@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+function rts_config(): array
+{
+    static $cfg;
+    if ($cfg === null) {
+        $path = dirname(__DIR__) . '/config/config.php';
+        $cfg = file_exists($path) ? require $path : [];
+    }
+    return $cfg;
+}
+
+function rts_pdo(): PDO
+{
+    static $pdo;
+    if ($pdo instanceof PDO) {
+        return $pdo;
+    }
+    $c = rts_config()['db'] ?? [];
+    $host = $c['host'] ?? '127.0.0.1';
+    $port = (int) ($c['port'] ?? 3306);
+    $name = $c['name'] ?? 'rts_db';
+    $user = $c['user'] ?? 'root';
+    $pass = $c['pass'] ?? '';
+    $charset = $c['charset'] ?? 'utf8mb4';
+    $dsn = "mysql:host={$host};port={$port};dbname={$name};charset={$charset}";
+    $pdo = new PDO($dsn, $user, $pass, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    ]);
+    return $pdo;
+}

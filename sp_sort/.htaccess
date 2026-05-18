@@ -1,0 +1,10 @@
+# SP Sort folder — rules valid in .htaccess only (no <Directory> blocks)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^uploads/ - [F,L]
+    RewriteRule ^outputs/ - [F,L]
+    RewriteRule ^composer\.(json|lock)$ - [F,L]
+    RewriteRule ^vendor/ - [F,L]
+</IfModule>
+
+Options -Indexes

@@ -1,0 +1,11 @@
+{
+    "name": "excel-sorter/app",
+    "description": "Upload, merge, and sort Excel files by Column D",
+    "require": {
+        "php": ">=7.4",
+        "phpoffice/phpspreadsheet": "^1.29 || ^2.0"
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
