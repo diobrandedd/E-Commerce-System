@@ -292,6 +292,19 @@ if ($caseIds !== []) {
       cursor: pointer;
     }
     .btn-view:hover { border-color: var(--accent); }
+    .btn-edit-record {
+      padding: 0.35rem 0.65rem;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff9ef;
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-edit-record:hover { border-color: var(--accent); color: var(--accent); }
     .btn-void-toggle { border-color:#9a6b6b; color:#7a3e3e; background:#fff5f5; text-decoration:none; font-size:0.85rem; padding:0.45rem 0.75rem; border-radius:8px; display:inline-flex; align-items:center; }
     .btn-void-toggle.on { background:#5c2a2a; color:#fff; border-color:#5c2a2a; }
     .btn-void-record { border-color:#9a6b6b; color:#7a3e3e; background:#fff5f5; }
@@ -791,6 +804,10 @@ if ($caseIds !== []) {
         <button type="button" class="btn-save-claim" id="viewSaveClaim">Save claim status</button>
         <p class="claim-save-msg hidden" id="viewClaimMsg" role="status"></p>
       </div>
+      <div id="viewEditBox" class="view-edit-box hidden" style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <p style="margin:0 0 0.5rem;font-size:0.82rem;color:var(--muted);">Fix wrong shop, dates, products, or documentation on a saved record.</p>
+        <a href="#" class="btn-edit-record" id="viewEditRecord">Edit record</a>
+      </div>
       <div class="view-actions">
         <button type="button" class="btn-void-record hidden" id="viewVoid">Void record</button>
         <button type="button" id="viewClose">Close</button>
@@ -873,6 +890,8 @@ if ($caseIds !== []) {
     var claimNoteEl = document.getElementById('viewClaimNote');
     var saveClaimBtn = document.getElementById('viewSaveClaim');
     var claimMsgEl = document.getElementById('viewClaimMsg');
+    var editBox = document.getElementById('viewEditBox');
+    var editRecordLink = document.getElementById('viewEditRecord');
     var currentCaseId = 0;
     var currentVoidTracking = '';
     var claimLabels = {
@@ -898,6 +917,7 @@ if ($caseIds !== []) {
       backdrop.setAttribute('aria-hidden', 'true');
       currentCaseId = 0;
       if (voidBtn) voidBtn.classList.add('hidden');
+      if (editBox) editBox.classList.add('hidden');
       if (claimMsgEl) {
         claimMsgEl.classList.add('hidden');
         claimMsgEl.textContent = '';
@@ -1010,6 +1030,15 @@ if ($caseIds !== []) {
           voidBtn.classList.add('hidden');
         }
       }
+      if (editBox && editRecordLink) {
+        if (!d.voided && d.tracking) {
+          editBox.classList.remove('hidden');
+          editRecordLink.href = 'record.php?edit=' + encodeURIComponent(String(d.tracking));
+        } else {
+          editBox.classList.add('hidden');
+          editRecordLink.href = '#';
+        }
+      }
 
       backdrop.classList.remove('hidden');
       backdrop.setAttribute('aria-hidden', 'false');
@@ -1114,6 +1143,18 @@ if ($caseIds !== []) {
 
     if (saveClaimBtn) {
       saveClaimBtn.addEventListener('click', saveClaimStatus);
+    }
+    if (editRecordLink) {
+      editRecordLink.addEventListener('click', function (e) {
+        var href = editRecordLink.getAttribute('href');
+        if (!href || href === '#') {
+          e.preventDefault();
+          return;
+        }
+        e.preventDefault();
+        document.body.classList.add('page-exit');
+        setTimeout(function () { window.location.href = href; }, 180);
+      });
     }
     if (voidBtn) {
       voidBtn.addEventListener('click', openVoidConfirm);

@@ -8,6 +8,8 @@ require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/deliveries_review_nav.php';
 require_once __DIR__ . '/includes/admin_nav.php';
 require_once __DIR__ . '/includes/rts_products.php';
+require_once __DIR__ . '/includes/rts_storage.php';
+$editTracking = isset($_GET['edit']) ? trim((string) $_GET['edit']) : '';
 $deliveryNavBadge = '';
 try {
     $deliveryNavBadge = rts_delivery_review_nav_badge_html(rts_pdo());
@@ -526,8 +528,8 @@ $pageTitle = 'Record RTS';
         </div>
       </div>
       <div style="margin-top:0.75rem;">
-        <label>Opening / damage proof (optional)</label>
-        <p style="margin:0.25rem 0 0;font-size:0.82rem;color:var(--muted);">Upload <strong>multiple photos</strong> and/or a <strong>video</strong> (e.g. unboxing for courier claims). Images up to ~12MB each; MP4, WebM, or MOV up to ~120MB. On a phone, tap the button area to pick files or use the camera for a still photo.</p>
+        <label>Opening / damage proof <span class="req" aria-hidden="true">*</span></label>
+        <p style="margin:0.25rem 0 0;font-size:0.82rem;color:var(--muted);">Upload at least <strong>one photo or video</strong> before saving. You may add more (e.g. unboxing for courier claims). Images up to ~12MB each; MP4, WebM, or MOV up to ~120MB. On a phone, tap the button area to pick files or use the camera for a still photo.</p>
         <div class="toolbar" style="margin-top:0.4rem;">
           <label class="btn btn-ghost file-pick-label">
             <input type="file" id="docFileInput" accept="image/*,video/*" multiple aria-label="Upload documentation photos or videos">
@@ -571,7 +573,7 @@ $pageTitle = 'Record RTS';
             <div class="compare-box">
               <h4>RTS (return)</h4>
               <div id="rtsCompareAttachments" class="compare-media-stack"></div>
-              <div id="rtsDocComparePlaceholder" class="muted" style="padding:0.6rem;font-size:0.84rem;border:1px dashed var(--border);border-radius:8px;">Add RTS photos or video above (optional).</div>
+              <div id="rtsDocComparePlaceholder" class="muted" style="padding:0.6rem;font-size:0.84rem;border:1px dashed var(--border);border-radius:8px;">Add at least one RTS photo or video above.</div>
             </div>
           </div>
         </div>
@@ -754,6 +756,10 @@ $pageTitle = 'Record RTS';
   let appendLines = [];
   const RTS_ATTACHMENTS_MAX = 24;
   let documentationAttachments = [];
+  let isEditMode = false;
+  let editCaseId = 0;
+  const EDIT_TRACKING = <?= json_encode($editTracking, JSON_UNESCAPED_UNICODE) ?>;
+  const RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;
   /** @type {null | { ok?: boolean, match?: boolean, item_id?: number, photo_filename?: string, file_url?: string }} */
   let deliveryMatch = null;
   /** @type {null | string} */
@@ -970,6 +976,7 @@ $pageTitle = 'Record RTS';
     if (!$('dateDelivered').value) missing.push('Date delivered');
     if (!$('dateOpened').value) missing.push('Date opened / recorded');
     if (!pendingLines.length) missing.push('At least one product');
+    if (!documentationAttachments.length) missing.push('RTS documentation (at least 1 file)');
     if ($('damagedCheck').checked) {
       if (!$('damagedReason').value) missing.push('Damage reason');
       if (!deliveryMatch || !deliveryMatch.match) missing.push('Pre-delivery photo (Deliveries)');
@@ -1435,10 +1442,101 @@ $pageTitle = 'Record RTS';
     syncFormValidity();
   }
 
+  function linesFromDb(rows) {
+    const idToIdx = {};
+    (rows || []).forEach((r, i) => { idToIdx[r.id] = i; });
+    return (rows || []).map((r) => {
+      const line = {
+        product_type: r.product_type,
+        honey_size: r.honey_size || null,
+        honey_variant: r.honey_variant || null,
+        combo_product: r.combo_product || null,
+        combo_quantity: r.combo_quantity != null ? parseFloat(r.combo_quantity) : null,
+        combo_honey_size: r.combo_honey_size || null,
+        combo_honey_variant: r.combo_honey_variant || null,
+        quantity: parseFloat(r.quantity) || 0,
+        is_bonus: r.is_bonus == 1 || r.is_bonus === true
+      };
+      if (line.is_bonus && r.bonus_parent_id != null && idToIdx[r.bonus_parent_id] !== undefined) {
+        line._bonus_parent_idx = idToIdx[r.bonus_parent_id];
+      }
+      return line;
+    });
+  }
+
+  function loadDocumentationFromCase(c) {
+    const atts = Array.isArray(c.documentation_attachments) ? c.documentation_attachments : [];
+    documentationAttachments = atts.map((a) => {
+      const fn = a && a.file ? String(a.file) : '';
+      const kind = a && a.kind === 'video' ? 'video' : 'image';
+      return {
+        kind,
+        file_name: fn,
+        file_url: fn ? RTS_DOC_URL_BASE + encodeURIComponent(fn) : ''
+      };
+    }).filter((a) => a.file_name);
+    if (!documentationAttachments.length && c.documentation_photo) {
+      const fn = String(c.documentation_photo);
+      documentationAttachments = [{
+        kind: 'image',
+        file_name: fn,
+        file_url: RTS_DOC_URL_BASE + encodeURIComponent(fn)
+      }];
+    }
+    renderDocAttachmentsPanel();
+  }
+
+  function openEditFromCase(c, lines) {
+    if (c.voided_at) {
+      toast('This record is voided and cannot be edited.', true);
+      return;
+    }
+    isEditMode = true;
+    editCaseId = parseInt(c.id, 10) || 0;
+    if (editCaseId < 1) {
+      toast('Invalid record', true);
+      return;
+    }
+    $('modalBackdrop').classList.remove('hidden');
+    $('modalTitle').textContent = 'Edit RTS record';
+    $('modalStepLabel').textContent = 'Update details and save changes';
+    $('btnSave').textContent = 'Save changes';
+    setTrackingEditWarn('');
+    setModalTracking(c.tracking_number || '');
+    currentTracking = c.tracking_number || '';
+    applyDetectedCourierFromApi(c.courier_detected || '');
+    $('shop').value = c.shop || '';
+    $('vipSub').value = c.vip_subsource || '';
+    if (c.shop === 'vip') $('vipRow').classList.remove('hidden');
+    else $('vipRow').classList.add('hidden');
+    syncCourierForShop();
+    $('courierFinal').value = c.courier_final || '';
+    $('dateDelivered').value = c.date_delivered || '';
+    $('dateOpened').value = c.date_opened || '';
+    const dr = c.damaged_reason || '';
+    if (dr) {
+      $('damagedCheck').checked = true;
+      $('damagedReason').value = dr;
+    } else {
+      resetDamagedUiPartial();
+    }
+    pendingLines = linesFromDb(lines);
+    renderPendingLines();
+    loadDocumentationFromCase(c);
+    $('docFileInput').value = '';
+    $('docCameraInput').value = '';
+    updateDetectedCourierHint();
+    void refreshDeliveryMatch();
+    syncFormValidity();
+  }
+
   function showModalNew() {
+    isEditMode = false;
+    editCaseId = 0;
     $('modalBackdrop').classList.remove('hidden');
     $('modalTitle').textContent = 'New RTS';
     $('modalStepLabel').textContent = 'Fill out details and save in one screen';
+    $('btnSave').textContent = 'Save RTS';
     setTrackingEditWarn('');
     pendingLines = [];
     documentationAttachments = [];
@@ -1456,6 +1554,9 @@ $pageTitle = 'Record RTS';
   function hideModalNew() {
     $('modalBackdrop').classList.add('hidden');
     resetDamagedUiPartial();
+    isEditMode = false;
+    editCaseId = 0;
+    $('btnSave').textContent = 'Save RTS';
   }
 
   function openScanPanel() {
@@ -1943,7 +2044,7 @@ $pageTitle = 'Record RTS';
     html += '<dt>Courier</dt><dd>' + (cVal ? (courierLabels[cVal] || cVal) : '<em>Not selected</em>') + '</dd>';
     html += '<dt>Date delivered</dt><dd>' + ($('dateDelivered').value || '—') + '</dd>';
     html += '<dt>Date opened / recorded</dt><dd>' + ($('dateOpened').value || '—') + '</dd>';
-    let docSummary = '—';
+    let docSummary = '<em style="color:var(--danger);">Required — none uploaded</em>';
     if (documentationAttachments.length) {
       const imgs = documentationAttachments.filter((x) => x.kind === 'image').length;
       const vids = documentationAttachments.filter((x) => x.kind === 'video').length;
@@ -1981,6 +2082,10 @@ $pageTitle = 'Record RTS';
       toast('Please add at least one product line before saving.', true);
       return;
     }
+    if (!documentationAttachments.length) {
+      toast('Upload at least one RTS documentation photo or video before saving.', true);
+      return;
+    }
     if ($('damagedCheck').checked) {
       const dr = $('damagedReason').value;
       if (!dr) {
@@ -2004,7 +2109,7 @@ $pageTitle = 'Record RTS';
       return;
     }
     const payload = {
-      action: 'create',
+      action: isEditMode ? 'update_record' : 'create',
       tracking_number: trackingToSave,
       courier_final: $('courierFinal').value,
       shop: $('shop').value,
@@ -2015,10 +2120,15 @@ $pageTitle = 'Record RTS';
       damaged_reason: $('damagedCheck').checked ? $('damagedReason').value : '',
       lines: flattenLinesForApi(pendingLines)
     };
+    if (isEditMode) payload.case_id = editCaseId;
     const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const j = await r.json();
     if (!j.ok) {
       if (j.error === 'duplicate_tracking') {
+        if (isEditMode) {
+          toast(j.message || 'Another record already uses this tracking number.', true);
+          return;
+        }
         hideModalNew();
         const data = await fetchCase(payload.tracking_number);
         showDuplicate(payload.tracking_number, data);
@@ -2029,7 +2139,18 @@ $pageTitle = 'Record RTS';
         void refreshDeliveryMatch();
         return;
       }
-      toast(j.error || 'Save failed', true);
+      if (j.error === 'documentation_required') {
+        toast(j.message || 'Upload at least one RTS documentation photo or video.', true);
+        return;
+      }
+      toast(j.error || j.message || 'Save failed', true);
+      return;
+    }
+    if (isEditMode) {
+      toast('Record updated.');
+      hideModalNew();
+      document.body.classList.add('page-exit');
+      setTimeout(() => { window.location.href = 'records.php'; }, 180);
       return;
     }
     toast('RTS saved.');
@@ -2112,6 +2233,21 @@ $pageTitle = 'Record RTS';
       setTimeout(() => { window.location.href = href; }, 180);
     });
   });
+
+  if (EDIT_TRACKING) {
+    (async () => {
+      const data = await fetchCase(EDIT_TRACKING);
+      if (!data.ok) {
+        toast(data.error || 'Could not load record', true);
+        return;
+      }
+      if (!data.exists || !data.case) {
+        toast('Record not found for this tracking number.', true);
+        return;
+      }
+      openEditFromCase(data.case, data.lines || []);
+    })();
+  }
 })();
   </script>
 </body>
