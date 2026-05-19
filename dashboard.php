@@ -52,22 +52,22 @@ if ($byCourier === false) {
 
 $lineAgg = $pdo->query(
     "SELECT
-       SUM(CASE WHEN kind = 'honey' THEN 1 ELSE 0 END) AS honey_lines,
-       SUM(CASE WHEN kind = 'non_honey' THEN 1 ELSE 0 END) AS other_lines,
-       COALESCE(SUM(CASE WHEN kind = 'honey' THEN quantity ELSE 0 END), 0) AS honey_qty
+       SUM(CASE WHEN product_type IN ('honey','honey_with_other') THEN 1 ELSE 0 END) AS honey_lines,
+       SUM(CASE WHEN product_type NOT IN ('honey','honey_with_other') THEN 1 ELSE 0 END) AS other_lines,
+       COALESCE(SUM(CASE WHEN product_type IN ('honey','honey_with_other') THEN quantity ELSE 0 END), 0) AS honey_qty
      FROM rts_line_items"
 )->fetch() ?: ['honey_lines' => 0, 'other_lines' => 0, 'honey_qty' => 0];
 
 $nonHoneyTop = $pdo->query(
-    "SELECT non_honey_product, SUM(quantity) AS qty
-     FROM rts_line_items WHERE kind = 'non_honey' AND non_honey_product IS NOT NULL
-     GROUP BY non_honey_product ORDER BY qty DESC LIMIT 8"
+    "SELECT product_type, SUM(quantity) AS qty
+     FROM rts_line_items WHERE product_type NOT IN ('honey','honey_with_other')
+     GROUP BY product_type ORDER BY qty DESC LIMIT 8"
 )->fetchAll();
 
 $honeyByVariant = $pdo->query(
-    "SELECT variant, SUM(quantity) AS qty
-     FROM rts_line_items WHERE kind = 'honey' AND variant IS NOT NULL
-     GROUP BY variant ORDER BY qty DESC"
+    "SELECT honey_variant AS variant, SUM(quantity) AS qty
+     FROM rts_line_items WHERE product_type IN ('honey','honey_with_other') AND honey_variant IS NOT NULL
+     GROUP BY honey_variant ORDER BY qty DESC"
 )->fetchAll();
 
 $timeline = $pdo->query(
@@ -490,16 +490,17 @@ foreach ($courierOrder as $courierCode) {
             <thead><tr><th>Product</th><th>Qty</th></tr></thead>
             <tbody>
         <?php
-              $nhLabel = [
-                  'paragis_tea' => 'Paragis tea',
-                  'black_rice_tea' => 'Black rice tea',
-                  'cacao' => 'Cacao',
-                  'honey_comb' => 'Honey comb',
-                  'pito_pito' => 'Pito-pito',
+              $ptLabels = [
+                  'pouch_pt' => 'Pouch PT',
+                  'pouch_pt_with_honey' => 'Pouch PT w/ Honey',
+                  'pouch_brc' => 'Pouch BRC',
+                  'jar_cacao' => 'Jar Cacao',
+                  'jar_cacao_with_honey' => 'Jar Cacao w/ Honey',
+                  'jar_honey_comb' => 'Jar Honey Comb',
               ];
               foreach ($nonHoneyTop as $r):
-                  $slug = (string) $r['non_honey_product'];
-                  $name = $nhLabel[$slug] ?? $slug;
+                  $slug = (string) $r['product_type'];
+                  $name = $ptLabels[$slug] ?? ucwords(str_replace('_', ' ', $slug));
                   ?>
               <tr>
                 <td><?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?></td>

@@ -8,6 +8,7 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/rts_attachments.php';
 require_once dirname(__DIR__) . '/includes/rts_shop_couriers.php';
 require_once dirname(__DIR__) . '/includes/rts_claim_status.php';
+require_once dirname(__DIR__) . '/includes/rts_products.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -66,7 +67,7 @@ if ($method === 'GET') {
     if (!isset($case['damaged_tag'])) {
         $case['damaged_tag'] = rts_damaged_tag(isset($case['damaged_reason']) ? (string) $case['damaged_reason'] : null);
     }
-    $lines = $pdo->prepare('SELECT id, kind, pack_size, variant, non_honey_product, quantity, created_at FROM rts_line_items WHERE case_id = ? ORDER BY id ASC');
+    $lines = $pdo->prepare('SELECT id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id, created_at FROM rts_line_items WHERE case_id = ? ORDER BY id ASC');
     $lines->execute([$lid]);
     echo json_encode([
         'ok' => true,
@@ -172,84 +173,17 @@ if ($tracking === '') {
     exit;
 }
 
-function rts_validate_lines(array $lines): ?string
-{
-    if ($lines === []) {
-        return 'At least one line item is required';
-    }
-    foreach ($lines as $i => $row) {
-        if (!is_array($row)) {
-            return 'Invalid line item';
-        }
-        $kind = $row['kind'] ?? '';
-        if ($kind !== 'honey' && $kind !== 'non_honey') {
-            return 'Line ' . ($i + 1) . ': kind must be honey or non_honey';
-        }
-        $qty = $row['quantity'] ?? null;
-        if (!is_numeric($qty) || (float) $qty <= 0) {
-            return 'Line ' . ($i + 1) . ': quantity must be a positive number';
-        }
-        if ($kind === 'honey') {
-            $ps = $row['pack_size'] ?? '';
-            $v = $row['variant'] ?? '';
-            $validPs = ['250ml', '350ml', 'liter', 'gallon'];
-            $validV = ['light', 'amber', 'dark'];
-            if (!in_array($ps, $validPs, true)) {
-                return 'Line ' . ($i + 1) . ': invalid pack_size';
-            }
-            if (!in_array($v, $validV, true)) {
-                return 'Line ' . ($i + 1) . ': invalid variant';
-            }
-        } else {
-            $nh = $row['non_honey_product'] ?? '';
-            $validNh = ['paragis_tea', 'black_rice_tea', 'cacao', 'honey_comb', 'pito_pito'];
-            if (!in_array($nh, $validNh, true)) {
-                return 'Line ' . ($i + 1) . ': invalid non_honey_product';
-            }
-        }
-    }
-    return null;
-}
-
-function rts_normalize_lines(array $lines): array
-{
-    $out = [];
-    foreach ($lines as $row) {
-        if (!is_array($row)) {
-            continue;
-        }
-        $kind = $row['kind'] === 'honey' ? 'honey' : 'non_honey';
-        $qty = round((float) ($row['quantity'] ?? 0), 2);
-        if ($kind === 'honey') {
-            $out[] = [
-                'kind' => 'honey',
-                'pack_size' => (string) ($row['pack_size'] ?? ''),
-                'variant' => (string) ($row['variant'] ?? ''),
-                'non_honey_product' => null,
-                'quantity' => $qty,
-            ];
-        } else {
-            $out[] = [
-                'kind' => 'non_honey',
-                'pack_size' => null,
-                'variant' => null,
-                'non_honey_product' => (string) ($row['non_honey_product'] ?? ''),
-                'quantity' => $qty,
-            ];
-        }
-    }
-    return $out;
-}
+// Validation and normalization now handled by includes/rts_products.php
 
 if ($action === 'create') {
     $linesIn = isset($data['lines']) && is_array($data['lines']) ? $data['lines'] : [];
-    $err = rts_validate_lines($linesIn);
+    $err = rts_validate_lines_v2($linesIn);
     if ($err !== null) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => $err]);
         exit;
     }
-    $lines = rts_normalize_lines($linesIn);
+    $lines = array_map('rts_normalize_line', $linesIn);
 
     $courierFinal = isset($data['courier_final']) ? (string) $data['courier_final'] : '';
     if ($courierFinal === '' || $courierFinal === 'unknown') {
@@ -386,17 +320,28 @@ if ($action === 'create') {
         ]);
         $caseId = (int) $pdo->lastInsertId();
         $li = $pdo->prepare(
-            'INSERT INTO rts_line_items (case_id, kind, pack_size, variant, non_honey_product, quantity) VALUES (?,?,?,?,?,?)'
+            'INSERT INTO rts_line_items (case_id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
         );
-        foreach ($lines as $L) {
+        $insertedIds = [];
+        foreach ($lines as $idx => $L) {
+            $parentId = null;
+            if ($L['is_bonus'] && isset($L['_bonus_parent_idx'])) {
+                $parentId = $insertedIds[(int) $L['_bonus_parent_idx']] ?? null;
+            }
             $li->execute([
                 $caseId,
-                $L['kind'],
-                $L['pack_size'],
-                $L['variant'],
-                $L['non_honey_product'],
+                $L['product_type'],
+                $L['honey_size'],
+                $L['honey_variant'],
+                $L['combo_product'],
+                $L['combo_quantity'],
+                $L['combo_honey_size'],
+                $L['combo_honey_variant'],
                 $L['quantity'],
+                $L['is_bonus'],
+                $parentId,
             ]);
+            $insertedIds[$idx] = (int) $pdo->lastInsertId();
         }
         $pdo->commit();
     } catch (Throwable $e) {
@@ -412,13 +357,13 @@ if ($action === 'create') {
 
 if ($action === 'append_lines') {
     $linesIn = isset($data['lines']) && is_array($data['lines']) ? $data['lines'] : [];
-    $err = rts_validate_lines($linesIn);
+    $err = rts_validate_lines_v2($linesIn);
     if ($err !== null) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => $err]);
         exit;
     }
-    $lines = rts_normalize_lines($linesIn);
+    $lines = array_map('rts_normalize_line', $linesIn);
 
     $st = $pdo->prepare('SELECT id FROM rts_cases WHERE tracking_number = ? AND voided_at IS NULL LIMIT 1');
     $st->execute([$tracking]);
@@ -432,17 +377,28 @@ if ($action === 'append_lines') {
     $pdo->beginTransaction();
     try {
         $li = $pdo->prepare(
-            'INSERT INTO rts_line_items (case_id, kind, pack_size, variant, non_honey_product, quantity) VALUES (?,?,?,?,?,?)'
+            'INSERT INTO rts_line_items (case_id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
         );
-        foreach ($lines as $L) {
+        $insertedIds = [];
+        foreach ($lines as $idx => $L) {
+            $parentId = null;
+            if ($L['is_bonus'] && isset($L['_bonus_parent_idx'])) {
+                $parentId = $insertedIds[(int) $L['_bonus_parent_idx']] ?? null;
+            }
             $li->execute([
                 $caseId,
-                $L['kind'],
-                $L['pack_size'],
-                $L['variant'],
-                $L['non_honey_product'],
+                $L['product_type'],
+                $L['honey_size'],
+                $L['honey_variant'],
+                $L['combo_product'],
+                $L['combo_quantity'],
+                $L['combo_honey_size'],
+                $L['combo_honey_variant'],
                 $L['quantity'],
+                $L['is_bonus'],
+                $parentId,
             ]);
+            $insertedIds[$idx] = (int) $pdo->lastInsertId();
         }
         $pdo->prepare('UPDATE rts_cases SET updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$caseId]);
         $pdo->commit();

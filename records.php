@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/labels.php';
+require_once __DIR__ . '/includes/rts_products.php';
 require_once __DIR__ . '/includes/rts_claim_status.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/rts_attachments.php';
+require_once __DIR__ . '/includes/rts_storage.php';
 
 rts_require_roles([RTS_ROLE_ADMIN], 'login.php');
 
@@ -174,7 +176,7 @@ $linesByCase = [];
 if ($caseIds !== []) {
     $placeholders = implode(',', array_fill(0, count($caseIds), '?'));
     $lst = $pdo->prepare(
-        "SELECT case_id, kind, pack_size, variant, non_honey_product, quantity
+        "SELECT case_id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus
          FROM rts_line_items WHERE case_id IN ($placeholders) ORDER BY id ASC"
     );
     $lst->execute($caseIds);
@@ -806,6 +808,7 @@ if ($caseIds !== []) {
     </div>
   </div>
   <script>
+  var RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;
   (function () {
     var btn = document.getElementById('mobileMenuBtn');
     var panel = document.getElementById('mobileMenuPanel');
@@ -972,7 +975,7 @@ if ($caseIds !== []) {
           var fn = item && item.file ? String(item.file) : '';
           var k = item && item.kind ? String(item.kind) : 'image';
           if (!/^[a-zA-Z0-9_.-]+$/.test(fn)) continue;
-          var url = 'assets/rts_documentation/' + encodeURIComponent(fn);
+          var url = RTS_DOC_URL_BASE + encodeURIComponent(fn);
           docHtml += '<div class="doc-gallery-item">';
           if (k === 'video') {
             docHtml += '<video controls playsinline preload="metadata" src="' + esc(url) + '" style="max-width:100%;max-height:240px;border-radius:8px;"></video>';

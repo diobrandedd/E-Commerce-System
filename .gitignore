@@ -1,0 +1,10 @@
+/config/config.php
+/vendor/
+/assets/rts_documentation/*
+!/assets/rts_documentation/.gitkeep
+/assets/deliveries_documentation/*
+!/assets/deliveries_documentation/.gitkeep
+/assets/sp_sort/*
+!/assets/sp_sort/.gitkeep
+/assets/sp_sort/tmp/*
+!/assets/sp_sort/tmp/.gitkeep

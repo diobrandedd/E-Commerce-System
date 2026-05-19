@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/deliveries_review_nav.php';
 require_once dirname(__DIR__) . '/includes/admin_nav.php';
+require_once dirname(__DIR__) . '/includes/rts_storage.php';
 
 rts_require_roles([RTS_ROLE_ADMIN], '../login.php');
 
@@ -437,7 +438,7 @@ $iconPen = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewB
                     $raw = $r['raw_qr_text'] !== null ? (string) $r['raw_qr_text'] : '';
                     $voided = $r['voided_at'] !== null && $r['voided_at'] !== '';
                     $dd = (string) $r['delivery_date'];
-                    $imgUrl = '../assets/deliveries_documentation/' . rawurlencode($fn);
+                    $imgUrl = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn, '../');
                     $dupCount = (int) ($r['dup_same_tracking'] ?? 0);
                     $isDup = !$voided && $tr !== '' && $dupCount > 1;
                     $missing = !$voided && $tr === '';

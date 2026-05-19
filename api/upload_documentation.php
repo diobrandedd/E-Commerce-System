@@ -5,6 +5,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/rts_storage.php';
 rts_session_start();
 $authUser = rts_auth_user();
 if ($authUser === null || $authUser['role'] !== RTS_ROLE_ADMIN) {
@@ -101,8 +102,9 @@ if ($size > $maxForType) {
     exit;
 }
 
-$targetDir = dirname(__DIR__) . '/assets/rts_documentation';
-if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+try {
+    $targetDir = rts_storage_dir(RTS_STORAGE_BUCKET_RTS);
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'Could not create documentation directory']);
     exit;
@@ -121,6 +123,6 @@ if (!move_uploaded_file($tmp, $targetPath)) {
 echo json_encode([
     'ok' => true,
     'file_name' => $name,
-    'file_url' => 'assets/rts_documentation/' . rawurlencode($name),
+    'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $name),
     'media_kind' => $kind,
 ], JSON_UNESCAPED_UNICODE);

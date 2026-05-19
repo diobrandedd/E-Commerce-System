@@ -11,4 +11,9 @@ return [
         'pass' => '',
         'charset' => 'utf8mb4',
     ],
+    // Uploads outside this git folder — see config/config.sample.php and README.md
+    'storage' => [
+        'root' => 'C:/xampp/htdocs/rts_storage',
+        'web_base' => '/rts_storage',
+    ],
 ];

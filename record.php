@@ -7,6 +7,7 @@ rts_require_roles([RTS_ROLE_ADMIN], 'login.php');
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/deliveries_review_nav.php';
 require_once __DIR__ . '/includes/admin_nav.php';
+require_once __DIR__ . '/includes/rts_products.php';
 $deliveryNavBadge = '';
 try {
     $deliveryNavBadge = rts_delivery_review_nav_badge_html(rts_pdo());
@@ -198,7 +199,49 @@ $pageTitle = 'Record RTS';
     .line-chip {
       display: flex; justify-content: space-between; align-items: center;
       padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.4rem;
-      font-size: 0.88rem;
+      font-size: 0.88rem; flex-wrap: wrap; gap: 0.3rem;
+    }
+    .line-chip.is-bonus {
+      margin-left: 1.2rem; border-left: 3px solid var(--accent); background: #fffbf0;
+    }
+    .line-chip span { flex: 1; min-width: 0; word-break: break-word; }
+    .line-form-card { padding: 0.85rem 0.9rem; }
+    .line-form-row { margin-bottom: 0.6rem; }
+    .line-form-row:last-child { margin-bottom: 0; }
+    .line-form-row.hidden { display: none !important; }
+    .line-form-row label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.2rem; }
+    .line-form-row select,
+    .line-form-row input[type="number"] {
+      width: 100%; padding: 0.5rem 0.55rem; border-radius: 8px; border: 1px solid var(--border);
+      font-size: 0.95rem; font-family: inherit; min-height: 44px; background: #fffdfa;
+    }
+    .line-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .line-form-subcard {
+      background: #fff7ea; border: 1px dashed var(--border); border-radius: 10px; padding: 0.6rem 0.7rem;
+    }
+    .line-form-sublabel { display: block; font-size: 0.76rem; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; }
+    .line-form-actions { display: flex; gap: 0.5rem; margin-top: 0.65rem; flex-wrap: wrap; }
+    .line-form-actions .btn { min-height: 44px; flex: 1; }
+    .variant-rows-label { font-size: 0.78rem; color: var(--muted); margin: 0.5rem 0 0.35rem; display: block; }
+    .variant-row {
+      display: grid; grid-template-columns: 1fr 5.5rem auto; gap: 0.45rem; align-items: end;
+      margin-bottom: 0.45rem;
+    }
+    .variant-row select, .variant-row input[type="number"] {
+      width: 100%; padding: 0.5rem 0.55rem; border-radius: 8px; border: 1px solid var(--border);
+      font-size: 0.95rem; min-height: 44px; background: #fffdfa;
+    }
+    .variant-row .btn-remove-variant {
+      min-height: 44px; padding: 0.4rem 0.55rem; font-size: 0.82rem;
+    }
+    .btn-add-variant {
+      margin-top: 0.35rem; font-size: 0.85rem; padding: 0.45rem 0.65rem; min-height: 40px;
+    }
+    @media (max-width: 560px) {
+      .line-form-grid { grid-template-columns: 1fr; }
+      .line-form-actions { flex-direction: column; }
+      .variant-row { grid-template-columns: 1fr 1fr; }
+      .variant-row .btn-remove-variant { grid-column: 1 / -1; }
     }
     .banner-warn {
       background: rgba(245, 166, 35, 0.12);
@@ -436,7 +479,12 @@ $pageTitle = 'Record RTS';
     <div class="modal" id="modalNew">
       <h2 id="modalTitle">New RTS</h2>
       <div class="steps" id="modalStepLabel">Fill out details and save in one screen</div>
-      <p class="mono" style="margin:0 0 0.75rem;">Tracking: <strong id="dispTracking"></strong></p>
+      <div style="margin:0 0 0.75rem;">
+        <label for="dispTracking">Tracking number</label>
+        <input type="text" id="dispTracking" class="mono" autocomplete="off" spellcheck="false" placeholder="Paste or correct tracking number">
+        <p class="muted" style="margin:0.35rem 0 0;font-size:0.78rem;">Wrong QR? Edit the number here before saving.</p>
+        <p id="trackingEditWarn" class="banner-warn hidden" style="margin:0.5rem 0 0;font-size:0.82rem;" role="status"></p>
+      </div>
       <p id="detectedCourierHint" class="hidden" style="margin:0 0 0.65rem;font-size:0.84rem;color:var(--muted);"></p>
       <div id="formValidationBanner" class="banner-warn hidden" role="status"></div>
       <div class="row">
@@ -531,55 +579,62 @@ $pageTitle = 'Record RTS';
       </div>
 
       <p class="section-title">Products <span class="req" aria-hidden="true">*</span></p>
-      <p style="margin:0 0 0.5rem;color:var(--muted);font-size:0.9rem;">Add at least one product (required). The form below updates instantly based on honey/non-honey selection.</p>
+      <p style="margin:0 0 0.5rem;color:var(--muted);font-size:0.9rem;">Add at least one product. Fields change based on selection.</p>
       <div id="pendingLines"></div>
-      <div class="card" style="background:#fff9ef;margin-top:0.75rem;">
-        <div class="row">
-          <div>
-            <label for="lineKind">Type</label>
-            <select id="lineKind">
-              <option value="honey">Honey</option>
-              <option value="non_honey">Non-honey</option>
+      <div class="card line-form-card" style="background:#fff9ef;margin-top:0.75rem;">
+        <div class="line-form-row">
+          <label for="lineProductType">Product</label>
+          <select id="lineProductType">
+            <?php foreach (RTS_PRODUCT_TYPES as $pt): ?>
+            <option value="<?= $pt ?>"><?= htmlspecialchars(RTS_PRODUCT_LABELS[$pt], ENT_QUOTES, 'UTF-8') ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="line-form-row" id="wrapHoneyMain">
+          <label for="honeySize">Size</label>
+              <select id="honeySize">
+                <?php foreach (RTS_HONEY_SIZES as $s): ?>
+                <option value="<?= $s ?>"><?= htmlspecialchars(RTS_HONEY_SIZE_LABELS[$s], ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
+              </select>
+          <span class="variant-rows-label">Variants — enter qty for each (e.g. 2 Liter: 1 Amber + 1 Dark)</span>
+          <div id="honeyVariantList" class="honey-variant-list" data-field="honey"></div>
+          <button type="button" class="btn btn-ghost btn-add-variant" id="btnAddHoneyVariant">+ Add variant row</button>
+        </div>
+        <div class="line-form-row" id="wrapComboOther">
+          <div class="line-form-subcard">
+            <span class="line-form-sublabel">Paired with:</span>
+            <label for="comboProduct">Product</label>
+            <select id="comboProduct">
+              <?php foreach (RTS_COMBO_PRODUCTS as $cp): ?>
+              <option value="<?= $cp ?>"><?= htmlspecialchars(RTS_COMBO_PRODUCT_LABELS[$cp], ENT_QUOTES, 'UTF-8') ?></option>
+              <?php endforeach; ?>
             </select>
-          </div>
-          <div id="wrapNonHoney" class="hidden">
-            <label for="nhProduct">Product</label>
-            <select id="nhProduct">
-              <option value="paragis_tea">Paragis tea</option>
-              <option value="black_rice_tea">Black rice tea</option>
-              <option value="cacao">Cacao</option>
-              <option value="honey_comb">Honey comb</option>
-              <option value="pito_pito">Pito-pito</option>
-            </select>
+            <label for="comboQty">Quantity</label>
+            <input type="number" id="comboQty" min="1" step="1" value="1">
           </div>
         </div>
-        <div class="row" style="margin-top:0.65rem;" id="wrapHoneySize">
-          <div>
-            <label for="packSize">Pack size</label>
-            <select id="packSize">
-              <option value="250ml">250 ml</option>
-              <option value="350ml">350 ml</option>
-              <option value="liter">Liter</option>
-              <option value="gallon">Gallon</option>
+        <div class="line-form-row" id="wrapComboHoney">
+          <div class="line-form-subcard">
+            <span class="line-form-sublabel">Paired honey:</span>
+            <label for="comboHoneySize">Size</label>
+            <select id="comboHoneySize">
+              <?php foreach (RTS_HONEY_SIZES as $s): ?>
+              <option value="<?= $s ?>"><?= htmlspecialchars(RTS_HONEY_SIZE_LABELS[$s], ENT_QUOTES, 'UTF-8') ?></option>
+              <?php endforeach; ?>
             </select>
-          </div>
-          <div>
-            <label for="variant">Variant</label>
-            <select id="variant">
-              <option value="light">Light</option>
-              <option value="amber">Amber</option>
-              <option value="dark">Dark</option>
-            </select>
+            <span class="variant-rows-label">Honey variants (qty per type)</span>
+            <div id="comboHoneyVariantList" class="honey-variant-list" data-field="comboHoney"></div>
+            <button type="button" class="btn btn-ghost btn-add-variant" id="btnAddComboHoneyVariant">+ Add variant row</button>
           </div>
         </div>
-        <div class="row" style="margin-top:0.65rem;">
-          <div>
-            <label for="lineQty">Quantity</label>
-            <input type="number" id="lineQty" min="0.01" step="0.01" value="1">
-          </div>
-          <div style="display:flex;align-items:flex-end;">
-            <button type="button" class="btn btn-primary" id="btnAddLine" style="width:100%;">Add to list</button>
-          </div>
+        <div class="line-form-row" id="wrapLineQty">
+          <label for="lineQty">Quantity</label>
+          <input type="number" id="lineQty" min="1" step="1" value="1">
+        </div>
+        <div class="line-form-actions">
+          <button type="button" class="btn btn-primary" id="btnAddLine">Add to list</button>
+          <button type="button" class="btn btn-ghost" id="btnAddBonus">+ Bonus item</button>
         </div>
       </div>
 
@@ -613,53 +668,60 @@ $pageTitle = 'Record RTS';
       <p class="mono" style="margin:0 0 0.75rem;">Tracking: <strong id="appendTracking"></strong></p>
       <div id="appendStepLines">
         <div id="appendPendingLines"></div>
-        <div class="card" style="background:#fff9ef;">
-          <div class="row">
-            <div>
-              <label for="a_lineKind">Type</label>
-              <select id="a_lineKind">
-                <option value="honey">Honey</option>
-                <option value="non_honey">Non-honey</option>
+        <div class="card line-form-card" style="background:#fff9ef;">
+          <div class="line-form-row">
+            <label for="a_lineProductType">Product</label>
+            <select id="a_lineProductType">
+              <?php foreach (RTS_PRODUCT_TYPES as $pt): ?>
+              <option value="<?= $pt ?>"><?= htmlspecialchars(RTS_PRODUCT_LABELS[$pt], ENT_QUOTES, 'UTF-8') ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="line-form-row" id="a_wrapHoneyMain">
+            <label for="a_honeySize">Size</label>
+                <select id="a_honeySize">
+                  <?php foreach (RTS_HONEY_SIZES as $s): ?>
+                  <option value="<?= $s ?>"><?= htmlspecialchars(RTS_HONEY_SIZE_LABELS[$s], ENT_QUOTES, 'UTF-8') ?></option>
+                  <?php endforeach; ?>
+                </select>
+            <span class="variant-rows-label">Variants — enter qty for each</span>
+            <div id="a_honeyVariantList" class="honey-variant-list" data-field="honey"></div>
+            <button type="button" class="btn btn-ghost btn-add-variant" id="a_btnAddHoneyVariant">+ Add variant row</button>
+          </div>
+          <div class="line-form-row" id="a_wrapComboOther">
+            <div class="line-form-subcard">
+              <span class="line-form-sublabel">Paired with:</span>
+              <label for="a_comboProduct">Product</label>
+              <select id="a_comboProduct">
+                <?php foreach (RTS_COMBO_PRODUCTS as $cp): ?>
+                <option value="<?= $cp ?>"><?= htmlspecialchars(RTS_COMBO_PRODUCT_LABELS[$cp], ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
               </select>
-            </div>
-            <div id="a_wrapNonHoney" class="hidden">
-              <label for="a_nhProduct">Product</label>
-              <select id="a_nhProduct">
-                <option value="paragis_tea">Paragis tea</option>
-                <option value="black_rice_tea">Black rice tea</option>
-                <option value="cacao">Cacao</option>
-                <option value="honey_comb">Honey comb</option>
-                <option value="pito_pito">Pito-pito</option>
-              </select>
+              <label for="a_comboQty">Quantity</label>
+              <input type="number" id="a_comboQty" min="1" step="1" value="1">
             </div>
           </div>
-          <div class="row" style="margin-top:0.65rem;" id="a_wrapHoneySize">
-            <div>
-              <label for="a_packSize">Pack size</label>
-              <select id="a_packSize">
-                <option value="250ml">250 ml</option>
-                <option value="350ml">350 ml</option>
-                <option value="liter">Liter</option>
-                <option value="gallon">Gallon</option>
+          <div class="line-form-row" id="a_wrapComboHoney">
+            <div class="line-form-subcard">
+              <span class="line-form-sublabel">Paired honey:</span>
+              <label for="a_comboHoneySize">Size</label>
+              <select id="a_comboHoneySize">
+                <?php foreach (RTS_HONEY_SIZES as $s): ?>
+                <option value="<?= $s ?>"><?= htmlspecialchars(RTS_HONEY_SIZE_LABELS[$s], ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
               </select>
-            </div>
-            <div>
-              <label for="a_variant">Variant</label>
-              <select id="a_variant">
-                <option value="light">Light</option>
-                <option value="amber">Amber</option>
-                <option value="dark">Dark</option>
-              </select>
+              <span class="variant-rows-label">Honey variants (qty per type)</span>
+              <div id="a_comboHoneyVariantList" class="honey-variant-list" data-field="comboHoney"></div>
+              <button type="button" class="btn btn-ghost btn-add-variant" id="a_btnAddComboHoneyVariant">+ Add variant row</button>
             </div>
           </div>
-          <div class="row" style="margin-top:0.65rem;">
-            <div>
-              <label for="a_lineQty">Quantity</label>
-              <input type="number" id="a_lineQty" min="0.01" step="0.01" value="1">
-            </div>
-            <div style="display:flex;align-items:flex-end;">
-              <button type="button" class="btn btn-primary" id="a_btnAddLine" style="width:100%;">Add to list</button>
-            </div>
+          <div class="line-form-row" id="a_wrapLineQty">
+            <label for="a_lineQty">Quantity</label>
+            <input type="number" id="a_lineQty" min="1" step="1" value="1">
+          </div>
+          <div class="line-form-actions">
+            <button type="button" class="btn btn-primary" id="a_btnAddLine">Add to list</button>
+            <button type="button" class="btn btn-ghost" id="a_btnAddBonus">+ Bonus item</button>
           </div>
         </div>
         <div class="toolbar" style="justify-content:flex-end;margin-top:0.75rem;">
@@ -774,6 +836,68 @@ $pageTitle = 'Record RTS';
     return r.json();
   }
 
+  function getModalTracking() {
+    const el = $('dispTracking');
+    if (!el) return '';
+    const raw = typeof el.value === 'string' ? el.value : (el.textContent || '');
+    return normalizeTracking(raw);
+  }
+
+  function setModalTracking(tracking) {
+    const el = $('dispTracking');
+    if (!el) return;
+    el.value = tracking;
+  }
+
+  function setTrackingEditWarn(msg) {
+    const el = $('trackingEditWarn');
+    if (!el) return;
+    if (!msg) {
+      el.classList.add('hidden');
+      el.textContent = '';
+      return;
+    }
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
+  function applyDetectedCourierFromApi(det) {
+    detectedCourierHint = ['spx', 'jnt', 'flash'].includes(det) ? det : null;
+    updateDetectedCourierHint();
+    if ($('shop').value) syncCourierForShop();
+  }
+
+  let trackingLookupTm = null;
+  async function onModalTrackingEdited() {
+    const tr = getModalTracking();
+    currentTracking = tr;
+    setTrackingEditWarn('');
+    if (!tr) {
+      detectedCourierHint = null;
+      updateDetectedCourierHint();
+      deliveryMatch = null;
+      applyDamagedCompareUi();
+      syncFormValidity();
+      return;
+    }
+    if (trackingLookupTm) clearTimeout(trackingLookupTm);
+    trackingLookupTm = setTimeout(async () => {
+      try {
+        const data = await fetchCase(tr);
+        if (!data.ok) return;
+        if (data.exists) {
+          setTrackingEditWarn('This tracking is already in the database. Saving will show the duplicate screen, or close and use Add more products.');
+          detectedCourierHint = null;
+          updateDetectedCourierHint();
+        } else {
+          applyDetectedCourierFromApi(data.detected_courier || '');
+        }
+        void refreshDeliveryMatch();
+        syncFormValidity();
+      } catch (e) {}
+    }, 450);
+  }
+
   function syncCourierForShop() {
     const shopSel = $('shop');
     const courierSel = $('courierFinal');
@@ -835,6 +959,7 @@ $pageTitle = 'Record RTS';
 
   function getFormValidation() {
     const missing = [];
+    if (!getModalTracking()) missing.push('Tracking number');
     if (!$('shop').value) missing.push('Shop');
     const shopVal = $('shop').value;
     const courierVal = $('courierFinal').value;
@@ -883,32 +1008,229 @@ $pageTitle = 'Record RTS';
     sync();
   }
 
-  function setLineKindHandlers(prefix) {
-    const kind = $(prefix + 'lineKind');
-    const wrapNh = $(prefix + 'wrapNonHoney');
-    const wrapHoney = $(prefix + 'wrapHoneySize');
-    if (!kind) return;
+  const PRODUCT_LABELS = <?= json_encode(RTS_PRODUCT_LABELS, JSON_UNESCAPED_UNICODE) ?>;
+  const HONEY_SIZE_LABELS = <?= json_encode(RTS_HONEY_SIZE_LABELS, JSON_UNESCAPED_UNICODE) ?>;
+  const HONEY_VARIANT_LABELS = <?= json_encode(RTS_HONEY_VARIANT_LABELS, JSON_UNESCAPED_UNICODE) ?>;
+  const COMBO_PRODUCT_LABELS = <?= json_encode(RTS_COMBO_PRODUCT_LABELS, JSON_UNESCAPED_UNICODE) ?>;
+  const TYPES_HONEY_MAIN = <?= json_encode(RTS_TYPES_WITH_HONEY_MAIN) ?>;
+  const TYPES_COMBO = <?= json_encode(RTS_TYPES_WITH_COMBO) ?>;
+  const TYPES_COMBO_HONEY = <?= json_encode(RTS_TYPES_WITH_COMBO_HONEY) ?>;
+  const TYPES_COMBO_OTHER = <?= json_encode(RTS_TYPES_WITH_COMBO_OTHER) ?>;
+
+  function typeNeedsHoney(t) { return TYPES_HONEY_MAIN.includes(t); }
+  function typeHasCombo(t) { return TYPES_COMBO.includes(t); }
+  function typeComboIsHoney(t) { return TYPES_COMBO_HONEY.includes(t); }
+  function typeComboIsOther(t) { return TYPES_COMBO_OTHER.includes(t); }
+
+  function variantListId(prefix, field) {
+    if (field === 'comboHoney') {
+      return prefix + (prefix ? 'comboHoneyVariantList' : 'comboHoneyVariantList');
+    }
+    return prefix + 'honeyVariantList';
+  }
+
+  function createVariantRow(prefix, field, variant, qty) {
+    const row = document.createElement('div');
+    row.className = 'variant-row';
+    let opts = '';
+    Object.keys(HONEY_VARIANT_LABELS).forEach((k) => {
+      opts += '<option value="' + k + '"' + (k === variant ? ' selected' : '') + '>' + HONEY_VARIANT_LABELS[k] + '</option>';
+    });
+    row.innerHTML =
+      '<div><label>Variant</label><select class="vr-variant">' + opts + '</select></div>' +
+      '<div><label>Qty</label><input type="number" class="vr-qty" min="0" step="1" value="' + (qty || 0) + '"></div>' +
+      '<button type="button" class="btn btn-ghost btn-remove-variant">Remove</button>';
+    row.querySelector('.btn-remove-variant').addEventListener('click', () => {
+      const list = $(variantListId(prefix, field));
+      if (list && list.querySelectorAll('.variant-row').length > 1) row.remove();
+    });
+    return row;
+  }
+
+  function initVariantList(prefix, field) {
+    const list = $(variantListId(prefix, field));
+    if (!list) return;
+    list.innerHTML = '';
+    list.appendChild(createVariantRow(prefix, field, 'light', 1));
+  }
+
+  function readVariantRows(prefix, field) {
+    const list = $(variantListId(prefix, field));
+    if (!list) return [];
+    const out = [];
+    list.querySelectorAll('.variant-row').forEach((row) => {
+      const v = row.querySelector('.vr-variant').value;
+      const q = parseInt(row.querySelector('.vr-qty').value, 10) || 0;
+      if (q > 0) out.push({ variant: v, qty: q });
+    });
+    return out;
+  }
+
+  function formatVariantBreakdown(variants, sizeLabel) {
+    if (!variants || !variants.length) return '';
+    const parts = variants.map((v) => v.qty + ' ' + (HONEY_VARIANT_LABELS[v.variant] || v.variant));
+    return (sizeLabel ? sizeLabel + ': ' : '') + parts.join(', ');
+  }
+
+  function setupLineForm(prefix) {
+    const sel = $(prefix + 'lineProductType');
+    const wrapHoney = $(prefix + 'wrapHoneyMain');
+    const wrapComboOther = $(prefix + 'wrapComboOther');
+    const wrapComboHoney = $(prefix + 'wrapComboHoney');
+    const wrapLineQty = $(prefix + 'wrapLineQty');
+    if (!sel) return;
     const sync = () => {
-      const isHoney = kind.value === 'honey';
-      if (wrapNh) wrapNh.classList.toggle('hidden', isHoney);
-      if (wrapHoney) wrapHoney.classList.toggle('hidden', !isHoney);
+      const pt = sel.value;
+      if (wrapHoney) wrapHoney.classList.toggle('hidden', !typeNeedsHoney(pt));
+      if (wrapComboOther) wrapComboOther.classList.toggle('hidden', !typeComboIsOther(pt));
+      if (wrapComboHoney) wrapComboHoney.classList.toggle('hidden', !typeComboIsHoney(pt));
+      if (wrapLineQty) wrapLineQty.classList.toggle('hidden', typeNeedsHoney(pt));
     };
-    kind.addEventListener('change', sync);
+    sel.addEventListener('change', sync);
     sync();
   }
 
-  function formatLineHuman(l) {
-    if (l.kind === 'honey') {
-      return l.quantity + ' × honey ' + l.variant + ' (' + l.pack_size + ')';
+  function readSimpleLineForm(prefix) {
+    const pt = $(prefix + 'lineProductType').value;
+    const qty = parseFloat($(prefix + 'lineQty').value) || 0;
+    if (qty < 1) return null;
+    return { product_type: pt, quantity: qty, honey_size: null, honey_variant: null, combo_product: null, combo_quantity: null, combo_honey_size: null, combo_honey_variant: null, is_bonus: false };
+  }
+
+  function buildLinesFromForm(prefix) {
+    const pt = $(prefix + 'lineProductType').value;
+    if (typeNeedsHoney(pt)) {
+      const variants = readVariantRows(prefix, 'honey');
+      if (!variants.length) { toast('Add at least one variant with quantity', true); return null; }
+      const size = $(prefix + 'honeySize').value;
+      const line = {
+        product_type: pt,
+        honey_size: size,
+        variants: variants,
+        quantity: variants.reduce((s, v) => s + v.qty, 0),
+        combo_product: null,
+        combo_quantity: null,
+        is_bonus: false,
+        _grouped: true
+      };
+      if (typeComboIsOther(pt)) {
+        line.combo_product = $(prefix + 'comboProduct').value;
+        line.combo_quantity = parseFloat($(prefix + 'comboQty').value) || 1;
+      }
+      return [line];
     }
-    const names = {
-      paragis_tea: 'Paragis tea',
-      black_rice_tea: 'Black rice tea',
-      cacao: 'Cacao',
-      honey_comb: 'Honey comb',
-      pito_pito: 'Pito-pito'
-    };
-    return l.quantity + ' × ' + (names[l.non_honey_product] || l.non_honey_product);
+    if (typeComboIsHoney(pt)) {
+      const mainQty = parseFloat($(prefix + 'lineQty').value) || 0;
+      if (mainQty < 1) { toast('Enter product quantity', true); return null; }
+      const variants = readVariantRows(prefix, 'comboHoney');
+      if (!variants.length) { toast('Add at least one honey variant with quantity', true); return null; }
+      return [{
+        product_type: pt,
+        quantity: mainQty,
+        combo_honey_size: $(prefix + 'comboHoneySize').value,
+        combo_variants: variants,
+        is_bonus: false,
+        _grouped: true
+      }];
+    }
+    const simple = readSimpleLineForm(prefix);
+    return simple ? [simple] : null;
+  }
+
+  function flattenLinesForApi(lines) {
+    const out = [];
+    const pendingFirstFlat = [];
+    lines.forEach((l, pi) => {
+      pendingFirstFlat[pi] = out.length;
+      if (l._grouped && l.variants && l.variants.length) {
+        l.variants.forEach((v, vi) => {
+          out.push({
+            product_type: l.product_type,
+            honey_size: l.honey_size,
+            honey_variant: v.variant,
+            quantity: v.qty,
+            combo_product: vi === 0 && l.combo_product ? l.combo_product : null,
+            combo_quantity: vi === 0 && l.combo_product ? l.combo_quantity : null,
+            combo_honey_size: null,
+            combo_honey_variant: null,
+            is_bonus: l.is_bonus ? 1 : 0,
+            _bonus_parent_pending: l.is_bonus ? l._bonus_parent_idx : null
+          });
+        });
+      } else if (l._grouped && l.combo_variants && l.combo_variants.length) {
+        l.combo_variants.forEach((v) => {
+          out.push({
+            product_type: l.product_type,
+            quantity: v.qty,
+            honey_size: null,
+            honey_variant: null,
+            combo_product: null,
+            combo_quantity: null,
+            combo_honey_size: l.combo_honey_size,
+            combo_honey_variant: v.variant,
+            is_bonus: l.is_bonus ? 1 : 0,
+            _bonus_parent_pending: l.is_bonus ? l._bonus_parent_idx : null
+          });
+        });
+      } else {
+        out.push(Object.assign({}, l, {
+          is_bonus: l.is_bonus ? 1 : 0,
+          _bonus_parent_pending: l.is_bonus ? l._bonus_parent_idx : null
+        }));
+      }
+    });
+    out.forEach((row) => {
+      if (row._bonus_parent_pending != null && row._bonus_parent_pending !== '') {
+        row._bonus_parent_idx = pendingFirstFlat[row._bonus_parent_pending];
+      }
+      delete row._bonus_parent_pending;
+    });
+    return out;
+  }
+
+  function resetLineForm(prefix) {
+    $(prefix + 'lineProductType').value = 'honey';
+    $(prefix + 'lineQty').value = '1';
+    if ($(prefix + 'honeySize')) $(prefix + 'honeySize').value = '250ml';
+    if ($(prefix + 'comboProduct')) $(prefix + 'comboProduct').selectedIndex = 0;
+    if ($(prefix + 'comboQty')) $(prefix + 'comboQty').value = '1';
+    if ($(prefix + 'comboHoneySize')) $(prefix + 'comboHoneySize').value = '250ml';
+    initVariantList(prefix, 'honey');
+    initVariantList(prefix, 'comboHoney');
+    $(prefix + 'lineProductType').dispatchEvent(new Event('change'));
+  }
+
+  function formatLineHuman(l) {
+    const pt = l.product_type;
+    let text = '';
+    if (l.variants && l.variants.length) {
+      const sz = HONEY_SIZE_LABELS[l.honey_size] || l.honey_size || '';
+      const label = PRODUCT_LABELS[pt] || pt;
+      text = label + ' (' + sz + '): ' + formatVariantBreakdown(l.variants, '');
+      if (typeComboIsOther(pt) && l.combo_product) {
+        text += ' + ' + (l.combo_quantity || 1) + ' x ' + (COMBO_PRODUCT_LABELS[l.combo_product] || l.combo_product);
+      }
+    } else if (l.combo_variants && l.combo_variants.length) {
+      const sz = HONEY_SIZE_LABELS[l.combo_honey_size] || l.combo_honey_size || '';
+      text = (l.quantity || 0) + ' x ' + (PRODUCT_LABELS[pt] || pt);
+      text += ' + Honey (' + sz + '): ' + formatVariantBreakdown(l.combo_variants, '');
+    } else if (typeNeedsHoney(pt)) {
+      const sz = HONEY_SIZE_LABELS[l.honey_size] || l.honey_size || '';
+      const vr = HONEY_VARIANT_LABELS[l.honey_variant] || l.honey_variant || '';
+      text = l.quantity + ' x Honey ' + vr + ' (' + sz + ')';
+    } else {
+      text = l.quantity + ' x ' + (PRODUCT_LABELS[pt] || pt);
+    }
+    if (typeComboIsOther(pt) && l.combo_product && !l.variants) {
+      text += ' + ' + (l.combo_quantity || 1) + ' x ' + (COMBO_PRODUCT_LABELS[l.combo_product] || l.combo_product);
+    }
+    if (typeComboIsHoney(pt) && l.combo_honey_size && !l.combo_variants) {
+      const csz = HONEY_SIZE_LABELS[l.combo_honey_size] || l.combo_honey_size;
+      const cvr = HONEY_VARIANT_LABELS[l.combo_honey_variant] || l.combo_honey_variant;
+      text += ' + ' + (l.combo_quantity || 1) + ' x Honey ' + cvr + ' (' + csz + ')';
+    }
+    if (l.is_bonus) text = '[Bonus] ' + text;
+    return text;
   }
 
   function renderPending(targetId, lines, onRemove) {
@@ -920,7 +1242,7 @@ $pageTitle = 'Record RTS';
     }
     lines.forEach((l, idx) => {
       const row = document.createElement('div');
-      row.className = 'line-chip';
+      row.className = 'line-chip' + (l.is_bonus ? ' is-bonus' : '');
       row.innerHTML = '<span>' + formatLineHuman(l) + '</span>';
       const rm = document.createElement('button');
       rm.type = 'button';
@@ -1092,7 +1414,7 @@ $pageTitle = 'Record RTS';
   }
 
   async function refreshDeliveryMatch() {
-    const tr = normalizeTracking(($('dispTracking') && $('dispTracking').textContent) || currentTracking || '');
+    const tr = getModalTracking() || currentTracking || '';
     deliveryMatch = null;
     if (!tr) {
       applyDamagedCompareUi();
@@ -1117,6 +1439,7 @@ $pageTitle = 'Record RTS';
     $('modalBackdrop').classList.remove('hidden');
     $('modalTitle').textContent = 'New RTS';
     $('modalStepLabel').textContent = 'Fill out details and save in one screen';
+    setTrackingEditWarn('');
     pendingLines = [];
     documentationAttachments = [];
     $('docFileInput').value = '';
@@ -1380,9 +1703,9 @@ $pageTitle = 'Record RTS';
       showDuplicate(tracking, data);
       return;
     }
-    $('dispTracking').textContent = tracking;
-    const det = data.detected_courier || '';
-    detectedCourierHint = ['spx', 'jnt', 'flash'].includes(det) ? det : null;
+    setModalTracking(tracking);
+    setTrackingEditWarn('');
+    applyDetectedCourierFromApi(data.detected_courier || '');
     $('shop').value = '';
     $('vipSub').value = '';
     $('dateDelivered').value = '';
@@ -1433,8 +1756,7 @@ $pageTitle = 'Record RTS';
     html += '<dt>Line items</dt><dd><ul style="margin:0.25rem 0 0 1rem;padding:0;">';
     if (!lines.length) html += '<li>None</li>';
     else lines.forEach((l) => {
-      const fake = { kind: l.kind, pack_size: l.pack_size, variant: l.variant, non_honey_product: l.non_honey_product, quantity: l.quantity };
-      html += '<li>' + formatLineHuman(fake) + '</li>';
+      html += '<li>' + formatLineHuman(l) + '</li>';
     });
     html += '</ul></dd></dl>';
     $('dupDetails').innerHTML = html;
@@ -1537,7 +1859,7 @@ $pageTitle = 'Record RTS';
     const body = {
       action: 'append_lines',
       tracking_number: currentTracking,
-      lines: appendLines
+      lines: flattenLinesForApi(appendLines)
     };
     const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json();
@@ -1552,38 +1874,66 @@ $pageTitle = 'Record RTS';
   });
 
   setShopHandlers();
-  setLineKindHandlers('');
-  setLineKindHandlers('a_');
+  setupLineForm('');
+  setupLineForm('a_');
 
-  $('btnAddLine').addEventListener('click', () => {
-    const kind = $('lineKind').value;
-    const qty = parseFloat($('lineQty').value);
-    if (!qty || qty <= 0) { toast('Enter a valid quantity', true); return; }
-    if (kind === 'honey') {
-      pendingLines.push({
-        kind: 'honey',
-        pack_size: $('packSize').value,
-        variant: $('variant').value,
-        non_honey_product: null,
-        quantity: qty
-      });
-    } else {
-      pendingLines.push({
-        kind: 'non_honey',
-        pack_size: null,
-        variant: null,
-        non_honey_product: $('nhProduct').value,
-        quantity: qty
+  function addLineFromForm(prefix, targetLines, renderFn) {
+    const built = buildLinesFromForm(prefix);
+    if (!built) return;
+    built.forEach((line) => targetLines.push(line));
+    resetLineForm(prefix);
+    renderFn();
+  }
+
+  function addBonusFromForm(prefix, targetLines, renderFn) {
+    const built = buildLinesFromForm(prefix);
+    if (!built) return;
+    let parentIdx = -1;
+    for (let i = targetLines.length - 1; i >= 0; i--) {
+      if (!targetLines[i].is_bonus) { parentIdx = i; break; }
+    }
+    if (parentIdx < 0) { toast('Add a main product first before adding a bonus.', true); return; }
+    built.forEach((line) => {
+      line.is_bonus = true;
+      line._bonus_parent_idx = parentIdx;
+      targetLines.push(line);
+    });
+    resetLineForm(prefix);
+    renderFn();
+  }
+
+  function wireVariantButtons(prefix) {
+    const addHoney = $(prefix + 'btnAddHoneyVariant');
+    const addCombo = $(prefix + 'btnAddComboHoneyVariant');
+    if (addHoney) {
+      addHoney.addEventListener('click', () => {
+        const list = $(variantListId(prefix, 'honey'));
+        if (list) list.appendChild(createVariantRow(prefix, 'honey', 'light', 0));
       });
     }
-    renderPendingLines();
-  });
+    if (addCombo) {
+      addCombo.addEventListener('click', () => {
+        const list = $(variantListId(prefix, 'comboHoney'));
+        if (list) list.appendChild(createVariantRow(prefix, 'comboHoney', 'light', 0));
+      });
+    }
+  }
+
+  initVariantList('', 'honey');
+  initVariantList('', 'comboHoney');
+  initVariantList('a_', 'honey');
+  initVariantList('a_', 'comboHoney');
+  wireVariantButtons('');
+  wireVariantButtons('a_');
+
+  $('btnAddLine').addEventListener('click', () => addLineFromForm('', pendingLines, renderPendingLines));
+  $('btnAddBonus').addEventListener('click', () => addBonusFromForm('', pendingLines, renderPendingLines));
 
   function buildConfirm() {
     const courierLabels = { spx: 'SPX', jnt: 'J&T', flash: 'Flash', unknown: 'Unknown' };
     const shopLabels = { shopee: 'Shopee', lazada: 'Lazada', tiktok: 'TikTok', vip: 'VIP' };
     let html = '';
-    html += '<dt>Tracking</dt><dd class="mono">' + $('dispTracking').textContent + '</dd>';
+    html += '<dt>Tracking</dt><dd class="mono">' + getModalTracking() + '</dd>';
     const cVal = $('courierFinal').value;
     html += '<dt>Shop</dt><dd>' + (shopLabels[$('shop').value] || '<em>Not selected</em>');
     if ($('shop').value === 'vip' && $('vipSub').value) {
@@ -1648,9 +1998,14 @@ $pageTitle = 'Record RTS';
       toast('Select a courier allowed for this shop.', true);
       return;
     }
+    const trackingToSave = getModalTracking();
+    if (!trackingToSave) {
+      toast('Enter a tracking number', true);
+      return;
+    }
     const payload = {
       action: 'create',
-      tracking_number: $('dispTracking').textContent,
+      tracking_number: trackingToSave,
       courier_final: $('courierFinal').value,
       shop: $('shop').value,
       vip_subsource: $('shop').value === 'vip' ? $('vipSub').value : '',
@@ -1658,7 +2013,7 @@ $pageTitle = 'Record RTS';
       date_opened: $('dateOpened').value || todayISO(),
       documentation_attachments: documentationAttachments.map((a) => ({ kind: a.kind, file: a.file_name })),
       damaged_reason: $('damagedCheck').checked ? $('damagedReason').value : '',
-      lines: pendingLines
+      lines: flattenLinesForApi(pendingLines)
     };
     const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const j = await r.json();
@@ -1687,6 +2042,11 @@ $pageTitle = 'Record RTS';
     $(id).addEventListener('change', syncFormValidity);
     $(id).addEventListener('input', syncFormValidity);
   });
+  const dispTrackingEl = $('dispTracking');
+  if (dispTrackingEl) {
+    dispTrackingEl.addEventListener('input', onModalTrackingEdited);
+    dispTrackingEl.addEventListener('change', onModalTrackingEdited);
+  }
   $('damagedCheck').addEventListener('change', () => {
     applyDamagedCompareUi();
     syncFormValidity();
@@ -1716,29 +2076,8 @@ $pageTitle = 'Record RTS';
     closeScanPanel();
   });
 
-  $('a_btnAddLine').addEventListener('click', () => {
-    const kind = $('a_lineKind').value;
-    const qty = parseFloat($('a_lineQty').value);
-    if (!qty || qty <= 0) { toast('Enter a valid quantity', true); return; }
-    if (kind === 'honey') {
-      appendLines.push({
-        kind: 'honey',
-        pack_size: $('a_packSize').value,
-        variant: $('a_variant').value,
-        non_honey_product: null,
-        quantity: qty
-      });
-    } else {
-      appendLines.push({
-        kind: 'non_honey',
-        pack_size: null,
-        variant: null,
-        non_honey_product: $('a_nhProduct').value,
-        quantity: qty
-      });
-    }
-    renderAppendPending();
-  });
+  $('a_btnAddLine').addEventListener('click', () => addLineFromForm('a_', appendLines, renderAppendPending));
+  $('a_btnAddBonus').addEventListener('click', () => addBonusFromForm('a_', appendLines, renderAppendPending));
 
   $('modalBackdrop').addEventListener('click', (e) => {
     if (e.target.id === 'modalBackdrop') { /* ignore backdrop close to avoid accidental loss */ }
