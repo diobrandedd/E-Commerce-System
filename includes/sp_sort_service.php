@@ -21,19 +21,20 @@ const SP_SORT_COURIER_COLORS = [
 
 function sp_sort_storage_dir(): string
 {
-    $dir = dirname(__DIR__) . '/assets/sp_sort';
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
-    }
-    return $dir;
+    require_once __DIR__ . '/rts_storage.php';
+
+    return rts_storage_dir(RTS_STORAGE_BUCKET_SP_SORT);
 }
 
 function sp_sort_upload_dir(): string
 {
-    $dir = dirname(__DIR__) . '/assets/sp_sort/tmp';
+    require_once __DIR__ . '/rts_storage.php';
+
+    $dir = rts_storage_dir(RTS_STORAGE_BUCKET_SP_SORT) . '/tmp';
     if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
+        mkdir($dir, 0775, true);
     }
+
     return $dir;
 }
 

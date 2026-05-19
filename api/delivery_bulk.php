@@ -6,6 +6,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/qr_decode.php';
+require_once dirname(__DIR__) . '/includes/rts_storage.php';
 
 /** Max bytes per delivery photo (PHP upload_max_filesize / post_max_size must be at least this high). */
 const RTS_DELIVERY_PHOTO_MAX_BYTES = 20 * 1024 * 1024;
@@ -69,8 +70,9 @@ if ($hints !== null && count($hints) !== $n) {
     exit;
 }
 
-$targetDir = dirname(__DIR__) . '/assets/deliveries_documentation';
-if (!is_dir($targetDir) && !mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
+try {
+    $targetDir = rts_storage_dir(RTS_STORAGE_BUCKET_DELIVERIES);
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'Could not create storage directory']);
     exit;

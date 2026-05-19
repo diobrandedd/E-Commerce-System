@@ -26,12 +26,20 @@ function rts_shop_label(string $shop): string
 
 function rts_line_summary(array $row): string
 {
+    // v2 format (product_type based)
+    if (isset($row['product_type']) && $row['product_type'] !== '') {
+        require_once __DIR__ . '/rts_products.php';
+
+        return htmlspecialchars(rts_line_display($row), ENT_QUOTES, 'UTF-8');
+    }
+
+    // Legacy v1 fallback (kind-based, for any old data still displayed)
     if (($row['kind'] ?? '') === 'honey') {
         $qty = $row['quantity'] ?? '';
         $v = $row['variant'] ?? '';
         $p = $row['pack_size'] ?? '';
 
-        return htmlspecialchars((string) $qty . ' × honey ' . $v . ' (' . $p . ')', ENT_QUOTES, 'UTF-8');
+        return htmlspecialchars((string) $qty . ' x honey ' . $v . ' (' . $p . ')', ENT_QUOTES, 'UTF-8');
     }
     $names = [
         'paragis_tea' => 'Paragis tea',
@@ -43,5 +51,5 @@ function rts_line_summary(array $row): string
     $nh = $row['non_honey_product'] ?? '';
     $label = $names[$nh] ?? $nh;
 
-    return htmlspecialchars((string) ($row['quantity'] ?? '') . ' × ' . $label, ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string) ($row['quantity'] ?? '') . ' x ' . $label, ENT_QUOTES, 'UTF-8');
 }

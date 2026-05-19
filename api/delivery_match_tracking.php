@@ -9,6 +9,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/rts_storage.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 
 rts_session_start();
@@ -72,7 +73,7 @@ if (!$row) {
 }
 
 $fn = (string) $row['photo_filename'];
-$fileUrl = 'assets/deliveries_documentation/' . rawurlencode($fn);
+$fileUrl = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);
 
 echo json_encode([
     'ok' => true,
