@@ -38,6 +38,7 @@ $pageTitle = 'Pyx Tracker portal';
     <p style="margin:0.6rem 0 1rem;">Your restricted portal is now enabled. Department-specific pages will be added next.</p>
     <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
       <a class="btn" href="deliveries/index.php">Deliveries upload</a>
+      <a class="btn" href="settings.php">Settings</a>
       <a class="btn" href="logout.php">Sign out</a>
     </div>
   </div>

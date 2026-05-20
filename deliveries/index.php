@@ -164,6 +164,7 @@ $isAdmin = rts_can_access_rts_admin($user);
       <?php elseif (($user['role'] ?? '') === RTS_ROLE_TEAM_LEADER || ($user['role'] ?? '') === RTS_ROLE_STAFF): ?>
         <a href="../portal.php">Portal</a>
       <?php endif; ?>
+      <a href="../settings.php">Settings</a>
       <a href="../logout.php">Sign out</a>
     </nav>
   </aside>

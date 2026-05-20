@@ -32,3 +32,12 @@ function rts_pdo(): PDO
     ]);
     return $pdo;
 }
+
+/**
+ * Inventory modules share the same database connection as RTS.
+ * Keep this alias so new modules can depend on a neutral name.
+ */
+function ims_pdo(): PDO
+{
+    return rts_pdo();
+}

@@ -4,7 +4,17 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/auth_check.php';
 
+if (ims_pos_authenticated()) {
+    header('Location: ' . ims_redirect_dashboard_by_role(IMS_ROLE_POS), true, 302);
+    exit;
+}
+$imsUser = ims_current_user();
+if ($imsUser !== null) {
+    header('Location: ' . ims_redirect_dashboard_by_role((string) $imsUser['role']), true, 302);
+    exit;
+}
 if (rts_auth_user() !== null) {
     header('Location: ' . rts_login_redirect_by_role((string) rts_auth_user()['role']), true, 302);
     exit;
@@ -14,10 +24,17 @@ $error = '';
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $user = trim((string) ($_POST['username'] ?? ''));
     $pass = (string) ($_POST['password'] ?? '');
+
     if (rts_auth_login($user, $pass, '')) {
         $auth = rts_auth_user();
         $role = $auth !== null ? (string) $auth['role'] : '';
         header('Location: ' . rts_login_redirect_by_role($role), true, 302);
+        exit;
+    }
+    if (ims_login_user($user, $pass)) {
+        $auth = ims_current_user();
+        $role = $auth !== null ? (string) $auth['role'] : '';
+        header('Location: ' . ims_redirect_dashboard_by_role($role), true, 302);
         exit;
     }
     $error = 'Invalid username/password, or account is not active.';

@@ -31,6 +31,7 @@ function rts_admin_nav_links(string $active, string $prefix = '', string $delive
         ['id' => 'deliveries_review', 'href' => $deliveriesHref, 'label' => 'Deliveries review' . $deliveryNavBadge, 'raw' => true],
         ['id' => 'sp_sort', 'href' => $prefix . 'sp_sort/index.php', 'label' => 'SP Sort', 'raw' => false],
         ['id' => 'sp_sort_records', 'href' => $prefix . 'sp_sort/batches.php', 'label' => 'SP Sort records', 'raw' => false],
+        ['id' => 'settings', 'href' => $prefix . 'settings.php', 'label' => 'Settings', 'raw' => false],
         ['id' => 'logout', 'href' => $prefix . 'logout.php', 'label' => 'Sign out', 'raw' => false],
     ]);
 
