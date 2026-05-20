@@ -104,9 +104,9 @@ $pageTitle = 'Pyx Tracker Management System — Sign in';
     </div>
 
     <div class="delivery-cta">
-      <p>Deliveries upload</p>
-      <a href="deliveries/index.php" id="deliveryBulkLink">Go to deliveries bulk upload</a>
-      <small>All staff accounts can submit; each batch records who submitted it.</small>
+      <p>Deliveries</p>
+      <a href="deliveries/index.php" id="deliveryBulkLink">Go to deliveries</a>
+      <small>Sign in above, or open deliveries if you are already signed in.</small>
     </div>
   </div>
   <script>

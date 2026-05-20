@@ -4,6 +4,21 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 
+/**
+ * Always return JSON on uncaught errors (avoids HTML fatal pages that look like "HTTP 200" failures in the app).
+ */
+set_exception_handler(static function (Throwable $e): void {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode([
+        'ok' => false,
+        'error' => 'Server error: ' . $e->getMessage(),
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+});
+
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/qr_decode.php';
@@ -20,11 +35,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 
 rts_session_start();
 $authUser = rts_auth_user();
-if ($authUser === null) {
-    http_response_code(401);
-    echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
-    exit;
-}
 
 $deliveryDate = isset($_POST['delivery_date']) ? trim((string) $_POST['delivery_date']) : '';
 if ($deliveryDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $deliveryDate)) {
@@ -36,11 +46,15 @@ if ($deliveryDate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $deliveryDate))
 if (!isset($_FILES['photos']) || !is_array($_FILES['photos'])) {
     $postMax = ini_get('post_max_size') ?: 'unknown';
     $uploadMax = ini_get('upload_max_filesize') ?: 'unknown';
+    $contentLen = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+    $msg = 'No photos received.';
+    if ($contentLen > 0) {
+        $msg .= ' The upload may exceed server limits (post_max_size=' . $postMax . ', upload_max_filesize=' . $uploadMax . '). Try a smaller photo or raise PHP limits.';
+    } else {
+        $msg .= ' Send a photo with the request (empty body).';
+    }
     http_response_code(400);
-    echo json_encode([
-        'ok' => false,
-        'error' => 'No photos received. The batch may exceed server limits (post_max_size=' . $postMax . ', upload_max_filesize=' . $uploadMax . '). Try fewer or smaller images.',
-    ]);
+    echo json_encode(['ok' => false, 'error' => $msg]);
     exit;
 }
 
@@ -80,7 +94,8 @@ if ($hints !== null && count($hints) !== $n) {
 }
 
 try {
-    $targetDir = rts_storage_dir(RTS_STORAGE_BUCKET_DELIVERIES);
+    $monthKey = rts_storage_deliveries_month_key($deliveryDate);
+    $targetDir = rts_storage_dir_deliveries_month($deliveryDate);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'Could not create storage directory']);
@@ -103,23 +118,44 @@ try {
     exit;
 }
 
-$submitterId = (int) ($authUser['id'] ?? 0);
+$submitterId = rts_delivery_submitter_user_id($pdo);
 if ($submitterId < 1) {
-    http_response_code(401);
-    echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'No system user available for delivery batches']);
     exit;
 }
 
 $outItems = [];
 $savedFiles = [];
 
+const RTS_DELIVERY_BATCH_MAX_ITEMS = 30;
+
 try {
     $pdo->beginTransaction();
-    $stBatch = $pdo->prepare(
-        'INSERT INTO delivery_batches (submitted_by_user_id, delivery_date) VALUES (?, ?)'
+
+    $stFind = $pdo->prepare(
+        'SELECT id FROM delivery_batches WHERE delivery_date = ? LIMIT 1 FOR UPDATE'
     );
-    $stBatch->execute([$submitterId, $deliveryDate]);
-    $batchId = (int) $pdo->lastInsertId();
+    $stFind->execute([$deliveryDate]);
+    $batchId = (int) ($stFind->fetchColumn() ?: 0);
+
+    if ($batchId < 1) {
+        $stBatch = $pdo->prepare(
+            'INSERT INTO delivery_batches (submitted_by_user_id, delivery_date) VALUES (?, ?)'
+        );
+        $stBatch->execute([$submitterId, $deliveryDate]);
+        $batchId = (int) $pdo->lastInsertId();
+    }
+
+    $stCount = $pdo->prepare('SELECT COUNT(*) FROM delivery_batch_items WHERE batch_id = ?');
+    $stCount->execute([$batchId]);
+    $existingCount = (int) $stCount->fetchColumn();
+    if ($existingCount + $n > RTS_DELIVERY_BATCH_MAX_ITEMS) {
+        throw new RuntimeException(
+            'This delivery date already has ' . $existingCount . ' parcel(s). Maximum '
+            . RTS_DELIVERY_BATCH_MAX_ITEMS . ' per day.'
+        );
+    }
 
     $stItem = $pdo->prepare(
         'INSERT INTO delivery_batch_items (batch_id, photo_filename, tracking_number, raw_qr_text, item_status)
@@ -153,10 +189,21 @@ try {
             throw new RuntimeException('Could not read upload');
         }
 
-        $class = rts_classify_delivery_qr_blob($blob);
-        if ($hints !== null && isset($hints[$i]) && in_array($class['status'], ['needs_manual', 'ambiguous'], true)) {
-            $hintRaw = trim((string) $hints[$i]);
-            if ($hintRaw !== '' && strlen($hintRaw) <= 512) {
+        $hintRaw = ($hints !== null && isset($hints[$i])) ? trim((string) $hints[$i]) : '';
+        $class = null;
+        if ($hintRaw !== '' && strlen($hintRaw) <= 512) {
+            $ht = rts_normalize_tracking_from_qr($hintRaw);
+            if ($ht !== '') {
+                $class = [
+                    'status' => 'decoded_ok',
+                    'tracking' => $ht,
+                    'raw' => mb_substr($hintRaw, 0, 500),
+                ];
+            }
+        }
+        if ($class === null) {
+            $class = rts_classify_delivery_qr_blob($blob);
+            if ($hintRaw !== '' && in_array($class['status'], ['needs_manual', 'ambiguous'], true)) {
                 $ht = rts_normalize_tracking_from_qr($hintRaw);
                 if ($ht !== '') {
                     $class = [
@@ -168,8 +215,9 @@ try {
             }
         }
 
-        $name = 'deliv_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '_' . $i . '.' . $ext;
-        $dest = $targetDir . '/' . $name;
+        $baseName = 'deliv_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '_' . $i . '.' . $ext;
+        $name = $monthKey . '/' . $baseName;
+        $dest = $targetDir . '/' . $baseName;
         if (!move_uploaded_file($tmp, $dest)) {
             throw new RuntimeException('Could not save file');
         }
@@ -191,10 +239,13 @@ try {
     }
 
     $pdo->commit();
+    $stCount->execute([$batchId]);
+    $batchItemCount = (int) $stCount->fetchColumn();
     echo json_encode([
         'ok' => true,
         'batch_id' => $batchId,
         'delivery_date' => $deliveryDate,
+        'batch_item_count' => $batchItemCount,
         'items' => $outItems,
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {

@@ -129,16 +129,80 @@ function rts_can_access_rts_admin(?array $user): bool
 
 function rts_login_redirect_by_role(string $role): string
 {
-    if (rts_role_is_executive($role)) {
-        return 'executive.php';
-    }
-    if ($role === RTS_ROLE_PRODUCTION_MANAGER) {
+    if ($role === RTS_ROLE_ADMIN || $role === RTS_ROLE_PRODUCTION_MANAGER) {
         return 'dashboard.php';
+    }
+    if ($role === RTS_ROLE_EXECUTIVE) {
+        return 'executive.php';
     }
     if ($role === RTS_ROLE_DELIVERY) {
         return 'deliveries/index.php';
     }
     return 'portal.php';
+}
+
+/** Whether app_users has a status column (older DBs may not). */
+function rts_app_users_has_status_column(PDO $pdo): bool
+{
+    static $has = null;
+    if ($has !== null) {
+        return $has;
+    }
+    try {
+        $st = $pdo->query("SHOW COLUMNS FROM app_users LIKE 'status'");
+        $has = $st !== false && $st->fetch() !== false;
+    } catch (Throwable) {
+        $has = false;
+    }
+
+    return $has;
+}
+
+/**
+ * app_users.id for delivery_batches.submitted_by_user_id (logged-in user, else shared delivery account).
+ */
+function rts_delivery_submitter_user_id(?PDO $pdo = null): int
+{
+    $auth = rts_auth_user();
+    if ($auth !== null) {
+        $id = (int) ($auth['id'] ?? 0);
+        if ($id > 0) {
+            return $id;
+        }
+    }
+
+    static $guestId = null;
+    if ($guestId !== null && $guestId > 0) {
+        return $guestId;
+    }
+
+    if ($pdo === null) {
+        $pdo = rts_pdo();
+    }
+
+    $filterActive = rts_app_users_has_status_column($pdo);
+
+    if ($filterActive) {
+        $st = $pdo->prepare(
+            "SELECT id FROM app_users WHERE username = ? AND status = 'active' LIMIT 1"
+        );
+    } else {
+        $st = $pdo->prepare('SELECT id FROM app_users WHERE username = ? LIMIT 1');
+    }
+    $st->execute(['delivery']);
+    $guestId = (int) ($st->fetchColumn() ?: 0);
+    if ($guestId > 0) {
+        return $guestId;
+    }
+
+    if ($filterActive) {
+        $st = $pdo->query("SELECT id FROM app_users WHERE status = 'active' ORDER BY id ASC LIMIT 1");
+    } else {
+        $st = $pdo->query('SELECT id FROM app_users ORDER BY id ASC LIMIT 1');
+    }
+    $guestId = (int) ($st ? $st->fetchColumn() : 0);
+
+    return $guestId > 0 ? $guestId : 0;
 }
 
 function rts_session_start(): void

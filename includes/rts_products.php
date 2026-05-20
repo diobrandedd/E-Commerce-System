@@ -274,3 +274,21 @@ function rts_line_display(array $row): string
 
     return $text;
 }
+
+/** True when rts_line_items has v2 columns (product_type, honey_variant, …). */
+function rts_line_items_schema_v2(PDO $pdo, bool $fresh = false): bool
+{
+    static $v2 = null;
+    if (!$fresh && $v2 !== null) {
+        return $v2;
+    }
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM `rts_line_items` LIKE 'product_type'");
+        $v2 = $stmt !== false && $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+    } catch (Throwable) {
+        $v2 = false;
+    }
+
+    return $v2;
+}
+

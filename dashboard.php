@@ -21,6 +21,7 @@ try {
 require_once __DIR__ . '/includes/deliveries_review_nav.php';
 require_once __DIR__ . '/includes/admin_nav.php';
 require_once __DIR__ . '/includes/sp_sort_service.php';
+require_once __DIR__ . '/includes/rts_products.php';
 $deliveryNavBadge = rts_delivery_review_nav_badge_html($pdo);
 
 $totalCases = (int) $pdo->query('SELECT COUNT(*) FROM rts_cases')->fetchColumn();
@@ -50,25 +51,49 @@ if ($byCourier === false) {
     $byCourier = [];
 }
 
-$lineAgg = $pdo->query(
-    "SELECT
-       SUM(CASE WHEN product_type IN ('honey','honey_with_other') THEN 1 ELSE 0 END) AS honey_lines,
-       SUM(CASE WHEN product_type NOT IN ('honey','honey_with_other') THEN 1 ELSE 0 END) AS other_lines,
-       COALESCE(SUM(CASE WHEN product_type IN ('honey','honey_with_other') THEN quantity ELSE 0 END), 0) AS honey_qty
-     FROM rts_line_items"
-)->fetch() ?: ['honey_lines' => 0, 'other_lines' => 0, 'honey_qty' => 0];
+if (rts_line_items_schema_v2($pdo)) {
+    $lineAgg = $pdo->query(
+        "SELECT
+           SUM(CASE WHEN product_type IN ('honey','honey_with_other') THEN 1 ELSE 0 END) AS honey_lines,
+           SUM(CASE WHEN product_type NOT IN ('honey','honey_with_other') THEN 1 ELSE 0 END) AS other_lines,
+           COALESCE(SUM(CASE WHEN product_type IN ('honey','honey_with_other') THEN quantity ELSE 0 END), 0) AS honey_qty
+         FROM rts_line_items"
+    )->fetch() ?: ['honey_lines' => 0, 'other_lines' => 0, 'honey_qty' => 0];
 
-$nonHoneyTop = $pdo->query(
-    "SELECT product_type, SUM(quantity) AS qty
-     FROM rts_line_items WHERE product_type NOT IN ('honey','honey_with_other')
-     GROUP BY product_type ORDER BY qty DESC LIMIT 8"
-)->fetchAll();
+    $nonHoneyTop = $pdo->query(
+        "SELECT product_type, SUM(quantity) AS qty
+         FROM rts_line_items WHERE product_type NOT IN ('honey','honey_with_other')
+         GROUP BY product_type ORDER BY qty DESC LIMIT 8"
+    )->fetchAll();
 
-$honeyByVariant = $pdo->query(
-    "SELECT honey_variant AS variant, SUM(quantity) AS qty
-     FROM rts_line_items WHERE product_type IN ('honey','honey_with_other') AND honey_variant IS NOT NULL
-     GROUP BY honey_variant ORDER BY qty DESC"
-)->fetchAll();
+    $honeyByVariant = $pdo->query(
+        "SELECT honey_variant AS variant, SUM(quantity) AS qty
+         FROM rts_line_items WHERE product_type IN ('honey','honey_with_other') AND honey_variant IS NOT NULL
+         GROUP BY honey_variant ORDER BY qty DESC"
+    )->fetchAll();
+} else {
+    $lineAgg = $pdo->query(
+        "SELECT
+           SUM(CASE WHEN kind = 'honey' THEN 1 ELSE 0 END) AS honey_lines,
+           SUM(CASE WHEN kind IS NULL OR kind != 'honey' THEN 1 ELSE 0 END) AS other_lines,
+           COALESCE(SUM(CASE WHEN kind = 'honey' THEN quantity ELSE 0 END), 0) AS honey_qty
+         FROM rts_line_items"
+    )->fetch() ?: ['honey_lines' => 0, 'other_lines' => 0, 'honey_qty' => 0];
+
+    $nonHoneyTop = $pdo->query(
+        "SELECT non_honey_product AS product_type, SUM(quantity) AS qty
+         FROM rts_line_items
+         WHERE kind != 'honey' AND non_honey_product IS NOT NULL AND non_honey_product != ''
+         GROUP BY non_honey_product ORDER BY qty DESC LIMIT 8"
+    )->fetchAll();
+
+    $honeyByVariant = $pdo->query(
+        "SELECT variant AS variant, SUM(quantity) AS qty
+         FROM rts_line_items
+         WHERE kind = 'honey' AND variant IS NOT NULL AND variant != ''
+         GROUP BY variant ORDER BY qty DESC"
+    )->fetchAll();
+}
 
 $timeline = $pdo->query(
     'SELECT DATE_FORMAT(date_opened, "%Y-%m-%d") AS d, COUNT(*) AS cnt
@@ -497,6 +522,11 @@ foreach ($courierOrder as $courierCode) {
                   'jar_cacao' => 'Jar Cacao',
                   'jar_cacao_with_honey' => 'Jar Cacao w/ Honey',
                   'jar_honey_comb' => 'Jar Honey Comb',
+                  'paragis_tea' => 'Paragis tea',
+                  'black_rice_tea' => 'Black rice tea',
+                  'cacao' => 'Cacao',
+                  'honey_comb' => 'Honey comb',
+                  'pito_pito' => 'Pito-pito',
               ];
               foreach ($nonHoneyTop as $r):
                   $slug = (string) $r['product_type'];
