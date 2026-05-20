@@ -10,7 +10,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/rts_storage.php';
 
 $bucket = isset($_GET['b']) ? trim((string) $_GET['b']) : '';
-$filename = isset($_GET['f']) ? basename((string) $_GET['f']) : '';
+$filename = isset($_GET['f']) ? trim((string) $_GET['f']) : '';
 
 $allowed = [RTS_STORAGE_BUCKET_RTS, RTS_STORAGE_BUCKET_DELIVERIES];
 if (!in_array($bucket, $allowed, true) || $filename === '') {

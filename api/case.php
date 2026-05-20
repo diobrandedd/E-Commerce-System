@@ -9,6 +9,7 @@ require_once dirname(__DIR__) . '/includes/rts_attachments.php';
 require_once dirname(__DIR__) . '/includes/rts_shop_couriers.php';
 require_once dirname(__DIR__) . '/includes/rts_claim_status.php';
 require_once dirname(__DIR__) . '/includes/rts_products.php';
+require_once dirname(__DIR__) . '/includes/rts_schema.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -38,15 +39,13 @@ if ($method === 'GET') {
         echo json_encode(['ok' => false, 'error' => 'Database connection failed']);
         exit;
     }
-    $st = $pdo->prepare(
-        'SELECT id, tracking_number, courier_detected, courier_final, shop, vip_subsource,
-                date_delivered, date_opened, documentation_photo, documentation_attachments,
-                damaged_reason, damaged_tag, delivery_match_item_id,
-                created_at, updated_at, voided_at
-         FROM rts_cases WHERE tracking_number = ? LIMIT 1'
-    );
-    $st->execute([$tracking]);
-    $case = $st->fetch();
+    try {
+        $case = rts_cases_fetch_by_tracking($pdo, $tracking);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Lookup failed']);
+        exit;
+    }
     if (!$case) {
         echo json_encode([
             'ok' => true,
@@ -67,14 +66,19 @@ if ($method === 'GET') {
     if (!isset($case['damaged_tag'])) {
         $case['damaged_tag'] = rts_damaged_tag(isset($case['damaged_reason']) ? (string) $case['damaged_reason'] : null);
     }
-    $lines = $pdo->prepare('SELECT id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id, created_at FROM rts_line_items WHERE case_id = ? ORDER BY id ASC');
-    $lines->execute([$lid]);
+    try {
+        $lineRows = rts_line_items_fetch_for_case($pdo, $lid);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Could not load line items']);
+        exit;
+    }
     echo json_encode([
         'ok' => true,
         'exists' => true,
         'detected_courier' => rts_detect_courier($tracking),
         'case' => $case,
-        'lines' => $lines->fetchAll(),
+        'lines' => $lineRows,
     ]);
     exit;
 }
@@ -295,9 +299,8 @@ if ($action === 'update_record') {
 
     $pdo->beginTransaction();
     try {
-        $st = $pdo->prepare(
-            'SELECT id, tracking_number FROM rts_cases WHERE id = ? AND voided_at IS NULL LIMIT 1'
-        );
+        $void = rts_cases_void_sql($pdo);
+        $st = $pdo->prepare("SELECT id, tracking_number FROM rts_cases WHERE id = ? AND {$void} LIMIT 1");
         $st->execute([$caseId]);
         $existing = $st->fetch();
         if (!$existing) {
@@ -307,8 +310,9 @@ if ($action === 'update_record') {
             exit;
         }
 
+        $dupVoid = rts_cases_void_sql($pdo);
         $dup = $pdo->prepare(
-            'SELECT id FROM rts_cases WHERE tracking_number = ? AND voided_at IS NULL AND id != ? LIMIT 1'
+            "SELECT id FROM rts_cases WHERE tracking_number = ? AND {$dupVoid} AND id != ? LIMIT 1"
         );
         $dup->execute([$tracking, $caseId]);
         if ($dup->fetch()) {
@@ -318,56 +322,30 @@ if ($action === 'update_record') {
             exit;
         }
 
-        $upd = $pdo->prepare(
-            'UPDATE rts_cases SET tracking_number = ?, courier_detected = ?, courier_final = ?, shop = ?, vip_subsource = ?,
-                date_delivered = ?, date_opened = ?, documentation_photo = ?, documentation_attachments = ?,
-                damaged_reason = ?, damaged_tag = ?, delivery_match_item_id = ?, updated_at = CURRENT_TIMESTAMP
-             WHERE id = ?'
-        );
-        $upd->execute([
-            $tracking,
-            $detected,
-            $courierFinal,
-            $shop,
-            $vip,
-            $dd,
-            $do,
-            $docPhotoCol,
-            $attachmentsJson,
-            $damagedDb,
-            $damagedTag,
-            $deliveryMatchItemId,
-            $caseId,
+        rts_cases_update_row($pdo, $caseId, [
+            'tracking_number' => $tracking,
+            'courier_detected' => $detected,
+            'courier_final' => $courierFinal,
+            'shop' => $shop,
+            'vip_subsource' => $vip,
+            'date_delivered' => $dd,
+            'date_opened' => $do,
+            'documentation_photo' => $docPhotoCol,
+            'documentation_attachments' => $attachmentsJson,
+            'damaged_reason' => $damagedDb,
+            'damaged_tag' => $damagedTag,
+            'delivery_match_item_id' => $deliveryMatchItemId,
         ]);
 
         $pdo->prepare('DELETE FROM rts_line_items WHERE case_id = ?')->execute([$caseId]);
-
-        $li = $pdo->prepare(
-            'INSERT INTO rts_line_items (case_id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
-        );
-        $insertedIds = [];
-        foreach ($lines as $idx => $L) {
-            $parentId = null;
-            if ($L['is_bonus'] && isset($L['_bonus_parent_idx'])) {
-                $parentId = $insertedIds[(int) $L['_bonus_parent_idx']] ?? null;
-            }
-            $li->execute([
-                $caseId,
-                $L['product_type'],
-                $L['honey_size'],
-                $L['honey_variant'],
-                $L['combo_product'],
-                $L['combo_quantity'],
-                $L['combo_honey_size'],
-                $L['combo_honey_variant'],
-                $L['quantity'],
-                $L['is_bonus'],
-                $parentId,
-            ]);
-            $insertedIds[$idx] = (int) $pdo->lastInsertId();
-        }
+        rts_line_items_insert_batch($pdo, $caseId, $lines);
 
         $pdo->commit();
+    } catch (RuntimeException $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'save_failed', 'message' => $e->getMessage()]);
+        exit;
     } catch (Throwable $e) {
         $pdo->rollBack();
         http_response_code(500);
@@ -514,62 +492,37 @@ if ($action === 'create') {
 
     $pdo->beginTransaction();
     try {
-        $check = $pdo->prepare('SELECT id FROM rts_cases WHERE tracking_number = ? AND voided_at IS NULL LIMIT 1');
-        $check->execute([$tracking]);
-        if ($check->fetch()) {
+        if (rts_cases_find_active_id_by_tracking($pdo, $tracking) !== null) {
             $pdo->rollBack();
             http_response_code(409);
             echo json_encode(['ok' => false, 'error' => 'duplicate_tracking', 'message' => 'This tracking number already exists.']);
             exit;
         }
-        $ins = $pdo->prepare(
-            'INSERT INTO rts_cases (tracking_number, courier_detected, courier_final, shop, vip_subsource, date_delivered, date_opened, documentation_photo, documentation_attachments, damaged_reason, damaged_tag, delivery_match_item_id)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
-        );
-        $ins->execute([
-            $tracking,
-            $detected,
-            $courierFinal,
-            $shop,
-            $vip,
-            $dateDelivered,
-            $dateOpened,
-            $docPhotoCol,
-            $attachmentsJson,
-            $damagedDb,
-            $damagedTag,
-            $deliveryMatchItemId,
+        $caseId = rts_cases_insert_row($pdo, [
+            'tracking_number' => $tracking,
+            'courier_detected' => $detected,
+            'courier_final' => $courierFinal,
+            'shop' => $shop,
+            'vip_subsource' => $vip,
+            'date_delivered' => $dateDelivered,
+            'date_opened' => $dateOpened,
+            'documentation_photo' => $docPhotoCol,
+            'documentation_attachments' => $attachmentsJson,
+            'damaged_reason' => $damagedDb,
+            'damaged_tag' => $damagedTag,
+            'delivery_match_item_id' => $deliveryMatchItemId,
         ]);
-        $caseId = (int) $pdo->lastInsertId();
-        $li = $pdo->prepare(
-            'INSERT INTO rts_line_items (case_id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
-        );
-        $insertedIds = [];
-        foreach ($lines as $idx => $L) {
-            $parentId = null;
-            if ($L['is_bonus'] && isset($L['_bonus_parent_idx'])) {
-                $parentId = $insertedIds[(int) $L['_bonus_parent_idx']] ?? null;
-            }
-            $li->execute([
-                $caseId,
-                $L['product_type'],
-                $L['honey_size'],
-                $L['honey_variant'],
-                $L['combo_product'],
-                $L['combo_quantity'],
-                $L['combo_honey_size'],
-                $L['combo_honey_variant'],
-                $L['quantity'],
-                $L['is_bonus'],
-                $parentId,
-            ]);
-            $insertedIds[$idx] = (int) $pdo->lastInsertId();
-        }
+        rts_line_items_insert_batch($pdo, $caseId, $lines);
         $pdo->commit();
+    } catch (RuntimeException $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'save_failed', 'message' => $e->getMessage()]);
+        exit;
     } catch (Throwable $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['ok' => false, 'error' => 'Save failed']);
+        echo json_encode(['ok' => false, 'error' => 'Save failed', 'message' => 'Database error while saving.']);
         exit;
     }
 
@@ -587,43 +540,24 @@ if ($action === 'append_lines') {
     }
     $lines = array_map('rts_normalize_line', $linesIn);
 
-    $st = $pdo->prepare('SELECT id FROM rts_cases WHERE tracking_number = ? AND voided_at IS NULL LIMIT 1');
-    $st->execute([$tracking]);
-    $row = $st->fetch();
-    if (!$row) {
+    $caseId = rts_cases_find_active_id_by_tracking($pdo, $tracking);
+    if ($caseId === null) {
         http_response_code(404);
         echo json_encode(['ok' => false, 'error' => 'Case not found, voided, or invalid tracking number']);
         exit;
     }
-    $caseId = (int) $row['id'];
     $pdo->beginTransaction();
     try {
-        $li = $pdo->prepare(
-            'INSERT INTO rts_line_items (case_id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
-        );
-        $insertedIds = [];
-        foreach ($lines as $idx => $L) {
-            $parentId = null;
-            if ($L['is_bonus'] && isset($L['_bonus_parent_idx'])) {
-                $parentId = $insertedIds[(int) $L['_bonus_parent_idx']] ?? null;
-            }
-            $li->execute([
-                $caseId,
-                $L['product_type'],
-                $L['honey_size'],
-                $L['honey_variant'],
-                $L['combo_product'],
-                $L['combo_quantity'],
-                $L['combo_honey_size'],
-                $L['combo_honey_variant'],
-                $L['quantity'],
-                $L['is_bonus'],
-                $parentId,
-            ]);
-            $insertedIds[$idx] = (int) $pdo->lastInsertId();
+        rts_line_items_insert_batch($pdo, $caseId, $lines);
+        if (rts_db_has_column($pdo, 'rts_cases', 'updated_at')) {
+            $pdo->prepare('UPDATE rts_cases SET updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$caseId]);
         }
-        $pdo->prepare('UPDATE rts_cases SET updated_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$caseId]);
         $pdo->commit();
+    } catch (RuntimeException $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'save_failed', 'message' => $e->getMessage()]);
+        exit;
     } catch (Throwable $e) {
         $pdo->rollBack();
         http_response_code(500);

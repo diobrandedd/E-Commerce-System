@@ -24,6 +24,13 @@ $pageTitle = 'Record RTS';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
+  <script>
+  (function () {
+    var NGROK_HOST = 'basket-grouped-viscous.ngrok-free.dev';
+    if (location.protocol === 'https:' && location.hostname === NGROK_HOST) return;
+    location.replace('https://' + NGROK_HOST + location.pathname + location.search + location.hash);
+  })();
+  </script>
   <style>
     :root {
       --bg: #fffdf6;
@@ -174,6 +181,23 @@ $pageTitle = 'Record RTS';
       z-index: 2;
     }
     #reader { width: 100%; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    .overlay-backdrop {
+      position: fixed; inset: 0; background: rgba(75,58,29,0.45); z-index: 55;
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+      animation: fadeIn .18s ease both;
+    }
+    .overlay-panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.1rem 1.2rem; max-width: 480px; width: 100%; max-height: 92vh; overflow-y: auto;
+      box-shadow: 0 16px 48px rgba(101,76,36,0.22); animation: popIn .22s ease both;
+    }
+    .overlay-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.65rem; }
+    .overlay-close {
+      border: none; background: transparent; font-size: 1.35rem; line-height: 1; cursor: pointer;
+      color: var(--muted); padding: 0.2rem 0.4rem;
+    }
+    .modal-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+    .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); font-weight: 500; }
     .modal-backdrop {
       position: fixed; inset: 0; background: rgba(75,58,29,0.28);
       display: flex; align-items: flex-start; justify-content: center;
@@ -420,61 +444,32 @@ $pageTitle = 'Record RTS';
   <main>
     <div class="card intro-card">
       <p style="margin:0 0 0.75rem;color:var(--muted);font-size:0.92rem;">
-        Scan the courier QR for the tracking number: use <strong>Take photo of QR</strong> or <strong>Gallery / files</strong> (works on Wi‑Fi at <code>http://192.168…</code>), the <strong>live preview</strong> only after <strong>HTTPS</strong> or on <strong>localhost</strong>, or enter the number manually. Then fill parcel details — honey uses pack size + variant; other products use quantity only.
+        Scan the courier QR or barcode with the <strong>live camera</strong> (decoded on your device — no photo upload), or enter the tracking number manually. Then fill parcel details — honey uses pack size + variant; other products use quantity only.
       </p>
       <button type="button" class="btn btn-primary" id="btnStart">Add RTS</button>
     </div>
 
-    <div id="scanPanel" class="card hidden">
-      <div id="scanHttpBanner" class="hidden" style="padding:0.65rem 0.75rem;background:#fff7ea;border:1px solid var(--border);border-radius:10px;margin-bottom:0.85rem;font-size:0.88rem;color:var(--text);line-height:1.4;">
-        <strong>Live QR preview is turned off on this link.</strong> Phones and Chrome only allow the embedded live camera on <strong>HTTPS</strong> or <strong>localhost</strong>, not on plain <code>http://192.168…</code> — that is a browser rule, not a bug in this app.
-        <p style="margin:0.55rem 0 0;color:var(--muted);">Use <strong>Take photo of QR</strong> or <strong>Gallery / files</strong> — the photo is sent to this PC and decoded with PHP (<a href="https://github.com/chillerlan/php-qrcode" target="_blank" rel="noopener">chillerlan/php-qrcode</a>), which works on plain HTTP. Or type the tracking number. The embedded <strong>live</strong> preview still needs <strong>HTTPS</strong> or <strong>localhost</strong>.</p>
-      </div>
+  </main>
 
-      <div id="scanLiveCameraRow" class="row" style="margin-bottom:0.75rem;">
-        <div>
-          <label for="camSelect">Camera for scanner</label>
-          <select id="camSelect"></select>
-        </div>
-        <div style="display:flex;align-items:flex-end;">
-          <button type="button" class="btn btn-ghost" id="btnRefreshCams" style="width:100%;">Refresh cameras</button>
-        </div>
+  <div id="scannerModal" class="overlay-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="scannerModalTitle">
+    <div class="overlay-panel">
+      <div class="overlay-header">
+        <h3 id="scannerModalTitle" style="margin:0;">Scan RTS label</h3>
+        <button type="button" class="overlay-close" id="scannerModalClose" aria-label="Close scanner">&times;</button>
       </div>
-      <div class="row" style="margin-bottom:0.75rem;">
+      <p style="margin:0 0 0.65rem;color:var(--muted);font-size:0.85rem;">Point at the QR or barcode. If the label is torn or unreadable, type the tracking number below.</p>
+      <div id="reader"></div>
+      <div class="row" style="margin-top:0.85rem;">
         <div>
           <label for="manualTracking">Tracking number (manual)</label>
-          <input type="text" id="manualTracking" placeholder="Paste or type if scan fails" autocomplete="off">
+          <input type="text" id="manualTracking" class="mono" placeholder="Paste or type tracking" autocomplete="off" spellcheck="false">
         </div>
         <div style="display:flex;align-items:flex-end;">
-          <button type="button" class="btn btn-primary" id="btnUseManual" style="width:100%;">Use manual entry</button>
+          <button type="button" class="btn btn-primary" id="btnUseManual" style="width:100%;">Continue with manual entry</button>
         </div>
-      </div>
-      <div class="row" style="margin-bottom:0.75rem;">
-        <div style="display:flex;align-items:flex-end;gap:0.5rem;flex-wrap:wrap;">
-          <label class="btn btn-ghost file-pick-label" style="flex:1;min-width:10rem;">
-            <input type="file" id="qrFileInput" accept="image/*" aria-label="Choose a photo of the QR from gallery or files">
-            Gallery / files
-          </label>
-          <label class="btn btn-ghost file-pick-label" style="flex:1;min-width:10rem;">
-            <input type="file" id="qrCameraInput" accept="image/*" capture="environment" aria-label="Take a photo of the QR with the camera">
-            Take photo of QR
-          </label>
-          <button type="button" class="btn btn-ghost" id="btnQrFromPaste" title="Paste a screenshot from clipboard" style="flex:1;min-width:10rem;">
-            Paste image (clipboard)
-          </button>
-        </div>
-      </div>
-      <div id="scanLivePreviewSection">
-        <label>Live QR preview</label>
-        <div id="reader"></div>
-      </div>
-      <div id="qrFileReader" aria-hidden="true" style="position:fixed;width:320px;height:320px;left:-10000px;top:0;overflow:hidden;"></div>
-      <div class="toolbar">
-        <button type="button" class="btn btn-ghost" id="btnStopScan">Stop camera</button>
-        <button type="button" class="btn btn-ghost" id="btnCancelScan">Cancel</button>
       </div>
     </div>
-  </main>
+  </div>
 
   <!-- New case modal -->
   <div id="modalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
@@ -483,8 +478,8 @@ $pageTitle = 'Record RTS';
       <div class="steps" id="modalStepLabel">Fill out details and save in one screen</div>
       <div style="margin:0 0 0.75rem;">
         <label for="dispTracking">Tracking number</label>
-        <input type="text" id="dispTracking" class="mono" autocomplete="off" spellcheck="false" placeholder="Paste or correct tracking number">
-        <p class="muted" style="margin:0.35rem 0 0;font-size:0.78rem;">Wrong QR? Edit the number here before saving.</p>
+        <input type="text" id="dispTracking" class="mono" autocomplete="off" spellcheck="false" placeholder="Scan, paste, or type tracking number">
+        <p class="muted" style="margin:0.35rem 0 0;font-size:0.78rem;">Parcel beat up or scan wrong? Type or fix the tracking here before saving.</p>
         <p id="trackingEditWarn" class="banner-warn hidden" style="margin:0.5rem 0 0;font-size:0.82rem;" role="status"></p>
       </div>
       <p id="detectedCourierHint" class="hidden" style="margin:0 0 0.65rem;font-size:0.84rem;color:var(--muted);"></p>
@@ -642,9 +637,14 @@ $pageTitle = 'Record RTS';
 
       <p class="section-title">Live summary</p>
       <dl class="summary" id="confirmSummary"></dl>
-      <div class="toolbar" style="justify-content:space-between;margin-top:0.75rem;">
-        <button type="button" class="btn btn-ghost" id="btnModalCancelNew">Cancel</button>
-        <button type="button" class="btn btn-primary" id="btnSave" disabled>Save RTS</button>
+      <div class="modal-actions" id="rtsNewActions">
+        <button type="button" class="btn btn-secondary" id="btnModalCancelNew">Cancel</button>
+        <button type="button" class="btn btn-secondary" id="btnSaveDone" disabled>Done</button>
+        <button type="button" class="btn btn-primary" id="btnSaveScanNext" disabled>Scan next parcel</button>
+      </div>
+      <div class="toolbar hidden" id="rtsEditActions" style="justify-content:space-between;margin-top:0.75rem;">
+        <button type="button" class="btn btn-ghost" id="btnModalCancelEdit">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btnSave" disabled>Save changes</button>
       </div>
     </div>
   </div>
@@ -748,9 +748,9 @@ $pageTitle = 'Record RTS';
 (function () {
   const api = 'api/case.php';
   const uploadApi = 'api/upload_documentation.php';
-  const qrDecodeApi = 'api/scan_qr_image.php';
   const deliveryMatchApi = 'api/delivery_match_tracking.php';
-  let html5Qr = null;
+  let html5QrcodeScanner = null;
+  let scanLock = false;
   let currentTracking = '';
   let pendingLines = [];
   let appendLines = [];
@@ -801,45 +801,98 @@ $pageTitle = 'Record RTS';
     return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate());
   }
 
+  function normalizeTrackingFromQr(raw) {
+    let t = String(raw || '').trim();
+    if (!t) return '';
+    if (/^https?:\/\//i.test(t)) {
+      try {
+        const u = new URL(t);
+        const parts = (u.pathname || '').split('/').filter(Boolean);
+        const seg = parts.length ? parts[parts.length - 1] : '';
+        if (seg && seg !== '/') t = decodeURIComponent(seg);
+        const tr = u.searchParams.get('tracking') || u.searchParams.get('Tracking');
+        if (tr) t = decodeURIComponent(tr);
+      } catch (e) { /* keep t */ }
+    }
+    return t.trim();
+  }
+
   function normalizeTracking(text) {
-    return String(text || '').trim();
+    const fromQr = normalizeTrackingFromQr(text);
+    return fromQr || String(text || '').trim();
   }
 
-  function clearQrFileInputs() {
-    $('qrFileInput').value = '';
-    $('qrCameraInput').value = '';
+  function getScannerFormats() {
+    return [
+      Html5QrcodeSupportedFormats.QR_CODE,
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E
+    ];
   }
 
-  /**
-   * Embedded live QR scanning uses getUserMedia, which only works in a secure context
-   * (HTTPS, or http://localhost / 127.0.0.1). Plain http://192.168.x.x is blocked by the browser — not fixable in JS.
-   */
-  function liveCameraBlockedReason() {
-    if (typeof window.isSecureContext === 'boolean' && window.isSecureContext) {
-      return null;
+  function scannerConfig() {
+    return {
+      fps: 20,
+      qrbox: function (viewfinderWidth, viewfinderHeight) {
+        return {
+          width: Math.min(viewfinderWidth * 0.8, 300),
+          height: Math.min(viewfinderHeight * 0.5, 200)
+        };
+      },
+      rememberLastUsedCamera: true,
+      formatsToSupport: getScannerFormats()
+    };
+  }
+
+  function onScanSuccess(decodedText) {
+    if (scanLock) return;
+    const tracking = normalizeTracking(decodedText);
+    if (!tracking) return;
+    scanLock = true;
+    void clearScanner();
+    onGotTracking(tracking);
+  }
+
+  function onScanFailure() {}
+
+  async function clearScanner() {
+    if (!html5QrcodeScanner) return;
+    const inst = html5QrcodeScanner;
+    html5QrcodeScanner = null;
+    try {
+      await inst.clear();
+    } catch (e) { /* ignore */ }
+  }
+
+  function startScanner() {
+    if (typeof Html5QrcodeScanner === 'undefined') {
+      toast('Scanner library failed to load. Use manual entry.', true);
+      return;
     }
-    const h = (location.hostname || '').toLowerCase();
-    if (h === 'localhost' || h === '127.0.0.1' || h === '[::1]') {
-      return null;
-    }
-    return 'insecure-http';
+    const readerEl = $('reader');
+    if (!readerEl) return;
+    readerEl.innerHTML = '';
+    scanLock = false;
+    html5QrcodeScanner = new Html5QrcodeScanner('reader', scannerConfig(), false);
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
   }
 
-  function syncScanPanelLiveUi() {
-    const blocked = liveCameraBlockedReason() !== null;
-    const banner = $('scanHttpBanner');
-    const liveRow = $('scanLiveCameraRow');
-    const livePrev = $('scanLivePreviewSection');
-    const stopBtn = $('btnStopScan');
-    if (banner) banner.classList.toggle('hidden', !blocked);
-    if (liveRow) liveRow.classList.toggle('hidden', blocked);
-    if (livePrev) livePrev.classList.toggle('hidden', blocked);
-    if (stopBtn) stopBtn.classList.toggle('hidden', blocked);
+  function stopScanner() {
+    void clearScanner();
   }
 
   async function fetchCase(tracking) {
     const r = await fetch(api + '?tracking=' + encodeURIComponent(tracking));
-    return r.json();
+    const text = await r.text();
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      return { ok: false, error: r.ok ? 'Invalid server response' : ('Lookup failed (' + r.status + ')') };
+    }
   }
 
   function getModalTracking() {
@@ -984,10 +1037,18 @@ $pageTitle = 'Record RTS';
     return { ok: missing.length === 0, missing };
   }
 
+  function setRtsActionButtonsEnabled(on) {
+    const done = $('btnSaveDone');
+    const next = $('btnSaveScanNext');
+    const save = $('btnSave');
+    if (done) done.disabled = !on;
+    if (next) next.disabled = !on;
+    if (save) save.disabled = !on;
+  }
+
   function syncFormValidity() {
     const v = getFormValidation();
-    const btn = $('btnSave');
-    if (btn) btn.disabled = !v.ok;
+    setRtsActionButtonsEnabled(v.ok);
     const banner = $('formValidationBanner');
     if (banner) {
       if (v.ok) {
@@ -1497,6 +1558,9 @@ $pageTitle = 'Record RTS';
       toast('Invalid record', true);
       return;
     }
+    hideScannerModal();
+    $('rtsNewActions').classList.add('hidden');
+    $('rtsEditActions').classList.remove('hidden');
     $('modalBackdrop').classList.remove('hidden');
     $('modalTitle').textContent = 'Edit RTS record';
     $('modalStepLabel').textContent = 'Update details and save changes';
@@ -1530,13 +1594,34 @@ $pageTitle = 'Record RTS';
     syncFormValidity();
   }
 
+  function showScannerModal() {
+    const el = $('scannerModal');
+    if (el) {
+      el.classList.remove('hidden');
+      el.setAttribute('aria-hidden', 'false');
+    }
+    startScanner();
+  }
+
+  function hideScannerModal() {
+    stopScanner();
+    const el = $('scannerModal');
+    if (el) {
+      el.classList.add('hidden');
+      el.setAttribute('aria-hidden', 'true');
+    }
+    if ($('manualTracking')) $('manualTracking').value = '';
+  }
+
   function showModalNew() {
     isEditMode = false;
     editCaseId = 0;
+    hideScannerModal();
+    $('rtsNewActions').classList.remove('hidden');
+    $('rtsEditActions').classList.add('hidden');
     $('modalBackdrop').classList.remove('hidden');
     $('modalTitle').textContent = 'New RTS';
     $('modalStepLabel').textContent = 'Fill out details and save in one screen';
-    $('btnSave').textContent = 'Save RTS';
     setTrackingEditWarn('');
     pendingLines = [];
     documentationAttachments = [];
@@ -1556,26 +1641,19 @@ $pageTitle = 'Record RTS';
     resetDamagedUiPartial();
     isEditMode = false;
     editCaseId = 0;
-    $('btnSave').textContent = 'Save RTS';
+    $('btnSave').textContent = 'Save changes';
+    $('rtsNewActions').classList.remove('hidden');
+    $('rtsEditActions').classList.add('hidden');
   }
 
   function openScanPanel() {
-    $('scanPanel').classList.remove('hidden');
-    syncScanPanelLiveUi();
-    if (liveCameraBlockedReason()) {
-      void stopScannerAsync();
-      return;
-    }
-    startScanner();
+    scanLock = false;
+    showScannerModal();
   }
 
   function closeScanPanel() {
-    stopScanner();
-    $('scanPanel').classList.add('hidden');
-    $('manualTracking').value = '';
-    clearQrFileInputs();
-    $('docFileInput').value = '';
-    $('docCameraInput').value = '';
+    hideScannerModal();
+    scanLock = false;
   }
 
   async function uploadMediaFile(file) {
@@ -1603,217 +1681,40 @@ $pageTitle = 'Record RTS';
     syncFormValidity();
   }
 
-  async function stopScannerAsync() {
-    if (!html5Qr) return;
-    const inst = html5Qr;
-    html5Qr = null;
-    try {
-      await inst.stop();
-    } catch (e) {
-      try {
-        await inst.clear();
-      } catch (e2) {}
-    }
-  }
-
-  function stopScanner() {
-    void stopScannerAsync();
-  }
-
-  const CAM_LS = 'rts_cam_device_id';
-
-  async function refreshCameraDropdown() {
-    const sel = $('camSelect');
-    if (liveCameraBlockedReason()) {
-      sel.innerHTML = '';
-      return false;
-    }
-    if (typeof Html5Qrcode === 'undefined') {
-      sel.innerHTML = '';
-      return false;
-    }
-    let cams;
-    try {
-      cams = await Html5Qrcode.getCameras();
-    } catch (e) {
-      sel.innerHTML = '';
-      toast('Could not access cameras (permission denied?). You can still use Take photo of QR, Gallery, or manual.', true);
-      return false;
-    }
-    const previous = sel.value;
-    sel.innerHTML = '';
-    if (!cams || !cams.length) {
-      toast('No camera found. Use photo upload or manual entry.', true);
-      return false;
-    }
-    cams.forEach((cam, i) => {
-      const opt = document.createElement('option');
-      opt.value = cam.id;
-      opt.textContent = cam.label ? cam.label : ('Camera ' + (i + 1));
-      sel.appendChild(opt);
-    });
-    const saved = localStorage.getItem(CAM_LS);
-    if (saved && [...sel.options].some((o) => o.value === saved)) {
-      sel.value = saved;
-    } else if (previous && [...sel.options].some((o) => o.value === previous)) {
-      sel.value = previous;
-    } else if (sel.options.length > 0) {
-      sel.selectedIndex = 0;
-    }
-    return true;
-  }
-
-  async function startScanner() {
-    await stopScannerAsync();
-    if (liveCameraBlockedReason()) {
-      return;
-    }
-    if (typeof Html5Qrcode === 'undefined') {
-      toast('Scanner library failed to load. Use manual entry.', true);
-      return;
-    }
-    const hasCameras = await refreshCameraDropdown();
-    if (!hasCameras) return;
-    const sel = $('camSelect');
-    const deviceId = sel.value;
-    if (!deviceId) return;
-    html5Qr = new Html5Qrcode('reader');
-    try {
-      await html5Qr.start(
-        { deviceId: { exact: deviceId } },
-        {
-          fps: 10,
-          qrbox: function (vw, vh) {
-            var s = Math.min(vw, vh);
-            var q = Math.min(280, Math.floor(s * 0.72));
-            return { width: q, height: q };
-          }
-        },
-        function (decoded) { onGotTracking(normalizeTracking(decoded)); },
-        function () {}
-      );
-    } catch (e) {
-      html5Qr = null;
-      toast('Camera failed to start. Try Take photo of QR, Gallery, or manual entry.', true);
-    }
-  }
-
-  async function hasCameraHardware() {
-    if (liveCameraBlockedReason()) return false;
-    if (typeof Html5Qrcode === 'undefined') return false;
-    try {
-      var cams = await Html5Qrcode.getCameras();
-      return !!(cams && cams.length);
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /**
-   * Server-side decode (PHP + chillerlan/php-qrcode): works on http://LAN without getUserMedia.
-   */
-  async function tryServerQrDecode(blob, mime) {
-    try {
-      const fd = new FormData();
-      const file = blob instanceof File
-        ? blob
-        : new File([blob], 'qr-paste.png', { type: mime || 'image/png' });
-      fd.append('image', file);
-      const r = await fetch(qrDecodeApi, { method: 'POST', body: fd });
-      if (!r.ok) return null;
-      const j = await r.json();
-      if (j && j.ok && j.text) return String(j.text);
-    } catch (e) {
-      return null;
-    }
-    return null;
-  }
-
-  /**
-   * Decode QR from an uploaded/pasted image (no live camera).
-   * Tries PHP server decode first, then html5-qrcode in the browser.
-   */
-  async function scanQrFromImageBlob(blob, sourceLabel) {
-    if (!blob) {
-      toast('No image provided.', true);
-      return;
-    }
-    var mime = (blob.type || '').trim().toLowerCase();
-    if (blob instanceof File && /\.(heic|heif)$/i.test(blob.name || '')) {
-      toast('HEIC photos are often unsupported in browsers. Use JPG/PNG upload or paste a PNG screenshot.', true);
-      clearQrFileInputs();
-      return;
-    }
-    if (!mime || mime.indexOf('image/') !== 0) {
-      mime = 'image/png';
-    }
-    await stopScannerAsync();
-    await new Promise(function (r) { setTimeout(r, 120); });
-
-    const serverText = await tryServerQrDecode(blob, mime);
-    if (serverText) {
-      clearQrFileInputs();
-      onGotTracking(normalizeTracking(serverText));
-      return;
-    }
-
-    if (typeof Html5Qrcode === 'undefined') {
-      toast('Could not read QR (server decode failed and scanner script is missing). Check PHP GD and composer install.', true);
-      clearQrFileInputs();
-      return;
-    }
-
-    var file = blob instanceof File
-      ? blob
-      : new File([blob], 'qr-image.png', { type: mime });
-
-    var h = null;
-    try {
-      h = new Html5Qrcode('qrFileReader');
-      var text = await h.scanFile(file, false);
-      await h.clear();
-      clearQrFileInputs();
-      onGotTracking(normalizeTracking(text));
-    } catch (err) {
-      if (h) {
-        try { await h.clear(); } catch (e2) {}
-      }
-      clearQrFileInputs();
-      var hint = sourceLabel === 'paste'
-        ? 'Try cropping so only the QR is visible, or use Take photo of QR / Gallery.'
-        : 'Use a sharper JPG/PNG with the QR in frame (not HEIC). Or enter tracking manually.';
-      toast('Could not read QR from that image. ' + hint, true);
-      if (!$('scanPanel').classList.contains('hidden')) {
-        if (await hasCameraHardware()) await startScanner();
-      }
-    }
-  }
-
   async function onGotTracking(tracking) {
     if (!tracking) return;
     currentTracking = tracking;
-    await stopScannerAsync();
-    $('scanPanel').classList.add('hidden');
-    const data = await fetchCase(tracking);
-    if (!data.ok) {
-      toast(data.error || 'Lookup failed', true);
-      openScanPanel();
-      return;
+    try {
+      await clearScanner();
+      hideScannerModal();
+      const data = await fetchCase(tracking);
+      if (!data || !data.ok) {
+        toast((data && data.error) || 'Lookup failed', true);
+        scanLock = false;
+        openScanPanel();
+        return;
+      }
+      if (data.exists) {
+        scanLock = false;
+        showDuplicate(tracking, data);
+        return;
+      }
+      setModalTracking(tracking);
+      setTrackingEditWarn('');
+      applyDetectedCourierFromApi(data.detected_courier || '');
+      $('shop').value = '';
+      $('vipSub').value = '';
+      $('dateDelivered').value = '';
+      $('dateOpened').value = todayISO();
+      pendingLines = [];
+      renderPendingLines();
+      showModalNew();
+      scanLock = false;
+    } catch (e) {
+      scanLock = false;
+      toast('Could not open parcel form. Try manual entry or refresh the page.', true);
+      showScannerModal();
     }
-    if (data.exists) {
-      showDuplicate(tracking, data);
-      return;
-    }
-    setModalTracking(tracking);
-    setTrackingEditWarn('');
-    applyDetectedCourierFromApi(data.detected_courier || '');
-    $('shop').value = '';
-    $('vipSub').value = '';
-    $('dateDelivered').value = '';
-    $('dateOpened').value = todayISO();
-    pendingLines = [];
-    renderPendingLines();
-    showModalNew();
   }
 
   function renderPendingLines() {
@@ -1889,63 +1790,16 @@ $pageTitle = 'Record RTS';
   }
 
   $('btnStart').addEventListener('click', () => openScanPanel());
-  $('camSelect').addEventListener('change', async () => {
-    localStorage.setItem(CAM_LS, $('camSelect').value);
-    if (liveCameraBlockedReason()) return;
-    if (!$('scanPanel').classList.contains('hidden') && html5Qr) {
-      await startScanner();
-    }
+  $('scannerModalClose').addEventListener('click', () => {
+    closeScanPanel();
+    scanLock = false;
   });
-  $('btnRefreshCams').addEventListener('click', async () => {
-    if (liveCameraBlockedReason()) {
-      toast('Live preview needs HTTPS (or localhost). Use Take photo of QR or type the tracking number.', true);
-      return;
-    }
-    const open = !$('scanPanel').classList.contains('hidden');
-    if (open) await startScanner();
-    else await refreshCameraDropdown();
-  });
-  $('btnCancelScan').addEventListener('click', () => closeScanPanel());
-  $('btnStopScan').addEventListener('click', () => stopScanner());
   $('btnUseManual').addEventListener('click', () => {
     const t = normalizeTracking($('manualTracking').value);
     if (!t) { toast('Enter a tracking number', true); return; }
+    scanLock = true;
+    void clearScanner();
     onGotTracking(t);
-  });
-  $('qrFileInput').addEventListener('change', async () => {
-    const inp = $('qrFileInput');
-    const f = inp.files && inp.files[0];
-    if (!f) return;
-    await scanQrFromImageBlob(f, 'upload');
-  });
-  $('qrCameraInput').addEventListener('change', async () => {
-    const inp = $('qrCameraInput');
-    const f = inp.files && inp.files[0];
-    if (!f) return;
-    await scanQrFromImageBlob(f, 'upload');
-  });
-  $('btnQrFromPaste').addEventListener('click', async () => {
-    if (!navigator.clipboard || typeof navigator.clipboard.read !== 'function') {
-      toast('Clipboard images are not supported in this browser. Use Gallery or Take photo of QR.', true);
-      return;
-    }
-    try {
-      const items = await navigator.clipboard.read();
-      for (let i = 0; i < items.length; i++) {
-        const ci = items[i];
-        for (let j = 0; j < ci.types.length; j++) {
-          const type = ci.types[j];
-          if (type.indexOf('image/') === 0) {
-            const blob = await ci.getType(type);
-            await scanQrFromImageBlob(blob, 'paste');
-            return;
-          }
-        }
-      }
-      toast('No image in clipboard. Take a screenshot (e.g. Snipping Tool), copy it, then click again.', true);
-    } catch (e) {
-      toast('Could not read clipboard. Allow permission when asked, or use Upload photo.', true);
-    }
   });
 
   $('dupClose').addEventListener('click', () => { hideDup(); closeScanPanel(); });
@@ -2072,42 +1926,43 @@ $pageTitle = 'Record RTS';
     $('confirmSummary').innerHTML = html;
   }
 
-  $('btnSave').addEventListener('click', async () => {
+  async function saveRts(andThen) {
     const v = getFormValidation();
     if (!v.ok) {
       toast('Complete all required fields: ' + v.missing.join(', '), true);
-      return;
+      return false;
     }
     if (!pendingLines.length) {
       toast('Please add at least one product line before saving.', true);
-      return;
+      return false;
     }
     if (!documentationAttachments.length) {
       toast('Upload at least one RTS documentation photo or video before saving.', true);
-      return;
+      return false;
     }
     if ($('damagedCheck').checked) {
       const dr = $('damagedReason').value;
       if (!dr) {
         toast('Select a damage reason, or uncheck Damaged.', true);
-        return;
+        return false;
       }
       if (!deliveryMatch || !deliveryMatch.match) {
         toast('Damaged requires a pre-delivery Deliveries photo with this tracking. Add it in Deliveries or uncheck Damaged.', true);
-        return;
+        return false;
       }
     }
     const shopVal = $('shop').value;
     const courierVal = $('courierFinal').value;
     if (!SHOP_COURIERS[shopVal] || !SHOP_COURIERS[shopVal].includes(courierVal)) {
       toast('Select a courier allowed for this shop.', true);
-      return;
+      return false;
     }
     const trackingToSave = getModalTracking();
     if (!trackingToSave) {
       toast('Enter a tracking number', true);
-      return;
+      return false;
     }
+    setRtsActionButtonsEnabled(false);
     const payload = {
       action: isEditMode ? 'update_record' : 'create',
       tracking_number: trackingToSave,
@@ -2121,42 +1976,71 @@ $pageTitle = 'Record RTS';
       lines: flattenLinesForApi(pendingLines)
     };
     if (isEditMode) payload.case_id = editCaseId;
-    const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const j = await r.json();
+    let j;
+    try {
+      const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const text = await r.text();
+      try {
+        j = JSON.parse(text);
+      } catch (e) {
+        toast(r.ok ? 'Invalid server response' : ('Save failed (' + r.status + ')'), true);
+        syncFormValidity();
+        return false;
+      }
+    } catch (e) {
+      toast('Network error while saving.', true);
+      syncFormValidity();
+      return false;
+    }
     if (!j.ok) {
       if (j.error === 'duplicate_tracking') {
         if (isEditMode) {
           toast(j.message || 'Another record already uses this tracking number.', true);
-          return;
+          syncFormValidity();
+          return false;
         }
         hideModalNew();
         const data = await fetchCase(payload.tracking_number);
         showDuplicate(payload.tracking_number, data);
-        return;
+        syncFormValidity();
+        return false;
       }
       if (j.error === 'damaged_requires_delivery_photo') {
         toast(j.message || 'A Deliveries pre-delivery photo is required for damaged RTS.', true);
         void refreshDeliveryMatch();
-        return;
+        syncFormValidity();
+        return false;
       }
       if (j.error === 'documentation_required') {
         toast(j.message || 'Upload at least one RTS documentation photo or video.', true);
-        return;
+        syncFormValidity();
+        return false;
       }
-      toast(j.error || j.message || 'Save failed', true);
-      return;
+      toast(j.message || j.error || 'Save failed', true);
+      syncFormValidity();
+      return false;
     }
     if (isEditMode) {
       toast('Record updated.');
       hideModalNew();
       document.body.classList.add('page-exit');
       setTimeout(() => { window.location.href = 'records.php'; }, 180);
-      return;
+      return true;
     }
-    toast('RTS saved.');
     showSuccess();
     hideModalNew();
-    closeScanPanel();
+    scanLock = false;
+    if (typeof andThen === 'function') andThen();
+    else closeScanPanel();
+    return true;
+  }
+
+  $('btnSave').addEventListener('click', () => { void saveRts(); });
+  $('btnSaveDone').addEventListener('click', () => {
+    void saveRts(() => closeScanPanel());
+  });
+  $('btnSaveScanNext').addEventListener('click', () => {
+    void saveRts(() => showScannerModal());
   });
 
   ['shop', 'vipSub', 'dateDelivered', 'dateOpened'].forEach((id) => {
@@ -2194,7 +2078,13 @@ $pageTitle = 'Record RTS';
 
   $('btnModalCancelNew').addEventListener('click', () => {
     hideModalNew();
-    closeScanPanel();
+    scanLock = false;
+    showScannerModal();
+  });
+  $('btnModalCancelEdit').addEventListener('click', () => {
+    hideModalNew();
+    document.body.classList.add('page-exit');
+    setTimeout(() => { window.location.href = 'records.php'; }, 180);
   });
 
   $('a_btnAddLine').addEventListener('click', () => addLineFromForm('a_', appendLines, renderAppendPending));
@@ -2232,6 +2122,21 @@ $pageTitle = 'Record RTS';
       document.body.classList.add('page-exit');
       setTimeout(() => { window.location.href = href; }, 180);
     });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const sm = $('scannerModal');
+    if (sm && !sm.classList.contains('hidden')) {
+      closeScanPanel();
+      scanLock = false;
+      return;
+    }
+    if ($('modalBackdrop') && !$('modalBackdrop').classList.contains('hidden') && !isEditMode) {
+      hideModalNew();
+      scanLock = false;
+      showScannerModal();
+    }
   });
 
   if (EDIT_TRACKING) {
