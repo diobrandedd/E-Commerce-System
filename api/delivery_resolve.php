@@ -15,7 +15,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 
 rts_session_start();
 $u = rts_auth_user();
-if ($u === null || $u['role'] !== RTS_ROLE_ADMIN) {
+if (!rts_can_access_rts_admin($u)) {
     http_response_code(403);
     echo json_encode(['ok' => false, 'error' => 'Admin only']);
     exit;

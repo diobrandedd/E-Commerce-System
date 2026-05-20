@@ -6,11 +6,19 @@ require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 
 rts_session_start();
+rts_require_roles([
+    RTS_ROLE_EXECUTIVE,
+    RTS_ROLE_PRODUCTION_MANAGER,
+    RTS_ROLE_TEAM_LEADER,
+    RTS_ROLE_STAFF,
+    RTS_ROLE_DELIVERY,
+    RTS_ROLE_ADMIN,
+], '../login.php');
 $user = rts_auth_user();
 
-$pageTitle = 'Deliveries — bulk upload';
+$pageTitle = 'Pyx Tracker — deliveries bulk upload';
 $today = (new DateTimeImmutable('today'))->format('Y-m-d');
-$isAdmin = $user !== null && ($user['role'] ?? '') === RTS_ROLE_ADMIN;
+$isAdmin = rts_can_access_rts_admin($user);
 
 ?>
 <!DOCTYPE html>
@@ -145,21 +153,18 @@ $isAdmin = $user !== null && ($user['role'] ?? '') === RTS_ROLE_ADMIN;
   <aside class="sidebar">
     <div>
       <img src="../assets/sys_img/pyxfoodpr.png" alt="Pyxfood logo" style="height:42px;width:auto;border-radius:8px;margin-bottom:0.5rem;" onerror="this.style.display='none'">
-      <h1>Deliveries</h1>
+      <h1>Pyx Tracker</h1>
       <p class="muted" style="margin:0.25rem 0 0;font-size:0.78rem;">Pre‑dispatch photos</p>
     </div>
     <nav class="nav-links">
       <a href="index.php">Upload batch</a>
       <?php if ($isAdmin): ?>
         <a href="review.php">Review batches (admin)</a>
-        <a href="../dashboard.php">RTS dashboard</a>
-        <a href="../logout.php">Sign out</a>
-      <?php elseif ($user !== null): ?>
-        <a href="../login.php">RTS admin</a>
-        <a href="logout.php">Sign out</a>
-      <?php else: ?>
-        <a href="../login.php">RTS admin sign in</a>
+        <a href="../dashboard.php">Dashboard</a>
+      <?php elseif (($user['role'] ?? '') === RTS_ROLE_TEAM_LEADER || ($user['role'] ?? '') === RTS_ROLE_STAFF): ?>
+        <a href="../portal.php">Portal</a>
       <?php endif; ?>
+      <a href="../logout.php">Sign out</a>
     </nav>
   </aside>
   <main>
@@ -170,11 +175,7 @@ $isAdmin = $user !== null && ($user['role'] ?? '') === RTS_ROLE_ADMIN;
         <input type="date" id="delivery_date" name="delivery_date" value="<?= htmlspecialchars($today, ENT_QUOTES, 'UTF-8') ?>" required>
         <label for="photos" style="margin-top:0.85rem;">Photos (JPEG / PNG / WebP / GIF)</label>
         <input type="file" id="photos" name="photos[]" accept="image/*" multiple required>
-        <?php if ($user !== null): ?>
-          <p class="muted" style="margin:0.5rem 0 0;">Signed in as <strong><?= htmlspecialchars($user['username'], ENT_QUOTES, 'UTF-8') ?></strong> (<?= htmlspecialchars($user['role'], ENT_QUOTES, 'UTF-8') ?>).</p>
-        <?php else: ?>
-          <p class="muted" style="margin:0.5rem 0 0;">Uploads are attributed to the shared <strong>delivery</strong> account (no password needed on this page).</p>
-        <?php endif; ?>
+        <p class="muted" style="margin:0.5rem 0 0;">Signed in as <strong><?= htmlspecialchars((string) ($user['username'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong> (<?= htmlspecialchars((string) ($user['role'] ?? ''), ENT_QUOTES, 'UTF-8') ?>). This account will be saved as the submitter of this batch.</p>
         <div id="previewCard" class="preview-card hidden" aria-live="polite">
           <h3>Review selected photos</h3>
           <p class="muted" style="margin:0 0 0.75rem;font-size:0.82rem;">Check each image. When you are ready, confirm to upload this batch.</p>

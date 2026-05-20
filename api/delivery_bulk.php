@@ -5,6 +5,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/qr_decode.php';
 require_once dirname(__DIR__) . '/includes/rts_storage.php';
 
@@ -14,6 +15,14 @@ const RTS_DELIVERY_PHOTO_MAX_BYTES = 20 * 1024 * 1024;
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     http_response_code(405);
     echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
+    exit;
+}
+
+rts_session_start();
+$authUser = rts_auth_user();
+if ($authUser === null) {
+    http_response_code(401);
+    echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
     exit;
 }
 
@@ -94,12 +103,10 @@ try {
     exit;
 }
 
-$stSub = $pdo->prepare('SELECT id FROM app_users WHERE username = ? LIMIT 1');
-$stSub->execute(['delivery']);
-$submitterId = (int) $stSub->fetchColumn();
+$submitterId = (int) ($authUser['id'] ?? 0);
 if ($submitterId < 1) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Missing delivery user row (import sql/migration_auth_and_deliveries.sql)']);
+    http_response_code(401);
+    echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
     exit;
 }
 

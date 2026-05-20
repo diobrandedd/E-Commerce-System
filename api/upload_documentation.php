@@ -8,7 +8,7 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/rts_storage.php';
 rts_session_start();
 $authUser = rts_auth_user();
-if ($authUser === null || $authUser['role'] !== RTS_ROLE_ADMIN) {
+if (!rts_can_access_rts_admin($authUser)) {
     http_response_code(401);
     echo json_encode(['ok' => false, 'error' => 'Unauthorized']);
     exit;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/auth.php';
 
-if (rts_auth_user() !== null && rts_auth_user()['role'] === RTS_ROLE_ADMIN) {
-    header('Location: dashboard.php', true, 302);
+if (rts_auth_user() !== null) {
+    header('Location: ' . rts_login_redirect_by_role((string) rts_auth_user()['role']), true, 302);
     exit;
 }
 
@@ -14,14 +14,16 @@ $error = '';
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $user = trim((string) ($_POST['username'] ?? ''));
     $pass = (string) ($_POST['password'] ?? '');
-    if (rts_auth_login($user, $pass, RTS_ROLE_ADMIN)) {
-        header('Location: dashboard.php', true, 302);
+    if (rts_auth_login($user, $pass, '')) {
+        $auth = rts_auth_user();
+        $role = $auth !== null ? (string) $auth['role'] : '';
+        header('Location: ' . rts_login_redirect_by_role($role), true, 302);
         exit;
     }
-    $error = 'Invalid username or password.';
+    $error = 'Invalid username/password, or account is not active.';
 }
 
-$pageTitle = 'RTS — Sign in';
+$pageTitle = 'Pyx Tracker Management System — Sign in';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -68,10 +70,10 @@ $pageTitle = 'RTS — Sign in';
   <div class="wrap">
     <div class="brand">
       <img src="assets/sys_img/pyxfoodpr.png" alt="Pyxfood logo" onerror="this.style.display='none'">
-      <h1>RTS admin</h1>
+      <h1>Pyx Tracker Management System</h1>
     </div>
     <div class="card">
-      <p style="margin:0 0 0.5rem;color:var(--muted);font-size:0.92rem;">Sign in to manage returns (dashboard, record, records).</p>
+      <p style="margin:0 0 0.5rem;color:var(--muted);font-size:0.92rem;">Sign in with your assigned Pyx Tracker account.</p>
       <?php if ($error !== ''): ?>
         <p class="err"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
       <?php endif; ?>
@@ -80,14 +82,14 @@ $pageTitle = 'RTS — Sign in';
         <input type="text" id="username" name="username" required autocomplete="username" autofocus>
         <label for="password">Password</label>
         <input type="password" id="password" name="password" required autocomplete="current-password">
-        <button type="submit" class="btn">Sign in to RTS</button>
+        <button type="submit" class="btn">Sign in</button>
       </form>
     </div>
 
     <div class="delivery-cta">
-      <p>Delivery team — pre‑delivery photos</p>
+      <p>Deliveries upload</p>
       <a href="deliveries/index.php" id="deliveryBulkLink">Go to deliveries bulk upload</a>
-      <small>No sign‑in required — upload parcel photos directly.</small>
+      <small>All staff accounts can submit; each batch records who submitted it.</small>
     </div>
   </div>
   <script>
