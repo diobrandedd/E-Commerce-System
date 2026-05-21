@@ -74,11 +74,6 @@ if ($n < 1) {
     echo json_encode(['ok' => false, 'error' => 'Select at least one image']);
     exit;
 }
-if ($n > 30) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Maximum 30 images per batch']);
-    exit;
-}
 
 $hints = null;
 if (!empty($_POST['client_hints_json'])) {
@@ -128,8 +123,6 @@ if ($submitterId < 1) {
 $outItems = [];
 $savedFiles = [];
 
-const RTS_DELIVERY_BATCH_MAX_ITEMS = 30;
-
 try {
     $pdo->beginTransaction();
 
@@ -148,14 +141,6 @@ try {
     }
 
     $stCount = $pdo->prepare('SELECT COUNT(*) FROM delivery_batch_items WHERE batch_id = ?');
-    $stCount->execute([$batchId]);
-    $existingCount = (int) $stCount->fetchColumn();
-    if ($existingCount + $n > RTS_DELIVERY_BATCH_MAX_ITEMS) {
-        throw new RuntimeException(
-            'This delivery date already has ' . $existingCount . ' parcel(s). Maximum '
-            . RTS_DELIVERY_BATCH_MAX_ITEMS . ' per day.'
-        );
-    }
 
     $stItem = $pdo->prepare(
         'INSERT INTO delivery_batch_items (batch_id, photo_filename, tracking_number, raw_qr_text, item_status)
