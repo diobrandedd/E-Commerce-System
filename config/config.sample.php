@@ -29,4 +29,6 @@ return [
         'root' => 'C:/xampp/htdocs/rts_storage',
         'web_base' => '/rts_storage',
     ],
+
+    // Mobile HTTPS / ngrok: see config/forwarding.sample.php (separate file).
 ];

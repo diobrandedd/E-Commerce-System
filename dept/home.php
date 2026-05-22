@@ -11,22 +11,26 @@ $user = ims_current_user();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Department Home</title>
+  <title>Department Home — Pyx Tracker</title>
+  <meta http-equiv="refresh" content="0; url=/rts/app/dist/dashboard">
+  <style>
+    body { font-family: system-ui, sans-serif; background:#fffdf6; color:#3f2f1e; padding: 2rem; }
+    .card { background:#fff; border:1px solid #e8dcc5; border-radius:12px; padding:1.5rem; max-width: 600px; margin:auto; }
+    a.btn { display:inline-block; background:#C8900A; color:white; padding:0.6rem 1rem; border-radius:8px; text-decoration:none; font-weight:600; }
+    .muted { color:#7e6a4b; font-size:0.85rem; }
+  </style>
 </head>
 <body>
-  <h1>Department Home</h1>
-  <p>User: <?= htmlspecialchars((string) ($user['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
-  <p>Role: <?= htmlspecialchars((string) ($user['role'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
-  <p>dept_id from session: <?= isset($user['dept_id']) ? (int) $user['dept_id'] : 0 ?></p>
-  <ul>
-    <li><a href="stock_entries.php">Stock entries</a></li>
-    <li><a href="products.php">Products, formulas, deductions</a></li>
-    <?php if ((string) ($user['role'] ?? '') === IMS_ROLE_TL): ?>
-      <li><a href="beginning_inventory.php">Set beginning inventory</a></li>
-    <?php endif; ?>
-    <li><a href="example_protected.php">Example protected page</a></li>
-    <li><a href="../auth/settings.php">Settings</a></li>
-    <li><a href="../auth/logout.php">Logout</a></li>
-  </ul>
+  <div class="card">
+    <h1 style="margin:0 0 0.5rem;font-size:1.2rem;">Pyx Tracker has moved</h1>
+    <p>The inventory module is now part of the new Pyx Tracker SPA. We're redirecting you in a moment.</p>
+    <p><a class="btn" href="/rts/app/dist/dashboard">Open Pyx Tracker</a></p>
+    <p class="muted">Signed in as <strong><?= htmlspecialchars((string) ($user['name'] ?? ''), ENT_QUOTES, 'UTF-8') ?></strong> · <?= htmlspecialchars((string) ($user['role'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+    <p class="muted">Legacy pages still available:
+      <a href="stock_entries.php">Stock entries</a> ·
+      <a href="products.php">Products</a> ·
+      <a href="../auth/logout.php">Logout</a>
+    </p>
+  </div>
 </body>
 </html>

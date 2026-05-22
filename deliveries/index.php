@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/forwarding.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 
 rts_session_start();
@@ -21,13 +22,7 @@ $isLoggedIn = $user !== null;
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
-  <script>
-  (function () {
-    var NGROK_HOST = 'basket-grouped-viscous.ngrok-free.dev';
-    if (location.protocol === 'https:' && location.hostname === NGROK_HOST) return;
-    location.replace('https://' + NGROK_HOST + location.pathname + location.search + location.hash);
-  })();
-  </script>
+  <?= rts_forwarding_head_script() ?>
   <style>
     :root { --bg:#fffdf6; --panel:#ffffff; --border:#e8dcc5; --text:#3f2f1e; --muted:#7e6a4b; --accent:#d99200; --ok:#2d6a4f; --danger:#c65a4a; --green:#34a853; }
     * { box-sizing: border-box; }
@@ -237,7 +232,8 @@ $isLoggedIn = $user !== null;
   var successBackdrop = document.getElementById('successBackdrop');
   var successMsg = document.getElementById('successMsg');
   var saveErrorBanner = document.getElementById('saveErrorBanner');
-  var api = '../api/delivery_bulk.php?ngrok-skip-browser-warning=1';
+  var api = '../api/delivery_bulk.php';
+  var RTS_FORWARDING_HEADERS = <?= rts_forwarding_fetch_headers_json() ?>;
   var isAdmin = <?= $isAdmin ? 'true' : 'false' ?>;
 
   var html5QrcodeScanner = null;
@@ -256,7 +252,7 @@ $isLoggedIn = $user !== null;
   }
 
   function ngrokFetchHeaders() {
-    return { 'ngrok-skip-browser-warning': '1' };
+    return Object.assign({}, RTS_FORWARDING_HEADERS);
   }
 
   function looksLikeHtmlBody(raw) {

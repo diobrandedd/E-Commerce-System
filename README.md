@@ -60,15 +60,58 @@ User password change pages:
 - RTS accounts: `settings.php`
 - Inventory phase accounts: `auth/settings.php`
 
-## Inventory migrations (phases 2-4)
+## Inventory migrations (phases 2-5)
 
 Run these SQL files in order after phase 1:
 
 - `sql/migration_phase2_inventory_stocks.sql`
 - `sql/migration_phase3_inventory_products.sql`
 - `sql/migration_phase4_inventory_costing.sql`
+- `sql/migration_phase5_pos_ar_reports.sql`
 
 Phase 4 adds:
 
 - `stock_price_history` (audit trail of stock price changes)
 - `product_cost_history` (costing recalculation history triggered by stock price updates)
+
+Phase 5 adds:
+
+- `pos_sales` and `pos_receipt_items` (walk-in POS terminal sales)
+- `ar_credits` (staff "take a product on credit" accounts receivable)
+
+These back the React SPA pages `POSPage`, `ARCreditsPage`, and `ReportsPage`.
+
+## React SPA (Pyx Tracker)
+
+The new SPA lives in `app/` and is served at `/rts/app/dist/` once built:
+
+```
+cd app
+npm install
+npm run build        # outputs to app/dist/
+```
+
+For development, `npm run dev` runs Vite on `http://localhost:5173` and proxies
+`/rts/api/*` to the local XAMPP Apache. The PHP JSON gateway lives in
+`api/v1/*.php` and reuses the existing IMS session/CSRF helpers.
+
+## HTTPS forwarding (ngrok) for mobile camera
+
+Edit **`config/forwarding.php`** when you switch ngrok accounts (testing vs live):
+
+```php
+'enabled' => true,
+'public_url' => 'https://your-subdomain.ngrok-free.dev',
+'label' => 'testing',  // or 'live'
+```
+
+Copy from `config/forwarding.sample.php` if the file does not exist yet.
+
+When enabled:
+
+- Opening the site on a **phone/LAN IP** (e.g. `http://192.168.1.50/rts/...`) redirects to the HTTPS ngrok URL (required for camera/QR).
+- **`localhost` on the server PC** is not redirected by default (local dev).
+- Legacy pages (`record.php`, `deliveries/`) and the React app use the same config.
+- API routes under `/rts/api/` are not redirected (avoids breaking JSON `fetch`).
+
+Start ngrok pointing at port 80, then set `public_url` to the HTTPS URL ngrok shows.

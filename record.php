@@ -24,13 +24,7 @@ $pageTitle = 'Record RTS';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
-  <script>
-  (function () {
-    var NGROK_HOST = 'basket-grouped-viscous.ngrok-free.dev';
-    if (location.protocol === 'https:' && location.hostname === NGROK_HOST) return;
-    location.replace('https://' + NGROK_HOST + location.pathname + location.search + location.hash);
-  })();
-  </script>
+  <?= rts_forwarding_head_script() ?>
   <style>
     :root {
       --bg: #fffdf6;

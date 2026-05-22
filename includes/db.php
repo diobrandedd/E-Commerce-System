@@ -41,3 +41,6 @@ function ims_pdo(): PDO
 {
     return rts_pdo();
 }
+
+require_once __DIR__ . '/forwarding.php';
+rts_forwarding_maybe_redirect();
