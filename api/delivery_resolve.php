@@ -6,6 +6,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/rts_storage.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     http_response_code(405);
@@ -50,6 +51,48 @@ if ($action === 'void') {
     $st = $pdo->prepare('UPDATE delivery_batch_items SET voided_at = NOW() WHERE id = ? AND voided_at IS NULL');
     $st->execute([$itemId]);
     echo json_encode(['ok' => true, 'message' => 'Row voided']);
+    exit;
+}
+
+if ($action === 'delete') {
+    $password = isset($data['admin_password']) ? (string) $data['admin_password'] : '';
+    if ($password === '' && isset($data['password'])) {
+        $password = (string) $data['password'];
+    }
+    if (!rts_auth_verify_user_password((int) $u['id'], $password)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid admin password']);
+        exit;
+    }
+
+    $st = $pdo->prepare(
+        'SELECT photo_filename FROM delivery_batch_items WHERE id = ? LIMIT 1'
+    );
+    $st->execute([$itemId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Item not found']);
+        exit;
+    }
+
+    $del = $pdo->prepare('DELETE FROM delivery_batch_items WHERE id = ?');
+    $del->execute([$itemId]);
+    if ($del->rowCount() === 0) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Item not found']);
+        exit;
+    }
+
+    $photo = isset($row['photo_filename']) ? trim((string) $row['photo_filename']) : '';
+    if ($photo !== '') {
+        $path = rts_storage_resolve_file(RTS_STORAGE_BUCKET_DELIVERIES, $photo);
+        if ($path !== null && is_file($path)) {
+            @unlink($path);
+        }
+    }
+
+    echo json_encode(['ok' => true, 'message' => 'Entry deleted']);
     exit;
 }
 

@@ -299,6 +299,29 @@ function rts_auth_login(string $username, string $password, string $requiredRole
     return true;
 }
 
+/**
+ * Re-verify the signed-in user's password (e.g. before destructive actions).
+ */
+function rts_auth_verify_user_password(int $userId, string $password): bool
+{
+    if ($userId < 1 || $password === '') {
+        return false;
+    }
+    try {
+        $pdo = rts_pdo();
+        $st = $pdo->prepare('SELECT password_hash FROM app_users WHERE id = ? LIMIT 1');
+        $st->execute([$userId]);
+        $hash = $st->fetchColumn();
+    } catch (Throwable $e) {
+        return false;
+    }
+    if (!is_string($hash) || $hash === '') {
+        return false;
+    }
+
+    return password_verify($password, $hash);
+}
+
 function rts_auth_logout(): void
 {
     rts_session_start();

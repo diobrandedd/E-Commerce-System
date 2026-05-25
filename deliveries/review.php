@@ -259,6 +259,10 @@ $iconPen = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewB
       background:#5c2a2a; border:1px solid #5c2a2a; color:#fff; font-weight:600;
       padding:0.45rem 0.85rem; border-radius:8px; cursor:pointer; font-size:0.88rem;
     }
+    .void-confirm-modal .admin-pw-field {
+      width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border);
+      font-size: 0.95rem; margin-top: 0.35rem;
+    }
     .void-confirm-actions .btn-cancel-confirm {
       background:#fffdfa; border:1px solid var(--border); color:var(--text);
       padding:0.45rem 0.85rem; border-radius:8px; cursor:pointer; font-size:0.88rem;
@@ -542,7 +546,7 @@ $iconPen = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewB
           </div>
           <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
             <button type="button" class="btn" id="editSaveBtn">Save</button>
-            <button type="button" class="btn btn-ghost btn-danger" id="editVoidBtn">Void row</button>
+            <button type="button" class="btn btn-ghost btn-danger" id="editDeleteBtn">Delete entry</button>
             <button type="button" class="btn btn-ghost" id="editModalClose">Cancel</button>
           </div>
         </div>
@@ -558,13 +562,15 @@ $iconPen = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewB
     </div>
   </div>
 
-  <div id="voidConfirmBackdrop" class="void-confirm-backdrop hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="voidConfirmTitle">
+  <div id="deleteConfirmBackdrop" class="void-confirm-backdrop hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
     <div class="void-confirm-modal">
-      <h3 id="voidConfirmTitle">Void this delivery row?</h3>
-      <p id="voidConfirmSummary" class="void-confirm-summary"></p>
-      <div class="void-confirm-actions">
-        <button type="button" class="btn-cancel-confirm" id="voidConfirmCancel">Cancel</button>
-        <button type="button" class="btn-danger-confirm" id="voidConfirmYes">Yes, void row</button>
+      <h3 id="deleteConfirmTitle">Delete this delivery entry?</h3>
+      <p id="deleteConfirmSummary" class="void-confirm-summary"></p>
+      <label for="deleteAdminPassword" style="display:block;font-size:0.8rem;color:var(--muted);margin-top:0.5rem;">Admin password</label>
+      <input type="password" id="deleteAdminPassword" class="admin-pw-field" autocomplete="current-password" placeholder="Enter your password to confirm">
+      <div class="void-confirm-actions" style="margin-top:1rem;">
+        <button type="button" class="btn-cancel-confirm" id="deleteConfirmCancel">Cancel</button>
+        <button type="button" class="btn-danger-confirm" id="deleteConfirmYes">Yes, delete permanently</button>
       </div>
     </div>
   </div>
@@ -583,15 +589,16 @@ $iconPen = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewB
   var editBatchId = document.getElementById('editBatchId');
   var editInput = document.getElementById('editTrackingInput');
   var editSave = document.getElementById('editSaveBtn');
-  var editVoid = document.getElementById('editVoidBtn');
+  var editDelete = document.getElementById('editDeleteBtn');
   var editClose = document.getElementById('editModalClose');
   var editPrev = document.getElementById('editPrevBtn');
   var editNext = document.getElementById('editNextBtn');
   var saveSuccess = document.getElementById('saveSuccess');
-  var voidConfirmBackdrop = document.getElementById('voidConfirmBackdrop');
-  var voidConfirmSummary = document.getElementById('voidConfirmSummary');
-  var voidConfirmCancel = document.getElementById('voidConfirmCancel');
-  var voidConfirmYes = document.getElementById('voidConfirmYes');
+  var deleteConfirmBackdrop = document.getElementById('deleteConfirmBackdrop');
+  var deleteConfirmSummary = document.getElementById('deleteConfirmSummary');
+  var deleteConfirmCancel = document.getElementById('deleteConfirmCancel');
+  var deleteConfirmYes = document.getElementById('deleteConfirmYes');
+  var deleteAdminPassword = document.getElementById('deleteAdminPassword');
   var currentEditId = 0;
   var currentViewTr = null;
 
@@ -766,64 +773,72 @@ $iconPen = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewB
       }).catch(function () { alert('Network error'); });
     });
   }
-  function closeVoidConfirm() {
-    if (!voidConfirmBackdrop) return;
-    voidConfirmBackdrop.classList.add('hidden');
-    voidConfirmBackdrop.setAttribute('aria-hidden', 'true');
-    if (voidConfirmYes) {
-      voidConfirmYes.disabled = false;
-      voidConfirmYes.textContent = 'Yes, void row';
+  function closeDeleteConfirm() {
+    if (!deleteConfirmBackdrop) return;
+    deleteConfirmBackdrop.classList.add('hidden');
+    deleteConfirmBackdrop.setAttribute('aria-hidden', 'true');
+    if (deleteConfirmYes) {
+      deleteConfirmYes.disabled = false;
+      deleteConfirmYes.textContent = 'Yes, delete permanently';
     }
+    if (deleteAdminPassword) deleteAdminPassword.value = '';
   }
 
-  function openVoidConfirm() {
-    if (currentEditId < 1 || !voidConfirmBackdrop) return;
+  function openDeleteConfirm() {
+    if (currentEditId < 1 || !deleteConfirmBackdrop) return;
     var trk = editInput ? (editInput.value || '').trim() : '';
-  var batch = editBatchId ? editBatchId.textContent : '';
-    if (voidConfirmSummary) {
-      voidConfirmSummary.innerHTML =
+    var batch = editBatchId ? editBatchId.textContent : '';
+    if (deleteConfirmSummary) {
+      deleteConfirmSummary.innerHTML =
         'Item #' + esc(String(currentEditId)) +
         (batch ? ' · Batch #' + esc(batch) : '') +
         '<br><br>Tracking: <strong>' + esc(trk || '—') + '</strong><br><br>' +
-        'The row stays in the list for audit. The photo file is <strong>not</strong> deleted from disk.';
+        'This permanently removes the row and deletes the photo from storage. This cannot be undone.';
     }
-    voidConfirmBackdrop.classList.remove('hidden');
-    voidConfirmBackdrop.setAttribute('aria-hidden', 'false');
-    if (voidConfirmYes) voidConfirmYes.focus();
+    if (deleteAdminPassword) deleteAdminPassword.value = '';
+    deleteConfirmBackdrop.classList.remove('hidden');
+    deleteConfirmBackdrop.setAttribute('aria-hidden', 'false');
+    if (deleteAdminPassword) deleteAdminPassword.focus();
   }
 
-  function doVoidRow() {
+  function doDeleteRow() {
     if (currentEditId < 1) return;
-    if (voidConfirmYes) {
-      voidConfirmYes.disabled = true;
-      voidConfirmYes.textContent = 'Voiding…';
+    var pw = deleteAdminPassword ? (deleteAdminPassword.value || '') : '';
+    if (!pw) {
+      alert('Enter your admin password to confirm deletion.');
+      if (deleteAdminPassword) deleteAdminPassword.focus();
+      return;
+    }
+    if (deleteConfirmYes) {
+      deleteConfirmYes.disabled = true;
+      deleteConfirmYes.textContent = 'Deleting…';
     }
     fetch(api, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ action: 'void', item_id: currentEditId })
+      body: JSON.stringify({ action: 'delete', item_id: currentEditId, admin_password: pw })
     }).then(function (r) { return r.json(); }).then(function (j) {
       if (j.ok) {
-        closeVoidConfirm();
+        closeDeleteConfirm();
         closeEdit();
         showSaveSuccessThenReload();
       } else {
         alert(j.error || 'Failed');
-        closeVoidConfirm();
+        closeDeleteConfirm();
       }
     }).catch(function () {
       alert('Network error');
-      closeVoidConfirm();
+      closeDeleteConfirm();
     });
   }
 
-  if (editVoid) editVoid.addEventListener('click', openVoidConfirm);
-  if (voidConfirmCancel) voidConfirmCancel.addEventListener('click', closeVoidConfirm);
-  if (voidConfirmYes) voidConfirmYes.addEventListener('click', doVoidRow);
-  if (voidConfirmBackdrop) {
-    voidConfirmBackdrop.addEventListener('click', function (e) {
-      if (e.target === voidConfirmBackdrop) closeVoidConfirm();
+  if (editDelete) editDelete.addEventListener('click', openDeleteConfirm);
+  if (deleteConfirmCancel) deleteConfirmCancel.addEventListener('click', closeDeleteConfirm);
+  if (deleteConfirmYes) deleteConfirmYes.addEventListener('click', doDeleteRow);
+  if (deleteConfirmBackdrop) {
+    deleteConfirmBackdrop.addEventListener('click', function (e) {
+      if (e.target === deleteConfirmBackdrop) closeDeleteConfirm();
     });
   }
 
@@ -847,7 +862,8 @@ $iconPen = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewB
 
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
-    if (viewModal && !viewModal.classList.contains('hidden')) closeView();
+    if (deleteConfirmBackdrop && !deleteConfirmBackdrop.classList.contains('hidden')) closeDeleteConfirm();
+    else if (viewModal && !viewModal.classList.contains('hidden')) closeView();
     else if (editModal && !editModal.classList.contains('hidden')) closeEdit();
   });
 

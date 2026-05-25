@@ -10,6 +10,8 @@ require_once dirname(__DIR__) . '/includes/rts_shop_couriers.php';
 require_once dirname(__DIR__) . '/includes/rts_claim_status.php';
 require_once dirname(__DIR__) . '/includes/rts_products.php';
 require_once dirname(__DIR__) . '/includes/rts_schema.php';
+require_once dirname(__DIR__) . '/includes/rts_storage.php';
+require_once dirname(__DIR__) . '/includes/rts_attachments.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -168,6 +170,63 @@ if ($action === 'void') {
         exit;
     }
     echo json_encode(['ok' => true, 'message' => 'Record voided']);
+    exit;
+}
+
+if ($action === 'delete') {
+    $caseId = isset($data['case_id']) ? (int) $data['case_id'] : 0;
+    if ($caseId < 1) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Invalid case_id']);
+        exit;
+    }
+    $password = isset($data['admin_password']) ? (string) $data['admin_password'] : '';
+    if ($password === '' && isset($data['password'])) {
+        $password = (string) $data['password'];
+    }
+    if (!rts_auth_verify_user_password((int) $authUser['id'], $password)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid admin password']);
+        exit;
+    }
+
+    $cols = rts_cases_select_columns($pdo);
+    $st = $pdo->prepare('SELECT ' . implode(', ', $cols) . ' FROM rts_cases WHERE id = ? LIMIT 1');
+    $st->execute([$caseId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Case not found']);
+        exit;
+    }
+
+    $attRaw = $row['documentation_attachments'] ?? null;
+    $legacyPhoto = isset($row['documentation_photo']) ? (string) $row['documentation_photo'] : null;
+    $attachments = rts_attachments_decode(
+        $attRaw !== null && $attRaw !== '' ? (string) $attRaw : null,
+        $legacyPhoto
+    );
+
+    $del = $pdo->prepare('DELETE FROM rts_cases WHERE id = ?');
+    $del->execute([$caseId]);
+    if ($del->rowCount() === 0) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Case not found']);
+        exit;
+    }
+
+    foreach ($attachments as $att) {
+        $fn = isset($att['file_name']) ? trim((string) $att['file_name']) : '';
+        if ($fn === '') {
+            continue;
+        }
+        $path = rts_storage_resolve_file(RTS_STORAGE_BUCKET_RTS, $fn);
+        if ($path !== null && is_file($path)) {
+            @unlink($path);
+        }
+    }
+
+    echo json_encode(['ok' => true, 'message' => 'Record deleted']);
     exit;
 }
 

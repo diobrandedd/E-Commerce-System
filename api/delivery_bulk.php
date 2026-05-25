@@ -23,6 +23,7 @@ require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
 require_once dirname(__DIR__) . '/includes/qr_decode.php';
 require_once dirname(__DIR__) . '/includes/rts_storage.php';
+require_once dirname(__DIR__) . '/includes/delivery_duplicates.php';
 
 /** Max bytes per delivery photo (PHP upload_max_filesize / post_max_size must be at least this high). */
 const RTS_DELIVERY_PHOTO_MAX_BYTES = 20 * 1024 * 1024;
@@ -198,6 +199,13 @@ try {
                     ];
                 }
             }
+        }
+
+        $trackingToSave = trim((string) ($class['tracking'] ?? ''));
+        if ($trackingToSave !== '' && rts_delivery_tracking_is_duplicate($pdo, $trackingToSave)) {
+            throw new RuntimeException(
+                'duplicate_tracking: This tracking number is already saved. Scan a different parcel or remove the duplicate in admin review.'
+            );
         }
 
         $baseName = 'deliv_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '_' . $i . '.' . $ext;

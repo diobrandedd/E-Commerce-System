@@ -64,6 +64,9 @@ $isLoggedIn = $user !== null;
       background:#fff6f3; border:1px solid var(--danger); color:var(--danger); font-size:0.88rem; line-height:1.4;
     }
     #saveErrorBanner.visible { display:block; }
+    .dup-warn-panel { border-color:var(--danger); background:#fff6f3; }
+    .dup-warn-panel h3 { color:var(--danger); margin:0 0 0.5rem; }
+    .admin-pw-field { width:100%; padding:0.5rem; border-radius:8px; border:1px solid var(--border); font-size:0.95rem; margin-top:0.35rem; }
     .pill { display:inline-block; padding:0.12rem 0.45rem; border-radius:6px; background:#fff7ea; border:1px solid var(--border); font-size:0.8rem; margin:0.15rem 0.15rem 0 0; }
     .pill.bad { border-color:var(--danger); color:var(--danger); }
     .pill.ok { border-color:var(--ok); color:var(--ok); }
@@ -206,6 +209,17 @@ $isLoggedIn = $user !== null;
       <div class="submit-dots" aria-hidden="true"><span></span><span></span><span></span></div>
     </div>
   </div>
+  <div id="dupModal" class="overlay-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="dupModalTitle">
+    <div class="overlay-panel dup-warn-panel">
+      <h3 id="dupModalTitle">Duplicate tracking</h3>
+      <p class="muted" style="margin:0 0 0.75rem;font-size:0.9rem;">This tracking number is already saved. It cannot be uploaded again. Scan a different parcel or remove the duplicate in admin review.</p>
+      <div id="dupModalTracking" class="tracking-display"></div>
+      <div class="modal-actions" style="margin-top:1rem;">
+        <button type="button" class="btn btn-secondary" id="dupModalClose">Scan another parcel</button>
+      </div>
+    </div>
+  </div>
+
   <div id="successBackdrop" class="success-backdrop hidden" aria-hidden="true">
     <div class="success-modal">
       <div class="success-check"></div>
@@ -240,12 +254,18 @@ $isLoggedIn = $user !== null;
   var successBackdrop = document.getElementById('successBackdrop');
   var successMsg = document.getElementById('successMsg');
   var saveErrorBanner = document.getElementById('saveErrorBanner');
+  var dupModal = document.getElementById('dupModal');
+  var dupModalTracking = document.getElementById('dupModalTracking');
+  var dupModalClose = document.getElementById('dupModalClose');
   var api = '../api/delivery_bulk.php?ngrok-skip-browser-warning=1';
+  var checkApi = '../api/delivery_check_tracking.php';
   var isAdmin = <?= $isAdmin ? 'true' : 'false' ?>;
 
   var html5QrcodeScanner = null;
   var scanLock = false;
   var pendingTracking = '';
+  var pendingIsDuplicate = false;
+  var sessionSavedTrackings = {};
   var pendingParcelFile = null;
   var parcelPreviewUrl = null;
   var sessionBatchId = null;
@@ -367,8 +387,42 @@ $isLoggedIn = $user !== null;
     if (previewScanNext) previewScanNext.disabled = !on;
   }
 
+  function trackingKey(t) {
+    return String(t || '').trim().toLowerCase();
+  }
+
+  function hideDupModal() {
+    if (dupModal) {
+      dupModal.classList.add('hidden');
+      dupModal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  function showDupModal(tracking) {
+    if (dupModalTracking) dupModalTracking.textContent = tracking;
+    if (dupModal) {
+      dupModal.classList.remove('hidden');
+      dupModal.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  async function checkTrackingDuplicate(tracking) {
+    var key = trackingKey(tracking);
+    if (!key) return false;
+    if (sessionSavedTrackings[key]) return true;
+    try {
+      var url = checkApi + '?tracking=' + encodeURIComponent(tracking);
+      var r = await fetch(url, { credentials: 'same-origin', headers: ngrokFetchHeaders() });
+      var j = await r.json();
+      return !!(j && j.ok && j.duplicate);
+    } catch (e) {
+      return false;
+    }
+  }
+
   function resetPreviewState() {
     pendingTracking = '';
+    pendingIsDuplicate = false;
     pendingParcelFile = null;
     if (parcelPhotoInput) parcelPhotoInput.value = '';
     revokeParcelPreview();
@@ -408,8 +462,9 @@ $isLoggedIn = $user !== null;
     startScanner();
   }
 
-  function openPreviewForTracking(tracking) {
+  function openPreviewForTracking(tracking, isDuplicate) {
     pendingTracking = tracking;
+    pendingIsDuplicate = !!isDuplicate;
     if (modalTracking) modalTracking.textContent = tracking;
     hideScannerModal();
     if (previewModal) {
@@ -465,7 +520,16 @@ $isLoggedIn = $user !== null;
     var tracking = normalizeTrackingFromQr(decodedText);
     if (!tracking) return;
     scanLock = true;
-    openPreviewForTracking(tracking);
+    checkTrackingDuplicate(tracking).then(function (isDup) {
+      if (isDup) {
+        hideScannerModal();
+        showDupModal(tracking);
+        return;
+      }
+      openPreviewForTracking(tracking, false);
+    }).catch(function () {
+      openPreviewForTracking(tracking, false);
+    });
   }
 
   function onParcelPhotoSelected(file) {
@@ -480,8 +544,17 @@ $isLoggedIn = $user !== null;
   }
 
   function saveParcel(andThen) {
+    if (pendingIsDuplicate) {
+      showSaveError('This tracking number is already saved. Scan a different parcel.');
+      return Promise.resolve(false);
+    }
     if (!pendingTracking || !pendingParcelFile) {
       showSaveError('Missing tracking or photo. Take the parcel photo again.');
+      return Promise.resolve(false);
+    }
+    var saveKey = trackingKey(pendingTracking);
+    if (saveKey && sessionSavedTrackings[saveKey]) {
+      showSaveError('This tracking number was already saved in this session.');
       return Promise.resolve(false);
     }
     if (!dateEl || !dateEl.value) {
@@ -557,7 +630,12 @@ $isLoggedIn = $user !== null;
       }
 
       if (!xj.ok) {
-        showSaveError(xj.error ? String(xj.error) : 'Upload failed');
+        var errMsg = xj.error ? String(xj.error) : 'Upload failed';
+        if (errMsg.indexOf('duplicate_tracking') !== -1) {
+          errMsg = 'This tracking number is already saved. Scan a different parcel or remove the duplicate in admin review.';
+          pendingIsDuplicate = true;
+        }
+        showSaveError(errMsg);
         setPreviewActionsEnabled(true);
         return false;
       }
@@ -573,6 +651,8 @@ $isLoggedIn = $user !== null;
       updateBatchStatus();
       var item = (xj.items && xj.items[0]) ? xj.items[0] : {};
       var tn = item.tracking_number || pendingTracking;
+      var savedKey = trackingKey(tn);
+      if (savedKey) sessionSavedTrackings[savedKey] = true;
       clearSaveError();
       showSuccessCheck('Saved ' + tn + '.');
       if (result) {
@@ -621,6 +701,14 @@ $isLoggedIn = $user !== null;
     });
   }
 
+  if (dupModalClose) {
+    dupModalClose.addEventListener('click', function () {
+      hideDupModal();
+      scanLock = false;
+      showScannerModal();
+    });
+  }
+
   if (scannerModalClose) {
     scannerModalClose.addEventListener('click', function () {
       hideScannerModal();
@@ -655,6 +743,12 @@ $isLoggedIn = $user !== null;
 
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
+    if (dupModal && !dupModal.classList.contains('hidden')) {
+      hideDupModal();
+      scanLock = false;
+      showScannerModal();
+      return;
+    }
     if (previewModal && !previewModal.classList.contains('hidden')) {
       hidePreviewModal();
       scanLock = false;

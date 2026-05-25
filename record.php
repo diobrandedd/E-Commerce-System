@@ -306,6 +306,30 @@ $pageTitle = 'Record RTS';
     label .req { color: var(--danger); font-weight: 600; }
     select:disabled, input:disabled { opacity: 0.65; cursor: not-allowed; background: #f5f0e6; }
     #btnSave:disabled { opacity: 0.45; cursor: not-allowed; }
+    .delete-confirm-backdrop {
+      position: fixed; inset: 0; background: rgba(75, 58, 29, 0.45); z-index: 150;
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .delete-confirm-backdrop.hidden { display: none; }
+    .delete-confirm-modal {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.2rem 1.35rem; max-width: 420px; width: 100%;
+      box-shadow: 0 16px 48px rgba(101, 76, 36, 0.22);
+    }
+    .delete-confirm-modal h3 { margin: 0 0 0.5rem; font-size: 1.05rem; color: #6b3030; }
+    .delete-confirm-modal .admin-pw-field {
+      width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border);
+      font-size: 0.95rem; margin-top: 0.35rem;
+    }
+    .delete-confirm-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+    .delete-confirm-actions .btn-danger-confirm {
+      background: #5c2a2a; border: 1px solid #5c2a2a; color: #fff; font-weight: 600;
+      padding: 0.45rem 0.85rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
+    }
+    .delete-confirm-actions .btn-cancel-confirm {
+      background: #fffdfa; border: 1px solid var(--border); color: var(--text);
+      padding: 0.45rem 0.85rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
+    }
     #formValidationBanner { font-size: 0.88rem; margin: 0 0 0.75rem; }
     .success-backdrop {
       position: fixed;
@@ -643,8 +667,24 @@ $pageTitle = 'Record RTS';
         <button type="button" class="btn btn-primary" id="btnSaveScanNext" disabled>Scan next parcel</button>
       </div>
       <div class="toolbar hidden" id="rtsEditActions" style="justify-content:space-between;margin-top:0.75rem;">
-        <button type="button" class="btn btn-ghost" id="btnModalCancelEdit">Cancel</button>
-        <button type="button" class="btn btn-primary" id="btnSave" disabled>Save changes</button>
+        <button type="button" class="btn btn-ghost btn-danger" id="btnDeleteRecord">Delete entry</button>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-left:auto;">
+          <button type="button" class="btn btn-ghost" id="btnModalCancelEdit">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btnSave" disabled>Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteConfirmBackdrop" class="delete-confirm-backdrop hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+    <div class="delete-confirm-modal">
+      <h3 id="deleteConfirmTitle">Delete this RTS record?</h3>
+      <p id="deleteConfirmSummary" class="muted" style="margin:0 0 0.75rem;font-size:0.9rem;line-height:1.5;"></p>
+      <label for="deleteAdminPassword" style="display:block;font-size:0.8rem;color:var(--muted);">Admin password</label>
+      <input type="password" id="deleteAdminPassword" class="admin-pw-field" autocomplete="current-password" placeholder="Enter your password to confirm">
+      <div class="delete-confirm-actions">
+        <button type="button" class="btn-cancel-confirm" id="deleteConfirmCancel">Cancel</button>
+        <button type="button" class="btn-danger-confirm" id="deleteConfirmYes">Yes, delete permanently</button>
       </div>
     </div>
   </div>
@@ -774,6 +814,11 @@ $pageTitle = 'Record RTS';
   const COURIER_LABELS = { jnt: 'J&T', spx: 'SPX', flash: 'Flash' };
 
   const $ = (id) => document.getElementById(id);
+  const escHtml = (s) => {
+    const d = document.createElement('div');
+    d.textContent = s == null ? '' : String(s);
+    return d.innerHTML;
+  };
   const toast = (msg, isErr) => {
     const t = $('toast');
     t.textContent = msg;
@@ -2035,6 +2080,86 @@ $pageTitle = 'Record RTS';
     return true;
   }
 
+  function closeDeleteConfirm() {
+    const bd = $('deleteConfirmBackdrop');
+    if (!bd) return;
+    bd.classList.add('hidden');
+    bd.setAttribute('aria-hidden', 'true');
+    const yes = $('deleteConfirmYes');
+    if (yes) {
+      yes.disabled = false;
+      yes.textContent = 'Yes, delete permanently';
+    }
+    const pw = $('deleteAdminPassword');
+    if (pw) pw.value = '';
+  }
+
+  function openDeleteConfirm() {
+    if (!isEditMode || editCaseId < 1) return;
+    const bd = $('deleteConfirmBackdrop');
+    const sum = $('deleteConfirmSummary');
+    const trk = currentTracking || ($('dispTracking') ? $('dispTracking').value : '') || '';
+    if (sum) {
+      sum.innerHTML = 'Record #' + escHtml(String(editCaseId)) + '<br><br>Tracking: <strong>' + escHtml(trk || '—') + '</strong><br><br>' +
+        'This permanently removes the RTS case, all product lines, and documentation files. This cannot be undone.';
+    }
+    const pw = $('deleteAdminPassword');
+    if (pw) pw.value = '';
+    if (bd) {
+      bd.classList.remove('hidden');
+      bd.setAttribute('aria-hidden', 'false');
+    }
+    if (pw) pw.focus();
+  }
+
+  async function doDeleteRecord() {
+    if (!isEditMode || editCaseId < 1) return;
+    const pwEl = $('deleteAdminPassword');
+    const pw = pwEl ? (pwEl.value || '') : '';
+    if (!pw) {
+      toast('Enter your admin password to confirm deletion.', true);
+      if (pwEl) pwEl.focus();
+      return;
+    }
+    const yes = $('deleteConfirmYes');
+    if (yes) {
+      yes.disabled = true;
+      yes.textContent = 'Deleting…';
+    }
+    try {
+      const r = await fetch(api, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ action: 'delete', case_id: editCaseId, admin_password: pw })
+      });
+      const j = await r.json();
+      if (j.ok) {
+        closeDeleteConfirm();
+        toast('Record deleted.');
+        document.body.classList.add('page-exit');
+        setTimeout(() => { window.location.href = 'records.php'; }, 180);
+        return;
+      }
+      toast(j.error || 'Delete failed', true);
+      closeDeleteConfirm();
+    } catch (e) {
+      toast('Network error', true);
+      closeDeleteConfirm();
+    }
+  }
+
+  const btnDeleteRecord = $('btnDeleteRecord');
+  if (btnDeleteRecord) btnDeleteRecord.addEventListener('click', openDeleteConfirm);
+  $('deleteConfirmCancel').addEventListener('click', closeDeleteConfirm);
+  $('deleteConfirmYes').addEventListener('click', () => { void doDeleteRecord(); });
+  const deleteBd = $('deleteConfirmBackdrop');
+  if (deleteBd) {
+    deleteBd.addEventListener('click', (e) => {
+      if (e.target.id === 'deleteConfirmBackdrop') closeDeleteConfirm();
+    });
+  }
+
   $('btnSave').addEventListener('click', () => { void saveRts(); });
   $('btnSaveDone').addEventListener('click', () => {
     void saveRts(() => closeScanPanel());
@@ -2130,6 +2255,11 @@ $pageTitle = 'Record RTS';
     if (sm && !sm.classList.contains('hidden')) {
       closeScanPanel();
       scanLock = false;
+      return;
+    }
+    const delBd = $('deleteConfirmBackdrop');
+    if (delBd && !delBd.classList.contains('hidden')) {
+      closeDeleteConfirm();
       return;
     }
     if ($('modalBackdrop') && !$('modalBackdrop').classList.contains('hidden') && !isEditMode) {
