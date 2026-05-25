@@ -1,0 +1,9 @@
+# React Router (SPA) — send unknown paths to index.html so refresh works on deep links.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /rts/app/dist/
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /rts/app/dist/index.html [L]
+</IfModule>

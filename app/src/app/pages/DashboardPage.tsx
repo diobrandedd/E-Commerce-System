@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, FileEdit, RefreshCcw, AlertCircle, Package, Users, Layers, ClipboardEdit } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
+import { DashboardInventorySection } from "@/app/components/dashboard/DashboardInventorySection";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, ApiError } from "@/app/lib/api";
 
@@ -104,6 +105,8 @@ export function DashboardPage() {
   }, []);
 
   const isExec = user?.role === "executive";
+  const showPackagingInventory =
+    user?.role === "prod_manager" || user?.role === "executive" || user?.role === "hr";
 
   return (
     <PageLayout
@@ -124,6 +127,12 @@ export function DashboardPage() {
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {showPackagingInventory && (
+          <div className="bg-card rounded-xl border border-border p-5 sm:p-6" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <DashboardInventorySection />
           </div>
         )}
 

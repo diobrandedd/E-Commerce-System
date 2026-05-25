@@ -60,7 +60,7 @@ User password change pages:
 - RTS accounts: `settings.php`
 - Inventory phase accounts: `auth/settings.php`
 
-## Inventory migrations (phases 2-5)
+## Inventory migrations (phases 2-8)
 
 Run these SQL files in order after phase 1:
 
@@ -68,6 +68,10 @@ Run these SQL files in order after phase 1:
 - `sql/migration_phase3_inventory_products.sql`
 - `sql/migration_phase4_inventory_costing.sql`
 - `sql/migration_phase5_pos_ar_reports.sql`
+- `sql/migration_phase6_honey_inventory_v3.sql` — Honey warehouse/production/packaging, sales log, correction requests, dept rows, `hr` role
+- `sql/migration_phase7_rts_inventory_sync.sql` — `rts_inventory_rows`, `rts_sync_state` (run after phase 6)
+- `sql/migration_phase8_suppliers_master.sql` — `suppliers` master table, `honey_warehouse_rows.supplier_id`, ID photos in `supplier_valid_ids/` storage bucket
+- `sql/migration_phase9_packaging_one_per_production.sql` — one packaging row per production row (partial bottling adds to same batch)
 
 Phase 4 adds:
 
@@ -80,6 +84,27 @@ Phase 5 adds:
 - `ar_credits` (staff "take a product on credit" accounts receivable)
 
 These back the React SPA pages `POSPage`, `ARCreditsPage`, and `ReportsPage`.
+
+## Honey inventory v3 vs generic costing
+
+Two parallel models share one database (`rts_system`):
+
+| Area | Tables / API | SPA |
+|------|----------------|-----|
+| **Honey ops (v3)** | `honey_warehouse_rows`, `honey_production_rows`, `honey_packaging_rows`, `honey_sales_log`, `inventory_correction_requests` | `/inventory/honey/*`, `/inventory/requests` via `api/v1/honey.php` |
+| **Generic costing** | `stocks`, `stock_entries`, `products`, `product_formula` | `/costing` via `api/v1/costing.php` (unchanged) |
+| **RTS inventory mirror** | `rts_inventory_rows` synced from `rts_line_items` | `/rts` via `api/v1/rts.php` + `rts_sync.php` |
+
+Operational RTS recording stays in legacy `record.php` / `rts_cases`. Sync creates **new inventory rows per return event**; PM deduct/sell only updates inventory rows and `honey_sales_log` (`source=rts`), never deletes source line items.
+
+**Roles:** `prod_manager` mutates Honey + RTS inventory; `executive` approves corrections and can direct qty adjust; `hr` is read-only across Honey, requests history, and RTS inventory.
+
+## Supplier master (phase 8)
+
+- **Executive** — `/suppliers` (Supplier Master): register suppliers (name, contact, payment account/number, address, valid ID photo, category: Honey / Paragis / Black Rice / Cacao). API: `api/v1/suppliers.php`.
+- **Production Manager** — Honey warehouse stock-in: **combobox only** (type to filter names); cannot add suppliers. Posts `supplier_id` + variants; supplier code = initials of full display name + arrival date (`MMDDYY`), same as `honey_supplier_code()`.
+- **Production → Packaging** — PM enters bottle size lines (250ml, 350ml, 1L, gallon); system auto-deducts gallon/s from volume (1 gal ≈ 3,785 ml exact in code). Partial runs update the **same** packaging batch row; first run sets batch + bottling date.
+- ID photos stored under configured storage root: `supplier_valid_ids/` (or `assets/supplier_valid_ids/` if storage root is empty).
 
 ## React SPA (Pyx Tracker)
 
@@ -114,4 +139,8 @@ When enabled:
 - Legacy pages (`record.php`, `deliveries/`) and the React app use the same config.
 - API routes under `/rts/api/` are not redirected (avoids breaking JSON `fetch`).
 
-Start ngrok pointing at port 80, then set `public_url` to the HTTPS URL ngrok shows.
+Start ngrok pointing at port 80, then set `public_url` to the HTTPS URL ngrok shows (must match exactly, e.g. `*.ngrok-free.dev` vs `*.ngrokfree.dev`).
+
+**Refresh on deep links:** The SPA ships `app/public/.htaccess` (copied to `app/dist/` on build) so URLs like `/rts/app/dist/inventory/honey/warehouse` reload correctly instead of Apache 404.
+
+**ngrok + API:** All `fetch` calls to `/rts/api/` automatically send `ngrok-skip-browser-warning` when the page hostname contains `ngrok`, so refresh does not hit ngrok’s HTML interstitial instead of JSON.

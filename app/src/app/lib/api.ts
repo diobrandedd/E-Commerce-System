@@ -7,16 +7,32 @@
  *   `auth.php?action=me` response and sent in the `X-CSRF-Token` header.
  */
 
+import { triggerLiveRefresh } from "@/app/lib/liveRefresh";
+
 export const API_BASE = "/rts/api/v1";
 
 let csrfToken: string | null = null;
 let extraFetchHeaders: Record<string, string> = {};
 
+/** ngrok free tier returns HTML unless this header is sent on every API request. */
+function ngrokFetchHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const h = window.location.hostname.toLowerCase();
+  if (h.includes("ngrok")) {
+    return { "ngrok-skip-browser-warning": "1" };
+  }
+  return {};
+}
+
+function mergeApiHeaders(base: Record<string, string>): Record<string, string> {
+  return { ...ngrokFetchHeaders(), ...extraFetchHeaders, ...base };
+}
+
 export function setCsrfToken(token: string | null): void {
   csrfToken = token;
 }
 
-/** ngrok-skip-browser-warning etc., from auth `forwarding.fetch_headers`. */
+/** Extra headers from auth `forwarding.fetch_headers` (merged with ngrok auto-detect). */
 export function setForwardingFetchHeaders(headers: Record<string, string> | null | undefined): void {
   extraFetchHeaders = headers ?? {};
 }
@@ -61,10 +77,9 @@ export async function api<T = unknown>(
     }
   }
 
-  const headers: Record<string, string> = {
+  const headers = mergeApiHeaders({
     Accept: "application/json",
-    ...extraFetchHeaders,
-  };
+  });
   if (method !== "GET") {
     headers["Content-Type"] = "application/json";
     if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
@@ -93,6 +108,9 @@ export async function api<T = unknown>(
   if (!payload.ok) {
     throw new ApiError(payload.error ?? `Request failed (${response.status}).`, response.status, payload.data);
   }
+  if (method !== "GET") {
+    triggerLiveRefresh();
+  }
   return payload.data as T;
 }
 
@@ -107,4 +125,27 @@ export function apiGet<T = unknown>(
 
 export function apiPost<T = unknown>(path: string, action: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   return api<T>(path, action, { method: "POST", body, signal });
+}
+
+/** Multipart POST (e.g. supplier create with ID photo). Do not set Content-Type — browser sets boundary. */
+export async function apiPostForm<T = unknown>(path: string, action: string, form: FormData, signal?: AbortSignal): Promise<T> {
+  const url = new URL(`${API_BASE}/${path.replace(/^\/+/, "")}`, window.location.origin);
+  url.searchParams.set("action", action);
+  const headers = mergeApiHeaders({ Accept: "application/json" });
+  if (csrfToken) headers["X-CSRF-Token"] = csrfToken;
+
+  const response = await fetch(url.toString(), {
+    method: "POST",
+    headers,
+    credentials: "same-origin",
+    body: form,
+    signal,
+  });
+
+  const payload = (await response.json()) as ApiResponse<T>;
+  if (!payload.ok) {
+    throw new ApiError(payload.error ?? `Request failed (${response.status}).`, response.status, payload.data);
+  }
+  triggerLiveRefresh();
+  return payload.data as T;
 }

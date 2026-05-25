@@ -9,6 +9,7 @@ const IMS_ROLE_PROD_MANAGER = 'prod_manager';
 const IMS_ROLE_TL = 'tl';
 const IMS_ROLE_STAFF = 'staff';
 const IMS_ROLE_POS = 'pos';
+const IMS_ROLE_HR = 'hr';
 
 /**
  * Start session once for auth middleware.

@@ -7,6 +7,7 @@ require_once __DIR__ . '/db.php';
 const RTS_STORAGE_BUCKET_RTS = 'rts_documentation';
 const RTS_STORAGE_BUCKET_DELIVERIES = 'deliveries_documentation';
 const RTS_STORAGE_BUCKET_SP_SORT = 'sp_sort';
+const RTS_STORAGE_BUCKET_SUPPLIER_IDS = 'supplier_valid_ids';
 
 /** @return array<string, mixed> */
 function rts_storage_cfg(): array
@@ -42,7 +43,12 @@ function rts_storage_root_path(): string
  */
 function rts_storage_dir(string $bucket): string
 {
-    $allowed = [RTS_STORAGE_BUCKET_RTS, RTS_STORAGE_BUCKET_DELIVERIES, RTS_STORAGE_BUCKET_SP_SORT];
+    $allowed = [
+        RTS_STORAGE_BUCKET_RTS,
+        RTS_STORAGE_BUCKET_DELIVERIES,
+        RTS_STORAGE_BUCKET_SP_SORT,
+        RTS_STORAGE_BUCKET_SUPPLIER_IDS,
+    ];
     if (!in_array($bucket, $allowed, true)) {
         throw new InvalidArgumentException('Unknown storage bucket: ' . $bucket);
     }

@@ -1,193 +1,245 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ExternalLink, RefreshCcw, AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
+import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { useAuth } from "@/app/context/AuthContext";
-import { apiGet, ApiError } from "@/app/lib/api";
+import { apiGet, apiPost, ApiError } from "@/app/lib/api";
+import { HONEY_SIZES } from "@/app/lib/honey";
 
-interface PoolRow {
-  product_type: string;
-  honey_size: string | null;
-  honey_variant: string | null;
-  total_qty: string;
-  line_count: string;
-}
-
-interface RecentItem {
-  line_id: number;
-  case_id: number;
-  product_type: string;
-  honey_size: string | null;
-  honey_variant: string | null;
-  combo_product: string | null;
-  quantity: string;
-  is_bonus: number;
-  created_at: string;
-  tracking_number: string;
-  shop: string;
-  courier_final: string;
-  claim_status: string;
-  date_opened: string;
-  damaged_tag: string;
+interface RtsInvRow {
+  id: number;
+  category: string;
+  product_label: string;
+  variant: string | null;
+  current_liter: string;
+  initial_liter: string;
+  current_250ml: string;
+  initial_250ml: string;
+  current_350ml: string;
+  initial_350ml: string;
+  current_gallon: string;
+  initial_gallon: string;
+  current_qty: string;
+  initial_qty: string;
 }
 
 interface LegacyUrls { records: string; create: string; dashboard: string }
 
-const fmtDate = (s: string) => {
-  const d = new Date(s.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return s;
-  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-};
-
-const productLabel = (row: { product_type: string; honey_size: string | null; honey_variant: string | null }) => {
-  let label = row.product_type.replace(/_/g, " ");
-  if (row.honey_size) label += ` · ${row.honey_size}`;
-  if (row.honey_variant) label += ` · ${row.honey_variant}`;
-  return label;
-};
-
 export function RTSPage() {
   const { user } = useAuth();
-  const isExec = user?.role === "executive";
   const canRecord = user?.role === "csr_staff" || user?.role === "csr_tl";
+  const canMutate = user?.role === "prod_manager";
+  const readonly = user?.role === "hr" || user?.role === "csr_tl" || user?.role === "csr_staff";
 
-  const [pool, setPool] = useState<PoolRow[]>([]);
-  const [recent, setRecent] = useState<RecentItem[]>([]);
+  const [honey, setHoney] = useState<RtsInvRow[]>([]);
+  const [other, setOther] = useState<RtsInvRow[]>([]);
+  const [sync, setSync] = useState<{ last_synced_at: string | null; last_error: string | null } | null>(null);
+  const [diagnostic, setDiagnostic] = useState<{
+    case_count: number;
+    line_item_count: number;
+    syncable_line_item_count: number;
+    inventory_row_count: number;
+  } | null>(null);
   const [legacy, setLegacy] = useState<LegacyUrls | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sellRow, setSellRow] = useState<RtsInvRow | null>(null);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [poolPayload, recentPayload, urls] = await Promise.all([
-        apiGet<{ pool: PoolRow[] }>("rts.php", "pool"),
-        apiGet<{ items: RecentItem[] }>("rts.php", "recent"),
+      await apiPost("rts_sync.php", "run").catch(() => null);
+      const [inv, urls] = await Promise.all([
+        apiGet<{
+          honey: RtsInvRow[];
+          other: RtsInvRow[];
+          sync: typeof sync;
+          diagnostic: typeof diagnostic;
+          readonly: boolean;
+          can_mutate: boolean;
+        }>("rts.php", "inventory_list"),
         apiGet<LegacyUrls>("rts.php", "legacy_urls"),
       ]);
-      setPool(poolPayload.pool);
-      setRecent(recentPayload.items);
+      setHoney(inv.honey);
+      setOther(inv.other);
+      setSync(inv.sync);
+      setDiagnostic(inv.diagnostic ?? null);
       setLegacy(urls);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not load RTS data.");
+      setError(e instanceof ApiError ? e.message : "Could not load RTS inventory.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    refresh();
+    const t = setInterval(() => apiPost("rts_sync.php", "run").catch(() => null).then(() => refresh()), 60000);
+    return () => clearInterval(t);
+  }, [refresh]);
 
   return (
     <PageLayout
-      title="RTS Overview"
-      subtitle="Return-to-Seller pool, recent items, and legacy admin links"
+      title="RTS inventory"
+      subtitle="Synced from operational RTS records — create cases in legacy RTS"
       actions={
-        <div className="flex items-center gap-2">
-          <button onClick={refresh} className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg border border-border">
-            <RefreshCcw size={13} /> Refresh
+        <div className="flex gap-2">
+          <button onClick={refresh} className="text-xs border rounded-lg px-3 py-1.5 text-muted-foreground hover:text-foreground">
+            <RefreshCcw size={13} className="inline mr-1" /> Sync now
           </button>
+          {legacy && canRecord && (
+            <a href={legacy.create} className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg inline-flex items-center gap-1" style={{ background: "#C8900A" }}>
+              <ExternalLink size={13} /> Record RTS (legacy)
+            </a>
+          )}
         </div>
       }
     >
       <div className="space-y-6">
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
-            <AlertCircle size={16} className="mt-0.5 flex-shrink-0" /> <span>{error}</span>
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex gap-2">
+            <AlertCircle size={16} /> {error}
           </div>
         )}
-
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex items-start gap-3">
-          <RotateCcw size={18} className="text-amber-700 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-amber-900">Legacy RTS still active</p>
-            <p className="text-xs text-amber-800 mt-1">
-              Case creation, reuse logging, and claim status are still managed in the existing RTS pages.
-              The SPA shows live pool balances pulled from <code>rts_line_items</code>.
-            </p>
-            <div className="flex flex-wrap gap-2 mt-3">
-              {legacy?.records && (
-                <a href={legacy.records} className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-amber-200 hover:border-amber-400 transition-colors">
-                  <ExternalLink size={12} /> RTS Records
-                </a>
-              )}
-              {canRecord && legacy?.create && (
-                <a href={legacy.create} className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-700 text-white hover:bg-amber-800 transition-colors">
-                  <ExternalLink size={12} /> Record RTS parcel
-                </a>
-              )}
-              {legacy?.dashboard && isExec && (
-                <a href={legacy.dashboard} className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-amber-200 hover:border-amber-400 transition-colors">
-                  <ExternalLink size={12} /> RTS Dashboard
-                </a>
-              )}
-            </div>
+        {diagnostic && diagnostic.case_count > 0 && diagnostic.line_item_count === 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <strong>No product lines to sync.</strong> You have {diagnostic.case_count} RTS case(s) in{" "}
+            <code className="text-xs">rts_cases</code>, but <code className="text-xs">rts_line_items</code> is empty.
+            RTS inventory is built from line items (products per case), not from cases alone. Open each case in{" "}
+            {legacy ? (
+              <a href={legacy.records} className="underline font-semibold text-[#8a5c00]">legacy RTS records</a>
+            ) : (
+              "legacy RTS records"
+            )}{" "}
+            and save the product lines, then click <strong>Sync now</strong>.
           </div>
-        </div>
-
-        <div>
-          <h3 className="text-sm font-semibold text-foreground mb-3">Current RTS pool balance</h3>
-          {loading ? (
-            <div className="bg-card rounded-xl border border-border px-6 py-8 text-center text-sm text-muted-foreground"><Loader2 className="inline animate-spin mr-2" size={14} />Loading…</div>
-          ) : pool.length === 0 ? (
-            <div className="bg-card rounded-xl border border-border px-6 py-8 text-center text-sm text-muted-foreground">No RTS items found.</div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pool.map((p, i) => {
-                const total = parseFloat(p.total_qty);
-                return (
-                  <div key={i} className="bg-card rounded-xl border border-border p-4" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-semibold text-foreground capitalize">{p.product_type.replace(/_/g, " ")}</p>
-                      <span className="text-xl font-bold text-amber-600">{total.toLocaleString()}</span>
-                    </div>
-                    {(p.honey_size || p.honey_variant) && (
-                      <p className="text-xs text-muted-foreground mb-2">{[p.honey_size, p.honey_variant].filter(Boolean).join(" · ")}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">{p.line_count} line{p.line_count === "1" ? "" : "s"}</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Recent RTS items</h3>
-            <span className="text-xs text-muted-foreground">Last 50</span>
+        )}
+        {sync?.last_error && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Sync warning: {sync.last_error}
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-secondary/40">
-                  {["Tracking", "Shop / courier", "Product", "Qty", "Claim status", "Damaged", "Recorded"].map(h => (
-                    <th key={h} className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-4 py-2.5 first:pl-6">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading && (
-                  <tr><td colSpan={7} className="px-6 py-8 text-center text-sm text-muted-foreground"><Loader2 className="inline animate-spin mr-2" size={14} /> Loading…</td></tr>
-                )}
-                {!loading && recent.length === 0 && (
-                  <tr><td colSpan={7} className="px-6 py-8 text-center text-sm text-muted-foreground">No recent RTS line items.</td></tr>
-                )}
-                {recent.map(item => (
-                  <tr key={item.line_id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
-                    <td className="px-6 py-3 font-mono text-xs">{item.tracking_number}</td>
-                    <td className="px-4 py-3 text-muted-foreground capitalize">{item.shop} · {item.courier_final}</td>
-                    <td className="px-4 py-3 text-foreground">{productLabel(item)}</td>
-                    <td className="px-4 py-3 font-semibold text-foreground">{parseFloat(item.quantity).toLocaleString()}</td>
-                    <td className="px-4 py-3"><span className="inline-block text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground capitalize">{item.claim_status.replace(/_/g, " ")}</span></td>
-                    <td className="px-4 py-3 text-muted-foreground capitalize">{item.damaged_tag === "no" ? "—" : item.damaged_tag}</td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{fmtDate(item.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Last synced: {sync?.last_synced_at ? new Date(sync.last_synced_at.replace(" ", "T")).toLocaleString() : "Never"}
+          {readonly && " · Read-only for your role"}
+        </p>
+
+        {loading ? (
+          <div className="text-sm text-muted-foreground py-8 text-center"><Loader2 className="inline animate-spin mr-2" size={14} /> Loading…</div>
+        ) : (
+          <>
+            <section>
+              <h3 className="text-sm font-semibold mb-3">Honey RTS</h3>
+              <RtsTable rows={honey} honey onSell={canMutate ? setSellRow : undefined} />
+            </section>
+            <section>
+              <h3 className="text-sm font-semibold mb-3">Other products</h3>
+              <RtsTable rows={other} honey={false} onSell={canMutate ? setSellRow : undefined} />
+            </section>
+          </>
+        )}
+        {legacy && (
+          <p className="text-xs text-muted-foreground">
+            <a href={legacy.records} className="text-[#C8900A] underline">View all RTS cases</a>
+            {" · "}
+            <a href={legacy.dashboard} className="text-[#C8900A] underline">RTS dashboard</a>
+          </p>
+        )}
       </div>
+      {sellRow && <SellModal row={sellRow} onClose={() => setSellRow(null)} onDone={() => { setSellRow(null); refresh(); }} />}
     </PageLayout>
+  );
+}
+
+function RtsTable({ rows, honey, onSell }: { rows: RtsInvRow[]; honey: boolean; onSell?: (r: RtsInvRow) => void }) {
+  if (!rows.length) return <p className="text-sm text-muted-foreground">No rows yet. Run sync after new RTS records are saved.</p>;
+  if (honey) {
+    return (
+      <div className="bg-card rounded-xl border overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
+              <th className="px-3 py-2 text-left">Variant</th>
+              {HONEY_SIZES.map(s => <th key={s} className="px-3 py-2 text-left">{s}</th>)}
+              {onSell && <th className="px-3 py-2" />}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.id} className="border-b">
+                <td className="px-3 py-2 capitalize">{r.variant ?? r.product_label}</td>
+                <td className="px-3 py-2"><QtyCounter current={r.current_liter} initial={r.initial_liter} /></td>
+                <td className="px-3 py-2"><QtyCounter current={r.current_250ml} initial={r.initial_250ml} /></td>
+                <td className="px-3 py-2"><QtyCounter current={r.current_350ml} initial={r.initial_350ml} /></td>
+                <td className="px-3 py-2"><QtyCounter current={r.current_gallon} initial={r.initial_gallon} /></td>
+                {onSell && (
+                  <td className="px-3 py-2">
+                    <button onClick={() => onSell(r)} className="text-xs font-semibold text-[#C8900A]">Deduct / Sell</button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+  return (
+    <div className="bg-card rounded-xl border overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-secondary/40"><th className="px-4 py-2 text-left">Product</th><th className="px-4 py-2 text-left">Qty</th>{onSell && <th />}</tr>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.id} className="border-b">
+              <td className="px-4 py-3">{r.product_label}</td>
+              <td className="px-4 py-3"><QtyCounter current={r.current_qty} initial={r.initial_qty} /></td>
+              {onSell && <td><button onClick={() => onSell(r)} className="text-xs text-[#C8900A] font-semibold">Deduct / Sell</button></td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function SellModal({ row, onClose, onDone }: { row: RtsInvRow; onClose: () => void; onDone: () => void }) {
+  const [saleType, setSaleType] = useState<"walk_in" | "parcel">("walk_in");
+  const [sizes, setSizes] = useState<Record<string, string>>({});
+  const [qtyOther, setQtyOther] = useState("");
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const size_qtys: Record<string, number> = {};
+    if (row.category === "honey") {
+      HONEY_SIZES.forEach(s => { const v = parseFloat(sizes[s] || "0"); if (v > 0) size_qtys[s] = v; });
+    }
+    await apiPost("rts.php", "inventory_deduct_sell", {
+      row_id: row.id,
+      size_qtys,
+      qty_other: row.category === "other" ? parseFloat(qtyOther) : undefined,
+      sale_type: saleType,
+    });
+    onDone();
+  };
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card rounded-xl border p-6 max-w-sm w-full" onClick={e => e.stopPropagation()}>
+        <h3 className="font-bold mb-3">Deduct / Sell — {row.product_label}</h3>
+        <form onSubmit={submit} className="space-y-2 text-sm">
+          {row.category === "honey" ? HONEY_SIZES.map(s => (
+            <input key={s} type="number" step="0.01" placeholder={s} onChange={e => setSizes({ ...sizes, [s]: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
+          )) : (
+            <input type="number" step="0.01" value={qtyOther} onChange={e => setQtyOther(e.target.value)} className="w-full border rounded-lg px-3 py-2" required />
+          )}
+          <div className="flex gap-4 pt-2">
+            <label><input type="radio" checked={saleType === "walk_in"} onChange={() => setSaleType("walk_in")} /> Walk-in</label>
+            <label><input type="radio" checked={saleType === "parcel"} onChange={() => setSaleType("parcel")} /> Parcel</label>
+          </div>
+          <button type="submit" className="w-full py-2.5 rounded-lg font-bold text-white mt-2" style={{ background: "#C8900A" }}>Confirm</button>
+        </form>
+      </div>
+    </div>
   );
 }

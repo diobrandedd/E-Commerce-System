@@ -16,14 +16,19 @@ function maybeRedirectToForwarding(f?: ForwardingInfo): void {
   if (f.allow_localhost_without_redirect !== false) {
     if (h === "localhost" || h === "127.0.0.1" || h.startsWith("127.")) return;
   }
+  // Already on ngrok (any subdomain) — do not bounce on refresh (avoids failed reload if tunnel URL changed).
+  if (h.includes("ngrok")) return;
   if (window.location.protocol === "https:" && h === f.host.toLowerCase()) return;
   const base = f.public_url.replace(/\/$/, "");
-  window.location.replace(base + window.location.pathname + window.location.search + window.location.hash);
+  const target = base + window.location.pathname + window.location.search + window.location.hash;
+  if (target === window.location.href) return;
+  window.location.replace(target);
 }
 
 export type Role =
   | "executive"
   | "prod_manager"
+  | "hr"
   | "team_leader"
   | "staff"
   | "csr_staff"

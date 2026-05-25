@@ -6,8 +6,16 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>Pyx Tracker</title>
       <style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>
-      <script type="module" crossorigin src="/rts/app/dist/assets/index-DsXqeCfD.js"></script>
-      <link rel="stylesheet" crossorigin href="/rts/app/dist/assets/index-C0Bae0Qi.css">
+      <script>
+        (function () {
+          var h = location.hostname.toLowerCase();
+          if (h.indexOf("ngrok") !== -1) {
+            window.__PYX_NGROK_HOST__ = true;
+          }
+        })();
+      </script>
+      <script type="module" crossorigin src="/rts/app/dist/assets/index-Duz3i6uM.js"></script>
+      <link rel="stylesheet" crossorigin href="/rts/app/dist/assets/index-M0c6-6uX.css">
     </head>
 
     <body>

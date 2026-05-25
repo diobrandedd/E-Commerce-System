@@ -119,6 +119,7 @@ function api_normalize_role(string $phpRole, ?string $deptName): string
     return match ($phpRole) {
         'executive' => 'executive',
         'prod_manager' => 'prod_manager',
+        'hr' => 'hr',
         'tl' => $isCsr ? 'csr_tl' : 'team_leader',
         'staff' => $isCsr ? 'csr_staff' : 'staff',
         default => $phpRole,

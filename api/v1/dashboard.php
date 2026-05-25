@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
+require_once dirname(__DIR__, 2) . '/includes/dashboard_inventory.php';
 
 /**
  * Dashboard data for the SPA.  Replaces queries from
@@ -12,6 +13,7 @@ require_once __DIR__ . '/_bootstrap.php';
 api_dispatch([
     'index' => 'api_dashboard_index',
     'summary' => 'api_dashboard_index',
+    'inventory_snapshot' => 'api_dashboard_inventory_snapshot',
 ]);
 
 function api_dashboard_index(): void
@@ -140,4 +142,26 @@ function api_dashboard_index(): void
     }
 
     api_ok($payload);
+}
+
+function api_dashboard_inventory_snapshot(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    $role = (string) $user['role'];
+    if (!in_array($role, ['executive', 'prod_manager', 'hr'], true)) {
+        api_fail('Not available for this role.', 403);
+    }
+
+    $period = isset($_GET['period']) ? (string) $_GET['period'] : 'all';
+    $from = isset($_GET['from']) ? (string) $_GET['from'] : null;
+    $to = isset($_GET['to']) ? (string) $_GET['to'] : null;
+
+    try {
+        $snapshot = dashboard_inventory_snapshot(ims_pdo(), $period, $from, $to);
+    } catch (InvalidArgumentException $e) {
+        api_fail($e->getMessage(), 422);
+    }
+
+    api_ok($snapshot);
 }

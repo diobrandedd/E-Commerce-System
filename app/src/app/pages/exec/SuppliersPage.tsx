@@ -1,32 +1,81 @@
-import { useState } from "react";
-import { Plus, Search, Edit2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Plus, Search, Edit2, Loader2, Camera } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
-
-const SUPPLIERS = [
-  { id: 1, name: "BeeKo Farms", code: "BK-001", contact: "Ricardo Santos", phone: "+63 917 888 1234", address: "Batangas City", stocks: ["Raw Honey — Light", "Raw Honey — Amber", "Beeswax"], active: true },
-  { id: 2, name: "Laguna Apiary", code: "LA-003", contact: "Elena Reyes", phone: "+63 918 222 5678", address: "Bay, Laguna", stocks: ["Raw Honey — Dark"], active: true },
-  { id: 3, name: "Northern Farms Co.", code: "NF-007", contact: "Benito Cruz", phone: "+63 927 333 9012", address: "Tuguegarao City", stocks: ["Paragis Grass", "Paragis Powder"], active: true },
-  { id: 4, name: "Davao Cacao Corp", code: "DC-011", contact: "Maricel Torres", phone: "+63 945 444 3456", address: "Davao City", stocks: ["Cacao Nibs", "Cacao Powder"], active: true },
-  { id: 5, name: "SunGrain PH", code: "SG-005", contact: "Armando Lim", phone: "+63 932 555 7890", address: "Nueva Ecija", stocks: ["BRC Barley"], active: false },
-];
+import { SupplierProfileModal } from "@/app/components/suppliers/SupplierProfileModal";
+import {
+  listSuppliers,
+  setSupplierActive,
+  createSupplierForm,
+  updateSupplierForm,
+  SUPPLIER_CATEGORIES,
+  type Supplier,
+  type SupplierCategory,
+} from "@/app/lib/suppliers";
+import { ApiError } from "@/app/lib/api";
 
 export function SuppliersPage() {
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const filtered = SUPPLIERS.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.code.toLowerCase().includes(search.toLowerCase())
-  );
+  const [modal, setModal] = useState<"add" | Supplier | null>(null);
+  const [profileId, setProfileId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await listSuppliers();
+      setSuppliers(data.suppliers);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not load suppliers.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const filtered = suppliers.filter(s => {
+    const q = search.toLowerCase();
+    if (!q) return true;
+    return (
+      s.display_name.toLowerCase().includes(q) ||
+      s.category_label.toLowerCase().includes(q) ||
+      (s.contact_number ?? "").includes(q)
+    );
+  });
+
+  const toggleActive = async (s: Supplier) => {
+    try {
+      await setSupplierActive(s.id, !s.is_active);
+      refresh();
+    } catch (e) {
+      alert(e instanceof ApiError ? e.message : "Failed");
+    }
+  };
 
   return (
-    <PageLayout title="Supplier Master" subtitle="Manage supplier records and linked stocks">
+    <PageLayout title="Supplier Master" subtitle="Executive registers suppliers; production managers select from this list">
       <div className="space-y-5">
+        {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
           <div className="flex items-center justify-between px-6 py-4 border-b border-border gap-4">
             <div className="relative flex-1 max-w-xs">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search suppliers..." className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-background outline-none focus:border-[#C8900A] transition-colors" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search suppliers…"
+                className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-background outline-none focus:border-[#C8900A] transition-colors"
+              />
             </div>
-            <button className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg text-white" style={{ background: "#C8900A" }}>
+            <button
+              type="button"
+              onClick={() => setModal("add")}
+              className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg text-white"
+              style={{ background: "#C8900A" }}
+            >
               <Plus size={15} /> Add Supplier
             </button>
           </div>
@@ -34,36 +83,51 @@ export function SuppliersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40">
-                  {["Supplier", "Code", "Contact", "Address", "Linked Stocks", "Status", ""].map(h => (
+                  {["Name", "Category", "Contact", "Payment", "Address", "Status", ""].map(h => (
                     <th key={h} className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-5 py-3 first:pl-6">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s, i) => (
-                  <tr key={s.id} className={`border-b border-border last:border-0 hover:bg-secondary/30 transition-colors ${i % 2 ? "bg-secondary/10" : ""}`}>
-                    <td className="px-6 py-3.5 font-semibold text-foreground">{s.name}</td>
-                    <td className="px-5 py-3.5 font-mono text-xs text-muted-foreground">{s.code}</td>
-                    <td className="px-5 py-3.5">
-                      <p className="text-sm text-foreground">{s.contact}</p>
-                      <p className="text-xs text-muted-foreground">{s.phone}</p>
+                {loading && (
+                  <tr><td colSpan={7} className="py-10 text-center text-muted-foreground"><Loader2 className="inline animate-spin" size={16} /></td></tr>
+                )}
+                {!loading && filtered.map((s, i) => (
+                  <tr
+                    key={s.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setProfileId(s.id)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setProfileId(s.id);
+                      }
+                    }}
+                    className={`border-b border-border last:border-0 hover:bg-secondary/30 cursor-pointer ${i % 2 ? "bg-secondary/10" : ""}`}
+                  >
+                    <td className="px-6 py-3.5 font-semibold">{s.display_name}</td>
+                    <td className="px-5 py-3.5">{s.category_label}</td>
+                    <td className="px-5 py-3.5">{s.contact_number}</td>
+                    <td className="px-5 py-3.5 text-xs">
+                      <p>{s.payment_account ?? "—"}</p>
+                      <p className="text-muted-foreground">{s.payment_account_number ?? ""}</p>
                     </td>
-                    <td className="px-5 py-3.5 text-muted-foreground">{s.address}</td>
+                    <td className="px-5 py-3.5 text-muted-foreground max-w-[200px] truncate">{s.address}</td>
                     <td className="px-5 py-3.5">
-                      <div className="flex flex-wrap gap-1">
-                        {s.stocks.map(st => (
-                          <span key={st} className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">{st}</span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${s.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                        {s.active ? "Active" : "Inactive"}
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${s.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                        {s.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <button className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                    <td className="px-5 py-3.5 space-x-2 whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                      {s.valid_id_url && (
+                        <a href={s.valid_id_url} target="_blank" rel="noreferrer" className="text-xs text-[#C8900A] underline">ID</a>
+                      )}
+                      <button type="button" onClick={() => setModal(s)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground inline-flex">
                         <Edit2 size={14} />
+                      </button>
+                      <button type="button" onClick={() => toggleActive(s)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+                        {s.is_active ? "Deactivate" : "Activate"}
                       </button>
                     </td>
                   </tr>
@@ -73,6 +137,146 @@ export function SuppliersPage() {
           </div>
         </div>
       </div>
+      {profileId !== null && (
+        <SupplierProfileModal
+          supplierId={profileId}
+          onClose={() => setProfileId(null)}
+          onEdit={supplier => {
+            setProfileId(null);
+            setModal(supplier);
+          }}
+        />
+      )}
+      {modal && (
+        <SupplierFormModal
+          initial={modal === "add" ? null : modal}
+          onClose={() => setModal(null)}
+          onSaved={() => { setModal(null); refresh(); }}
+        />
+      )}
     </PageLayout>
+  );
+}
+
+function SupplierFormModal({
+  initial,
+  onClose,
+  onSaved,
+}: {
+  initial: Supplier | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [firstName, setFirstName] = useState(initial?.first_name ?? "");
+  const [lastName, setLastName] = useState(initial?.last_name ?? "");
+  const [contact, setContact] = useState(initial?.contact_number ?? "");
+  const [payAcct, setPayAcct] = useState(initial?.payment_account ?? "");
+  const [payNum, setPayNum] = useState(initial?.payment_account_number ?? "");
+  const [address, setAddress] = useState(initial?.address ?? "");
+  const [category, setCategory] = useState<SupplierCategory>(initial?.category ?? "honey");
+  const [idFile, setIdFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    const fd = new FormData();
+    if (initial) fd.set("id", String(initial.id));
+    fd.set("first_name", firstName);
+    fd.set("last_name", lastName);
+    fd.set("contact_number", contact);
+    fd.set("payment_account", payAcct);
+    fd.set("payment_account_number", payNum);
+    fd.set("address", address);
+    fd.set("category", category);
+    if (idFile) fd.set("valid_id", idFile);
+    try {
+      if (initial) {
+        await updateSupplierForm(fd);
+      } else {
+        if (!idFile) {
+          setErr("Valid ID photo is required.");
+          setBusy(false);
+          return;
+        }
+        await createSupplierForm(fd);
+      }
+      onSaved();
+    } catch (ex) {
+      setErr(ex instanceof ApiError ? ex.message : "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const inputCls = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background outline-none focus:border-[#C8900A]";
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
+      <div className="bg-card rounded-xl border p-6 w-full max-w-lg my-8" onClick={e => e.stopPropagation()}>
+        <h3 className="font-bold text-lg mb-4">{initial ? "Edit supplier" : "Add supplier"}</h3>
+        <form onSubmit={submit} className="space-y-3">
+          {err && <p className="text-xs text-red-600">{err}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground">First name</label>
+              <input value={firstName} onChange={e => setFirstName(e.target.value)} className={inputCls} required />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Last name</label>
+              <input value={lastName} onChange={e => setLastName(e.target.value)} className={inputCls} required />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Contact number</label>
+            <input value={contact} onChange={e => setContact(e.target.value)} className={inputCls} required />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Payment account (e.g. Cebuana)</label>
+            <input value={payAcct} onChange={e => setPayAcct(e.target.value)} className={inputCls} required />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Account number</label>
+            <input value={payNum} onChange={e => setPayNum(e.target.value)} className={inputCls} required />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Location / address</label>
+            <textarea value={address} onChange={e => setAddress(e.target.value)} className={inputCls} rows={2} required />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Valid ID photo{initial ? " (optional replace)" : ""}</label>
+            <div className="flex flex-wrap gap-2">
+              <label className="inline-flex items-center gap-1 text-xs font-semibold border rounded-lg px-3 py-2 cursor-pointer hover:bg-secondary">
+                <Camera size={14} /> Camera / file
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="sr-only"
+                  onChange={e => setIdFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+              {idFile && <span className="text-xs text-muted-foreground">{idFile.name}</span>}
+              {initial?.valid_id_url && !idFile && (
+                <a href={initial.valid_id_url} target="_blank" rel="noreferrer" className="text-xs text-[#C8900A] underline">Current ID</a>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground">Product category</label>
+            <select value={category} onChange={e => setCategory(e.target.value as SupplierCategory)} className={inputCls}>
+              {SUPPLIER_CATEGORIES.map(c => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+          <button type="submit" disabled={busy} className="w-full py-2.5 rounded-lg text-sm font-bold text-white mt-2" style={{ background: "#C8900A" }}>
+            {busy ? "Saving…" : initial ? "Update" : "Create supplier"}
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }

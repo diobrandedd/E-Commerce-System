@@ -64,14 +64,14 @@ function api_staff_list(): void
          FROM users u
          INNER JOIN roles r ON r.id = u.role_id
          LEFT JOIN departments d ON d.id = u.dept_id
-         WHERE r.name IN ('executive','prod_manager','tl','staff')
+         WHERE r.name IN ('executive','prod_manager','tl','staff','hr')
          ORDER BY u.created_at DESC, u.id DESC"
     );
     $users = array_map('api_staff_serialize_user', $st ? $st->fetchAll() : []);
 
     $stRoles = $pdo->query(
-        "SELECT id, name FROM roles WHERE name IN ('executive','prod_manager','tl','staff')
-         ORDER BY FIELD(name,'executive','prod_manager','tl','staff')"
+        "SELECT id, name FROM roles WHERE name IN ('executive','prod_manager','tl','staff','hr')
+         ORDER BY FIELD(name,'executive','prod_manager','tl','staff','hr')"
     );
     $roles = $stRoles ? array_map(fn($r) => ['id' => (int) $r['id'], 'name' => (string) $r['name']], $stRoles->fetchAll()) : [];
 
@@ -133,7 +133,7 @@ function api_staff_create(): void
 
     $pdo = ims_pdo();
     $roleIdByName = [];
-    $st = $pdo->query("SELECT id, name FROM roles WHERE name IN ('executive','prod_manager','tl','staff')");
+    $st = $pdo->query("SELECT id, name FROM roles WHERE name IN ('executive','prod_manager','tl','staff','hr')");
     foreach ($st ? $st->fetchAll() : [] as $r) {
         $roleIdByName[(string) $r['name']] = (int) $r['id'];
     }
@@ -177,7 +177,7 @@ function api_staff_update(): void
 
     $pdo = ims_pdo();
     $roleIdByName = [];
-    $st = $pdo->query("SELECT id, name FROM roles WHERE name IN ('executive','prod_manager','tl','staff')");
+    $st = $pdo->query("SELECT id, name FROM roles WHERE name IN ('executive','prod_manager','tl','staff','hr')");
     foreach ($st ? $st->fetchAll() : [] as $r) {
         $roleIdByName[(string) $r['name']] = (int) $r['id'];
     }

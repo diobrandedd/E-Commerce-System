@@ -6,7 +6,12 @@ import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { EditRequestsPage } from "./pages/EditRequestsPage";
+import { InventoryRequestsPage } from "./pages/InventoryRequestsPage";
 import { RTSPage } from "./pages/RTSPage";
+import { HoneyWarehousePage } from "./pages/honey/HoneyWarehousePage";
+import { HoneyProductionPage } from "./pages/honey/HoneyProductionPage";
+import { HoneyPackagingPage } from "./pages/honey/HoneyPackagingPage";
+import { DeptInventoryPage } from "./pages/dept/DeptInventoryPage";
 import { StaffManagementPage } from "./pages/exec/StaffManagementPage";
 import { CostingPage } from "./pages/exec/CostingPage";
 import { ARCreditsPage } from "./pages/exec/ARCreditsPage";
@@ -43,14 +48,20 @@ export const router = createBrowserRouter(
         { path: "daily-count", element: guarded(InventoryPage) },
         { path: "beginning-inventory", element: guarded(InventoryPage) },
         { path: "edit-requests", element: guarded(EditRequestsPage) },
+        { path: "inventory/requests", element: guarded(InventoryRequestsPage, { roles: ["executive", "prod_manager", "hr"] }) },
+        { path: "inventory/honey/warehouse", element: guarded(HoneyWarehousePage, { roles: ["executive", "prod_manager", "hr"] }) },
+        { path: "inventory/honey/production", element: guarded(HoneyProductionPage, { roles: ["executive", "prod_manager", "hr"] }) },
+        { path: "inventory/honey/packaging", element: guarded(HoneyPackagingPage, { roles: ["executive", "prod_manager", "hr"] }) },
+        { path: "inventory/paragis", element: guarded(DeptInventoryPage, { roles: ["executive", "prod_manager", "hr"] }) },
+        { path: "inventory/cacao-brc", element: guarded(DeptInventoryPage, { roles: ["executive", "prod_manager", "hr"] }) },
 
         { path: "staff", element: guarded(StaffManagementPage, { roles: ["executive"] }) },
         { path: "reports", element: guarded(ReportsPage, { roles: ["executive", "prod_manager"] }) },
         { path: "suppliers", element: guarded(SuppliersPage, { roles: ["executive"] }) },
         { path: "costing", element: guarded(CostingPage, { roles: ["executive", "prod_manager"] }) },
         { path: "ar", element: guarded(ARCreditsPage) },
-        { path: "rts", element: guarded(RTSPage) },
-        { path: "rts/record", element: guarded(RTSPage) },
+        { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
+        { path: "rts/record", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
         { path: "settings", element: guarded(SettingsPage) },
       ],
     },

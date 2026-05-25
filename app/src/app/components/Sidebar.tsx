@@ -1,55 +1,92 @@
-import { NavLink, useNavigate } from "react-router";
-import { useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
-  ChevronDown, Truck, DollarSign, RotateCcw, ShoppingCart, ClipboardList,
-  CalendarDays, FileEdit, X, PlusCircle,
+  ChevronDown, Truck, DollarSign, RotateCcw, ClipboardList,
+  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import { useAuth, Role } from "@/app/context/AuthContext";
+import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
+
+interface NavLinkChild {
+  label: string;
+  to: string;
+}
+
+interface NavGroupChild {
+  label: string;
+  children: NavLinkChild[];
+}
+
+type NavChild = NavLinkChild | NavGroupChild;
+
+function isNavGroup(child: NavChild): child is NavGroupChild {
+  return "children" in child;
+}
 
 interface NavItem {
   icon: React.ElementType;
   label: string;
   to: string;
-  children?: { label: string; to: string }[];
+  badge?: number;
+  children?: NavChild[];
 }
 
-function getNavItems(role: Role, dept: string): NavItem[] {
+const HONEY_CHILDREN: NavLinkChild[] = [
+  { label: "Warehouse", to: "/inventory/honey/warehouse" },
+  { label: "Production", to: "/inventory/honey/production" },
+  { label: "Packaging", to: "/inventory/honey/packaging" },
+];
+
+function getNavItems(role: Role, dept: string, pendingCorrections: number): NavItem[] {
+  const inventoryHoney: NavItem = {
+    icon: Package,
+    label: "Inventory",
+    to: "/inventory/honey/warehouse",
+    children: [
+      { label: "Honey", children: HONEY_CHILDREN },
+      { label: "Paragis", to: "/inventory/paragis" },
+      { label: "Cacao / BRC", to: "/inventory/cacao-brc" },
+    ],
+  };
+
+  const requestsItem: NavItem = {
+    icon: FileEdit,
+    label: "Correction requests",
+    to: "/inventory/requests",
+    badge: pendingCorrections > 0 ? pendingCorrections : undefined,
+  };
+
   switch (role) {
     case "executive":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        {
-          icon: Package, label: "Inventory", to: "/inventory",
-          children: [
-            { label: "Honey", to: "/inventory/honey" },
-            { label: "Paragis", to: "/inventory/paragis" },
-            { label: "Cacao / BRC", to: "/inventory/cacao-brc" },
-          ],
-        },
+        inventoryHoney,
+        requestsItem,
         { icon: Users, label: "Staff Management", to: "/staff" },
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: Truck, label: "Supplier Master", to: "/suppliers" },
         { icon: DollarSign, label: "Product Costing", to: "/costing" },
         { icon: ClipboardList, label: "AR Credits", to: "/ar" },
-        { icon: RotateCcw, label: "RTS Overview", to: "/rts" },
+        { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
         { icon: Settings, label: "System Settings", to: "/settings" },
       ];
     case "prod_manager":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        {
-          icon: Package, label: "Inventory", to: "/inventory",
-          children: [
-            { label: "Honey", to: "/inventory/honey" },
-            { label: "Paragis", to: "/inventory/paragis" },
-            { label: "Cacao / BRC", to: "/inventory/cacao-brc" },
-          ],
-        },
+        inventoryHoney,
+        requestsItem,
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
-        { icon: RotateCcw, label: "RTS Overview", to: "/rts" },
+        { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
+      ];
+    case "hr":
+      return [
+        { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        inventoryHoney,
+        { ...requestsItem, badge: undefined },
+        { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
       ];
     case "team_leader":
       return [
@@ -64,14 +101,14 @@ function getNavItems(role: Role, dept: string): NavItem[] {
     case "csr_tl":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        { icon: RotateCcw, label: "RTS Records", to: "/rts" },
+        { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
       ];
     case "staff":
       return [
         { icon: PlusCircle, label: "Stock Input", to: "/stock-input" },
         { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
         { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
-        { icon: ShoppingCart, label: "My AR Credits", to: "/ar" },
+        { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
       ];
     case "csr_staff":
       return [
@@ -85,6 +122,7 @@ function getNavItems(role: Role, dept: string): NavItem[] {
 const ROLE_LABELS: Record<Role, string> = {
   executive: "Executive",
   prod_manager: "Production Manager",
+  hr: "HR (read-only)",
   team_leader: "Team Leader",
   staff: "Staff",
   csr_staff: "CSR Staff",
@@ -95,6 +133,7 @@ const ROLE_LABELS: Record<Role, string> = {
 const ROLE_BADGE_COLORS: Record<Role, string> = {
   executive: "bg-[#C8900A]/20 text-[#C8900A]",
   prod_manager: "bg-blue-500/20 text-blue-400",
+  hr: "bg-teal-500/20 text-teal-300",
   team_leader: "bg-green-500/20 text-green-400",
   staff: "bg-purple-500/20 text-purple-400",
   csr_staff: "bg-pink-500/20 text-pink-400",
@@ -107,14 +146,42 @@ interface SidebarProps {
   onClose: () => void;
 }
 
+function groupKey(parent: string, label: string) {
+  return `${parent}>${label}`;
+}
+
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [expandedGroup, setExpandedGroup] = useState<string | null>("Inventory");
+  const location = useLocation();
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    () => new Set(["Inventory", ...(location.pathname.includes("/inventory/honey") ? ["Inventory>Honey"] : [])]),
+  );
   const [signingOut, setSigningOut] = useState(false);
+  const { unreadCount: pendingCorrections } = useCorrectionNotifications();
+
+  useEffect(() => {
+    if (location.pathname.includes("/inventory/honey")) {
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.add("Inventory");
+        next.add("Inventory>Honey");
+        return next;
+      });
+    }
+  }, [location.pathname]);
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   if (!user) return null;
-  const navItems = getNavItems(user.role, user.dept);
+  const navItems = getNavItems(user.role, user.dept, pendingCorrections);
   const initials = user.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
   const handleLogout = async () => {
@@ -138,7 +205,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
           <img src={pyxLogo} alt="Pyx" className="w-10 h-10 object-contain flex-shrink-0" />
           <div className="min-w-0">
@@ -150,22 +216,20 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </button>
         </div>
 
-        {/* Role badge */}
         <div className="px-5 pt-4 pb-2">
           <span className={`inline-block text-[10px] font-semibold tracking-widest uppercase px-2.5 py-1 rounded-full ${ROLE_BADGE_COLORS[user.role]}`}>
             {ROLE_LABELS[user.role]}
           </span>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ icon: Icon, label, to, children }) => {
+          {navItems.map(({ icon: Icon, label, to, children, badge }) => {
             if (children) {
-              const isExpanded = expandedGroup === label;
+              const isExpanded = expandedGroups.has(label);
               return (
                 <div key={label}>
                   <button
-                    onClick={() => setExpandedGroup(isExpanded ? null : label)}
+                    onClick={() => toggleGroup(label)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8 transition-all duration-150"
                   >
                     <Icon size={17} />
@@ -174,20 +238,61 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   </button>
                   {isExpanded && (
                     <div className="ml-8 mt-0.5 space-y-0.5">
-                      {children.map(child => (
-                        <NavLink
-                          key={child.to}
-                          to={child.to}
-                          onClick={onClose}
-                          className={({ isActive }) =>
-                            `block px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
-                              isActive ? "bg-[#C8900A] text-white font-semibold" : "text-white/50 hover:text-white hover:bg-white/8"
-                            }`
-                          }
-                        >
-                          {child.label}
-                        </NavLink>
-                      ))}
+                      {children.map(child => {
+                        if (isNavGroup(child)) {
+                          const key = groupKey(label, child.label);
+                          const subExpanded = expandedGroups.has(key);
+                          return (
+                            <div key={key}>
+                              <button
+                                type="button"
+                                onClick={() => toggleGroup(key)}
+                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-white/50 hover:text-white hover:bg-white/8 transition-all duration-150"
+                              >
+                                <span className="flex-1 text-left">{child.label}</span>
+                                <ChevronDown
+                                  size={12}
+                                  className={`transition-transform duration-200 ${subExpanded ? "rotate-180" : ""}`}
+                                />
+                              </button>
+                              {subExpanded && (
+                                <div className="ml-4 mt-0.5 space-y-0.5">
+                                  {child.children.map(link => (
+                                    <NavLink
+                                      key={link.to}
+                                      to={link.to}
+                                      onClick={onClose}
+                                      className={({ isActive }) =>
+                                        `block px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
+                                          isActive
+                                            ? "bg-[#C8900A] text-white font-semibold"
+                                            : "text-white/50 hover:text-white hover:bg-white/8"
+                                        }`
+                                      }
+                                    >
+                                      {link.label}
+                                    </NavLink>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+                        return (
+                          <NavLink
+                            key={child.to}
+                            to={child.to}
+                            onClick={onClose}
+                            className={({ isActive }) =>
+                              `block px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
+                                isActive ? "bg-[#C8900A] text-white font-semibold" : "text-white/50 hover:text-white hover:bg-white/8"
+                              }`
+                            }
+                          >
+                            {child.label}
+                          </NavLink>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -205,13 +310,17 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 }
               >
                 <Icon size={17} />
-                {label}
+                <span className="flex-1">{label}</span>
+                {badge != null && badge > 0 && (
+                  <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                )}
               </NavLink>
             );
           })}
         </nav>
 
-        {/* User + logout */}
         <div className="px-3 py-4 border-t border-white/10">
           <div className="flex items-center gap-3 px-3 py-2 mb-1">
             <div className="w-8 h-8 rounded-full bg-[#C8900A] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">

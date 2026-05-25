@@ -28,6 +28,7 @@ interface StaffListPayload {
 const ROLE_LABELS: Record<string, string> = {
   executive: "Executive",
   prod_manager: "Production Manager",
+  hr: "HR (read-only)",
   tl: "Team Leader",
   staff: "Staff",
 };
@@ -35,6 +36,7 @@ const ROLE_LABELS: Record<string, string> = {
 const ROLE_COLORS: Record<string, string> = {
   executive: "bg-[#C8900A]/20 text-[#C8900A]",
   prod_manager: "bg-blue-100 text-blue-700",
+  hr: "bg-teal-100 text-teal-700",
   tl: "bg-green-100 text-green-700",
   staff: "bg-purple-100 text-purple-700",
 };

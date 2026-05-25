@@ -1,0 +1,459 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/_bootstrap.php';
+require_once dirname(__DIR__, 2) . '/includes/honey_inventory.php';
+
+api_dispatch([
+    'warehouse_list' => 'api_honey_warehouse_list',
+    'warehouse_stock_in' => 'api_honey_warehouse_stock_in',
+    'warehouse_stock_out' => 'api_honey_warehouse_stock_out',
+    'production_list' => 'api_honey_production_list',
+    'production_stock_out' => 'api_honey_production_stock_out',
+    'packaging_list' => 'api_honey_packaging_list',
+    'packaging_stock_out' => 'api_honey_packaging_stock_out',
+    'traceability' => 'api_honey_traceability',
+    'correction_submit' => 'api_honey_correction_submit',
+    'correction_list' => 'api_honey_correction_list',
+    'correction_row_options' => 'api_honey_correction_row_options',
+    'correction_approve' => 'api_honey_correction_approve',
+    'correction_reject' => 'api_honey_correction_reject',
+    'correction_pending_count' => 'api_honey_correction_pending_count',
+    'executive_adjust' => 'api_honey_executive_adjust',
+    'executive_edit' => 'api_honey_executive_edit',
+    'correction_unread_count' => 'api_honey_correction_unread_count',
+    'correction_unread_list' => 'api_honey_correction_unread_list',
+    'correction_mark_viewed' => 'api_honey_correction_mark_viewed',
+    'dept_list' => 'api_honey_dept_list',
+    'dept_add_row' => 'api_honey_dept_add_row',
+]);
+
+function api_honey_require_view(): array
+{
+    $user = api_require_ims_user();
+    if (!honey_role_can_view((string) $user['role']) && !honey_role_can_mutate((string) $user['role'])) {
+        api_fail('Forbidden.', 403);
+    }
+
+    return $user;
+}
+
+function api_honey_require_mutate(): array
+{
+    $user = api_require_ims_user();
+    if (!honey_role_can_mutate((string) $user['role'])) {
+        api_fail('Forbidden.', 403);
+    }
+
+    return $user;
+}
+
+function api_honey_warehouse_list(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    $pdo = ims_pdo();
+    $st = $pdo->query(
+        'SELECT id, supplier_id, supplier_name, supplier_code, arrival_date, variant, current_qty, initial_qty, created_at
+         FROM honey_warehouse_rows ORDER BY arrival_date DESC, id DESC'
+    );
+    api_ok(['rows' => $st ? $st->fetchAll() : []]);
+}
+
+function api_honey_warehouse_stock_in(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $variants = is_array($input['variants'] ?? null) ? $input['variants'] : [];
+    try {
+        $result = honey_warehouse_stock_in(
+            ims_pdo(),
+            (int) $user['id'],
+            (int) ($input['supplier_id'] ?? 0),
+            (string) ($input['arrival_date'] ?? date('Y-m-d')),
+            $variants
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_warehouse_stock_out(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    try {
+        $result = honey_warehouse_stock_out(
+            ims_pdo(),
+            (int) $user['id'],
+            (int) ($input['warehouse_row_id'] ?? 0),
+            (float) ($input['qty'] ?? 0)
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_production_list(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    $pdo = ims_pdo();
+    $st = $pdo->query(
+        'SELECT pr.id, pr.warehouse_row_id, pr.supplier_code, pr.arrival_date, pr.variant,
+                pr.current_qty, pr.initial_qty, pr.transferred_at, pr.created_at,
+                pk.batch_no AS packaging_batch_no, pk.bottling_date AS packaging_bottling_date
+         FROM honey_production_rows pr
+         LEFT JOIN honey_packaging_rows pk ON pk.production_row_id = pr.id
+         ORDER BY pr.transferred_at DESC, pr.id DESC'
+    );
+    api_ok(['rows' => $st ? $st->fetchAll() : []]);
+}
+
+function api_honey_production_stock_out(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    try {
+        $lines = honey_parse_bottle_lines_from_input($input);
+        $result = honey_production_stock_out(
+            ims_pdo(),
+            (int) $user['id'],
+            (int) ($input['production_row_id'] ?? 0),
+            $lines
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_packaging_list(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    $pdo = ims_pdo();
+    $st = $pdo->query(
+        'SELECT id, production_row_id, supplier_code, batch_no, bottling_date, variant,
+                current_liter, initial_liter, current_250ml, initial_250ml,
+                current_350ml, initial_350ml, current_gallon, initial_gallon, created_at
+         FROM honey_packaging_rows ORDER BY bottling_date DESC, id DESC'
+    );
+    api_ok(['rows' => $st ? $st->fetchAll() : []]);
+}
+
+function api_honey_packaging_stock_out(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    try {
+        $result = honey_packaging_stock_out_sold(
+            ims_pdo(),
+            (int) $user['id'],
+            (int) ($input['packaging_row_id'] ?? 0),
+            is_array($input['size_qtys'] ?? null) ? $input['size_qtys'] : [],
+            (string) ($input['sale_type'] ?? 'walk_in')
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_traceability(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    $q = trim((string) ($_GET['q'] ?? ''));
+    api_ok(honey_traceability(ims_pdo(), $q));
+}
+
+function api_honey_correction_submit(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $stage = (string) ($input['stage'] ?? '');
+    $rowTable = (string) ($input['row_table'] ?? '');
+    $rowId = (int) ($input['row_id'] ?? 0);
+    $reason = trim((string) ($input['reason'] ?? ''));
+    $correctionType = (string) ($input['correction_type'] ?? 'qty_delta');
+    $action = (string) ($input['action'] ?? 'add');
+    $amount = (float) ($input['amount'] ?? 0);
+    $size = isset($input['size']) ? (string) $input['size'] : null;
+    $newValue = isset($input['new_value']) ? trim((string) $input['new_value']) : null;
+
+    if ($reason === '' || $rowId < 1) {
+        api_fail('Invalid correction request.', 422);
+    }
+
+    if ($correctionType === 'qty_delta' && !in_array($action, ['add', 'deduct'], true)) {
+        api_fail('Invalid action.', 422);
+    }
+    if ($correctionType === 'qty_delta' && $amount <= 0) {
+        api_fail('Amount must be positive.', 422);
+    }
+    if (in_array($correctionType, ['variant', 'set_qty', 'supplier', 'packaging_size'], true) && ($newValue === null || $newValue === '')) {
+        api_fail('New value is required for this correction type.', 422);
+    }
+
+    $pdo = ims_pdo();
+    try {
+        $ins = $pdo->prepare(
+            'INSERT INTO inventory_correction_requests (
+                stage, row_table, row_id, correction_type, new_value, action, amount, size, reason, requested_by
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $ins->execute([
+            $stage,
+            $rowTable,
+            $rowId,
+            $correctionType,
+            $newValue,
+            $action,
+            $amount,
+            $size ?: null,
+            $reason,
+            (int) $user['id'],
+        ]);
+    } catch (Throwable $e) {
+        $ins = $pdo->prepare(
+            'INSERT INTO inventory_correction_requests (stage, row_table, row_id, action, amount, size, reason, requested_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $ins->execute([$stage, $rowTable, $rowId, $action, $amount, $size ?: null, $reason, (int) $user['id']]);
+    }
+    api_ok(['id' => (int) $pdo->lastInsertId()]);
+}
+
+function api_honey_correction_list(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    $role = (string) $user['role'];
+    if (!in_array($role, ['executive', 'prod_manager', 'hr'], true)) {
+        api_fail('Forbidden.', 403);
+    }
+    $pdo = ims_pdo();
+    $sql = 'SELECT icr.*, u.name AS requested_by_name, r.name AS reviewed_by_name
+            FROM inventory_correction_requests icr
+            INNER JOIN users u ON u.id = icr.requested_by
+            LEFT JOIN users r ON r.id = icr.reviewed_by';
+    $params = [];
+    if ($role === 'prod_manager') {
+        $sql .= ' WHERE icr.requested_by = ?';
+        $params[] = (int) $user['id'];
+    }
+    $sql .= ' ORDER BY icr.status = "pending" DESC, icr.created_at DESC LIMIT 500';
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+    $rows = $st->fetchAll();
+    foreach ($rows as &$row) {
+        honey_correction_enrich($pdo, $row);
+    }
+    api_ok(['requests' => $rows, 'readonly' => $role === 'hr']);
+}
+
+function api_honey_correction_row_options(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_mutate();
+    $stage = (string) ($_GET['stage'] ?? '');
+    api_ok(['options' => honey_correction_row_options(ims_pdo(), $stage)]);
+}
+
+function api_honey_correction_pending_count(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_correction_unread_count();
+}
+
+function api_honey_correction_unread_count(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    if ((string) $user['role'] !== 'executive') {
+        api_ok(['count' => 0]);
+
+        return;
+    }
+    api_ok(['count' => honey_correction_unread_count(ims_pdo())]);
+}
+
+function api_honey_correction_unread_list(): void
+{
+    api_method_allowed(['GET']);
+    api_require_role(['executive']);
+    $limit = (int) ($_GET['limit'] ?? 10);
+    $rows = honey_correction_unread_list(ims_pdo(), $limit);
+    api_ok(['requests' => $rows]);
+}
+
+function api_honey_correction_mark_viewed(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_require_role(['executive']);
+    $id = (int) ($input['id'] ?? 0);
+    if ($id < 1) {
+        api_fail('Invalid request id.', 422);
+    }
+    honey_correction_mark_viewed(ims_pdo(), $id);
+    api_ok(['viewed' => true]);
+}
+
+function api_honey_correction_approve(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $id = (int) ($input['id'] ?? 0);
+    $pdo = ims_pdo();
+    $st = $pdo->prepare('SELECT * FROM inventory_correction_requests WHERE id = ? AND status = "pending" LIMIT 1');
+    $st->execute([$id]);
+    $req = $st->fetch();
+    if (!$req) {
+        api_fail('Request not found.', 404);
+    }
+    $pdo->beginTransaction();
+    try {
+        honey_apply_correction_request($pdo, $req);
+        $pdo->prepare(
+            'UPDATE inventory_correction_requests SET status = "approved", reviewed_by = ?, reviewed_at = NOW() WHERE id = ?'
+        )->execute([(int) $user['id'], $id]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok(['approved' => true]);
+}
+
+function api_honey_correction_reject(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $id = (int) ($input['id'] ?? 0);
+    $note = trim((string) ($input['rejection_note'] ?? ''));
+    if ($note === '') {
+        api_fail('Rejection note is required.', 422);
+    }
+    $upd = ims_pdo()->prepare(
+        'UPDATE inventory_correction_requests SET status = "rejected", rejection_note = ?, reviewed_by = ?, reviewed_at = NOW()
+         WHERE id = ? AND status = "pending"'
+    );
+    $upd->execute([$note, (int) $user['id'], $id]);
+    if ($upd->rowCount() < 1) {
+        api_fail('Request not found.', 404);
+    }
+    api_ok(['rejected' => true]);
+}
+
+function api_honey_executive_adjust(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_require_role(['executive']);
+    try {
+        honey_executive_adjust(
+            ims_pdo(),
+            (string) ($input['stage'] ?? ''),
+            (string) ($input['row_table'] ?? ''),
+            (int) ($input['row_id'] ?? 0),
+            (float) ($input['new_current'] ?? 0),
+            isset($input['size']) ? (string) $input['size'] : null
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok(['adjusted' => true]);
+}
+
+function api_honey_executive_edit(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        honey_executive_edit_row(
+            $pdo,
+            (int) $user['id'],
+            (string) ($input['stage'] ?? ''),
+            (string) ($input['row_table'] ?? ''),
+            (int) ($input['row_id'] ?? 0),
+            is_array($input['fields'] ?? null) ? $input['fields'] : $input
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok(['saved' => true]);
+}
+
+function api_honey_dept_list(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    $deptKey = trim((string) ($_GET['dept'] ?? ''));
+    $pdo = ims_pdo();
+    $st = $pdo->prepare(
+        'SELECT dir.id, dir.dept_id, d.name AS dept_name, dir.product_label, dir.current_qty, dir.initial_qty, dir.created_at
+         FROM dept_inventory_rows dir
+         INNER JOIN departments d ON d.id = dir.dept_id
+         WHERE (? = "" OR d.name = ?)
+         ORDER BY dir.id DESC'
+    );
+    $st->execute([$deptKey, $deptKey]);
+    api_ok(['rows' => $st->fetchAll()]);
+}
+
+function api_honey_dept_add_row(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $deptKey = trim((string) ($input['dept'] ?? ''));
+    $label = trim((string) ($input['product_label'] ?? ''));
+    $qty = (float) ($input['qty'] ?? 0);
+    if ($deptKey === '' || $label === '' || $qty <= 0) {
+        api_fail('Invalid dept row.', 422);
+    }
+    $pdo = ims_pdo();
+    $st = $pdo->prepare('SELECT id FROM departments WHERE name = ? LIMIT 1');
+    $st->execute([$deptKey]);
+    $deptId = (int) $st->fetchColumn();
+    if ($deptId < 1) {
+        api_fail('Department not found.', 404);
+    }
+    $ins = $pdo->prepare(
+        'INSERT INTO dept_inventory_rows (dept_id, product_label, current_qty, initial_qty, created_by) VALUES (?, ?, ?, ?, ?)'
+    );
+    $ins->execute([$deptId, $label, $qty, $qty, (int) $user['id']]);
+    api_ok(['id' => (int) $pdo->lastInsertId()]);
+}
