@@ -4,7 +4,6 @@ import { PageLayout } from "@/app/components/PageLayout";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
 import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
-import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
@@ -12,17 +11,12 @@ import { HONEY_VARIANTS } from "@/app/lib/honey";
 import { canExecutiveDirectEdit, canMutateHoneyInventory, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { previewSupplierCode, type Supplier } from "@/app/lib/suppliers";
+import type { WarehousePricingRow } from "@/app/lib/honeyPricing";
 
-interface WhRow {
-  id: number;
-  supplier_id?: number;
-  supplier_name: string;
-  supplier_code: string;
-  arrival_date: string;
-  variant: string;
-  current_qty: string;
-  initial_qty: string;
-}
+type WhRow = WarehousePricingRow;
+
+const peso = (n: number) =>
+  `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export function HoneyWarehousePage() {
   const { user } = useAuth();
@@ -30,6 +24,8 @@ export function HoneyWarehousePage() {
   const canExecEdit = canExecutiveDirectEdit(user?.role);
   const showSupplierProfile = canViewSupplierProfile(user?.role);
   const [rows, setRows] = useState<WhRow[]>([]);
+  const [page, setPage] = useState(1);
+  const perPage = 12;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showIn, setShowIn] = useState(false);
@@ -41,6 +37,7 @@ export function HoneyWarehousePage() {
     try {
       const data = await apiGet<{ rows: WhRow[] }>("honey.php", "warehouse_list");
       setRows(data.rows);
+      setPage(1);
       setError(null);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Load failed");
@@ -51,6 +48,12 @@ export function HoneyWarehousePage() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useLiveRefresh(refresh);
+
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * perPage;
+  const pagedRows = rows.slice(start, start + perPage);
 
   return (
     <PageLayout title="Honey — Warehouse" subtitle="Stock-in and stock-out to production">
@@ -65,46 +68,90 @@ export function HoneyWarehousePage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-secondary/40">
-                {["Supplier code", "Arrival", "Variant", "Qty", canMutate || canExecEdit ? "Actions" : ""].filter(Boolean).map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{h}</th>
-                ))}
+                {[
+                  "Supplier code",
+                  "Arrival",
+                  "Variant",
+                  "Qty",
+                  canMutate || canExecEdit ? "Actions" : "",
+                ]
+                  .filter(Boolean)
+                  .map(h => (
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">{h}</th>
+                  ))}
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground"><Loader2 className="inline animate-spin" size={14} /></td></tr>}
-              {!loading && rows.map(r => (
-                <tr key={r.id} className="border-b hover:bg-secondary/20">
-                  <td className="px-4 py-3">
-                    {showSupplierProfile ? (
-                      <SupplierCodeButton code={r.supplier_code} />
-                    ) : (
-                      <span className="font-medium font-mono">{r.supplier_code}</span>
-                    )}
+              {loading && (
+                <tr>
+                  <td colSpan={canMutate || canExecEdit ? 5 : 4} className="px-4 py-8 text-center text-muted-foreground">
+                    <Loader2 className="inline animate-spin" size={14} />
                   </td>
-                  <td className="px-4 py-3">{r.arrival_date}</td>
-                  <td className="px-4 py-3 capitalize">{r.variant}</td>
-                  <td className="px-4 py-3">
-                    <QtyCounter current={r.current_qty} initial={r.initial_qty} />
-                  </td>
-                  {(canMutate || canExecEdit) && (
-                    <td className="px-4 py-3 space-x-2">
-                      {canExecEdit && (
-                        <button type="button" onClick={() => setEditRow(r)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
-                          Edit
-                        </button>
-                      )}
-                      {canMutate && (
-                        <button disabled={Number(r.current_qty) <= 0} onClick={() => setShowOut(r)} className="text-xs font-semibold text-[#C8900A] disabled:opacity-40">
-                          Stock out
-                        </button>
+                </tr>
+              )}
+              {!loading && pagedRows.map(r => {
+                return (
+                  <tr key={r.id} className="border-b hover:bg-secondary/20">
+                    <td className="px-4 py-3">
+                      {showSupplierProfile ? (
+                        <SupplierCodeButton code={r.supplier_code} />
+                      ) : (
+                        <span className="font-medium font-mono">{r.supplier_code}</span>
                       )}
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td className="px-4 py-3">{r.arrival_date}</td>
+                    <td className="px-4 py-3 capitalize">{r.variant}</td>
+                    <td className="px-4 py-3">
+                      <QtyCounter current={r.current_qty} initial={r.initial_qty} />
+                    </td>
+                    {(canMutate || canExecEdit) && (
+                      <td className="px-4 py-3 space-x-2">
+                        {canExecEdit && (
+                          <button type="button" onClick={() => setEditRow(r)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+                            Edit
+                          </button>
+                        )}
+                        {canMutate && (
+                          <button disabled={Number(r.current_qty) <= 0} onClick={() => setShowOut(r)} className="text-xs font-semibold text-[#C8900A] disabled:opacity-40">
+                            Stock out
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
+        {!loading && totalRows > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1">
+            <p className="text-xs text-muted-foreground">
+              Showing {start + 1}-{Math.min(start + perPage, totalRows)} of {totalRows} rows
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-xs text-muted-foreground">
+                Page {safePage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       {showIn && <StockInModal onClose={() => setShowIn(false)} onDone={() => { setShowIn(false); refresh(); }} />}
       {showOut && <StockOutModal row={showOut} onClose={() => setShowOut(null)} onDone={() => { setShowOut(null); refresh(); }} />}

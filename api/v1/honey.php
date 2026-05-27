@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/honey_inventory.php';
+require_once dirname(__DIR__, 2) . '/includes/honey_pricing.php';
 
 api_dispatch([
     'warehouse_list' => 'api_honey_warehouse_list',
@@ -27,6 +28,11 @@ api_dispatch([
     'correction_mark_viewed' => 'api_honey_correction_mark_viewed',
     'dept_list' => 'api_honey_dept_list',
     'dept_add_row' => 'api_honey_dept_add_row',
+    'supplier_honey_prices' => 'api_honey_supplier_honey_prices',
+    'supplier_honey_prices_save' => 'api_honey_supplier_honey_prices_save',
+    'warehouse_pending_prices' => 'api_honey_warehouse_pending_prices',
+    'warehouse_set_unit_cost' => 'api_honey_warehouse_set_unit_cost',
+    'pricing_sync_stocks' => 'api_honey_pricing_sync_stocks',
 ]);
 
 function api_honey_require_view(): array
@@ -52,13 +58,29 @@ function api_honey_require_mutate(): array
 function api_honey_warehouse_list(): void
 {
     api_method_allowed(['GET']);
-    api_honey_require_view();
+    $user = api_honey_require_view();
+    $role = (string) $user['role'];
     $pdo = ims_pdo();
+    $costCol = honey_warehouse_unit_cost_column($pdo);
+    $cols = $costCol !== null
+        ? "id, supplier_id, supplier_name, supplier_code, arrival_date, variant, current_qty, initial_qty,
+           {$costCol}, supplier_price_id, cost_override, created_at"
+        : 'id, supplier_id, supplier_name, supplier_code, arrival_date, variant, current_qty, initial_qty, created_at';
     $st = $pdo->query(
-        'SELECT id, supplier_id, supplier_name, supplier_code, arrival_date, variant, current_qty, initial_qty, created_at
-         FROM honey_warehouse_rows ORDER BY arrival_date DESC, id DESC'
+        "SELECT {$cols} FROM honey_warehouse_rows ORDER BY arrival_date DESC, id DESC"
     );
-    api_ok(['rows' => $st ? $st->fetchAll() : []]);
+    $rows = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+    if ($costCol !== null) {
+        $rows = array_map(
+            static fn (array $r) => honey_pricing_enrich_warehouse_row(honey_warehouse_normalize_cost_row($r)),
+            $rows
+        );
+    }
+    api_ok([
+        'rows' => $rows,
+        'can_view_cost' => honey_pricing_role_can_view_cost($role),
+        'pending_count' => honey_warehouse_has_pricing_columns($pdo) ? honey_pricing_pending_count($pdo) : 0,
+    ]);
 }
 
 function api_honey_warehouse_stock_in(): void
@@ -456,4 +478,124 @@ function api_honey_dept_add_row(): void
     );
     $ins->execute([$deptId, $label, $qty, $qty, (int) $user['id']]);
     api_ok(['id' => (int) $pdo->lastInsertId()]);
+}
+
+function api_honey_supplier_honey_prices(): void
+{
+    api_method_allowed(['GET']);
+    api_require_role(['executive']);
+    $supplierId = isset($_GET['supplier_id']) ? (int) $_GET['supplier_id'] : 0;
+    $pdo = ims_pdo();
+    $prices = honey_pricing_list_supplier_prices($pdo, $supplierId > 0 ? $supplierId : null);
+
+    $latestByKey = [];
+    foreach ($prices as $p) {
+        $key = (int) $p['supplier_id'] . '|' . (string) $p['variant'];
+        if (!isset($latestByKey[$key])) {
+            $latestByKey[$key] = [
+                'supplier_id' => (int) $p['supplier_id'],
+                'variant' => (string) $p['variant'],
+                'price_per_gallon' => round((float) $p['price_per_gallon'], 2),
+                'effective_from' => (string) $p['effective_from'],
+                'id' => (int) $p['id'],
+            ];
+        }
+    }
+
+    api_ok([
+        'prices' => array_values($latestByKey),
+        'history' => array_map(static function (array $p) {
+            return [
+                'id' => (int) $p['id'],
+                'supplier_id' => (int) $p['supplier_id'],
+                'variant' => (string) $p['variant'],
+                'price_per_gallon' => round((float) $p['price_per_gallon'], 2),
+                'effective_from' => (string) $p['effective_from'],
+                'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),
+            ];
+        }, $prices),
+        'pending_count' => honey_pricing_pending_count($pdo),
+    ]);
+}
+
+function api_honey_supplier_honey_prices_save(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $supplierId = (int) ($input['supplier_id'] ?? 0);
+    $effectiveFrom = trim((string) ($input['effective_from'] ?? date('Y-m-d')));
+    $variants = is_array($input['variants'] ?? null) ? $input['variants'] : [];
+
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $saved = honey_pricing_save_supplier_prices($pdo, $supplierId, $variants, $effectiveFrom, (int) $user['id']);
+        $repriced = honey_pricing_reprice_pending_for_supplier($pdo, $supplierId, (int) $user['id']);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok([
+        'saved' => $saved,
+        'repriced_rows' => $repriced,
+        'pending_count' => honey_pricing_pending_count($pdo),
+    ]);
+}
+
+function api_honey_warehouse_pending_prices(): void
+{
+    api_method_allowed(['GET']);
+    api_require_role(['executive']);
+    $pdo = ims_pdo();
+    api_ok([
+        'rows' => honey_pricing_pending_warehouse_rows($pdo),
+        'pending_count' => honey_pricing_pending_count($pdo),
+    ]);
+}
+
+function api_honey_warehouse_set_unit_cost(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $warehouseRowId = (int) ($input['warehouse_row_id'] ?? 0);
+    $raw = trim((string) ($input['unit_cost_per_gallon'] ?? ''));
+    if ($warehouseRowId < 1) {
+        api_fail('Invalid warehouse row.', 422);
+    }
+    if (!is_numeric($raw) || (float) $raw < 0) {
+        api_fail('Unit cost per gallon must be 0 or greater.', 422);
+    }
+
+    try {
+        $row = honey_pricing_set_warehouse_row_cost(ims_pdo(), $warehouseRowId, (float) $raw, (int) $user['id']);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok([
+        'row' => $row,
+        'pending_count' => honey_pricing_pending_count(ims_pdo()),
+    ]);
+}
+
+function api_honey_pricing_sync_stocks(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    try {
+        $synced = honey_pricing_sync_all_variant_stocks(ims_pdo(), (int) $user['id']);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok(['synced' => $synced]);
 }

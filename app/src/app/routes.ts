@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Outlet } from "react-router";
 import { Root } from "./Root";
 import { RequireAuth } from "./components/RequireAuth";
 import { LoginPage } from "./pages/LoginPage";
@@ -18,7 +18,9 @@ import { ARCreditsPage } from "./pages/exec/ARCreditsPage";
 import { ReportsPage } from "./pages/exec/ReportsPage";
 import { SuppliersPage } from "./pages/exec/SuppliersPage";
 import { SettingsPage } from "./pages/exec/SettingsPage";
-import { POSPage } from "./pages/pos/POSPage";
+import { POSCategoryPage } from "./pages/pos/POSCategoryPage";
+import { POSHoneyPage } from "./pages/pos/POSHoneyPage";
+import { SalesPage } from "./pages/exec/SalesPage";
 import type { Role } from "./context/AuthContext";
 
 // Wrap a page component in RequireAuth.  Using createElement to keep this
@@ -57,21 +59,27 @@ export const router = createBrowserRouter(
 
         { path: "staff", element: guarded(StaffManagementPage, { roles: ["executive"] }) },
         { path: "reports", element: guarded(ReportsPage, { roles: ["executive", "prod_manager"] }) },
+        { path: "sales", element: guarded(SalesPage, { roles: ["executive", "prod_manager"] }) },
         { path: "suppliers", element: guarded(SuppliersPage, { roles: ["executive"] }) },
         { path: "costing", element: guarded(CostingPage, { roles: ["executive", "prod_manager"] }) },
         { path: "ar", element: guarded(ARCreditsPage) },
         { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
         { path: "rts/record", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
-        { path: "settings", element: guarded(SettingsPage) },
+        { path: "settings", element: guarded(SettingsPage, { roles: ["executive"] }) },
+
+        {
+          path: "pos",
+          element: createElement(
+            RequireAuth,
+            { allowPOS: true, roles: ["pos"] },
+            createElement(Outlet)
+          ),
+          children: [
+            { index: true, Component: POSCategoryPage },
+            { path: "honey", Component: POSHoneyPage },
+          ],
+        },
       ],
-    },
-    {
-      path: "/pos",
-      element: createElement(
-        RequireAuth,
-        { allowPOS: true, roles: ["pos"] },
-        createElement(POSPage)
-      ),
     },
   ],
   { basename }

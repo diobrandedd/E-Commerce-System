@@ -20,7 +20,7 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
   const { user } = useAuth();
   const navigate = useNavigate();
   const isExec = user?.role === "executive";
-  const { unreadCount, unreadList, markViewed, refresh: refreshNotifications } = useCorrectionNotifications();
+  const { unreadCount, unreadList, refresh: refreshNotifications } = useCorrectionNotifications();
 
   const badgeCount = isExec ? unreadCount : notificationCount;
 
@@ -32,9 +32,8 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const openRequest = async (id: number) => {
+  const openCorrectionRequest = (id: number) => {
     setBellOpen(false);
-    await markViewed(id);
     navigate(`/inventory/requests?request=${id}`);
   };
 
@@ -87,7 +86,7 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
                   style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
                 >
                   <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                    <p className="text-sm font-semibold">Correction requests</p>
+                    <p className="text-sm font-semibold">Notifications</p>
                     <button
                       type="button"
                       onClick={() => {
@@ -100,23 +99,50 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
                     </button>
                   </div>
                   {unreadList.length === 0 ? (
-                    <p className="px-4 py-6 text-sm text-muted-foreground text-center">No unread requests</p>
+                    <p className="px-4 py-6 text-sm text-muted-foreground text-center">No unread notifications</p>
                   ) : (
                     <ul className="divide-y divide-border">
                       {unreadList.map(r => (
-                        <li key={r.id}>
+                        <li key={`${r.kind}-${r.id}`}>
                           <button
                             type="button"
-                            onClick={() => openRequest(r.id)}
+                            onClick={() => {
+                              if (r.kind === "correction") {
+                                void openCorrectionRequest(r.id);
+                                return;
+                              }
+                              setBellOpen(false);
+                              navigate("/inventory/requests");
+                            }}
                             className="w-full text-left px-4 py-3 hover:bg-secondary/50 transition-colors"
                           >
-                            <p className="text-xs font-semibold text-foreground capitalize">{r.stage}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                              {r.summary ?? r.reason}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground mt-1">
-                              {r.requested_by_name} · {r.created_at}
-                            </p>
+                            {r.kind === "correction" ? (
+                              <>
+                                <p className="text-xs font-semibold text-foreground capitalize">{r.stage}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {r.summary ?? r.reason}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {r.requested_by_name} · {r.created_at}
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-xs font-semibold text-foreground">
+                                  Discount approval · {r.discount_percent}% off
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {r.request_no} · {r.buyer_name} · Total {new Intl.NumberFormat(undefined, {
+                                    style: "currency",
+                                    currency: "PHP",
+                                    minimumFractionDigits: 2,
+                                  }).format(r.total_amount)}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {r.cashier_label} · {r.created_at}
+                                </p>
+                              </>
+                            )}
                           </button>
                         </li>
                       ))}

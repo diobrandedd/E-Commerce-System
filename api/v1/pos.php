@@ -3,18 +3,26 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/../../includes/honey_pos.php';
+require_once __DIR__ . '/../../includes/pos_discount_requests.php';
 
 /**
  * Walk-in POS terminal API.  Requires the dedicated POS session created by
  * `ims_login_pos()` — POS users cannot access any non-POS endpoint.
  *
- *   GET  ?action=products        -> sellable products with selling_price
- *   POST ?action=checkout        -> {items, buyer_name?, buyer_credentials?}
+ *   GET  ?action=products         -> sellable products with selling_price (legacy)
+ *   GET  ?action=honey_catalog    -> honey variants, sizes, on-hand, prices
+ *   POST ?action=checkout         -> legacy flat product checkout
+ *   POST ?action=honey_checkout   -> honey cart with packaging deduct + sales log
  */
 
 api_dispatch([
     'products' => 'api_pos_products',
+    'honey_catalog' => 'api_pos_honey_catalog',
     'checkout' => 'api_pos_checkout',
+    'honey_checkout' => 'api_pos_honey_checkout',
+    'discount_request_create' => 'api_pos_discount_request_create',
+    'discount_request_status' => 'api_pos_discount_request_status',
 ]);
 
 function api_pos_require_session(): void
@@ -38,6 +46,17 @@ function api_pos_products(): void
          ORDER BY d.name ASC, p.name ASC"
     );
     api_ok(['products' => $st ? $st->fetchAll() : []]);
+}
+
+function api_pos_honey_catalog(): void
+{
+    api_method_allowed(['GET']);
+    api_pos_require_session();
+    try {
+        api_ok(honey_pos_honey_catalog(ims_pdo()));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
 }
 
 function api_pos_checkout(): void
@@ -94,27 +113,30 @@ function api_pos_checkout(): void
 
         $receiptNo = sprintf('RCP-%s', strtoupper(bin2hex(random_bytes(4))));
         $insSale = $pdo->prepare(
-            'INSERT INTO pos_sales (receipt_no, buyer_name, buyer_credentials, total_amount, sold_by_pin_id, sale_date)
-             VALUES (?, ?, ?, ?, ?, NOW())'
+            'INSERT INTO pos_sales (
+                receipt_no, buyer_name, buyer_credentials, subtotal_amount, discount_percent, discount_amount, total_amount, sold_by_pin_id, sale_date
+             ) VALUES (?, ?, ?, ?, NULL, 0, ?, ?, NOW())'
         );
         $insSale->execute([
             $receiptNo,
             $buyerName !== '' ? $buyerName : 'Walk-in',
             $buyerCreds === '' ? null : $buyerCreds,
             $total,
+            $total,
             $pinId,
         ]);
         $saleId = (int) $pdo->lastInsertId();
 
         $insLine = $pdo->prepare(
-            'INSERT INTO pos_receipt_items (sale_id, product_id, qty, unit_price, line_total)
-             VALUES (?, ?, ?, ?, ?)'
+            'INSERT INTO pos_receipt_items (sale_id, product_id, qty, unit_price, list_unit_price, line_total, discount_percent)
+             VALUES (?, ?, ?, ?, ?, ?, NULL)'
         );
         foreach ($cleanItems as $item) {
             $insLine->execute([
                 $saleId,
                 $item['product_id'],
                 $item['qty'],
+                $item['unit_price'],
                 $item['unit_price'],
                 $item['line_total'],
             ]);
@@ -135,4 +157,74 @@ function api_pos_checkout(): void
         'items' => $cleanItems,
         'buyer_name' => $buyerName !== '' ? $buyerName : 'Walk-in',
     ]);
+}
+
+function api_pos_honey_checkout(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_pos_require_session();
+
+    $pinId = (int) ($_SESSION['pos_pin_id'] ?? 0);
+    $items = is_array($input['items'] ?? null) ? $input['items'] : [];
+    $buyerName = trim((string) ($input['buyer_name'] ?? 'Walk-in'));
+    $buyerCreds = trim((string) ($input['buyer_credentials'] ?? ''));
+
+    try {
+        $result = honey_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok($result);
+}
+
+function api_pos_discount_request_create(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_pos_require_session();
+
+    $pinId = (int) ($_SESSION['pos_pin_id'] ?? 0);
+    $items = is_array($input['items'] ?? null) ? $input['items'] : [];
+    $buyerName = trim((string) ($input['buyer_name'] ?? ''));
+    $buyerCreds = trim((string) ($input['buyer_credentials'] ?? ''));
+    $discountPercent = (int) ($input['discount_percent'] ?? 0);
+
+    try {
+        $result = pos_discount_request_create(
+            ims_pdo(),
+            $pinId,
+            $items,
+            $buyerName,
+            $buyerCreds,
+            $discountPercent
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok($result);
+}
+
+function api_pos_discount_request_status(): void
+{
+    api_method_allowed(['GET']);
+    api_pos_require_session();
+
+    $pinId = (int) ($_SESSION['pos_pin_id'] ?? 0);
+    $requestId = (int) ($_GET['request_id'] ?? 0);
+    if ($requestId < 1) {
+        api_fail('request_id is required.', 422);
+    }
+
+    try {
+        $result = pos_discount_request_fetch_for_pin(ims_pdo(), $requestId, $pinId);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok($result);
 }

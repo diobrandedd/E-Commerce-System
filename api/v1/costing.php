@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/../../includes/suppliers.php';
+require_once __DIR__ . '/../../includes/honey_volume.php';
 require_once __DIR__ . '/_costing_helpers.php';
 
 /**
@@ -17,6 +19,7 @@ require_once __DIR__ . '/_costing_helpers.php';
  *   POST ?action=formula_update
  *   POST ?action=formula_delete
  *   POST ?action=product_create
+ *   POST ?action=product_update_selling_price
  */
 
 api_dispatch([
@@ -28,6 +31,7 @@ api_dispatch([
     'formula_update' => 'api_costing_formula_update',
     'formula_delete' => 'api_costing_formula_delete',
     'product_create' => 'api_costing_product_create',
+    'product_update_selling_price' => 'api_costing_product_update_selling_price',
 ]);
 
 // --------------------------------------------------------------------------
@@ -47,20 +51,42 @@ function api_costing_stocks_list(): void
     }
     $pdo = ims_pdo();
 
-    $sql = 'SELECT s.id, s.name, s.unit, s.current_price, s.dept_id, s.supplier_name, s.supplier_code, s.created_at,
+    $sql = 'SELECT s.id, s.name, s.unit, s.current_price, s.dept_id, s.supplier_id,
+                   s.supplier_name, s.supplier_code, s.created_at,
                    d.name AS dept_name,
-                   (SELECT MAX(se.created_at) FROM stock_entries se WHERE se.stock_id = s.id) AS last_entry_at
+                   sup.first_name AS supplier_first_name,
+                   sup.last_name AS supplier_last_name,
+                   (SELECT MAX(se.created_at) FROM stock_entries se WHERE se.stock_id = s.id) AS last_entry_at,
+                   (SELECT sph.old_price FROM stock_price_history sph
+                    WHERE sph.stock_id = s.id ORDER BY sph.id DESC LIMIT 1) AS previous_price,
+                   (SELECT sph.changed_at FROM stock_price_history sph
+                    WHERE sph.stock_id = s.id ORDER BY sph.id DESC LIMIT 1) AS price_changed_at
             FROM stocks s
-            INNER JOIN departments d ON d.id = s.dept_id';
+            INNER JOIN departments d ON d.id = s.dept_id
+            LEFT JOIN suppliers sup ON sup.id = s.supplier_id';
     $params = [];
     if (!$canViewAll) {
         $sql .= ' WHERE s.dept_id = ?';
         $params[] = $userDeptId;
     }
-    $sql .= ' ORDER BY d.name ASC, s.name ASC';
+    $sql .= ' ORDER BY d.name ASC,
+              COALESCE(sup.last_name, ""), COALESCE(sup.first_name, ""),
+              s.name ASC';
     $st = $pdo->prepare($sql);
     $st->execute($params);
-    $rows = $st->fetchAll();
+    $rows = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (!empty($row['supplier_first_name']) || !empty($row['supplier_last_name'])) {
+            $row['supplier_display_name'] = supplier_display_name(
+                (string) ($row['supplier_first_name'] ?? ''),
+                (string) ($row['supplier_last_name'] ?? '')
+            );
+        } else {
+            $row['supplier_display_name'] = null;
+        }
+        unset($row['supplier_first_name'], $row['supplier_last_name']);
+        $rows[] = api_costing_enrich_stock_row($row);
+    }
     api_ok([
         'stocks' => $rows,
         'show_pricing' => api_costing_show_pricing($role),
@@ -244,6 +270,41 @@ function api_costing_product_create(): void
     api_ok(['id' => (int) $pdo->lastInsertId()]);
 }
 
+function api_costing_product_update_selling_price(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_require_role(['executive']);
+
+    $productId = (int) ($input['product_id'] ?? 0);
+    $sellingRaw = trim((string) ($input['selling_price'] ?? ''));
+
+    if ($productId < 1) {
+        api_fail('Invalid product.', 422);
+    }
+    if (!is_numeric($sellingRaw) || (float) $sellingRaw < 0) {
+        api_fail('Selling price must be 0 or greater.', 422);
+    }
+    $sellingPrice = round((float) $sellingRaw, 2);
+
+    $pdo = ims_pdo();
+    $st = $pdo->prepare('SELECT id FROM products WHERE id = ? LIMIT 1');
+    $st->execute([$productId]);
+    if (!$st->fetch()) {
+        api_fail('Product not found.', 404);
+    }
+
+    $upd = $pdo->prepare('UPDATE products SET selling_price = ? WHERE id = ?');
+    $upd->execute([$sellingPrice, $productId]);
+
+    api_ok([
+        'updated' => true,
+        'product_id' => $productId,
+        'selling_price' => $sellingPrice,
+    ]);
+}
+
 function api_costing_formula_mutate(string $action): void
 {
     api_method_allowed(['POST']);
@@ -277,12 +338,13 @@ function api_costing_formula_mutate(string $action): void
                 throw new RuntimeException('qty_per_unit must be > 0.');
             }
             $qty = (float) $qtyRaw;
-            $stStock = $pdo->prepare('SELECT id, current_price FROM stocks WHERE id = ? AND dept_id = ? LIMIT 1');
+            $stStock = $pdo->prepare('SELECT id, name, current_price FROM stocks WHERE id = ? AND dept_id = ? LIMIT 1');
             $stStock->execute([$stockId, $product['dept_id']]);
             $stock = $stStock->fetch();
             if (!$stock) {
                 throw new RuntimeException('Stock not found in same department.');
             }
+            $qty = api_costing_resolve_formula_qty($product, (string) $stock['name'], $qty);
             $price = (float) $stock['current_price'];
             $ins = $pdo->prepare(
                 'INSERT INTO product_formula (product_id, stock_id, qty_per_unit, price_at_creation) VALUES (?, ?, ?, ?)'
@@ -304,12 +366,13 @@ function api_costing_formula_mutate(string $action): void
             if (!$stOwn->fetch()) {
                 throw new RuntimeException('Formula row not found.');
             }
-            $stStock = $pdo->prepare('SELECT id, current_price FROM stocks WHERE id = ? AND dept_id = ? LIMIT 1');
+            $stStock = $pdo->prepare('SELECT id, name, current_price FROM stocks WHERE id = ? AND dept_id = ? LIMIT 1');
             $stStock->execute([$stockId, $product['dept_id']]);
             $stock = $stStock->fetch();
             if (!$stock) {
                 throw new RuntimeException('Stock not found in same department.');
             }
+            $qty = api_costing_resolve_formula_qty($product, (string) $stock['name'], $qty);
             $price = (float) $stock['current_price'];
             $upd = $pdo->prepare(
                 'UPDATE product_formula SET stock_id = ?, qty_per_unit = ?, price_at_creation = ? WHERE id = ?'

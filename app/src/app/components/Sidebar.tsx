@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
   ChevronDown, Truck, DollarSign, RotateCcw, ClipboardList,
-  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart,
+  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import { useAuth, Role } from "@/app/context/AuthContext";
@@ -53,7 +53,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
 
   const requestsItem: NavItem = {
     icon: FileEdit,
-    label: "Correction requests",
+    label: "Notifications",
     to: "/inventory/requests",
     badge: pendingCorrections > 0 ? pendingCorrections : undefined,
   };
@@ -66,6 +66,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         requestsItem,
         { icon: Users, label: "Staff Management", to: "/staff" },
         { icon: BarChart2, label: "Reports", to: "/reports" },
+        { icon: ShoppingBag, label: "Sales", to: "/sales" },
         { icon: Truck, label: "Supplier Master", to: "/suppliers" },
         { icon: DollarSign, label: "Product Costing", to: "/costing" },
         { icon: ClipboardList, label: "AR Credits", to: "/ar" },
@@ -78,6 +79,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         inventoryHoney,
         requestsItem,
         { icon: BarChart2, label: "Reports", to: "/reports" },
+        { icon: ShoppingBag, label: "Sales", to: "/sales" },
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
         { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
       ];

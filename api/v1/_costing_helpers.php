@@ -39,6 +39,82 @@ if (!function_exists('api_costing_show_pricing')) {
     }
 }
 
+if (!function_exists('api_costing_is_honey_raw_stock')) {
+    function api_costing_is_honey_raw_stock(string $stockName): bool
+    {
+        return (bool) preg_match('/^Raw Honey — (Light|Amber|Dark)$/i', trim($stockName));
+    }
+}
+
+if (!function_exists('api_costing_resolve_formula_qty')) {
+    /**
+     * For honey raw lines on sized products, use exact bottle liters (gallon = full US gal constant).
+     *
+     * @param array{size: ?string} $product
+     */
+    function api_costing_resolve_formula_qty(array $product, string $stockName, float $qty): float
+    {
+        if (!api_costing_is_honey_raw_stock($stockName)) {
+            return $qty;
+        }
+        $size = $product['size'] ?? null;
+        if ($size === null || $size === '') {
+            return $qty;
+        }
+        if (!function_exists('honey_normalize_bottle_size')) {
+            require_once dirname(__DIR__, 2) . '/includes/honey_volume.php';
+        }
+        try {
+            $norm = honey_normalize_bottle_size((string) $size);
+
+            return honey_bottle_size_ml($norm) / 1000.0;
+        } catch (Throwable) {
+            return $qty;
+        }
+    }
+}
+
+if (!function_exists('api_costing_stock_price_direction')) {
+    /**
+     * @return 'up'|'down'|'unchanged'|'unknown'
+     */
+    function api_costing_stock_price_direction(float $currentPrice, ?float $previousPrice): string
+    {
+        if ($previousPrice === null) {
+            return 'unknown';
+        }
+        $diff = round($currentPrice - $previousPrice, 2);
+        if (abs($diff) < 0.01) {
+            return 'unchanged';
+        }
+
+        return $diff > 0 ? 'up' : 'down';
+    }
+}
+
+if (!function_exists('api_costing_enrich_stock_row')) {
+    /** @param array<string, mixed> $row */
+    function api_costing_enrich_stock_row(array $row): array
+    {
+        $name = (string) ($row['name'] ?? '');
+        $current = round((float) ($row['current_price'] ?? 0), 2);
+        $previousRaw = $row['previous_price'] ?? null;
+        $previous = $previousRaw !== null && $previousRaw !== '' ? round((float) $previousRaw, 2) : null;
+
+        $supplierId = isset($row['supplier_id']) && $row['supplier_id'] !== null && $row['supplier_id'] !== ''
+            ? (int) $row['supplier_id']
+            : null;
+
+        return array_merge($row, [
+            'supplier_id' => $supplierId,
+            'is_honey_raw' => api_costing_is_honey_raw_stock($name) && $supplierId !== null && $supplierId > 0,
+            'previous_price' => $previous,
+            'price_changed_at' => $row['price_changed_at'] ?? null,
+            'price_direction' => api_costing_stock_price_direction($current, $previous),
+        ]);
+    }
+}
+
 if (!function_exists('api_costing_fetch_product_scope')) {
     function api_costing_fetch_product_scope(PDO $pdo, int $productId, bool $canViewAll, int $userDeptId): array
     {

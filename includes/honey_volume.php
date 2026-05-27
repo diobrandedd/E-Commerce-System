@@ -5,6 +5,14 @@ declare(strict_types=1);
 /** US fluid gallon in milliliters (exact; use only in calculations). */
 const HONEY_ML_PER_US_GALLON = 3785.411784;
 
+/** US fluid gallon in liters (exact). */
+const HONEY_LITERS_PER_US_GALLON = HONEY_ML_PER_US_GALLON / 1000.0;
+
+function honey_price_per_liter_from_gallon(float $pricePerGallon): float
+{
+    return $pricePerGallon / HONEY_LITERS_PER_US_GALLON;
+}
+
 const HONEY_BOTTLE_SIZE_KEYS = ['250ml', '350ml', 'liter', 'gallon'];
 
 function honey_normalize_bottle_size(string $size): string

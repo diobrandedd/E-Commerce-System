@@ -38,6 +38,8 @@ export function HoneyProductionPage() {
   const canExecEdit = canExecutiveDirectEdit(user?.role);
   const showSupplierProfile = canViewSupplierProfile(user?.role);
   const [rows, setRows] = useState<PrRow[]>([]);
+  const [page, setPage] = useState(1);
+  const perPage = 12;
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<PrRow | null>(null);
   const [editRow, setEditRow] = useState<PrRow | null>(null);
@@ -47,6 +49,7 @@ export function HoneyProductionPage() {
     try {
       const data = await apiGet<{ rows: PrRow[] }>("honey.php", "production_list");
       setRows(data.rows);
+      setPage(1);
     } catch {
       /* ignore */
     } finally {
@@ -58,6 +61,12 @@ export function HoneyProductionPage() {
     refresh();
   }, [refresh]);
   useLiveRefresh(refresh);
+
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * perPage;
+  const pagedRows = rows.slice(start, start + perPage);
 
   return (
     <PageLayout title="Honey — Production" subtitle="Stock-out to packaging (batch numbers generated)">
@@ -80,7 +89,7 @@ export function HoneyProductionPage() {
                 </td>
               </tr>
             )}
-            {rows.map(r => (
+            {pagedRows.map(r => (
               <tr key={r.id} className="border-b">
                 <td className="px-4 py-3">
                   {showSupplierProfile ? (
@@ -117,6 +126,32 @@ export function HoneyProductionPage() {
           </tbody>
         </table>
       </div>
+      {!loading && totalRows > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 mt-3">
+          <p className="text-xs text-muted-foreground">
+            Showing {start + 1}-{Math.min(start + perPage, totalRows)} of {totalRows} rows
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={safePage <= 1}
+              className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-muted-foreground">Page {safePage} of {totalPages}</span>
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={safePage >= totalPages}
+              className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
       {active && (
         <PackOutModal row={active} onClose={() => setActive(null)} onDone={() => { setActive(null); refresh(); }} />
       )}

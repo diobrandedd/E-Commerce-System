@@ -33,6 +33,8 @@ export function HoneyPackagingPage() {
   const canExecEdit = canExecutiveDirectEdit(user?.role);
   const showSupplierProfile = canViewSupplierProfile(user?.role);
   const [rows, setRows] = useState<PkRow[]>([]);
+  const [page, setPage] = useState(1);
+  const perPage = 12;
   const [loading, setLoading] = useState(true);
   const [traceBatch, setTraceBatch] = useState<string | null>(null);
   const [sellRow, setSellRow] = useState<PkRow | null>(null);
@@ -44,6 +46,7 @@ export function HoneyPackagingPage() {
     try {
       const data = await apiGet<{ rows: PkRow[] }>("honey.php", "packaging_list");
       setRows(data.rows);
+      setPage(1);
     } finally {
       setLoading(false);
     }
@@ -51,6 +54,12 @@ export function HoneyPackagingPage() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useLiveRefresh(refresh);
+
+  const totalRows = rows.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * perPage;
+  const pagedRows = rows.slice(start, start + perPage);
 
   return (
     <PageLayout
@@ -76,8 +85,8 @@ export function HoneyPackagingPage() {
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={9} className="py-8 text-center"><Loader2 className="inline animate-spin" size={14} /></td></tr>}
-            {rows.map(r => (
+            {loading && <tr><td colSpan={(canMutate || canExecEdit) ? 9 : 8} className="py-8 text-center"><Loader2 className="inline animate-spin" size={14} /></td></tr>}
+            {pagedRows.map(r => (
               <tr key={r.id} className="border-b">
                 <td className="px-3 py-2">
                   {showSupplierProfile ? (
@@ -114,6 +123,32 @@ export function HoneyPackagingPage() {
           </tbody>
         </table>
       </div>
+      {!loading && totalRows > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 mt-3">
+          <p className="text-xs text-muted-foreground">
+            Showing {start + 1}-{Math.min(start + perPage, totalRows)} of {totalRows} rows
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={safePage <= 1}
+              className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-muted-foreground">Page {safePage} of {totalPages}</span>
+            <button
+              type="button"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={safePage >= totalPages}
+              className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
       {traceBatch && <BatchTraceabilityDrawer query={traceBatch} onClose={() => setTraceBatch(null)} />}
       {sellRow && <SellModal row={sellRow} onClose={() => setSellRow(null)} onDone={() => { setSellRow(null); refresh(); }} />}
       {editRow && (

@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { Loader2, Plus } from "lucide-react";
+import { CheckCircle2, Loader2, Plus, XCircle } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { CorrectionReviewModal, type CorrectionRequestDetail } from "@/app/components/honey/CorrectionReviewModal";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
-import { apiGet, apiPost } from "@/app/lib/api";
+import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_SIZES, HONEY_VARIANTS } from "@/app/lib/honey";
 import type { Supplier } from "@/app/lib/suppliers";
 
@@ -25,6 +25,56 @@ function formatRequestLine(r: CorrectionRequestDetail): string {
   return `${prefix}${r.action} ${r.amount}${r.size ? ` (${r.size})` : ""}`;
 }
 
+const ROWS_PER_PAGE = 12;
+
+function TablePagination({
+  page,
+  setPage,
+  totalRows,
+  perPage,
+  noun,
+}: {
+  page: number;
+  setPage: (fn: (p: number) => number) => void;
+  totalRows: number;
+  perPage: number;
+  noun: string;
+}) {
+  if (totalRows <= 0) return null;
+  const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * perPage;
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 pt-3">
+      <p className="text-xs text-muted-foreground">
+        Showing {start + 1}–{Math.min(start + perPage, totalRows)} of {totalRows} {noun}
+      </p>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setPage(p => Math.max(1, p - 1))}
+          disabled={safePage <= 1}
+          className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        <span className="text-xs text-muted-foreground">
+          Page {safePage} of {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          disabled={safePage >= totalPages}
+          className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function InventoryRequestsPage() {
   const { user } = useAuth();
   const isExec = user?.role === "executive";
@@ -33,43 +83,86 @@ export function InventoryRequestsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { refresh: refreshNotifications, markViewed } = useCorrectionNotifications();
   const [requests, setRequests] = useState<CorrectionRequestDetail[]>([]);
+  const [discountQueue, setDiscountQueue] = useState<Array<{
+    id: number;
+    request_no: string;
+    buyer_name: string;
+    discount_percent: number;
+    subtotal_amount: number;
+    discount_amount: number;
+    total_amount: number;
+    item_count: number;
+    cashier_label: string;
+    created_at: string;
+  }>>([]);
+  const [actingDiscountId, setActingDiscountId] = useState<number | null>(null);
+  const [discountError, setDiscountError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [reviewId, setReviewId] = useState<number | null>(null);
+  const [correctionPage, setCorrectionPage] = useState(1);
+  const [discountPage, setDiscountPage] = useState(1);
+  const markedViewedRef = useRef<Set<number>>(new Set());
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const data = await apiGet<{ requests: CorrectionRequestDetail[] }>("honey.php", "correction_list");
       setRequests(data.requests);
+      setCorrectionPage(1);
+      setDiscountPage(1);
+      if (isExec) {
+        const discountData = await apiGet<{ rows: typeof discountQueue }>("pos_discounts.php", "list", { status: "pending", limit: "50" });
+        setDiscountQueue(discountData.rows);
+      } else {
+        setDiscountQueue([]);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isExec]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
   useLiveRefresh(refresh);
 
-  const openReview = useCallback(
+  const markViewedOnce = useCallback(
     async (id: number) => {
-      if (isExec) await markViewed(id);
-      setReviewId(id);
-      setSearchParams({ request: String(id) }, { replace: true });
+      if (!isExec || markedViewedRef.current.has(id)) return;
+      markedViewedRef.current.add(id);
+      await markViewed(id);
     },
-    [isExec, markViewed, setSearchParams],
+    [isExec, markViewed],
   );
 
-  useEffect(() => {
-    const param = searchParams.get("request");
-    if (!param) return;
-    const id = parseInt(param, 10);
-    if (id > 0 && requests.length > 0) {
+  const openReview = useCallback(
+    (id: number) => {
       setReviewId(id);
-      if (isExec) markViewed(id);
+      setSearchParams({ request: String(id) }, { replace: true });
+      void markViewedOnce(id);
+    },
+    [markViewedOnce, setSearchParams],
+  );
+
+  const requestParam = searchParams.get("request");
+  const requestIdFromUrl = requestParam ? parseInt(requestParam, 10) : 0;
+
+  useEffect(() => {
+    if (requestIdFromUrl < 1) {
+      setReviewId(null);
+      return;
     }
-  }, [searchParams, requests, isExec, markViewed]);
+    if (requests.length === 0) return;
+    setReviewId(requestIdFromUrl);
+  }, [requestIdFromUrl, requests.length]);
+
+  useEffect(() => {
+    if (requestIdFromUrl < 1 || requests.length === 0 || !isExec) return;
+    const req = requests.find(r => r.id === requestIdFromUrl);
+    if (req?.executive_viewed_at || markedViewedRef.current.has(requestIdFromUrl)) return;
+    void markViewedOnce(requestIdFromUrl);
+  }, [requestIdFromUrl, requests.length, isExec, markViewedOnce, requests]);
 
   const closeReview = () => {
     setReviewId(null);
@@ -84,10 +177,54 @@ export function InventoryRequestsPage() {
     await refreshNotifications();
   };
 
+  const approveDiscount = async (id: number) => {
+    if (!confirm("Approve this discount request?")) return;
+    setActingDiscountId(id);
+    setDiscountError(null);
+    try {
+      await apiPost("pos_discounts.php", "approve", { id });
+      await refresh();
+      await refreshNotifications();
+    } catch (e) {
+      setDiscountError(e instanceof ApiError ? e.message : "Could not approve request.");
+    } finally {
+      setActingDiscountId(null);
+    }
+  };
+
+  const declineDiscount = async (id: number) => {
+    const note = prompt("Reason for decline (optional):") ?? "";
+    setActingDiscountId(id);
+    setDiscountError(null);
+    try {
+      await apiPost("pos_discounts.php", "decline", { id, note });
+      await refresh();
+      await refreshNotifications();
+    } catch (e) {
+      setDiscountError(e instanceof ApiError ? e.message : "Could not decline request.");
+    } finally {
+      setActingDiscountId(null);
+    }
+  };
+
+  const correctionTotal = requests.length;
+  const correctionTotalPages = Math.max(1, Math.ceil(correctionTotal / ROWS_PER_PAGE));
+  const correctionSafePage = Math.min(correctionPage, correctionTotalPages);
+  const correctionStart = (correctionSafePage - 1) * ROWS_PER_PAGE;
+  const pagedRequests = requests.slice(correctionStart, correctionStart + ROWS_PER_PAGE);
+
+  const discountTotal = discountQueue.length;
+  const discountTotalPages = Math.max(1, Math.ceil(discountTotal / ROWS_PER_PAGE));
+  const discountSafePage = Math.min(discountPage, discountTotalPages);
+  const discountStart = (discountSafePage - 1) * ROWS_PER_PAGE;
+  const pagedDiscounts = discountQueue.slice(discountStart, discountStart + ROWS_PER_PAGE);
+
+  const colSpan = isExec && !readonly ? 6 : 5;
+
   return (
     <PageLayout
-      title="Correction requests"
-      subtitle="PM requests changes to qty, variant, or supplier; Executive approves or edits directly on inventory tables"
+      title="Notifications"
+      subtitle="Inventory correction requests and pending POS discount approvals"
       actions={
         isPm ? (
           <button
@@ -100,53 +237,146 @@ export function InventoryRequestsPage() {
         ) : undefined
       }
     >
-      <div className="bg-card rounded-xl border overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
-              {["Date", "Stage", "Change", "Reason", "Status", isExec && !readonly ? "Review" : ""].filter(Boolean).map(h => (
-                <th key={h} className="text-left px-4 py-3">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={6} className="py-8 text-center">
-                  <Loader2 className="inline animate-spin" size={14} />
-                </td>
-              </tr>
-            )}
-            {requests.map(r => (
-              <tr
-                key={r.id}
-                className={`border-b cursor-pointer hover:bg-secondary/30 ${
-                  r.status === "pending" ? "border-l-4 border-l-amber-400" : r.status === "approved" ? "border-l-4 border-l-green-500" : "border-l-4 border-l-red-400"
-                }`}
-                onClick={() => openReview(r.id)}
-              >
-                <td className="px-4 py-3 text-xs">{r.created_at}</td>
-                <td className="px-4 py-3 capitalize">{r.stage}</td>
-                <td className="px-4 py-3">{formatRequestLine(r)}</td>
-                <td className="px-4 py-3 max-w-xs truncate">{r.reason}</td>
-                <td className="px-4 py-3 capitalize">{r.status}</td>
-                {isExec && !readonly && (
-                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                    {r.status === "pending" ? (
-                      <button type="button" onClick={() => openReview(r.id)} className="text-xs text-[#C8900A] font-semibold">
-                        Review
-                      </button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{r.reviewed_by_name ?? "—"}</span>
-                    )}
-                  </td>
+      <div className="space-y-10">
+        <section>
+          <div className="px-1 pb-3">
+            <h3 className="text-sm font-semibold text-foreground">Inventory correction requests</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Click a row to review details</p>
+          </div>
+          <div className="bg-card rounded-xl border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
+                  {["Date", "Stage", "Change", "Reason", "Status", isExec && !readonly ? "Review" : ""].filter(Boolean).map(h => (
+                    <th key={h} className="text-left px-4 py-3">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading && (
+                  <tr>
+                    <td colSpan={colSpan} className="py-8 text-center">
+                      <Loader2 className="inline animate-spin" size={14} />
+                    </td>
+                  </tr>
                 )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                {!loading && pagedRequests.length === 0 && (
+                  <tr>
+                    <td colSpan={colSpan} className="py-8 text-center text-sm text-muted-foreground">
+                      No correction requests yet.
+                    </td>
+                  </tr>
+                )}
+                {!loading &&
+                  pagedRequests.map(r => (
+                    <tr
+                      key={r.id}
+                      className={`border-b cursor-pointer hover:bg-secondary/30 ${
+                        r.status === "pending"
+                          ? "border-l-4 border-l-amber-400"
+                          : r.status === "approved"
+                            ? "border-l-4 border-l-green-500"
+                            : "border-l-4 border-l-red-400"
+                      }`}
+                      onClick={() => openReview(r.id)}
+                    >
+                      <td className="px-4 py-3 text-xs">{r.created_at}</td>
+                      <td className="px-4 py-3 capitalize">{r.stage}</td>
+                      <td className="px-4 py-3">{formatRequestLine(r)}</td>
+                      <td className="px-4 py-3 max-w-xs truncate">{r.reason}</td>
+                      <td className="px-4 py-3 capitalize">{r.status}</td>
+                      {isExec && !readonly && (
+                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                          {r.status === "pending" ? (
+                            <button type="button" onClick={() => openReview(r.id)} className="text-xs text-[#C8900A] font-semibold">
+                              Review
+                            </button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">{r.reviewed_by_name ?? "—"}</span>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+          {!loading && (
+            <TablePagination
+              page={correctionPage}
+              setPage={setCorrectionPage}
+              totalRows={correctionTotal}
+              perPage={ROWS_PER_PAGE}
+              noun="requests"
+            />
+          )}
+        </section>
+
+        {isExec && (
+          <section>
+            <div className="px-1 pb-3">
+              <h3 className="text-sm font-semibold text-foreground">Pending discount approvals</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">POS cart discounts awaiting executive approval</p>
+            </div>
+            <div className="bg-card rounded-xl border overflow-hidden">
+              {discountError && (
+                <div className="px-4 py-2 text-xs text-red-700 bg-red-50 border-b border-red-200">{discountError}</div>
+              )}
+              {loading ? (
+                <div className="py-6 text-center text-muted-foreground">
+                  <Loader2 className="inline animate-spin" size={14} />
+                </div>
+              ) : discountQueue.length === 0 ? (
+                <p className="px-4 py-6 text-sm text-muted-foreground">No pending discount approvals.</p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {pagedDiscounts.map(row => (
+                    <div key={row.id} className="px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {row.request_no} · {row.discount_percent}% off · {row.buyer_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Cashier: {row.cashier_label} · {row.item_count} item{row.item_count === 1 ? "" : "s"} ·
+                          Subtotal ₱{row.subtotal_amount.toFixed(2)} → Total ₱{row.total_amount.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={actingDiscountId === row.id}
+                          onClick={() => void approveDiscount(row.id)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-green-300 bg-green-50 text-green-700 disabled:opacity-60"
+                        >
+                          <CheckCircle2 size={14} /> Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={actingDiscountId === row.id}
+                          onClick={() => void declineDiscount(row.id)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-300 bg-red-50 text-red-700 disabled:opacity-60"
+                        >
+                          <XCircle size={14} /> Decline
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {!loading && (
+              <TablePagination
+                page={discountPage}
+                setPage={setDiscountPage}
+                totalRows={discountTotal}
+                perPage={ROWS_PER_PAGE}
+                noun="approvals"
+              />
+            )}
+          </section>
+        )}
       </div>
       {showNew && <NewRequestModal onClose={() => setShowNew(false)} onDone={() => { setShowNew(false); refresh(); }} />}
       {reviewRequest && (

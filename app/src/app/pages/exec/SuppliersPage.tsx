@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
-import { Plus, Search, Edit2, Loader2, Camera } from "lucide-react";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { Plus, Search, Edit2, Loader2, Camera, Eye, ChevronDown, ChevronRight } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { SupplierProfileModal } from "@/app/components/suppliers/SupplierProfileModal";
+import { SupplierHoneyPricesInline } from "@/app/components/suppliers/SupplierHoneyPricesInline";
+import { fetchSupplierHoneyPrices } from "@/app/lib/honeyPricing";
 import {
   listSuppliers,
   setSupplierActive,
@@ -19,6 +21,8 @@ export function SuppliersPage() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<"add" | Supplier | null>(null);
   const [profileId, setProfileId] = useState<number | null>(null);
+  const [expandedHoneyId, setExpandedHoneyId] = useState<number | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -35,6 +39,12 @@ export function SuppliersPage() {
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  useEffect(() => {
+    void fetchSupplierHoneyPrices()
+      .then(data => setPendingCount(data.pending_count))
+      .catch(() => {});
+  }, []);
 
   const filtered = suppliers.filter(s => {
     const q = search.toLowerCase();
@@ -55,10 +65,20 @@ export function SuppliersPage() {
     }
   };
 
+  const toggleHoneyExpand = (s: Supplier) => {
+    setExpandedHoneyId(prev => (prev === s.id ? null : s.id));
+  };
+
   return (
     <PageLayout title="Supplier Master" subtitle="Executive registers suppliers; production managers select from this list">
       <div className="space-y-5">
         {error && <p className="text-sm text-red-600">{error}</p>}
+        {pendingCount > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <strong>{pendingCount}</strong> warehouse delivery row{pendingCount === 1 ? "" : "s"} still need a supplier
+            price. Expand a honey supplier below and save ₱/gallon rates.
+          </div>
+        )}
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
           <div className="flex items-center justify-between px-6 py-4 border-b border-border gap-4">
             <div className="relative flex-1 max-w-xs">
@@ -92,46 +112,87 @@ export function SuppliersPage() {
                 {loading && (
                   <tr><td colSpan={7} className="py-10 text-center text-muted-foreground"><Loader2 className="inline animate-spin" size={16} /></td></tr>
                 )}
-                {!loading && filtered.map((s, i) => (
-                  <tr
-                    key={s.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setProfileId(s.id)}
-                    onKeyDown={e => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setProfileId(s.id);
-                      }
-                    }}
-                    className={`border-b border-border last:border-0 hover:bg-secondary/30 cursor-pointer ${i % 2 ? "bg-secondary/10" : ""}`}
-                  >
-                    <td className="px-6 py-3.5 font-semibold">{s.display_name}</td>
-                    <td className="px-5 py-3.5">{s.category_label}</td>
-                    <td className="px-5 py-3.5">{s.contact_number}</td>
-                    <td className="px-5 py-3.5 text-xs">
-                      <p>{s.payment_account ?? "—"}</p>
-                      <p className="text-muted-foreground">{s.payment_account_number ?? ""}</p>
-                    </td>
-                    <td className="px-5 py-3.5 text-muted-foreground max-w-[200px] truncate">{s.address}</td>
-                    <td className="px-5 py-3.5">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${s.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                        {s.is_active ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 space-x-2 whitespace-nowrap" onClick={e => e.stopPropagation()}>
-                      {s.valid_id_url && (
-                        <a href={s.valid_id_url} target="_blank" rel="noreferrer" className="text-xs text-[#C8900A] underline">ID</a>
+                {!loading && filtered.map((s, i) => {
+                  const isHoney = s.category === "honey";
+                  const isExpanded = isHoney && expandedHoneyId === s.id;
+                  return (
+                    <Fragment key={s.id}>
+                      <tr
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isHoney ? isExpanded : undefined}
+                        onClick={() => {
+                          if (isHoney) toggleHoneyExpand(s);
+                          else setProfileId(s.id);
+                        }}
+                        onKeyDown={e => {
+                          if (e.key !== "Enter" && e.key !== " ") return;
+                          e.preventDefault();
+                          if (isHoney) toggleHoneyExpand(s);
+                          else setProfileId(s.id);
+                        }}
+                        className={`border-b border-border hover:bg-secondary/30 cursor-pointer ${
+                          isExpanded ? "bg-amber-50/80" : i % 2 ? "bg-secondary/10" : ""
+                        }`}
+                      >
+                        <td className="px-6 py-3.5 font-semibold">
+                          <span className="inline-flex items-center gap-1.5">
+                            {isHoney && (
+                              isExpanded ? (
+                                <ChevronDown size={14} className="text-[#C8900A]" />
+                              ) : (
+                                <ChevronRight size={14} className="text-muted-foreground" />
+                              )
+                            )}
+                            {s.display_name}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">{s.category_label}</td>
+                        <td className="px-5 py-3.5">{s.contact_number}</td>
+                        <td className="px-5 py-3.5 text-xs">
+                          <p>{s.payment_account ?? "—"}</p>
+                          <p className="text-muted-foreground">{s.payment_account_number ?? ""}</p>
+                        </td>
+                        <td className="px-5 py-3.5 text-muted-foreground max-w-[200px] truncate">{s.address}</td>
+                        <td className="px-5 py-3.5">
+                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${s.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                            {s.is_active ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 space-x-2 whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setProfileId(s.id)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg border border-border hover:border-[#C8900A] hover:text-[#C8900A]"
+                            title="View supplier profile"
+                          >
+                            <Eye size={12} /> View
+                          </button>
+                          {s.valid_id_url && (
+                            <a href={s.valid_id_url} target="_blank" rel="noreferrer" className="text-xs text-[#C8900A] underline">ID</a>
+                          )}
+                          <button type="button" onClick={() => setModal(s)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground inline-flex">
+                            <Edit2 size={14} />
+                          </button>
+                          <button type="button" onClick={() => toggleActive(s)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+                            {s.is_active ? "Deactivate" : "Activate"}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="border-b border-border bg-secondary/20">
+                          <td colSpan={7} className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                            <SupplierHoneyPricesInline
+                              supplierId={s.id}
+                              supplierName={s.display_name}
+                              onPendingCountChange={setPendingCount}
+                            />
+                          </td>
+                        </tr>
                       )}
-                      <button type="button" onClick={() => setModal(s)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground inline-flex">
-                        <Edit2 size={14} />
-                      </button>
-                      <button type="button" onClick={() => toggleActive(s)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
-                        {s.is_active ? "Deactivate" : "Activate"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>

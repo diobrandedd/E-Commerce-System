@@ -15,9 +15,26 @@ export interface UnreadCorrection {
   status: string;
 }
 
+export interface UnreadDiscountApproval {
+  id: number;
+  request_no: string;
+  buyer_name: string;
+  discount_percent: number;
+  subtotal_amount: number;
+  discount_amount: number;
+  total_amount: number;
+  cashier_label: string;
+  created_at: string;
+  status: "pending" | "approved" | "declined";
+}
+
+export type NotificationItem =
+  | ({ kind: "correction" } & UnreadCorrection)
+  | ({ kind: "discount_approval" } & UnreadDiscountApproval);
+
 interface CorrectionNotificationsContextValue {
   unreadCount: number;
-  unreadList: UnreadCorrection[];
+  unreadList: NotificationItem[];
   refresh: () => Promise<void>;
   markViewed: (id: number) => Promise<void>;
 }
@@ -31,7 +48,7 @@ export function CorrectionNotificationsProvider({ children }: { children: ReactN
   const location = useLocation();
   const isExec = user?.role === "executive";
   const [unreadCount, setUnreadCount] = useState(0);
-  const [unreadList, setUnreadList] = useState<UnreadCorrection[]>([]);
+  const [unreadList, setUnreadList] = useState<NotificationItem[]>([]);
 
   const refresh = useCallback(async () => {
     if (!isExec) {
@@ -40,12 +57,23 @@ export function CorrectionNotificationsProvider({ children }: { children: ReactN
       return;
     }
     try {
-      const [countRes, listRes] = await Promise.all([
+      const [countRes, listRes, pendingDiscounts] = await Promise.all([
         apiGet<{ count: number }>("honey.php", "correction_unread_count"),
         apiGet<{ requests: UnreadCorrection[] }>("honey.php", "correction_unread_list", { limit: 10 }),
+        apiGet<{ rows: UnreadDiscountApproval[]; pending_count: number }>("pos_discounts.php", "list", {
+          status: "pending",
+          limit: "10",
+        }),
       ]);
-      setUnreadCount(countRes.count);
-      setUnreadList(listRes.requests);
+
+      const correctionItems: NotificationItem[] = listRes.requests.map(r => ({ kind: "correction", ...r }));
+      const discountItems: NotificationItem[] = pendingDiscounts.rows.map(r => ({ kind: "discount_approval", ...r }));
+      const merged = [...correctionItems, ...discountItems].sort((a, b) =>
+        String(b.created_at).localeCompare(String(a.created_at)),
+      );
+
+      setUnreadCount((countRes.count ?? 0) + (pendingDiscounts.pending_count ?? 0));
+      setUnreadList(merged);
     } catch {
       setUnreadCount(0);
       setUnreadList([]);
@@ -82,9 +110,10 @@ export function CorrectionNotificationsProvider({ children }: { children: ReactN
     async (id: number) => {
       if (!isExec) return;
       await apiPost("honey.php", "correction_mark_viewed", { id });
-      await refresh();
+      setUnreadList(prev => prev.filter(item => !(item.kind === "correction" && item.id === id)));
+      setUnreadCount(c => Math.max(0, c - 1));
     },
-    [isExec, refresh],
+    [isExec],
   );
 
   return (

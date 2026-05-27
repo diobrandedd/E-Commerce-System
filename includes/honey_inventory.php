@@ -6,6 +6,16 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/suppliers.php';
 require_once __DIR__ . '/honey_volume.php';
 
+/** Lazy-load pricing helpers (avoids circular require at bootstrap). */
+function honey_inventory_pricing(): void
+{
+    static $loaded = false;
+    if (!$loaded) {
+        require_once __DIR__ . '/honey_pricing.php';
+        $loaded = true;
+    }
+}
+
 const HONEY_VARIANTS = ['light', 'amber', 'dark', 'other'];
 const HONEY_SIZES = ['liter', '250ml', '350ml', 'gallon'];
 
@@ -123,10 +133,22 @@ function honey_warehouse_stock_in(PDO $pdo, int $userId, int $supplierId, string
     $supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);
     $code = honey_supplier_code($supplierName, $arrivalDate);
     $created = [];
-    $ins = $pdo->prepare(
-        'INSERT INTO honey_warehouse_rows (supplier_id, supplier_name, supplier_code, arrival_date, variant, current_qty, initial_qty, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    );
+    $hasPricingCols = honey_warehouse_has_pricing_columns($pdo);
+    if ($hasPricingCols) {
+        $ins = $pdo->prepare(
+            'INSERT INTO honey_warehouse_rows (
+                supplier_id, supplier_name, supplier_code, arrival_date, variant,
+                current_qty, initial_qty, unit_cost_per_gallon, supplier_price_id, cost_override, created_by
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, 0, ?)'
+        );
+    } else {
+        $ins = $pdo->prepare(
+            'INSERT INTO honey_warehouse_rows (supplier_id, supplier_name, supplier_code, arrival_date, variant, current_qty, initial_qty, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+    }
+
+    $variantsTouched = [];
     foreach ($variants as $row) {
         $variant = honey_normalize_variant((string) ($row['variant'] ?? ''));
         $qty = (float) ($row['qty'] ?? 0);
@@ -134,16 +156,71 @@ function honey_warehouse_stock_in(PDO $pdo, int $userId, int $supplierId, string
             throw new RuntimeException('Quantity must be greater than zero.');
         }
         $ins->execute([$supplierId, $supplierName, $code, $arrivalDate, $variant, $qty, $qty, $userId]);
+        $wid = (int) $pdo->lastInsertId();
+        $pricing = ['priced' => false, 'unit_cost_per_gallon' => null, 'supplier_price_id' => null];
+        if ($hasPricingCols) {
+            honey_inventory_pricing();
+            $pricing = honey_pricing_snapshot_warehouse_row($pdo, $wid);
+            if ($pricing['priced']) {
+                $variantsTouched[$variant] = true;
+            }
+        }
         $created[] = [
-            'id' => (int) $pdo->lastInsertId(),
+            'id' => $wid,
             'supplier_code' => $code,
             'variant' => $variant,
             'current_qty' => $qty,
             'initial_qty' => $qty,
+            'unit_cost_per_gallon' => $pricing['unit_cost_per_gallon'],
+            'pricing_status' => $pricing['priced'] ? 'priced' : 'pending',
         ];
     }
 
+    if ($hasPricingCols) {
+        honey_inventory_pricing();
+        honey_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);
+    }
+
     return ['supplier_code' => $code, 'rows' => $created];
+}
+
+function honey_warehouse_has_pricing_columns(PDO $pdo): bool
+{
+    return honey_warehouse_unit_cost_column($pdo) !== null;
+}
+
+/** @return 'unit_cost_per_gallon'|'unit_cost_per_liter'|null */
+function honey_warehouse_unit_cost_column(PDO $pdo): ?string
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache === '' ? null : $cache;
+    }
+    $st = $pdo->prepare(
+        'SELECT 1 FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1'
+    );
+    foreach (['unit_cost_per_gallon', 'unit_cost_per_liter'] as $col) {
+        $st->execute(['honey_warehouse_rows', $col]);
+        if ($st->fetchColumn()) {
+            $cache = $col;
+
+            return $col;
+        }
+    }
+    $cache = '';
+
+    return null;
+}
+
+function honey_warehouse_normalize_cost_row(array $row): array
+{
+    if (!isset($row['unit_cost_per_gallon']) && isset($row['unit_cost_per_liter'])) {
+        $row['unit_cost_per_gallon'] = $row['unit_cost_per_liter'];
+        unset($row['unit_cost_per_liter']);
+    }
+
+    return $row;
 }
 
 function honey_warehouse_stock_out(PDO $pdo, int $userId, int $warehouseRowId, float $qty): array
