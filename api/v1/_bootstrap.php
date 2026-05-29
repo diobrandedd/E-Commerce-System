@@ -2,6 +2,36 @@
 
 declare(strict_types=1);
 
+// Keep JSON responses parseable (XAMPP often has display_errors=On).
+ini_set('display_errors', '0');
+
+/**
+ * Emit JSON if PHP fatals after headers (e.g. OOM during large uploads).
+ */
+function api_shutdown_guard(): void
+{
+    $err = error_get_last();
+    if ($err === null) {
+        return;
+    }
+    $fatal = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+    if (!in_array($err['type'], $fatal, true)) {
+        return;
+    }
+    if (headers_sent()) {
+        return;
+    }
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code(500);
+    echo json_encode([
+        'ok' => false,
+        'data' => null,
+        'error' => 'Server error: ' . ($err['message'] ?? 'unknown'),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+register_shutdown_function('api_shutdown_guard');
+
 /**
  * Shared bootstrap for /rts/api/v1/*.php JSON endpoints.
  *
@@ -28,7 +58,15 @@ header('X-Content-Type-Options: nosniff');
 function api_json(array $payload, int $status = 200): void
 {
     http_response_code($status);
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+    if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
+        $flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+    }
+    $json = json_encode($payload, $flags);
+    if ($json === false) {
+        $json = '{"ok":false,"data":null,"error":"Server error (could not encode JSON response)."}';
+    }
+    echo $json;
     exit;
 }
 

@@ -21,6 +21,7 @@ import { SettingsPage } from "./pages/exec/SettingsPage";
 import { POSCategoryPage } from "./pages/pos/POSCategoryPage";
 import { POSHoneyPage } from "./pages/pos/POSHoneyPage";
 import { SalesPage } from "./pages/exec/SalesPage";
+import { WaybillStamperPage } from "./pages/csr/WaybillStamperPage";
 import type { Role } from "./context/AuthContext";
 
 // Wrap a page component in RequireAuth.  Using createElement to keep this
@@ -63,6 +64,10 @@ export const router = createBrowserRouter(
         { path: "suppliers", element: guarded(SuppliersPage, { roles: ["executive"] }) },
         { path: "costing", element: guarded(CostingPage, { roles: ["executive", "prod_manager"] }) },
         { path: "ar", element: guarded(ARCreditsPage) },
+        {
+          path: "waybill-stamper",
+          element: guarded(WaybillStamperPage, { roles: ["executive", "csr_tl"] }),
+        },
         { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
         { path: "rts/record", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
         { path: "settings", element: guarded(SettingsPage, { roles: ["executive"] }) },

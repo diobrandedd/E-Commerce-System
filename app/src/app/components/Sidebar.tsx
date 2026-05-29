@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
   ChevronDown, Truck, DollarSign, RotateCcw, ClipboardList,
-  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag,
+  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, Printer,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import { useAuth, Role } from "@/app/context/AuthContext";
@@ -53,9 +53,15 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
 
   const requestsItem: NavItem = {
     icon: FileEdit,
-    label: "Notifications",
+    label: "Requests",
     to: "/inventory/requests",
     badge: pendingCorrections > 0 ? pendingCorrections : undefined,
+  };
+
+  const waybillStamperItem: NavItem = {
+    icon: Printer,
+    label: "Waybill Stamper",
+    to: "/waybill-stamper",
   };
 
   switch (role) {
@@ -67,6 +73,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: Users, label: "Staff Management", to: "/staff" },
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
+        waybillStamperItem,
         { icon: Truck, label: "Supplier Master", to: "/suppliers" },
         { icon: DollarSign, label: "Product Costing", to: "/costing" },
         { icon: ClipboardList, label: "AR Credits", to: "/ar" },
@@ -103,6 +110,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     case "csr_tl":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        waybillStamperItem,
         { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
       ];
     case "staff":

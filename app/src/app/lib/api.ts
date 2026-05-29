@@ -54,6 +54,37 @@ export class ApiError extends Error {
   }
 }
 
+/** Parse `{ ok, data, error }` even when PHP warnings were prepended to the body. */
+export async function readApiResponse<T>(response: Response): Promise<ApiResponse<T>> {
+  const text = await response.text();
+  if (!text.trim()) {
+    throw new ApiError(
+      `Empty response (${response.status}). The server may have crashed during processing — check Apache error log, Python install, and try again.`,
+      response.status
+    );
+  }
+  try {
+    return JSON.parse(text) as ApiResponse<T>;
+  } catch {
+    const trimmed = text.trim();
+    const jsonStart = trimmed.lastIndexOf("{");
+    if (jsonStart >= 0) {
+      try {
+        return JSON.parse(trimmed.slice(jsonStart)) as ApiResponse<T>;
+      } catch {
+        /* fall through */
+      }
+    }
+    const plain = trimmed
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const msg = plain.length > 280 ? `${plain.slice(0, 280)}…` : plain;
+    throw new ApiError(msg || `Bad response (${response.status}).`, response.status);
+  }
+}
+
 interface ApiRequestOptions {
   method?: "GET" | "POST";
   body?: unknown;
@@ -98,12 +129,7 @@ export async function api<T = unknown>(
     throw new ApiError("Network error. Is XAMPP/Apache running?", 0);
   }
 
-  let payload: ApiResponse<T>;
-  try {
-    payload = (await response.json()) as ApiResponse<T>;
-  } catch {
-    throw new ApiError(`Bad response (${response.status}).`, response.status);
-  }
+  const payload = await readApiResponse<T>(response);
 
   if (!payload.ok) {
     throw new ApiError(payload.error ?? `Request failed (${response.status}).`, response.status, payload.data);
@@ -128,7 +154,13 @@ export function apiPost<T = unknown>(path: string, action: string, body?: unknow
 }
 
 /** Multipart POST (e.g. supplier create with ID photo). Do not set Content-Type — browser sets boundary. */
-export async function apiPostForm<T = unknown>(path: string, action: string, form: FormData, signal?: AbortSignal): Promise<T> {
+export async function apiPostForm<T = unknown>(
+  path: string,
+  action: string,
+  form: FormData,
+  signal?: AbortSignal,
+  options?: { refresh?: boolean }
+): Promise<T> {
   const url = new URL(`${API_BASE}/${path.replace(/^\/+/, "")}`, window.location.origin);
   url.searchParams.set("action", action);
   const headers = mergeApiHeaders({ Accept: "application/json" });
@@ -142,10 +174,12 @@ export async function apiPostForm<T = unknown>(path: string, action: string, for
     signal,
   });
 
-  const payload = (await response.json()) as ApiResponse<T>;
+  const payload = await readApiResponse<T>(response);
   if (!payload.ok) {
     throw new ApiError(payload.error ?? `Request failed (${response.status}).`, response.status, payload.data);
   }
-  triggerLiveRefresh();
+  if (options?.refresh !== false) {
+    triggerLiveRefresh();
+  }
   return payload.data as T;
 }

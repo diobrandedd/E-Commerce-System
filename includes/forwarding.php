@@ -36,6 +36,10 @@ function rts_forwarding_enabled(): bool
 /** Parsed public origin, e.g. https://xxx.ngrok-free.dev (no trailing slash). */
 function rts_forwarding_public_url(): string
 {
+    if (function_exists('ini_set')) {
+        @ini_set('pcre.jit', '0');
+    }
+
     $raw = trim((string) (rts_forwarding_config()['public_url'] ?? ''));
     if ($raw === '') {
         return '';

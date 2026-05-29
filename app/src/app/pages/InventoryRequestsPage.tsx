@@ -221,10 +221,15 @@ export function InventoryRequestsPage() {
 
   const colSpan = isExec && !readonly ? 6 : 5;
 
+  const pageTitle = "Requests";
+  const pageSubtitle = isExec
+    ? "Inventory correction requests and pending POS discount approvals"
+    : "Inventory correction requests you have submitted";
+
   return (
     <PageLayout
-      title="Notifications"
-      subtitle="Inventory correction requests and pending POS discount approvals"
+      title={pageTitle}
+      subtitle={pageSubtitle}
       actions={
         isPm ? (
           <button
