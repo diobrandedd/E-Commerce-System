@@ -24,6 +24,8 @@ https://www.python.org/downloads/
 pip install pdfplumber openpyxl PyMuPDF pytesseract pdf2image
 ```
 
+`pdfplumber` is required for **PDF → Excel** (Waybill sidebar). PyMuPDF is used by **Waybill Stamper**.
+
 ### 3. Tesseract OCR (for Lazada/Shopee image-only pages)
 Download: https://github.com/UB-Mannheim/tesseract/wiki
 → Install to: `C:\Program Files\Tesseract-OCR\` (default — the app auto-detects this path)
@@ -77,7 +79,20 @@ max_execution_time = 300
 
 ---
 
-## HOW TO USE
+## PDF → EXCEL (no worker Excel)
+
+When workers send **PDF waybills only**, use **Waybill → PDF to Excel** in Pyx Tracker:
+
+1. Upload Shopee waybill PDF(s)
+2. Review extracted rows (tracking, name, item/s per page)
+3. Confirm and download the generated iPYX Excel (one file per PDF)
+4. Upload the **same PDF(s)** plus the Excel in **Waybill Stamper** below
+
+Legacy standalone URL `pdf-to-excel/` redirects to the SPA when logged in.
+
+---
+
+## HOW TO USE (Waybill Stamper)
 
 1. Drop your **PDF waybills** (one or multiple) into the left zone
 2. Drop your **iPYX Excel order sheet(s)** into the right zone
@@ -87,13 +102,20 @@ max_execution_time = 300
 
 ---
 
-## EXCEL FORMAT EXPECTED (iPYX)
-- Row 4 = headers
+## EXCEL FORMAT EXPECTED (iPYX / sir Jono)
+- Row 4 = blue header row
+- Row 5 = blank separator
+- Data from row 6 onward
+- Col A = line number (1, 2, 3…)
 - Col B = Order No.
 - Col C = Name
-- Col D = Item/s  ← this gets stamped onto the waybill
+- Col D = Item/s  ← stamped onto the waybill
+- Col E = Note
+- Col F = blank spacer (no header text)
 - Col G = Courier
 - Col H = Tracking Number  ← matched against PDF tracking numbers
+
+**PDF → Excel** writes this layout automatically so Stamper can read the file as-is.
 
 The system reads ALL sheets automatically (Today Orders, YesterdayPendings, etc.)
 and skips utility sheets (Template, Pito-Pito, Inventory).
@@ -105,7 +127,7 @@ and skips utility sheets (Template, Pito-Pito, Inventory).
 |-----------|---------------------|-------------------|
 | TikTok    | JT001848...         | Text layer ⚡     |
 | Lazada    | 820144974112        | OCR 🔍            |
-| Shopee    | PH268923880270O     | Text layer ⚡     |
+| Shopee    | SPEPH… / SPX… / PH… | Text layer ⚡     |
 | Flash Exp | FExxxxxxxxxx        | Text layer ⚡     |
 
 ---

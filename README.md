@@ -8,7 +8,7 @@
 | **API** | PHP JSON gateway (`api/v1/*.php`) |
 | **Legacy UI** | PHP pages (`record.php`, `deliveries/`, etc.) |
 | **Database** | MySQL (`rts_system`) |
-| **Heavy jobs** | Python (`waybill-stamper/processor.py`) |
+| **Heavy jobs** | Python (`waybill-stamper/`, `pdf-to-excel/`) |
 
 **Production URL (local):** `http://localhost/rts/app/dist/`  
 **API base:** `/rts/api/v1/`
@@ -23,7 +23,7 @@ Pyx Tracker
 ├── RTS (returns tracking + inventory mirror)
 ├── Sales & POS (walk-in terminal, reports)
 ├── Suppliers & AR
-├── CSR tools (waybill stamping)
+├── CSR tools (waybill stamp, PDF→Excel, order remarks)
 └── Legacy / bridge pages (deliveries upload, old RTS record flow)
 ```
 
@@ -46,7 +46,9 @@ Built app: `cd app && npm install && npm run build:prod` → `app/dist/`
 | **RTS inventory** | `/rts` | Executive, PM, HR, CSR | Mirror of returns; sync from legacy cases |
 | **Reports / Sales** | `/reports`, `/sales` | Executive, PM | POS + AR-backed reporting |
 | **AR credits** | `/ar` | Several roles | Staff credit tracking |
-| **Waybill stamper** | `/waybill-stamper` | Executive, CSR TL | PDF waybills + iPYX Excel → stamped PDF |
+| **Waybill stamper** | `/waybill/stamper` | Executive, CSR TL | PDF waybills + iPYX Excel → stamped PDF |
+| **PDF → Excel** | `/waybill/pdf-to-excel` | Executive, CSR TL | Shopee PDF only → iPYX Excel for stamper |
+| **Order remarks** | `/waybill/order-remarks` | Executive, CSR TL | Clean courier Excel remarks column |
 | **Staff / settings** | `/staff`, `/settings` | Executive | User management |
 | **POS terminal** | `/pos`, `/pos/honey` | POS PIN | Walk-in sales |
 
@@ -63,12 +65,21 @@ Auth: `api/v1/auth.php` (session + CSRF). SPA proxies API in dev via Vite.
 
 RTS **operational** data still originates here; the SPA **inventory mirror** is updated via `api/v1/rts_sync.php`.
 
-### Waybill stamper
+### Waybill tools (CSR)
 
-- **SPA:** `/waybill-stamper`
-- **API:** `api/v1/waybill.php` (`stash` → per-file upload, `process`, `download`)
-- **Engine:** `waybill-stamper/processor.py` (Python, Tesseract, Poppler)
-- **Setup:** [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md)
+| Tool | SPA route | API |
+|------|-----------|-----|
+| **Stamper** | `/waybill/stamper` | `api/v1/waybill.php` |
+| **PDF → Excel** | `/waybill/pdf-to-excel` | `api/v1/pdf_to_excel.php` |
+| **Order remarks** | `/waybill/order-remarks` | `api/v1/order_remarks.php` |
+
+Engines: `waybill-stamper/processor.py`, `pdf-to-excel/extractor.py`, `includes/order_remarks_workbook.py`.
+
+**Typical flow when workers send PDF only:** PDF → Excel → download Excel → Stamper (same PDF + Excel).
+
+Legacy URLs `/waybill-stamper` and `pdf-to-excel/` redirect into the SPA when logged in.
+
+Full install steps for Python / OCR: [Quick start, section 3](#3-waybill--pdf-tools-setup-windows) and [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md).
 
 ### Infrastructure
 
@@ -85,7 +96,7 @@ RTS **operational** data still originates here; the SPA **inventory mirror** is 
 | `executive` | Full inventory, costing, suppliers, RTS, waybill, staff, settings |
 | `prod_manager` | Honey ops, RTS inventory, reports, sales, AR (own) |
 | `hr` | Read-only Honey + RTS + requests history |
-| `csr_tl` | Waybill stamper, RTS inventory |
+| `csr_tl` | Waybill group (stamper, PDF→Excel, order remarks), RTS inventory |
 | `csr_staff` | RTS record flow |
 | `team_leader` / `staff` | Dept stock input, daily count, edit requests (legacy-style dept tools) |
 | `pos` | POS terminal only |
@@ -103,8 +114,9 @@ rts/
 ├── includes/               # PHP shared logic (auth, honey, waybill, …)
 ├── config/                 # config.php, forwarding.php
 ├── sql/                    # Database migrations
-├── waybill-stamper/        # Python processor + SETUP.md
-├── storage/                # App-private files (waybill temp, etc.)
+├── waybill-stamper/        # Stamper Python + SETUP.md
+├── pdf-to-excel/           # PDF→Excel extractor.py
+├── storage/                # App-private files (waybill, order-remarks, pdf-to-excel)
 ├── assets/                 # Legacy static uploads (prefer external storage)
 ├── record.php, deliveries/ # Legacy RTS / logistics pages
 └── README.md               # This file
@@ -124,10 +136,165 @@ rts/
 ### 2. PHP / Apache (XAMPP)
 
 - Point Apache document root at `htdocs`; app is served under `/rts/`.
-- Enable `shell_exec` if using Waybill Stamper (see SETUP.md).
-- Optional: raise `upload_max_filesize` / `post_max_size` for large PDF batches.
+- **Waybill / PDF → Excel / Order remarks** need `shell_exec` enabled in `php.ini` (see [section 3 below](#3-waybill--pdf-tools-setup-windows)).
+- Raise upload limits for large waybill PDFs (see same section).
 
-### 3. React SPA
+### 3. Waybill & PDF tools setup (Windows)
+
+Required for **Waybill Stamper**, **PDF → Excel**, and OCR fallback on image-only label pages. Install on the **same machine that runs Apache** (your XAMPP PC).
+
+#### 3.1 Python 3
+
+1. Download: [python.org/downloads](https://www.python.org/downloads/) (64-bit recommended).
+2. Run the installer.
+3. On the first screen, check **“Add python.exe to PATH”** (or “Add Python to PATH”).
+4. Choose **Install Now** (or customize if you prefer a fixed path).
+
+Verify in **Command Prompt** (new window after install):
+
+```bat
+python --version
+```
+
+If `python` is not found, try:
+
+```bat
+py -3 --version
+```
+
+The app tries `python`, then `py -3`, then common install paths automatically.
+
+#### 3.2 Python packages (pip)
+
+Open **Command Prompt** and run:
+
+```bat
+pip install pdfplumber openpyxl PyMuPDF pytesseract pdf2image
+```
+
+| Package | Used by |
+|---------|---------|
+| `pdfplumber` | PDF → Excel (text layer per page) |
+| `PyMuPDF` (`fitz`) | Waybill Stamper (read/stamp PDF) |
+| `openpyxl` | Excel read/write (stamper, PDF→Excel, order remarks) |
+| `pytesseract` | OCR wrapper (stamper + PDF→Excel fallback) |
+| `pdf2image` | Renders PDF pages to images for OCR |
+
+Verify imports:
+
+```bat
+python -c "import pdfplumber, fitz, openpyxl, pytesseract, pdf2image; print('All OK')"
+```
+
+If you use `py` instead of `python`:
+
+```bat
+py -3 -m pip install pdfplumber openpyxl PyMuPDF pytesseract pdf2image
+py -3 -c "import pdfplumber, fitz, openpyxl, pytesseract, pdf2image; print('All OK')"
+```
+
+#### 3.3 Tesseract OCR
+
+Needed when a waybill page has **no text layer** (some Lazada/Shopee scans) or PDF → Excel cannot read the tracking number from text.
+
+1. Download the Windows installer: [UB Mannheim Tesseract wiki](https://github.com/UB-Mannheim/tesseract/wiki).
+2. Install to the default folder: `C:\Program Files\Tesseract-OCR\`
+3. Optional: check “Add to PATH” during install. The app also checks this path even if PATH is not set for Apache.
+
+Confirm the executable exists:
+
+`C:\Program Files\Tesseract-OCR\tesseract.exe`
+
+Or in CMD:
+
+```bat
+tesseract --version
+```
+
+**Custom install path:** copy `waybill-stamper/paths.sample.json` to `waybill-stamper/paths.json` and set the full path to `tesseract.exe`.
+
+#### 3.4 Poppler (for pdf2image)
+
+`pdf2image` needs Poppler’s `pdftoppm` to turn PDF pages into images before OCR.
+
+1. Download a Windows build: [poppler-windows releases](https://github.com/oschwartz10612/poppler-windows/releases).
+2. Extract the ZIP (e.g. to `C:\poppler\`).
+3. Add the **bin** folder to your system PATH, for example:
+   - `C:\poppler\Library\bin`
+   - (Exact folder name depends on the release; look for `pdftoppm.exe` inside.)
+
+Verify:
+
+```bat
+pdftoppm -h
+```
+
+**Custom path:** set `"poppler": "C:\\poppler\\Library\\bin"` in `waybill-stamper/paths.json` (see `paths.sample.json`).
+
+#### 3.5 PHP: allow Python and large uploads
+
+Edit `C:\xampp\php\php.ini`, then **restart Apache** in XAMPP.
+
+**Enable `shell_exec`** (required for Python jobs):
+
+- Find `disable_functions`.
+- Remove `shell_exec` from that list (leave other restrictions if your policy requires them).
+
+**Upload / runtime limits** (per-file uploads are ~60 MB max in the UI; raise if needed):
+
+```ini
+upload_max_filesize = 64M
+post_max_size = 68M
+max_execution_time = 300
+```
+
+`api/v1/.htaccess` may also raise limits for API routes when Apache allows `.htaccess` overrides.
+
+#### 3.6 Optional path overrides
+
+If Tesseract or Poppler are not on PATH (common when Apache runs as a service):
+
+```bat
+copy waybill-stamper\paths.sample.json waybill-stamper\paths.json
+```
+
+Edit `paths.json`:
+
+```json
+{
+  "tesseract": "C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
+  "poppler": "C:\\poppler\\Library\\bin"
+}
+```
+
+PDF → Excel reads the same `waybill-stamper/paths.json` for OCR fallback.
+
+#### 3.7 Quick checklist
+
+| Step | Command / check |
+|------|------------------|
+| Python | `python --version` |
+| pip packages | `python -c "import pdfplumber, fitz, openpyxl, pytesseract, pdf2image; print('OK')"` |
+| Tesseract | `tesseract --version` or file exists under `Program Files\Tesseract-OCR` |
+| Poppler | `pdftoppm -h` or `paths.json` |
+| PHP | `shell_exec` not disabled; Apache restarted |
+| App | Log in → **Waybill → PDF to Excel** or **Stamper** and run a small test PDF |
+
+#### 3.8 Troubleshooting
+
+| Problem | What to do |
+|---------|------------|
+| “Python is not available” | Install Python, add to PATH, restart Apache; try `py -3` in CMD |
+| `pip` not found | `python -m pip install …` or reinstall Python with pip enabled |
+| OCR fails / empty tracking | Install Tesseract + Poppler; set `paths.json` |
+| `pdf2image` / Poppler error | Add `Library\bin` to PATH or `paths.json` → `poppler` |
+| Upload too large | Increase `upload_max_filesize` / `post_max_size` in `php.ini` |
+| Processing timeout | Increase `max_execution_time`; large OCR batches take minutes |
+| `shell_exec` disabled | Remove from `disable_functions` in `php.ini` |
+
+More detail: [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md), [`pdf-to-excel/README.md`](pdf-to-excel/README.md).
+
+### 4. React SPA
 
 ```bash
 cd app
@@ -136,7 +303,7 @@ npm run dev          # http://localhost:5173 — proxies /rts/api to XAMPP
 npm run build:prod   # output → app/dist/ for Apache
 ```
 
-### 4. Config
+### 5. Config
 
 ```bash
 cp config/config.sample.php config/config.php    # if missing
@@ -194,7 +361,7 @@ Edit **`config/forwarding.php`** when switching tunnels:
 | **RTS mirror** | `rts_inventory_rows`, `api/v1/rts.php`, `rts_sync.php` |
 | **Suppliers** | `suppliers`, `api/v1/suppliers.php` |
 | **POS / AR** | `pos_sales`, `ar_credits`, `api/v1/pos.php`, `ar.php` |
-| **Waybill** | Session stash + `storage/waybill-stamper/`, `api/v1/waybill.php` |
+| **Waybill** | `storage/waybill-stamper/`, `storage/pdf-to-excel/`, `storage/order-remarks/` |
 
 Honey ops and generic costing share one DB but serve different screens.
 
@@ -213,6 +380,8 @@ Honey ops and generic costing share one DB but serve different screens.
 | `reports.php`, `sales.php` | Reporting |
 | `pos.php`, `ar.php` | POS & credits |
 | `waybill.php` | Waybill stamper |
+| `pdf_to_excel.php` | PDF → Excel (waybill labels → iPYX) |
+| `order_remarks.php` | Courier Excel remarks cleanup |
 | `dashboard.php`, `edit_requests.php` | Dashboard & corrections |
 
 ---
@@ -223,7 +392,9 @@ Honey ops and generic costing share one DB but serve different screens.
 |------|--------|--------|
 | **CSR portal expansion** | Planned | `portal.php` is a stub; more CSR self-service pages |
 | **Paragis / Cacao-BRC inventory** | Partial | Routes exist; operational parity with Honey v3 |
-| **Waybill stamper** | ✅ Shipped | Optional: batch history, progress streaming, CSR staff access |
+| **Waybill stamper** | ✅ Shipped | |
+| **PDF → Excel** | ✅ Shipped | Review gate before download; Stamper handoff manual |
+| **Order remarks** | ✅ Shipped | JNT / SPX / Flash profiles |
 | **Legacy → SPA migration** | Ongoing | `record.php` RTS flow still primary for case capture |
 | **Team leader / staff SPA** | Partial | Stock input & daily count in SPA; some flows still legacy |
 | **Executive legacy pages** | Deprecated path | Prefer SPA dashboard / reports |
@@ -235,9 +406,14 @@ Honey ops and generic costing share one DB but serve different screens.
 
 ## Related docs
 
-- [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md) — Python, Tesseract, Poppler, PHP limits  
+- [`docs/Pyx_Tracker_Project_Specification.docx`](docs/Pyx_Tracker_Project_Specification.docx) — project spec (executive / IT)  
+- [`docs/Pyx_Tracker_Executive_Guide.docx`](docs/Pyx_Tracker_Executive_Guide.docx) — how the system works (non-technical)  
+- [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md) — Waybill-focused setup & troubleshooting  
+- [`pdf-to-excel/README.md`](pdf-to-excel/README.md) — PDF → Excel API & columns  
 - [`app/README.md`](app/README.md) — SPA dev commands  
 - [`config/forwarding.sample.php`](config/forwarding.sample.php) — ngrok fields  
+
+Regenerate DOCX files: `py -3 docs/generate_executive_docs.py`
 
 ---
 

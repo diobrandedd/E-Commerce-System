@@ -83,9 +83,11 @@ configure_external_tools()
 # ─── TRACKING NUMBER PATTERNS ────────────────────────────────────────────────
 
 TN_PATTERNS = [
+    r'\b(SPEPH\d{12,15})\b',          # Shopee Express PH (waybill barcode text)
+    r'\b(SPX[A-Z0-9]{10,15})\b',      # Shopee Express alt
     r'\b(JT\d{13,16})\b',            # J&T / TikTok
     r'\b(FE[A-Z0-9]{10,14})\b',      # Flash Express
-    r'\b(PH\d{10,14}[A-Z0-9]?\w?)\b',# Shopee Express
+    r'\b(PH\d{10,14}[A-Z0-9]?\w?)\b',# Shopee Express (legacy PH…)
     r'\b(8201\d{8,10})\b',            # Lazada numeric (820144...)
     r'\b(820\d{9,11})\b',             # Lazada numeric fallback
 ]
@@ -102,6 +104,7 @@ def find_tracking(text: str) -> str | None:
 
 def detect_platform(tn: str | None) -> str:
     if not tn: return 'Unknown'
+    if tn.startswith('SPEPH') or tn.startswith('SPX'): return 'Shopee Express'
     if tn.startswith('JT'):  return 'TikTok/J&T'
     if tn.startswith('FE'):  return 'Lazada/Flash'
     if tn.startswith('PH'):  return 'Shopee'
@@ -167,7 +170,10 @@ ORDER_COL_NAMES = ['order no.', 'order no', 'order number', 'order id', 'order']
 NOTE_COL_NAMES  = ['note', 'notes', 'remarks']
 
 # Sheets to always skip regardless of content
-SKIP_SHEETS = ['template', 'pito-pito', 'inventory', 'return', 'yesterday']
+SKIP_SHEETS = [
+    'template', 'pito-pito', 'inventory', 'return', 'yesterday',
+    'extraction summary',
+]
 
 
 def norm_tn(raw: str) -> str:

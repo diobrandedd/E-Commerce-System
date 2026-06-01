@@ -18,10 +18,10 @@ $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $isLegacyDownload = isset($_GET['download']);
 $isLegacyProcess = $method === 'POST' && (($_POST['action'] ?? '') === 'process');
 if ($method === 'GET' && !$isLegacyDownload) {
-    header('Location: /rts/app/dist/#/waybill-stamper', true, 302);
+    header('Location: /rts/app/dist/#/waybill/stamper', true, 302);
     exit;
 }
 if (!$isLegacyProcess && $method !== 'GET') {
-    header('Location: /rts/app/dist/#/waybill-stamper', true, 302);
+    header('Location: /rts/app/dist/#/waybill/stamper', true, 302);
     exit;
 }

@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { Link } from "react-router";
 import {
   AlertCircle,
   CheckCircle2,
@@ -165,6 +166,13 @@ export function WaybillStamperPage() {
             Upload PDF waybills (TikTok, Lazada, Shopee) and iPYX Excel order sheets. The system reads each
             tracking number, finds the matching order, and prints the item line on the waybill. Unmatched pages
             are flagged in red on the output PDF.
+          </p>
+          <p className="mt-2">
+            No Excel from the worker?{" "}
+            <Link to="/waybill/pdf-to-excel" className="text-[#C8900A] font-semibold hover:underline">
+              PDF → Excel
+            </Link>{" "}
+            builds an order sheet from the waybill PDF first.
           </p>
         </div>
 

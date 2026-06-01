@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { createBrowserRouter, Outlet } from "react-router";
+import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import { Root } from "./Root";
 import { RequireAuth } from "./components/RequireAuth";
 import { LoginPage } from "./pages/LoginPage";
@@ -22,6 +22,8 @@ import { POSCategoryPage } from "./pages/pos/POSCategoryPage";
 import { POSHoneyPage } from "./pages/pos/POSHoneyPage";
 import { SalesPage } from "./pages/exec/SalesPage";
 import { WaybillStamperPage } from "./pages/csr/WaybillStamperPage";
+import { OrderRemarksPage } from "./pages/csr/OrderRemarksPage";
+import { PdfToExcelPage } from "./pages/csr/PdfToExcelPage";
 import type { Role } from "./context/AuthContext";
 
 // Wrap a page component in RequireAuth.  Using createElement to keep this
@@ -65,8 +67,20 @@ export const router = createBrowserRouter(
         { path: "costing", element: guarded(CostingPage, { roles: ["executive", "prod_manager"] }) },
         { path: "ar", element: guarded(ARCreditsPage) },
         {
-          path: "waybill-stamper",
+          path: "waybill/stamper",
           element: guarded(WaybillStamperPage, { roles: ["executive", "csr_tl"] }),
+        },
+        {
+          path: "waybill/order-remarks",
+          element: guarded(OrderRemarksPage, { roles: ["executive", "csr_tl"] }),
+        },
+        {
+          path: "waybill/pdf-to-excel",
+          element: guarded(PdfToExcelPage, { roles: ["executive", "csr_tl"] }),
+        },
+        {
+          path: "waybill-stamper",
+          element: createElement(Navigate, { to: "/waybill/stamper", replace: true }),
         },
         { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
         { path: "rts/record", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },

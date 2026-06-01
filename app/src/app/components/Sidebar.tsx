@@ -58,10 +58,15 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     badge: pendingCorrections > 0 ? pendingCorrections : undefined,
   };
 
-  const waybillStamperItem: NavItem = {
+  const waybillGroup: NavItem = {
     icon: Printer,
-    label: "Waybill Stamper",
-    to: "/waybill-stamper",
+    label: "Waybill",
+    to: "/waybill/stamper",
+    children: [
+      { label: "Stamper", to: "/waybill/stamper" },
+      { label: "PDF to Excel", to: "/waybill/pdf-to-excel" },
+      { label: "Order Remarks", to: "/waybill/order-remarks" },
+    ],
   };
 
   switch (role) {
@@ -73,7 +78,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: Users, label: "Staff Management", to: "/staff" },
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
-        waybillStamperItem,
+        waybillGroup,
         { icon: Truck, label: "Supplier Master", to: "/suppliers" },
         { icon: DollarSign, label: "Product Costing", to: "/costing" },
         { icon: ClipboardList, label: "AR Credits", to: "/ar" },
@@ -110,7 +115,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     case "csr_tl":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        waybillStamperItem,
+        waybillGroup,
         { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
       ];
     case "staff":
@@ -176,6 +181,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         const next = new Set(prev);
         next.add("Inventory");
         next.add("Inventory>Honey");
+        return next;
+      });
+    }
+    if (location.pathname.includes("/waybill")) {
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.add("Waybill");
         return next;
       });
     }
