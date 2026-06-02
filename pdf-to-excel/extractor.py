@@ -90,20 +90,38 @@ def configure_external_tools() -> None:
 configure_external_tools()
 
 
-TN_PATTERNS = [
-    r'\b(SPEPH\d{12,15})\b',
-    r'\b(SPX[A-Z0-9]{10,15})\b',
-    r'\b(JT\d{13,16})\b',
-    r'\b(PH\d{10,14}[A-Z0-9]?\w?)\b',
+TN_PATTERNS: list[tuple[int, str]] = [
+    (10, r'\b(SPEPH\d{12,15})\b'),
+    (10, r'\b(SPX[A-Z0-9]{10,15})\b'),
+    (20, r'\b(8201\d{8,12})\b'),
+    (20, r'\b(820\d{9,12})\b'),
+    (30, r'\b(JT\d{13,16})\b'),
+    (30, r'\b(FE[A-Z0-9]{10,14})\b'),
+    (30, r'\b(PH\d{10,14}[A-Z0-9]?\w?)\b'),
+    (40, r'\b(P[A-Z0-9]{11,17})\b'),
 ]
 
 
+def _valid_marketplace_parcel_id(tn: str) -> bool:
+    if not re.match(r'^P[A-Z0-9]{11,17}$', tn, re.IGNORECASE):
+        return True
+    return sum(1 for c in tn if c.isdigit()) >= 2
+
+
 def find_tracking(text: str) -> str | None:
-    for pat in TN_PATTERNS:
-        m = re.search(pat, text)
-        if m:
-            return m.group(1)
-    return None
+    if not text:
+        return None
+    best_prio = 999
+    best_tn: str | None = None
+    for prio, pat in TN_PATTERNS:
+        for m in re.finditer(pat, text, re.IGNORECASE):
+            tn = m.group(1).strip().upper()
+            if not _valid_marketplace_parcel_id(tn):
+                continue
+            if prio < best_prio:
+                best_prio = prio
+                best_tn = tn
+    return best_tn
 
 
 def detect_courier(tn: str | None) -> str:
@@ -111,8 +129,14 @@ def detect_courier(tn: str | None) -> str:
         return 'Unknown'
     if tn.startswith('SPEPH') or tn.startswith('SPX') or tn.startswith('PH'):
         return 'Shopee Express'
+    if re.match(r'^P[A-Z0-9]{11,17}$', tn, re.I):
+        return 'Flash / Marketplace'
     if tn.startswith('JT'):
         return "J&T Express"
+    if tn.startswith('FE'):
+        return 'Flash Express'
+    if tn.startswith('820'):
+        return 'Lazada / J&T'
     return 'Unknown'
 
 

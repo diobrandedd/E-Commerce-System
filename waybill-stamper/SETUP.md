@@ -100,6 +100,8 @@ Legacy standalone URL `pdf-to-excel/` redirects to the SPA when logged in.
 4. Wait — OCR pages take ~2–3 seconds each
 5. Download the stamped PDF
 
+**Stamp placement:** One line at the bottom-right (e.g. `ITEMS: 1 x 1L HONEY w/SF`) so the **bottom-left QR** on SPX/Shopee labels stays visible.
+
 ---
 
 ## EXCEL FORMAT EXPECTED (iPYX / sir Jono)
@@ -128,7 +130,8 @@ and skips utility sheets (Template, Pito-Pito, Inventory).
 | TikTok    | JT001848...         | Text layer ⚡     |
 | Lazada    | 820144974112        | OCR 🔍            |
 | Shopee    | SPEPH… / SPX… / PH… | Text layer ⚡     |
-| Flash Exp | FExxxxxxxxxx        | Text layer ⚡     |
+| Flash / marketplace | P0432KFQNC1AC (parcel ID) or FE… | Text layer ⚡ |
+| Lazada/J&T | 820… / JT…         | Text / OCR        |
 
 ---
 

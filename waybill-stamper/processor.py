@@ -82,22 +82,40 @@ configure_external_tools()
 
 # ─── TRACKING NUMBER PATTERNS ────────────────────────────────────────────────
 
-TN_PATTERNS = [
-    r'\b(SPEPH\d{12,15})\b',          # Shopee Express PH (waybill barcode text)
-    r'\b(SPX[A-Z0-9]{10,15})\b',      # Shopee Express alt
-    r'\b(JT\d{13,16})\b',            # J&T / TikTok
-    r'\b(FE[A-Z0-9]{10,14})\b',      # Flash Express
-    r'\b(PH\d{10,14}[A-Z0-9]?\w?)\b',# Shopee Express (legacy PH…)
-    r'\b(8201\d{8,10})\b',            # Lazada numeric (820144...)
-    r'\b(820\d{9,11})\b',             # Lazada numeric fallback
+# (priority, pattern) — lower priority number wins when multiple matches exist (e.g. OCR).
+TN_PATTERNS: list[tuple[int, str]] = [
+    (10, r'\b(SPEPH\d{12,15})\b'),          # Shopee Express PH barcode
+    (10, r'\b(SPX[A-Z0-9]{10,15})\b'),      # Shopee Express alt
+    (20, r'\b(8201\d{8,12})\b'),            # Lazada / J&T numeric
+    (20, r'\b(820\d{9,12})\b'),             # Lazada numeric (e.g. 820145410774)
+    (30, r'\b(JT\d{13,16})\b'),            # J&T / TikTok
+    (30, r'\b(FE[A-Z0-9]{10,14})\b'),      # Flash carrier barcode
+    (30, r'\b(PH\d{10,14}[A-Z0-9]?\w?)\b'),# Shopee legacy PH…
+    (40, r'\b(P[A-Z0-9]{11,17})\b'),        # Marketplace parcel ID (P0432KFQNC1AC)
 ]
 
+
+def _valid_marketplace_parcel_id(tn: str) -> bool:
+    """Reject OCR garbage like PLLOLPSVLOZ8 (letters + one digit on vertical text)."""
+    if not re.match(r'^P[A-Z0-9]{11,17}$', tn, re.IGNORECASE):
+        return True
+    return sum(1 for c in tn if c.isdigit()) >= 2
+
+
 def find_tracking(text: str) -> str | None:
-    for pat in TN_PATTERNS:
-        m = re.search(pat, text)
-        if m:
-            return m.group(1).strip()
-    return None
+    if not text:
+        return None
+    best_prio = 999
+    best_tn: str | None = None
+    for prio, pat in TN_PATTERNS:
+        for m in re.finditer(pat, text, re.IGNORECASE):
+            tn = m.group(1).strip().upper()
+            if not _valid_marketplace_parcel_id(tn):
+                continue
+            if prio < best_prio:
+                best_prio = prio
+                best_tn = tn
+    return best_tn
 
 
 # ─── PLATFORM DETECTION ──────────────────────────────────────────────────────
@@ -105,6 +123,7 @@ def find_tracking(text: str) -> str | None:
 def detect_platform(tn: str | None) -> str:
     if not tn: return 'Unknown'
     if tn.startswith('SPEPH') or tn.startswith('SPX'): return 'Shopee Express'
+    if re.match(r'^P[A-Z0-9]{11,17}$', tn): return 'Marketplace/Flash'
     if tn.startswith('JT'):  return 'TikTok/J&T'
     if tn.startswith('FE'):  return 'Lazada/Flash'
     if tn.startswith('PH'):  return 'Shopee'
@@ -317,90 +336,103 @@ RED_BORDER    = (0.55, 0.05, 0.05)
 RED_TEXT      = (0.45, 0.02, 0.02)
 
 
-def stamp_page(page: fitz.Page, items: str, matched: bool, tn: str | None):
+def _stamp_layout(
+    page: fitz.Page,
+    tn: str | None,
+    line: str | None = None,
+) -> tuple[fitz.Rect, int, int]:
     """
-    Stamp a large, bold, clearly visible item label at the bottom of the page.
-    Uses white background + thick black border + large black text.
-    Sized to be obvious for packers without overwriting any waybill content.
+    Item stamp on the bottom-right; bottom-left kept clear for SPX/Shopee QR only.
+    Returns (rect, font_size, font_size_small).
     """
     pw = page.rect.width
     ph = page.rect.height
+    margin = 4
 
-    # ── Box dimensions — tall enough to be obvious ──────────────────────────
-    margin   = 5
-    box_h    = 68       # taller box
-    rect     = fitz.Rect(margin, ph - box_h - margin,
-                         pw - margin, ph - margin)
+    tn_up = (tn or '').upper()
+    # Only SPEPH/SPX use the narrow layout (QR bottom-left). Flash/Lazada P… IDs use full width.
+    is_shopee = tn_up.startswith('SPEPH') or tn_up.startswith('SPX')
+    if not is_shopee and tn:
+        is_shopee = detect_platform(tn) == 'Shopee Express'
 
-    if matched:
-        # White fill, thick black border
-        page.draw_rect(rect, color=BLACK, fill=WHITE, width=2.5)
+    left_reserve = pw * (0.42 if is_shopee else 0.22)
+    long_line = bool(line and len(line) > 45)
+    box_h = 20 if is_shopee else 24
+    if long_line:
+        box_h = 28 if is_shopee else 34
 
-        # Thin top divider line for visual separation
-        page.draw_line(
-            (rect.x0, rect.y0 + 20),
-            (rect.x1, rect.y0 + 20),
-            color=BLACK, width=0.8
-        )
+    font = 9 if is_shopee else 10
+    font_small = 7 if is_shopee else 8
 
-        # "ITEMS:" label — small caps header line
-        page.insert_text(
-            (rect.x0 + 8, rect.y0 + 14),
-            "ITEMS:",
-            fontsize=9,
-            color=BLACK,
-            fontname="helv",
-        )
+    x0 = max(left_reserve + margin, left_reserve)
+    rect = fitz.Rect(x0, ph - box_h - margin, pw - margin, ph - margin)
+    return rect, font, font_small
 
-        # Main items text — large and bold
-        inner = fitz.Rect(rect.x0 + 6, rect.y0 + 24,
-                          rect.x1 - 6, rect.y1 - 5)
-        rc = page.insert_textbox(
-            inner,
-            items,
-            fontsize=13,
-            color=BLACK,
-            fontname="hebo",        # Helvetica Bold
-            align=fitz.TEXT_ALIGN_LEFT,
-        )
-        # If text overflows (very long items), fallback to smaller size
-        if rc < 0:
-            page.draw_rect(inner, color=WHITE, fill=WHITE, width=0)  # clear
-            page.insert_textbox(
+
+def _draw_stamp_text(
+    page: fitz.Page,
+    rect: fitz.Rect,
+    line: str,
+    font: int,
+    font_small: int,
+    color: tuple,
+) -> None:
+    """Fit stamp text; shrink font and grow box upward if the line is long."""
+    inner = fitz.Rect(rect.x0 + 4, rect.y0 + 2, rect.x1 - 4, rect.y1 - 2)
+    min_fs = 5
+
+    for attempt in range(3):
+        for fs in range(font if attempt == 0 else font_small, min_fs - 1, -1):
+            rc = page.insert_textbox(
                 inner,
-                items,
-                fontsize=10,
-                color=BLACK,
+                line,
+                fontsize=fs,
+                color=color,
                 fontname="hebo",
                 align=fitz.TEXT_ALIGN_LEFT,
             )
+            if rc >= 0:
+                return
+        # Grow box upward for wrapped lines (up to ~2 extra lines)
+        grow = 12
+        if inner.y0 - grow < rect.y0 - 24:
+            break
+        inner = fitz.Rect(inner.x0, inner.y0 - grow, inner.x1, inner.y1)
 
+    # Last resort: truncate so something is always visible
+    label = 'ITEMS: ' if line.upper().startswith('ITEMS:') else ''
+    body = line[len(label):] if label else line
+    max_body = max(12, int((inner.width / 4.5)))
+    short = f"{label}{body[:max_body]}…" if len(body) > max_body else line
+    page.insert_textbox(
+        inner,
+        short,
+        fontsize=min_fs,
+        color=color,
+        fontname="hebo",
+        align=fitz.TEXT_ALIGN_LEFT,
+    )
+
+
+def stamp_page(page: fitz.Page, items: str, matched: bool, tn: str | None):
+    """
+    Item stamp at the bottom-right (e.g. ITEMS: 1 x 1L HONEY w/SF).
+    Bottom-left stays clear for carrier QR codes on SPX/Shopee labels only.
+    """
+    if matched:
+        line = f"ITEMS: {items}"
     else:
-        # Unmatched — red fill, bold red text, still clearly visible
-        page.draw_rect(rect, color=RED_BORDER, fill=RED_FILL, width=2.5)
-        page.draw_line(
-            (rect.x0, rect.y0 + 20),
-            (rect.x1, rect.y0 + 20),
-            color=RED_BORDER, width=0.8
-        )
-        page.insert_text(
-            (rect.x0 + 8, rect.y0 + 14),
-            "NO MATCH FOUND",
-            fontsize=9,
-            color=RED_TEXT,
-            fontname="hebo",
-        )
         tn_str = tn or "UNKNOWN"
-        inner = fitz.Rect(rect.x0 + 6, rect.y0 + 24,
-                          rect.x1 - 6, rect.y1 - 5)
-        page.insert_textbox(
-            inner,
-            f"Tracking: {tn_str}",
-            fontsize=11,
-            color=RED_TEXT,
-            fontname="hebo",
-            align=fitz.TEXT_ALIGN_LEFT,
-        )
+        line = f"NO MATCH: {tn_str}"
+
+    rect, font, font_small = _stamp_layout(page, tn, line)
+
+    if matched:
+        page.draw_rect(rect, color=BLACK, fill=WHITE, width=1.2)
+        _draw_stamp_text(page, rect, line, font, font_small, BLACK)
+    else:
+        page.draw_rect(rect, color=RED_BORDER, fill=RED_FILL, width=1.2)
+        _draw_stamp_text(page, rect, line, font, font_small, RED_TEXT)
 
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────
