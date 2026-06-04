@@ -10,15 +10,11 @@ require_once __DIR__ . '/waybill_stamper.php';
 
 function pdf_to_excel_storage_root(): string
 {
-    $root = dirname(__DIR__) . '/storage/pdf-to-excel';
-    foreach (['stash', 'outputs', 'work'] as $sub) {
-        $dir = $root . '/' . $sub;
-        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
-            throw new RuntimeException('Could not create pdf-to-excel storage directory.');
-        }
-    }
-
-    return $root;
+    return rts_storage_csr_tool_root(
+        RTS_STORAGE_BUCKET_PDF_TO_EXCEL,
+        'pdf-to-excel',
+        ['stash', 'outputs', 'work'],
+    );
 }
 
 function pdf_to_excel_extractor_script(): string

@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-06-04T03:07:03+02:00
+generated: 2026-06-04T11:09:05+02:00
 type: module
 function_count: 3
 ---
@@ -22,19 +22,18 @@ function_count: 3
 **Callers (2):**
 
 - `includes/db.php`:21 — `$c = rts_config()['db'] ?? [];`
-- `includes/rts_storage.php`:17 — `$cfg = rts_config()['storage'] ?? [];`
+- `includes/rts_storage.php`:21 — `$cfg = rts_config()['storage'] ?? [];`
 
 ## rts_pdo {#rts_pdo}
 
-**Callers (24):**
+**Callers (23):**
 
 - `api/case.php`:36 — `$pdo = rts_pdo();`
 - `api/case.php`:104 — `$pdo = rts_pdo();`
 - `api/delivery_batch_detail.php`:32 — `$pdo = rts_pdo();`
-- `api/delivery_bulk.php`:109 — `$pdo = rts_pdo();`
+- `api/delivery_bulk.php`:91 — `$pdo = rts_pdo();`
 - `api/delivery_match_tracking.php`:37 — `$pdo = rts_pdo();`
 - `api/delivery_resolve.php`:42 — `$pdo = rts_pdo();`
-- `deliveries/review.php`:35 — `$pdo = rts_pdo();`
 - `includes/auth.php`:180 — `$pdo = rts_pdo();`
 - `includes/auth.php`:251 — `$pdo = rts_pdo();`
 - `includes/db.php`:42 — `return rts_pdo();`
@@ -55,7 +54,7 @@ function_count: 3
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (93):**
+**Callers (113):**
 
 - `api/v1/_bootstrap.php`:176 — `$pdo = ims_pdo();`
 - `api/v1/ar.php`:26 — `$pdo = ims_pdo();`
@@ -71,16 +70,16 @@ function_count: 3
 - `api/v1/costing.php`:326 — `$pdo = ims_pdo();`
 - `api/v1/dashboard.php`:23 — `$pdo = ims_pdo();`
 - `api/v1/dashboard.php`:161 — `$snapshot = dashboard_inventory_snapshot(ims_pdo(), $period, $from, $to);`
+- `api/v1/deliveries.php`:50 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:94 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:115 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:156 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:186 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:241 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:265 — `$pdo = ims_pdo();`
 - `api/v1/edit_requests.php`:30 — `$pdo = ims_pdo();`
 - `api/v1/edit_requests.php`:87 — `$pdo = ims_pdo();`
 - `api/v1/edit_requests.php`:117 — `$pdo = ims_pdo();`
 - `api/v1/edit_requests.php`:176 — `$pdo = ims_pdo();`
-- `api/v1/honey.php`:63 — `$pdo = ims_pdo();`
-- `api/v1/honey.php`:95 — `ims_pdo(),`
-- `api/v1/honey.php`:115 — `ims_pdo(),`
-- `api/v1/honey.php`:130 — `$pdo = ims_pdo();`
-- `api/v1/honey.php`:151 — `ims_pdo(),`
-- `api/v1/honey.php`:166 — `$pdo = ims_pdo();`
-- `api/v1/honey.php`:184 — `ims_pdo(),`
-- _… and 68 more (run impact.php for full list)_
+- _… and 88 more (run impact.php for full list)_
 

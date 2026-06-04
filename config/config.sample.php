@@ -19,6 +19,10 @@ return [
      *   rts_documentation/
      *   deliveries_documentation/
      *   sp_sort/
+     *   waybill_stamper/   (uploads, outputs, stash — CSR waybill stamper)
+     *   pdf_to_excel/      (stash, outputs, work)
+     *   order_remarks/     (stash, outputs)
+     *   online_orders/     (outputs, work — master Excel merge)
      *
      * web_base: URL path from Apache document root (htdocs). Sibling folder
      *   htdocs/rts_storage → web_base '/rts_storage'

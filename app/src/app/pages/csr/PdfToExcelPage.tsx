@@ -28,7 +28,17 @@ import { cn } from "@/app/components/ui/utils";
 
 function missingLabel(fields: string[]): string {
   if (fields.length === 0) return "Complete";
-  return fields.map(f => (f === "tracking" ? "Tracking" : f === "name" ? "Name" : "Item/s")).join(", ");
+  return fields
+    .map(f =>
+      f === "tracking"
+        ? "Tracking"
+        : f === "name"
+          ? "Name"
+          : f === "items_variant"
+            ? "Honey variant"
+            : "Item/s",
+    )
+    .join(", ");
 }
 
 function ReviewTable({

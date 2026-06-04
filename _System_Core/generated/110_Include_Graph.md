@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-06-04T03:07:02+02:00
+generated: 2026-06-04T11:09:04+02:00
 type: memory-bank
-edge_count: 127
+edge_count: 151
 ---
 
 
@@ -31,10 +31,18 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/costing.php` | `includes/honey_volume.php` |
 | `api/v1/costing.php` | `includes/suppliers.php` |
 | `api/v1/dashboard.php` | `api/v1/_bootstrap.php` |
+| `api/v1/deliveries.php` | `api/v1/_bootstrap.php` |
+| `api/v1/deliveries.php` | `includes/deliveries_upload.php` |
+| `api/v1/deliveries.php` | `includes/online_order_parcels.php` |
 | `api/v1/edit_requests.php` | `api/v1/_bootstrap.php` |
 | `api/v1/honey.php` | `api/v1/_bootstrap.php` |
+| `api/v1/online_orders.php` | `api/v1/_bootstrap.php` |
+| `api/v1/online_orders.php` | `includes/online_orders_generator.php` |
 | `api/v1/order_remarks.php` | `api/v1/_bootstrap.php` |
 | `api/v1/order_remarks.php` | `includes/order_remarks.php` |
+| `api/v1/parcels.php` | `api/v1/_bootstrap.php` |
+| `api/v1/parcels.php` | `includes/honey_parcel_item_parser.php` |
+| `api/v1/parcels.php` | `includes/online_order_parcels.php` |
 | `api/v1/pdf_to_excel.php` | `api/v1/_bootstrap.php` |
 | `api/v1/pdf_to_excel.php` | `includes/pdf_to_excel.php` |
 | `api/v1/pos.php` | `api/v1/_bootstrap.php` |
@@ -83,10 +91,18 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/auth.php` | `includes/db.php` |
 | `includes/auth_check.php` | `includes/db.php` |
 | `includes/db.php` | `includes/forwarding.php` |
+| `includes/deliveries_upload.php` | `includes/auth.php` |
+| `includes/deliveries_upload.php` | `includes/online_order_parcels.php` |
+| `includes/deliveries_upload.php` | `includes/qr_decode.php` |
+| `includes/deliveries_upload.php` | `includes/rts_schema.php` |
+| `includes/deliveries_upload.php` | `includes/rts_storage.php` |
 | `includes/honey_inventory.php` | `includes/db.php` |
 | `includes/honey_inventory.php` | `includes/honey_pricing.php` |
 | `includes/honey_inventory.php` | `includes/honey_volume.php` |
 | `includes/honey_inventory.php` | `includes/suppliers.php` |
+| `includes/honey_parcel_inventory.php` | `includes/honey_parcel_item_parser.php` |
+| `includes/honey_parcel_inventory.php` | `includes/honey_pos.php` |
+| `includes/honey_parcel_inventory.php` | `includes/rts_schema.php` |
 | `includes/honey_pos.php` | `includes/honey_inventory.php` |
 | `includes/honey_pricing.php` | `api/v1/_costing_helpers.php` |
 | `includes/honey_pricing.php` | `includes/honey_inventory.php` |
@@ -94,6 +110,13 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_pricing.php` | `includes/honey_volume.php` |
 | `includes/honey_sales_report.php` | `includes/dashboard_inventory.php` |
 | `includes/labels.php` | `includes/rts_products.php` |
+| `includes/online_order_parcels.php` | `includes/honey_parcel_inventory.php` |
+| `includes/online_order_parcels.php` | `includes/honey_parcel_item_parser.php` |
+| `includes/online_order_parcels.php` | `includes/qr_decode.php` |
+| `includes/online_order_parcels.php` | `includes/rts_schema.php` |
+| `includes/online_orders_generator.php` | `includes/db.php` |
+| `includes/online_orders_generator.php` | `includes/online_order_parcels.php` |
+| `includes/online_orders_generator.php` | `includes/waybill_stamper.php` |
 | `includes/order_remarks.php` | `includes/waybill_stamper.php` |
 | `includes/pdf_to_excel.php` | `includes/waybill_stamper.php` |
 | `includes/pos_discount_requests.php` | `includes/honey_pos.php` |
@@ -105,6 +128,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/sp_sort_service.php` | `includes/rts_storage.php` |
 | `includes/suppliers.php` | `includes/db.php` |
 | `includes/suppliers.php` | `includes/rts_storage.php` |
+| `includes/waybill_stamper.php` | `includes/rts_storage.php` |
 | `index.php` | `includes/auth.php` |
 | `index.php` | `includes/auth_check.php` |
 | `login.php` | `includes/auth.php` |

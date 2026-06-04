@@ -1,7 +1,7 @@
 ---
 title: admin_sidebar
 source: includes/admin_sidebar.php
-generated: 2026-06-04T03:07:02+02:00
+generated: 2026-06-04T11:09:04+02:00
 type: module
 function_count: 3
 ---
@@ -35,11 +35,8 @@ function_count: 3
 
 ## setOpen {#setopen}
 
-**Callers (20):**
+**Callers (17):**
 
-- `deliveries/review.php`:838 — `setOpen(!mPanel.classList.contains('open'));`
-- `deliveries/review.php`:841 — `a.addEventListener('click', function () { setOpen(false); });`
-- `deliveries/review.php`:844 — `if (e.key === 'Escape') setOpen(false);`
 - `includes/admin_sidebar.php`:53 — `btn.addEventListener('click', function () { setOpen(!panel.classList.contains('open')); });`
 - `includes/admin_sidebar.php`:55 — `a.addEventListener('click', function () { setOpen(false); });`
 - `includes/admin_sidebar.php`:58 — `if (e.key === 'Escape') setOpen(false);`

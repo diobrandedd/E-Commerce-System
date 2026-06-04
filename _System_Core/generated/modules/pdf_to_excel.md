@@ -1,7 +1,7 @@
 ---
 title: pdf_to_excel
 source: includes/pdf_to_excel.php
-generated: 2026-06-04T03:07:05+02:00
+generated: 2026-06-04T11:09:10+02:00
 type: module
 function_count: 15
 ---
@@ -21,27 +21,27 @@ function_count: 15
 
 **Callers (2):**
 
-- `includes/pdf_to_excel.php`:63 — `$stashDir = pdf_to_excel_storage_root() . '/stash';`
-- `includes/pdf_to_excel.php`:191 — `$root = pdf_to_excel_storage_root();`
+- `includes/pdf_to_excel.php`:59 — `$stashDir = pdf_to_excel_storage_root() . '/stash';`
+- `includes/pdf_to_excel.php`:187 — `$root = pdf_to_excel_storage_root();`
 
 ## pdf_to_excel_extractor_script {#pdf_to_excel_extractor_script}
 
 **Callers (1):**
 
-- `includes/pdf_to_excel.php`:186 — `$script = pdf_to_excel_extractor_script();`
+- `includes/pdf_to_excel.php`:182 — `$script = pdf_to_excel_extractor_script();`
 
 ## pdf_to_excel_require_access {#pdf_to_excel_require_access}
 
 **Callers (1):**
 
-- `includes/pdf_to_excel.php`:408 — `pdf_to_excel_require_access();`
+- `includes/pdf_to_excel.php`:404 — `pdf_to_excel_require_access();`
 
 ## pdf_to_excel_stash_prune {#pdf_to_excel_stash_prune}
 
 **Callers (2):**
 
-- `includes/pdf_to_excel.php`:56 — `pdf_to_excel_stash_prune();`
-- `includes/pdf_to_excel.php`:89 — `pdf_to_excel_stash_prune();`
+- `includes/pdf_to_excel.php`:52 — `pdf_to_excel_stash_prune();`
+- `includes/pdf_to_excel.php`:85 — `pdf_to_excel_stash_prune();`
 
 ## pdf_to_excel_stash_upload {#pdf_to_excel_stash_upload}
 
@@ -66,15 +66,15 @@ function_count: 15
 
 **Callers (2):**
 
-- `includes/pdf_to_excel.php`:298 — `pdf_to_excel_jobs_prune();`
-- `includes/pdf_to_excel.php`:336 — `pdf_to_excel_jobs_prune();`
+- `includes/pdf_to_excel.php`:294 — `pdf_to_excel_jobs_prune();`
+- `includes/pdf_to_excel.php`:332 — `pdf_to_excel_jobs_prune();`
 
 ## pdf_to_excel_delete_job_files {#pdf_to_excel_delete_job_files}
 
 **Callers (2):**
 
-- `includes/pdf_to_excel.php`:149 — `pdf_to_excel_delete_job_files($job);`
-- `includes/pdf_to_excel.php`:497 — `pdf_to_excel_delete_job_files($job);`
+- `includes/pdf_to_excel.php`:145 — `pdf_to_excel_delete_job_files($job);`
+- `includes/pdf_to_excel.php`:493 — `pdf_to_excel_delete_job_files($job);`
 
 ## pdf_to_excel_extract {#pdf_to_excel_extract}
 
@@ -92,7 +92,7 @@ function_count: 15
 
 **Callers (1):**
 
-- `includes/pdf_to_excel.php`:369 — `'download_token' => pdf_to_excel_register_download($path, $filename, $jobToken),`
+- `includes/pdf_to_excel.php`:365 — `'download_token' => pdf_to_excel_register_download($path, $filename, $jobToken),`
 
 ## pdf_to_excel_serve_download {#pdf_to_excel_serve_download}
 
@@ -104,15 +104,15 @@ function_count: 15
 
 **Callers (1):**
 
-- `includes/pdf_to_excel.php`:461 — `pdf_to_excel_maybe_cleanup_job($jobToken, $path);`
+- `includes/pdf_to_excel.php`:457 — `pdf_to_excel_maybe_cleanup_job($jobToken, $path);`
 
 ## pdf_to_excel_rmdir {#pdf_to_excel_rmdir}
 
 **Callers (5):**
 
-- `includes/pdf_to_excel.php`:231 — `pdf_to_excel_rmdir($workDir);`
-- `includes/pdf_to_excel.php`:241 — `pdf_to_excel_rmdir($workDir);`
-- `includes/pdf_to_excel.php`:289 — `pdf_to_excel_rmdir($workDir);`
-- `includes/pdf_to_excel.php`:500 — `pdf_to_excel_rmdir($workDir);`
-- `includes/pdf_to_excel.php`:520 — `pdf_to_excel_rmdir($path);`
+- `includes/pdf_to_excel.php`:227 — `pdf_to_excel_rmdir($workDir);`
+- `includes/pdf_to_excel.php`:237 — `pdf_to_excel_rmdir($workDir);`
+- `includes/pdf_to_excel.php`:285 — `pdf_to_excel_rmdir($workDir);`
+- `includes/pdf_to_excel.php`:496 — `pdf_to_excel_rmdir($workDir);`
+- `includes/pdf_to_excel.php`:516 — `pdf_to_excel_rmdir($path);`
 

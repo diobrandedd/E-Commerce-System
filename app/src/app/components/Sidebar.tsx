@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
   ChevronDown, Truck, DollarSign, RotateCcw, ClipboardList,
-  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, Printer,
+  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, Printer, PackageCheck,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import { useAuth, Role } from "@/app/context/AuthContext";
@@ -58,14 +58,25 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     badge: pendingCorrections > 0 ? pendingCorrections : undefined,
   };
 
-  const waybillGroup: NavItem = {
-    icon: Printer,
-    label: "Waybill",
-    to: "/waybill/stamper",
+  const onlineOrdersItem: NavItem = {
+    icon: Package,
+    label: "Online Orders",
+    to: "/waybill/online-orders",
+  };
+
+  const onlineParcelsItem: NavItem = {
+    icon: PackageCheck,
+    label: "Online parcels",
+    to: "/fulfillment/online-parcels",
+  };
+
+  const deliveriesItem: NavItem = {
+    icon: Truck,
+    label: "Deliveries",
+    to: "/deliveries",
     children: [
-      { label: "Stamper", to: "/waybill/stamper" },
-      { label: "PDF to Excel", to: "/waybill/pdf-to-excel" },
-      { label: "Order Remarks", to: "/waybill/order-remarks" },
+      { label: "Add deliveries", to: "/deliveries" },
+      { label: "Review batches", to: "/deliveries/review" },
     ],
   };
 
@@ -78,7 +89,9 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: Users, label: "Staff Management", to: "/staff" },
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
-        waybillGroup,
+        onlineOrdersItem,
+        onlineParcelsItem,
+        deliveriesItem,
         { icon: Truck, label: "Supplier Master", to: "/suppliers" },
         { icon: DollarSign, label: "Product Costing", to: "/costing" },
         { icon: ClipboardList, label: "AR Credits", to: "/ar" },
@@ -93,6 +106,8 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
+        deliveriesItem,
+        onlineParcelsItem,
         { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
       ];
     case "hr":
@@ -115,7 +130,8 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     case "csr_tl":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        waybillGroup,
+        onlineOrdersItem,
+        onlineParcelsItem,
         { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
       ];
     case "staff":
@@ -127,6 +143,8 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
       ];
     case "csr_staff":
       return [
+        onlineOrdersItem,
+        onlineParcelsItem,
         { icon: RotateCcw, label: "Record RTS", to: "/rts/record" },
       ];
     default:

@@ -21,9 +21,10 @@ import { SettingsPage } from "./pages/exec/SettingsPage";
 import { POSCategoryPage } from "./pages/pos/POSCategoryPage";
 import { POSHoneyPage } from "./pages/pos/POSHoneyPage";
 import { SalesPage } from "./pages/exec/SalesPage";
-import { WaybillStamperPage } from "./pages/csr/WaybillStamperPage";
-import { OrderRemarksPage } from "./pages/csr/OrderRemarksPage";
-import { PdfToExcelPage } from "./pages/csr/PdfToExcelPage";
+import { OnlineOrdersGeneratorPage } from "./pages/csr/OnlineOrdersGeneratorPage";
+import { DeliveriesPage } from "./pages/deliveries/DeliveriesPage";
+import { DeliveriesReviewPage } from "./pages/deliveries/DeliveriesReviewPage";
+import { OnlineParcelsPage } from "./pages/fulfillment/OnlineParcelsPage";
 import type { Role } from "./context/AuthContext";
 
 // Wrap a page component in RequireAuth.  Using createElement to keep this
@@ -67,24 +68,39 @@ export const router = createBrowserRouter(
         { path: "costing", element: guarded(CostingPage, { roles: ["executive", "prod_manager"] }) },
         { path: "ar", element: guarded(ARCreditsPage) },
         {
+          path: "waybill/online-orders",
+          element: guarded(OnlineOrdersGeneratorPage, {
+            roles: ["executive", "csr_tl", "csr_staff"],
+          }),
+        },
+        {
           path: "waybill/stamper",
-          element: guarded(WaybillStamperPage, { roles: ["executive", "csr_tl"] }),
+          element: createElement(Navigate, { to: "/waybill/online-orders", replace: true }),
         },
         {
           path: "waybill/order-remarks",
-          element: guarded(OrderRemarksPage, { roles: ["executive", "csr_tl"] }),
+          element: createElement(Navigate, { to: "/waybill/online-orders", replace: true }),
         },
         {
           path: "waybill/pdf-to-excel",
-          element: guarded(PdfToExcelPage, { roles: ["executive", "csr_tl"] }),
+          element: createElement(Navigate, { to: "/waybill/online-orders", replace: true }),
         },
         {
           path: "waybill-stamper",
-          element: createElement(Navigate, { to: "/waybill/stamper", replace: true }),
+          element: createElement(Navigate, { to: "/waybill/online-orders", replace: true }),
         },
         { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
         { path: "rts/record", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
         { path: "settings", element: guarded(SettingsPage, { roles: ["executive"] }) },
+
+        { path: "deliveries", element: guarded(DeliveriesPage, { roles: ["executive", "prod_manager"] }) },
+        { path: "deliveries/review", element: guarded(DeliveriesReviewPage, { roles: ["executive", "prod_manager"] }) },
+        {
+          path: "fulfillment/online-parcels",
+          element: guarded(OnlineParcelsPage, {
+            roles: ["executive", "prod_manager", "csr_tl", "csr_staff"],
+          }),
+        },
 
         {
           path: "pos",

@@ -1,7 +1,7 @@
 ---
 title: admin_nav
 source: includes/admin_nav.php
-generated: 2026-06-04T03:07:02+02:00
+generated: 2026-06-04T11:09:04+02:00
 type: module
 function_count: 1
 ---
@@ -19,10 +19,8 @@ function_count: 1
 
 ## rts_admin_nav_links {#rts_admin_nav_links}
 
-**Callers (10):**
+**Callers (8):**
 
-- `deliveries/review.php`:363 — `<?php rts_admin_nav_links('deliveries', '../', $deliveryNavBadge, 'review.php'); ?>`
-- `deliveries/review.php`:373 — `<?php rts_admin_nav_links('deliveries', '../', $deliveryNavBadge, 'review.php'); ?>`
 - `includes/admin_sidebar.php`:25 — `<?php rts_admin_nav_links($active, $prefix, $deliveryNavBadge, $deliveriesHref); ?>`
 - `includes/admin_sidebar.php`:35 — `<?php rts_admin_nav_links($active, $prefix, $deliveryNavBadge, $deliveriesHref); ?>`
 - `dashboard.php`:343 — `<?php rts_admin_nav_links('dashboard', '', $deliveryNavBadge); ?>`

@@ -8,6 +8,10 @@ const RTS_STORAGE_BUCKET_RTS = 'rts_documentation';
 const RTS_STORAGE_BUCKET_DELIVERIES = 'deliveries_documentation';
 const RTS_STORAGE_BUCKET_SP_SORT = 'sp_sort';
 const RTS_STORAGE_BUCKET_SUPPLIER_IDS = 'supplier_valid_ids';
+const RTS_STORAGE_BUCKET_WAYBILL_STAMPER = 'waybill_stamper';
+const RTS_STORAGE_BUCKET_PDF_TO_EXCEL = 'pdf_to_excel';
+const RTS_STORAGE_BUCKET_ORDER_REMARKS = 'order_remarks';
+const RTS_STORAGE_BUCKET_ONLINE_ORDERS = 'online_orders';
 
 /** @return array<string, mixed> */
 function rts_storage_cfg(): array
@@ -48,6 +52,10 @@ function rts_storage_dir(string $bucket): string
         RTS_STORAGE_BUCKET_DELIVERIES,
         RTS_STORAGE_BUCKET_SP_SORT,
         RTS_STORAGE_BUCKET_SUPPLIER_IDS,
+        RTS_STORAGE_BUCKET_WAYBILL_STAMPER,
+        RTS_STORAGE_BUCKET_PDF_TO_EXCEL,
+        RTS_STORAGE_BUCKET_ORDER_REMARKS,
+        RTS_STORAGE_BUCKET_ONLINE_ORDERS,
     ];
     if (!in_array($bucket, $allowed, true)) {
         throw new InvalidArgumentException('Unknown storage bucket: ' . $bucket);
@@ -183,6 +191,29 @@ function rts_storage_public_url(string $bucket, string $filename, string $relati
     }
 
     return $prefix . $encoded;
+}
+
+/**
+ * CSR waybill tools (stamper, PDF→Excel, order remarks, online orders).
+ * When config storage.root is set → {root}/{bucket}/…; else project storage/{legacyFolder}/….
+ *
+ * @param RTS_STORAGE_BUCKET_* $bucket
+ * @param list<string>         $subdirs e.g. stash, outputs, uploads
+ */
+function rts_storage_csr_tool_root(string $bucket, string $legacyFolder, array $subdirs): string
+{
+    $root = rts_storage_external_enabled()
+        ? rts_storage_dir($bucket)
+        : rtrim(str_replace('\\', '/', dirname(__DIR__) . '/storage/' . $legacyFolder), '/');
+
+    foreach ($subdirs as $sub) {
+        $dir = $root . '/' . $sub;
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new RuntimeException('Could not create storage directory: ' . $dir);
+        }
+    }
+
+    return $root;
 }
 
 function rts_storage_resolve_file(string $bucket, string $filename): ?string

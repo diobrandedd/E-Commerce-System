@@ -38,7 +38,35 @@ After any migration, grep for these helpers and update callers.
 
 ## Shared access via waybill
 
-`pdf_to_excel.php` and `order_remarks.php` reuse `waybill_stamper_require_access()` from `includes/waybill_stamper.php`. Changing waybill access rules affects PDF→Excel and order remarks unintentionally.
+`pdf_to_excel.php` and `order_remarks.php` reuse `waybill_stamper_user_can_access()` / `waybill_stamper_require_access()` from `includes/waybill_stamper.php`. `online_orders_generator.php` delegates to the same helper (includes **`csr_staff`**). Changing waybill access rules affects PDF→Excel, order remarks, and Online Orders unintentionally.
+
+## PhpSpreadsheet 2.x (`online_orders_generator.php`)
+
+Project uses `phpoffice/phpspreadsheet` **^2.0**. Do **not** use removed APIs:
+
+- `getCellByColumnAndRow` / `setCellValueByColumnAndRow` / `getStyleByColumnAndRow`
+- `(int) $sheet->getHighestColumn()` — column letters must stay strings; use `Coordinate::columnIndexFromString()`
+
+Use `online_orders_coord($col, $row)` → `$sheet->getCell(...)` / `setCellValue(...)`. Match pattern in `includes/sp_sort_service.php` (`getCell('B4')`).
+
+## Shopee / marketplace PDF item lines
+
+Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dark**. Extractor marks these incomplete via `items_variant` in `missing_fields`. SPA must resolve in Shopee SPX carousel (`honeyItemNeedsVariantResolution` in `app/src/app/lib/honeyItemVariant.ts`) before `run_shopee_resolve` — do not treat non-empty `items` as packer-ready.
+
+## Online order parcels + ship deduct
+
+- **`online_order_parcels`** — created on `batch_finalize` from `csr_online_order_lines`; UNIQUE `tracking_number`; parser must pass before insert.
+- **Ship** — `api/v1/deliveries.php` `ship_parcel` requires `delivery_item_id` (photo uploaded first); uses `honey_pos_deduct_packaging_aggregate()` via `honey_parcel_apply_deduct()`; idempotent if already `shipped`.
+- **Parser** — `includes/honey_parcel_item_parser.php` must stay aligned with `orderRemarksParse.ts` / Shopee variant rules.
+- **Deliveries auth** — SPA uses IMS (`executive`, `prod_manager` only); legacy `api/delivery_bulk.php` still uses `app_users` submitter id via `deliveries_upload.php`.
+
+## Honey “total inventory” scope
+
+`packaging_total_inventory` counts **`honey_packaging_rows.current_*`** where `batch_no` is non-empty. Do not sum warehouse or production for this dashboard — those stages use gallons, not per-bottle SKUs. Sales charts use `honey_sales_log`; inventory charts use packaging current columns.
+
+## Online Orders stamp UX (SPA)
+
+After any pipeline stamp, **`OnlineOrdersGeneratorPage` holds `stampResult`** and renders `StampResultPanel` until the user explicitly continues. Do not call `setStep("post_run")` on stamp API success — only on “Done — master Excel” or “Process another pipeline”.
 
 ## Edit-request table whitelist
 
@@ -51,6 +79,17 @@ After any migration, grep for these helpers and update callers.
 ## RTS mirror → honey deduct
 
 `rts_inventory_deduct_sell()` in `includes/rts_inventory_sync.php` bridges RTS pool rows into honey packaging deduct when `category=honey`. Changing category values or honey deduct signatures breaks SPA sell flow.
+
+## CSR waybill file storage
+
+When `config.php` sets `storage.root` (e.g. `C:/xampp/htdocs/rts_storage`), stashes and outputs for waybill stamper, PDF→Excel, order remarks, and online orders live under:
+
+- `waybill_stamper/{uploads,outputs,stash}`
+- `pdf_to_excel/{stash,outputs,work}`
+- `order_remarks/{stash,outputs}`
+- `online_orders/{outputs,work}`
+
+Resolved via `rts_storage_csr_tool_root()` in `includes/rts_storage.php`. If `storage.root` is empty, legacy paths remain under `rts/storage/`. Downloads still use PHP session tokens (not public URLs).
 
 ## Before you edit shared code
 

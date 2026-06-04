@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-06-04T03:07:02+02:00
+generated: 2026-06-04T11:09:04+02:00
 type: memory-bank
-table_count: 35
+table_count: 40
 ---
 
 
@@ -54,8 +54,12 @@ Schema sources: `sql/full_schema.sql` and migration files
 |------|----------|
 | `api/case.php` | `(file-level)` |
 | `api/delivery_batch_detail.php` | `(file-level)` |
-| `api/delivery_bulk.php` | `(file-level)` |
 | `api/delivery_match_tracking.php` | `(file-level)` |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_batch_for_date]] |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_parcel_by_tracking]] |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
+| `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
 
 ## `delivery_batch_items`
 
@@ -63,10 +67,16 @@ Schema sources: `sql/full_schema.sql` and migration files
 |------|----------|
 | `api/case.php` | `(file-level)` |
 | `api/delivery_batch_detail.php` | `(file-level)` |
-| `api/delivery_bulk.php` | `(file-level)` |
 | `api/delivery_match_tracking.php` | `(file-level)` |
 | `api/delivery_resolve.php` | `(file-level)` |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_batch_for_date]] |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_parcel_by_tracking]] |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_void_item]] |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_resolve_item]] |
 | `includes/deliveries_review_nav.php` | [[modules/deliveries_review_nav#rts_delivery_review_attention_count]] |
+| `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
 
 ## `sp_sort_batches`
 
@@ -278,6 +288,52 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_fetch_for_pin]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
 
+## `csr_online_batches`
+
+| File | Function |
+|------|----------|
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_ensure_schema]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_start]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_get]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_cancel]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_assert_active_batch]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_finalize]] |
+
+## `csr_online_batch_runs`
+
+| File | Function |
+|------|----------|
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_get]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_start]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_complete]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_partner_stamp]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_vip_stamp]] |
+
+## `csr_online_order_lines`
+
+| File | Function |
+|------|----------|
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_promote_from_batch]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_get]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_lines_append]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_merge_master_workbook]] |
+
+## `online_order_parcels`
+
+| File | Function |
+|------|----------|
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_promote_from_batch]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_tracking]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_id]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_list]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
+
+## `online_parcel_deduct_lines`
+
+| File | Function |
+|------|----------|
+| `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_apply_deduct]] |
+
 ## `pos_sales`
 
 | File | Function |
@@ -353,6 +409,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_traceability]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_total_inventory_snapshot]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_packaging_availability]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_available_qty]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_deduct_packaging_aggregate]] |
@@ -363,6 +420,7 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_stock_out_sold]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_build_trace_chain]] |
+| `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_log_sale]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_log_sale]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |

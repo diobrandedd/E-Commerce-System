@@ -1,4 +1,4 @@
-# AI-Directed Engineering Workflow
+	# AI-Directed Engineering Workflow
 
 > How to use Obsidian + Cursor so **you define theory**, **AI plans**, **AI implements** — without skipping context.
 

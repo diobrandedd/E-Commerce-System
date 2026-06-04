@@ -1168,3 +1168,97 @@ function honey_correction_mark_viewed(PDO $pdo, int $requestId): void
         // Column may not exist pre-migration.
     }
 }
+
+/** Display labels for packaging size breakdown (matches Sales UI). */
+const HONEY_PACKAGING_SIZE_LABELS = [
+    '250ml' => '250ML',
+    '350ml' => '350ML',
+    'liter' => '1L',
+    'gallon' => 'GALLON',
+];
+
+/**
+ * Aggregate current on-hand bottles from packaging rows with batch numbers only.
+ * Excludes warehouse and production (not bottled / no batch yet).
+ *
+ * @param list<array<string, mixed>> $rows SQL rows with variant, ml250, ml350, liter, gallon
+ * @return array{variants: list<array<string, mixed>>, total: float, batch_count: int}
+ */
+function honey_packaging_variant_inventory_breakdown(array $rows): array
+{
+    $sizeKeys = [
+        ['key' => '250ml', 'col' => 'ml250'],
+        ['key' => '350ml', 'col' => 'ml350'],
+        ['key' => 'liter', 'col' => 'liter'],
+        ['key' => 'gallon', 'col' => 'gallon'],
+    ];
+
+    $variants = [];
+    $grandTotal = 0.0;
+    $batchCount = 0;
+
+    foreach ($rows as $row) {
+        $batchCount += (int) ($row['batch_rows'] ?? 0);
+        $variantTotal = 0.0;
+        foreach ($sizeKeys as $sk) {
+            $variantTotal += (float) ($row[$sk['col']] ?? 0);
+        }
+        $grandTotal += $variantTotal;
+        $sizes = [];
+        foreach ($sizeKeys as $sk) {
+            $qty = (float) ($row[$sk['col']] ?? 0);
+            $sizes[] = [
+                'size' => $sk['key'],
+                'label' => HONEY_PACKAGING_SIZE_LABELS[$sk['key']] ?? strtoupper($sk['key']),
+                'qty' => $qty,
+                'pct' => $variantTotal > 0 ? round(($qty / $variantTotal) * 100, 1) : 0.0,
+            ];
+        }
+        $variants[] = [
+            'variant' => (string) ($row['variant'] ?? ''),
+            'total_bottles' => $variantTotal,
+            'sizes' => $sizes,
+        ];
+    }
+
+    return ['variants' => $variants, 'total' => $grandTotal, 'batch_count' => $batchCount];
+}
+
+/** @return array<string, mixed> */
+function honey_packaging_total_inventory_snapshot(PDO $pdo): array
+{
+    $st = $pdo->query(
+        'SELECT variant,
+                COALESCE(SUM(current_250ml), 0) AS ml250,
+                COALESCE(SUM(current_350ml), 0) AS ml350,
+                COALESCE(SUM(current_liter), 0) AS liter,
+                COALESCE(SUM(current_gallon), 0) AS gallon,
+                COUNT(*) AS batch_rows
+         FROM honey_packaging_rows
+         WHERE batch_no IS NOT NULL AND TRIM(batch_no) <> ""
+           AND variant IN ("light", "amber", "dark")
+         GROUP BY variant
+         ORDER BY FIELD(variant, "light", "amber", "dark")'
+    );
+    $agg = honey_packaging_variant_inventory_breakdown($st ? $st->fetchAll(PDO::FETCH_ASSOC) : []);
+
+    $byVariant = [];
+    foreach ($agg['variants'] as $v) {
+        $byVariant[$v['variant']] = $v;
+    }
+
+    $ordered = [];
+    foreach (['light', 'amber', 'dark'] as $key) {
+        if (isset($byVariant[$key])) {
+            $ordered[] = $byVariant[$key];
+        }
+    }
+
+    return [
+        'scope' => 'packaging_batches_only',
+        'note' => 'Counts bottled stock with batch numbers. Warehouse and production gallons are excluded.',
+        'total_bottles' => $agg['total'],
+        'batch_count' => $agg['batch_count'],
+        'variants' => $ordered,
+    ];
+}

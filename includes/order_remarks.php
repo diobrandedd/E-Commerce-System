@@ -10,14 +10,11 @@ require_once __DIR__ . '/waybill_stamper.php';
 
 function order_remarks_storage_root(): string
 {
-    $root = dirname(__DIR__) . '/storage/order-remarks';
-    foreach (['stash', 'outputs'] as $sub) {
-        $dir = $root . '/' . $sub;
-        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
-            throw new RuntimeException('Could not create order-remarks storage directory.');
-        }
-    }
-    return $root;
+    return rts_storage_csr_tool_root(
+        RTS_STORAGE_BUCKET_ORDER_REMARKS,
+        'order-remarks',
+        ['stash', 'outputs'],
+    );
 }
 
 function order_remarks_workbook_script(): string

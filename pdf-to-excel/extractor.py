@@ -140,6 +140,30 @@ def detect_courier(tn: str | None) -> str:
     return 'Unknown'
 
 
+def items_need_variant_resolution(item_str: str) -> bool:
+    """Marketplace labels often say e.g. '1 x 1L HONEY' without Light/Amber/Dark."""
+    s = (item_str or '').strip()
+    if not s:
+        return False
+    if not re.search(r'honey|350|B2T1', s, re.I):
+        return False
+    if re.search(r'\b(light|amber|dark)\b', s, re.I):
+        return False
+    if re.search(r'1L\s*HONEY\s+[LAD]\b', s, re.I):
+        return False
+    if re.search(r'2L-HONEY\s+[LAD]{2}', s, re.I):
+        return False
+    if re.search(r'3L-HONEY\s+[LAD]{3}', s, re.I):
+        return False
+    if re.search(r'\bLAD\b', s, re.I):
+        return False
+    if re.search(r'Liter\s+Honey\s+(LIGHT|AMBER|DARK)', s, re.I):
+        return False
+    if re.search(r'1\s*L|2\s*L|3\s*L|350|gallon|liter', s, re.I):
+        return True
+    return bool(re.search(r'honey', s, re.I))
+
+
 def missing_fields(rec: dict) -> list[str]:
     missing = []
     if not (rec.get('tracking') or '').strip():
@@ -148,6 +172,8 @@ def missing_fields(rec: dict) -> list[str]:
         missing.append('name')
     if not (rec.get('items') or '').strip():
         missing.append('items')
+    elif items_need_variant_resolution(rec.get('items', '')):
+        missing.append('items_variant')
     return missing
 
 

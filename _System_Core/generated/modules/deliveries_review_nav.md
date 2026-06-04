@@ -1,7 +1,7 @@
 ---
 title: deliveries_review_nav
 source: includes/deliveries_review_nav.php
-generated: 2026-06-04T03:07:03+02:00
+generated: 2026-06-04T11:09:05+02:00
 type: module
 function_count: 2
 ---
@@ -23,9 +23,8 @@ function_count: 2
 
 ## rts_delivery_review_nav_badge_html {#rts_delivery_review_nav_badge_html}
 
-**Callers (5):**
+**Callers (4):**
 
-- `deliveries/review.php`:43 — `$deliveryNavBadge = rts_delivery_review_nav_badge_html($pdo);`
 - `sp_sort/bootstrap.php`:18 — `return rts_delivery_review_nav_badge_html(rts_pdo());`
 - `dashboard.php`:25 — `$deliveryNavBadge = rts_delivery_review_nav_badge_html($pdo);`
 - `record.php`:15 — `$deliveryNavBadge = rts_delivery_review_nav_badge_html(rts_pdo());`

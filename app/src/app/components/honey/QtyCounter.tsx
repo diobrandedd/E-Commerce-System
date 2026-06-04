@@ -1,11 +1,13 @@
-import { fmtCounter, isDepleted } from "@/app/lib/honey";
+import { isDepleted } from "@/app/lib/honey";
 
-export function QtyCounter({ current, initial }: { current: string | number; initial: string | number }) {
+/** Shows on-hand quantity only (no initial/progress ratio). */
+export function QtyCounter({ current, initial: _initial }: { current: string | number; initial?: string | number }) {
   const depleted = isDepleted(current);
+  const n = Number(current);
+  const label = Number.isFinite(n) ? String(n) : String(current);
   return (
-    <span className={depleted ? "opacity-50" : ""}>
-      <span className="font-semibold text-foreground">{fmtCounter(current, initial).split(" / ")[0]}</span>
-      <span className="text-muted-foreground"> / {fmtCounter(current, initial).split(" / ")[1]}</span>
+    <span className={depleted ? "opacity-50 font-semibold text-foreground" : "font-semibold text-foreground"}>
+      {label}
     </span>
   );
 }

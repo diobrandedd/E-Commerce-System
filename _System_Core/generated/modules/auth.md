@@ -1,7 +1,7 @@
 ---
 title: auth
 source: includes/auth.php
-generated: 2026-06-04T03:07:02+02:00
+generated: 2026-06-04T11:09:04+02:00
 type: module
 function_count: 21
 ---
@@ -99,7 +99,7 @@ function_count: 21
 
 ## rts_can_access_rts_admin {#rts_can_access_rts_admin}
 
-**Callers (7):**
+**Callers (6):**
 
 - `api/case.php`:18 — `if (!rts_can_access_rts_admin($authUser)) {`
 - `api/delivery_batch_detail.php`:12 — `if (!rts_can_access_rts_admin($u)) {`
@@ -107,7 +107,6 @@ function_count: 21
 - `api/delivery_resolve.php`:18 — `if (!rts_can_access_rts_admin($u)) {`
 - `api/scan_qr_image.php`:17 — `if (!rts_can_access_rts_admin($authUser)) {`
 - `api/upload_documentation.php`:11 — `if (!rts_can_access_rts_admin($authUser)) {`
-- `deliveries/index.php`:15 — `$isAdmin = rts_can_access_rts_admin($user);`
 
 ## rts_login_redirect_by_role {#rts_login_redirect_by_role}
 
@@ -129,22 +128,22 @@ function_count: 21
 
 **Tables:** `app_users`
 
-**Callers (1):**
+**Callers (2):**
 
-- `api/delivery_bulk.php`:116 — `$submitterId = rts_delivery_submitter_user_id($pdo);`
+- `api/delivery_bulk.php`:98 — `$submitterId = rts_delivery_submitter_user_id($pdo);`
+- `includes/deliveries_upload.php`:213 — `return rts_delivery_submitter_user_id($pdo);`
 
 ## rts_session_start {#rts_session_start}
 
-**Callers (12):**
+**Callers (11):**
 
 - `api/case.php`:16 — `rts_session_start();`
 - `api/delivery_batch_detail.php`:10 — `rts_session_start();`
-- `api/delivery_bulk.php`:36 — `rts_session_start();`
+- `api/delivery_bulk.php`:35 — `rts_session_start();`
 - `api/delivery_match_tracking.php`:15 — `rts_session_start();`
 - `api/delivery_resolve.php`:16 — `rts_session_start();`
 - `api/scan_qr_image.php`:15 — `rts_session_start();`
 - `api/upload_documentation.php`:9 — `rts_session_start();`
-- `deliveries/index.php`:9 — `rts_session_start();`
 - `includes/auth.php`:221 — `rts_session_start();`
 - `includes/auth.php`:289 — `rts_session_start();`
 - `includes/auth.php`:304 — `rts_session_start();`
@@ -152,16 +151,15 @@ function_count: 21
 
 ## rts_auth_user {#rts_auth_user}
 
-**Callers (21):**
+**Callers (20):**
 
 - `api/case.php`:17 — `$authUser = rts_auth_user();`
 - `api/delivery_batch_detail.php`:11 — `$u = rts_auth_user();`
-- `api/delivery_bulk.php`:37 — `$authUser = rts_auth_user();`
+- `api/delivery_bulk.php`:36 — `$authUser = rts_auth_user();`
 - `api/delivery_match_tracking.php`:16 — `$u = rts_auth_user();`
 - `api/delivery_resolve.php`:17 — `$u = rts_auth_user();`
 - `api/scan_qr_image.php`:16 — `$authUser = rts_auth_user();`
 - `api/upload_documentation.php`:10 — `$authUser = rts_auth_user();`
-- `deliveries/index.php`:10 — `$user = rts_auth_user();`
 - `includes/admin_nav.php`:22 — `$u = rts_auth_user();`
 - `includes/auth.php`:166 — `$auth = rts_auth_user();`
 - `includes/auth.php`:319 — `$u = rts_auth_user();`
@@ -193,9 +191,8 @@ function_count: 21
 
 ## rts_require_roles {#rts_require_roles}
 
-**Callers (8):**
+**Callers (7):**
 
-- `deliveries/review.php`:11 — `rts_require_roles([RTS_ROLE_ADMIN], '../login.php');`
 - `sp_sort/bootstrap.php`:13 — `rts_require_roles([RTS_ROLE_ADMIN], '../login.php');`
 - `dashboard.php`:9 — `rts_require_roles([RTS_ROLE_ADMIN], 'login.php');`
 - `executive.php`:8 — `rts_require_roles([RTS_ROLE_EXECUTIVE], 'login.php');`

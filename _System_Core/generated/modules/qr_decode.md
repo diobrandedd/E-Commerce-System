@@ -1,7 +1,7 @@
 ---
 title: qr_decode
 source: includes/qr_decode.php
-generated: 2026-06-04T03:07:06+02:00
+generated: 2026-06-04T11:09:10+02:00
 type: module
 function_count: 13
 ---
@@ -89,10 +89,12 @@ function_count: 13
 
 ## rts_normalize_tracking_from_qr {#rts_normalize_tracking_from_qr}
 
-**Callers (4):**
+**Callers (6):**
 
-- `api/delivery_bulk.php`:180 — `$ht = rts_normalize_tracking_from_qr($hintRaw);`
-- `api/delivery_bulk.php`:192 — `$ht = rts_normalize_tracking_from_qr($hintRaw);`
+- `includes/deliveries_upload.php`:182 — `$ht = rts_normalize_tracking_from_qr($hintRaw);`
+- `includes/deliveries_upload.php`:194 — `$ht = rts_normalize_tracking_from_qr($hintRaw);`
+- `includes/online_order_parcels.php`:109 — `$tn = rts_normalize_tracking_from_qr($tn);`
+- `includes/online_order_parcels.php`:159 — `return rts_normalize_tracking_from_qr($raw);`
 - `includes/qr_decode.php`:280 — `$na = $okA ? rts_normalize_tracking_from_qr($a['text']) : '';`
 - `includes/qr_decode.php`:281 — `$nb = $okB ? rts_normalize_tracking_from_qr($b['text']) : '';`
 
@@ -100,7 +102,7 @@ function_count: 13
 
 **Callers (1):**
 
-- `api/delivery_bulk.php`:190 — `$class = rts_classify_delivery_qr_blob($blob);`
+- `includes/deliveries_upload.php`:192 — `$class = rts_classify_delivery_qr_blob($blob);`
 
 ## rts_qr_decode_image_upload_best {#rts_qr_decode_image_upload_best}
 

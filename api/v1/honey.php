@@ -13,6 +13,7 @@ api_dispatch([
     'production_list' => 'api_honey_production_list',
     'production_stock_out' => 'api_honey_production_stock_out',
     'packaging_list' => 'api_honey_packaging_list',
+    'packaging_total_inventory' => 'api_honey_packaging_total_inventory',
     'packaging_stock_out' => 'api_honey_packaging_stock_out',
     'traceability' => 'api_honey_traceability',
     'correction_submit' => 'api_honey_correction_submit',
@@ -171,6 +172,13 @@ function api_honey_packaging_list(): void
          FROM honey_packaging_rows ORDER BY bottling_date DESC, id DESC'
     );
     api_ok(['rows' => $st ? $st->fetchAll() : []]);
+}
+
+function api_honey_packaging_total_inventory(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));
 }
 
 function api_honey_packaging_stock_out(): void

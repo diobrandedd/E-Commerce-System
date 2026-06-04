@@ -6,16 +6,15 @@ declare(strict_types=1);
  * Waybill stamper — run processor.py, secure temp storage, download tokens.
  */
 
+require_once __DIR__ . '/rts_storage.php';
+
 function waybill_stamper_storage_root(): string
 {
-    $root = dirname(__DIR__) . '/storage/waybill-stamper';
-    foreach (['uploads', 'outputs', 'stash'] as $sub) {
-        $dir = $root . '/' . $sub;
-        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
-            throw new RuntimeException('Could not create waybill storage directory.');
-        }
-    }
-    return $root;
+    return rts_storage_csr_tool_root(
+        RTS_STORAGE_BUCKET_WAYBILL_STAMPER,
+        'waybill-stamper',
+        ['uploads', 'outputs', 'stash'],
+    );
 }
 
 function waybill_stamper_processor_script(): string
@@ -40,7 +39,7 @@ function waybill_stamper_require_access(): array
 function waybill_stamper_user_can_access(array $user): bool
 {
     $role = (string) ($user['role'] ?? '');
-    if ($role === 'executive' || $role === 'csr_tl') {
+    if ($role === 'executive' || $role === 'csr_tl' || $role === 'csr_staff') {
         return true;
     }
     if ($role === 'tl') {

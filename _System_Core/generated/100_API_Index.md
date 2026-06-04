@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-04T03:07:02+02:00
+generated: 2026-06-04T11:09:03+02:00
 type: memory-bank
 ---
 
@@ -77,6 +77,22 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `summary` | `api_dashboard_index()` | `ims_pdo()` |
 | `inventory_snapshot` | `api_dashboard_inventory_snapshot()` | `dashboard_inventory_snapshot()`, `ims_pdo()` |
 
+### `deliveries.php`
+
+- **Path:** `api/v1/deliveries.php`
+- **URL:** `/rts/api/v1/deliveries.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/deliveries_upload.php`, `includes/online_order_parcels.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `batch_for_date` | `api_deliveries_batch_for_date()` | `ims_pdo()` |
+| `upload_photo` | `api_deliveries_upload_photo()` | `ims_pdo()`, `deliveries_ims_submitter_app_user_id()`, `deliveries_upload_photos()` |
+| `parcel_by_tracking` | `api_deliveries_parcel_by_tracking()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_normalize_tracking()`, `online_parcels_get_by_tracking()` |
+| `ship_parcel` | `api_deliveries_ship_parcel()` | `ims_pdo()`, `online_parcels_ship()` |
+| `review_list` | `api_deliveries_review_list()` | `ims_pdo()` |
+| `void_item` | `api_deliveries_void_item()` | `ims_pdo()` |
+| `resolve_item` | `api_deliveries_resolve_item()` | `online_parcels_normalize_tracking()`, `ims_pdo()` |
+
 ### `edit_requests.php`
 
 - **Path:** `api/v1/edit_requests.php`
@@ -104,6 +120,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `production_list` | `api_honey_production_list()` | `ims_pdo()` |
 | `production_stock_out` | `api_honey_production_stock_out()` | `honey_parse_bottle_lines_from_input()`, `honey_production_stock_out()`, `ims_pdo()` |
 | `packaging_list` | `api_honey_packaging_list()` | `ims_pdo()` |
+| `packaging_total_inventory` | `api_honey_packaging_total_inventory()` | `honey_packaging_total_inventory_snapshot()`, `ims_pdo()` |
 | `packaging_stock_out` | `api_honey_packaging_stock_out()` | `honey_packaging_stock_out_sold()`, `ims_pdo()` |
 | `traceability` | `api_honey_traceability()` | `honey_traceability()`, `ims_pdo()` |
 | `correction_submit` | `api_honey_correction_submit()` | `ims_pdo()` |
@@ -125,6 +142,24 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `warehouse_set_unit_cost` | `api_honey_warehouse_set_unit_cost()` | `honey_pricing_set_warehouse_row_cost()`, `ims_pdo()`, `honey_pricing_pending_count()` |
 | `pricing_sync_stocks` | `api_honey_pricing_sync_stocks()` | `honey_pricing_sync_all_variant_stocks()`, `ims_pdo()` |
 
+### `online_orders.php`
+
+- **Path:** `api/v1/online_orders.php`
+- **URL:** `/rts/api/v1/online_orders.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/online_orders_generator.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `batch_start` | `api_online_orders_batch_start()` | `ims_current_user()`, `ims_pdo()`, `online_orders_batch_start()` |
+| `batch_get` | `api_online_orders_batch_get()` | `ims_current_user()`, `ims_pdo()`, `online_orders_batch_get()` |
+| `batch_cancel` | `api_online_orders_batch_cancel()` | `ims_current_user()`, `ims_pdo()`, `online_orders_batch_cancel()` |
+| `batch_finalize` | `api_online_orders_batch_finalize()` | `ims_current_user()`, `ims_pdo()`, `online_orders_batch_finalize()` |
+| `lines_append` | `api_online_orders_lines_append()` | `ims_current_user()`, `ims_pdo()`, `online_orders_assert_active_batch()`, `online_orders_run_start()`, `online_orders_lines_append()`, `online_orders_run_complete()` |
+| `run_partner` | `api_online_orders_run_partner()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_partner_stamp()` |
+| `run_vip_stamp` | `api_online_orders_run_vip_stamp()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_vip_stamp()` |
+| `run_shopee_resolve` | `api_online_orders_run_shopee_resolve()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_shopee_resolve()` |
+| `run_shopee_stamp` | `api_online_orders_run_shopee_stamp()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_shopee_stamp()` |
+
 ### `order_remarks.php`
 
 - **Path:** `api/v1/order_remarks.php`
@@ -137,6 +172,19 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `parse` | `api_order_remarks_parse()` | `order_remarks_parse_workbook()` |
 | `export` | `api_order_remarks_export()` | `order_remarks_export_workbook()` |
 | `profiles` | `api_order_remarks_profiles()` | `order_remarks_profile_labels()` |
+
+### `parcels.php`
+
+- **Path:** `api/v1/parcels.php`
+- **URL:** `/rts/api/v1/parcels.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/online_order_parcels.php`, `includes/honey_parcel_item_parser.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `list` | `api_parcels_list()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_list()` |
+| `get` | `api_parcels_get()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_get_by_id()`, `online_parcels_get_by_tracking()` |
+| `lookup` | `api_parcels_lookup()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_normalize_tracking()`, `online_parcels_get_by_tracking()` |
+| `parse_preview` | `api_parcels_parse_preview()` | `honey_parcel_parse_items_string()` |
 
 ### `pdf_to_excel.php`
 

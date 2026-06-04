@@ -1,7 +1,7 @@
 ---
 title: forwarding
 source: includes/forwarding.php
-generated: 2026-06-04T03:07:03+02:00
+generated: 2026-06-04T11:09:06+02:00
 type: module
 function_count: 15
 ---
@@ -69,9 +69,9 @@ function_count: 15
 
 ## rts_forwarding_fetch_headers_json {#rts_forwarding_fetch_headers_json}
 
-**Callers (1):**
+**Callers (0):**
 
-- `deliveries/index.php`:236 — `var RTS_FORWARDING_HEADERS = <?= rts_forwarding_fetch_headers_json() ?>;`
+_No direct callers detected (may be entry point or dynamic call)._
 
 ## rts_forwarding_current_host {#rts_forwarding_current_host}
 
@@ -107,9 +107,8 @@ function_count: 15
 
 ## rts_forwarding_head_script {#rts_forwarding_head_script}
 
-**Callers (2):**
+**Callers (1):**
 
-- `deliveries/index.php`:25 — `<?= rts_forwarding_head_script() ?>`
 - `record.php`:27 — `<?= rts_forwarding_head_script() ?>`
 
 ## rts_app_public_url {#rts_app_public_url}

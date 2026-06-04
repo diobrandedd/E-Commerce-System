@@ -23,7 +23,7 @@ Pyx Tracker
 ├── RTS (returns tracking + inventory mirror)
 ├── Sales & POS (walk-in terminal, reports)
 ├── Suppliers & AR
-├── CSR tools (waybill stamp, PDF→Excel, order remarks)
+├── CSR tools (Online Orders batch wizard)
 └── Legacy / bridge pages (deliveries upload, old RTS record flow)
 ```
 
@@ -46,9 +46,7 @@ Built app: `cd app && npm install && npm run build:prod` → `app/dist/`
 | **RTS inventory** | `/rts` | Executive, PM, HR, CSR | Mirror of returns; sync from legacy cases |
 | **Reports / Sales** | `/reports`, `/sales` | Executive, PM | POS + AR-backed reporting |
 | **AR credits** | `/ar` | Several roles | Staff credit tracking |
-| **Waybill stamper** | `/waybill/stamper` | Executive, CSR TL | PDF waybills + iPYX Excel → stamped PDF |
-| **PDF → Excel** | `/waybill/pdf-to-excel` | Executive, CSR TL | Shopee PDF only → iPYX Excel for stamper |
-| **Order remarks** | `/waybill/order-remarks` | Executive, CSR TL | Clean courier Excel remarks column |
+| **Online Orders** | `/waybill/online-orders` | Executive, CSR TL, CSR staff | Batch wizard: partner stamp, VIP remarks, Shopee SPX → one master Excel |
 | **Staff / settings** | `/staff`, `/settings` | Executive | User management |
 | **POS terminal** | `/pos`, `/pos/honey` | POS PIN | Walk-in sales |
 
@@ -65,19 +63,19 @@ Auth: `api/v1/auth.php` (session + CSRF). SPA proxies API in dev via Vite.
 
 RTS **operational** data still originates here; the SPA **inventory mirror** is updated via `api/v1/rts_sync.php`.
 
-### Waybill tools (CSR)
+### Online Orders (CSR)
 
 | Tool | SPA route | API |
 |------|-----------|-----|
-| **Stamper** | `/waybill/stamper` | `api/v1/waybill.php` |
-| **PDF → Excel** | `/waybill/pdf-to-excel` | `api/v1/pdf_to_excel.php` |
-| **Order remarks** | `/waybill/order-remarks` | `api/v1/order_remarks.php` |
+| **Online Orders Generator** | `/waybill/online-orders` | `api/v1/online_orders.php` |
 
-Engines: `waybill-stamper/processor.py`, `pdf-to-excel/extractor.py`, `includes/order_remarks_workbook.py`.
+The wizard runs three pipelines in one batch session (partner seller stamp, VIP order remarks + stamp, Shopee SPX extract → resolve items → stamp). **Done** merges all parcel lines into one master iPYX-style Excel (cols B–H) and persists rows in `csr_online_order_lines` for future inventory use.
 
-**Typical flow when workers send PDF only:** PDF → Excel → download Excel → Stamper (same PDF + Excel).
+Underlying engines (unchanged): `waybill-stamper/processor.py`, `pdf-to-excel/extractor.py`, `includes/order_remarks_workbook.py` — invoked via `waybill.php`, `pdf_to_excel.php`, and `order_remarks.php` from the orchestration layer in `includes/online_orders_generator.php`.
 
-Legacy URLs `/waybill-stamper` and `pdf-to-excel/` redirect into the SPA when logged in.
+**DB migration (once):** `Get-Content sql/migration_phase17_csr_online_orders.sql | mysql -u root rts_system` (or equivalent on your DB name)
+
+Legacy SPA routes `/waybill/stamper`, `/waybill/pdf-to-excel`, and `/waybill/order-remarks` redirect to `/waybill/online-orders`. `/waybill-stamper` redirects there as well.
 
 Full install steps for Python / OCR: [Quick start, section 3](#3-waybill--pdf-tools-setup-windows) and [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md).
 
@@ -96,8 +94,8 @@ Full install steps for Python / OCR: [Quick start, section 3](#3-waybill--pdf-to
 | `executive` | Full inventory, costing, suppliers, RTS, waybill, staff, settings |
 | `prod_manager` | Honey ops, RTS inventory, reports, sales, AR (own) |
 | `hr` | Read-only Honey + RTS + requests history |
-| `csr_tl` | Waybill group (stamper, PDF→Excel, order remarks), RTS inventory |
-| `csr_staff` | RTS record flow |
+| `csr_tl` | Online Orders, RTS inventory |
+| `csr_staff` | Online Orders, RTS record flow |
 | `team_leader` / `staff` | Dept stock input, daily count, edit requests (legacy-style dept tools) |
 | `pos` | POS terminal only |
 
@@ -361,7 +359,7 @@ Edit **`config/forwarding.php`** when switching tunnels:
 | **RTS mirror** | `rts_inventory_rows`, `api/v1/rts.php`, `rts_sync.php` |
 | **Suppliers** | `suppliers`, `api/v1/suppliers.php` |
 | **POS / AR** | `pos_sales`, `ar_credits`, `api/v1/pos.php`, `ar.php` |
-| **Waybill** | `storage/waybill-stamper/`, `storage/pdf-to-excel/`, `storage/order-remarks/` |
+| **Waybill / CSR tools** | With `config.php` `storage.root` set (recommended): `rts_storage/waybill_stamper/`, `pdf_to_excel/`, `order_remarks/`, `online_orders/` — stashes & outputs stay outside the git repo. Legacy fallback: `storage/*` inside project when `storage.root` is empty. |
 
 Honey ops and generic costing share one DB but serve different screens.
 
@@ -379,6 +377,7 @@ Honey ops and generic costing share one DB but serve different screens.
 | `staff.php`, `settings.php` | Admin |
 | `reports.php`, `sales.php` | Reporting |
 | `pos.php`, `ar.php` | POS & credits |
+| `online_orders.php` | CSR Online Orders batch wizard (partner / VIP / Shopee SPX) |
 | `waybill.php` | Waybill stamper |
 | `pdf_to_excel.php` | PDF → Excel (waybill labels → iPYX) |
 | `order_remarks.php` | Courier Excel remarks cleanup |

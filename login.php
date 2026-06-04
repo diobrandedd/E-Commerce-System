@@ -105,7 +105,7 @@ $pageTitle = 'Pyx Tracker Management System — Sign in';
 
     <div class="delivery-cta">
       <p>Deliveries</p>
-      <a href="deliveries/index.php" id="deliveryBulkLink">Go to deliveries</a>
+      <a href="app/dist/deliveries" id="deliveryBulkLink">Go to deliveries</a>
       <small>Sign in above, or open deliveries if you are already signed in.</small>
     </div>
   </div>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
+import { HoneyVariantPieGrid, type VariantChart } from "@/app/components/honey/HoneyVariantPieGrid";
 import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
@@ -10,6 +11,13 @@ import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet, apiPost } from "@/app/lib/api";
 import { HONEY_SIZES } from "@/app/lib/honey";
 import { canExecutiveDirectEdit, canMutateHoneyInventory, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
+
+interface PackagingInventorySnapshot {
+  total_bottles: number;
+  batch_count: number;
+  variants: VariantChart[];
+  note?: string;
+}
 
 interface PkRow {
   id: number;
@@ -40,6 +48,20 @@ export function HoneyPackagingPage() {
   const [sellRow, setSellRow] = useState<PkRow | null>(null);
   const [editRow, setEditRow] = useState<PkRow | null>(null);
   const [traceQ, setTraceQ] = useState("");
+  const [inventory, setInventory] = useState<PackagingInventorySnapshot | null>(null);
+  const [inventoryLoading, setInventoryLoading] = useState(true);
+
+  const refreshInventory = useCallback(async () => {
+    setInventoryLoading(true);
+    try {
+      const data = await apiGet<PackagingInventorySnapshot>("honey.php", "packaging_total_inventory");
+      setInventory(data);
+    } catch {
+      setInventory(null);
+    } finally {
+      setInventoryLoading(false);
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -52,8 +74,14 @@ export function HoneyPackagingPage() {
     }
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
-  useLiveRefresh(refresh);
+  const refreshAll = useCallback(async () => {
+    await Promise.all([refreshInventory(), refresh()]);
+  }, [refresh, refreshInventory]);
+
+  useEffect(() => {
+    void refreshAll();
+  }, [refreshAll]);
+  useLiveRefresh(refreshAll);
 
   const totalRows = rows.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
@@ -72,6 +100,26 @@ export function HoneyPackagingPage() {
       {traceQ && (
         <button onClick={() => setTraceBatch(traceQ)} className="text-xs text-blue-600 underline mb-3">Search traceability</button>
       )}
+
+      <section className="mb-8">
+        <h2 className="text-sm font-semibold mb-3">Total inventory (batch bottled)</h2>
+        {inventoryLoading ? (
+          <div className="flex justify-center py-8 text-muted-foreground">
+            <Loader2 className="animate-spin" size={20} />
+          </div>
+        ) : (
+          <HoneyVariantPieGrid
+            mode="inventory"
+            variants={inventory?.variants ?? []}
+            emptyMessage="No bottled batch stock yet. Finish packaging from production to create batch numbers."
+          />
+        )}
+        {inventory?.note && (
+          <p className="text-xs text-muted-foreground mt-2">{inventory.note}</p>
+        )}
+      </section>
+
+      <h2 className="text-sm font-semibold mb-3">Batch rows</h2>
       <div className="bg-card rounded-xl border overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -150,13 +198,13 @@ export function HoneyPackagingPage() {
         </div>
       )}
       {traceBatch && <BatchTraceabilityDrawer query={traceBatch} onClose={() => setTraceBatch(null)} />}
-      {sellRow && <SellModal row={sellRow} onClose={() => setSellRow(null)} onDone={() => { setSellRow(null); refresh(); }} />}
+      {sellRow && <SellModal row={sellRow} onClose={() => setSellRow(null)} onDone={() => { setSellRow(null); void refreshAll(); }} />}
       {editRow && (
         <ExecutiveRowEditModal
           stage="packaging"
           row={editRow}
           onClose={() => setEditRow(null)}
-          onDone={() => { setEditRow(null); refresh(); }}
+          onDone={() => { setEditRow(null); void refreshAll(); }}
         />
       )}
     </PageLayout>
