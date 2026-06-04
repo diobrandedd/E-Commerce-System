@@ -1,0 +1,320 @@
+---
+title: API Index
+generated: 2026-06-04T03:07:02+02:00
+type: memory-bank
+---
+
+
+# API Index
+
+> AUTO-GENERATED — do not edit by hand. Run `php tools/memory_bank/generate_all.php`.
+
+See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Clients]]
+
+## api/v1 (SPA JSON gateway)
+
+### `_costing_helpers.php`
+
+- **Path:** `api/v1/_costing_helpers.php`
+- **URL:** `/rts/api/v1/_costing_helpers.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+- **Note:** No `api_dispatch` map (inline handlers or helper file).
+
+### `ar.php`
+
+- **Path:** `api/v1/ar.php`
+- **URL:** `/rts/api/v1/ar.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `list` | `api_ar_list()` | `ims_pdo()` |
+| `take` | `api_ar_take()` | `ims_pdo()` |
+| `mark_paid` | `api_ar_mark_paid()` | `ims_pdo()` |
+| `products` | `api_ar_products()` | `ims_pdo()` |
+
+### `auth.php`
+
+- **Path:** `api/v1/auth.php`
+- **URL:** `/rts/api/v1/auth.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `me` | `api_auth_me()` | `ims_pos_authenticated()`, `rts_forwarding_api_payload()`, `ims_current_user()` |
+| `login` | `api_auth_login()` | `ims_login_user()`, `ims_current_user()`, `rts_forwarding_api_payload()` |
+| `pos_login` | `api_auth_pos_login()` | `ims_login_pos()`, `rts_forwarding_api_payload()` |
+| `logout` | `api_auth_logout()` | `ims_logout()` |
+| `change_password` | `api_auth_change_password()` | `ims_change_password()` |
+
+### `costing.php`
+
+- **Path:** `api/v1/costing.php`
+- **URL:** `/rts/api/v1/costing.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/suppliers.php`, `includes/honey_volume.php`, `api/v1/_costing_helpers.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `stocks_list` | `api_costing_stocks_list()` | `ims_pdo()`, `supplier_display_name()` |
+| `products_list` | `api_costing_products_list()` | `ims_pdo()` |
+| `product_view` | `api_costing_product_view()` | `ims_pdo()` |
+| `stock_update_price` | `api_costing_stock_update_price()` | `ims_pdo()` |
+| `formula_add` | `api_costing_formula_add()` | — |
+| `formula_update` | `api_costing_formula_update()` | — |
+| `formula_delete` | `api_costing_formula_delete()` | — |
+| `product_create` | `api_costing_product_create()` | `ims_pdo()` |
+| `product_update_selling_price` | `api_costing_product_update_selling_price()` | `ims_pdo()` |
+
+### `dashboard.php`
+
+- **Path:** `api/v1/dashboard.php`
+- **URL:** `/rts/api/v1/dashboard.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `index` | `api_dashboard_index()` | `ims_pdo()` |
+| `summary` | `api_dashboard_index()` | `ims_pdo()` |
+| `inventory_snapshot` | `api_dashboard_inventory_snapshot()` | `dashboard_inventory_snapshot()`, `ims_pdo()` |
+
+### `edit_requests.php`
+
+- **Path:** `api/v1/edit_requests.php`
+- **URL:** `/rts/api/v1/edit_requests.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `list` | `api_er_list()` | `ims_pdo()` |
+| `submit` | `api_er_submit()` | `ims_pdo()` |
+| `approve` | `api_er_approve()` | `ims_pdo()` |
+| `reject` | `api_er_reject()` | `ims_pdo()` |
+
+### `honey.php`
+
+- **Path:** `api/v1/honey.php`
+- **URL:** `/rts/api/v1/honey.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `warehouse_list` | `api_honey_warehouse_list()` | `ims_pdo()`, `honey_warehouse_unit_cost_column()`, `honey_pricing_enrich_warehouse_row()`, `honey_warehouse_normalize_cost_row()`, `honey_pricing_role_can_view_cost()`, `honey_warehouse_has_pricing_columns()`, `honey_pricing_pending_count()` |
+| `warehouse_stock_in` | `api_honey_warehouse_stock_in()` | `honey_warehouse_stock_in()`, `ims_pdo()` |
+| `warehouse_stock_out` | `api_honey_warehouse_stock_out()` | `honey_warehouse_stock_out()`, `ims_pdo()` |
+| `production_list` | `api_honey_production_list()` | `ims_pdo()` |
+| `production_stock_out` | `api_honey_production_stock_out()` | `honey_parse_bottle_lines_from_input()`, `honey_production_stock_out()`, `ims_pdo()` |
+| `packaging_list` | `api_honey_packaging_list()` | `ims_pdo()` |
+| `packaging_stock_out` | `api_honey_packaging_stock_out()` | `honey_packaging_stock_out_sold()`, `ims_pdo()` |
+| `traceability` | `api_honey_traceability()` | `honey_traceability()`, `ims_pdo()` |
+| `correction_submit` | `api_honey_correction_submit()` | `ims_pdo()` |
+| `correction_list` | `api_honey_correction_list()` | `ims_pdo()`, `honey_correction_enrich()` |
+| `correction_row_options` | `api_honey_correction_row_options()` | `honey_correction_row_options()`, `ims_pdo()` |
+| `correction_approve` | `api_honey_correction_approve()` | `ims_pdo()`, `honey_apply_correction_request()` |
+| `correction_reject` | `api_honey_correction_reject()` | `ims_pdo()` |
+| `correction_pending_count` | `api_honey_correction_pending_count()` | — |
+| `executive_adjust` | `api_honey_executive_adjust()` | `honey_executive_adjust()`, `ims_pdo()` |
+| `executive_edit` | `api_honey_executive_edit()` | `ims_pdo()`, `honey_executive_edit_row()` |
+| `correction_unread_count` | `api_honey_correction_unread_count()` | `honey_correction_unread_count()`, `ims_pdo()` |
+| `correction_unread_list` | `api_honey_correction_unread_list()` | `honey_correction_unread_list()`, `ims_pdo()` |
+| `correction_mark_viewed` | `api_honey_correction_mark_viewed()` | `honey_correction_mark_viewed()`, `ims_pdo()` |
+| `dept_list` | `api_honey_dept_list()` | `ims_pdo()` |
+| `dept_add_row` | `api_honey_dept_add_row()` | `ims_pdo()` |
+| `supplier_honey_prices` | `api_honey_supplier_honey_prices()` | `ims_pdo()`, `honey_pricing_list_supplier_prices()`, `supplier_display_name()`, `honey_pricing_pending_count()` |
+| `supplier_honey_prices_save` | `api_honey_supplier_honey_prices_save()` | `ims_pdo()`, `honey_pricing_save_supplier_prices()`, `honey_pricing_reprice_pending_for_supplier()`, `honey_pricing_pending_count()` |
+| `warehouse_pending_prices` | `api_honey_warehouse_pending_prices()` | `ims_pdo()`, `honey_pricing_pending_warehouse_rows()`, `honey_pricing_pending_count()` |
+| `warehouse_set_unit_cost` | `api_honey_warehouse_set_unit_cost()` | `honey_pricing_set_warehouse_row_cost()`, `ims_pdo()`, `honey_pricing_pending_count()` |
+| `pricing_sync_stocks` | `api_honey_pricing_sync_stocks()` | `honey_pricing_sync_all_variant_stocks()`, `ims_pdo()` |
+
+### `order_remarks.php`
+
+- **Path:** `api/v1/order_remarks.php`
+- **URL:** `/rts/api/v1/order_remarks.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/order_remarks.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `stash` | `api_order_remarks_stash()` | `order_remarks_stash_upload()` |
+| `parse` | `api_order_remarks_parse()` | `order_remarks_parse_workbook()` |
+| `export` | `api_order_remarks_export()` | `order_remarks_export_workbook()` |
+| `profiles` | `api_order_remarks_profiles()` | `order_remarks_profile_labels()` |
+
+### `pdf_to_excel.php`
+
+- **Path:** `api/v1/pdf_to_excel.php`
+- **URL:** `/rts/api/v1/pdf_to_excel.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/pdf_to_excel.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `stash` | `api_pdf_to_excel_stash()` | `waybill_stamper_upload_preflight()`, `pdf_to_excel_stash_upload()` |
+| `extract` | `api_pdf_to_excel_extract()` | `pdf_to_excel_resolve_stash_tokens()`, `pdf_to_excel_extract()`, `pdf_to_excel_release_stash_tokens()` |
+| `confirm` | `api_pdf_to_excel_confirm()` | `pdf_to_excel_confirm()` |
+
+### `pos.php`
+
+- **Path:** `api/v1/pos.php`
+- **URL:** `/rts/api/v1/pos.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/pos_discount_requests.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `products` | `api_pos_products()` | `ims_pdo()` |
+| `honey_catalog` | `api_pos_honey_catalog()` | `honey_pos_honey_catalog()`, `ims_pdo()` |
+| `checkout` | `api_pos_checkout()` | `ims_pdo()` |
+| `honey_checkout` | `api_pos_honey_checkout()` | `honey_pos_checkout()`, `ims_pdo()` |
+| `discount_request_create` | `api_pos_discount_request_create()` | `pos_discount_request_create()`, `ims_pdo()` |
+| `discount_request_status` | `api_pos_discount_request_status()` | `pos_discount_request_fetch_for_pin()`, `ims_pdo()` |
+
+### `pos_discounts.php`
+
+- **Path:** `api/v1/pos_discounts.php`
+- **URL:** `/rts/api/v1/pos_discounts.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/pos_discount_requests.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `list` | `api_pos_discounts_list()` | `pos_discount_request_list()`, `ims_pdo()` |
+| `approve` | `api_pos_discounts_approve()` | `pos_discount_request_approve()`, `ims_pdo()` |
+| `decline` | `api_pos_discounts_decline()` | `pos_discount_request_decline()`, `ims_pdo()` |
+
+### `reports.php`
+
+- **Path:** `api/v1/reports.php`
+- **URL:** `/rts/api/v1/reports.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `stock_movement` | `api_reports_stock_movement()` | `ims_pdo()` |
+| `dept_summary` | `api_reports_dept_summary()` | `ims_pdo()` |
+
+### `rts.php`
+
+- **Path:** `api/v1/rts.php`
+- **URL:** `/rts/api/v1/rts.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `pool` | `api_rts_pool()` | `ims_pdo()` |
+| `recent` | `api_rts_recent()` | `ims_pdo()` |
+| `legacy_urls` | `api_rts_legacy_urls()` | — |
+| `inventory_list` | `api_rts_inventory_list()` | `ims_pdo()`, `rts_inventory_sync_status()` |
+| `inventory_deduct_sell` | `api_rts_inventory_deduct_sell()` | `rts_inventory_deduct_sell()`, `ims_pdo()` |
+| `sync_status` | `api_rts_sync_status_action()` | `rts_inventory_sync_status()`, `ims_pdo()` |
+
+### `rts_sync.php`
+
+- **Path:** `api/v1/rts_sync.php`
+- **URL:** `/rts/api/v1/rts_sync.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `run` | `api_rts_sync_run()` | `rts_inventory_sync_run()`, `ims_pdo()` |
+| `status` | `api_rts_sync_status()` | `rts_inventory_sync_status()`, `ims_pdo()` |
+
+### `sales.php`
+
+- **Path:** `api/v1/sales.php`
+- **URL:** `/rts/api/v1/sales.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_sales_report.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `honey_sold` | `api_sales_honey_sold()` | `honey_sales_sold_snapshot()`, `ims_pdo()` |
+
+### `settings.php`
+
+- **Path:** `api/v1/settings.php`
+- **URL:** `/rts/api/v1/settings.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `pos_pins_list` | `api_settings_pos_pins_list()` | `ims_pdo()` |
+| `pos_pin_update` | `api_settings_pos_pin_update()` | `ims_pdo()` |
+| `pos_pin_create` | `api_settings_pos_pin_create()` | `ims_pdo()` |
+
+### `staff.php`
+
+- **Path:** `api/v1/staff.php`
+- **URL:** `/rts/api/v1/staff.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `list` | `api_staff_list()` | `ims_pdo()` |
+| `create` | `api_staff_create()` | `ims_pdo()` |
+| `update` | `api_staff_update()` | `ims_pdo()` |
+| `reset_password` | `api_staff_reset_password()` | `ims_pdo()` |
+
+### `stocks.php`
+
+- **Path:** `api/v1/stocks.php`
+- **URL:** `/rts/api/v1/stocks.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `api/v1/_costing_helpers.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `entries_list` | `api_stocks_entries_list()` | `ims_pdo()` |
+| `stocks_for_dept` | `api_stocks_for_dept()` | `ims_pdo()` |
+| `departments` | `api_stocks_departments()` | `ims_pdo()` |
+| `add_entry` | `api_stocks_add_entry()` | `ims_pdo()` |
+
+### `suppliers.php`
+
+- **Path:** `api/v1/suppliers.php`
+- **URL:** `/rts/api/v1/suppliers.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `list` | `api_suppliers_list()` | `supplier_list()`, `ims_pdo()` |
+| `get` | `api_suppliers_get()` | `supplier_fetch()`, `ims_pdo()`, `supplier_serialize()` |
+| `get_by_code` | `api_suppliers_get_by_code()` | `supplier_fetch_by_honey_code()`, `ims_pdo()`, `supplier_serialize()` |
+| `create` | `api_suppliers_create()` | `supplier_create()`, `ims_pdo()` |
+| `update` | `api_suppliers_update()` | `supplier_update()`, `ims_pdo()` |
+| `activate` | `api_suppliers_activate()` | `supplier_set_active()`, `ims_pdo()` |
+| `deactivate` | `api_suppliers_deactivate()` | `supplier_set_active()`, `ims_pdo()` |
+
+### `waybill.php`
+
+- **Path:** `api/v1/waybill.php`
+- **URL:** `/rts/api/v1/waybill.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/waybill_stamper.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `stash` | `api_waybill_stash()` | `waybill_stamper_upload_preflight()`, `waybill_stamper_stash_upload()` |
+| `process` | `api_waybill_process()` | `waybill_stamper_resolve_stash_tokens()`, `waybill_stamper_upload_preflight()`, `waybill_stamper_files_field()`, `waybill_stamper_collect_uploads()`, `waybill_stamper_process_uploads()`, `waybill_stamper_release_stash_tokens()` |
+
+## Legacy api/ (non-v1)
+
+### `case.php`
+- **Path:** `api/case.php`
+
+### `delivery_batch_detail.php`
+- **Path:** `api/delivery_batch_detail.php`
+
+### `delivery_bulk.php`
+- **Path:** `api/delivery_bulk.php`
+
+### `delivery_match_tracking.php`
+- **Path:** `api/delivery_match_tracking.php`
+
+### `delivery_resolve.php`
+- **Path:** `api/delivery_resolve.php`
+
+### `scan_qr_image.php`
+- **Path:** `api/scan_qr_image.php`
+
+### `scan_qr_image_public.php`
+- **Path:** `api/scan_qr_image_public.php`
+
+### `storage_media.php`
+- **Path:** `api/storage_media.php`
+
+### `upload_documentation.php`
+- **Path:** `api/upload_documentation.php`
+

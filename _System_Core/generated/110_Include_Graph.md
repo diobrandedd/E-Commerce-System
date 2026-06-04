@@ -1,0 +1,149 @@
+---
+title: Include Graph
+generated: 2026-06-04T03:07:02+02:00
+type: memory-bank
+edge_count: 127
+---
+
+
+# Include Graph
+
+> AUTO-GENERATED — PHP `require` / `require_once` edges.
+
+## Risky edges (includes → api/v1)
+
+These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[../003_Fragile_Edges]].
+
+- `includes/honey_pricing.php` → `api/v1/_costing_helpers.php`
+
+## All edges
+
+| From | To |
+|------|-----|
+| `api/v1/_bootstrap.php` | `includes/auth.php` |
+| `api/v1/_bootstrap.php` | `includes/auth_check.php` |
+| `api/v1/_bootstrap.php` | `includes/db.php` |
+| `api/v1/_costing_helpers.php` | `api/v1/_bootstrap.php` |
+| `api/v1/ar.php` | `api/v1/_bootstrap.php` |
+| `api/v1/auth.php` | `api/v1/_bootstrap.php` |
+| `api/v1/costing.php` | `api/v1/_bootstrap.php` |
+| `api/v1/costing.php` | `api/v1/_costing_helpers.php` |
+| `api/v1/costing.php` | `includes/honey_volume.php` |
+| `api/v1/costing.php` | `includes/suppliers.php` |
+| `api/v1/dashboard.php` | `api/v1/_bootstrap.php` |
+| `api/v1/edit_requests.php` | `api/v1/_bootstrap.php` |
+| `api/v1/honey.php` | `api/v1/_bootstrap.php` |
+| `api/v1/order_remarks.php` | `api/v1/_bootstrap.php` |
+| `api/v1/order_remarks.php` | `includes/order_remarks.php` |
+| `api/v1/pdf_to_excel.php` | `api/v1/_bootstrap.php` |
+| `api/v1/pdf_to_excel.php` | `includes/pdf_to_excel.php` |
+| `api/v1/pos.php` | `api/v1/_bootstrap.php` |
+| `api/v1/pos.php` | `includes/honey_pos.php` |
+| `api/v1/pos.php` | `includes/pos_discount_requests.php` |
+| `api/v1/pos_discounts.php` | `api/v1/_bootstrap.php` |
+| `api/v1/pos_discounts.php` | `includes/pos_discount_requests.php` |
+| `api/v1/reports.php` | `api/v1/_bootstrap.php` |
+| `api/v1/rts.php` | `api/v1/_bootstrap.php` |
+| `api/v1/rts_sync.php` | `api/v1/_bootstrap.php` |
+| `api/v1/sales.php` | `api/v1/_bootstrap.php` |
+| `api/v1/sales.php` | `includes/honey_sales_report.php` |
+| `api/v1/settings.php` | `api/v1/_bootstrap.php` |
+| `api/v1/staff.php` | `api/v1/_bootstrap.php` |
+| `api/v1/stocks.php` | `api/v1/_bootstrap.php` |
+| `api/v1/stocks.php` | `api/v1/_costing_helpers.php` |
+| `api/v1/suppliers.php` | `api/v1/_bootstrap.php` |
+| `api/v1/waybill.php` | `api/v1/_bootstrap.php` |
+| `api/v1/waybill.php` | `includes/waybill_stamper.php` |
+| `auth/login.php` | `includes/auth_check.php` |
+| `auth/logout.php` | `includes/auth_check.php` |
+| `auth/phase1_5_setup.php` | `includes/db.php` |
+| `auth/settings.php` | `includes/auth_check.php` |
+| `dashboard.php` | `includes/admin_nav.php` |
+| `dashboard.php` | `includes/auth.php` |
+| `dashboard.php` | `includes/db.php` |
+| `dashboard.php` | `includes/deliveries_review_nav.php` |
+| `dashboard.php` | `includes/labels.php` |
+| `dashboard.php` | `includes/rts_products.php` |
+| `dashboard.php` | `includes/sp_sort_service.php` |
+| `dept/beginning_inventory.php` | `includes/auth_check.php` |
+| `dept/example_protected.php` | `includes/auth_check.php` |
+| `dept/home.php` | `includes/auth_check.php` |
+| `dept/products.php` | `includes/auth_check.php` |
+| `dept/stock_entries.php` | `includes/auth_check.php` |
+| `exec/dashboard.php` | `includes/auth_check.php` |
+| `exec/dashboard.php` | `includes/ims_exec_sidebar.php` |
+| `exec/edit_requests.php` | `includes/auth_check.php` |
+| `exec/edit_requests.php` | `includes/ims_exec_sidebar.php` |
+| `exec/staff_management.php` | `includes/auth_check.php` |
+| `exec/staff_management.php` | `includes/ims_exec_sidebar.php` |
+| `executive.php` | `includes/auth.php` |
+| `executive.php` | `includes/db.php` |
+| `includes/admin_nav.php` | `includes/auth.php` |
+| `includes/admin_sidebar.php` | `includes/admin_nav.php` |
+| `includes/auth.php` | `includes/db.php` |
+| `includes/auth_check.php` | `includes/db.php` |
+| `includes/db.php` | `includes/forwarding.php` |
+| `includes/honey_inventory.php` | `includes/db.php` |
+| `includes/honey_inventory.php` | `includes/honey_pricing.php` |
+| `includes/honey_inventory.php` | `includes/honey_volume.php` |
+| `includes/honey_inventory.php` | `includes/suppliers.php` |
+| `includes/honey_pos.php` | `includes/honey_inventory.php` |
+| `includes/honey_pricing.php` | `api/v1/_costing_helpers.php` |
+| `includes/honey_pricing.php` | `includes/honey_inventory.php` |
+| `includes/honey_pricing.php` | `includes/honey_pos.php` |
+| `includes/honey_pricing.php` | `includes/honey_volume.php` |
+| `includes/honey_sales_report.php` | `includes/dashboard_inventory.php` |
+| `includes/labels.php` | `includes/rts_products.php` |
+| `includes/order_remarks.php` | `includes/waybill_stamper.php` |
+| `includes/pdf_to_excel.php` | `includes/waybill_stamper.php` |
+| `includes/pos_discount_requests.php` | `includes/honey_pos.php` |
+| `includes/rts_inventory_sync.php` | `includes/db.php` |
+| `includes/rts_inventory_sync.php` | `includes/honey_inventory.php` |
+| `includes/rts_schema.php` | `includes/rts_products.php` |
+| `includes/rts_storage.php` | `includes/db.php` |
+| `includes/sp_sort_service.php` | `includes/rts_storage.php` |
+| `includes/sp_sort_service.php` | `includes/rts_storage.php` |
+| `includes/suppliers.php` | `includes/db.php` |
+| `includes/suppliers.php` | `includes/rts_storage.php` |
+| `index.php` | `includes/auth.php` |
+| `index.php` | `includes/auth_check.php` |
+| `login.php` | `includes/auth.php` |
+| `login.php` | `includes/auth_check.php` |
+| `login.php` | `includes/db.php` |
+| `logout.php` | `includes/auth.php` |
+| `orders-editor/auth_gate.php` | `includes/auth_check.php` |
+| `orders-editor/auth_gate.php` | `includes/order_remarks.php` |
+| `orders-editor/index.php` | `orders-editor/auth_gate.php` |
+| `pdf-to-excel/auth_gate.php` | `includes/auth_check.php` |
+| `pdf-to-excel/auth_gate.php` | `includes/pdf_to_excel.php` |
+| `pdf-to-excel/auth_gate.php` | `pdf-to-excel/index.php` |
+| `portal.php` | `includes/auth.php` |
+| `pos/index.php` | `includes/auth_check.php` |
+| `prodmgr/dashboard.php` | `includes/auth_check.php` |
+| `record.php` | `includes/admin_nav.php` |
+| `record.php` | `includes/auth.php` |
+| `record.php` | `includes/db.php` |
+| `record.php` | `includes/deliveries_review_nav.php` |
+| `record.php` | `includes/rts_products.php` |
+| `record.php` | `includes/rts_storage.php` |
+| `records.php` | `includes/admin_nav.php` |
+| `records.php` | `includes/auth.php` |
+| `records.php` | `includes/db.php` |
+| `records.php` | `includes/deliveries_review_nav.php` |
+| `records.php` | `includes/labels.php` |
+| `records.php` | `includes/rts_attachments.php` |
+| `records.php` | `includes/rts_claim_status.php` |
+| `records.php` | `includes/rts_products.php` |
+| `records.php` | `includes/rts_storage.php` |
+| `settings.php` | `includes/auth.php` |
+| `settings.php` | `includes/db.php` |
+| `sp_sort/batches.php` | `sp_sort/bootstrap.php` |
+| `sp_sort/carousel.php` | `sp_sort/bootstrap.php` |
+| `sp_sort/download.php` | `sp_sort/bootstrap.php` |
+| `sp_sort/index.php` | `sp_sort/bootstrap.php` |
+| `sp_sort/print.php` | `sp_sort/bootstrap.php` |
+| `sp_sort/process.php` | `sp_sort/bootstrap.php` |
+| `sp_sort/workflow.php` | `sp_sort/bootstrap.php` |
+| `waybill-stamper/auth_gate.php` | `includes/auth_check.php` |
+| `waybill-stamper/auth_gate.php` | `includes/waybill_stamper.php` |
+| `waybill-stamper/index.php` | `waybill-stamper/auth_gate.php` |

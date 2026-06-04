@@ -1,0 +1,29 @@
+---
+description: AI-directed engineering — theory in Obsidian specs, plan before code, then implement
+alwaysApply: true
+---
+
+# AI-directed engineering
+
+## Default workflow (do not skip)
+
+1. **Theory** — Read `_System_Core/001_System_State.md` for **Active Spec** and **Active Plan** links.
+   - If no spec exists for the request, ask the user to create one from `_System_Core/specs/TEMPLATE_Feature_Spec.md` OR draft the spec in `specs/` and wait for approval before planning.
+
+2. **Plan** — Before writing code on a non-trivial feature:
+   - Read the linked spec, `_System_Core/010_Product_Theory.md`, `000`, `003`, and relevant `generated/` / `generated/spa/` maps.
+   - Write or update the plan at `_System_Core/plans/active/<name>_plan.md` using `plans/TEMPLATE_Implementation_Plan.md`.
+   - **Stop and get human approval** if the user has not marked the plan approved (checkbox in plan frontmatter or explicit "approved" in chat).
+
+3. **Implement** — Only after plan approval:
+   - Follow the plan phases; use `004`/`005` for UI; `impact.php` for shared `includes/` edits.
+   - Regenerate memory bank; append `_System_Core/002_Memory_Bank.md`; move plan to `plans/archive/`.
+
+## Small fixes exception
+
+Trivial bugfixes (one file, obvious scope) may skip a formal plan if they do not change API contracts, schema, or shared includes. Still run `impact.php` when touching `includes/`.
+
+## Never
+
+- Implement large features from chat memory alone without a spec/plan note in `_System_Core/`
+- Treat `generated/` as theory — it describes **current** code, not desired future state

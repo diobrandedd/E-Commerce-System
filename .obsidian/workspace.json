@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "a92a7a748db4d1ca",
+        "id": "442b8a99a22301b5",
         "type": "tabs",
         "children": [
           {
-            "id": "470b85c7954897a3",
+            "id": "36bf0aa71eed035d",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -30,19 +30,6 @@
         "id": "96e81ae3380eaf40",
         "type": "tabs",
         "children": [
-          {
-            "id": "cf158df73eedaeac",
-            "type": "leaf",
-            "state": {
-              "type": "file-explorer",
-              "state": {
-                "sortOrder": "alphabetical",
-                "autoReveal": false
-              },
-              "icon": "lucide-folder-closed",
-              "title": "Files"
-            }
-          },
           {
             "id": "b602b6a05c277d42",
             "type": "leaf",
@@ -69,13 +56,26 @@
               "icon": "lucide-bookmark",
               "title": "Bookmarks"
             }
+          },
+          {
+            "id": "8020acfaf00bf88f",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": true
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
           }
-        ]
+        ],
+        "currentTab": 2
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "right": {
     "id": "8988026add23112c",
@@ -159,12 +159,12 @@
               "title": "Outline"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -177,28 +177,43 @@
       "bases:Create new base": false
     }
   },
-  "active": "470b85c7954897a3",
+  "active": "6a077ed51253c9e6",
   "lastOpenFiles": [
-    "_System_Core/000_System_Architecture.md",
-    "_System_Core/002_Memory_Bank.md",
-    "_System_Core/001_System_State.md",
-    "app/node_modules/vaul/README.md",
-    "orders-editor/README.md",
-    "app/node_modules/@types/d3-path/README.md",
-    "app/node_modules/@radix-ui/react-scroll-area/README.md",
-    "app/node_modules/fast-equals/README.md",
-    "app/node_modules/fast-deep-equal/README.md",
-    "app/node_modules/react-fast-compare/README.md",
-    "app/node_modules/source-map-js/README.md",
-    "vendor/maennchen/zipstream-php/README.md",
-    "app/node_modules/json-parse-even-better-errors/README.md",
-    "app/node_modules/react-smooth/README.md",
-    "app/node_modules/lodash/README.md",
-    "sp_sort/README.md",
-    "_System_Core/002_Memory_Bank.md.md",
-    "_System_Core/001_System_State.md.md",
-    "_System_Core/000_System_Architecture.md.md",
+    "Untitled.canvas",
     "Untitled.md",
-    "_System_Core"
+    "Untitled.base",
+    "Untitled",
+    "2026-06-04.md",
+    "_System_Core/generated/130_Module_Index.md",
+    "app/node_modules/fast-equals/README.md",
+    "tools/memory_bank/generate.bat",
+    "tools/memory_bank/install-pre-commit.ps1",
+    "tools/memory_bank/pre-commit",
+    "_System_Core/generated/modules/waybill_stamper.md",
+    "_System_Core/generated/modules/suppliers.md",
+    "_System_Core/generated/modules/sp_sort_service.md",
+    "_System_Core/generated/modules/rts_storage.md",
+    "_System_Core/generated/modules/rts_shop_couriers.md",
+    "_System_Core/generated/modules/rts_schema.md",
+    "_System_Core/generated/modules/rts_products.md",
+    "_System_Core/generated/modules/rts_inventory_sync.md",
+    "_System_Core/generated/modules/rts_claim_status.md",
+    "_System_Core/generated/modules/rts_attachments.md",
+    "_System_Core/generated/modules/qr_decode.md",
+    "_System_Core/generated/modules/pos_discount_requests.md",
+    "_System_Core/generated/modules/pdf_to_excel.md",
+    "_System_Core/generated/modules/order_remarks.md",
+    "_System_Core/generated/modules/labels.md",
+    "_System_Core/generated/modules/ims_exec_sidebar.md",
+    "_System_Core/generated/modules/honey_volume.md",
+    "_System_Core/generated/modules/honey_sales_report.md",
+    "_System_Core/generated/modules/honey_pricing.md",
+    "_System_Core/generated/modules/honey_pos.md",
+    "_System_Core/generated/modules/honey_inventory.md",
+    "_System_Core/generated/modules",
+    "_System_Core/generated",
+    "tools/memory_bank/impact.php",
+    "tools/memory_bank/generate_all.php",
+    "tools/memory_bank/Generator.php"
   ]
 }

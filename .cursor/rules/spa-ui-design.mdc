@@ -1,0 +1,24 @@
+---
+description: SPA UI design system — colors, layout, modals, motion, feedback
+globs: app/src/**/*.ts,app/src/**/*.tsx
+alwaysApply: false
+---
+
+# SPA UI & UX consistency
+
+Before adding or changing React UI:
+
+1. Read `_System_Core/004_SPA_Design_System.md` (colors, PageLayout, tokens)
+2. Read `_System_Core/005_SPA_UX_Patterns.md` (modals, toasts, motion rules)
+3. Check `_System_Core/generated/spa/151_Components_Index.md` for existing patterns on similar pages
+
+## Must follow
+
+- **Colors:** use Tailwind semantic tokens (`bg-background`, `bg-primary`, `text-muted-foreground`) — not random hex in new code
+- **Exec/inventory/CSR pages:** wrap in `PageLayout` unless POS full-screen
+- **Modals:** reuse `POSModal`, honey `*Modal`, costing `ModalShell`, or `ui/dialog` — do not add new inline `fixed inset-0` overlays
+- **Motion:** import from `motion/react`; always use `useReducedMotion()` and disable animation when true
+- **Feedback:** POS → `FeedbackBurst`; CSR tools → `OrderRemarksToast` + timeout; forms → green/red banner
+- **API calls:** use `app/src/app/lib/api.ts` helpers; see `_System_Core/generated/140_Frontend_API_Clients.md`
+
+Auto maps: `_System_Core/generated/spa/` (routes, theme, motion exports)

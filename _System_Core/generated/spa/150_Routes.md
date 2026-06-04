@@ -1,0 +1,42 @@
+---
+title: SPA Routes
+generated: 2026-06-04T03:07:08+02:00
+type: spa
+---
+
+
+# SPA Routes
+
+> AUTO-GENERATED from `app/src/app/routes.ts`. Manual UX rules: [[../../004_SPA_Design_System]] · [[../../005_SPA_UX_Patterns]]
+
+Basename: `/rts/app/dist` (prod) · dev at `localhost:5173`
+
+| Path | Page component | Roles |
+|------|----------------|-------|
+| `/dashboard` | `DashboardPage` | any authenticated |
+| `/inventory/:dept` | `InventoryPage` | any authenticated |
+| `/inventory` | `InventoryPage` | any authenticated |
+| `/stock-input` | `InventoryPage` | any authenticated |
+| `/daily-count` | `InventoryPage` | any authenticated |
+| `/beginning-inventory` | `InventoryPage` | any authenticated |
+| `/edit-requests` | `EditRequestsPage` | any authenticated |
+| `/inventory/requests` | `InventoryRequestsPage` | executive,prod_manager,hr |
+| `/inventory/honey/warehouse` | `HoneyWarehousePage` | executive,prod_manager,hr |
+| `/inventory/honey/production` | `HoneyProductionPage` | executive,prod_manager,hr |
+| `/inventory/honey/packaging` | `HoneyPackagingPage` | executive,prod_manager,hr |
+| `/inventory/paragis` | `DeptInventoryPage` | executive,prod_manager,hr |
+| `/inventory/cacao-brc` | `DeptInventoryPage` | executive,prod_manager,hr |
+| `/staff` | `StaffManagementPage` | executive |
+| `/reports` | `ReportsPage` | executive,prod_manager |
+| `/sales` | `SalesPage` | executive,prod_manager |
+| `/suppliers` | `SuppliersPage` | executive |
+| `/costing` | `CostingPage` | executive,prod_manager |
+| `/ar` | `ARCreditsPage` | any authenticated |
+| `/waybill/stamper` | `WaybillStamperPage` | executive,csr_tl |
+| `/waybill/order-remarks` | `OrderRemarksPage` | executive,csr_tl |
+| `/waybill/pdf-to-excel` | `PdfToExcelPage` | executive,csr_tl |
+| `/rts` | `RTSPage` | executive,prod_manager,hr,csr_tl,csr_staff |
+| `/rts/record` | `RTSPage` | executive,prod_manager,hr,csr_tl,csr_staff |
+| `/settings` | `SettingsPage` | executive |
+| `//` | `Root` | public or POS nested |
+| `/honey` | `POSHoneyPage` | public or POS nested |

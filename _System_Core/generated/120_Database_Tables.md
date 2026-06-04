@@ -1,0 +1,422 @@
+---
+title: Database Tables
+generated: 2026-06-04T03:07:02+02:00
+type: memory-bank
+table_count: 35
+---
+
+
+# Database Tables
+
+> AUTO-GENERATED from `sql/*.sql` + SQL regex scan of `includes/` and `api/`.
+
+Schema sources: `sql/full_schema.sql` and migration files
+
+## `rts_cases`
+
+| File | Function |
+|------|----------|
+| `api/case.php` | `(file-level)` |
+| `api/v1/rts.php` | [[modules/rts#api_rts_pool]] |
+| `api/v1/rts.php` | [[modules/rts#api_rts_recent]] |
+| `api/v1/rts.php` | [[modules/rts#api_rts_inventory_list]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
+| `includes/rts_schema.php` | [[modules/rts_schema#rts_cases_fetch_by_tracking]] |
+| `includes/rts_schema.php` | [[modules/rts_schema#rts_cases_insert_row]] |
+| `includes/rts_schema.php` | [[modules/rts_schema#rts_cases_update_row]] |
+| `includes/rts_schema.php` | [[modules/rts_schema#rts_cases_find_active_id_by_tracking]] |
+
+## `rts_line_items`
+
+| File | Function |
+|------|----------|
+| `api/case.php` | `(file-level)` |
+| `api/v1/rts.php` | [[modules/rts#api_rts_pool]] |
+| `api/v1/rts.php` | [[modules/rts#api_rts_recent]] |
+| `api/v1/rts.php` | [[modules/rts#api_rts_inventory_list]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
+| `includes/rts_products.php` | [[modules/rts_products#rts_line_items_schema_v2]] |
+| `includes/rts_schema.php` | [[modules/rts_schema#rts_line_items_fetch_for_case]] |
+| `includes/rts_schema.php` | [[modules/rts_schema#rts_line_items_ensure_v2_schema]] |
+| `includes/rts_schema.php` | [[modules/rts_schema#rts_line_items_insert_batch]] |
+
+## `app_users`
+
+| File | Function |
+|------|----------|
+| `includes/auth.php` | [[modules/auth#rts_app_users_has_status_column]] |
+| `includes/auth.php` | [[modules/auth#rts_delivery_submitter_user_id]] |
+| `includes/auth.php` | [[modules/auth#rts_auth_login]] |
+
+## `delivery_batches`
+
+| File | Function |
+|------|----------|
+| `api/case.php` | `(file-level)` |
+| `api/delivery_batch_detail.php` | `(file-level)` |
+| `api/delivery_bulk.php` | `(file-level)` |
+| `api/delivery_match_tracking.php` | `(file-level)` |
+
+## `delivery_batch_items`
+
+| File | Function |
+|------|----------|
+| `api/case.php` | `(file-level)` |
+| `api/delivery_batch_detail.php` | `(file-level)` |
+| `api/delivery_bulk.php` | `(file-level)` |
+| `api/delivery_match_tracking.php` | `(file-level)` |
+| `api/delivery_resolve.php` | `(file-level)` |
+| `includes/deliveries_review_nav.php` | [[modules/deliveries_review_nav#rts_delivery_review_attention_count]] |
+
+## `sp_sort_batches`
+
+| File | Function |
+|------|----------|
+| `includes/sp_sort_service.php` | [[modules/sp_sort_service#sp_sort_create_batch]] |
+| `includes/sp_sort_service.php` | [[modules/sp_sort_service#sp_sort_regenerate_batch_file]] |
+| `includes/sp_sort_service.php` | [[modules/sp_sort_service#sp_sort_shop_counts]] |
+| `includes/sp_sort_service.php` | [[modules/sp_sort_service#sp_sort_tables_exist]] |
+| `includes/sp_sort_service.php` | [[modules/sp_sort_service#sp_sort_courier_counts]] |
+| `sp_sort/api/complete.php` | `(file-level)` |
+| `sp_sort/api/export.php` | `(file-level)` |
+
+## `sp_sort_rows`
+
+| File | Function |
+|------|----------|
+| `includes/sp_sort_service.php` | [[modules/sp_sort_service#sp_sort_create_batch]] |
+| `includes/sp_sort_service.php` | [[modules/sp_sort_service#sp_sort_load_batch_rows]] |
+| `includes/sp_sort_service.php` | [[modules/sp_sort_service#sp_sort_shop_counts]] |
+| `includes/sp_sort_service.php` | [[modules/sp_sort_service#sp_sort_courier_counts]] |
+
+## `roles`
+
+| File | Function |
+|------|----------|
+| `api/v1/staff.php` | [[modules/staff#api_staff_list]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_create]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_update]] |
+| `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
+
+## `departments`
+
+| File | Function |
+|------|----------|
+| `api/v1/_bootstrap.php` | [[modules/_bootstrap#api_dept_lookup]] |
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_fetch_product_scope]] |
+| `api/v1/ar.php` | [[modules/ar#api_ar_products]] |
+| `api/v1/ar.php` | [[modules/ar#api_ar_list]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_list]] |
+| `api/v1/honey.php` | [[modules/honey#api_honey_dept_list]] |
+| `api/v1/honey.php` | [[modules/honey#api_honey_dept_add_row]] |
+| `api/v1/pos.php` | [[modules/pos#api_pos_products]] |
+| `api/v1/reports.php` | [[modules/reports#api_reports_stock_movement]] |
+| `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_list]] |
+| `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
+| `api/v1/stocks.php` | [[modules/stocks#api_stocks_departments]] |
+| `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_dept_products_snapshot]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_resolve_honey_dept_id]] |
+| `includes/waybill_stamper.php` | [[modules/waybill_stamper#waybill_stamper_user_can_access]] |
+
+## `users`
+
+| File | Function |
+|------|----------|
+| `api/v1/ar.php` | [[modules/ar#api_ar_list]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_list]] |
+| `api/v1/honey.php` | [[modules/honey#api_honey_correction_list]] |
+| `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_list]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_create]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_update]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_reset_password]] |
+| `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
+| `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
+| `includes/auth_check.php` | [[modules/auth_check#ims_change_password]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
+| `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
+
+## `pos_pins`
+
+| File | Function |
+|------|----------|
+| `api/v1/settings.php` | [[modules/settings#api_settings_pos_pins_list]] |
+| `api/v1/settings.php` | [[modules/settings#api_settings_pos_pin_update]] |
+| `api/v1/settings.php` | [[modules/settings#api_settings_pos_pin_create]] |
+| `includes/auth_check.php` | [[modules/auth_check#ims_login_pos]] |
+| `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
+
+## `stocks`
+
+| File | Function |
+|------|----------|
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_fetch_product_scope]] |
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_apply_price_change]] |
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_build_product_detail]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_stock_update_price]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_formula_mutate]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
+| `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
+| `api/v1/stocks.php` | [[modules/stocks#api_stocks_for_dept]] |
+| `api/v1/stocks.php` | [[modules/stocks#api_stocks_add_entry]] |
+| `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_upsert_supplier_costing_stocks]] |
+
+## `stock_entries`
+
+| File | Function |
+|------|----------|
+| `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_submit]] |
+| `api/v1/reports.php` | [[modules/reports#api_reports_stock_movement]] |
+| `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
+| `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
+| `api/v1/stocks.php` | [[modules/stocks#api_stocks_add_entry]] |
+
+## `edit_requests`
+
+| File | Function |
+|------|----------|
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_list]] |
+| `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_submit]] |
+| `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_approve]] |
+| `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_reject]] |
+| `includes/ims_exec_sidebar.php` | [[modules/ims_exec_sidebar#ims_render_exec_sidebar]] |
+
+## `products`
+
+| File | Function |
+|------|----------|
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_fetch_product_scope]] |
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_recalculate_baseline]] |
+| `api/v1/ar.php` | [[modules/ar#api_ar_products]] |
+| `api/v1/ar.php` | [[modules/ar#api_ar_list]] |
+| `api/v1/ar.php` | [[modules/ar#api_ar_take]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_product_create]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_product_update_selling_price]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/pos.php` | [[modules/pos#api_pos_products]] |
+| `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
+| `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_product_map]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
+| `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
+
+## `product_formula`
+
+| File | Function |
+|------|----------|
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_fetch_product_scope]] |
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_recalculate_baseline]] |
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_apply_price_change]] |
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_build_product_detail]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_formula_mutate]] |
+
+## `stock_deductions`
+
+| File | Function |
+|------|----------|
+| `api/v1/reports.php` | [[modules/reports#api_reports_stock_movement]] |
+| `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
+
+## `beginning_inventory`
+
+_No references detected in includes/api (may be legacy pages only)._
+
+## `stock_price_history`
+
+| File | Function |
+|------|----------|
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_apply_price_change]] |
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_build_product_detail]] |
+| `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+
+## `product_cost_history`
+
+| File | Function |
+|------|----------|
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_apply_price_change]] |
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_build_product_detail]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+
+## `inventory_edit_log`
+
+| File | Function |
+|------|----------|
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_log_edit]] |
+
+## `supplier_honey_prices`
+
+| File | Function |
+|------|----------|
+| `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_resolve_active_price]] |
+| `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_list_supplier_prices]] |
+| `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_save_supplier_prices]] |
+
+## `pos_discount_requests`
+
+| File | Function |
+|------|----------|
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
+| `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_create]] |
+| `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_approve]] |
+| `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_decline]] |
+| `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_fetch_for_pin]] |
+| `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
+
+## `pos_sales`
+
+| File | Function |
+|------|----------|
+| `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
+| `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
+
+## `pos_receipt_items`
+
+| File | Function |
+|------|----------|
+| `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
+| `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
+
+## `ar_credits`
+
+| File | Function |
+|------|----------|
+| `api/v1/ar.php` | [[modules/ar#api_ar_list]] |
+| `api/v1/ar.php` | [[modules/ar#api_ar_take]] |
+| `api/v1/ar.php` | [[modules/ar#api_ar_mark_paid]] |
+
+## `honey_warehouse_rows`
+
+| File | Function |
+|------|----------|
+| `api/v1/honey.php` | [[modules/honey#api_honey_warehouse_list]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_warehouse]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_warehouse_stock_in]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_warehouse_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_traceability]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
+| `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_apply_row_cost]] |
+| `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_reprice_pending_for_supplier]] |
+| `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_pending_warehouse_rows]] |
+| `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_pending_count]] |
+| `includes/suppliers.php` | [[modules/suppliers#supplier_fetch_by_honey_code]] |
+
+## `honey_production_rows`
+
+| File | Function |
+|------|----------|
+| `api/v1/honey.php` | [[modules/honey#api_honey_production_list]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_production]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_warehouse_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_cascade_warehouse_metadata]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_traceability]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
+
+## `honey_packaging_rows`
+
+| File | Function |
+|------|----------|
+| `api/v1/honey.php` | [[modules/honey#api_honey_production_list]] |
+| `api/v1/honey.php` | [[modules/honey#api_honey_packaging_list]] |
+| `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_honey_packaging_snapshot]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging_by_production]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_stock_out_sold]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_cascade_warehouse_metadata]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_traceability]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_packaging_availability]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_available_qty]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_deduct_packaging_aggregate]] |
+
+## `honey_sales_log`
+
+| File | Function |
+|------|----------|
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_stock_out_sold]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_build_trace_chain]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_log_sale]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell]] |
+
+## `inventory_correction_requests`
+
+| File | Function |
+|------|----------|
+| `api/v1/honey.php` | [[modules/honey#api_honey_correction_submit]] |
+| `api/v1/honey.php` | [[modules/honey#api_honey_correction_list]] |
+| `api/v1/honey.php` | [[modules/honey#api_honey_correction_approve]] |
+| `api/v1/honey.php` | [[modules/honey#api_honey_correction_reject]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_count]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_mark_viewed]] |
+
+## `dept_inventory_rows`
+
+| File | Function |
+|------|----------|
+| `api/v1/honey.php` | [[modules/honey#api_honey_dept_list]] |
+| `api/v1/honey.php` | [[modules/honey#api_honey_dept_add_row]] |
+| `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_dept_products_snapshot]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
+
+## `rts_inventory_rows`
+
+| File | Function |
+|------|----------|
+| `api/v1/rts.php` | [[modules/rts#api_rts_inventory_list]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell]] |
+
+## `rts_sync_state`
+
+| File | Function |
+|------|----------|
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_status]] |
+
+## `suppliers`
+
+| File | Function |
+|------|----------|
+| `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
+| `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_sync_all_variant_stocks]] |
+| `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_list_supplier_prices]] |
+| `includes/suppliers.php` | [[modules/suppliers#supplier_fetch]] |
+| `includes/suppliers.php` | [[modules/suppliers#supplier_fetch_by_honey_code]] |
+| `includes/suppliers.php` | [[modules/suppliers#supplier_list]] |
+| `includes/suppliers.php` | [[modules/suppliers#supplier_create]] |
+| `includes/suppliers.php` | [[modules/suppliers#supplier_update]] |
+| `includes/suppliers.php` | [[modules/suppliers#supplier_set_active]] |
+

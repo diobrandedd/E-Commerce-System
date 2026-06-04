@@ -1,0 +1,34 @@
+---
+title: admin_nav
+source: includes/admin_nav.php
+generated: 2026-06-04T03:07:02+02:00
+type: module
+function_count: 1
+---
+
+
+# admin_nav
+
+> Source: `includes/admin_nav.php`
+
+[[../130_Module_Index]] · [[../120_Database_Tables]] · [[../100_API_Index]]
+
+## Includes
+
+- `includes/auth.php`
+
+## rts_admin_nav_links {#rts_admin_nav_links}
+
+**Callers (10):**
+
+- `deliveries/review.php`:363 — `<?php rts_admin_nav_links('deliveries', '../', $deliveryNavBadge, 'review.php'); ?>`
+- `deliveries/review.php`:373 — `<?php rts_admin_nav_links('deliveries', '../', $deliveryNavBadge, 'review.php'); ?>`
+- `includes/admin_sidebar.php`:25 — `<?php rts_admin_nav_links($active, $prefix, $deliveryNavBadge, $deliveriesHref); ?>`
+- `includes/admin_sidebar.php`:35 — `<?php rts_admin_nav_links($active, $prefix, $deliveryNavBadge, $deliveriesHref); ?>`
+- `dashboard.php`:343 — `<?php rts_admin_nav_links('dashboard', '', $deliveryNavBadge); ?>`
+- `dashboard.php`:353 — `<?php rts_admin_nav_links('dashboard', '', $deliveryNavBadge); ?>`
+- `record.php`:425 — `<?php rts_admin_nav_links('record', '', $deliveryNavBadge); ?>`
+- `record.php`:435 — `<?php rts_admin_nav_links('record', '', $deliveryNavBadge); ?>`
+- `records.php`:545 — `<?php rts_admin_nav_links('records', '', $deliveryNavBadge); ?>`
+- `records.php`:555 — `<?php rts_admin_nav_links('records', '', $deliveryNavBadge); ?>`
+

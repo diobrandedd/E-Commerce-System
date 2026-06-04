@@ -29,5 +29,14 @@
 - Use storage helpers/configured storage root for file IO; do not hardcode random filesystem paths in feature code.
 
 ## 🔗 Connected Memory Anchors
+- **Workflow (theory → plan → build):** [[006_AI_Directed_Engineering]]
+- **Product theory:** [[010_Product_Theory]]
 - Current Active Tasks: [[001_System_State]]
 - Project Change Log: [[002_Memory_Bank]]
+- Fragile / non-obvious traps: [[003_Fragile_Edges]]
+- SPA design (colors, layout): [[004_SPA_Design_System]]
+- SPA UX (modals, motion, feedback): [[005_SPA_UX_Patterns]]
+- Auto-generated backend indexes: [[generated/100_API_Index]] · [[generated/130_Module_Index]] · [[generated/120_Database_Tables]]
+- Auto-generated SPA indexes: [[generated/spa/149_SPA_Index]]
+- Full project reference: [README.md](../README.md) (repo root)
+- Regenerate indexes: `php tools/memory_bank/generate_all.php` (see [[README]])
