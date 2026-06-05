@@ -1,7 +1,7 @@
 ---
 title: forwarding
 source: includes/forwarding.php
-generated: 2026-06-05T08:03:21+02:00
+generated: 2026-06-05T10:39:38+02:00
 type: module
 function_count: 15
 ---
@@ -109,7 +109,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `record.php`:27 — `<?= rts_forwarding_head_script() ?>`
+- `record.php`:33 — `<?= rts_forwarding_head_script() ?>`
 
 ## rts_app_public_url {#rts_app_public_url}
 

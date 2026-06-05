@@ -1,7 +1,7 @@
 ---
 title: rts_products
 source: includes/rts_products.php
-generated: 2026-06-05T08:03:28+02:00
+generated: 2026-06-05T10:39:47+02:00
 type: module
 function_count: 14
 ---
@@ -83,11 +83,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## rts_validate_lines_v2 {#rts_validate_lines_v2}
 
-**Callers (3):**
+**Callers (2):**
 
-- `api/case.php`:189 — `$err = rts_validate_lines_v2($linesIn);`
-- `api/case.php`:370 — `$err = rts_validate_lines_v2($linesIn);`
-- `api/case.php`:535 — `$err = rts_validate_lines_v2($linesIn);`
+- `includes/rts_case_handlers.php`:148 — `$err = rts_validate_lines_v2($linesIn);`
+- `includes/rts_case_handlers.php`:359 — `$err = rts_validate_lines_v2($linesIn);`
 
 ## rts_normalize_line {#rts_normalize_line}
 
@@ -110,5 +109,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/rts_schema.php`:163 — `if (rts_line_items_schema_v2($pdo)) {`
 - `includes/rts_schema.php`:195 — `if (rts_line_items_schema_v2($pdo, true)) {`
 - `includes/rts_schema.php`:234 — `return rts_line_items_schema_v2($pdo, true) ? null : 'Line items upgrade failed.';`
-- `dashboard.php`:54 — `if (rts_line_items_schema_v2($pdo)) {`
+- `dashboard.php`:57 — `if (rts_line_items_schema_v2($pdo)) {`
 

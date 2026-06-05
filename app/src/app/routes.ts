@@ -8,6 +8,9 @@ import { InventoryPage } from "./pages/InventoryPage";
 import { EditRequestsPage } from "./pages/EditRequestsPage";
 import { InventoryRequestsPage } from "./pages/InventoryRequestsPage";
 import { RTSPage } from "./pages/RTSPage";
+import { RTSRecordPage } from "./pages/rts/RTSRecordPage";
+import { RTSRecordsPage } from "./pages/rts/RTSRecordsPage";
+import { RTSDashboardPage } from "./pages/rts/RTSDashboardPage";
 import { HoneyWarehousePage } from "./pages/honey/HoneyWarehousePage";
 import { HoneyProductionPage } from "./pages/honey/HoneyProductionPage";
 import { HoneyPackagingPage } from "./pages/honey/HoneyPackagingPage";
@@ -90,7 +93,9 @@ export const router = createBrowserRouter(
           element: createElement(Navigate, { to: "/waybill/online-orders", replace: true }),
         },
         { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
-        { path: "rts/record", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
+        { path: "rts/record", element: guarded(RTSRecordPage, { roles: ["executive", "prod_manager", "csr_tl", "csr_staff"] }) },
+        { path: "rts/records", element: guarded(RTSRecordsPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
+        { path: "rts/dashboard", element: guarded(RTSDashboardPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
         { path: "settings", element: guarded(SettingsPage, { roles: ["executive"] }) },
 
         { path: "deliveries", element: guarded(DeliveriesPage, { roles: ["executive", "prod_manager"] }) },

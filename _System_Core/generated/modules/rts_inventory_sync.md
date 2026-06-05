@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-06-05T08:03:28+02:00
+generated: 2026-06-05T10:39:47+02:00
 type: module
 function_count: 5
 ---
@@ -34,9 +34,10 @@ function_count: 5
 
 **Tables:** `rts_sync_state`, `rts_line_items`, `rts_cases`, `rts_inventory_rows`
 
-**Callers (1):**
+**Callers (2):**
 
-- `api/v1/rts_sync.php`:26 — `$result = rts_inventory_sync_run(ims_pdo());`
+- `api/v1/rts_cases.php`:60 — `rts_inventory_sync_run($pdo);`
+- `api/v1/rts_sync.php`:28 — `$result = rts_inventory_sync_run(ims_pdo());`
 
 ## rts_inventory_sync_status {#rts_inventory_sync_status}
 
@@ -46,7 +47,7 @@ function_count: 5
 
 - `api/v1/rts.php`:124 — `$sync = rts_inventory_sync_status($pdo);`
 - `api/v1/rts.php`:176 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
-- `api/v1/rts_sync.php`:37 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
+- `api/v1/rts_sync.php`:39 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
 
 ## rts_inventory_deduct_sell {#rts_inventory_deduct_sell}
 

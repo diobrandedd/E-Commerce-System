@@ -1,7 +1,7 @@
 ---
 title: auth
 source: includes/auth.php
-generated: 2026-06-05T08:03:19+02:00
+generated: 2026-06-05T10:39:36+02:00
 type: module
 function_count: 21
 ---
@@ -101,7 +101,7 @@ function_count: 21
 
 **Callers (6):**
 
-- `api/case.php`:18 — `if (!rts_can_access_rts_admin($authUser)) {`
+- `api/case.php`:13 — `if (!rts_can_access_rts_admin($authUser)) {`
 - `api/delivery_batch_detail.php`:12 — `if (!rts_can_access_rts_admin($u)) {`
 - `api/delivery_match_tracking.php`:17 — `if (!rts_can_access_rts_admin($u)) {`
 - `api/delivery_resolve.php`:18 — `if (!rts_can_access_rts_admin($u)) {`
@@ -137,7 +137,7 @@ function_count: 21
 
 **Callers (11):**
 
-- `api/case.php`:16 — `rts_session_start();`
+- `api/case.php`:11 — `rts_session_start();`
 - `api/delivery_batch_detail.php`:10 — `rts_session_start();`
 - `api/delivery_bulk.php`:35 — `rts_session_start();`
 - `api/delivery_match_tracking.php`:15 — `rts_session_start();`
@@ -153,7 +153,7 @@ function_count: 21
 
 **Callers (20):**
 
-- `api/case.php`:17 — `$authUser = rts_auth_user();`
+- `api/case.php`:12 — `$authUser = rts_auth_user();`
 - `api/delivery_batch_detail.php`:11 — `$u = rts_auth_user();`
 - `api/delivery_bulk.php`:36 — `$authUser = rts_auth_user();`
 - `api/delivery_match_tracking.php`:16 — `$u = rts_auth_user();`
@@ -194,11 +194,11 @@ function_count: 21
 **Callers (7):**
 
 - `sp_sort/bootstrap.php`:13 — `rts_require_roles([RTS_ROLE_ADMIN], '../login.php');`
-- `dashboard.php`:9 — `rts_require_roles([RTS_ROLE_ADMIN], 'login.php');`
+- `dashboard.php`:12 — `rts_require_roles([RTS_ROLE_ADMIN], 'login.php');`
 - `executive.php`:8 — `rts_require_roles([RTS_ROLE_EXECUTIVE], 'login.php');`
 - `portal.php`:6 — `rts_require_roles([RTS_ROLE_TEAM_LEADER, RTS_ROLE_STAFF], 'login.php');`
-- `record.php`:5 — `rts_require_roles([RTS_ROLE_ADMIN], 'login.php');`
-- `records.php`:13 — `rts_require_roles([RTS_ROLE_ADMIN], 'login.php');`
+- `record.php`:11 — `rts_require_roles([RTS_ROLE_ADMIN], 'login.php');`
+- `records.php`:19 — `rts_require_roles([RTS_ROLE_ADMIN], 'login.php');`
 - `settings.php`:8 — `rts_require_roles([`
 
 ## rts_is_admin {#rts_is_admin}

@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-05T08:03:18+02:00
+generated: 2026-06-05T10:39:35+02:00
 type: memory-bank
 table_count: 40
 ---
@@ -16,10 +16,15 @@ Schema sources: `sql/full_schema.sql` and migration files
 
 | File | Function |
 |------|----------|
-| `api/case.php` | `(file-level)` |
 | `api/v1/rts.php` | [[modules/rts#api_rts_pool]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_recent]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_inventory_list]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_update]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_append_lines]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_void]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_update_claim]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_list]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_dashboard]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
 | `includes/rts_schema.php` | [[modules/rts_schema#rts_cases_fetch_by_tracking]] |
 | `includes/rts_schema.php` | [[modules/rts_schema#rts_cases_insert_row]] |
@@ -30,10 +35,11 @@ Schema sources: `sql/full_schema.sql` and migration files
 
 | File | Function |
 |------|----------|
-| `api/case.php` | `(file-level)` |
 | `api/v1/rts.php` | [[modules/rts#api_rts_pool]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_recent]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_inventory_list]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_update]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_list]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
 | `includes/rts_products.php` | [[modules/rts_products#rts_line_items_schema_v2]] |
 | `includes/rts_schema.php` | [[modules/rts_schema#rts_line_items_fetch_for_case]] |
@@ -52,7 +58,6 @@ Schema sources: `sql/full_schema.sql` and migration files
 
 | File | Function |
 |------|----------|
-| `api/case.php` | `(file-level)` |
 | `api/delivery_batch_detail.php` | `(file-level)` |
 | `api/delivery_match_tracking.php` | `(file-level)` |
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_batch_for_date]] |
@@ -63,12 +68,13 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_find_delivery_match_item_id]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_delivery_match]] |
 
 ## `delivery_batch_items`
 
 | File | Function |
 |------|----------|
-| `api/case.php` | `(file-level)` |
 | `api/delivery_batch_detail.php` | `(file-level)` |
 | `api/delivery_match_tracking.php` | `(file-level)` |
 | `api/delivery_resolve.php` | `(file-level)` |
@@ -83,6 +89,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_find_delivery_match_item_id]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_delivery_match]] |
 
 ## `sp_sort_batches`
 

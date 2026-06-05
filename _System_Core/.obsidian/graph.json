@@ -1,11 +1,11 @@
 {
-  "collapse-filter": true,
+  "collapse-filter": false,
   "search": "",
   "showTags": false,
   "showAttachments": true,
   "hideUnresolved": false,
   "showOrphans": true,
-  "collapse-color-groups": false,
+  "collapse-color-groups": true,
   "colorGroups": [
     {
       "query": "Database",
@@ -51,15 +51,15 @@
     }
   ],
   "collapse-display": false,
-  "showArrow": true,
+  "showArrow": false,
   "textFadeMultiplier": 1.7,
   "nodeSizeMultiplier": 0.6359375,
   "lineSizeMultiplier": 0.814583333333333,
-  "collapse-forces": false,
+  "collapse-forces": true,
   "centerStrength": 0.4375,
   "repelStrength": 2.91666666666667,
   "linkStrength": 0.458333333333333,
   "linkDistance": 192,
-  "scale": 0.2726859917360013,
+  "scale": 0.2726859917360001,
   "close": true
 }

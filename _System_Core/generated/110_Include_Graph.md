@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-06-05T08:03:18+02:00
+generated: 2026-06-05T10:39:35+02:00
 type: memory-bank
-edge_count: 165
+edge_count: 173
 ---
 
 
@@ -55,6 +55,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/pos_discounts.php` | `includes/pos_discount_requests.php` |
 | `api/v1/reports.php` | `api/v1/_bootstrap.php` |
 | `api/v1/rts.php` | `api/v1/_bootstrap.php` |
+| `api/v1/rts_cases.php` | `api/v1/_bootstrap.php` |
 | `api/v1/rts_sync.php` | `api/v1/_bootstrap.php` |
 | `api/v1/sales.php` | `api/v1/_bootstrap.php` |
 | `api/v1/sales.php` | `includes/honey_sales_report.php` |
@@ -130,6 +131,13 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/order_remarks.php` | `includes/waybill_stamper.php` |
 | `includes/pdf_to_excel.php` | `includes/waybill_stamper.php` |
 | `includes/pos_discount_requests.php` | `includes/honey_pos.php` |
+| `includes/rts_case_handlers.php` | `includes/courier_detect.php` |
+| `includes/rts_case_handlers.php` | `includes/rts_attachments.php` |
+| `includes/rts_case_handlers.php` | `includes/rts_claim_status.php` |
+| `includes/rts_case_handlers.php` | `includes/rts_products.php` |
+| `includes/rts_case_handlers.php` | `includes/rts_schema.php` |
+| `includes/rts_case_handlers.php` | `includes/rts_shop_couriers.php` |
+| `includes/rts_case_handlers.php` | `includes/rts_storage.php` |
 | `includes/rts_inventory_sync.php` | `includes/db.php` |
 | `includes/rts_inventory_sync.php` | `includes/honey_inventory.php` |
 | `includes/rts_schema.php` | `includes/rts_products.php` |

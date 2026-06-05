@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-05T08:03:18+02:00
+generated: 2026-06-05T10:39:35+02:00
 type: memory-bank
 ---
 
@@ -39,6 +39,7 @@ type: memory-bank
 | [[modules/pos_discount_requests]] | 7 |
 | [[modules/qr_decode]] | 13 |
 | [[modules/rts_attachments]] | 5 |
+| [[modules/rts_case_handlers]] | 16 |
 | [[modules/rts_claim_status]] | 3 |
 | [[modules/rts_inventory_sync]] | 5 |
 | [[modules/rts_products]] | 14 |

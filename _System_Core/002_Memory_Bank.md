@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-05 — [[problems/records/2026-06-05_rts-spa-followup-ux|RTS SPA follow-up UX]]
+Grouped RTS sidebar; sync toast + HR role; records table badges, line_count, compact filters, standard pagination footer.
+
+### 2026-06-05 — [[problems/records/2026-06-05_rts-spa-migration|RTS full SPA migration]]
+Migrated record, records list, and dashboard to React; v1 IMS case API + shared handlers; legacy PHP redirects.
+
 ### 2026-06-05 — [[problems/records/2026-06-05_unified-requests-hub|Unified Requests hub]]
 Merged inventory corrections, edit requests, and POS discount approvals into one Requests hub with redirects.
 

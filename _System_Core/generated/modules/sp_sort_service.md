@@ -1,7 +1,7 @@
 ---
 title: sp_sort_service
 source: includes/sp_sort_service.php
-generated: 2026-06-05T08:03:29+02:00
+generated: 2026-06-05T10:39:48+02:00
 type: module
 function_count: 26
 ---
@@ -206,7 +206,7 @@ function_count: 26
 
 **Callers (1):**
 
-- `dashboard.php`:126 — `$deliveredByShop = sp_sort_shop_counts($pdo);`
+- `dashboard.php`:129 — `$deliveredByShop = sp_sort_shop_counts($pdo);`
 
 ## sp_sort_tables_exist {#sp_sort_tables_exist}
 
@@ -214,7 +214,7 @@ function_count: 26
 
 **Callers (1):**
 
-- `dashboard.php`:120 — `$spSortReady = sp_sort_tables_exist($pdo);`
+- `dashboard.php`:123 — `$spSortReady = sp_sort_tables_exist($pdo);`
 
 ## sp_sort_courier_counts {#sp_sort_courier_counts}
 
@@ -222,5 +222,5 @@ function_count: 26
 
 **Callers (1):**
 
-- `dashboard.php`:125 — `$deliveredByCourier = sp_sort_courier_counts($pdo);`
+- `dashboard.php`:128 — `$deliveredByCourier = sp_sort_courier_counts($pdo);`
 

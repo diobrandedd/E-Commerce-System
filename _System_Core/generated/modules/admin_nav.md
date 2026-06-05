@@ -1,7 +1,7 @@
 ---
 title: admin_nav
 source: includes/admin_nav.php
-generated: 2026-06-05T08:03:18+02:00
+generated: 2026-06-05T10:39:35+02:00
 type: module
 function_count: 1
 ---
@@ -23,10 +23,10 @@ function_count: 1
 
 - `includes/admin_sidebar.php`:25 — `<?php rts_admin_nav_links($active, $prefix, $deliveryNavBadge, $deliveriesHref); ?>`
 - `includes/admin_sidebar.php`:35 — `<?php rts_admin_nav_links($active, $prefix, $deliveryNavBadge, $deliveriesHref); ?>`
-- `dashboard.php`:343 — `<?php rts_admin_nav_links('dashboard', '', $deliveryNavBadge); ?>`
-- `dashboard.php`:353 — `<?php rts_admin_nav_links('dashboard', '', $deliveryNavBadge); ?>`
-- `record.php`:425 — `<?php rts_admin_nav_links('record', '', $deliveryNavBadge); ?>`
-- `record.php`:435 — `<?php rts_admin_nav_links('record', '', $deliveryNavBadge); ?>`
-- `records.php`:545 — `<?php rts_admin_nav_links('records', '', $deliveryNavBadge); ?>`
-- `records.php`:555 — `<?php rts_admin_nav_links('records', '', $deliveryNavBadge); ?>`
+- `dashboard.php`:346 — `<?php rts_admin_nav_links('dashboard', '', $deliveryNavBadge); ?>`
+- `dashboard.php`:356 — `<?php rts_admin_nav_links('dashboard', '', $deliveryNavBadge); ?>`
+- `record.php`:431 — `<?php rts_admin_nav_links('record', '', $deliveryNavBadge); ?>`
+- `record.php`:441 — `<?php rts_admin_nav_links('record', '', $deliveryNavBadge); ?>`
+- `records.php`:551 — `<?php rts_admin_nav_links('records', '', $deliveryNavBadge); ?>`
+- `records.php`:561 — `<?php rts_admin_nav_links('records', '', $deliveryNavBadge); ?>`
 

@@ -101,9 +101,9 @@ function api_rts_legacy_urls(): void
     api_method_allowed(['GET']);
     api_require_ims_user();
     api_ok([
-        'records' => '/rts/records.php',
-        'create' => '/rts/record.php',
-        'dashboard' => '/rts/dashboard.php',
+        'records' => '/rts/app/dist/rts/records',
+        'create' => '/rts/app/dist/rts/record',
+        'dashboard' => '/rts/app/dist/rts/dashboard',
     ]);
 }
 

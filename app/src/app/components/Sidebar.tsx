@@ -82,6 +82,21 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     ],
   };
 
+  const rtsInventory: NavLinkChild = { label: "RTS inventory", to: "/rts", end: true };
+  const rtsRecords: NavLinkChild = { label: "RTS Records", to: "/rts/records" };
+  const rtsDashboard: NavLinkChild = { label: "RTS Dashboard", to: "/rts/dashboard" };
+  const rtsRecord: NavLinkChild = { label: "Record RTS", to: "/rts/record" };
+
+  const rtsNav = (children: NavLinkChild[]): NavItem => ({
+    icon: RotateCcw,
+    label: "RTS",
+    to: "/rts",
+    children,
+  });
+
+  const rtsNavFull = rtsNav([rtsInventory, rtsRecords, rtsDashboard, rtsRecord]);
+  const rtsNavReadOnly = rtsNav([rtsInventory, rtsRecords, rtsDashboard]);
+
   switch (role) {
     case "executive":
       return [
@@ -97,7 +112,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: Truck, label: "Supplier Master", to: "/suppliers" },
         { icon: DollarSign, label: "Product Costing", to: "/costing" },
         { icon: ClipboardList, label: "AR Credits", to: "/ar" },
-        { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
+        rtsNavFull,
         { icon: Settings, label: "System Settings", to: "/settings" },
       ];
     case "prod_manager":
@@ -110,14 +125,14 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
         deliveriesItem,
         onlineParcelsItem,
-        { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
+        rtsNavFull,
       ];
     case "hr":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         inventoryHoney,
         { ...requestsItem, badge: undefined },
-        { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
+        rtsNavReadOnly,
       ];
     case "team_leader":
       return [
@@ -134,7 +149,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         onlineOrdersItem,
         onlineParcelsItem,
-        { icon: RotateCcw, label: "RTS inventory", to: "/rts" },
+        rtsNavFull,
       ];
     case "staff":
       return [
@@ -147,7 +162,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
       return [
         onlineOrdersItem,
         onlineParcelsItem,
-        { icon: RotateCcw, label: "Record RTS", to: "/rts/record" },
+        rtsNavFull,
       ];
     default:
       return [];
@@ -215,6 +230,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       setExpandedGroups(prev => {
         const next = new Set(prev);
         next.add("Deliveries");
+        return next;
+      });
+    }
+    if (location.pathname.startsWith("/rts")) {
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.add("RTS");
         return next;
       });
     }

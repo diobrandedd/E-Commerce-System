@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+$qs = isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] !== ''
+    ? '?' . $_SERVER['QUERY_STRING']
+    : '';
+header('Location: app/dist/rts/records' . $qs, true, 302);
+exit;
+
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/labels.php';
 require_once __DIR__ . '/includes/rts_products.php';

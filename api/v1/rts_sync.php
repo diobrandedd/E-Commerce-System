@@ -13,7 +13,9 @@ api_dispatch([
 function api_rts_sync_require(): void
 {
     $user = api_require_ims_user();
-    if (!in_array((string) $user['role'], ['executive', 'prod_manager'], true)) {
+    $role = (string) $user['role'];
+    $allowed = in_array($role, ['executive', 'prod_manager', 'hr', 'csr_tl', 'csr_staff'], true);
+    if (!$allowed) {
         api_fail('Forbidden.', 403);
     }
 }

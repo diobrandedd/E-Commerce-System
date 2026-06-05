@@ -6,15 +6,16 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | _(none — last completed: [[specs/Inventory Connection to Everything]])_ |
-| **Active Plan** | _(archived: [[plans/archive/2026-06-04_Inventory-Connection-to-Everything_plan]])_ |
+| **Active Spec** | _(none — last completed: [[specs/2026-06-05_RTS-SPA-Migration]])_ |
+| **Active Plan** | _(archived: [[plans/archive/2026-06-05_rts_spa_migration_plan]])_ |
 | **Status** | `done` |
 
 ## 🚀 Active Feature / Sprint
-- **Current Focus:** Manual E2E (inventory connection + CSR pipelines + SPX packing list path)
-- **Latest shipped:** Shopee SPX Packing List.Standard Local import (product_info + PDF names + Order No. in master Excel) — see [[002_Memory_Bank]]
+- **Current Focus:** Manual E2E (RTS SPA migration + inventory connection + CSR pipelines)
+- **Latest shipped:** RTS full SPA migration (record, records, dashboard via `api/v1/rts_cases.php`) — see [[002_Memory_Bank]]
 
 ## 🛠️ Current Todo List
+- [ ] Manual E2E: RTS SPA — create case, append lines, sync inventory, void/claim, dashboard counts
 - [ ] Manual E2E: Shopee SPX **packing list Excel + PDF** — import → B2T1 350ml variant pick → master Excel has Order No. + Name + Item/s
 - [ ] Manual E2E: CSR finalize batch → parcels in `packing` → **prod_manager** Deliveries scan/photo/ship → packaging totals drop
 - [ ] Manual E2E: parcel lookup (CSR TL/staff) and idempotent re-scan of shipped TN

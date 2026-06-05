@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { ExternalLink, RefreshCcw, AlertCircle, Loader2, RotateCcw } from "lucide-react";
+import { Link } from "react-router";
+import { RefreshCcw, AlertCircle, Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
+import { FulfillmentToast } from "@/app/components/csr/onlineFulfillmentMotion";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
@@ -24,12 +26,11 @@ interface RtsInvRow {
   initial_qty: string;
 }
 
-interface LegacyUrls { records: string; create: string; dashboard: string }
-
 export function RTSPage() {
   const { user } = useAuth();
-  const canRecord = user?.role === "csr_staff" || user?.role === "csr_tl";
+  const canRecord = user?.role === "csr_staff" || user?.role === "csr_tl" || user?.role === "executive" || user?.role === "prod_manager";
   const canMutate = user?.role === "prod_manager";
+  const canViewOps = user?.role === "executive" || user?.role === "prod_manager" || user?.role === "hr";
   const readonly = user?.role === "hr" || user?.role === "csr_tl" || user?.role === "csr_staff";
 
   const [honey, setHoney] = useState<RtsInvRow[]>([]);
@@ -41,62 +42,97 @@ export function RTSPage() {
     syncable_line_item_count: number;
     inventory_row_count: number;
   } | null>(null);
-  const [legacy, setLegacy] = useState<LegacyUrls | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [sellRow, setSellRow] = useState<RtsInvRow | null>(null);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  const canSync = user?.role === "executive" || user?.role === "prod_manager" || user?.role === "hr"
+    || user?.role === "csr_tl" || user?.role === "csr_staff";
+
+  const loadInventory = useCallback(async (showLoader = true) => {
+    if (showLoader) setLoading(true);
     setError(null);
     try {
-      await apiPost("rts_sync.php", "run").catch(() => null);
-      const [inv, urls] = await Promise.all([
-        apiGet<{
-          honey: RtsInvRow[];
-          other: RtsInvRow[];
-          sync: typeof sync;
-          diagnostic: typeof diagnostic;
-          readonly: boolean;
-          can_mutate: boolean;
-        }>("rts.php", "inventory_list"),
-        apiGet<LegacyUrls>("rts.php", "legacy_urls"),
-      ]);
+      const inv = await apiGet<{
+        honey: RtsInvRow[];
+        other: RtsInvRow[];
+        sync: typeof sync;
+        diagnostic: typeof diagnostic;
+        readonly: boolean;
+        can_mutate: boolean;
+      }>("rts.php", "inventory_list");
       setHoney(inv.honey);
       setOther(inv.other);
       setSync(inv.sync);
       setDiagnostic(inv.diagnostic ?? null);
-      setLegacy(urls);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load RTS inventory.");
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   }, []);
 
+  const syncNow = useCallback(async () => {
+    if (!canSync) {
+      setError("Your role cannot run RTS sync.");
+      return;
+    }
+    setSyncing(true);
+    setError(null);
+    try {
+      const result = await apiPost<{ synced: number; last_synced_at: string | null; last_error: string | null }>(
+        "rts_sync.php",
+        "run"
+      );
+      await loadInventory(false);
+      if (result.synced > 0) {
+        setToast(`Synced ${result.synced} product line(s) to inventory`);
+      } else {
+        setToast("Sync finished — no new product lines to add (cases need product lines first)");
+      }
+      window.setTimeout(() => setToast(null), 4000);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "RTS sync failed.");
+    } finally {
+      setSyncing(false);
+    }
+  }, [canSync, loadInventory]);
+
   useEffect(() => {
-    refresh();
-    const t = setInterval(() => apiPost("rts_sync.php", "run").catch(() => null).then(() => refresh()), 60000);
+    void loadInventory();
+    const t = setInterval(() => {
+      if (!canSync) return;
+      void apiPost("rts_sync.php", "run").catch(() => null).then(() => loadInventory(false));
+    }, 60000);
     return () => clearInterval(t);
-  }, [refresh]);
+  }, [loadInventory, canSync]);
 
   return (
     <PageLayout
       title="RTS inventory"
-      subtitle="Synced from operational RTS records — create cases in legacy RTS"
+      subtitle="Synced from operational RTS records"
       actions={
-        <div className="flex gap-2">
-          <button onClick={refresh} className="text-xs border rounded-lg px-3 py-1.5 text-muted-foreground hover:text-foreground">
-            <RefreshCcw size={13} className="inline mr-1" /> Sync now
+        <div className="flex gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => void syncNow()}
+            disabled={syncing || !canSync}
+            className="text-xs border rounded-lg px-3 py-1.5 text-muted-foreground hover:text-foreground disabled:opacity-50"
+          >
+            <RefreshCcw size={13} className={`inline mr-1 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing…" : "Sync now"}
           </button>
-          {legacy && canRecord && (
-            <a href={legacy.create} className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg inline-flex items-center gap-1" style={{ background: "#C8900A" }}>
-              <ExternalLink size={13} /> Record RTS (legacy)
-            </a>
+          {canRecord && (
+            <Link to="/rts/record" className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg inline-flex items-center gap-1" style={{ background: "#C8900A" }}>
+              Record RTS
+            </Link>
           )}
         </div>
       }
     >
+      <FulfillmentToast message={toast} />
       <div className="space-y-6">
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex gap-2">
@@ -104,16 +140,19 @@ export function RTSPage() {
           </div>
         )}
         {diagnostic && diagnostic.case_count > 0 && diagnostic.line_item_count === 0 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            <strong>No product lines to sync.</strong> You have {diagnostic.case_count} RTS case(s) in{" "}
-            <code className="text-xs">rts_cases</code>, but <code className="text-xs">rts_line_items</code> is empty.
-            RTS inventory is built from line items (products per case), not from cases alone. Open each case in{" "}
-            {legacy ? (
-              <a href={legacy.records} className="underline font-semibold text-[#8a5c00]">legacy RTS records</a>
-            ) : (
-              "legacy RTS records"
-            )}{" "}
-            and save the product lines, then click <strong>Sync now</strong>.
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
+            <p>
+              <strong>Sync ran, but inventory stays empty.</strong> You have {diagnostic.case_count} RTS case(s), but none have product lines yet.
+              Inventory is built from <code className="text-xs">rts_line_items</code> (honey, pouches, etc. per case), not from tracking numbers alone.
+            </p>
+            <p className="flex flex-wrap gap-2">
+              <Link to="/rts/record" className="inline-block text-xs font-semibold text-white px-3 py-1.5 rounded-lg" style={{ background: "#C8900A" }}>
+                Record RTS — add product lines
+              </Link>
+              <Link to="/rts/records" className="inline-block text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-400 text-[#8a5c00]">
+                Open RTS Records
+              </Link>
+            </p>
           </div>
         )}
         {sync?.last_error && (
@@ -140,15 +179,15 @@ export function RTSPage() {
             </section>
           </>
         )}
-        {legacy && (
+        {canViewOps && (
           <p className="text-xs text-muted-foreground">
-            <a href={legacy.records} className="text-[#C8900A] underline">View all RTS cases</a>
+            <Link to="/rts/records" className="text-[#C8900A] underline">View all RTS cases</Link>
             {" · "}
-            <a href={legacy.dashboard} className="text-[#C8900A] underline">RTS dashboard</a>
+            <Link to="/rts/dashboard" className="text-[#C8900A] underline">RTS dashboard</Link>
           </p>
         )}
       </div>
-      {sellRow && <SellModal row={sellRow} onClose={() => setSellRow(null)} onDone={() => { setSellRow(null); refresh(); }} />}
+      {sellRow && <SellModal row={sellRow} onClose={() => setSellRow(null)} onDone={() => { setSellRow(null); void loadInventory(); }} />}
     </PageLayout>
   );
 }

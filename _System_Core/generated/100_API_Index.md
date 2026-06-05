@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-05T08:03:16+02:00
+generated: 2026-06-05T10:39:35+02:00
 type: memory-bank
 ---
 
@@ -253,6 +253,26 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `inventory_list` | `api_rts_inventory_list()` | `ims_pdo()`, `rts_inventory_sync_status()` |
 | `inventory_deduct_sell` | `api_rts_inventory_deduct_sell()` | `rts_inventory_deduct_sell()`, `ims_pdo()` |
 | `sync_status` | `api_rts_sync_status_action()` | `rts_inventory_sync_status()`, `ims_pdo()` |
+
+### `rts_cases.php`
+
+- **Path:** `api/v1/rts_cases.php`
+- **URL:** `/rts/api/v1/rts_cases.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `case_get` | `api_rts_cases_get()` | `rts_case_handler_get_by_tracking()`, `ims_pdo()` |
+| `case_create` | `api_rts_cases_create()` | `ims_pdo()`, `rts_case_handler_create()` |
+| `case_append_lines` | `api_rts_cases_append_lines()` | `ims_pdo()`, `rts_case_handler_append_lines()` |
+| `case_update` | `api_rts_cases_update()` | `ims_pdo()`, `rts_case_handler_update()` |
+| `case_void` | `api_rts_cases_void()` | `rts_case_handler_void()`, `ims_pdo()` |
+| `case_update_claim` | `api_rts_cases_update_claim()` | `rts_case_handler_update_claim()`, `ims_pdo()` |
+| `cases_list` | `api_rts_cases_list()` | `rts_case_handler_list()`, `ims_pdo()` |
+| `dashboard` | `api_rts_cases_dashboard()` | `rts_case_handler_dashboard()`, `ims_pdo()` |
+| `product_catalog` | `api_rts_cases_product_catalog()` | `rts_case_handler_product_catalog()` |
+| `delivery_match` | `api_rts_cases_delivery_match()` | `rts_case_handler_delivery_match()`, `ims_pdo()` |
+| `documentation_upload` | `api_rts_cases_documentation_upload()` | `rts_case_handler_upload_documentation()` |
 
 ### `rts_sync.php`
 

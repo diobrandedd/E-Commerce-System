@@ -9,9 +9,11 @@ See also: [[000_System_Architecture]] · [[generated/110_Include_Graph]] · [[ge
 | System | Session helper | User table | Used by |
 |--------|----------------|------------|---------|
 | **IMS (SPA)** | `ims_current_user()` in `includes/auth_check.php` | `users` | `api/v1/*`, React SPA |
-| **Legacy RTS** | `rts_auth_user()` in `includes/auth.php` | `app_users` | `record.php`, `api/case.php`, `api/delivery_*.php`, legacy pages |
+| **Legacy RTS** | `rts_auth_user()` in `includes/auth.php` | `app_users` | `api/case.php` (thin wrapper), `api/delivery_*.php` if still called outside SPA |
 
 Do not assume a session from one system works on endpoints built for the other.
+
+**RTS SPA cutover (2026-06-05):** Record / records list / dashboard are React routes (`/rts/record`, `/rts/records`, `/rts/dashboard`). SPA writes use **`api/v1/rts_cases.php`** (IMS + CSRF). Shared logic lives in `includes/rts_case_handlers.php`; `api/case.php` delegates there for any remaining legacy callers. Legacy PHP pages `record.php`, `records.php`, `dashboard.php` redirect to SPA — do not add new SPA features that POST to `api/case.php`.
 
 ## `db.php` side effect
 

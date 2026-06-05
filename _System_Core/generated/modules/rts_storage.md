@@ -1,7 +1,7 @@
 ---
 title: rts_storage
 source: includes/rts_storage.php
-generated: 2026-06-05T08:03:29+02:00
+generated: 2026-06-05T10:39:48+02:00
 type: module
 function_count: 12
 ---
@@ -43,10 +43,11 @@ function_count: 12
 
 ## rts_storage_dir {#rts_storage_dir}
 
-**Callers (9):**
+**Callers (10):**
 
 - `api/upload_documentation.php`:106 — `$targetDir = rts_storage_dir(RTS_STORAGE_BUCKET_RTS);`
 - `includes/delivery_edit_requests.php`:109 — `$path = rts_storage_dir(RTS_STORAGE_BUCKET_DELIVERIES) . '/' . $safe;`
+- `includes/rts_case_handlers.php`:656 — `$targetDir = rts_storage_dir(RTS_STORAGE_BUCKET_RTS);`
 - `includes/rts_storage.php`:95 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_DELIVERIES) . '/' . $month;`
 - `includes/rts_storage.php`:206 — `? rts_storage_dir($bucket)`
 - `includes/rts_storage.php`:225 — `$path = rts_storage_dir($bucket) . '/' . $safe;`
@@ -84,19 +85,22 @@ function_count: 12
 
 ## rts_storage_public_prefix {#rts_storage_public_prefix}
 
-**Callers (3):**
+**Callers (4):**
 
+- `includes/rts_case_handlers.php`:588 — `'doc_url_base' => rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''),`
 - `includes/rts_storage.php`:188 — `$prefix = rts_storage_public_prefix($bucket, $relativeToApp);`
-- `record.php`:756 — `const RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;`
-- `records.php`:828 — `var RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;`
+- `record.php`:762 — `const RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;`
+- `records.php`:834 — `var RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;`
 
 ## rts_storage_public_url {#rts_storage_public_url}
 
-**Callers (4):**
+**Callers (6):**
 
 - `api/delivery_match_tracking.php`:76 — `$fileUrl = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
 - `api/upload_documentation.php`:126 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $name),`
 - `includes/online_order_parcels.php`:288 — `$url = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
+- `includes/rts_case_handlers.php`:132 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn),`
+- `includes/rts_case_handlers.php`:666 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $name),`
 - `includes/suppliers.php`:79 — `'valid_id_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_SUPPLIER_IDS, (string) $row['valid_id_filename'], '/rts/'),`
 
 ## rts_storage_csr_tool_root {#rts_storage_csr_tool_root}

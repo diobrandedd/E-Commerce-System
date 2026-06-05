@@ -1,7 +1,7 @@
 ---
 title: admin_sidebar
 source: includes/admin_sidebar.php
-generated: 2026-06-05T08:03:18+02:00
+generated: 2026-06-05T10:39:35+02:00
 type: module
 function_count: 3
 ---
@@ -40,15 +40,15 @@ function_count: 3
 - `includes/admin_sidebar.php`:53 — `btn.addEventListener('click', function () { setOpen(!panel.classList.contains('open')); });`
 - `includes/admin_sidebar.php`:55 — `a.addEventListener('click', function () { setOpen(false); });`
 - `includes/admin_sidebar.php`:58 — `if (e.key === 'Escape') setOpen(false);`
-- `dashboard.php`:601 — `setOpen(!panel.classList.contains('open'));`
-- `dashboard.php`:606 — `a.addEventListener('click', function () { setOpen(false); });`
-- `dashboard.php`:621 — `if (e.key === 'Escape') setOpen(false);`
-- `record.php`:2100 — `setOpen(!mPanel.classList.contains('open'));`
-- `record.php`:2103 — `a.addEventListener('click', () => setOpen(false));`
-- `record.php`:2106 — `if (e.key === 'Escape') setOpen(false);`
-- `records.php`:840 — `setOpen(!panel.classList.contains('open'));`
-- `records.php`:846 — `setOpen(false);`
-- `records.php`:875 — `setOpen(false);`
+- `dashboard.php`:604 — `setOpen(!panel.classList.contains('open'));`
+- `dashboard.php`:609 — `a.addEventListener('click', function () { setOpen(false); });`
+- `dashboard.php`:624 — `if (e.key === 'Escape') setOpen(false);`
+- `record.php`:2106 — `setOpen(!mPanel.classList.contains('open'));`
+- `record.php`:2109 — `a.addEventListener('click', () => setOpen(false));`
+- `record.php`:2112 — `if (e.key === 'Escape') setOpen(false);`
+- `records.php`:846 — `setOpen(!panel.classList.contains('open'));`
+- `records.php`:852 — `setOpen(false);`
+- `records.php`:881 — `setOpen(false);`
 - `app/src/app/components/suppliers/SupplierCombobox.tsx`:34 — `setOpen(false);`
 - `app/src/app/components/suppliers/SupplierCombobox.tsx`:63 — `setOpen(false);`
 - `app/src/app/components/suppliers/SupplierCombobox.tsx`:74 — `setOpen(true);`
