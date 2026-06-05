@@ -6,6 +6,25 @@ require_once __DIR__ . '/honey_parcel_item_parser.php';
 require_once __DIR__ . '/honey_parcel_inventory.php';
 require_once __DIR__ . '/qr_decode.php';
 require_once __DIR__ . '/rts_schema.php';
+require_once __DIR__ . '/rts_storage.php';
+
+function online_parcels_user_is_csr_dept(array $user): bool
+{
+    $deptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
+    if ($deptId < 1) {
+        return false;
+    }
+    try {
+        $pdo = ims_pdo();
+        $st = $pdo->prepare('SELECT name FROM departments WHERE id = ? LIMIT 1');
+        $st->execute([$deptId]);
+        $name = (string) ($st->fetchColumn() ?: '');
+
+        return strtolower($name) === 'csr';
+    } catch (Throwable) {
+        return false;
+    }
+}
 
 function online_parcels_user_can_access(?array $user): bool
 {
@@ -14,7 +33,21 @@ function online_parcels_user_can_access(?array $user): bool
     }
     $role = (string) ($user['role'] ?? '');
 
-    return in_array($role, ['executive', 'prod_manager', 'csr_tl', 'csr_staff'], true);
+    if (in_array($role, ['executive', 'prod_manager'], true)) {
+        return true;
+    }
+
+    // SPA-normalized names (session normally stores IMS `tl` / `staff` instead).
+    if (in_array($role, ['csr_tl', 'csr_staff'], true)) {
+        return true;
+    }
+
+    // IMS CSR team leader / staff — same dept gate as waybill stamper + online orders.
+    if (in_array($role, ['tl', 'staff'], true)) {
+        return online_parcels_user_is_csr_dept($user);
+    }
+
+    return false;
 }
 
 function online_parcels_user_can_ship(?array $user): bool
@@ -172,7 +205,7 @@ function online_parcels_get_by_tracking(PDO $pdo, string $tracking): ?array
     $st = $pdo->prepare('SELECT * FROM online_order_parcels WHERE tracking_number = ? LIMIT 1');
     $st->execute([$tracking]);
 
-    return online_parcels_format_row($st->fetch(PDO::FETCH_ASSOC) ?: null);
+    return online_parcels_format_row($st->fetch(PDO::FETCH_ASSOC) ?: null, $pdo);
 }
 
 /**
@@ -184,14 +217,193 @@ function online_parcels_get_by_id(PDO $pdo, int $id): ?array
     $st = $pdo->prepare('SELECT * FROM online_order_parcels WHERE id = ? LIMIT 1');
     $st->execute([$id]);
 
-    return online_parcels_format_row($st->fetch(PDO::FETCH_ASSOC) ?: null);
+    return online_parcels_format_row($st->fetch(PDO::FETCH_ASSOC) ?: null, $pdo);
+}
+
+/**
+ * Latest non-voided deliveries photo linked to this parcel (by online_parcel_id or tracking).
+ *
+ * @return array{delivery_item_id: int, photo_filename: string, photo_url: string, delivery_date: string}|null
+ */
+function online_parcels_find_packing_photo(PDO $pdo, int $parcelId, string $tracking): ?array
+{
+    $hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');
+
+    if ($hasLink && $parcelId > 0) {
+        $st = $pdo->prepare(
+            'SELECT i.id AS delivery_item_id, i.photo_filename, b.delivery_date
+             FROM delivery_batch_items i
+             INNER JOIN delivery_batches b ON b.id = i.batch_id
+             WHERE i.voided_at IS NULL
+               AND i.online_parcel_id = ?
+               AND TRIM(COALESCE(i.photo_filename, "")) != ""
+             ORDER BY i.id DESC
+             LIMIT 1'
+        );
+        $st->execute([$parcelId]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if (is_array($row)) {
+            return online_parcels_format_packing_photo($row);
+        }
+    }
+
+    if ($tracking === '') {
+        return null;
+    }
+
+    $st = $pdo->prepare(
+        'SELECT i.id AS delivery_item_id, i.photo_filename, b.delivery_date
+         FROM delivery_batch_items i
+         INNER JOIN delivery_batches b ON b.id = i.batch_id
+         WHERE i.voided_at IS NULL
+           AND TRIM(COALESCE(i.photo_filename, "")) != ""
+           AND TRIM(COALESCE(i.tracking_number, "")) = ?
+         ORDER BY i.id DESC
+         LIMIT 1'
+    );
+    $st->execute([$tracking]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!is_array($row)) {
+        return null;
+    }
+
+    return online_parcels_format_packing_photo($row);
+}
+
+/**
+ * @param array<string, mixed> $row
+ * @return array{delivery_item_id: int, photo_filename: string, photo_url: string, delivery_date: string}|null
+ */
+function online_parcels_format_packing_photo(array $row): ?array
+{
+    $fn = trim((string) ($row['photo_filename'] ?? ''));
+    if ($fn === '') {
+        return null;
+    }
+    $url = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);
+    if ($url !== '' && !str_starts_with($url, '/') && !preg_match('#^https?://#i', $url)) {
+        $url = '/rts/' . ltrim($url, '/');
+    }
+
+    return [
+        'delivery_item_id' => (int) ($row['delivery_item_id'] ?? 0),
+        'photo_filename' => $fn,
+        'photo_url' => $url,
+        'delivery_date' => (string) ($row['delivery_date'] ?? ''),
+    ];
+}
+
+/**
+ * @param array<string, mixed> $parcel
+ * @return array<string, mixed>
+ */
+function online_parcels_enrich_packing_photo(PDO $pdo, array $parcel): array
+{
+    $parcel['packing_photo'] = online_parcels_find_packing_photo(
+        $pdo,
+        (int) ($parcel['id'] ?? 0),
+        (string) ($parcel['tracking_number'] ?? '')
+    );
+
+    return $parcel;
+}
+
+/**
+ * @param list<array<string, mixed>> $rows
+ * @return list<array<string, mixed>>
+ */
+function online_parcels_enrich_packing_photos_batch(PDO $pdo, array $rows): array
+{
+    if ($rows === []) {
+        return [];
+    }
+
+    $hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');
+    $byParcelId = [];
+    $byTracking = [];
+
+    if ($hasLink) {
+        $parcelIds = [];
+        foreach ($rows as $row) {
+            $id = (int) ($row['id'] ?? 0);
+            if ($id > 0) {
+                $parcelIds[$id] = true;
+            }
+        }
+        if ($parcelIds !== []) {
+            $placeholders = implode(',', array_fill(0, count($parcelIds), '?'));
+            $st = $pdo->prepare(
+                "SELECT i.id AS delivery_item_id, i.photo_filename, b.delivery_date, i.online_parcel_id
+                 FROM delivery_batch_items i
+                 INNER JOIN delivery_batches b ON b.id = i.batch_id
+                 WHERE i.voided_at IS NULL
+                   AND TRIM(COALESCE(i.photo_filename, '')) != ''
+                   AND i.online_parcel_id IN ({$placeholders})
+                 ORDER BY i.id DESC"
+            );
+            $st->execute(array_keys($parcelIds));
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $photoRow) {
+                $pid = (int) ($photoRow['online_parcel_id'] ?? 0);
+                if ($pid > 0 && !isset($byParcelId[$pid])) {
+                    $formatted = online_parcels_format_packing_photo($photoRow);
+                    if ($formatted !== null) {
+                        $byParcelId[$pid] = $formatted;
+                    }
+                }
+            }
+        }
+    }
+
+    $missingTrackings = [];
+    foreach ($rows as $row) {
+        $id = (int) ($row['id'] ?? 0);
+        if ($id > 0 && isset($byParcelId[$id])) {
+            continue;
+        }
+        $tn = trim((string) ($row['tracking_number'] ?? ''));
+        if ($tn !== '') {
+            $missingTrackings[$tn] = true;
+        }
+    }
+
+    if ($missingTrackings !== []) {
+        $placeholders = implode(',', array_fill(0, count($missingTrackings), '?'));
+        $st = $pdo->prepare(
+            "SELECT i.id AS delivery_item_id, i.photo_filename, b.delivery_date, i.tracking_number
+             FROM delivery_batch_items i
+             INNER JOIN delivery_batches b ON b.id = i.batch_id
+             WHERE i.voided_at IS NULL
+               AND TRIM(COALESCE(i.photo_filename, '')) != ''
+               AND TRIM(COALESCE(i.tracking_number, '')) IN ({$placeholders})
+             ORDER BY i.id DESC"
+        );
+        $st->execute(array_keys($missingTrackings));
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $photoRow) {
+            $tn = trim((string) ($photoRow['tracking_number'] ?? ''));
+            if ($tn !== '' && !isset($byTracking[$tn])) {
+                $formatted = online_parcels_format_packing_photo($photoRow);
+                if ($formatted !== null) {
+                    $byTracking[$tn] = $formatted;
+                }
+            }
+        }
+    }
+
+    foreach ($rows as &$row) {
+        $id = (int) ($row['id'] ?? 0);
+        $tn = trim((string) ($row['tracking_number'] ?? ''));
+        $row['packing_photo'] = $byParcelId[$id] ?? ($tn !== '' ? ($byTracking[$tn] ?? null) : null);
+    }
+    unset($row);
+
+    return $rows;
 }
 
 /**
  * @param array<string, mixed>|false|null $row
  * @return array<string, mixed>|null
  */
-function online_parcels_format_row($row): ?array
+function online_parcels_format_row($row, ?PDO $pdo = null): ?array
 {
     if (!is_array($row)) {
         return null;
@@ -204,7 +416,7 @@ function online_parcels_format_row($row): ?array
         }
     }
 
-    return [
+    $formatted = [
         'id' => (int) $row['id'],
         'csr_batch_id' => $row['csr_batch_id'] !== null ? (int) $row['csr_batch_id'] : null,
         'csr_line_id' => $row['csr_line_id'] !== null ? (int) $row['csr_line_id'] : null,
@@ -220,7 +432,14 @@ function online_parcels_format_row($row): ?array
         'return_date' => $row['return_date'] !== null ? (string) $row['return_date'] : null,
         'deducted_at' => $row['deducted_at'] !== null ? (string) $row['deducted_at'] : null,
         'created_at' => (string) $row['created_at'],
+        'packing_photo' => null,
     ];
+
+    if ($pdo !== null) {
+        return online_parcels_enrich_packing_photo($pdo, $formatted);
+    }
+
+    return $formatted;
 }
 
 /**
@@ -265,7 +484,7 @@ function online_parcels_list(PDO $pdo, string $q, string $status, int $page, int
         }
     }
 
-    return ['rows' => $rows, 'total' => $total];
+    return ['rows' => online_parcels_enrich_packing_photos_batch($pdo, $rows), 'total' => $total];
 }
 
 /**

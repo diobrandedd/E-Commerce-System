@@ -1,7 +1,7 @@
 import type { ElementType } from "react";
 import { FileSpreadsheet, Package, Truck } from "lucide-react";
+import { FulfillmentPickerCard, FulfillmentSectionEnter } from "@/app/components/csr/onlineFulfillmentMotion";
 import type { OnlineOrdersPipeline } from "@/app/lib/onlineOrdersTypes";
-import { cn } from "@/app/components/ui/utils";
 
 const PIPELINES: {
   id: OnlineOrdersPipeline;
@@ -37,31 +37,24 @@ export function PipelinePicker({
   onSelect: (pipeline: OnlineOrdersPipeline) => void;
 }) {
   return (
-    <div className="space-y-4 max-w-4xl">
+    <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
       <p className="text-sm text-muted-foreground">
         {lineCount > 0
           ? `${lineCount} parcel line(s) saved in this batch. Pick another pipeline or finish the batch.`
           : "Choose which type of orders to process next."}
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {PIPELINES.map(p => {
+        {PIPELINES.map((p, i) => {
           const Icon = p.icon;
           return (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => onSelect(p.id)}
-              className={cn(
-                "text-left bg-card rounded-xl border border-border p-5 hover:border-primary hover:shadow-md transition-all",
-              )}
-            >
+            <FulfillmentPickerCard key={p.id} index={i} onClick={() => onSelect(p.id)}>
               <Icon size={28} className="text-primary mb-3" />
               <p className="font-semibold text-foreground">{p.title}</p>
               <p className="text-xs text-muted-foreground mt-2">{p.description}</p>
-            </button>
+            </FulfillmentPickerCard>
           );
         })}
       </div>
-    </div>
+    </FulfillmentSectionEnter>
   );
 }

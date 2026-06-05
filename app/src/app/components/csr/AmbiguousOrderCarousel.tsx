@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Pencil } from "lucide-react";
 import { VariantCardStrip } from "@/app/components/csr/VariantCardStrip";
 import {
   OrderRemarksAllDonePanel,
@@ -24,12 +24,16 @@ import {
   type RowResolution,
 } from "@/app/lib/orderRemarksParse";
 import type { OrderRow } from "@/app/lib/orderRemarksApi";
+import { enrichVipPresets } from "@/app/lib/honeyPackagingStock";
+import type { PackagingStockSnapshot } from "@/app/lib/honeyPackagingStock";
+import { useHoneyPackagingStock } from "@/app/hooks/useHoneyPackagingStock";
 import { cn } from "@/app/components/ui/utils";
 
 interface AmbiguousOrderCarouselProps {
   rows: { order: OrderRow; parsed: ParsedRemark }[];
   resolutions: Record<number, RowResolution>;
   onResolve: (idx: number, resolution: RowResolution) => void;
+  onClearResolution?: (idx: number) => void;
   disabled?: boolean;
   showCompleted: boolean;
   onShowCompletedChange: (value: boolean) => void;
@@ -48,13 +52,17 @@ function OrderCard({
   parsed,
   resolution,
   onResolve,
+  onClearResolution,
   disabled,
+  packagingStock,
 }: {
   order: OrderRow;
   parsed: ParsedRemark;
   resolution?: RowResolution;
   onResolve: (resolution: RowResolution) => void;
+  onClearResolution?: () => void;
   disabled?: boolean;
+  packagingStock: PackagingStockSnapshot | null;
 }) {
   const raw = order.remarks;
   const steps = getCardSteps(raw, parsed, resolution);
@@ -144,7 +152,7 @@ function OrderCard({
       <OrderRemarksStepReveal show={steps.showMain}>
         <VariantCardStrip
           title={mainStepTitle(parsed.product)}
-          presets={buildMainPresets(parsed.product, raw)}
+          presets={enrichVipPresets(buildMainPresets(parsed.product, raw), parsed.product, "main", packagingStock)}
           selected={resolution?.mainVariant}
           onSelect={handleMainSelect}
           disabled={disabled}
@@ -154,7 +162,7 @@ function OrderCard({
       <OrderRemarksStepReveal show={steps.showFree350}>
         <VariantCardStrip
           title="Free 350ml bottle"
-          presets={buildFree350Presets()}
+          presets={enrichVipPresets(buildFree350Presets(), parsed.product, "free350", packagingStock)}
           selected={resolution?.free350Variant}
           onSelect={handleFree350Select}
           disabled={disabled}
@@ -166,6 +174,17 @@ function OrderCard({
           {resolution?.finalRemark}
         </p>
       </OrderRemarksDoneBadge>
+
+      {done && onClearResolution && (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onClearResolution}
+          className="mt-2 w-full text-xs font-medium py-1.5 rounded-lg border border-border flex items-center justify-center gap-1 hover:bg-muted/40"
+        >
+          <Pencil size={12} /> Edit choice
+        </button>
+      )}
     </motion.div>
   );
 }
@@ -174,11 +193,13 @@ export function AmbiguousOrderCarousel({
   rows,
   resolutions,
   onResolve,
+  onClearResolution,
   disabled,
   showCompleted,
   onShowCompletedChange,
   onCardCompleted,
 }: AmbiguousOrderCarouselProps) {
+  const { snapshot: packagingStock } = useHoneyPackagingStock();
   const pendingRows = useMemo(
     () =>
       rows.filter(
@@ -263,7 +284,11 @@ export function AmbiguousOrderCarousel({
                   parsed={parsed}
                   resolution={resolutions[order.idx]}
                   onResolve={res => handleResolve(order.idx, res)}
+                  onClearResolution={
+                    onClearResolution ? () => onClearResolution(order.idx) : undefined
+                  }
                   disabled={disabled}
+                  packagingStock={packagingStock}
                 />
               </OrderRemarksCarouselCard>
             ))}

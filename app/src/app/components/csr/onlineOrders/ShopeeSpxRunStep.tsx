@@ -1,14 +1,18 @@
 import { useCallback, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, FileText, Loader2 } from "lucide-react";
+import { CheckCircle2, FileText, Loader2 } from "lucide-react";
 import { FileZone } from "@/app/components/csr/FileZone";
+import { DuplicateTrackingModal } from "@/app/components/csr/onlineOrders/DuplicateTrackingModal";
+import { FulfillmentErrorBanner, FulfillmentSectionEnter } from "@/app/components/csr/onlineFulfillmentMotion";
 import { ItemResolverCarousel, type ShopeeRowResolution } from "@/app/components/csr/onlineOrders/ItemResolverCarousel";
+import { ShopeeItemsReviewPanel } from "@/app/components/csr/onlineOrders/ShopeeItemsReviewPanel";
 import { OrderRemarksToast } from "@/app/components/csr/orderRemarksMotion";
 import { onlineOrdersRunShopeeResolve, onlineOrdersRunShopeeStamp } from "@/app/lib/onlineOrdersApi";
 import { extractPdfToExcel, pdfToExcelUploadTooLarge } from "@/app/lib/pdfToExcelApi";
 import { waybillUploadTooLarge } from "@/app/lib/waybillApi";
+import { useDuplicateTrackingHandler } from "@/app/lib/useDuplicateTrackingHandler";
 import { apiPostForm, getCsrfToken, ApiError } from "@/app/lib/api";
 import type { PartnerStampResult } from "@/app/lib/onlineOrdersTypes";
-import { shopeeRowNeedsItemResolution } from "@/app/lib/honeyItemVariant";
+import { shopeeFinalItemsForRow, shopeeRowIsReadyForExport } from "@/app/lib/honeyItemVariant";
 import type { PdfToExcelRow } from "@/app/lib/pdfToExcelApi";
 
 async function stashWaybillPdf(file: File): Promise<string> {
@@ -22,7 +26,7 @@ async function stashWaybillPdf(file: File): Promise<string> {
   return data.token;
 }
 
-type Phase = "extract" | "resolve" | "stamp";
+type Phase = "extract" | "resolve" | "review" | "stamp";
 
 export function ShopeeSpxRunStep({
   batchId,
@@ -36,14 +40,24 @@ export function ShopeeSpxRunStep({
   const [phase, setPhase] = useState<Phase>("extract");
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    duplicateConflicts,
+    showDuplicateModal,
+    setShowDuplicateModal,
+    error,
+    setError,
+    clearErrors,
+    handleApiError,
+  } = useDuplicateTrackingHandler();
   const [toast, setToast] = useState<string | null>(null);
   const [rows, setRows] = useState<PdfToExcelRow[]>([]);
   const [resolutions, setResolutions] = useState<Record<number, ShopeeRowResolution>>({});
+  const [showCompleted, setShowCompleted] = useState(false);
   const [excelToken, setExcelToken] = useState<string | null>(null);
+  const [editFocusPage, setEditFocusPage] = useState<number | null>(null);
 
   const allResolved = useMemo(() => {
-    return rows.every(r => !shopeeRowNeedsItemResolution(r, resolutions[r.page]?.items));
+    return rows.every(r => shopeeRowIsReadyForExport(r, resolutions[r.page]));
   }, [rows, resolutions]);
 
   const runExtract = async () => {
@@ -63,8 +77,10 @@ export function ShopeeSpxRunStep({
       }
       setRows(flat);
       setResolutions({});
+      setShowCompleted(false);
+      setEditFocusPage(null);
       setPhase("resolve");
-      setToast("PDF extracted — set exact items for each row");
+      setToast("PDF extracted — pick variant, then confirm each line");
       window.setTimeout(() => setToast(null), 2800);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Extraction failed.");
@@ -73,28 +89,33 @@ export function ShopeeSpxRunStep({
     }
   };
 
+  const goToReview = () => {
+    setEditFocusPage(null);
+    setPhase("review");
+    setToast("Review all item lines before building Excel");
+    window.setTimeout(() => setToast(null), 2800);
+  };
+
   const runResolve = async () => {
     setBusy(true);
-    setError(null);
+    clearErrors();
     try {
-      const payload = rows.map(r => ({
-        page: r.page,
-        tracking: r.tracking,
-        name: r.name,
-        items: resolutions[r.page]?.items?.trim() || r.items?.trim() || "",
-        courier: r.courier || "SPX",
-      })).filter(r => {
-        if (!r.items) return false;
-        const src = rows.find(x => x.page === r.page);
-        return src ? !shopeeRowNeedsItemResolution(src, r.items) : true;
-      });
+      const payload = rows
+        .map(r => ({
+          page: r.page,
+          tracking: r.tracking,
+          name: r.name,
+          items: shopeeFinalItemsForRow(r, resolutions[r.page]),
+          courier: r.courier || "SPX",
+        }))
+        .filter(r => r.items);
       const res = await onlineOrdersRunShopeeResolve(batchId, payload);
       setExcelToken(res.excel_token);
       setPhase("stamp");
       setToast("Excel ready — now stamp waybills");
       window.setTimeout(() => setToast(null), 2800);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not build order sheet.");
+      handleApiError(e, "Could not build order sheet.");
     } finally {
       setBusy(false);
     }
@@ -124,8 +145,19 @@ export function ShopeeSpxRunStep({
     }
   }, [batchId, pdfFiles, excelToken, onStampSuccess]);
 
+  const handleEditFromReview = (page: number) => {
+    setResolutions(prev => {
+      const next = { ...prev };
+      delete next[page];
+      return next;
+    });
+    setEditFocusPage(page);
+    setShowCompleted(false);
+    setPhase("resolve");
+  };
+
   return (
-    <div className="space-y-4 max-w-4xl">
+    <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
       <OrderRemarksToast message={toast} />
       <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
         ← Back to pipelines
@@ -162,17 +194,64 @@ export function ShopeeSpxRunStep({
           <ItemResolverCarousel
             rows={rows}
             resolutions={resolutions}
-            onResolve={(page, res) => setResolutions(prev => ({ ...prev, [page]: res }))}
+            showCompleted={showCompleted}
+            onShowCompletedChange={setShowCompleted}
+            onResolve={(page, res) => {
+              setResolutions(prev => ({ ...prev, [page]: res }));
+              if (editFocusPage === page) setEditFocusPage(null);
+            }}
+            onClearResolution={page => {
+              setResolutions(prev => {
+                const next = { ...prev };
+                delete next[page];
+                return next;
+              });
+              setEditFocusPage(page);
+              setShowCompleted(false);
+            }}
+            disabled={busy}
+            focusPage={editFocusPage}
+          />
+          {allResolved && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={goToReview}
+              className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
+            >
+              Review all items
+            </button>
+          )}
+        </>
+      )}
+
+      {phase === "review" && (
+        <>
+          <ShopeeItemsReviewPanel
+            rows={rows}
+            resolutions={resolutions}
+            onEdit={handleEditFromReview}
             disabled={busy}
           />
-          <button
-            type="button"
-            disabled={busy || !allResolved}
-            onClick={() => void runResolve()}
-            className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
-          >
-            Confirm items & build Excel
-          </button>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setPhase("resolve")}
+              className="text-sm font-medium px-4 py-2.5 rounded-lg border border-border"
+            >
+              ← Back to variant picks
+            </button>
+            <button
+              type="button"
+              disabled={busy || !allResolved}
+              onClick={() => void runResolve()}
+              className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
+            >
+              {busy ? <Loader2 size={16} className="animate-spin inline" /> : null}
+              Confirm all & build Excel
+            </button>
+          </div>
         </>
       )}
 
@@ -193,12 +272,13 @@ export function ShopeeSpxRunStep({
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-800 flex gap-2">
-          <AlertCircle size={18} /> {error}
-        </div>
-      )}
+      <FulfillmentErrorBanner message={error} />
 
-    </div>
+      <DuplicateTrackingModal
+        open={showDuplicateModal}
+        conflicts={duplicateConflicts}
+        onClose={() => setShowDuplicateModal(false)}
+      />
+    </FulfillmentSectionEnter>
   );
 }

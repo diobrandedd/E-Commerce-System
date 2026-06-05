@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-04T11:09:03+02:00
+generated: 2026-06-05T04:27:25+02:00
 type: memory-bank
 ---
 
@@ -159,6 +159,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `run_vip_stamp` | `api_online_orders_run_vip_stamp()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_vip_stamp()` |
 | `run_shopee_resolve` | `api_online_orders_run_shopee_resolve()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_shopee_resolve()` |
 | `run_shopee_stamp` | `api_online_orders_run_shopee_stamp()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_shopee_stamp()` |
+| `packaging_stock` | `api_online_orders_packaging_stock()` | `honey_packaging_total_inventory_snapshot()`, `ims_pdo()` |
 
 ### `order_remarks.php`
 

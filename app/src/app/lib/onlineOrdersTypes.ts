@@ -40,3 +40,31 @@ export interface PartnerStampResult {
   lines_added: number;
   run_id: number;
 }
+
+export type DuplicateTrackingSource = "batch_line" | "parcel" | "incoming_upload";
+
+export interface DuplicateTrackingParty {
+  recipient_name?: string;
+  items?: string;
+  courier?: string;
+  source_pipeline?: string;
+  order_no?: string | null;
+}
+
+export interface DuplicateTrackingExisting extends DuplicateTrackingParty {
+  source: DuplicateTrackingSource;
+  batch_id?: number | null;
+  batch_status?: string;
+  line_id?: number;
+  parcel_id?: number;
+  parcel_status?: string;
+  ship_date?: string | null;
+  created_at?: string;
+}
+
+export interface DuplicateTrackingConflict {
+  tracking_number: string;
+  tracking_raw?: string;
+  attempted: DuplicateTrackingParty;
+  existing: DuplicateTrackingExisting;
+}

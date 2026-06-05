@@ -124,6 +124,8 @@ export function VariantCardStrip({
 
               label={p.label}
 
+              stockLeft={p.stockLeft}
+
               active={selected === p.value}
 
               disabled={disabled}

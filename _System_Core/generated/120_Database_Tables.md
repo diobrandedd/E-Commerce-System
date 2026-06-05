@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-04T11:09:04+02:00
+generated: 2026-06-05T04:27:25+02:00
 type: memory-bank
 table_count: 40
 ---
@@ -59,6 +59,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_parcel_by_tracking]] |
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
 | `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
 
 ## `delivery_batch_items`
@@ -76,6 +78,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_resolve_item]] |
 | `includes/deliveries_review_nav.php` | [[modules/deliveries_review_nav#rts_delivery_review_attention_count]] |
 | `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
 
 ## `sp_sort_batches`
@@ -131,6 +135,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_dept_products_snapshot]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_resolve_honey_dept_id]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_user_is_csr_dept]] |
 | `includes/waybill_stamper.php` | [[modules/waybill_stamper#waybill_stamper_user_can_access]] |
 
 ## `users`
@@ -297,12 +302,14 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_get]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_cancel]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_assert_active_batch]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_existing_tracking_map]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_finalize]] |
 
 ## `csr_online_batch_runs`
 
 | File | Function |
 |------|----------|
+| `api/v1/online_orders.php` | [[modules/online_orders#api_online_orders_mark_run_failed]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_get]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_start]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_complete]] |
@@ -315,6 +322,7 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_promote_from_batch]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_get]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_existing_tracking_map]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_lines_append]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_merge_master_workbook]] |
 
@@ -327,6 +335,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_id]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_list]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_existing_tracking_map]] |
 
 ## `online_parcel_deduct_lines`
 

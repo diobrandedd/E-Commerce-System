@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { CheckCircle2, Download, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { FulfillmentErrorBanner, FulfillmentSectionEnter } from "@/app/components/csr/onlineFulfillmentMotion";
 import { AmbiguousOrderCarousel } from "@/app/components/csr/AmbiguousOrderCarousel";
 import { FileZone } from "@/app/components/csr/FileZone";
+import { DuplicateTrackingModal } from "@/app/components/csr/onlineOrders/DuplicateTrackingModal";
 import { OrderRemarksToast } from "@/app/components/csr/orderRemarksMotion";
 import {
   categorizeRow,
@@ -23,6 +25,7 @@ import {
   type ParseOrderRemarksResult,
 } from "@/app/lib/orderRemarksApi";
 import { waybillUploadTooLarge } from "@/app/lib/waybillApi";
+import { useDuplicateTrackingHandler } from "@/app/lib/useDuplicateTrackingHandler";
 import { apiPostForm, getCsrfToken, ApiError } from "@/app/lib/api";
 import type { PartnerStampResult } from "@/app/lib/onlineOrdersTypes";
 
@@ -51,10 +54,19 @@ export function VipRunStep({
   const [phase, setPhase] = useState<Phase>("remarks");
   const [courierExcelFile, setCourierExcelFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    duplicateConflicts,
+    showDuplicateModal,
+    setShowDuplicateModal,
+    error,
+    setError,
+    clearErrors,
+    handleApiError,
+  } = useDuplicateTrackingHandler();
   const [toast, setToast] = useState<string | null>(null);
   const [parseResult, setParseResult] = useState<ParseOrderRemarksResult | null>(null);
   const [resolutions, setResolutions] = useState<Record<number, RowResolution>>({});
+  const [showCompleted, setShowCompleted] = useState(false);
   const [remarksToken, setRemarksToken] = useState<string | null>(null);
   const [vipExcelFile, setVipExcelFile] = useState<File | null>(null);
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
@@ -86,6 +98,7 @@ export function VipRunStep({
       const result = await parseOrderRemarks(token);
       setParseResult(result);
       setResolutions({});
+      setShowCompleted(false);
       setToast("Workbook loaded — resolve any ambiguous orders");
       window.setTimeout(() => setToast(null), 2800);
     } catch (e) {
@@ -98,7 +111,7 @@ export function VipRunStep({
   const runExport = async () => {
     if (!remarksToken || !parseResult) return;
     setBusy(true);
-    setError(null);
+    clearErrors();
     try {
       const remarks = parseResult.orders.map(o =>
         finalRemarkForRow(o.remarks, parseRemarks(o.remarks), resolutions[o.idx]),
@@ -122,7 +135,7 @@ export function VipRunStep({
       window.setTimeout(() => setToast(null), 4000);
       setPhase("stamp");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Export failed.");
+      handleApiError(e, "Export failed.");
     } finally {
       setBusy(false);
     }
@@ -156,7 +169,7 @@ export function VipRunStep({
   }, [batchId, pdfFiles, vipExcelFile, onStampSuccess]);
 
   return (
-    <div className="space-y-4 max-w-4xl">
+    <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
       <OrderRemarksToast message={toast} />
       <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
         ← Back to pipelines
@@ -197,9 +210,17 @@ export function VipRunStep({
             <AmbiguousOrderCarousel
               rows={ambiguousRows}
               resolutions={resolutions}
-              showCompleted={false}
-              onShowCompletedChange={() => {}}
+              showCompleted={showCompleted}
+              onShowCompletedChange={setShowCompleted}
               onResolve={(idx, resolution) => setResolutions(prev => ({ ...prev, [idx]: resolution }))}
+              onClearResolution={idx => {
+                setResolutions(prev => {
+                  const next = { ...prev };
+                  delete next[idx];
+                  return next;
+                });
+                setShowCompleted(false);
+              }}
               disabled={busy}
               onCardCompleted={remaining => {
                 setToast(remaining > 0 ? `${remaining} remaining` : "All orders resolved");
@@ -257,12 +278,13 @@ export function VipRunStep({
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-800 flex gap-2">
-          <AlertCircle size={18} /> {error}
-        </div>
-      )}
+      <FulfillmentErrorBanner message={error} />
 
-    </div>
+      <DuplicateTrackingModal
+        open={showDuplicateModal}
+        conflicts={duplicateConflicts}
+        onClose={() => setShowDuplicateModal(false)}
+      />
+    </FulfillmentSectionEnter>
   );
 }

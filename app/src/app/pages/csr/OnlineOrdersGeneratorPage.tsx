@@ -9,6 +9,13 @@ import { VipRunStep } from "@/app/components/csr/onlineOrders/VipRunStep";
 import { ShopeeSpxRunStep } from "@/app/components/csr/onlineOrders/ShopeeSpxRunStep";
 import { OrderRemarksToast } from "@/app/components/csr/orderRemarksMotion";
 import {
+  FulfillmentErrorBanner,
+  FulfillmentPressable,
+  FulfillmentSectionEnter,
+  FulfillmentStepSwitch,
+  FulfillmentSuccessPanel,
+} from "@/app/components/csr/onlineFulfillmentMotion";
+import {
   onlineOrdersBatchCancel,
   onlineOrdersBatchFinalize,
   onlineOrdersBatchGet,
@@ -163,12 +170,10 @@ export function OnlineOrdersGeneratorPage() {
         </div>
       )}
 
-      {error && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-800">{error}</div>
-      )}
+      {error && <FulfillmentErrorBanner message={error} />}
 
       {batch && step !== "loading" && step !== "start" && (
-        <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <FulfillmentSectionEnter index={0} className="mb-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           <span>
             Batch #{batch.id} · {batch.line_count} lines · {batch.runs.length} run(s)
           </span>
@@ -177,53 +182,64 @@ export function OnlineOrdersGeneratorPage() {
               Cancel batch
             </button>
           )}
-        </div>
-      )}
-
-      {step === "picker" && batch && (
-        <PipelinePicker
-          lineCount={batch.line_count}
-          onSelect={p => {
-            setStampResult(null);
-            setPipeline(p);
-            setStep("pipeline");
-          }}
-        />
+        </FulfillmentSectionEnter>
       )}
 
       {stampResult && (
-        <StampResultPanel
-          result={stampResult}
-          busy={busy}
-          onProcessAnother={goProcessAnother}
-          onFinishBatch={() => void goFinishBatch()}
-        />
+        <FulfillmentStepSwitch stepKey="stamp-result">
+          <StampResultPanel
+            result={stampResult}
+            busy={busy}
+            onProcessAnother={goProcessAnother}
+            onFinishBatch={() => void goFinishBatch()}
+          />
+        </FulfillmentStepSwitch>
+      )}
+
+      {!stampResult && step === "picker" && batch && (
+        <FulfillmentStepSwitch stepKey="picker">
+          <PipelinePicker
+            lineCount={batch.line_count}
+            onSelect={p => {
+              setStampResult(null);
+              setPipeline(p);
+              setStep("pipeline");
+            }}
+          />
+        </FulfillmentStepSwitch>
       )}
 
       {!stampResult && step === "pipeline" && batch && pipeline === "partner" && (
-        <PartnerRunStep
-          batchId={batch.id}
-          onStampSuccess={r => void handleStampSuccess(r)}
-          onBack={() => setStep("picker")}
-        />
+        <FulfillmentStepSwitch stepKey="pipeline-partner">
+          <PartnerRunStep
+            batchId={batch.id}
+            onStampSuccess={r => void handleStampSuccess(r)}
+            onBack={() => setStep("picker")}
+          />
+        </FulfillmentStepSwitch>
       )}
       {!stampResult && step === "pipeline" && batch && pipeline === "vip" && (
-        <VipRunStep
-          batchId={batch.id}
-          onStampSuccess={r => void handleStampSuccess(r)}
-          onBack={() => setStep("picker")}
-        />
+        <FulfillmentStepSwitch stepKey="pipeline-vip">
+          <VipRunStep
+            batchId={batch.id}
+            onStampSuccess={r => void handleStampSuccess(r)}
+            onBack={() => setStep("picker")}
+          />
+        </FulfillmentStepSwitch>
       )}
       {!stampResult && step === "pipeline" && batch && pipeline === "shopee_spx" && (
-        <ShopeeSpxRunStep
-          batchId={batch.id}
-          onStampSuccess={r => void handleStampSuccess(r)}
-          onBack={() => setStep("picker")}
-        />
+        <FulfillmentStepSwitch stepKey="pipeline-shopee">
+          <ShopeeSpxRunStep
+            batchId={batch.id}
+            onStampSuccess={r => void handleStampSuccess(r)}
+            onBack={() => setStep("picker")}
+          />
+        </FulfillmentStepSwitch>
       )}
 
       {step === "post_run" && batch && (
-        <div className="max-w-lg space-y-4 bg-card rounded-xl border p-6">
+        <FulfillmentStepSwitch stepKey="post-run">
+          <FulfillmentSectionEnter className="max-w-lg space-y-4 bg-card rounded-xl border p-6">
           <p className="font-semibold text-foreground">Pipeline step complete</p>
           <p className="text-sm text-muted-foreground">
             Process another type of orders, or finish and download the combined master Excel for packers.
@@ -243,28 +259,26 @@ export function OnlineOrdersGeneratorPage() {
             </button>
           )}
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => setStep("picker")}
-              className="text-sm font-semibold px-4 py-2.5 rounded-lg border border-border hover:bg-secondary"
-            >
+            <FulfillmentPressable variant="outline" className="px-4 py-2.5" onClick={() => setStep("picker")}>
               Process another
-            </button>
-            <button
-              type="button"
+            </FulfillmentPressable>
+            <FulfillmentPressable
+              variant="primary"
               disabled={busy || batch.line_count < 1}
               onClick={() => void finalizeBatch()}
-              className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
+              className="inline-flex items-center gap-2"
             >
-              {busy ? <Loader2 size={16} className="animate-spin inline mr-2" /> : null}
+              {busy ? <Loader2 size={16} className="animate-spin" /> : null}
               Done — download master Excel
-            </button>
+            </FulfillmentPressable>
           </div>
-        </div>
+          </FulfillmentSectionEnter>
+        </FulfillmentStepSwitch>
       )}
 
       {step === "done" && batch && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6 max-w-lg space-y-3">
+        <FulfillmentStepSwitch stepKey="done">
+          <FulfillmentSuccessPanel>
           <p className="flex items-center gap-2 font-semibold text-green-800">
             <CheckCircle2 size={20} /> Batch processed
           </p>
@@ -272,13 +286,13 @@ export function OnlineOrdersGeneratorPage() {
             {batch.line_count} lines saved. Master file: {batch.master_filename ?? "download"}
           </p>
           {batch.master_download_token && (
-            <button
-              type="button"
+            <FulfillmentPressable
+              variant="primary"
+              className="inline-flex items-center gap-2 px-4 py-2"
               onClick={() => triggerOnlineOrdersDownload(batch.master_download_token!, batch.master_filename ?? undefined)}
-              className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary text-primary-foreground"
             >
               <Download size={16} /> Download again
-            </button>
+            </FulfillmentPressable>
           )}
           <button
             type="button"
@@ -291,17 +305,14 @@ export function OnlineOrdersGeneratorPage() {
           >
             Start new batch
           </button>
-        </div>
+          </FulfillmentSuccessPanel>
+        </FulfillmentStepSwitch>
       )}
 
       {step === "start" && !showStartModal && (
-        <button
-          type="button"
-          onClick={() => setShowStartModal(true)}
-          className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary"
-        >
+        <FulfillmentPressable variant="primary" onClick={() => setShowStartModal(true)}>
           Start new batch
-        </button>
+        </FulfillmentPressable>
       )}
     </PageLayout>
   );

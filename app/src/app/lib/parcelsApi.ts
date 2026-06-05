@@ -1,5 +1,12 @@
 import { api, apiGet, apiPost } from "@/app/lib/api";
 
+export interface OnlineParcelPackingPhoto {
+  delivery_item_id: number;
+  photo_filename: string;
+  photo_url: string;
+  delivery_date: string;
+}
+
 export interface OnlineParcel {
   id: number;
   csr_batch_id: number | null;
@@ -14,6 +21,7 @@ export interface OnlineParcel {
   ship_date: string | null;
   deducted_at: string | null;
   created_at: string;
+  packing_photo: OnlineParcelPackingPhoto | null;
 }
 
 export async function parcelsList(params: {

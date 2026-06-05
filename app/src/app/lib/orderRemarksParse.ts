@@ -12,6 +12,8 @@ export interface ParsedRemark {
 export interface PresetOption {
   value: string;
   label: string;
+  /** Bottled packaging stock for this preset (CSR variant picker). */
+  stockLeft?: number | null;
 }
 
 export interface RowResolution {

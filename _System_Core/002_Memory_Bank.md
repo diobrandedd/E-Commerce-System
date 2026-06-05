@@ -2,6 +2,121 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-05 - Partner waybill stamp fixes (Flash NO MATCH + iPYX first sheet only)
+- **Symptoms (E2E):** Partner stamp showed **NO MATCH** on Flash/Lazada waybill `P3623KK03MYAD` even though row 1 of iPYX Excel had the order. Error banner displayed `P3623KKO3MYAD` (letter **O** instead of digit **0**). Extra/wrong rows also appeared because the parser scanned **all workbook sheets**.
+- **Root causes:**
+  1. **OCR 0↔O** — `waybill-stamper/processor.py` OCR/text layer read `0` as `O` on marketplace `P…` parcel IDs; Excel had correct `P3623KK03MYAD`.
+  2. **All sheets** — `processor.py` `parse_excel()` iterated every sheet; `online_orders_parse_ipyx_excel_paths()` used `getAllSheets()`. iPYX daily workbook: **only sheet 1** is today's orders; other sheets add noise or overwrite keys.
+- **Fixes:**
+  - **`norm_tn()` / `ocr_confusables_for_match()`** in `waybill-stamper/processor.py` — for `P[A-Z0-9]+` IDs, map **`O` → `0`** before lookup.
+  - **`online_orders_ocr_confusables_for_match()`** in `includes/online_orders_generator.php` — same rule inside **`online_orders_normalize_tracking()`** (duplicate checks + Excel keys stay aligned).
+  - **First sheet only** — `processor.py` reads `wb.sheetnames[0]` only; PHP `online_orders_parse_ipyx_excel_paths()` uses `$spreadsheet->getSheet(0)` only.
+- **Example:** PDF OCR `P3623KKO3MYAD` + Excel `P3623KK03MYAD` → both normalize to `P3623KK03MYAD` → MATCHED.
+- **Key files:** `waybill-stamper/processor.py`, `includes/online_orders_generator.php`
+- **Deploy:** PHP + Python only — **no SPA rebuild**. Re-stamp same PDF + Excel to verify.
+- **Regenerate:** `c:\xampp\php\php.exe tools/memory_bank/generate_all.php`
+- **Fragile edges:** [[003_Fragile_Edges#Partner waybill matching (iPYX Excel + Flash OCR)]]
+
+### 2026-06-05 - Online Parcels API Forbidden for CSR team leader
+- **Symptom:** CSR TL opened `/fulfillment/online-parcels` — page loaded but API returned **Forbidden**; empty table + red banner.
+- **Root cause:** `online_parcels_user_can_access()` checked SPA role names `csr_tl` / `csr_staff`, but `ims_current_user()` session stores IMS roles **`tl`** / **`staff`**. SPA normalizes via `api_normalize_role()` on login only — API parcel gate did not.
+- **Fix:** `includes/online_order_parcels.php` — added `online_parcels_user_is_csr_dept()`; allow `tl` / `staff` when `departments.name = 'csr'` (same pattern as `waybill_stamper_user_can_access()` for team leaders). Also keeps `executive`, `prod_manager`, and normalized `csr_*` names.
+- **Key files:** `includes/online_order_parcels.php`, `api/v1/parcels.php`
+- **Deploy:** PHP only — refresh page.
+- **Fragile edges:** [[003_Fragile_Edges#IMS role vs SPA role (API gates)]]
+
+### 2026-06-05 - CSR variant picker stock indicators (Shopee SPX + VIP + Order Remarks)
+- **What we did:** When CSR picks Light/Amber/Dark for a parcel, each preset button now shows **bottled packaging stock** under the label (e.g. `Amber 1L` → `38 left`), matching the Shopee carousel design.
+- **Why:** CSRs need on-hand counts at pick time — not just after opening Honey Packaging — to avoid committing variants that are out of stock.
+- **Data source:** Same snapshot as Honey Packaging dashboard — `honey_packaging_rows` with non-empty `batch_no` only (warehouse/production excluded).
+- **API:** `GET api/v1/online_orders.php?action=packaging_stock` — CSR-accessible read-only wrapper around `honey_packaging_total_inventory_snapshot()` (CSR roles cannot call `honey.php` directly).
+- **SPA:**
+  - `honeyPackagingStock.ts` — maps presets → variant+size; `enrichShopeePresets` / `enrichVipPresets`.
+  - `useHoneyPackagingStock()` — fetches once on carousel mount.
+  - `PresetOption.stockLeft` optional field; `VariantPresetButton` second line `{n} left`.
+  - Wired in **`ItemResolverCarousel`** (Shopee), **`AmbiguousOrderCarousel`** (VIP + Order Remarks).
+  - **2L/3L combo codes** (`LA`, `LAD`, …) show **min** 1L stock among letters in the combo (bottleneck).
+- **UX fix — scroll chevrons:** `OrderRemarksScrollButton` in `VariantCardStrip` was opaque and covered stock text. Now **~55% opacity** + translucent `bg-card/45` + light blur; **hover → ~95%** for tap target.
+- **Bug fix:** Shopee extract crashed `cn is not defined` — `ItemResolverCarousel.tsx` still used `cn()` for row classes but import was dropped when stock work landed. Restored `import { cn } from "@/app/components/ui/utils"`.
+- **Key files:** `api/v1/online_orders.php`, `onlineOrdersApi.ts`, `honeyPackagingStock.ts`, `useHoneyPackagingStock.ts`, `VariantPresetButton` / `OrderRemarksScrollButton` in `orderRemarksMotion.tsx`, `VariantCardStrip.tsx`, `ItemResolverCarousel.tsx`, `AmbiguousOrderCarousel.tsx`, `orderRemarksParse.ts` (`PresetOption.stockLeft`)
+- **Deploy:** `cd app && npm run build` + hard refresh.
+- **Regenerate:** `c:\xampp\php\php.exe tools/memory_bank/generate_all.php`
+- **Patterns:** [[005_SPA_UX_Patterns#CSR variant picker stock indicators]] · [[003_Fragile_Edges#CSR packaging stock for variant pickers]]
+
+### 2026-06-05 - Online Parcels packing photo (Deliveries → detail modal)
+- **What we did:** Parcel API responses now include **`packing_photo`** from the latest non-voided **`delivery_batch_items`** row (photo taken during Deliveries scan). **`OnlineParcelDetailModal`** shows the image at the top; if none exists yet, shows **“Not yet packed”** placeholder (dashed border + package icon).
+- **Why:** CSR/prod need to see whether a parcel was photographed in Deliveries before ship; photos are not stored on `online_order_parcels` — they live in the deliveries bucket.
+- **Backend (`includes/online_order_parcels.php`):**
+  - `online_parcels_find_packing_photo()` — prefers `delivery_batch_items.online_parcel_id`, fallback normalized `tracking_number`.
+  - `online_parcels_format_packing_photo()` — builds `photo_url` via `rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, …)` with `/rts/` prefix for SPA.
+  - `online_parcels_enrich_packing_photo()` — single parcel (get / lookup).
+  - `online_parcels_enrich_packing_photos_batch()` — list endpoint (2 queries max, no N+1).
+  - `online_parcels_format_row()` always includes `packing_photo: null` unless enriched.
+- **API:** `GET api/v1/parcels.php?action=list|get|lookup` — each parcel may include:
+  ```json
+  "packing_photo": { "delivery_item_id", "photo_filename", "photo_url", "delivery_date" } | null
+  ```
+- **SPA:**
+  - `OnlineParcel` type + `packing_photo` in `parcelsApi.ts`.
+  - `OnlineParcelDetailModal.tsx` — **Packing photo** section above recipient/items.
+- **Key files:** `includes/online_order_parcels.php`, `includes/rts_storage.php`, `api/v1/parcels.php`, `OnlineParcelDetailModal.tsx`, `parcelsApi.ts`
+- **Deploy:** `cd app && npm run build` + hard refresh.
+- **Regenerate:** `c:\xampp\php\php.exe tools/memory_bank/generate_all.php`
+- **Patterns:** [[005_SPA_UX_Patterns#Online parcel detail (packing photo)]] · [[003_Fragile_Edges#Online order parcels + ship deduct]]
+
+### 2026-06-05 - Online Parcels UI + fulfillment motion & hover system
+- **Online Parcels (`/fulfillment/online-parcels`):**
+  - Table aligned with system pattern (`bg-card`, uppercase header, `px-4 py-3`, loading/empty states, pagination).
+  - Row click + search lookup → **`OnlineParcelDetailModal`** (packing photo or “Not yet packed”, tracking, items raw, parsed deltas, batch, status).
+  - **`FulfillmentTableRow`** — stagger reveal + **hover bg + drop shadow**.
+  - Toasts on lookup found + refresh; animated error banner.
+- **Shared motion kit (`onlineFulfillmentMotion.tsx`):**
+  - `FulfillmentToast`, `FulfillmentErrorBanner`, `FulfillmentSectionEnter`, `FulfillmentStepSwitch`, `FulfillmentSuccessPanel`, `FulfillmentModal`, `FulfillmentPickerCard`, `FulfillmentTableRow`, `FulfillmentPressable`, `AnimatedStat`.
+  - **Hover tokens:** `fulfillmentHoverCard`, `fulfillmentHoverRow`, `fulfillmentHoverPressablePrimary/Outline` — amber ring + shadow on cards; shadow + bg on rows; lift + shadow on buttons.
+  - **`useReducedMotion()`** respected everywhere.
+- **Online Orders wired:** step transitions, stamp stats animate, pipeline cards hover, pressable CTAs, duplicate + parcel modals use `FulfillmentModal`.
+- **Policy (new):** All future SPA features must ship **feedback animations** + **hover highlight/shadow** on interactive elements — documented in [[005_SPA_UX_Patterns#Feedback animations & hover (mandatory)]] and `.cursor/rules/spa-ui-design.mdc`.
+- **Key files:** `onlineFulfillmentMotion.tsx`, `OnlineParcelsPage.tsx`, `OnlineParcelDetailModal.tsx`, `OnlineOrdersGeneratorPage.tsx`, `StampResultPanel.tsx`, `PipelinePicker.tsx`, `DuplicateTrackingModal.tsx`
+- **Deploy:** `cd app && npm run build` + hard refresh.
+- **Regenerate:** `c:\xampp\php\php.exe tools/memory_bank/generate_all.php`
+
+### 2026-06-05 - Online Orders duplicate tracking prevention (Partner + VIP + Shopee SPX)
+- **What we did:** Blocked duplicate tracking numbers across all CSR online-order pipelines. On conflict, the SPA opens a **modal** (not a red error banner) showing the tracking number, the **existing record** (recipient, items, courier, pipeline, batch/parcel), and what the user tried to add.
+- **Why:** Same TN must not be saved twice in an active/processed batch or after promotion to fulfillment parcels — prevents double packing/shipping.
+- **Backend (`includes/online_orders_generator.php`):**
+  - `online_orders_normalize_tracking()` — wraps `rts_normalize_tracking_from_qr()` + uppercase/strip spaces.
+  - `online_orders_existing_tracking_map()` — indexes `csr_online_order_lines` (batches `active`/`processed`) + `online_order_parcels`.
+  - `online_orders_validate_tracking_duplicates()` / `online_orders_assert_no_duplicate_tracking()` — also catches **duplicates within the same upload**.
+  - `OnlineOrdersDuplicateTrackingException` with structured `duplicates[]` payload.
+  - **`online_orders_lines_append()`** — validates then stores normalized TN.
+  - **Partner** — parse Excel **before** stamp; reject before `waybill_stamper_process_uploads()` wastes work.
+  - **Shopee** — validate in `run_shopee_resolve` before building Excel.
+  - **VIP stamp** — **removed** second `lines_append` (lines saved once at export, like Shopee resolve → stamp).
+- **API (`api/v1/online_orders.php`):** `api_online_orders_fail_pipeline()` returns **HTTP 409** + `{ duplicates: [...] }` for `lines_append`, `run_partner`, `run_vip_stamp`, `run_shopee_resolve`. Check `OnlineOrdersDuplicateTrackingException` **before** generic `RuntimeException` (subclass trap).
+- **SPA:**
+  - `DuplicateTrackingModal.tsx` — fixed `z-[100]` overlay (same pattern as `ExecutiveRowEditModal` / `CorrectionReviewModal`). **Do not use Radix `Dialog` here** — it was the only Dialog consumer and did not render reliably.
+  - `useDuplicateTrackingHandler.ts` + `duplicateTrackingUtils.ts` — shared hook; `duplicateConflictsFromApiError()` reads `data.duplicates` regardless of HTTP status.
+  - Wired in `PartnerRunStep`, `VipRunStep` (export), `ShopeeSpxRunStep` (resolve). On duplicate: modal only, `setError(null)`.
+- **Key files:** `includes/online_orders_generator.php`, `api/v1/online_orders.php`, `DuplicateTrackingModal.tsx`, `useDuplicateTrackingHandler.ts`, `duplicateTrackingUtils.ts`, `PartnerRunStep.tsx`, `VipRunStep.tsx`, `ShopeeSpxRunStep.tsx`, `onlineOrdersTypes.ts`
+- **Deploy:** `cd app && npm run build` + hard refresh on ngrok/Apache.
+- **Regenerate:** `c:\xampp\php\php.exe tools/memory_bank/generate_all.php`
+- **Patterns:** [[005_SPA_UX_Patterns#Duplicate tracking conflict (Online Orders)]] · [[003_Fragile_Edges#Online Orders duplicate tracking]]
+
+### 2026-06-04 - CSR variant resolution UX (VIP + Shopee SPX) — confirm, review, edit
+- **What we did:** Standardized ambiguous honey variant flows in Online Orders so users **never auto-commit** a wrong Light/Amber/Dark pick.
+- **Shopee SPX (`ItemResolverCarousel` + `ShopeeSpxRunStep`):**
+  - Pick preset or custom line → **“Is this correct?”** (`Yes, correct` / `Change`) before saving.
+  - New **`review`** phase: table of PDF vs final item → **Confirm all & build Excel**.
+  - **`Show completed`** checkbox lists confirmed rows; **Edit item** clears resolution and reopens picker.
+  - Resolutions require `confirmed: true` (`shopeeRowIsReadyForExport` in `honeyItemVariant.ts`).
+- **VIP (`AmbiguousOrderCarousel` + `VipRunStep`):**
+  - Fixed **Show completed** — was hardcoded `showCompleted={false}` and `onShowCompletedChange={() => {}}` (checkbox did nothing).
+  - Added **Edit choice** on completed cards via `onClearResolution` (delete from `resolutions` state).
+- **Bug fix:** After confirm, app crashed `e.trim is not a function` — `shopeeRowIsReadyForExport` passed whole **`row` object** to `honeyItemNeedsVariantResolution(items)` instead of item string. Added `honeyItemLineText()` for API values that are not strings.
+- **Pattern for future CSR pickers:** Reuse `AmbiguousOrderCarousel` / `ItemResolverCarousel` + `orderRemarksMotion` — see [[005_SPA_UX_Patterns#CSR variant resolution (ambiguous honey)]].
+- **Key files:** `ItemResolverCarousel.tsx`, `ShopeeItemsReviewPanel.tsx`, `ShopeeSpxRunStep.tsx`, `AmbiguousOrderCarousel.tsx`, `VipRunStep.tsx`, `app/src/app/lib/honeyItemVariant.ts`
+- **Deploy:** `cd app && npm run build` + hard refresh on ngrok/Apache.
+
 ### 2026-06-04 - Honey packaging total inventory dashboard
 - **What we did:** Added **Total inventory (batch bottled)** at top of Honey — Packaging (`/inventory/honey/packaging`). Aggregates **current** bottle counts from `honey_packaging_rows` only (batch numbers exist after bottling). Variants Light / Amber / Dark; sizes 250ML, 350ML, 1L, Gallon. UI matches Sales page: three variant cards, donut chart, per-size grid; **size filter** pills (All / 250ML / 350ML / 1L / Gallon) instead of Sales discount filters.
 - **Why:** CSR needs sellable bottled stock at a glance; warehouse gallons and production WIP must not inflate totals.

@@ -36,6 +36,23 @@ function api_online_orders_require_csrf(): void
     }
 }
 
+function api_online_orders_fail_pipeline(Throwable $e): void
+{
+    if ($e instanceof OnlineOrdersDuplicateTrackingException) {
+        api_fail($e->getMessage(), 409, ['duplicates' => $e->duplicates]);
+    }
+    if ($e instanceof RuntimeException) {
+        api_fail($e->getMessage(), 400);
+    }
+    throw $e;
+}
+
+function api_online_orders_mark_run_failed(PDO $pdo, int $runId): void
+{
+    $fail = $pdo->prepare('UPDATE csr_online_batch_runs SET status = ? WHERE id = ?');
+    $fail->execute(['failed', $runId]);
+}
+
 api_dispatch([
     'batch_start' => 'api_online_orders_batch_start',
     'batch_get' => 'api_online_orders_batch_get',
@@ -46,6 +63,7 @@ api_dispatch([
     'run_vip_stamp' => 'api_online_orders_run_vip_stamp',
     'run_shopee_resolve' => 'api_online_orders_run_shopee_resolve',
     'run_shopee_stamp' => 'api_online_orders_run_shopee_stamp',
+    'packaging_stock' => 'api_online_orders_packaging_stock',
 ]);
 
 function api_online_orders_batch_start(): void
@@ -144,11 +162,16 @@ function api_online_orders_lines_append(): void
     try {
         online_orders_assert_active_batch($pdo, (int) $user['id'], $batchId);
         $runId = online_orders_run_start($pdo, $batchId, $pipeline);
-        $added = online_orders_lines_append($pdo, $batchId, $runId, $pipeline, $lines);
+        try {
+            $added = online_orders_lines_append($pdo, $batchId, $runId, $pipeline, $lines);
+        } catch (OnlineOrdersDuplicateTrackingException $e) {
+            api_online_orders_mark_run_failed($pdo, $runId);
+            throw $e;
+        }
         online_orders_run_complete($pdo, $runId, ['lines_added' => $added, 'source' => 'manual_append']);
         api_ok(['lines_added' => $added, 'run_id' => $runId]);
-    } catch (RuntimeException $e) {
-        api_fail($e->getMessage(), 400);
+    } catch (Throwable $e) {
+        api_online_orders_fail_pipeline($e);
     }
 }
 
@@ -172,10 +195,8 @@ function api_online_orders_run_partner(): void
     try {
         $result = online_orders_run_partner_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelTokens);
         api_ok($result);
-    } catch (RuntimeException $e) {
-        api_fail($e->getMessage(), 400);
     } catch (Throwable $e) {
-        api_fail('Partner stamp failed: ' . $e->getMessage(), 500);
+        api_online_orders_fail_pipeline($e);
     }
 }
 
@@ -199,8 +220,8 @@ function api_online_orders_run_vip_stamp(): void
     try {
         $result = online_orders_run_vip_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelToken);
         api_ok($result);
-    } catch (RuntimeException $e) {
-        api_fail($e->getMessage(), 400);
+    } catch (Throwable $e) {
+        api_online_orders_fail_pipeline($e);
     }
 }
 
@@ -222,8 +243,8 @@ function api_online_orders_run_shopee_resolve(): void
     try {
         $result = online_orders_run_shopee_resolve($pdo, (int) $user['id'], $batchId, $rows);
         api_ok($result);
-    } catch (RuntimeException $e) {
-        api_fail($e->getMessage(), 400);
+    } catch (Throwable $e) {
+        api_online_orders_fail_pipeline($e);
     }
 }
 
@@ -250,4 +271,13 @@ function api_online_orders_run_shopee_stamp(): void
     } catch (RuntimeException $e) {
         api_fail($e->getMessage(), 400);
     }
+}
+
+function api_online_orders_packaging_stock(): void
+{
+    api_method_allowed(['GET']);
+    api_online_orders_assert_access();
+
+    require_once dirname(__DIR__, 2) . '/includes/honey_inventory.php';
+    api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));
 }

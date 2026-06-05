@@ -1,3 +1,4 @@
+import type { PackagingStockSnapshot } from "@/app/lib/honeyPackagingStock";
 import { api, API_BASE } from "@/app/lib/api";
 import { normalizePartnerStampResult } from "@/app/lib/normalizePartnerStampResult";
 import type {
@@ -103,4 +104,8 @@ export async function onlineOrdersBatchFinalize(batchId: number): Promise<{
 export function triggerOnlineOrdersDownload(token: string, _filename?: string): void {
   const url = `${API_BASE}/online_orders.php?action=batch_download&token=${encodeURIComponent(token)}`;
   window.location.href = url;
+}
+
+export async function onlineOrdersPackagingStock(): Promise<PackagingStockSnapshot> {
+  return api("online_orders.php", "packaging_stock", { method: "GET" });
 }

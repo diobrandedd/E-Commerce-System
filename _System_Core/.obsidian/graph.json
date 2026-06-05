@@ -1,11 +1,11 @@
 {
-  "collapse-filter": false,
+  "collapse-filter": true,
   "search": "",
   "showTags": false,
   "showAttachments": true,
   "hideUnresolved": false,
   "showOrphans": true,
-  "collapse-color-groups": false,
+  "collapse-color-groups": true,
   "colorGroups": [
     {
       "query": "Database",
@@ -32,13 +32,13 @@
       "query": "Module",
       "color": {
         "a": 1,
-        "rgb": 16711829
+        "rgb": 16584089
       }
     }
   ],
   "collapse-display": false,
   "showArrow": true,
-  "textFadeMultiplier": -0.7,
+  "textFadeMultiplier": 1.5,
   "nodeSizeMultiplier": 0.610416666666667,
   "lineSizeMultiplier": 0.814583333333333,
   "collapse-forces": false,
@@ -46,6 +46,6 @@
   "repelStrength": 9.6875,
   "linkStrength": 0.807291666666667,
   "linkDistance": 319,
-  "scale": 0.3213363860503554,
+  "scale": 0.4505081176757778,
   "close": true
 }

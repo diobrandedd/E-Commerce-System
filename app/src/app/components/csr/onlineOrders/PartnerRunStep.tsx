@@ -1,9 +1,12 @@
 import { useCallback, useState } from "react";
-import { AlertCircle, FileSpreadsheet, FileText, Loader2, Package } from "lucide-react";
+import { FileSpreadsheet, FileText, Loader2, Package } from "lucide-react";
 import { FileZone } from "@/app/components/csr/FileZone";
+import { DuplicateTrackingModal } from "@/app/components/csr/onlineOrders/DuplicateTrackingModal";
+import { FulfillmentErrorBanner, FulfillmentPressable, FulfillmentSectionEnter } from "@/app/components/csr/onlineFulfillmentMotion";
 import { onlineOrdersRunPartner } from "@/app/lib/onlineOrdersApi";
 import { waybillUploadTooLarge } from "@/app/lib/waybillApi";
-import { apiPostForm, getCsrfToken, ApiError } from "@/app/lib/api";
+import { useDuplicateTrackingHandler } from "@/app/lib/useDuplicateTrackingHandler";
+import { apiPostForm, getCsrfToken } from "@/app/lib/api";
 import type { PartnerStampResult } from "@/app/lib/onlineOrdersTypes";
 
 async function stashToken(kind: "pdf" | "excel", file: File): Promise<string> {
@@ -29,11 +32,19 @@ export function PartnerRunStep({
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
   const [excelFiles, setExcelFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    duplicateConflicts,
+    showDuplicateModal,
+    setShowDuplicateModal,
+    error,
+    setError,
+    clearErrors,
+    handleApiError,
+  } = useDuplicateTrackingHandler();
 
   const run = useCallback(async () => {
     setBusy(true);
-    setError(null);
+    clearErrors();
     const sizeErr = waybillUploadTooLarge([...pdfFiles, ...excelFiles]);
     if (sizeErr) {
       setError(sizeErr);
@@ -48,14 +59,14 @@ export function PartnerRunStep({
       const res = await onlineOrdersRunPartner(batchId, pdfTokens, excelTokens);
       onStampSuccess(res);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Partner processing failed.");
+      handleApiError(e, "Partner processing failed.");
     } finally {
       setBusy(false);
     }
-  }, [batchId, pdfFiles, excelFiles, onStampSuccess]);
+  }, [batchId, pdfFiles, excelFiles, onStampSuccess, clearErrors, handleApiError, setError]);
 
   return (
-    <div className="space-y-4 max-w-4xl">
+    <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
       <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
         ← Back to pipelines
       </button>
@@ -82,21 +93,21 @@ export function PartnerRunStep({
           disabled={busy}
         />
       </div>
-      <button
-        type="button"
+      <FulfillmentPressable
+        variant="primary"
         disabled={busy || pdfFiles.length === 0 || excelFiles.length === 0}
         onClick={() => void run()}
-        className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
+        className="inline-flex items-center gap-2"
       >
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />}
         {busy ? "Processing…" : "Stamp & save to batch"}
-      </button>
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-800 flex gap-2">
-          <AlertCircle size={18} className="flex-shrink-0" />
-          {error}
-        </div>
-      )}
-    </div>
+      </FulfillmentPressable>
+      <FulfillmentErrorBanner message={error} />
+      <DuplicateTrackingModal
+        open={showDuplicateModal}
+        conflicts={duplicateConflicts}
+        onClose={() => setShowDuplicateModal(false)}
+      />
+    </FulfillmentSectionEnter>
   );
 }

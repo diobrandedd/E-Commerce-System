@@ -5,8 +5,15 @@
 
 export type HoneySizeHint = "350ml" | "1L" | "2L" | "3L" | "gallon" | null;
 
-export function honeySizeFromItemLine(items: string): HoneySizeHint {
-  const s = items.trim();
+/** API rows may send items as string, number, or null — always normalize before .trim(). */
+export function honeyItemLineText(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return value.trim();
+  return String(value).trim();
+}
+
+export function honeySizeFromItemLine(items: unknown): HoneySizeHint {
+  const s = honeyItemLineText(items);
   if (!s) return null;
   if (/350\s*ml|B2T1/i.test(s)) return "350ml";
   if (/3\s*L/i.test(s)) return "3L";
@@ -17,8 +24,8 @@ export function honeySizeFromItemLine(items: string): HoneySizeHint {
 }
 
 /** True when the line looks like honey with a size but no packer-ready variant. */
-export function honeyItemNeedsVariantResolution(items: string): boolean {
-  const raw = items.trim();
+export function honeyItemNeedsVariantResolution(items: unknown): boolean {
+  const raw = honeyItemLineText(items);
   if (!raw) return false;
   if (!/honey|350\s*ml|B2T1/i.test(raw)) return false;
 
@@ -36,10 +43,36 @@ export function honeyItemNeedsVariantResolution(items: string): boolean {
 }
 
 export function shopeeRowNeedsItemResolution(
-  row: { complete: boolean; items: string },
-  resolvedItems?: string,
+  row: { complete: boolean; items: unknown },
+  resolvedItems?: unknown,
 ): boolean {
-  if (resolvedItems?.trim()) return false;
-  if (!row.complete || !row.items?.trim()) return true;
-  return honeyItemNeedsVariantResolution(row.items);
+  const resolved = honeyItemLineText(resolvedItems);
+  if (resolved) return false;
+  const pdfItems = honeyItemLineText(row.items);
+  if (!row.complete || !pdfItems) return true;
+  return honeyItemNeedsVariantResolution(pdfItems);
+}
+
+/** Row is ready for Shopee resolve/stamp (PDF variant OK, or user confirmed a fix). */
+export function shopeeRowIsReadyForExport(
+  row: { complete: boolean; items: unknown },
+  resolution?: { items?: unknown; confirmed?: boolean },
+): boolean {
+  const pdfNeedsFix = shopeeRowNeedsItemResolution(row, undefined);
+  const pdfItems = honeyItemLineText(row.items);
+  const resolvedItems = honeyItemLineText(resolution?.items);
+  if (!pdfNeedsFix) {
+    return Boolean(pdfItems) && !honeyItemNeedsVariantResolution(pdfItems);
+  }
+  if (!resolution?.confirmed || !resolvedItems) return false;
+  return !honeyItemNeedsVariantResolution(resolvedItems);
+}
+
+export function shopeeFinalItemsForRow(
+  row: { complete: boolean; items: unknown },
+  resolution?: { items?: unknown; confirmed?: boolean },
+): string {
+  const resolvedItems = honeyItemLineText(resolution?.items);
+  if (resolution?.confirmed && resolvedItems) return resolvedItems;
+  return honeyItemLineText(row.items);
 }

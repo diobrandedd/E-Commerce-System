@@ -90,20 +90,19 @@ function online_orders_parse_ipyx_excel_paths(array $excelPaths): array
             throw new RuntimeException('Cannot open Excel: ' . basename($path));
         }
 
-        foreach ($spreadsheet->getAllSheets() as $sheet) {
-            $sheetName = (string) $sheet->getTitle();
-            $lower = strtolower($sheetName);
-            $skip = false;
-            foreach ($skipSheets as $s) {
-                if (str_contains($lower, $s)) {
-                    $skip = true;
-                    break;
-                }
+        // iPYX partner workbook: today's orders live on the first sheet only.
+        $sheet = $spreadsheet->getSheet(0);
+        $sheetName = (string) $sheet->getTitle();
+        $lower = strtolower($sheetName);
+        $skip = false;
+        foreach ($skipSheets as $s) {
+            if (str_contains($lower, $s)) {
+                $skip = true;
+                break;
             }
-            if ($skip) {
-                continue;
-            }
+        }
 
+        if (!$skip) {
             $highestRow = (int) $sheet->getHighestRow();
             $colIndex = Coordinate::columnIndexFromString((string) $sheet->getHighestColumn());
 
@@ -140,46 +139,45 @@ function online_orders_parse_ipyx_excel_paths(array $excelPaths): array
                 }
             }
 
-            if ($headerIdx === null) {
-                continue;
-            }
+            if ($headerIdx !== null) {
+                for ($r = $headerIdx + 1; $r <= $highestRow; $r++) {
+                    $gcell = static function (string $key) use ($sheet, $colMap, $r): string {
+                        $idx = $colMap[$key] ?? null;
+                        if ($idx === null) {
+                            return '';
+                        }
+                        $col = $idx + 1;
+                        $v = $sheet->getCell(online_orders_coord($col, $r))->getValue();
+                        if ($v === null) {
+                            return '';
+                        }
+                        if (is_float($v) && $v == (int) $v) {
+                            return (string) (int) $v;
+                        }
+                        return trim((string) $v);
+                    };
 
-            for ($r = $headerIdx + 1; $r <= $highestRow; $r++) {
-                $gcell = static function (string $key) use ($sheet, $colMap, $r): string {
-                    $idx = $colMap[$key] ?? null;
-                    if ($idx === null) {
-                        return '';
+                    $tn = $gcell('tn');
+                    if ($tn === '' || in_array(strtolower($tn), $tnNames, true)) {
+                        continue;
                     }
-                    $col = $idx + 1;
-                    $v = $sheet->getCell(online_orders_coord($col, $r))->getValue();
-                    if ($v === null) {
-                        return '';
+                    $key = online_orders_normalize_tracking($tn);
+                    if ($key === '' || isset($seenTn[$key])) {
+                        continue;
                     }
-                    if (is_float($v) && $v == (int) $v) {
-                        return (string) (int) $v;
-                    }
-                    return trim((string) $v);
-                };
+                    $seenTn[$key] = true;
 
-                $tn = $gcell('tn');
-                if ($tn === '' || in_array(strtolower($tn), $tnNames, true)) {
-                    continue;
+                    $rows[] = [
+                        'order_no' => $gcell('order') !== '' ? $gcell('order') : null,
+                        'name' => $gcell('name'),
+                        'items' => $gcell('items'),
+                        'courier' => $gcell('courier'),
+                        'tracking_number' => $tn,
+                    ];
                 }
-                $key = preg_replace('/\s+/', '', strtoupper($tn));
-                if ($key === '' || isset($seenTn[$key])) {
-                    continue;
-                }
-                $seenTn[$key] = true;
-
-                $rows[] = [
-                    'order_no' => $gcell('order') !== '' ? $gcell('order') : null,
-                    'name' => $gcell('name'),
-                    'items' => $gcell('items'),
-                    'courier' => $gcell('courier'),
-                    'tracking_number' => $tn,
-                ];
             }
         }
+
         $spreadsheet->disconnectWorksheets();
     }
 
@@ -302,6 +300,168 @@ function online_orders_run_complete(PDO $pdo, int $runId, array $meta): void
     $st->execute(['completed', json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $runId]);
 }
 
+class OnlineOrdersDuplicateTrackingException extends RuntimeException
+{
+    /** @param list<array<string, mixed>> $duplicates */
+    public function __construct(public array $duplicates, ?string $message = null)
+    {
+        parent::__construct($message ?? 'One or more tracking numbers already exist.');
+    }
+}
+
+function online_orders_normalize_tracking(string $raw): string
+{
+    require_once __DIR__ . '/qr_decode.php';
+    $t = rts_normalize_tracking_from_qr($raw);
+    if ($t === '') {
+        return '';
+    }
+
+    $t = strtoupper(preg_replace('/\s+/', '', $t));
+
+    return online_orders_ocr_confusables_for_match($t);
+}
+
+/**
+ * OCR fixes for waybill ↔ Excel matching (Flash/Lazada P-IDs: O vs 0).
+ */
+function online_orders_ocr_confusables_for_match(string $tn): string
+{
+    if (preg_match('/^P[A-Z0-9]+$/', $tn) === 1 && str_contains($tn, 'O')) {
+        return str_replace('O', '0', $tn);
+    }
+
+    return $tn;
+}
+
+/**
+ * @return array<string, array<string, mixed>>
+ */
+function online_orders_existing_tracking_map(PDO $pdo): array
+{
+    require_once __DIR__ . '/online_order_parcels.php';
+
+    online_parcels_ensure_schema($pdo);
+    $map = [];
+
+    $st = $pdo->query(
+        'SELECT * FROM online_order_parcels WHERE tracking_number IS NOT NULL AND tracking_number != ""'
+    );
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $key = online_orders_normalize_tracking((string) $row['tracking_number']);
+        if ($key === '') {
+            continue;
+        }
+        $map[$key] = [
+            'source' => 'parcel',
+            'parcel_id' => (int) $row['id'],
+            'batch_id' => $row['csr_batch_id'] !== null ? (int) $row['csr_batch_id'] : null,
+            'recipient_name' => (string) ($row['recipient_name'] ?? ''),
+            'items' => (string) ($row['items_raw'] ?? ''),
+            'courier' => (string) ($row['courier'] ?? ''),
+            'source_pipeline' => (string) ($row['source_pipeline'] ?? ''),
+            'order_no' => $row['order_no'] !== null ? (string) $row['order_no'] : null,
+            'parcel_status' => (string) ($row['status'] ?? ''),
+            'ship_date' => $row['ship_date'] !== null ? (string) $row['ship_date'] : null,
+            'created_at' => (string) ($row['created_at'] ?? ''),
+        ];
+    }
+
+    $st = $pdo->query(
+        'SELECT l.id AS line_id, l.batch_id, l.recipient_name, l.items, l.courier, l.tracking_number,
+                l.source_pipeline, l.order_no, l.created_at, b.status AS batch_status
+         FROM csr_online_order_lines l
+         INNER JOIN csr_online_batches b ON b.id = l.batch_id
+         WHERE b.status IN ("active", "processed")
+         AND l.tracking_number IS NOT NULL AND l.tracking_number != ""'
+    );
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $key = online_orders_normalize_tracking((string) $row['tracking_number']);
+        if ($key === '' || isset($map[$key])) {
+            continue;
+        }
+        $map[$key] = [
+            'source' => 'batch_line',
+            'line_id' => (int) $row['line_id'],
+            'batch_id' => (int) $row['batch_id'],
+            'batch_status' => (string) ($row['batch_status'] ?? ''),
+            'recipient_name' => (string) ($row['recipient_name'] ?? ''),
+            'items' => (string) ($row['items'] ?? ''),
+            'courier' => (string) ($row['courier'] ?? ''),
+            'source_pipeline' => (string) ($row['source_pipeline'] ?? ''),
+            'order_no' => $row['order_no'] !== null ? (string) $row['order_no'] : null,
+            'created_at' => (string) ($row['created_at'] ?? ''),
+        ];
+    }
+
+    return $map;
+}
+
+/**
+ * @param list<array{order_no?:?string,name?:string,items:string,courier?:string,tracking_number:string}> $lines
+ * @return list<array<string, mixed>>
+ */
+function online_orders_validate_tracking_duplicates(PDO $pdo, string $pipeline, array $lines): array
+{
+    $map = online_orders_existing_tracking_map($pdo);
+    $conflicts = [];
+    $incomingSeen = [];
+
+    foreach ($lines as $line) {
+        $rawTn = trim((string) ($line['tracking_number'] ?? ''));
+        $items = trim((string) ($line['items'] ?? ''));
+        if ($rawTn === '' || $items === '') {
+            continue;
+        }
+        $key = online_orders_normalize_tracking($rawTn);
+        if ($key === '') {
+            continue;
+        }
+
+        $attempted = [
+            'recipient_name' => trim((string) ($line['name'] ?? '')),
+            'items' => $items,
+            'courier' => trim((string) ($line['courier'] ?? '')),
+            'source_pipeline' => $pipeline,
+            'order_no' => isset($line['order_no']) && $line['order_no'] !== '' && $line['order_no'] !== null
+                ? (string) $line['order_no'] : null,
+        ];
+
+        if (isset($incomingSeen[$key])) {
+            $conflicts[] = [
+                'tracking_number' => $key,
+                'tracking_raw' => $rawTn,
+                'attempted' => $attempted,
+                'existing' => array_merge($incomingSeen[$key], ['source' => 'incoming_upload']),
+            ];
+            continue;
+        }
+        $incomingSeen[$key] = $attempted;
+
+        if (isset($map[$key])) {
+            $conflicts[] = [
+                'tracking_number' => $key,
+                'tracking_raw' => $rawTn,
+                'attempted' => $attempted,
+                'existing' => $map[$key],
+            ];
+        }
+    }
+
+    return $conflicts;
+}
+
+/**
+ * @param list<array{order_no?:?string,name?:string,items:string,courier?:string,tracking_number:string}> $lines
+ */
+function online_orders_assert_no_duplicate_tracking(PDO $pdo, string $pipeline, array $lines): void
+{
+    $conflicts = online_orders_validate_tracking_duplicates($pdo, $pipeline, $lines);
+    if ($conflicts !== []) {
+        throw new OnlineOrdersDuplicateTrackingException($conflicts);
+    }
+}
+
 /**
  * @param list<array{order_no?:?string,name?:string,items:string,courier?:string,tracking_number:string}> $lines
  */
@@ -313,6 +473,8 @@ function online_orders_lines_append(
     array $lines
 ): int
 {
+    online_orders_assert_no_duplicate_tracking($pdo, $pipeline, $lines);
+
     $ins = $pdo->prepare(
         'INSERT INTO csr_online_order_lines
             (batch_id, run_id, order_no, recipient_name, items, courier, tracking_number, source_pipeline)
@@ -320,10 +482,14 @@ function online_orders_lines_append(
     );
     $count = 0;
     foreach ($lines as $line) {
-        $tn = trim((string) ($line['tracking_number'] ?? ''));
+        $rawTn = trim((string) ($line['tracking_number'] ?? ''));
         $items = trim((string) ($line['items'] ?? ''));
-        if ($tn === '' || $items === '') {
+        if ($rawTn === '' || $items === '') {
             continue;
+        }
+        $tn = online_orders_normalize_tracking($rawTn);
+        if ($tn === '') {
+            $tn = $rawTn;
         }
         $ins->execute([
             $batchId,
@@ -360,20 +526,22 @@ function online_orders_run_partner_stamp(
     $excels = waybill_stamper_resolve_stash_tokens($excelTokens, 'excel');
     $stashRelease = array_merge($pdfTokens, $excelTokens);
 
+    $parsed = online_orders_parse_ipyx_excel_paths($excels);
+    $lines = [];
+    foreach ($parsed as $row) {
+        $lines[] = [
+            'order_no' => $row['order_no'],
+            'name' => $row['name'],
+            'items' => $row['items'],
+            'courier' => $row['courier'],
+            'tracking_number' => $row['tracking_number'],
+        ];
+    }
+    online_orders_assert_no_duplicate_tracking($pdo, 'partner', $lines);
+
     $runId = online_orders_run_start($pdo, $batchId, 'partner');
     try {
         $stamp = waybill_stamper_process_uploads($pdfs, $excels);
-        $parsed = online_orders_parse_ipyx_excel_paths($excels);
-        $lines = [];
-        foreach ($parsed as $row) {
-            $lines[] = [
-                'order_no' => $row['order_no'],
-                'name' => $row['name'],
-                'items' => $row['items'],
-                'courier' => $row['courier'],
-                'tracking_number' => $row['tracking_number'],
-            ];
-        }
         $added = online_orders_lines_append($pdo, $batchId, $runId, 'partner', $lines);
         online_orders_run_complete($pdo, $runId, [
             'stamp' => [
@@ -414,22 +582,10 @@ function online_orders_run_vip_stamp(
     $runId = online_orders_run_start($pdo, $batchId, 'vip');
     try {
         $stamp = waybill_stamper_process_uploads($pdfs, $excels);
-        $parsed = online_orders_parse_ipyx_excel_paths($excels);
-        $lines = [];
-        foreach ($parsed as $row) {
-            $lines[] = [
-                'order_no' => $row['order_no'],
-                'name' => $row['name'],
-                'items' => $row['items'],
-                'courier' => $row['courier'] !== '' ? $row['courier'] : 'VIP',
-                'tracking_number' => $row['tracking_number'],
-            ];
-        }
-        $added = online_orders_lines_append($pdo, $batchId, $runId, 'vip', $lines);
-        online_orders_run_complete($pdo, $runId, ['lines_added' => $added, 'stamp_matched' => $stamp['matched']]);
+        online_orders_run_complete($pdo, $runId, ['stamp_matched' => $stamp['matched']]);
         waybill_stamper_release_stash_tokens($stashRelease);
 
-        return ['stamp' => $stamp, 'lines_added' => $added, 'run_id' => $runId];
+        return ['stamp' => $stamp, 'lines_added' => 0, 'run_id' => $runId];
     } catch (Throwable $e) {
         waybill_stamper_release_stash_tokens($stashRelease);
         $fail = $pdo->prepare('UPDATE csr_online_batch_runs SET status = ? WHERE id = ?');
@@ -532,6 +688,8 @@ function online_orders_run_shopee_resolve(PDO $pdo, int $userId, int $batchId, a
     if ($normalized === []) {
         throw new RuntimeException('No complete rows to save.');
     }
+
+    online_orders_assert_no_duplicate_tracking($pdo, 'shopee_spx', $linePayload);
 
     $runId = online_orders_run_start($pdo, $batchId, 'shopee_spx');
     $excelToken = online_orders_build_ipyx_excel_from_rows($normalized, 'Shopee SPX — Online Orders');

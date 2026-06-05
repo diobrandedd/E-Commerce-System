@@ -53,16 +53,57 @@ Use `online_orders_coord($col, $row)` → `$sheet->getCell(...)` / `setCellValue
 
 Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dark**. Extractor marks these incomplete via `items_variant` in `missing_fields`. SPA must resolve in Shopee SPX carousel (`honeyItemNeedsVariantResolution` in `app/src/app/lib/honeyItemVariant.ts`) before `run_shopee_resolve` — do not treat non-empty `items` as packer-ready.
 
+**SPA confirm + edit:** Resolutions need `confirmed: true` before export. Use `honeyItemLineText()` before any `.trim()` on item fields — API/JSON may send non-strings.
+
+**Common bug:** Calling `honeyItemNeedsVariantResolution(row)` instead of `honeyItemNeedsVariantResolution(resolution.items)` → runtime `trim is not a function` because `row` is an object.
+
+## IMS role vs SPA role (API gates)
+
+- **Session stores IMS roles:** `tl`, `staff`, `executive`, `prod_manager` — from `roles.name` at login (`includes/auth_check.php`).
+- **SPA displays normalized roles:** `api_normalize_role()` in `api/v1/_bootstrap.php` maps `tl`+CSR dept → `csr_tl`, `staff`+CSR → `csr_staff`. Route guards and Sidebar use normalized names.
+- **Trap:** API permission checks that only list `csr_tl` / `csr_staff` will **403** for real CSR users whose session still has `tl` / `staff`.
+- **Pattern:** Mirror `waybill_stamper_user_can_access()` — accept normalized names **or** `tl`/`staff` with `online_parcels_user_is_csr_dept()` / dept lookup `departments.name = 'csr'`.
+- **Fixed 2026-06-05:** `online_parcels_user_can_access()` in `includes/online_order_parcels.php`.
+
+## Partner waybill matching (iPYX Excel + Flash OCR)
+
+- **Excel scope:** iPYX partner workbook **first sheet only** (`Today's Order` daily list). Do not scan all sheets — `processor.py` and `online_orders_parse_ipyx_excel_paths()` both use sheet index 0.
+- **Stamp matching:** `waybill_stamper_process_uploads()` → `processor.py` builds `orders` dict keyed by `norm_tn()`; each PDF page TN looked up same way.
+- **Flash/Lazada P-IDs:** OCR often reads digit **0** as letter **O** (e.g. `P3623KK03MYAD` → `P3623KKO3MYAD`). Both Python `ocr_confusables_for_match()` and PHP `online_orders_ocr_confusables_for_match()` map **`O` → `0`** on `^P[A-Z0-9]+$` before compare.
+- **Normalization chain:** `online_orders_normalize_tracking()` applies OCR fix — keeps duplicate-tracking checks and Excel parse aligned with stamper.
+- **Standalone stamper:** Same `processor.py` rules apply to legacy `api/v1/waybill.php?action=process` and Online Orders Partner step.
+
+## CSR carousel “Show completed” trap
+
+`AmbiguousOrderCarousel` and `ItemResolverCarousel` require **parent-controlled** `showCompleted` + `onShowCompletedChange`. Wiring `showCompleted={false}` and `onShowCompletedChange={() => {}}` makes the checkbox appear but do nothing (VIP bug 2026-06-04).
+
+## CSR packaging stock for variant pickers
+
+- **CSR cannot** call `api/v1/honey.php?action=packaging_total_inventory` — `honey_role_can_view` excludes `csr_tl` / `csr_staff`. Use **`online_orders.php?action=packaging_stock`** instead (same snapshot, `online_orders_user_can_access` gate).
+- **Counts** = `honey_packaging_rows.current_*` where `batch_no` is set — same scope as packaging dashboard; not warehouse gallons or WIP production.
+- **2L/3L presets** display min 1L stock across combo letters — do not sum; packers are limited by the scarcest bottle in the combo.
+- **`ItemResolverCarousel` + `cn`:** Stock work once dropped `cn` import while row `className={cn(...)}` remained → Shopee extract white-screen. Keep both imports when editing carousel files.
+
 ## Online order parcels + ship deduct
 
 - **`online_order_parcels`** — created on `batch_finalize` from `csr_online_order_lines`; UNIQUE `tracking_number`; parser must pass before insert.
 - **Ship** — `api/v1/deliveries.php` `ship_parcel` requires `delivery_item_id` (photo uploaded first); uses `honey_pos_deduct_packaging_aggregate()` via `honey_parcel_apply_deduct()`; idempotent if already `shipped`.
+- **Packing photo in parcel UI** — not a column on `online_order_parcels`. Enriched at read time from `delivery_batch_items.photo_filename` (`online_parcels_find_packing_photo` / batch enrich on list). URL via `rts_storage_public_url` → `api/storage_media.php?b=deliveries_documentation`. Modal shows **Not yet packed** when null. Keep link order: `online_parcel_id` first, then tracking fallback.
+- **CSR access** — `online_parcels_user_can_access()` must accept IMS `tl`/`staff` in CSR dept, not only SPA labels `csr_tl`/`csr_staff` — see [[003_Fragile_Edges#IMS role vs SPA role (API gates)]].
 - **Parser** — `includes/honey_parcel_item_parser.php` must stay aligned with `orderRemarksParse.ts` / Shopee variant rules.
 - **Deliveries auth** — SPA uses IMS (`executive`, `prod_manager` only); legacy `api/delivery_bulk.php` still uses `app_users` submitter id via `deliveries_upload.php`.
 
 ## Honey “total inventory” scope
 
 `packaging_total_inventory` counts **`honey_packaging_rows.current_*`** where `batch_no` is non-empty. Do not sum warehouse or production for this dashboard — those stages use gallons, not per-bottle SKUs. Sales charts use `honey_sales_log`; inventory charts use packaging current columns.
+
+## Online Orders duplicate tracking
+
+- **When it runs:** Before any insert via `online_orders_lines_append()` and pre-flight in `run_partner_stamp` / `run_shopee_resolve`. VIP lines saved once at **export** (`lines_append` in `VipRunStep`); **VIP stamp does not append again** (2026-06-05 fix — previously double-saved same TN).
+- **Normalize:** Always compare via `online_orders_normalize_tracking()` — includes OCR **O→0** on Flash `P…` IDs (2026-06-05). Same helper as parcel promote (`rts_normalize_tracking_from_qr` + uppercase/strip). Phone-based VIP TNs (e.g. `+639…`) match parcel UNIQUE keys.
+- **Sources checked:** (1) `csr_online_order_lines` in non-cancelled batches, (2) `online_order_parcels`, (3) duplicate rows in the current upload payload.
+- **API:** `OnlineOrdersDuplicateTrackingException` → 409 + `data.duplicates`. Frontend must parse `e.data.duplicates`, not only `e.message`.
+- **Do not** catch `RuntimeException` before `OnlineOrdersDuplicateTrackingException` in pipeline handlers — duplicates would downgrade to 400 without structured payload.
 
 ## Online Orders stamp UX (SPA)
 

@@ -11,15 +11,24 @@
 | **Status** | `done` |
 
 ## 🚀 Active Feature / Sprint
-- **Current Focus:** Manual E2E + ops verification
-- **Latest shipped:** Inventory connection — parcels registry, deliveries SPA, ship-time honey deduct — see [[002_Memory_Bank]]
+- **Current Focus:** Manual E2E (inventory connection + CSR pipelines)
+- **Latest shipped:** Partner waybill stamp (Flash OCR + iPYX first sheet) + Online Parcels CSR TL access — see [[002_Memory_Bank]]
 
 ## 🛠️ Current Todo List
 - [ ] Manual E2E: CSR finalize batch → parcels in `packing` → prod deliveries scan/photo/ship → packaging totals drop
 - [ ] Manual E2E: parcel lookup (CSR TL/staff) and idempotent re-scan of shipped TN
+- [ ] Manual E2E: Shopee SPX confirm → review → stamp; VIP show completed + edit choice
+- [ ] Manual E2E: duplicate tracking — try same TN across pipelines; confirm modal shows existing parcel/line
+- [x] Partner Flash waybill match — OCR O→0 on P-IDs; iPYX Excel first sheet only (2026-06-05)
+- [x] Online Parcels CSR TL/staff API access — IMS `tl`/`staff` + CSR dept gate (2026-06-05)
+- [x] CSR variant picker stock indicators — Shopee + VIP; translucent scroll chevrons (2026-06-05)
+- [x] Online Parcels packing photo — Deliveries → modal; “Not yet packed” placeholder (2026-06-05)
+- [x] Online Orders duplicate tracking prevention (2026-06-05)
+- [x] Online Parcels UI + fulfillment motion/hover (2026-06-05)
 - [x] Online Orders Generator + QA (2026-06-04)
 - [x] Honey packaging total inventory dashboard
 - [x] Inventory connection implementation (2026-06-04)
+- [x] CSR variant resolution UX — confirm, show completed, edit (2026-06-04)
 
 ## ⚠️ Known Blockers / Open Bugs
 - **Ops:** Hard-refresh Apache `app/dist/` after SPA deploy.

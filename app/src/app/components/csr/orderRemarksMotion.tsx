@@ -108,13 +108,16 @@ export function VariantPresetButton({
   disabled,
   onClick,
   label,
+  stockLeft,
 }: {
   active: boolean;
   disabled?: boolean;
   onClick: () => void;
   label: string;
+  stockLeft?: number | null;
 }) {
   const reduce = useReducedMotion();
+  const hasStock = stockLeft != null;
 
   return (
     <motion.button
@@ -127,6 +130,7 @@ export function VariantPresetButton({
       transition={remarksSpring}
       className={cn(
         "flex-shrink-0 snap-start min-w-[4.5rem] px-3 py-3 rounded-xl border-2 text-center",
+        hasStock && "min-w-[5.25rem]",
         active
           ? "border-[#C8900A] bg-[#C8900A]/15 shadow-sm"
           : "border-border bg-card hover:border-[#C8900A]/60 hover:bg-[#C8900A]/5",
@@ -134,12 +138,20 @@ export function VariantPresetButton({
       )}
     >
       <motion.span
-        className="block text-lg font-bold text-[#C8900A]"
+        className={cn(
+          "block font-bold text-[#C8900A]",
+          hasStock ? "text-sm leading-tight" : "text-lg",
+        )}
         animate={active && !reduce ? { scale: [1, 1.12, 1] } : { scale: 1 }}
         transition={{ duration: 0.35 }}
       >
         {label}
       </motion.span>
+      {hasStock && (
+        <span className="block text-[10px] text-foreground/75 mt-0.5 tabular-nums leading-tight">
+          {Math.max(0, Math.floor(stockLeft)).toLocaleString()} left
+        </span>
+      )}
     </motion.button>
   );
 }
@@ -169,7 +181,12 @@ export function OrderRemarksScrollButton({
       whileHover={disabled || reduce ? undefined : { scale: 1.08 }}
       transition={remarksSpring}
       className={cn(
-        "absolute top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-card border border-border shadow flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-40",
+        "absolute top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full",
+        "bg-card/45 border border-border/60 shadow-sm backdrop-blur-[2px]",
+        "flex items-center justify-center text-muted-foreground",
+        "opacity-55 hover:opacity-95 hover:bg-card/80 hover:text-foreground",
+        "transition-opacity duration-150",
+        "disabled:opacity-30",
         side === "left" ? "left-0" : "right-0",
       )}
     >

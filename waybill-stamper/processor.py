@@ -199,13 +199,23 @@ def norm_tn(raw: str) -> str:
     """
     Normalize a tracking number for reliable comparison.
     Handles floats stored as strings (e.g. '820145046679.0' → '820145046679'),
-    strips whitespace, uppercases.
+    strips whitespace, uppercases, and fixes common OCR confusions (O/0 on Flash P-IDs).
     """
     s = str(raw).strip().upper()
     # Remove float suffix (.0) that Excel sometimes adds to numeric tracking numbers
     s = re.sub(r'\.0+$', '', s)
     # Strip all internal whitespace
     s = re.sub(r'\s+', '', s)
+    return ocr_confusables_for_match(s)
+
+
+def ocr_confusables_for_match(s: str) -> str:
+    """
+    Map OCR-prone letters to digits for waybill ↔ Excel matching.
+    Flash/Lazada marketplace parcel IDs (P…) often read letter O as digit 0.
+    """
+    if re.match(r'^P[A-Z0-9]+$', s) and 'O' in s:
+        return s.replace('O', '0')
     return s
 
 
@@ -231,10 +241,9 @@ def _is_header_row(cells: list[str]) -> tuple[bool, dict]:
 
 def parse_excel(excel_paths: list, log_fn) -> dict:
     """
-    Reads ALL sheets in ALL uploaded Excel files.
+    Reads the **first sheet only** in each uploaded Excel file (iPYX daily order sheet).
     For each sheet:
-      1. Scans every row (not just the first 10) looking for the header row
-         by checking if the row contains the expected column keywords.
+      1. Scans every row looking for the header row by column keywords.
       2. Once the header row is found, all non-empty rows below it are data.
       3. Skips blank rows and rows where the TN cell looks like a header keyword.
 
@@ -250,77 +259,77 @@ def parse_excel(excel_paths: list, log_fn) -> dict:
             log_fn(f"  [ERROR] Cannot open {Path(path).name}: {e}")
             continue
 
-        log_fn(f"\n  File: {Path(path).name}  ({len(wb.sheetnames)} sheets)")
+        log_fn(f"\n  File: {Path(path).name}  (first sheet only)")
 
-        for sheet_name in wb.sheetnames:
-            # Skip known utility / archive sheets
-            if any(skip in sheet_name.lower() for skip in SKIP_SHEETS):
-                log_fn(f"    Skipping sheet: '{sheet_name}'")
+        if not wb.sheetnames:
+            continue
+
+        sheet_name = wb.sheetnames[0]
+        log_fn(f"    Using sheet: '{sheet_name}'")
+
+        ws   = wb[sheet_name]
+        rows = list(ws.iter_rows(values_only=True))
+        if not rows:
+            continue
+
+        # ── STEP 1: Scan every row for the header ──────────────────────
+        header_idx = None
+        col_map    = {}
+
+        for r_idx, row in enumerate(rows):
+            # Lowercase all cells for case-insensitive matching
+            cells = [str(c).lower().strip() if c is not None else '' for c in row]
+            is_hdr, found = _is_header_row(cells)
+            if is_hdr:
+                header_idx = r_idx
+                col_map    = found
+                log_fn(f"    Header found at row {r_idx + 1} → cols: {col_map}")
+                break
+
+        if header_idx is None:
+            log_fn(f"    [WARN] No header row found in '{sheet_name}' — skipping")
+            continue
+
+        # ── STEP 2: Read data rows below the header ────────────────────
+        sheet_count = 0
+        for row in rows[header_idx + 1:]:
+            # Skip completely empty rows
+            if not any(row):
                 continue
 
-            ws   = wb[sheet_name]
-            rows = list(ws.iter_rows(values_only=True))
-            if not rows:
+            def gcell(key):
+                idx = col_map.get(key)
+                if idx is None or idx >= len(row):
+                    return ''
+                v = row[idx]
+                if v is None:
+                    return ''
+                # Handle floats from Excel (e.g. 820145046679.0)
+                if isinstance(v, float) and v == int(v):
+                    return str(int(v))
+                return str(v).strip()
+
+            raw_tn = gcell('tn')
+
+            # Skip rows with no TN, or where TN cell still looks like a header
+            if not raw_tn or raw_tn.lower() in TN_COL_NAMES + ['none', '']:
                 continue
 
-            # ── STEP 1: Scan every row for the header ──────────────────────
-            header_idx = None
-            col_map    = {}
-
-            for r_idx, row in enumerate(rows):
-                # Lowercase all cells for case-insensitive matching
-                cells = [str(c).lower().strip() if c is not None else '' for c in row]
-                is_hdr, found = _is_header_row(cells)
-                if is_hdr:
-                    header_idx = r_idx
-                    col_map    = found
-                    log_fn(f"    Sheet '{sheet_name}': header found at row {r_idx + 1} → cols: {col_map}")
-                    break
-
-            if header_idx is None:
-                log_fn(f"    [WARN] No header row found in '{sheet_name}' — skipping")
+            key = norm_tn(raw_tn)
+            if not key:
                 continue
 
-            # ── STEP 2: Read data rows below the header ────────────────────
-            sheet_count = 0
-            for row in rows[header_idx + 1:]:
-                # Skip completely empty rows
-                if not any(row):
-                    continue
+            orders[key] = {
+                'tn':       raw_tn,
+                'order_no': gcell('order'),
+                'name':     gcell('name'),
+                'items':    gcell('items'),
+                'note':     gcell('note'),
+                'source':   f"{Path(path).name} / {sheet_name}",
+            }
+            sheet_count += 1
 
-                def gcell(key):
-                    idx = col_map.get(key)
-                    if idx is None or idx >= len(row):
-                        return ''
-                    v = row[idx]
-                    if v is None:
-                        return ''
-                    # Handle floats from Excel (e.g. 820145046679.0)
-                    if isinstance(v, float) and v == int(v):
-                        return str(int(v))
-                    return str(v).strip()
-
-                raw_tn = gcell('tn')
-
-                # Skip rows with no TN, or where TN cell still looks like a header
-                if not raw_tn or raw_tn.lower() in TN_COL_NAMES + ['none', '']:
-                    continue
-
-                key = norm_tn(raw_tn)
-                if not key:
-                    continue
-
-                orders[key] = {
-                    'tn':       raw_tn,
-                    'order_no': gcell('order'),
-                    'name':     gcell('name'),
-                    'items':    gcell('items'),
-                    'note':     gcell('note'),
-                    'source':   f"{Path(path).name} / {sheet_name}",
-                }
-                sheet_count += 1
-
-            log_fn(f"      → {sheet_count} orders loaded from '{sheet_name}'")
+        log_fn(f"      → {sheet_count} orders loaded from '{sheet_name}'")
 
     log_fn(f"\n  Total Excel records across all files: {len(orders)}")
     return orders

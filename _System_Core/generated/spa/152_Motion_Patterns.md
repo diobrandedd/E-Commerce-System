@@ -1,6 +1,6 @@
 ---
 title: Motion Patterns
-generated: 2026-06-04T11:09:14+02:00
+generated: 2026-06-05T04:27:35+02:00
 type: spa
 ---
 
@@ -17,6 +17,22 @@ type: spa
 - `CostingDetailReveal()`
 - `CostingDetailLoading()`
 - `CostingSectionEnter()`
+
+## `app/src/app/components/csr/onlineFulfillmentMotion.tsx`
+
+- `fulfillmentHoverCard()`
+- `fulfillmentHoverRow()`
+- `fulfillmentHoverPressableOutline()`
+- `fulfillmentHoverPressablePrimary()`
+- `FulfillmentSectionEnter()`
+- `FulfillmentStepSwitch()`
+- `FulfillmentErrorBanner()`
+- `FulfillmentSuccessPanel()`
+- `FulfillmentModal()`
+- `FulfillmentPickerCard()`
+- `FulfillmentTableRow()`
+- `FulfillmentPressable()`
+- `FulfillmentPanelEnter()`
 
 ## `app/src/app/components/csr/orderRemarksMotion.tsx`
 
