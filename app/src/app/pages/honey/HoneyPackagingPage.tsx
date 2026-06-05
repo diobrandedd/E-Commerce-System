@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { HoneyVariantPieGrid, type VariantChart } from "@/app/components/honey/HoneyVariantPieGrid";
 import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
@@ -222,9 +223,9 @@ function SellModal({ row, onClose, onDone }: { row: PkRow; onClose: () => void; 
     onDone();
   };
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card rounded-xl border p-6 max-w-sm w-full" onClick={e => e.stopPropagation()}>
-        <h3 className="font-bold mb-3">Sell — {row.batch_no}</h3>
+    <AppModal open onClose={onClose} panelClassName="max-w-sm w-full" labelledBy="packaging-sell-modal-title">
+      <AppModalHeader title={`Sell — ${row.batch_no}`} titleId="packaging-sell-modal-title" onClose={onClose} />
+      <AppModalBody>
         <form onSubmit={submit} className="space-y-2 text-sm">
           {HONEY_SIZES.map(s => (
             <input key={s} type="number" step="0.01" placeholder={s} onChange={e => setSizes({ ...sizes, [s]: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
@@ -233,9 +234,9 @@ function SellModal({ row, onClose, onDone }: { row: PkRow; onClose: () => void; 
             <label><input type="radio" checked={saleType === "walk_in"} onChange={() => setSaleType("walk_in")} /> Walk-in</label>
             <label><input type="radio" checked={saleType === "parcel"} onChange={() => setSaleType("parcel")} /> Parcel</label>
           </div>
-          <button type="submit" className="w-full py-2.5 rounded-lg font-bold text-white" style={{ background: "#C8900A" }}>Confirm sale</button>
+          <button type="submit" className="w-full py-2.5 rounded-lg font-bold text-white mt-2" style={{ background: "#C8900A" }}>Confirm sale</button>
         </form>
-      </div>
-    </div>
+      </AppModalBody>
+    </AppModal>
   );
 }

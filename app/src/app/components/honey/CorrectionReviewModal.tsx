@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { apiPost, ApiError } from "@/app/lib/api";
 
 export interface RowContext {
@@ -178,14 +179,14 @@ export function CorrectionReviewModal({
     : "";
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-card rounded-xl border p-6 w-full max-w-lg my-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h3 className="font-bold mb-1">Correction request #{request.id}</h3>
-        <p className="text-xs text-muted-foreground mb-4 capitalize">
-          {request.status} · {request.stage}
-          {submittedAt ? ` · ${submittedAt}` : ""}
-        </p>
-
+    <AppModal open onClose={onClose} panelClassName="max-w-lg w-full" labelledBy="correction-review-title">
+      <AppModalHeader
+        title={`Correction request #${request.id}`}
+        subtitle={`${request.status} · ${request.stage}${submittedAt ? ` · ${submittedAt}` : ""}`}
+        titleId="correction-review-title"
+        onClose={onClose}
+      />
+      <AppModalBody>
         {ctx ? (
           <InventoryContextCard ctx={ctx} />
         ) : (
@@ -236,23 +237,33 @@ export function CorrectionReviewModal({
           )}
         </dl>
 
-        {err && <p className="text-xs text-red-600 mb-3">{err}</p>}
-        <div className="flex gap-2">
-          <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border text-sm">
-            Close
-          </button>
-          {pending && (
-            <>
-              <button type="button" disabled={busy} onClick={reject} className="flex-1 py-2 rounded-lg border text-sm text-red-600 font-semibold">
-                Reject
-              </button>
-              <button type="button" disabled={busy} onClick={approve} className="flex-1 py-2 rounded-lg text-sm font-bold text-white" style={{ background: "#C8900A" }}>
-                Approve
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+        {err && <p className="text-xs text-red-600">{err}</p>}
+      </AppModalBody>
+      <AppModalFooter>
+        <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border border-border bg-background text-sm">
+          Close
+        </button>
+        {pending && (
+          <>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void reject()}
+              className="flex-1 py-2 rounded-lg border border-border text-sm text-red-600 font-semibold"
+            >
+              Reject
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void approve()}
+              className="flex-1 py-2 rounded-lg text-sm font-bold text-primary-foreground bg-primary"
+            >
+              Approve
+            </button>
+          </>
+        )}
+      </AppModalFooter>
+    </AppModal>
   );
 }

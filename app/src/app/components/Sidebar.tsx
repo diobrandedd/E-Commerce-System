@@ -12,6 +12,8 @@ import { useCorrectionNotifications } from "@/app/components/notifications/Corre
 interface NavLinkChild {
   label: string;
   to: string;
+  /** When true, only highlight on exact path match (not child routes). */
+  end?: boolean;
 }
 
 interface NavGroupChild {
@@ -75,7 +77,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     label: "Deliveries",
     to: "/deliveries",
     children: [
-      { label: "Add deliveries", to: "/deliveries" },
+      { label: "Add deliveries", to: "/deliveries", end: true },
       { label: "Review batches", to: "/deliveries/review" },
     ],
   };
@@ -209,6 +211,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         return next;
       });
     }
+    if (location.pathname.startsWith("/deliveries")) {
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.add("Deliveries");
+        return next;
+      });
+    }
   }, [location.pathname]);
 
   const toggleGroup = (key: string) => {
@@ -301,6 +310,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                                     <NavLink
                                       key={link.to}
                                       to={link.to}
+                                      end={link.end}
                                       onClick={onClose}
                                       className={({ isActive }) =>
                                         `block px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
@@ -322,6 +332,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                           <NavLink
                             key={child.to}
                             to={child.to}
+                            end={child.end}
                             onClick={onClose}
                             className={({ isActive }) =>
                               `block px-3 py-2 rounded-lg text-xs transition-all duration-150 ${

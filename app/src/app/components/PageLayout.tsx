@@ -4,6 +4,7 @@ import { Menu, Bell } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/app/context/AuthContext";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
+import { formatEditRequestCategory, formatEditRequestField } from "@/app/lib/editRequestsApi";
 
 interface PageLayoutProps {
   title: string;
@@ -112,7 +113,11 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
                                 return;
                               }
                               setBellOpen(false);
-                              navigate("/inventory/requests");
+                              if (r.kind === "edit_request") {
+                                navigate("/inventory/requests#edit-requests-section");
+                                return;
+                              }
+                              navigate("/inventory/requests#discount-approvals-section");
                             }}
                             className="w-full text-left px-4 py-3 hover:bg-secondary/50 transition-colors"
                           >
@@ -121,6 +126,18 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
                                 <p className="text-xs font-semibold text-foreground capitalize">{r.stage}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                                   {r.summary ?? r.reason}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {r.requested_by_name} · {r.created_at}
+                                </p>
+                              </>
+                            ) : r.kind === "edit_request" ? (
+                              <>
+                                <p className="text-xs font-semibold text-foreground">
+                                  Edit request · {formatEditRequestCategory(r.table_name)}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {formatEditRequestField(r.table_name, r.field_name)} · {r.reason}
                                 </p>
                                 <p className="text-[10px] text-muted-foreground mt-1">
                                   {r.requested_by_name} · {r.created_at}

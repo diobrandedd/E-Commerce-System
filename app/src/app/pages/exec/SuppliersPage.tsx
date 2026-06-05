@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Plus, Search, Edit2, Loader2, Camera, Eye, ChevronDown, ChevronRight } from "lucide-react";
+import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { SupplierProfileModal } from "@/app/components/suppliers/SupplierProfileModal";
 import { SupplierHoneyPricesInline } from "@/app/components/suppliers/SupplierHoneyPricesInline";
@@ -275,9 +276,9 @@ function SupplierFormModal({
   const inputCls = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background outline-none focus:border-[#C8900A]";
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-card rounded-xl border p-6 w-full max-w-lg my-8" onClick={e => e.stopPropagation()}>
-        <h3 className="font-bold text-lg mb-4">{initial ? "Edit supplier" : "Add supplier"}</h3>
+    <AppModal open onClose={onClose} panelClassName="max-w-lg w-full" labelledBy="supplier-form-modal-title">
+      <AppModalHeader title={initial ? "Edit supplier" : "Add supplier"} titleId="supplier-form-modal-title" onClose={onClose} />
+      <AppModalBody>
         <form onSubmit={submit} className="space-y-3">
           {err && <p className="text-xs text-red-600">{err}</p>}
           <div className="grid grid-cols-2 gap-3">
@@ -337,7 +338,7 @@ function SupplierFormModal({
             {busy ? "Saving…" : initial ? "Update" : "Create supplier"}
           </button>
         </form>
-      </div>
-    </div>
+      </AppModalBody>
+    </AppModal>
   );
 }

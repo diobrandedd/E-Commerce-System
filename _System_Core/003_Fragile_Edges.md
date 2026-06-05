@@ -25,6 +25,25 @@ Every include of `includes/db.php` also loads `includes/forwarding.php` and may 
 
 `honey_inventory.php` ↔ `honey_pricing.php` is broken with lazy load via `honey_inventory_pricing()`. Do not add top-level cross-requires between these files.
 
+## SPA photo uploads (mobile camera)
+
+Full-resolution phone photos (multi‑MB) uploaded on a **Confirm** button are the #1 perceived latency bug in warehouse flows.
+
+- **Always** compress client-side before POST (`compressDeliveryPhoto.ts` — 1280px / JPEG 0.82).
+- **Upload at capture**, not on Done — see [[005_SPA_UX_Patterns#Photo upload performance (SPA + API)]].
+- **`deliveries_upload.php`:** when `client_hint` is set (scan already gave tracking), do not `file_get_contents` the tmp file — classify from hint only.
+- Chaining `upload` → `refreshBatch` → `ship` → `refreshBatch` on one tap multiplies wait — use response `batch_item_count` instead of extra GETs.
+
+## Deliveries delete vs parcel ship state
+
+**Two tables, one workflow:** `delivery_batch_items` (packing photo) and `online_order_parcels` (CSR parcel, `packing` → `shipped` on `ship_parcel`).
+
+- Deleting only the **delivery row** without reverting parcel left **`shipped`** + deducted stock — rescan showed *"already shipped"*.
+- **Now:** `deliveries_delete_item_by_id()` reverts ship + `honey_parcel_revert_deduct()` when **no** active delivery photos remain for that parcel/tracking.
+- **Orphan repair:** `parcel_by_tracking` calls `deliveries_repair_orphaned_shipped_parcel()` — `shipped` with zero photos → auto `packing` (fixes rows deleted before this fix).
+- **Do not** delete `delivery_batch_items` without considering `online_parcel_deduct_lines` if the parcel was shipped.
+- If **other** delivery photos still exist for same tracking, delete does **not** unship.
+
 ## Runtime schema probes
 
 Code adapts SQL when columns are missing. Changing schema without updating probes causes silent behavior changes:
@@ -57,6 +76,15 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 
 **Common bug:** Calling `honeyItemNeedsVariantResolution(row)` instead of `honeyItemNeedsVariantResolution(resolution.items)` → runtime `trim is not a function` because `row` is an object.
 
+## Shopee SPX packing list `product_info`
+
+- **Format:** Shopee export `Packing List.Standard Local_*.xlsx` — sheet 0, columns **`tracking_number`**, **`product_info`**, **`order_sn`** (not the same layout as partner iPYX).
+- **Import API:** `online_orders.php?action=spx_import_packing_list` — stash packing list as `excel` token + optional PDF tokens for **names only** (items stay from Excel).
+- **Auto-resolve:** `1LITER-Light|Amber|Dark` in `Variation Name` → packer line `1 Liter Honey …` — do not send to carousel.
+- **B2T1 trap:** `Light & Amber & Dark,350ml` → line `3L-HONEY (LAD) + 350ml`. **`LAD` alone must not mark row complete** — free 350ml still needs `(L|A|D)` suffix. PHP: `shopee_spx_items_need_variant_resolution()`; SPA: `honeyItemNeedsVariantResolution()` + `shopeePresetToResolvedItemsLine()` on confirm.
+- **Master Excel:** `order_sn` → `order_no` through `run_shopee_resolve` → column B **Order No.**; PDF name → column C **Name**. PDF-only Shopee path still leaves Order No. blank.
+- **Tracking match for names:** `shopee_spx_merge_pdf_names()` uses `online_orders_normalize_tracking()` — same chain as duplicate checks / partner stamp.
+
 ## IMS role vs SPA role (API gates)
 
 - **Session stores IMS roles:** `tl`, `staff`, `executive`, `prod_manager` — from `roles.name` at login (`includes/auth_check.php`).
@@ -88,9 +116,10 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 
 - **`online_order_parcels`** — created on `batch_finalize` from `csr_online_order_lines`; UNIQUE `tracking_number`; parser must pass before insert.
 - **Ship** — `api/v1/deliveries.php` `ship_parcel` requires `delivery_item_id` (photo uploaded first); uses `honey_pos_deduct_packaging_aggregate()` via `honey_parcel_apply_deduct()`; idempotent if already `shipped`.
+- **Nested transactions trap:** `online_parcels_ship()` wraps ship + deduct in one transaction. `honey_parcel_apply_deduct()` must use **`$ownsTransaction = !$pdo->inTransaction()`** (same as `honey_pos_checkout`) — inner `commit()` otherwise ends the outer transaction and `ship_parcel` fails with **“There is no active transaction”**.
 - **Packing photo in parcel UI** — not a column on `online_order_parcels`. Enriched at read time from `delivery_batch_items.photo_filename` (`online_parcels_find_packing_photo` / batch enrich on list). URL via `rts_storage_public_url` → `api/storage_media.php?b=deliveries_documentation`. Modal shows **Not yet packed** when null. Keep link order: `online_parcel_id` first, then tracking fallback.
 - **CSR access** — `online_parcels_user_can_access()` must accept IMS `tl`/`staff` in CSR dept, not only SPA labels `csr_tl`/`csr_staff` — see [[003_Fragile_Edges#IMS role vs SPA role (API gates)]].
-- **Parser** — `includes/honey_parcel_item_parser.php` must stay aligned with `orderRemarksParse.ts` / Shopee variant rules.
+- **Parser** — `includes/honey_parcel_item_parser.php` must stay aligned with `orderRemarksParse.ts` / Shopee variant rules. **Semicolon/`+` split** per segment — do not apply one honey variant/qty to the whole line when Paragis/Cacao/etc. precede honey. Non-honey → `other_items` only (no deduct).
 - **Deliveries auth** — SPA uses IMS (`executive`, `prod_manager` only); legacy `api/delivery_bulk.php` still uses `app_users` submitter id via `deliveries_upload.php`.
 
 ## Honey “total inventory” scope

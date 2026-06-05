@@ -16,7 +16,7 @@ Before adding or changing React UI:
 
 - **Colors:** use Tailwind semantic tokens (`bg-background`, `bg-primary`, `text-muted-foreground`) — not random hex in new code
 - **Exec/inventory/CSR pages:** wrap in `PageLayout` unless POS full-screen
-- **Modals:** reuse `FulfillmentModal`, honey `*Modal`, costing `ModalShell`, or `ui/dialog` — not new one-off overlays
+- **Modals:** always use `AppModal` (+ Header/Body/Footer) from `components/AppModal.tsx`; see `.cursor/rules/app-modal.mdc`. `FulfillmentModal` is an alias. POS uses `POSModal`. Never new inline `fixed inset-0` dialogs.
 - **Motion:** import from `motion/react`; always use `useReducedMotion()` and disable animation when true
 - **Feedback animations:** every new feature gets toast/banner/step motion on success and error — use `onlineFulfillmentMotion.tsx` (CSR/fulfillment) or `orderRemarksMotion.tsx` / `posMotion.tsx` by domain
 - **Hover affordance:** clickable rows, cards, and buttons must show highlight + drop shadow on hover — use `FulfillmentTableRow`, `FulfillmentPickerCard`, `FulfillmentPressable`, or exported `fulfillmentHover*` classes

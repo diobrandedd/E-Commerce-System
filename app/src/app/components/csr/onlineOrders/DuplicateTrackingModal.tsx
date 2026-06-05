@@ -76,7 +76,7 @@ export function DuplicateTrackingModal({
       labelledBy="duplicate-tracking-title"
       panelClassName="max-w-2xl"
     >
-      <div className="bg-card rounded-xl border border-border shadow-xl max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="max-h-[85vh] flex flex-col overflow-hidden">
         <div className="px-6 pt-6 pb-4 border-b border-border">
           <h2 id="duplicate-tracking-title" className="text-lg font-semibold text-foreground">
             Tracking number already exists

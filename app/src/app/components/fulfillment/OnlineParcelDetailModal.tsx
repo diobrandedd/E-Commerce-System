@@ -50,7 +50,7 @@ export function OnlineParcelDetailModal({
       panelClassName="max-w-lg"
     >
       {parcel && (
-        <div className="bg-card rounded-xl border shadow-xl overflow-hidden">
+        <div className="overflow-hidden">
           <div className="px-6 pt-6 pb-4 border-b border-border">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -108,11 +108,25 @@ export function OnlineParcelDetailModal({
 
             {parcel.items_parsed?.deltas && parcel.items_parsed.deltas.length > 0 && (
               <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-4 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Parsed for inventory</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Parsed for inventory (honey)</p>
                 <ul className="text-sm text-amber-950 space-y-1">
                   {parcel.items_parsed.deltas.map((d, i) => (
                     <li key={i}>
                       {d.qty}× {d.variant} {d.size}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {parcel.items_parsed?.other_items && parcel.items_parsed.other_items.length > 0 && (
+              <div className="rounded-lg border border-sky-200 bg-sky-50/80 p-4 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-sky-900">Other products (noted)</p>
+                <p className="text-[10px] text-sky-800/80">Inventory tracking for these items is coming later.</p>
+                <ul className="text-sm text-sky-950 space-y-1">
+                  {parcel.items_parsed.other_items.map((o, i) => (
+                    <li key={i}>
+                      {o.qty}× {o.label}
                     </li>
                   ))}
                 </ul>

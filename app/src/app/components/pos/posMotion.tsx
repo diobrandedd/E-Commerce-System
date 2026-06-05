@@ -46,7 +46,7 @@ export function POSModal({
           <motion.button
             type="button"
             aria-label="Close"
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -56,7 +56,10 @@ export function POSModal({
           <motion.div
             role="dialog"
             aria-modal="true"
-            className={cn("relative w-full max-w-md", panelClassName)}
+            className={cn(
+              "relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-2xl ring-1 ring-black/5",
+              panelClassName,
+            )}
             initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 12 }}

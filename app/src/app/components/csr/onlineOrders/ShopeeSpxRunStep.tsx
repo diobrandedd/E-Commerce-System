@@ -6,7 +6,11 @@ import { FulfillmentErrorBanner, FulfillmentSectionEnter } from "@/app/component
 import { ItemResolverCarousel, type ShopeeRowResolution } from "@/app/components/csr/onlineOrders/ItemResolverCarousel";
 import { ShopeeItemsReviewPanel } from "@/app/components/csr/onlineOrders/ShopeeItemsReviewPanel";
 import { OrderRemarksToast } from "@/app/components/csr/orderRemarksMotion";
-import { onlineOrdersRunShopeeResolve, onlineOrdersRunShopeeStamp } from "@/app/lib/onlineOrdersApi";
+import {
+  onlineOrdersRunShopeeResolve,
+  onlineOrdersRunShopeeStamp,
+  onlineOrdersSpxImportPackingList,
+} from "@/app/lib/onlineOrdersApi";
 import { extractPdfToExcel, pdfToExcelUploadTooLarge } from "@/app/lib/pdfToExcelApi";
 import { waybillUploadTooLarge } from "@/app/lib/waybillApi";
 import { useDuplicateTrackingHandler } from "@/app/lib/useDuplicateTrackingHandler";
@@ -15,9 +19,9 @@ import type { PartnerStampResult } from "@/app/lib/onlineOrdersTypes";
 import { shopeeFinalItemsForRow, shopeeRowIsReadyForExport } from "@/app/lib/honeyItemVariant";
 import type { PdfToExcelRow } from "@/app/lib/pdfToExcelApi";
 
-async function stashWaybillPdf(file: File): Promise<string> {
+async function stashWaybillFile(file: File, kind: "pdf" | "excel"): Promise<string> {
   const form = new FormData();
-  form.append("kind", "pdf");
+  form.append("kind", kind);
   form.append("file", file);
   form.append("action", "stash");
   const csrf = getCsrfToken();
@@ -26,6 +30,7 @@ async function stashWaybillPdf(file: File): Promise<string> {
   return data.token;
 }
 
+type ImportMode = "pdf_only" | "packing_list";
 type Phase = "extract" | "resolve" | "review" | "stamp";
 
 export function ShopeeSpxRunStep({
@@ -38,7 +43,9 @@ export function ShopeeSpxRunStep({
   onBack: () => void;
 }) {
   const [phase, setPhase] = useState<Phase>("extract");
+  const [importMode, setImportMode] = useState<ImportMode>("pdf_only");
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
+  const [packingListFile, setPackingListFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const {
     duplicateConflicts,
@@ -70,20 +77,36 @@ export function ShopeeSpxRunStep({
       return;
     }
     try {
-      const job = await extractPdfToExcel(pdfFiles);
-      const flat: PdfToExcelRow[] = [];
-      for (const file of job.files) {
-        for (const row of file.rows) flat.push(row);
+      if (importMode === "packing_list") {
+        if (!packingListFile) {
+          setError("Upload the Shopee packing list Excel.");
+          setBusy(false);
+          return;
+        }
+        const excelToken = await stashWaybillFile(packingListFile, "excel");
+        const pdfTokens: string[] = [];
+        for (const f of pdfFiles) {
+          pdfTokens.push(await stashWaybillFile(f, "pdf"));
+        }
+        const res = await onlineOrdersSpxImportPackingList(excelToken, pdfTokens);
+        setRows(res.rows);
+        setToast("Packing list imported — pick variant where needed, then confirm each line");
+      } else {
+        const job = await extractPdfToExcel(pdfFiles);
+        const flat: PdfToExcelRow[] = [];
+        for (const file of job.files) {
+          for (const row of file.rows) flat.push(row);
+        }
+        setRows(flat);
+        setToast("PDF extracted — pick variant, then confirm each line");
       }
-      setRows(flat);
       setResolutions({});
       setShowCompleted(false);
       setEditFocusPage(null);
       setPhase("resolve");
-      setToast("PDF extracted — pick variant, then confirm each line");
       window.setTimeout(() => setToast(null), 2800);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Extraction failed.");
+      setError(e instanceof ApiError ? e.message : "Import failed.");
     } finally {
       setBusy(false);
     }
@@ -104,6 +127,7 @@ export function ShopeeSpxRunStep({
         .map(r => ({
           page: r.page,
           tracking: r.tracking,
+          order_no: r.order_no?.trim() || null,
           name: r.name,
           items: shopeeFinalItemsForRow(r, resolutions[r.page]),
           courier: r.courier || "SPX",
@@ -134,7 +158,7 @@ export function ShopeeSpxRunStep({
     try {
       const wbPdfTokens: string[] = [];
       for (const f of pdfFiles) {
-        wbPdfTokens.push(await stashWaybillPdf(f));
+        wbPdfTokens.push(await stashWaybillFile(f, "pdf"));
       }
       const res = await onlineOrdersRunShopeeStamp(batchId, wbPdfTokens, excelToken);
       onStampSuccess(res);
@@ -166,11 +190,50 @@ export function ShopeeSpxRunStep({
       {phase === "extract" && (
         <>
           <p className="text-sm text-muted-foreground">
-            Shopee SPX (ours): upload waybill PDF only — we build the iPYX Excel, then you confirm each item.
+            Shopee SPX (ours): build the iPYX Excel from waybill PDFs, or from Shopee&apos;s packing list Excel
+            plus PDFs for names and stamping.
           </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setImportMode("pdf_only")}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg border ${
+                importMode === "pdf_only"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground"
+              }`}
+            >
+              PDF only
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setImportMode("packing_list")}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg border ${
+                importMode === "packing_list"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground"
+              }`}
+            >
+              Packing list Excel + PDF
+            </button>
+          </div>
+          {importMode === "packing_list" && (
+            <FileZone
+              label="Shopee packing list Excel"
+              hint="Packing List.Standard Local *.xlsx"
+              accept=".xlsx,.xls"
+              icon={FileText}
+              files={packingListFile ? [packingListFile] : []}
+              onFiles={files => setPackingListFile(files[0] ?? null)}
+              disabled={busy}
+              multiple={false}
+            />
+          )}
           <FileZone
             label="Shopee waybill PDFs"
-            hint="PDF labels only"
+            hint={importMode === "packing_list" ? "For customer names + stamp step" : "PDF labels only"}
             accept=".pdf"
             icon={FileText}
             files={pdfFiles}
@@ -179,12 +242,16 @@ export function ShopeeSpxRunStep({
           />
           <button
             type="button"
-            disabled={busy || pdfFiles.length === 0}
+            disabled={
+              busy ||
+              pdfFiles.length === 0 ||
+              (importMode === "packing_list" && !packingListFile)
+            }
             onClick={() => void runExtract()}
             className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
           >
             {busy ? <Loader2 size={16} className="animate-spin" /> : null}
-            Extract from PDF
+            {importMode === "packing_list" ? "Import packing list" : "Extract from PDF"}
           </button>
         </>
       )}

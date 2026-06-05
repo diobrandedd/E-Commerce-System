@@ -10,26 +10,65 @@
 4. **Hover on interactive UI** — clickable cards, table rows, and buttons get visible highlight + drop shadow on hover (see [[#Feedback animations & hover (mandatory)]]).
 5. **Exec/inventory/CSR pages** → wrap in `PageLayout`. **POS** → use `posMotion` kit only.
 
-## Modal patterns — pick one
+## Modal patterns — `AppModal` is the standard
 
-| Context | Use | File |
-|---------|-----|------|
-| **POS checkout / add item** | `POSModal` | `components/pos/posMotion.tsx` |
-| **Costing CRUD** | `ModalShell` + `ModalFooter` + `Field` + `Banner` | inline in `pages/exec/CostingPage.tsx` |
-| **Honey corrections review** | `CorrectionReviewModal` | `components/honey/CorrectionReviewModal.tsx` |
-| **Honey executive row edit** | `ExecutiveRowEditModal` | `components/honey/ExecutiveRowEditModal.tsx` |
-| **Online Orders duplicate TN** | `DuplicateTrackingModal` | `components/csr/onlineOrders/DuplicateTrackingModal.tsx` |
-| **Online parcel detail** | `OnlineParcelDetailModal` | `components/fulfillment/OnlineParcelDetailModal.tsx` |
-| **Online Orders / Parcels motion shell** | `FulfillmentModal` | `components/csr/onlineFulfillmentMotion.tsx` |
-| **Supplier profile** | `SupplierProfileModal` | `components/suppliers/SupplierProfileModal.tsx` |
-| **Generic / future exec forms** | Radix `Dialog` from `components/ui/dialog` OR copy `ModalShell` pattern | — |
-| **Avoid for new code** | One-off inline `fixed inset-0` modals | legacy: `InventoryRequestsPage` `NewRequestModal` — use `FulfillmentModal` for CSR/fulfillment instead |
+**All new center modals** use `AppModal` + `AppModalHeader` / `AppModalBody` / `AppModalFooter` from `components/AppModal.tsx`.
 
-`POSModal` includes animated backdrop, `role="dialog"`, scale/spring entrance, click-outside close.
+| Piece | Role |
+|-------|------|
+| `AppModal` | Backdrop `bg-black/50 backdrop-blur-[2px]` + card panel `rounded-2xl shadow-2xl ring-1 ring-black/5`; spring entrance; `useReducedMotion()` |
+| `AppModalHeader` | Title (`h2`), optional subtitle, close button |
+| `AppModalBody` | Scrollable content (`flex-1 overflow-y-auto`) |
+| `AppModalFooter` | Actions row with top border + muted bg |
 
-`ModalShell` (costing) is static (no motion) but matches card styling — good for data-heavy forms.
+### Canonical recipe
 
-When adding a **new** modal in honey/exec/inventory, prefer extracting a named component (like existing honey modals) over inline JSX.
+```tsx
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
+
+<AppModal open={open} onClose={onClose} panelClassName="max-w-md w-full" labelledBy="my-modal-title">
+  <AppModalHeader title="Title" titleId="my-modal-title" onClose={onClose} />
+  <AppModalBody>{/* form / content */}</AppModalBody>
+  <AppModalFooter className="justify-end">{/* Cancel / Save */}</AppModalFooter>
+</AppModal>
+```
+
+**Never** add new inline `fixed inset-0` overlays for dialogs. Page-local `ModalShell` helpers should be thin wrappers around `AppModal` (see `CostingPage`).
+
+### Domain-specific shells (built on `AppModal`)
+
+| Context | Component | File |
+|---------|-----------|------|
+| **Default / exec / honey / inventory / deliveries** | `AppModal` (+ layout parts) | `components/AppModal.tsx` |
+| **CSR / fulfillment (alias)** | `FulfillmentModal` (= `AppModal`) | `components/csr/onlineFulfillmentMotion.tsx` |
+| **POS checkout / add item** | `POSModal` (same backdrop + panel tokens) | `components/pos/posMotion.tsx` |
+| **Radix confirm / alert** | `AlertDialog` / `Dialog` — already aligned backdrop + panel | `components/ui/*.tsx` |
+| **Side panel** | `BatchTraceabilityDrawer`, `Sheet`, `Drawer` — not center modals | — |
+
+Named feature modals (`CorrectionReviewModal`, `DeliveryReviewEditModal`, `SupplierProfileModal`, etc.) compose `AppModal` internally — copy one when adding a new feature modal.
+
+### Exceptions (not center modals)
+
+- **POS receipt overlay** — `pointer-events-none` full-screen flash (`POSReceiptView`)
+- **Saving spinner** — lightweight `fixed inset-0` without card (e.g. Deliveries ship busy state)
+- **Mobile sidebar scrim** — `Sidebar.tsx`
+
+## Sidebar navigation — sibling routes
+
+When a nav group has a **parent path** and **child paths that extend it** (e.g. `/deliveries` + `/deliveries/review`), React Router `NavLink` **prefix-matches** by default — both links look active on the longer path.
+
+**Rule:** Set `end: true` on the shorter/exact-only link in `Sidebar.tsx` `NavLinkChild`:
+
+```tsx
+{ label: "Add deliveries", to: "/deliveries", end: true },
+{ label: "Review batches", to: "/deliveries/review" },
+```
+
+Pass through to `NavLink`: `end={child.end}` (undefined = default prefix match, fine for leaf routes).
+
+**Also:** Auto-expand the parent group when `pathname.startsWith(parentPrefix)` so nested pages stay visible without manual toggle.
+
+**Apply this pattern** whenever adding sibling routes under one prefix (Deliveries today; check Honey/CSR groups if similar bugs appear).
 
 ## Toast & transient feedback
 
@@ -95,6 +134,32 @@ Springs used consistently: stiffness 400–520, damping 30–34. Page enters oft
 | VIP remarks | `AmbiguousOrderCarousel` | `VipRunStep.tsx` |
 | Shopee SPX | `ItemResolverCarousel` | `ShopeeSpxRunStep.tsx` |
 | Standalone remarks | `AmbiguousOrderCarousel` | `OrderRemarksPage.tsx` |
+
+### Shopee SPX packing list import
+
+**When:** CSR has Shopee’s **`Packing List.Standard Local_*.xlsx`** (has `order_sn`, tracking, `product_info`) plus waybill PDFs (buyer **name** only on PDF).
+
+**Extract step modes (`ShopeeSpxRunStep`):**
+
+| Mode | Upload | Button |
+|------|--------|--------|
+| PDF only | Waybill PDFs | Extract from PDF |
+| Packing list + PDF | `.xlsx` + waybill PDFs | Import packing list |
+
+**Data merge:**
+
+| Master column | Source |
+|---------------|--------|
+| Order No. | Packing list `order_sn` → `order_no` |
+| Name | PDF extract, matched by tracking |
+| Item/s | `product_info` parser (+ variant carousel if needed) |
+| Courier / Tracking | Packing list |
+
+**B2T1 UX:** Carousel title **“Pick Light / Amber / Dark for free 350ml”**; confirm merges into `3L-HONEY (LAD) + 350ml (L)` not bare `Light 350ml`.
+
+**API:** `onlineOrdersSpxImportPackingList(excelToken, pdfTokens)` → same resolve/review/stamp phases as PDF-only.
+
+**Helpers:** `shopeePresetToResolvedItemsLine`, `variantPickTitle` in `honeyItemVariant.ts`.
 
 **Readiness helpers:** `isRowFullyResolved` (VIP, `orderRemarksParse.ts`) · `shopeeRowIsReadyForExport` / `shopeeFinalItemsForRow` (Shopee, `honeyItemVariant.ts`).
 
@@ -170,6 +235,105 @@ Springs used consistently: stiffness 400–520, damping 30–34. Page enters oft
 **Backend helpers:** `online_parcels_find_packing_photo`, `online_parcels_enrich_packing_photo`, `online_parcels_enrich_packing_photos_batch` in `includes/online_order_parcels.php`.
 
 **Do not** duplicate photo storage on the parcel row — single source of truth is deliveries documentation bucket.
+
+## Photo upload performance (SPA + API)
+
+> **Mandatory for camera captures** (Deliveries packing photos, supplier ID photos, any mobile `capture="environment"` flow).
+
+### The problem pattern
+
+Uploading **full phone resolution** on a final **Confirm** button causes multi-second waits: large multipart body + sequential POST → GET refresh → second POST chains feel broken on warehouse Wi‑Fi.
+
+### Standard recipe (copy Deliveries)
+
+| Layer | Rule |
+|-------|------|
+| **Client compress** | `compressDeliveryPhoto()` — max edge **1280px**, JPEG **~0.82**; skip if already <500 KB JPEG (`app/src/app/lib/compressDeliveryPhoto.ts`) |
+| **Eager upload** | Start `upload_photo` (or domain equivalent) **when file is selected/captured**, while user still reviews — not on Done/Save |
+| **Confirm step** | Final button only runs **remaining mutation** (e.g. `ship_parcel`); `await` in-flight upload promise if user taps early |
+| **Counts / tallies** | Use fields returned by upload API (`batch_item_count`) — **no** extra `refreshBatch` GET after each save |
+| **Stale uploads** | Generation counter (`uploadGenRef`) — retake/cancel bumps gen so late responses are ignored |
+| **Server hint path** | When client already sent metadata (`client_hint`, tracking, IDs), PHP must **not** `file_get_contents` the image for QR/OCR |
+
+### Deliveries reference implementation
+
+- **File:** `DeliveriesPage.tsx` — `startEagerUpload`, `ensurePhotoUploaded`, `photoUploadState` (`compressing` \| `uploading` \| `ready` \| `error`)
+- **API:** `deliveriesUploadPhoto` returns `batch_item_count`; `deliveries_upload.php` hint-only classify path
+
+### AI checklist (before shipping new photo flows)
+
+1. Is upload deferred until confirm? → **Move earlier** + compress.
+2. Does confirm trigger upload **and** ship **and** list refresh? → **Drop redundant GETs**; split so confirm does one job.
+3. Does PHP re-decode image when hint exists? → **Skip binary read**.
+4. Reuse `compressDeliveryPhoto` or same constants — do not invent per-page compression.
+
+### Deliveries (prod_manager)
+
+**Who:** **`prod_manager`** and **`executive`** only — CSR does not see Deliveries in sidebar.
+
+**Routes:** `/deliveries` (scan label → take packing photo → ship) · `/deliveries/review` (batch review / edit requests / executive delete).
+
+**Sidebar:** **Add deliveries** uses `end: true` — see [[#Sidebar navigation — sibling routes]].
+
+**Standard flow:**
+
+1. CSR finalizes Online Orders batch → parcels appear as `packing`.
+2. PM opens **Deliveries** → pick business date → **Add deliveries** → scan QR or type tracking.
+3. Upload/take **photo** (required before Done / Scan next) — **compresses + uploads in background** on capture; retake cancels in-flight upload via `uploadGenRef`.
+4. **Done / Scan next** → `ship_parcel` only (photo usually already saved); packaging stock deduct; parcel → `shipped`.
+5. CSR / prod view **Online parcels** detail — packing photo from deliveries enrich.
+
+**Add deliveries feedback (fulfillment motion):**
+
+| Action | Component |
+|--------|-----------|
+| Scan next (keep batch open) | `FulfillmentToast` bottom pill |
+| Done (parcel shipped) | `FulfillmentSuccessPanel` green state |
+| Step changes (idle → preview → success) | `FulfillmentStepSwitch` |
+| Errors | `FulfillmentErrorBanner` |
+| CTAs | `FulfillmentPressable` |
+
+**Do not** add custom `fixed inset-0` success overlays on Deliveries — reuse `onlineFulfillmentMotion.tsx` (same kit as Online Orders / Online Parcels).
+
+**Review batches UX:**
+
+- Table stays **compact** (thumbnail, tracking, status, actions).
+- **View** → `AppModal` with full detail: tracking, recipient, items, order no., courier, parcel status, packing photo.
+- API `review_list` returns `photo_url` + optional `parcel` via `deliveries_enrich_review_rows()`.
+- PM submits **edit/delete requests** on **Requests → Edit requests** (see [[#Requests hub (unified approvals)]]); executive **hard-deletes** mistaken rows (`delete_item`) or approves PM delete requests — last photo delete **reverts ship** + restores packaging stock.
+
+**Duplicate scan:** `DeliveryDuplicateScanModal` when tracking already recorded for the date.
+
+**Photo perf:** See [[#Photo upload performance (SPA + API)]] — `compressDeliveryPhoto.ts` + eager upload; do not regress to upload-on-Done or full-size camera files.
+
+**Login default:** PM lands on `/dashboard` — Deliveries is in sidebar (truck icon), not the home route.
+
+## Requests hub (unified approvals)
+
+**Route:** `/inventory/requests` · Sidebar label **Requests** (executive, prod_manager, hr).
+
+**Not** inventory-only — use **sectioned tables** so new approval types plug in without new nav items.
+
+| Section | API | Who acts |
+|---------|-----|----------|
+| **Inventory corrections** | `honey.php` `correction_list` | Exec reviews in `CorrectionReviewModal`; PM submits |
+| **Edit requests** | `edit_requests.php` `list` / `approve` / `reject` | Exec approves inline; PM/TL/staff submit (`delivery_batch_items`, `stock_entries`, …) |
+| **POS discount approvals** | `pos_discounts.php` `list` | Exec only |
+
+### Edit requests section
+
+- **Component:** `EditRequestsSection.tsx` — shared by Requests hub + standalone `/edit-requests` (TL/staff).
+- **Categories:** `formatEditRequestCategory()` — **Deliveries** (`delivery_batch_items`), **Inventory**, **Products**.
+- **Deliveries review:** PM delete/tracking fix → `submitEditRequest` → executive sees **Deliveries** row on **Requests → Edit requests**.
+- **Deep links:** `#edit-requests-section`, `#inventory-corrections-section`, `#discount-approvals-section`.
+- **Redirects:** executive + prod_manager hitting `/edit-requests` → `/inventory/requests#edit-requests-section`.
+- **Notifications:** exec bell includes pending `edit_requests` (with corrections + discounts).
+
+### AI rules for new request types
+
+1. Add a **section** on Requests hub (or row category in `EditRequestsSection`) — avoid new sidebar pages.
+2. Backend: prefer `edit_requests` table + `ER_ALLOWED_TABLES` + apply handler pattern when exec must approve.
+3. Include pending count in `CorrectionNotificationsContext` if exec must act promptly.
 
 ## Feedback animations & hover (mandatory)
 

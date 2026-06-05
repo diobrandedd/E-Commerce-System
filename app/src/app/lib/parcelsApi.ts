@@ -12,7 +12,10 @@ export interface OnlineParcel {
   csr_batch_id: number | null;
   tracking_number: string;
   items_raw: string;
-  items_parsed: { deltas?: { variant: string; size: string; qty: number }[] } | null;
+  items_parsed: {
+    deltas?: { variant: string; size: string; qty: number }[];
+    other_items?: { label: string; qty: number; raw?: string }[];
+  } | null;
   recipient_name: string;
   courier: string;
   order_no: string | null;
@@ -44,6 +47,7 @@ export async function parcelsGetByTracking(tracking: string): Promise<OnlineParc
 
 export async function parcelsParsePreview(items: string): Promise<{
   deltas: { variant: string; size: string; qty: number }[];
+  other_items: { label: string; qty: number; raw: string }[];
   errors: string[];
 }> {
   return apiPost("parcels.php", "parse_preview", { items });

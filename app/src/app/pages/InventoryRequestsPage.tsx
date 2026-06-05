@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { CheckCircle2, Loader2, Plus, XCircle } from "lucide-react";
+import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { CorrectionReviewModal, type CorrectionRequestDetail } from "@/app/components/honey/CorrectionReviewModal";
+import { EditRequestsSection } from "@/app/components/requests/EditRequestsSection";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
 import { useAuth } from "@/app/context/AuthContext";
@@ -127,6 +129,15 @@ export function InventoryRequestsPage() {
   }, [refresh]);
   useLiveRefresh(refresh);
 
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (!hash) return;
+    const el = document.getElementById(hash);
+    if (el) {
+      window.requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  }, []);
+
   const markViewedOnce = useCallback(
     async (id: number) => {
       if (!isExec || markedViewedRef.current.has(id)) return;
@@ -221,10 +232,14 @@ export function InventoryRequestsPage() {
 
   const colSpan = isExec && !readonly ? 6 : 5;
 
+  const showEditRequests = isExec || isPm;
+
   const pageTitle = "Requests";
   const pageSubtitle = isExec
-    ? "Inventory correction requests and pending POS discount approvals"
-    : "Inventory correction requests you have submitted";
+    ? "Review inventory corrections, edit requests (deliveries + more), and POS discount approvals"
+    : isPm
+      ? "Inventory corrections and your delivery edit/delete requests"
+      : "Inventory correction requests you have submitted";
 
   return (
     <PageLayout
@@ -243,10 +258,10 @@ export function InventoryRequestsPage() {
       }
     >
       <div className="space-y-10">
-        <section>
+        <section id="inventory-corrections-section">
           <div className="px-1 pb-3">
-            <h3 className="text-sm font-semibold text-foreground">Inventory correction requests</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Click a row to review details</p>
+            <h3 className="text-sm font-semibold text-foreground">Inventory corrections</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Honey warehouse / production / packaging qty and metadata fixes</p>
           </div>
           <div className="bg-card rounded-xl border overflow-x-auto">
             <table className="w-full text-sm">
@@ -319,10 +334,18 @@ export function InventoryRequestsPage() {
           )}
         </section>
 
+        {showEditRequests && (
+          <EditRequestsSection
+            isReviewer={isExec}
+            readonly={readonly}
+            onChanged={() => void refreshNotifications()}
+          />
+        )}
+
         {isExec && (
-          <section>
+          <section id="discount-approvals-section">
             <div className="px-1 pb-3">
-              <h3 className="text-sm font-semibold text-foreground">Pending discount approvals</h3>
+              <h3 className="text-sm font-semibold text-foreground">POS discount approvals</h3>
               <p className="text-xs text-muted-foreground mt-0.5">POS cart discounts awaiting executive approval</p>
             </div>
             <div className="bg-card rounded-xl border overflow-hidden">
@@ -450,9 +473,9 @@ function NewRequestModal({ onClose, onDone }: { onClose: () => void; onDone: () 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-card rounded-xl border p-6 max-w-md w-full my-8" onClick={e => e.stopPropagation()}>
-        <h3 className="font-bold mb-4">New correction request</h3>
+    <AppModal open onClose={onClose} panelClassName="max-w-md w-full" labelledBy="new-correction-modal-title">
+      <AppModalHeader title="New correction request" titleId="new-correction-modal-title" onClose={onClose} />
+      <AppModalBody>
         <form onSubmit={submit} className="space-y-3 text-sm">
           <select value={stage} onChange={e => setStage(e.target.value)} className="w-full border rounded-lg px-3 py-2">
             {["warehouse", "production", "packaging"].map(s => (
@@ -542,7 +565,7 @@ function NewRequestModal({ onClose, onDone }: { onClose: () => void; onDone: () 
             Submit request
           </button>
         </form>
-      </div>
-    </div>
+      </AppModalBody>
+    </AppModal>
   );
 }

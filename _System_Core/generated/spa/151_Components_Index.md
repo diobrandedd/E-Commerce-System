@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-05T04:27:35+02:00
+generated: 2026-06-05T06:54:04+02:00
 type: spa
 ---
 
@@ -10,6 +10,31 @@ type: spa
 > AUTO-GENERATED scan of pages/components for layout, modal, toast, and motion usage.
 
 Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_UX_Patterns]]
+
+## fixed inset-0
+
+- `app/src/app/components/AppModal.tsx`
+- `app/src/app/components/Sidebar.tsx`
+- `app/src/app/components/honey/BatchTraceabilityDrawer.tsx`
+- `app/src/app/components/pos/POSReceiptView.tsx`
+- `app/src/app/components/pos/posMotion.tsx`
+- `app/src/app/components/ui/alert-dialog.tsx`
+- `app/src/app/components/ui/dialog.tsx`
+- `app/src/app/components/ui/drawer.tsx`
+- `app/src/app/components/ui/sheet.tsx`
+- `app/src/app/pages/deliveries/DeliveriesPage.tsx`
+
+## useReducedMotion
+
+- `app/src/app/components/AppModal.tsx`
+- `app/src/app/components/costing/costingMotion.tsx`
+- `app/src/app/components/csr/AmbiguousOrderCarousel.tsx`
+- `app/src/app/components/csr/onlineFulfillmentMotion.tsx`
+- `app/src/app/components/csr/onlineOrders/ItemResolverCarousel.tsx`
+- `app/src/app/components/csr/orderRemarksMotion.tsx`
+- `app/src/app/components/pos/POSReceiptView.tsx`
+- `app/src/app/components/pos/posMotion.tsx`
+- `app/src/app/pages/csr/OrderRemarksPage.tsx`
 
 ## PageLayout
 
@@ -37,43 +62,6 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/honey/HoneyPackagingPage.tsx`
 - `app/src/app/pages/honey/HoneyProductionPage.tsx`
 - `app/src/app/pages/honey/HoneyWarehousePage.tsx`
-
-## fixed inset-0
-
-- `app/src/app/components/Sidebar.tsx`
-- `app/src/app/components/csr/onlineFulfillmentMotion.tsx`
-- `app/src/app/components/honey/BatchTraceabilityDrawer.tsx`
-- `app/src/app/components/honey/CorrectionReviewModal.tsx`
-- `app/src/app/components/honey/ExecutiveRowEditModal.tsx`
-- `app/src/app/components/pos/POSReceiptView.tsx`
-- `app/src/app/components/pos/posMotion.tsx`
-- `app/src/app/components/suppliers/SupplierProfileModal.tsx`
-- `app/src/app/components/ui/alert-dialog.tsx`
-- `app/src/app/components/ui/dialog.tsx`
-- `app/src/app/components/ui/drawer.tsx`
-- `app/src/app/components/ui/sheet.tsx`
-- `app/src/app/pages/InventoryPage.tsx`
-- `app/src/app/pages/InventoryRequestsPage.tsx`
-- `app/src/app/pages/RTSPage.tsx`
-- `app/src/app/pages/deliveries/DeliveriesPage.tsx`
-- `app/src/app/pages/exec/ARCreditsPage.tsx`
-- `app/src/app/pages/exec/CostingPage.tsx`
-- `app/src/app/pages/exec/StaffManagementPage.tsx`
-- `app/src/app/pages/exec/SuppliersPage.tsx`
-- `app/src/app/pages/honey/HoneyPackagingPage.tsx`
-- `app/src/app/pages/honey/HoneyProductionPage.tsx`
-- `app/src/app/pages/honey/HoneyWarehousePage.tsx`
-
-## useReducedMotion
-
-- `app/src/app/components/costing/costingMotion.tsx`
-- `app/src/app/components/csr/AmbiguousOrderCarousel.tsx`
-- `app/src/app/components/csr/onlineFulfillmentMotion.tsx`
-- `app/src/app/components/csr/onlineOrders/ItemResolverCarousel.tsx`
-- `app/src/app/components/csr/orderRemarksMotion.tsx`
-- `app/src/app/components/pos/POSReceiptView.tsx`
-- `app/src/app/components/pos/posMotion.tsx`
-- `app/src/app/pages/csr/OrderRemarksPage.tsx`
 
 ## OrderRemarksToast
 
@@ -103,8 +91,11 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 
 ## Dedicated modal/drawer components
 
+- `app/src/app/components/AppModal.tsx`
 - `app/src/app/components/csr/onlineOrders/BatchStartModal.tsx`
 - `app/src/app/components/csr/onlineOrders/DuplicateTrackingModal.tsx`
+- `app/src/app/components/fulfillment/DeliveryDuplicateScanModal.tsx`
+- `app/src/app/components/fulfillment/DeliveryReviewEditModal.tsx`
 - `app/src/app/components/fulfillment/OnlineParcelDetailModal.tsx`
 - `app/src/app/components/honey/BatchTraceabilityDrawer.tsx`
 - `app/src/app/components/honey/CorrectionReviewModal.tsx`

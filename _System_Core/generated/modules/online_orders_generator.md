@@ -1,7 +1,7 @@
 ---
 title: online_orders_generator
 source: includes/online_orders_generator.php
-generated: 2026-06-05T04:27:31+02:00
+generated: 2026-06-05T06:53:59+02:00
 type: module
 function_count: 28
 ---
@@ -29,41 +29,41 @@ function_count: 28
 - `includes/online_orders_generator.php`:150 — `$v = $sheet->getCell(online_orders_coord($col, $r))->getValue();`
 - `includes/online_orders_generator.php`:622 — `$sheet->setCellValue(online_orders_coord($col, $headerRow), $text);`
 - `includes/online_orders_generator.php`:623 — `$sheet->getStyle(online_orders_coord($col, $headerRow))->getFont()->setBold(true);`
-- `includes/online_orders_generator.php`:629 — `$sheet->setCellValue(online_orders_coord(2, $r), '');`
-- `includes/online_orders_generator.php`:630 — `$sheet->setCellValue(online_orders_coord(3, $r), (string) ($row['name'] ?? ''));`
-- `includes/online_orders_generator.php`:631 — `$sheet->getCell(online_orders_coord(4, $r))`
-- `includes/online_orders_generator.php`:633 — `$sheet->setCellValue(online_orders_coord(5, $r), '');`
-- `includes/online_orders_generator.php`:634 — `$sheet->setCellValue(online_orders_coord(7, $r), (string) ($row['courier'] ?? ''));`
-- `includes/online_orders_generator.php`:635 — `$sheet->getCell(online_orders_coord(8, $r))`
-- `includes/online_orders_generator.php`:763 — `$coord = online_orders_coord($col, $headerRow);`
-- `includes/online_orders_generator.php`:777 — `$sheet->setCellValue(online_orders_coord(1, $r), $seq++);`
-- `includes/online_orders_generator.php`:778 — `$sheet->setCellValue(online_orders_coord(2, $r), (string) ($row['order_no'] ?? ''));`
-- `includes/online_orders_generator.php`:779 — `$sheet->setCellValue(online_orders_coord(3, $r), (string) $row['recipient_name']);`
-- `includes/online_orders_generator.php`:780 — `$sheet->getCell(online_orders_coord(4, $r))`
-- `includes/online_orders_generator.php`:782 — `$sheet->setCellValue(online_orders_coord(5, $r), '');`
-- `includes/online_orders_generator.php`:783 — `$sheet->setCellValue(online_orders_coord(6, $r), '');`
-- `includes/online_orders_generator.php`:784 — `$sheet->setCellValue(online_orders_coord(7, $r), (string) $row['courier']);`
-- `includes/online_orders_generator.php`:785 — `$sheet->getCell(online_orders_coord(8, $r))`
+- `includes/online_orders_generator.php`:630 — `$sheet->setCellValue(online_orders_coord(2, $r), $orderNo !== null && $orderNo !== '' ? (string) $orderNo : '');`
+- `includes/online_orders_generator.php`:631 — `$sheet->setCellValue(online_orders_coord(3, $r), (string) ($row['name'] ?? ''));`
+- `includes/online_orders_generator.php`:632 — `$sheet->getCell(online_orders_coord(4, $r))`
+- `includes/online_orders_generator.php`:634 — `$sheet->setCellValue(online_orders_coord(5, $r), '');`
+- `includes/online_orders_generator.php`:635 — `$sheet->setCellValue(online_orders_coord(7, $r), (string) ($row['courier'] ?? ''));`
+- `includes/online_orders_generator.php`:636 — `$sheet->getCell(online_orders_coord(8, $r))`
+- `includes/online_orders_generator.php`:767 — `$coord = online_orders_coord($col, $headerRow);`
+- `includes/online_orders_generator.php`:781 — `$sheet->setCellValue(online_orders_coord(1, $r), $seq++);`
+- `includes/online_orders_generator.php`:782 — `$sheet->setCellValue(online_orders_coord(2, $r), (string) ($row['order_no'] ?? ''));`
+- `includes/online_orders_generator.php`:783 — `$sheet->setCellValue(online_orders_coord(3, $r), (string) $row['recipient_name']);`
+- `includes/online_orders_generator.php`:784 — `$sheet->getCell(online_orders_coord(4, $r))`
+- `includes/online_orders_generator.php`:786 — `$sheet->setCellValue(online_orders_coord(5, $r), '');`
+- `includes/online_orders_generator.php`:787 — `$sheet->setCellValue(online_orders_coord(6, $r), '');`
+- `includes/online_orders_generator.php`:788 — `$sheet->setCellValue(online_orders_coord(7, $r), (string) $row['courier']);`
+- `includes/online_orders_generator.php`:789 — `$sheet->getCell(online_orders_coord(8, $r))`
 
 ## online_orders_storage_root {#online_orders_storage_root}
 
 **Callers (2):**
 
-- `includes/online_orders_generator.php`:640 — `$dir = online_orders_storage_root() . '/work';`
-- `includes/online_orders_generator.php`:795 — `$path = online_orders_storage_root() . '/outputs/master_' . bin2hex(random_bytes(8)) . '.xlsx';`
+- `includes/online_orders_generator.php`:641 — `$dir = online_orders_storage_root() . '/work';`
+- `includes/online_orders_generator.php`:799 — `$path = online_orders_storage_root() . '/outputs/master_' . bin2hex(random_bytes(8)) . '.xlsx';`
 
 ## online_orders_user_can_access {#online_orders_user_can_access}
 
 **Callers (2):**
 
-- `api/v1/online_orders.php`:24 — `if (!online_orders_user_can_access($user)) {`
+- `api/v1/online_orders.php`:25 — `if (!online_orders_user_can_access($user)) {`
 - `includes/online_orders_generator.php`:46 — `if (!online_orders_user_can_access($user)) {`
 
 ## online_orders_require_access {#online_orders_require_access}
 
 **Callers (1):**
 
-- `includes/online_orders_generator.php`:824 — `online_orders_require_access();`
+- `includes/online_orders_generator.php`:828 — `online_orders_require_access();`
 
 ## online_orders_ensure_schema {#online_orders_ensure_schema}
 
@@ -87,7 +87,7 @@ function_count: 28
 
 **Callers (1):**
 
-- `api/v1/online_orders.php`:78 — `$batch = online_orders_batch_start($pdo, (int) $user['id']);`
+- `api/v1/online_orders.php`:80 — `$batch = online_orders_batch_start($pdo, (int) $user['id']);`
 
 ## online_orders_batch_get {#online_orders_batch_get}
 
@@ -95,9 +95,9 @@ function_count: 28
 
 **Callers (3):**
 
-- `api/v1/online_orders.php`:94 — `$batch = online_orders_batch_get($pdo, (int) $user['id'], $batchId > 0 ? $batchId : null);`
+- `api/v1/online_orders.php`:96 — `$batch = online_orders_batch_get($pdo, (int) $user['id'], $batchId > 0 ? $batchId : null);`
 - `includes/online_orders_generator.php`:204 — `return online_orders_batch_get($pdo, $userId, $batchId);`
-- `includes/online_orders_generator.php`:869 — `$batch = online_orders_batch_get($pdo, $userId, $batchId);`
+- `includes/online_orders_generator.php`:873 — `$batch = online_orders_batch_get($pdo, $userId, $batchId);`
 
 ## online_orders_batch_cancel {#online_orders_batch_cancel}
 
@@ -105,7 +105,7 @@ function_count: 28
 
 **Callers (1):**
 
-- `api/v1/online_orders.php`:115 — `online_orders_batch_cancel($pdo, (int) $user['id'], $batchId);`
+- `api/v1/online_orders.php`:117 — `online_orders_batch_cancel($pdo, (int) $user['id'], $batchId);`
 
 ## online_orders_assert_active_batch {#online_orders_assert_active_batch}
 
@@ -113,12 +113,12 @@ function_count: 28
 
 **Callers (6):**
 
-- `api/v1/online_orders.php`:163 — `online_orders_assert_active_batch($pdo, (int) $user['id'], $batchId);`
+- `api/v1/online_orders.php`:165 — `online_orders_assert_active_batch($pdo, (int) $user['id'], $batchId);`
 - `includes/online_orders_generator.php`:523 — `online_orders_assert_active_batch($pdo, $userId, $batchId);`
 - `includes/online_orders_generator.php`:576 — `online_orders_assert_active_batch($pdo, $userId, $batchId);`
-- `includes/online_orders_generator.php`:665 — `online_orders_assert_active_batch($pdo, $userId, $batchId);`
-- `includes/online_orders_generator.php`:715 — `online_orders_assert_active_batch($pdo, $userId, $batchId);`
-- `includes/online_orders_generator.php`:853 — `online_orders_assert_active_batch($pdo, $userId, $batchId);`
+- `includes/online_orders_generator.php`:666 — `online_orders_assert_active_batch($pdo, $userId, $batchId);`
+- `includes/online_orders_generator.php`:719 — `online_orders_assert_active_batch($pdo, $userId, $batchId);`
+- `includes/online_orders_generator.php`:857 — `online_orders_assert_active_batch($pdo, $userId, $batchId);`
 
 ## online_orders_run_start {#online_orders_run_start}
 
@@ -126,10 +126,10 @@ function_count: 28
 
 **Callers (4):**
 
-- `api/v1/online_orders.php`:164 — `$runId = online_orders_run_start($pdo, $batchId, $pipeline);`
+- `api/v1/online_orders.php`:166 — `$runId = online_orders_run_start($pdo, $batchId, $pipeline);`
 - `includes/online_orders_generator.php`:542 — `$runId = online_orders_run_start($pdo, $batchId, 'partner');`
 - `includes/online_orders_generator.php`:582 — `$runId = online_orders_run_start($pdo, $batchId, 'vip');`
-- `includes/online_orders_generator.php`:694 — `$runId = online_orders_run_start($pdo, $batchId, 'shopee_spx');`
+- `includes/online_orders_generator.php`:698 — `$runId = online_orders_run_start($pdo, $batchId, 'shopee_spx');`
 
 ## online_orders_run_complete {#online_orders_run_complete}
 
@@ -137,10 +137,10 @@ function_count: 28
 
 **Callers (4):**
 
-- `api/v1/online_orders.php`:171 — `online_orders_run_complete($pdo, $runId, ['lines_added' => $added, 'source' => 'manual_append']);`
+- `api/v1/online_orders.php`:173 — `online_orders_run_complete($pdo, $runId, ['lines_added' => $added, 'source' => 'manual_append']);`
 - `includes/online_orders_generator.php`:546 — `online_orders_run_complete($pdo, $runId, [`
 - `includes/online_orders_generator.php`:585 — `online_orders_run_complete($pdo, $runId, ['stamp_matched' => $stamp['matched']]);`
-- `includes/online_orders_generator.php`:697 — `online_orders_run_complete($pdo, $runId, ['excel_token' => $excelToken, 'row_count' => count($normalized)]);`
+- `includes/online_orders_generator.php`:701 — `online_orders_run_complete($pdo, $runId, ['excel_token' => $excelToken, 'row_count' => count($normalized)]);`
 
 ## __construct {#__construct}
 
@@ -150,13 +150,15 @@ function_count: 28
 
 ## online_orders_normalize_tracking {#online_orders_normalize_tracking}
 
-**Callers (5):**
+**Callers (7):**
 
 - `includes/online_orders_generator.php`:164 — `$key = online_orders_normalize_tracking($tn);`
 - `includes/online_orders_generator.php`:351 — `$key = online_orders_normalize_tracking((string) $row['tracking_number']);`
 - `includes/online_orders_generator.php`:379 — `$key = online_orders_normalize_tracking((string) $row['tracking_number']);`
 - `includes/online_orders_generator.php`:416 — `$key = online_orders_normalize_tracking($rawTn);`
 - `includes/online_orders_generator.php`:490 — `$tn = online_orders_normalize_tracking($rawTn);`
+- `includes/shopee_spx_packing_list.php`:152 — `$key = online_orders_normalize_tracking($tn);`
+- `includes/shopee_spx_packing_list.php`:174 — `$key = online_orders_normalize_tracking((string) ($row['tracking'] ?? ''));`
 
 ## online_orders_ocr_confusables_for_match {#online_orders_ocr_confusables_for_match}
 
@@ -184,7 +186,7 @@ function_count: 28
 
 - `includes/online_orders_generator.php`:476 — `online_orders_assert_no_duplicate_tracking($pdo, $pipeline, $lines);`
 - `includes/online_orders_generator.php`:540 — `online_orders_assert_no_duplicate_tracking($pdo, 'partner', $lines);`
-- `includes/online_orders_generator.php`:692 — `online_orders_assert_no_duplicate_tracking($pdo, 'shopee_spx', $linePayload);`
+- `includes/online_orders_generator.php`:696 — `online_orders_assert_no_duplicate_tracking($pdo, 'shopee_spx', $linePayload);`
 
 ## online_orders_lines_append {#online_orders_lines_append}
 
@@ -192,9 +194,9 @@ function_count: 28
 
 **Callers (3):**
 
-- `api/v1/online_orders.php`:166 — `$added = online_orders_lines_append($pdo, $batchId, $runId, $pipeline, $lines);`
+- `api/v1/online_orders.php`:168 — `$added = online_orders_lines_append($pdo, $batchId, $runId, $pipeline, $lines);`
 - `includes/online_orders_generator.php`:545 — `$added = online_orders_lines_append($pdo, $batchId, $runId, 'partner', $lines);`
-- `includes/online_orders_generator.php`:696 — `online_orders_lines_append($pdo, $batchId, $runId, 'shopee_spx', $linePayload);`
+- `includes/online_orders_generator.php`:700 — `online_orders_lines_append($pdo, $batchId, $runId, 'shopee_spx', $linePayload);`
 
 ## online_orders_run_partner_stamp {#online_orders_run_partner_stamp}
 
@@ -202,7 +204,7 @@ function_count: 28
 
 **Callers (1):**
 
-- `api/v1/online_orders.php`:196 — `$result = online_orders_run_partner_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelTokens);`
+- `api/v1/online_orders.php`:198 — `$result = online_orders_run_partner_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelTokens);`
 
 ## online_orders_run_vip_stamp {#online_orders_run_vip_stamp}
 
@@ -210,25 +212,25 @@ function_count: 28
 
 **Callers (1):**
 
-- `api/v1/online_orders.php`:221 — `$result = online_orders_run_vip_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelToken);`
+- `api/v1/online_orders.php`:223 — `$result = online_orders_run_vip_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelToken);`
 
 ## online_orders_build_ipyx_excel_from_rows {#online_orders_build_ipyx_excel_from_rows}
 
 **Callers (1):**
 
-- `includes/online_orders_generator.php`:695 — `$excelToken = online_orders_build_ipyx_excel_from_rows($normalized, 'Shopee SPX — Online Orders');`
+- `includes/online_orders_generator.php`:699 — `$excelToken = online_orders_build_ipyx_excel_from_rows($normalized, 'Shopee SPX — Online Orders');`
 
 ## online_orders_run_shopee_resolve {#online_orders_run_shopee_resolve}
 
 **Callers (1):**
 
-- `api/v1/online_orders.php`:244 — `$result = online_orders_run_shopee_resolve($pdo, (int) $user['id'], $batchId, $rows);`
+- `api/v1/online_orders.php`:246 — `$result = online_orders_run_shopee_resolve($pdo, (int) $user['id'], $batchId, $rows);`
 
 ## online_orders_run_shopee_stamp {#online_orders_run_shopee_stamp}
 
 **Callers (1):**
 
-- `api/v1/online_orders.php`:269 — `$result = online_orders_run_shopee_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelToken);`
+- `api/v1/online_orders.php`:271 — `$result = online_orders_run_shopee_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelToken);`
 
 ## online_orders_merge_master_workbook {#online_orders_merge_master_workbook}
 
@@ -236,19 +238,19 @@ function_count: 28
 
 **Callers (1):**
 
-- `includes/online_orders_generator.php`:857 — `$metaJson = online_orders_merge_master_workbook($pdo, $batchId);`
+- `includes/online_orders_generator.php`:861 — `$metaJson = online_orders_merge_master_workbook($pdo, $batchId);`
 
 ## online_orders_register_master_download {#online_orders_register_master_download}
 
 **Callers (1):**
 
-- `includes/online_orders_generator.php`:860 — `$token = online_orders_register_master_download($metaJson);`
+- `includes/online_orders_generator.php`:864 — `$token = online_orders_register_master_download($metaJson);`
 
 ## online_orders_serve_download {#online_orders_serve_download}
 
 **Callers (1):**
 
-- `api/v1/online_orders.php`:12 — `online_orders_serve_download(trim((string) ($_GET['token'] ?? '')));`
+- `api/v1/online_orders.php`:13 — `online_orders_serve_download(trim((string) ($_GET['token'] ?? '')));`
 
 ## online_orders_batch_finalize {#online_orders_batch_finalize}
 
@@ -256,5 +258,5 @@ function_count: 28
 
 **Callers (1):**
 
-- `api/v1/online_orders.php`:136 — `$result = online_orders_batch_finalize($pdo, (int) $user['id'], $batchId);`
+- `api/v1/online_orders.php`:138 — `$result = online_orders_batch_finalize($pdo, (int) $user['id'], $batchId);`
 

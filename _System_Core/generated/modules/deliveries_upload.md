@@ -1,7 +1,7 @@
 ---
 title: deliveries_upload
 source: includes/deliveries_upload.php
-generated: 2026-06-05T04:27:28+02:00
+generated: 2026-06-05T06:53:55+02:00
 type: module
 function_count: 3
 ---
@@ -28,7 +28,7 @@ function_count: 3
 **Callers (2):**
 
 - `api/delivery_bulk.php`:114 — `$result = deliveries_upload_photos(`
-- `api/v1/deliveries.php`:98 — `$result = deliveries_upload_photos($pdo, $deliveryDate, $files, $hints, $submitterId);`
+- `api/v1/deliveries.php`:109 — `$result = deliveries_upload_photos($pdo, $deliveryDate, $files, $hints, $submitterId);`
 
 ## deliveries_classify_upload {#deliveries_classify_upload}
 
@@ -40,5 +40,5 @@ function_count: 3
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:95 — `$submitterId = deliveries_ims_submitter_app_user_id($pdo);`
+- `api/v1/deliveries.php`:106 — `$submitterId = deliveries_ims_submitter_app_user_id($pdo);`
 

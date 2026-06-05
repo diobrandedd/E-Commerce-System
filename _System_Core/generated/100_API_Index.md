@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-05T04:27:25+02:00
+generated: 2026-06-05T06:53:54+02:00
 type: memory-bank
 ---
 
@@ -81,29 +81,29 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/deliveries.php`
 - **URL:** `/rts/api/v1/deliveries.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/deliveries_upload.php`, `includes/online_order_parcels.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/deliveries_upload.php`, `includes/delivery_edit_requests.php`, `includes/online_order_parcels.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
 | `batch_for_date` | `api_deliveries_batch_for_date()` | `ims_pdo()` |
 | `upload_photo` | `api_deliveries_upload_photo()` | `ims_pdo()`, `deliveries_ims_submitter_app_user_id()`, `deliveries_upload_photos()` |
-| `parcel_by_tracking` | `api_deliveries_parcel_by_tracking()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_normalize_tracking()`, `online_parcels_get_by_tracking()` |
+| `parcel_by_tracking` | `api_deliveries_parcel_by_tracking()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_normalize_tracking()`, `online_parcels_get_by_tracking()`, `deliveries_find_existing_recordings()` |
 | `ship_parcel` | `api_deliveries_ship_parcel()` | `ims_pdo()`, `online_parcels_ship()` |
 | `review_list` | `api_deliveries_review_list()` | `ims_pdo()` |
-| `void_item` | `api_deliveries_void_item()` | `ims_pdo()` |
-| `resolve_item` | `api_deliveries_resolve_item()` | `online_parcels_normalize_tracking()`, `ims_pdo()` |
+| `void_item` | `api_deliveries_void_item()` | `ims_pdo()`, `deliveries_void_item_by_id()` |
+| `resolve_item` | `api_deliveries_resolve_item()` | `ims_pdo()`, `deliveries_resolve_item_by_id()` |
 
 ### `edit_requests.php`
 
 - **Path:** `api/v1/edit_requests.php`
 - **URL:** `/rts/api/v1/edit_requests.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/delivery_edit_requests.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
 | `list` | `api_er_list()` | `ims_pdo()` |
-| `submit` | `api_er_submit()` | `ims_pdo()` |
-| `approve` | `api_er_approve()` | `ims_pdo()` |
+| `submit` | `api_er_submit()` | `ims_pdo()`, `delivery_edit_request_validate_submit()`, `delivery_edit_request_normalize_values()` |
+| `approve` | `api_er_approve()` | `ims_pdo()`, `delivery_edit_request_apply()` |
 | `reject` | `api_er_reject()` | `ims_pdo()` |
 
 ### `honey.php`
@@ -146,7 +146,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/online_orders.php`
 - **URL:** `/rts/api/v1/online_orders.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/online_orders_generator.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/online_orders_generator.php`, `includes/shopee_spx_packing_list.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
@@ -159,6 +159,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `run_vip_stamp` | `api_online_orders_run_vip_stamp()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_vip_stamp()` |
 | `run_shopee_resolve` | `api_online_orders_run_shopee_resolve()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_shopee_resolve()` |
 | `run_shopee_stamp` | `api_online_orders_run_shopee_stamp()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_shopee_stamp()` |
+| `spx_import_packing_list` | `api_online_orders_spx_import_packing_list()` | `online_orders_spx_import_packing_list()` |
 | `packaging_stock` | `api_online_orders_packaging_stock()` | `honey_packaging_total_inventory_snapshot()`, `ims_pdo()` |
 
 ### `order_remarks.php`

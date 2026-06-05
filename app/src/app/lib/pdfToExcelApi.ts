@@ -8,6 +8,8 @@ export interface PdfToExcelRow {
   courier: string;
   complete: boolean;
   missing_fields: string[];
+  /** Shopee packing list `order_sn` — merged into master Excel Order No. */
+  order_no?: string;
 }
 
 export interface PdfToExcelFileResult {

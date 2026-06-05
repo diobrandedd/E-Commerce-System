@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle, AlertCircle, Loader2, RefreshCcw, Plus, X } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2, RefreshCcw, Plus } from "lucide-react";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
@@ -288,15 +289,10 @@ function TakeCreditModal({ onClose, onSuccess }: TakeCreditModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-card rounded-2xl border border-border w-full max-w-md overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.18)" }}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h3 className="text-base font-bold text-foreground">Take product on credit</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X size={18} />
-          </button>
-        </div>
-        <form onSubmit={submit} className="px-6 py-5 space-y-4">
+    <AppModal open onClose={onClose} panelClassName="max-w-md w-full" labelledBy="ar-credit-modal-title">
+      <AppModalHeader title="Take product on credit" titleId="ar-credit-modal-title" onClose={onClose} />
+      <form onSubmit={submit}>
+        <AppModalBody className="space-y-4">
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 flex items-start gap-2">
               <AlertCircle size={14} className="mt-0.5 flex-shrink-0" /> <span>{error}</span>
@@ -341,21 +337,21 @@ function TakeCreditModal({ onClose, onSuccess }: TakeCreditModalProps) {
               </span>
             </div>
           )}
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-muted-foreground hover:bg-secondary transition-colors">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting || loading || products.length === 0}
-              className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
-              style={{ background: "#C8900A" }}
-            >
-              {submitting ? "Saving…" : "Record credit"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </AppModalBody>
+        <AppModalFooter className="justify-end">
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium border border-border text-muted-foreground hover:bg-secondary transition-colors">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting || loading || products.length === 0}
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+            style={{ background: "#C8900A" }}
+          >
+            {submitting ? "Saving…" : "Record credit"}
+          </button>
+        </AppModalFooter>
+      </form>
+    </AppModal>
   );
 }

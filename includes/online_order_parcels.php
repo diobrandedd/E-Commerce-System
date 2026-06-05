@@ -154,6 +154,11 @@ function online_parcels_promote_from_batch(PDO $pdo, int $batchId): array
 
             continue;
         }
+        if ($parsed['deltas'] === [] && ($parsed['other_items'] ?? []) === []) {
+            $errors[] = 'Line ' . $tn . ': no recognizable items.';
+
+            continue;
+        }
 
         $exists = $pdo->prepare('SELECT id, status FROM online_order_parcels WHERE tracking_number = ? LIMIT 1');
         $exists->execute([$tn]);
@@ -527,7 +532,7 @@ function online_parcels_ship(
         'SELECT i.id, i.photo_filename, i.tracking_number, i.online_parcel_id, b.delivery_date
          FROM delivery_batch_items i
          INNER JOIN delivery_batches b ON b.id = i.batch_id
-         WHERE i.id = ? AND i.voided_at IS NULL LIMIT 1'
+         WHERE i.id = ? LIMIT 1'
     );
     $stItem->execute([$deliveryItemId]);
     $item = $stItem->fetch(PDO::FETCH_ASSOC);
@@ -548,7 +553,9 @@ function online_parcels_ship(
         $lock->execute([(int) $parcel['id']]);
         $locked = $lock->fetch(PDO::FETCH_ASSOC);
         if ($locked === false || (string) $locked['status'] === 'shipped') {
-            $pdo->rollBack();
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             $fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);
 
             return ['parcel' => $fresh ?? $parcel, 'already_shipped' => true];

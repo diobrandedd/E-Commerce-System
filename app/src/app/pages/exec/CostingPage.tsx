@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { TrendingUp, TrendingDown, Plus, ChevronDown, History, Pencil, AlertCircle, RefreshCcw, X, Loader2, Trash2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Plus, ChevronDown, History, Pencil, AlertCircle, RefreshCcw, Loader2, Trash2 } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
@@ -8,6 +8,7 @@ import { splitCostingProducts, groupHoneyByVariant } from "@/app/lib/costingProd
 import { CostBadge, peso } from "@/app/lib/costingDisplay";
 import { CostingHoneyVariantGroups } from "@/app/components/costing/CostingHoneyVariantGroups";
 import { CostingDetailLoading, CostingDetailReveal } from "@/app/components/costing/costingMotion";
+import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { cn } from "@/app/components/ui/utils";
 
 interface StockRow {
@@ -1132,15 +1133,10 @@ const inputCls = "w-full rounded-lg border-2 border-border bg-card text-foregrou
 
 function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="bg-card rounded-2xl border border-border w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h3 className="text-base font-semibold text-foreground">{title}</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
-        </div>
-        <div className="px-5 py-5">{children}</div>
-      </div>
-    </div>
+    <AppModal open onClose={onClose} panelClassName="max-w-md w-full" labelledBy="costing-modal-title">
+      <AppModalHeader title={title} titleId="costing-modal-title" onClose={onClose} />
+      <AppModalBody className="py-5">{children}</AppModalBody>
+    </AppModal>
   );
 }
 

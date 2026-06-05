@@ -5,6 +5,9 @@ declare(strict_types=1);
 /**
  * Parse CSR / marketplace Item/s strings into packaging deduct lines.
  * Mirrors app/src/app/lib/orderRemarksParse.ts and pdf-to-excel/extractor.py rules.
+ *
+ * Multi-item lines use `;` or `+` (e.g. "3 Paragis Tea ; 1 Liter Honey AMBER").
+ * Non-honey products are noted in other_items (inventory TBD) without blocking honey deduct.
  */
 
 const HONEY_PARCEL_VALID_3L = ['LAD', 'LLL', 'AAA', 'DDD', 'LAA', 'LLD', 'ADD', 'AAD'];
@@ -12,17 +15,22 @@ const HONEY_PARCEL_VALID_2L = ['LA', 'LD', 'AD', 'LL', 'AA', 'DD'];
 const HONEY_PARCEL_VALID_1L = ['L', 'A', 'D'];
 
 /**
- * @return array{deltas: list<array{variant: string, size: string, qty: float}>, errors: list<string>}
+ * @return array{
+ *   deltas: list<array{variant: string, size: string, qty: float}>,
+ *   other_items: list<array{label: string, qty: float, raw: string}>,
+ *   errors: list<string>
+ * }
  */
 function honey_parcel_parse_items_string(string $raw): array
 {
     $raw = trim($raw);
     if ($raw === '') {
-        return ['deltas' => [], 'errors' => ['Item/s is empty.']];
+        return ['deltas' => [], 'other_items' => [], 'errors' => ['Item/s is empty.']];
     }
 
-    $segments = preg_split('/\s*\+\s*/', $raw) ?: [$raw];
+    $segments = preg_split('/\s*[;+]\s*/', $raw) ?: [$raw];
     $deltas = [];
+    $otherItems = [];
     $errors = [];
 
     foreach ($segments as $segment) {
@@ -37,32 +45,54 @@ function honey_parcel_parse_items_string(string $raw): array
         foreach ($part['deltas'] as $d) {
             $deltas[] = $d;
         }
+        foreach ($part['other_items'] as $o) {
+            $otherItems[] = $o;
+        }
     }
 
-    if ($deltas === [] && $errors === []) {
-        $errors[] = 'No honey items recognized in: ' . mb_substr($raw, 0, 120);
+    if ($deltas === [] && $otherItems === [] && $errors === []) {
+        $errors[] = 'No items recognized in: ' . mb_substr($raw, 0, 120);
     }
 
-    return ['deltas' => honey_parcel_merge_deltas($deltas), 'errors' => array_values(array_unique($errors))];
+    return [
+        'deltas' => honey_parcel_merge_deltas($deltas),
+        'other_items' => honey_parcel_merge_other_items($otherItems),
+        'errors' => array_values(array_unique($errors)),
+    ];
 }
 
 /**
- * @return array{deltas: list<array{variant: string, size: string, qty: float}>, errors: list<string>}
+ * @return array{
+ *   deltas: list<array{variant: string, size: string, qty: float}>,
+ *   other_items: list<array{label: string, qty: float, raw: string}>,
+ *   errors: list<string>
+ * }
  */
 function honey_parcel_parse_segment(string $segment): array
 {
     $qty = honey_parcel_extract_qty($segment);
     $errors = [];
+    $emptyOther = ['deltas' => [], 'other_items' => [], 'errors' => []];
 
     if (preg_match('/350\s*ml|B2T1/i', $segment)) {
         $code = honey_parcel_extract_350_code($segment);
         if ($code === null) {
-            return ['deltas' => [], 'errors' => ['350ml line needs variant (L/A/D): ' . $segment]];
+            return ['deltas' => [], 'other_items' => [], 'errors' => ['350ml line needs variant (L/A/D): ' . $segment]];
         }
         $variant = honey_parcel_letter_to_variant($code);
 
         return [
             'deltas' => [['variant' => $variant, 'size' => '350ml', 'qty' => $qty]],
+            'other_items' => [],
+            'errors' => [],
+        ];
+    }
+
+    $otherLabel = honey_parcel_detect_other_product($segment);
+    if ($otherLabel !== null && !preg_match('/honey/i', $segment)) {
+        return [
+            'deltas' => [],
+            'other_items' => [['label' => $otherLabel, 'qty' => $qty, 'raw' => trim($segment)]],
             'errors' => [],
         ];
     }
@@ -70,20 +100,21 @@ function honey_parcel_parse_segment(string $segment): array
     $product = honey_parcel_detect_product($segment);
     if ($product === null) {
         if (preg_match('/honey/i', $segment)) {
-            return ['deltas' => [], 'errors' => ['Unresolved honey line (variant required): ' . $segment]];
+            return ['deltas' => [], 'other_items' => [], 'errors' => ['Unresolved honey line (variant required): ' . $segment]];
         }
 
-        return ['deltas' => [], 'errors' => []];
+        return $emptyOther;
     }
 
     if ($product === 'gallon') {
         $variant = honey_parcel_detect_word_variant($segment);
         if ($variant === null) {
-            return ['deltas' => [], 'errors' => ['Gallon line needs Light/Amber/Dark: ' . $segment]];
+            return ['deltas' => [], 'other_items' => [], 'errors' => ['Gallon line needs Light/Amber/Dark: ' . $segment]];
         }
 
         return [
             'deltas' => [['variant' => $variant, 'size' => 'gallon', 'qty' => $qty]],
+            'other_items' => [],
             'errors' => [],
         ];
     }
@@ -94,11 +125,12 @@ function honey_parcel_parse_segment(string $segment): array
         if ($variant !== null && $product === '1L') {
             return [
                 'deltas' => [['variant' => $variant, 'size' => 'liter', 'qty' => $qty]],
+                'other_items' => [],
                 'errors' => [],
             ];
         }
 
-        return ['deltas' => [], 'errors' => ['Could not resolve variant for: ' . $segment]];
+        return ['deltas' => [], 'other_items' => [], 'errors' => ['Could not resolve variant for: ' . $segment]];
     }
 
     $letters = honey_parcel_code_to_letters($code, $product);
@@ -111,7 +143,7 @@ function honey_parcel_parse_segment(string $segment): array
         ];
     }
 
-    return ['deltas' => $deltas, 'errors' => $errors];
+    return ['deltas' => $deltas, 'other_items' => [], 'errors' => $errors];
 }
 
 function honey_parcel_extract_qty(string $segment): float
@@ -124,6 +156,30 @@ function honey_parcel_extract_qty(string $segment): float
     }
 
     return 1.0;
+}
+
+/**
+ * Known non-honey catalog lines (not in packaging inventory yet — note only).
+ */
+function honey_parcel_detect_other_product(string $segment): ?string
+{
+    if (preg_match('/paragis/i', $segment)) {
+        return 'Paragis Tea';
+    }
+    if (preg_match('/\bcacao|tablea/i', $segment)) {
+        return 'Cacao';
+    }
+    if (preg_match('/black\s*rice\s*coffee|\bbrc\b/i', $segment)) {
+        return 'Black Rice Coffee';
+    }
+    if (preg_match('/pito[\s-]*pito/i', $segment)) {
+        return 'Pito-Pito';
+    }
+    if (preg_match('/honey\s*comb|honeycomb/i', $segment)) {
+        return 'Honey Comb';
+    }
+
+    return null;
 }
 
 function honey_parcel_detect_product(string $segment): ?string
@@ -283,6 +339,33 @@ function honey_parcel_merge_deltas(array $deltas): array
     foreach ($map as $key => $qty) {
         [$v, $s] = explode('|', $key, 2);
         $out[] = ['variant' => $v, 'size' => $s, 'qty' => round($qty, 4)];
+    }
+
+    return $out;
+}
+
+/**
+ * @param list<array{label: string, qty: float, raw: string}> $items
+ * @return list<array{label: string, qty: float, raw: string}>
+ */
+function honey_parcel_merge_other_items(array $items): array
+{
+    $map = [];
+    foreach ($items as $item) {
+        $label = (string) ($item['label'] ?? '');
+        $q = (float) ($item['qty'] ?? 0);
+        if ($label === '' || $q <= 0) {
+            continue;
+        }
+        if (!isset($map[$label])) {
+            $map[$label] = ['label' => $label, 'qty' => 0.0, 'raw' => (string) ($item['raw'] ?? $label)];
+        }
+        $map[$label]['qty'] += $q;
+    }
+    $out = [];
+    foreach ($map as $row) {
+        $row['qty'] = round($row['qty'], 4);
+        $out[] = $row;
     }
 
     return $out;

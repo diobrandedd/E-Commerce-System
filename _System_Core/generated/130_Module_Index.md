@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-05T04:27:25+02:00
+generated: 2026-06-05T06:53:54+02:00
 type: memory-bank
 ---
 
@@ -21,10 +21,11 @@ type: memory-bank
 | [[modules/db]] | 3 |
 | [[modules/deliveries_review_nav]] | 2 |
 | [[modules/deliveries_upload]] | 3 |
+| [[modules/delivery_edit_requests]] | 8 |
 | [[modules/forwarding]] | 15 |
 | [[modules/honey_inventory]] | 38 |
 | [[modules/honey_parcel_inventory]] | 2 |
-| [[modules/honey_parcel_item_parser]] | 10 |
+| [[modules/honey_parcel_item_parser]] | 12 |
 | [[modules/honey_pos]] | 10 |
 | [[modules/honey_pricing]] | 19 |
 | [[modules/honey_sales_report]] | 8 |
@@ -44,6 +45,8 @@ type: memory-bank
 | [[modules/rts_schema]] | 13 |
 | [[modules/rts_shop_couriers]] | 2 |
 | [[modules/rts_storage]] | 12 |
+| [[modules/shopee_spx_packing_list]] | 4 |
+| [[modules/shopee_spx_product_info]] | 3 |
 | [[modules/sp_sort_service]] | 26 |
 | [[modules/suppliers]] | 12 |
 | [[modules/waybill_stamper]] | 17 |

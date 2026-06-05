@@ -1,7 +1,7 @@
 ---
 title: pdf_to_excel
 source: includes/pdf_to_excel.php
-generated: 2026-06-05T04:27:32+02:00
+generated: 2026-06-05T06:54:00+02:00
 type: module
 function_count: 15
 ---
@@ -78,9 +78,10 @@ function_count: 15
 
 ## pdf_to_excel_extract {#pdf_to_excel_extract}
 
-**Callers (1):**
+**Callers (2):**
 
 - `api/v1/pdf_to_excel.php`:92 — `$result = pdf_to_excel_extract($pdfs);`
+- `includes/shopee_spx_packing_list.php`:137 — `$extract = pdf_to_excel_extract($pdfPaths);`
 
 ## pdf_to_excel_confirm {#pdf_to_excel_confirm}
 

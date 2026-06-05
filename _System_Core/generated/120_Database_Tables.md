@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-05T04:27:25+02:00
+generated: 2026-06-05T06:53:54+02:00
 type: memory-bank
 table_count: 40
 ---
@@ -56,9 +56,10 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/delivery_batch_detail.php` | `(file-level)` |
 | `api/delivery_match_tracking.php` | `(file-level)` |
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_batch_for_date]] |
-| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_parcel_by_tracking]] |
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
 | `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_find_existing_recordings]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_get_batch_item_row]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
@@ -72,12 +73,13 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/delivery_match_tracking.php` | `(file-level)` |
 | `api/delivery_resolve.php` | `(file-level)` |
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_batch_for_date]] |
-| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_parcel_by_tracking]] |
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
-| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_void_item]] |
-| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_resolve_item]] |
 | `includes/deliveries_review_nav.php` | [[modules/deliveries_review_nav#rts_delivery_review_attention_count]] |
 | `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_find_existing_recordings]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_get_batch_item_row]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_void_item_by_id]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_resolve_item_by_id]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
@@ -207,6 +209,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_submit]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_approve]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_reject]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#delivery_edit_request_assert_no_duplicate_pending]] |
 | `includes/ims_exec_sidebar.php` | [[modules/ims_exec_sidebar#ims_render_exec_sidebar]] |
 
 ## `products`

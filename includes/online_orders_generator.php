@@ -597,7 +597,7 @@ function online_orders_run_vip_stamp(
 /**
  * Build iPYX excel from resolved Shopee rows and stash for waybill.
  *
- * @param list<array{tracking:string,name:string,items:string,courier:string}> $rows
+ * @param list<array{order_no?:?string,tracking:string,name:string,items:string,courier:string}> $rows
  */
 function online_orders_build_ipyx_excel_from_rows(array $rows, string $label): string
 {
@@ -626,7 +626,8 @@ function online_orders_build_ipyx_excel_from_rows(array $rows, string $label): s
 
     $r = $firstData;
     foreach ($rows as $row) {
-        $sheet->setCellValue(online_orders_coord(2, $r), '');
+        $orderNo = $row['order_no'] ?? '';
+        $sheet->setCellValue(online_orders_coord(2, $r), $orderNo !== null && $orderNo !== '' ? (string) $orderNo : '');
         $sheet->setCellValue(online_orders_coord(3, $r), (string) ($row['name'] ?? ''));
         $sheet->getCell(online_orders_coord(4, $r))
             ->setValueExplicit((string) ($row['items'] ?? ''), DataType::TYPE_STRING);
@@ -658,7 +659,7 @@ function online_orders_build_ipyx_excel_from_rows(array $rows, string $label): s
 }
 
 /**
- * @param list<array{page?:int,tracking:string,name?:string,items:string,courier?:string}> $rows
+ * @param list<array{page?:int,order_no?:?string,tracking:string,name?:string,items:string,courier?:string}> $rows
  */
 function online_orders_run_shopee_resolve(PDO $pdo, int $userId, int $batchId, array $rows): array
 {
@@ -671,14 +672,17 @@ function online_orders_run_shopee_resolve(PDO $pdo, int $userId, int $batchId, a
         if ($tn === '' || $items === '') {
             continue;
         }
+        $orderNo = isset($row['order_no']) && $row['order_no'] !== '' && $row['order_no'] !== null
+            ? trim((string) $row['order_no']) : null;
         $normalized[] = [
+            'order_no' => $orderNo,
             'tracking' => $tn,
             'name' => trim((string) ($row['name'] ?? '')),
             'items' => $items,
             'courier' => trim((string) ($row['courier'] ?? 'SPX')),
         ];
         $linePayload[] = [
-            'order_no' => null,
+            'order_no' => $orderNo,
             'name' => trim((string) ($row['name'] ?? '')),
             'items' => $items,
             'courier' => trim((string) ($row['courier'] ?? 'SPX')),

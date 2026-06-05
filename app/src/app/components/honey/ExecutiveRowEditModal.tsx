@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
 import { apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_SIZES, HONEY_VARIANTS } from "@/app/lib/honey";
@@ -206,14 +207,14 @@ export function ExecutiveRowEditModal(props: Props) {
       : {};
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-card rounded-xl border p-6 w-full max-w-md my-8" onClick={e => e.stopPropagation()}>
-        <h3 className="font-bold mb-1">{title}</h3>
-        <p className="text-xs text-muted-foreground mb-4">
-          Fixes data entry errors only. Does not move stock between stages. Warehouse supplier/variant changes cascade to
-          linked production and packaging rows (batch numbers stay unchanged).
-        </p>
-        <div className="space-y-3 text-sm">
+    <AppModal open onClose={onClose} panelClassName="max-w-md w-full" labelledBy="exec-row-edit-title">
+      <AppModalHeader
+        title={title}
+        titleId="exec-row-edit-title"
+        subtitle="Fixes data entry errors only. Does not move stock between stages. Warehouse supplier/variant changes cascade to linked production and packaging rows (batch numbers stay unchanged)."
+        onClose={onClose}
+      />
+      <AppModalBody className="space-y-3 text-sm">
           {err && <p className="text-xs text-red-600">{err}</p>}
 
           {stage === "warehouse" && (
@@ -326,22 +327,20 @@ export function ExecutiveRowEditModal(props: Props) {
             </>
           )}
 
-          <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border text-sm">
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={submit}
-              className="flex-1 py-2 rounded-lg text-sm font-bold text-white disabled:opacity-50"
-              style={{ background: "#C8900A" }}
-            >
-              {busy ? <Loader2 className="inline animate-spin" size={14} /> : "Save changes"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </AppModalBody>
+      <AppModalFooter>
+        <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border border-border bg-background text-sm">
+          Cancel
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void submit()}
+          className="flex-1 py-2 rounded-lg text-sm font-bold text-primary-foreground bg-primary disabled:opacity-50"
+        >
+          {busy ? <Loader2 className="inline animate-spin" size={14} /> : "Save changes"}
+        </button>
+      </AppModalFooter>
+    </AppModal>
   );
 }

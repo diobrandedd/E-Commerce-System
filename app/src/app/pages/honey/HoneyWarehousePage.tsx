@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
+import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
@@ -297,11 +298,9 @@ function StockOutModal({ row, onClose, onDone }: { row: WhRow; onClose: () => vo
 
 function Modal({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card rounded-xl border p-6 w-full max-w-md relative z-50" onClick={e => e.stopPropagation()}>
-        <h3 className="font-bold mb-4">{title}</h3>
-        {children}
-      </div>
-    </div>
+    <AppModal open onClose={onClose} panelClassName="max-w-md w-full" labelledBy="honey-warehouse-modal-title">
+      <AppModalHeader title={title} titleId="honey-warehouse-modal-title" onClose={onClose} />
+      <AppModalBody>{children}</AppModalBody>
+    </AppModal>
   );
 }

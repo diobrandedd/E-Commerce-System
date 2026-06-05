@@ -21,7 +21,10 @@ function honey_parcel_apply_deduct(PDO $pdo, int $parcelId, int $userId, string 
         throw new RuntimeException('No inventory lines to deduct for this parcel.');
     }
 
-    $pdo->beginTransaction();
+    $ownsTransaction = !$pdo->inTransaction();
+    if ($ownsTransaction) {
+        $pdo->beginTransaction();
+    }
     try {
         $allLines = [];
         $hasParcelCol = rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id');
@@ -48,15 +51,56 @@ function honey_parcel_apply_deduct(PDO $pdo, int $parcelId, int $userId, string 
             honey_parcel_log_sale($pdo, $parcelId, $userId, $variant, $size, $qty, $hasParcelCol);
         }
 
-        $pdo->commit();
+        if ($ownsTransaction) {
+            $pdo->commit();
+        }
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
+        if ($ownsTransaction && $pdo->inTransaction()) {
             $pdo->rollBack();
         }
         throw $e;
     }
 
     return ['deducted' => $parsed['deltas'], 'lines' => $allLines];
+}
+
+/**
+ * Restore packaging stock from online_parcel_deduct_lines when a ship is reversed.
+ */
+function honey_parcel_revert_deduct(PDO $pdo, int $parcelId): void
+{
+    if ($parcelId < 1) {
+        return;
+    }
+
+    $st = $pdo->prepare(
+        'SELECT packaging_row_id, size, qty FROM online_parcel_deduct_lines WHERE parcel_id = ?'
+    );
+    $st->execute([$parcelId]);
+    $lines = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    foreach ($lines as $line) {
+        $size = (string) ($line['size'] ?? '');
+        $qty = (float) ($line['qty'] ?? 0);
+        $rowId = (int) ($line['packaging_row_id'] ?? 0);
+        if ($rowId < 1 || $qty <= 0 || $size === '') {
+            continue;
+        }
+        [$curCol] = honey_packaging_size_columns($size);
+        $pdo->prepare(
+            "UPDATE honey_packaging_rows SET {$curCol} = {$curCol} + ? WHERE id = ?"
+        )->execute([$qty, $rowId]);
+    }
+
+    if ($lines !== []) {
+        $pdo->prepare('DELETE FROM online_parcel_deduct_lines WHERE parcel_id = ?')->execute([$parcelId]);
+    }
+
+    if (rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id')) {
+        $pdo->prepare(
+            'DELETE FROM honey_sales_log WHERE online_parcel_id = ? AND sale_type = "parcel"'
+        )->execute([$parcelId]);
+    }
 }
 
 function honey_parcel_log_sale(

@@ -2,6 +2,137 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-05 - Unified Requests hub (inventory + edit requests + POS discounts)
+- **Problem:** Delivery review edit/delete requests lived on a separate **Edit Requests** page (`/edit-requests`); executives expected them under sidebar **Requests** (`/inventory/requests`) alongside inventory corrections. Page was inventory-only — more request types coming.
+- **What we did:**
+  - **`InventoryRequestsPage`** → unified **Requests** hub with **sectioned tables** (not one inventory-only table):
+    1. **Inventory corrections** — honey warehouse/production/packaging (`honey.php` correction_list)
+    2. **Edit requests** — deliveries delete/tracking fixes + inventory row edits (`edit_requests.php`) via **`EditRequestsSection`**
+    3. **POS discount approvals** — executive only (`pos_discounts.php`)
+  - **`EditRequestsSection.tsx`** — reusable table: Category (Deliveries / Inventory / Products), Target, Change, Requester, Reason, Approve/Reject (exec).
+  - **`editRequestsApi.ts`** — `listEditRequests`, `approveEditRequest`, `rejectEditRequest`, `formatEditRequestCategory`, `formatEditRequestChange`.
+  - **Executive + PM:** `/edit-requests` **redirects** to `/inventory/requests#edit-requests-section`. PM **removed** duplicate sidebar **Edit Requests** link.
+  - **Team leader / staff:** still use `/edit-requests` (standalone page — no access to inventory Requests route).
+  - **Deliveries review:** PM **My requests** → `#edit-requests-section`.
+  - **Notifications:** pending **edit_requests** included in exec bell badge + dropdown (`CorrectionNotificationsContext`); click → `#edit-requests-section`.
+- **PM flow:** Review batches → submit delete/edit → track on **Requests → Edit requests**. **Executive:** same page → Approve/Reject (applies `delivery_edit_request_apply`).
+- **AI rules:** New approval workflows → add a **section** on Requests hub (or extend `EditRequestsSection` with category), not a new top-level nav page. Reuse `EditRequestsSection` + `edit_requests.php` when staff submits + exec approves.
+- **Key files:** `InventoryRequestsPage.tsx`, `EditRequestsSection.tsx`, `EditRequestsPage.tsx`, `editRequestsApi.ts`, `Sidebar.tsx`, `DeliveriesReviewPage.tsx`, `CorrectionNotificationsContext.tsx`, `PageLayout.tsx`
+- **Patterns:** [[005_SPA_UX_Patterns#Requests hub (unified approvals)]]
+- **Deploy:** `cd app && npm run build` + hard refresh.
+
+### 2026-06-05 - Deliveries delete reverts ship (orphan shipped parcel repair)
+- **Symptom:** Executive **deleted** a row in **Review batches**, rescanned same tracking → **"This parcel is already shipped."** (green `shipped` badge); could not re-photograph / re-ship.
+- **Root cause:** **`deliveries_delete_item_by_id()`** only removed `delivery_batch_items` + photo file. **`online_order_parcels`** stayed **`shipped`** and packaging stock stayed deducted from prior **`ship_parcel`**.
+- **Fix:**
+  - **`honey_parcel_revert_deduct()`** — restore qty to `honey_packaging_rows` from `online_parcel_deduct_lines`; delete deduct lines + `honey_sales_log` parcel rows.
+  - **`deliveries_revert_parcel_to_packing_if_shipped()`** — when last delivery photo for parcel removed: status → **`packing`**, clear `ship_date` / `shipped_by_user_id` / `deducted_at`.
+  - **`deliveries_delete_item_by_id()`** — after DELETE, if **no remaining** `delivery_batch_items` for that tracking/parcel → revert ship + stock.
+  - **`deliveries_repair_orphaned_shipped_parcel()`** — on **`parcel_by_tracking`** lookup: if `shipped` but **zero** delivery photos (legacy mistaken delete) → auto-revert to `packing` so rescan works without manual DB fix.
+- **Rule:** Deleting delivery photo **does not** unship if **other** active delivery rows still exist for same tracking/parcel.
+- **Key files:** `delivery_edit_requests.php`, `honey_parcel_inventory.php`, `api/v1/deliveries.php`
+- **Fragile edges:** [[003_Fragile_Edges#Deliveries delete vs parcel ship state]]
+- **Deploy:** PHP only — rescan after deploy repairs orphaned rows.
+
+### 2026-06-05 - Deliveries save latency fix (photo upload performance)
+- **Symptom:** **Done** / **Scan next** on Add deliveries felt very slow — long **“Saving parcel…”** spinner; PM reported noticeable wait every parcel.
+- **Root causes (ranked):**
+  1. **Full-resolution phone photos** (often 2–8 MB) uploaded only when user tapped Done — large multipart POST dominates wall time.
+  2. **Sequential API chain on one button:** `upload_photo` → `refreshBatch` (GET) → `ship_parcel` → `refreshBatch` again — up to **4 round trips** before UI advanced.
+  3. **PHP** read entire upload into RAM via `file_get_contents($tmp)` even when **`client_hint`** (scanned tracking) already made QR/blob classification unnecessary.
+  4. **Secondary:** `ship_parcel` → `honey_parcel_apply_deduct` (FIFO packaging updates) — real work but usually smaller than photo upload.
+- **Not the cause:** Server-side QR decode on the image — normal flow passes `client_hint` from scan; `deliveries_classify_upload()` returns from hint without `rts_classify_delivery_qr_blob()`.
+- **Fix (SPA):**
+  - **`compressDeliveryPhoto.ts`** — resize longest edge to **1280px**, JPEG **~0.82**; skip if already small JPEG (<500 KB).
+  - **Eager background upload** — on photo capture, compress + `upload_photo` immediately while user reviews parcel; **Done / Scan next** usually only runs **`ship_parcel`** (awaits in-flight upload if user taps early).
+  - **Batch count** from upload response **`batch_item_count`** — removed redundant `refreshBatch()` calls during save (page load / date change still refresh once).
+  - **UX copy:** “Preparing photo…” → “Saving photo in background…” → “Photo saved — tap Done or Scan next when ready”; saving step shows “Shipping parcel…” when photo already uploaded.
+  - **Retake** bumps `uploadGenRef` to cancel stale in-flight uploads.
+- **Fix (PHP):** `deliveries_upload.php` — when `client_hint` non-empty, classify from hint only; **do not** `file_get_contents` the tmp file.
+- **AI rules — keep in mind for future features:**
+  1. **Camera / file uploads in SPA:** always **compress client-side** before `FormData` POST unless file is already tiny.
+  2. **Upload timing:** start upload **at capture/selection**, not on final confirm — user review time hides network latency.
+  3. **Avoid refresh chains:** use mutation response fields (`batch_item_count`, etc.) instead of extra GETs after every POST.
+  4. **Server:** when prior step already supplied structured metadata (tracking hint, IDs), **skip re-reading binaries** for classification/OCR.
+  5. **Do not** merge upload+ship into one endpoint unless necessary — eager upload + separate `ship_parcel` preserves idempotency and still feels fast.
+  6. Reuse **`compressDeliveryPhoto`** (or same max-edge/JPEG recipe) for any new packing-photo / evidence-photo flows.
+- **Key files:** `app/src/app/lib/compressDeliveryPhoto.ts`, `DeliveriesPage.tsx`, `deliveriesApi.ts`, `includes/deliveries_upload.php`
+- **Patterns:** [[005_SPA_UX_Patterns#Photo upload performance (SPA + API)]] · [[005_SPA_UX_Patterns#Deliveries (prod_manager)]]
+- **Deploy:** PHP + `cd app && npm run build` + hard refresh.
+
+### 2026-06-05 - Deliveries UI polish (sidebar nav, feedback motion, review view modal, hard delete)
+- **Sidebar active state:** On `/deliveries/review`, both **Add deliveries** and **Review batches** highlighted — React Router `NavLink` prefix-matches `/deliveries` for child paths.
+- **Fix (`Sidebar.tsx`):** `NavLinkChild.end?: boolean`; **Add deliveries** `{ to: "/deliveries", end: true }` so only exact `/deliveries` is active; pass `end={child.end}` to each child `NavLink`. Deliveries group auto-expands when `pathname.startsWith("/deliveries")`.
+- **Add deliveries feedback:** `DeliveriesPage` uses fulfillment motion kit (not custom full-screen overlay) — `FulfillmentToast` (Scan next), `FulfillmentSuccessPanel` (Done), `FulfillmentStepSwitch`, `FulfillmentSectionEnter`, `FulfillmentErrorBanner`, `FulfillmentPressable`.
+- **Review batches table:** Stays compact; **View** opens `AppModal` with tracking, recipient, items, order, courier, parcel status, packing photo. `review_list` enriched via `deliveries_enrich_review_rows()` (`parcel` object on each row).
+- **Hard delete (not void):** `deliveries_delete_item_by_id()` — DELETE row + photo file + pending edit requests; API `delete_item` (alias `void_item`, executive only). If **last** photo for parcel → also **revert ship** + restore packaging stock (see [[002_Memory_Bank#2026-06-05 - Deliveries delete reverts ship (orphan shipped parcel repair)]]).
+- **Duplicate tracking:** `deliveries_assert_tracking_not_duplicate()` on upload, resolve, edit-request apply; `DeliveryDuplicateScanModal` on scan conflict.
+- **Patterns:** [[005_SPA_UX_Patterns#Sidebar navigation — sibling routes]] · [[005_SPA_UX_Patterns#Deliveries (prod_manager)]]
+- **Key files:** `Sidebar.tsx`, `DeliveriesPage.tsx`, `DeliveriesReviewPage.tsx`, `delivery_edit_requests.php`, `deliveries_upload.php`, `api/v1/deliveries.php`
+- **Deploy:** `cd app && npm run build` + hard refresh.
+
+### 2026-06-05 - Edit requests submit: Server error on delivery edit/delete
+- **Symptom:** Production manager submits edit/delete request on Deliveries review → **Server error.**
+- **Root cause:** `api/v1/edit_requests.php` called `api_dispatch()` **before** `const ER_ALLOWED_TABLES` — PHP had not defined the constant yet when `api_er_submit()` ran.
+- **Fix:** Move `api_dispatch([...])` to **end of file** (after const + handler functions), same pattern as other v1 APIs.
+- **Key file:** `api/v1/edit_requests.php`
+
+### 2026-06-05 - Deliveries upload transaction fix + review photo viewer
+- **Symptom:** Add deliveries → photo taken → Done / Scan next → **"There is no active transaction"**; batch count stayed 0.
+- **Root cause:** `deliveries_upload_photos()` called `beginTransaction()`, then `online_parcels_get_by_tracking()` → `online_parcels_ensure_schema()` (`CREATE TABLE IF NOT EXISTS`). MySQL DDL **implicitly commits**, ending the txn; final `$pdo->commit()` threw.
+- **Fix (`deliveries_upload.php`):** Run `online_parcels_ensure_schema()` **before** `beginTransaction()`; link parcel with lightweight `SELECT id` (no schema DDL inside txn).
+- **Review batches:** `review_list` API returns `photo_url`; `DeliveriesReviewPage` thumbnail + View modal; `DeliveryReviewEditModal` shows photo.
+- **UX:** Done / Scan next require `photoFile` + preview; retake clears cached `delivery_item_id`.
+- **Key files:** `deliveries_upload.php`, `api/v1/deliveries.php`, `DeliveriesPage.tsx`, `DeliveriesReviewPage.tsx`
+- **Deploy:** PHP + `cd app && npm run build`
+
+### 2026-06-05 - System-wide AppModal standard (all center dialogs)
+- **What we did:** Introduced canonical modal shell `AppModal` (`components/AppModal.tsx`) — dimmed blurred backdrop (`bg-black/50 backdrop-blur-[2px]`) + elevated card panel (`rounded-2xl shadow-2xl ring-1 ring-black/5`) with spring motion and `useReducedMotion()`.
+- **Layout parts:** `AppModalHeader`, `AppModalBody`, `AppModalFooter` — header/body/footer pattern used across exec, honey, inventory, deliveries, CSR.
+- **Migrated pages:** `CostingPage`, `HoneyProductionPage`, `HoneyWarehousePage`, `HoneyPackagingPage`, `InventoryRequestsPage`, `InventoryPage`, `RTSPage`, `SuppliersPage`, `StaffManagementPage`, `ARCreditsPage`, `DeliveriesPage` (QR scanner).
+- **Already on standard:** `CorrectionReviewModal`, `ExecutiveRowEditModal`, `SupplierProfileModal`, `BatchStartModal`, `DeliveryReviewEditModal`, `DeliveryDuplicateScanModal`, `DuplicateTrackingModal`, `OnlineParcelDetailModal`; `FulfillmentModal` re-exports `AppModal`; `ui/dialog` + `ui/alert-dialog` aligned; `POSModal` uses same tokens.
+- **Cursor rule:** `.cursor/rules/app-modal.mdc` — agents must use `AppModal` for new center modals; no inline `fixed inset-0` overlays.
+- **Docs:** [[005_SPA_UX_Patterns#Modal patterns — AppModal is the standard]]
+- **Deploy:** `cd app && npm run build` + hard refresh.
+- **Regenerate:** `c:\xampp\php\php.exe tools/memory_bank/generate_all.php`
+
+### 2026-06-05 - Shopee SPX Packing List.Standard Local + master Excel merge
+- **What we did:** Added a second Shopee SPX import path for Shopee’s **`Packing List.Standard Local_*.xlsx`** plus waybill PDFs. Items come from **`product_info`** blobs (same long-text style as VIP), not PDF OCR alone.
+- **UI (`ShopeeSpxRunStep.tsx`):** Extract step toggle — **PDF only** | **Packing list Excel + PDF**. Packing list mode: upload `.xlsx` + PDFs → **Import packing list** → same variant carousel → review → build Excel → stamp.
+- **Backend:**
+  - `includes/shopee_spx_product_info.php` — parse `Product Name` / `Variation Name` / `Quantity` from `product_info`.
+  - `includes/shopee_spx_packing_list.php` — read sheet 0; headers `tracking_number` + `product_info` (+ `order_sn`); optional PDF name merge by normalized tracking via `pdf_to_excel_extract()`.
+  - `api/v1/online_orders.php?action=spx_import_packing_list` — `excel_token` + optional `pdf_tokens`.
+- **Parsing rules:**
+  - `Variation Name:1LITER-Light|Amber|Dark` → `1 Liter Honey LIGHT|AMBER|DARK` (auto, no picker).
+  - B2T1 `Light & Amber & Dark,350ml` → `3L-HONEY (LAD) + 350ml` — **LAD set but free 350ml still needs variant** (carousel shows 350ml presets only).
+  - User pick **Light 350ml** → final line `3L-HONEY (LAD) + 350ml (L)` via `shopeePresetToResolvedItemsLine()`.
+- **Master iPYX / batch lines (Order No. + Name):**
+  - Packing list `order_sn` → API row `order_no` → `run_shopee_resolve` → `online_orders_build_ipyx_excel_from_rows()` column **Order No.** (was always blank before).
+  - **Name** from PDF extract merged at import by tracking; flows to iPYX **Name** and `csr_online_order_lines.recipient_name`.
+  - Column layout unchanged: `Order No. | Name | Item/s | Note | | Courier | Tracking Number`.
+- **SPA variant logic (`honeyItemVariant.ts`):** `1LITER-*` auto-resolved; `\bLAD\b` no longer skips resolution when `350ml` lacks `(L|A|D)` suffix; `variantPickTitle()` for B2T1 free-bottle copy.
+- **Key files:** `shopee_spx_product_info.php`, `shopee_spx_packing_list.php`, `online_orders_generator.php`, `api/v1/online_orders.php`, `ShopeeSpxRunStep.tsx`, `ItemResolverCarousel.tsx`, `honeyItemVariant.ts`, `onlineOrdersApi.ts`, `pdfToExcelApi.ts` (`order_no` on row type)
+- **Deploy:** PHP + `cd app && npm run build` + hard refresh.
+- **Regenerate:** `c:\xampp\php\php.exe tools/memory_bank/generate_all.php`
+- **Patterns:** [[005_SPA_UX_Patterns#Shopee SPX packing list import]] · [[003_Fragile_Edges#Shopee SPX packing list product_info]]
+
+### 2026-06-05 - Parcel item parser: semicolon split + other_items (mixed orders)
+- **Symptom:** Lines like `3 Paragis Tea ; 1 Liter Honey AMBER` parsed as 3× amber liter — honey qty/variant leaked across segments.
+- **Fix (`includes/honey_parcel_item_parser.php`):** Split `Item/s` on **`;`** and **`+`**; parse each segment independently. Non-honey products (Paragis, Cacao, BRC, Pito-Pito, Honey Comb) collected in **`other_items`** — noted for packers, no honey deduct.
+- **Promote rule (`online_order_parcels.php`):** Allow lines with honey-only, other-only, or mixed — parser errors still block promote.
+- **SPA:** `OnlineParcelDetailModal` — **Other products (noted)** section when `other_items` present.
+- **Ops:** Existing parcels with wrong `items_parsed_json` need **re-finalize** CSR batch to pick up parser fix.
+- **Key files:** `honey_parcel_item_parser.php`, `online_order_parcels.php`, `OnlineParcelDetailModal.tsx`
+- **Deploy:** PHP + SPA rebuild if modal changed.
+
+### 2026-06-05 - Deliveries role (Production Manager)
+- **Who scans & photographs parcels:** **`prod_manager`** (Production Manager) and **`executive`** — not CSR.
+- **Sidebar:** **Deliveries** (truck) → **Add deliveries** `/deliveries` (scan → photo → ship) · **Review batches** `/deliveries/review`.
+- **Flow:** CSR finalizes online orders → parcels `packing` → PM Deliveries scan/photo → `ship_parcel` deducts packaging → photo visible on **Online parcels** modal.
+- **API gate:** `online_parcels_user_can_ship()` — `executive`, `prod_manager` only.
+- **Patterns:** [[005_SPA_UX_Patterns#Deliveries (prod_manager)]]
+
 ### 2026-06-05 - Partner waybill stamp fixes (Flash NO MATCH + iPYX first sheet only)
 - **Symptoms (E2E):** Partner stamp showed **NO MATCH** on Flash/Lazada waybill `P3623KK03MYAD` even though row 1 of iPYX Excel had the order. Error banner displayed `P3623KKO3MYAD` (letter **O** instead of digit **0**). Extra/wrong rows also appeared because the parser scanned **all workbook sheets**.
 - **Root causes:**

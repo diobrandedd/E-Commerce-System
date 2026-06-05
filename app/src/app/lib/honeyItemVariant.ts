@@ -15,6 +15,13 @@ export function honeyItemLineText(value: unknown): string {
 export function honeySizeFromItemLine(items: unknown): HoneySizeHint {
   const s = honeyItemLineText(items);
   if (!s) return null;
+  if (
+    /\bLAD\b/i.test(s) &&
+    /350\s*ml/i.test(s) &&
+    !/350\s*ml\s*\(\s*[LAD]\s*\)/i.test(s)
+  ) {
+    return "350ml";
+  }
   if (/350\s*ml|B2T1/i.test(s)) return "350ml";
   if (/3\s*L/i.test(s)) return "3L";
   if (/2\s*L/i.test(s)) return "2L";
@@ -29,11 +36,19 @@ export function honeyItemNeedsVariantResolution(items: unknown): boolean {
   if (!raw) return false;
   if (!/honey|350\s*ml|B2T1/i.test(raw)) return false;
 
-  if (/\b(light|amber|dark)\b/i.test(raw)) return false;
+  if (/1LITER[-\s]*(Light|Amber|Dark)/i.test(raw)) return false;
+  if (/1\s*Liter\s+Honey\s+(LIGHT|AMBER|DARK)/i.test(raw)) return false;
+  if (/\b(light|amber|dark)\b/i.test(raw) && !/Light\s*&\s*Amber\s*&\s*Dark/i.test(raw)) {
+    return false;
+  }
   if (/1L\s*HONEY\s+[LAD]\b/i.test(raw)) return false;
   if (/2L-HONEY\s+[LAD]{2}/i.test(raw)) return false;
   if (/3L-HONEY\s+[LAD]{3}/i.test(raw)) return false;
+  if (/\bLAD\b/i.test(raw) && /350\s*ml/i.test(raw) && !/350\s*ml\s*\(\s*[LAD]\s*\)/i.test(raw)) {
+    return true;
+  }
   if (/\bLAD\b/i.test(raw)) return false;
+  if (/350\s*ml\s*\(\s*[LAD]\s*\)/i.test(raw)) return false;
   if (/\bLiter\s+Honey\s+(LIGHT|AMBER|DARK)\b/i.test(raw)) return false;
 
   const size = honeySizeFromItemLine(raw);
@@ -66,6 +81,37 @@ export function shopeeRowIsReadyForExport(
   }
   if (!resolution?.confirmed || !resolvedItems) return false;
   return !honeyItemNeedsVariantResolution(resolvedItems);
+}
+
+/** Merge a variant preset into a B2T1 line that still needs a free 350ml pick. */
+export function shopeePresetToResolvedItemsLine(baseItems: unknown, preset: string): string {
+  const base = honeyItemLineText(baseItems);
+  const pick = preset.trim();
+  if (!pick) return pick;
+  if (
+    /\bLAD\b/i.test(base) &&
+    /\+\s*350\s*ml\s*$/i.test(base) &&
+    !/350\s*ml\s*\(\s*[LAD]\s*\)/i.test(base)
+  ) {
+    const m = pick.match(/^(Light|Amber|Dark)\s+350ml$/i);
+    if (m) {
+      const letter = m[1].charAt(0).toUpperCase();
+      return base.replace(/\+\s*350\s*ml\s*$/i, `+ 350ml (${letter})`);
+    }
+  }
+  return pick;
+}
+
+export function variantPickTitle(items: unknown): string {
+  const s = honeyItemLineText(items);
+  if (
+    /\bLAD\b/i.test(s) &&
+    /350\s*ml/i.test(s) &&
+    !/350\s*ml\s*\(\s*[LAD]\s*\)/i.test(s)
+  ) {
+    return "Pick Light / Amber / Dark for free 350ml";
+  }
+  return "Pick Light / Amber / Dark for this size";
 }
 
 export function shopeeFinalItemsForRow(

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, Edit2, ToggleLeft, ToggleRight, X, KeyRound, AlertCircle, Loader2 } from "lucide-react";
+import { Plus, Search, Edit2, ToggleLeft, ToggleRight, KeyRound, AlertCircle, Loader2 } from "lucide-react";
+import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 
@@ -346,13 +347,14 @@ function StaffModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="bg-card rounded-2xl border border-border w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h3 className="text-base font-semibold text-foreground">{mode === "create" ? "Add staff" : `Edit ${user?.name ?? ""}`}</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
-        </div>
-        <form onSubmit={submit} className="px-5 py-5 space-y-4">
+    <AppModal open onClose={onClose} panelClassName="max-w-md w-full" labelledBy="staff-form-modal-title">
+      <AppModalHeader
+        title={mode === "create" ? "Add staff" : `Edit ${user?.name ?? ""}`}
+        titleId="staff-form-modal-title"
+        onClose={onClose}
+      />
+      <AppModalBody className="py-5">
+        <form onSubmit={submit} className="space-y-4">
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 flex items-start gap-2">
               <AlertCircle size={13} className="mt-0.5 flex-shrink-0" /> <span>{error}</span>
@@ -396,8 +398,8 @@ function StaffModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </AppModalBody>
+    </AppModal>
   );
 }
 

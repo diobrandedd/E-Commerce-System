@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Loader2, X, Edit2 } from "lucide-react";
+import { Loader2, Edit2 } from "lucide-react";
+import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { getSupplier, type Supplier } from "@/app/lib/suppliers";
 import { ApiError } from "@/app/lib/api";
 
@@ -35,37 +36,25 @@ export function SupplierProfileModal({ supplierId, supplierCode, onClose, onEdit
   }, [supplierId]);
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div
-        className="bg-card rounded-xl border w-full max-w-lg my-6 overflow-hidden"
-        onClick={e => e.stopPropagation()}
-        style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}
+    <AppModal open onClose={onClose} panelClassName="max-w-lg w-full" labelledBy="supplier-profile-title" zIndex="z-[100]">
+      <AppModalHeader
+        title="Supplier profile"
+        titleId="supplier-profile-title"
+        subtitle={supplierCode ? `Code: ${supplierCode}` : undefined}
+        onClose={onClose}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <div>
-            <h3 className="font-bold text-foreground">Supplier profile</h3>
-            {supplierCode && (
-              <p className="text-xs text-muted-foreground mt-0.5 font-mono">Code: {supplierCode}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            {onEdit && supplier && (
-              <button
-                type="button"
-                onClick={() => onEdit(supplier)}
-                className="p-2 rounded-lg hover:bg-secondary text-muted-foreground"
-                title="Edit supplier"
-              >
-                <Edit2 size={16} />
-              </button>
-            )}
-            <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground">
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-5">
+        {onEdit && supplier && (
+          <button
+            type="button"
+            onClick={() => onEdit(supplier)}
+            className="p-2 rounded-lg hover:bg-muted/60 text-muted-foreground"
+            title="Edit supplier"
+          >
+            <Edit2 size={16} />
+          </button>
+        )}
+      </AppModalHeader>
+      <AppModalBody>
           {loading && (
             <div className="py-12 flex justify-center text-muted-foreground">
               <Loader2 className="animate-spin" size={22} />
@@ -132,8 +121,7 @@ export function SupplierProfileModal({ supplierId, supplierCode, onClose, onEdit
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+      </AppModalBody>
+    </AppModal>
   );
 }

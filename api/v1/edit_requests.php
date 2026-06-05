@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/../../includes/delivery_edit_requests.php';
 
 /**
  * Edit request workflow.
@@ -13,14 +14,7 @@ require_once __DIR__ . '/_bootstrap.php';
  *   POST ?action=reject         -> Executive rejects with rejection_note
  */
 
-api_dispatch([
-    'list' => 'api_er_list',
-    'submit' => 'api_er_submit',
-    'approve' => 'api_er_approve',
-    'reject' => 'api_er_reject',
-]);
-
-const ER_ALLOWED_TABLES = ['stock_entries', 'stocks', 'products', 'beginning_inventory'];
+const ER_ALLOWED_TABLES = ['stock_entries', 'stocks', 'products', 'beginning_inventory', 'delivery_batch_items'];
 
 function api_er_list(): void
 {
@@ -62,7 +56,7 @@ function api_er_submit(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['tl', 'staff']);
+    $user = api_require_role(['tl', 'staff', 'prod_manager']);
 
     $table = trim((string) ($input['table_name'] ?? ''));
     $recordId = (int) ($input['record_id'] ?? 0);
@@ -85,9 +79,29 @@ function api_er_submit(): void
     }
 
     $pdo = ims_pdo();
-    // Verify record exists and is in scope (same dept) for the requester.
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-    if ($table === 'stock_entries') {
+
+    if ($table === 'delivery_batch_items') {
+        if (!in_array($field, ['void', 'delete', 'tracking_number'], true)) {
+            api_fail('Invalid delivery change type.', 422);
+        }
+        if ($field === 'tracking_number' && trim($newValue) === '') {
+            api_fail('Tracking number is required.', 422);
+        }
+        try {
+            $item = delivery_edit_request_validate_submit($pdo, $recordId, $field, trim($newValue));
+            $currentTn = trim((string) ($item['tracking_number'] ?? ''));
+            $normalized = delivery_edit_request_normalize_values(
+                $field,
+                $currentTn !== '' ? $currentTn : (string) $item['item_status'],
+                trim($newValue),
+            );
+            $oldValue = $normalized['old_value'];
+            $newValue = $normalized['new_value'];
+        } catch (RuntimeException $e) {
+            api_fail($e->getMessage(), 400);
+        }
+    } elseif ($table === 'stock_entries') {
         $st = $pdo->prepare('SELECT dept_id FROM stock_entries WHERE id = ? LIMIT 1');
         $st->execute([$recordId]);
         $row = $st->fetch();
@@ -131,19 +145,23 @@ function api_er_approve(): void
         if (!in_array($table, ER_ALLOWED_TABLES, true)) {
             throw new RuntimeException('Table not allowed.');
         }
-        // Whitelist updatable fields per table for safety.
-        $allowedFields = [
-            'stock_entries' => ['qty', 'batching_date', 'supplier_batch_no'],
-            'stocks' => ['name', 'unit', 'supplier_name', 'supplier_code'],
-            'products' => ['name', 'size', 'variant', 'selling_price'],
-            'beginning_inventory' => ['qty', 'month_year'],
-        ];
-        if (!isset($allowedFields[$table]) || !in_array($field, $allowedFields[$table], true)) {
-            throw new RuntimeException('Field not allowed.');
+
+        if ($table === 'delivery_batch_items') {
+            delivery_edit_request_apply($pdo, $req);
+        } else {
+            $allowedFields = [
+                'stock_entries' => ['qty', 'batching_date', 'supplier_batch_no'],
+                'stocks' => ['name', 'unit', 'supplier_name', 'supplier_code'],
+                'products' => ['name', 'size', 'variant', 'selling_price'],
+                'beginning_inventory' => ['qty', 'month_year'],
+            ];
+            if (!isset($allowedFields[$table]) || !in_array($field, $allowedFields[$table], true)) {
+                throw new RuntimeException('Field not allowed.');
+            }
+            $sql = 'UPDATE ' . $table . ' SET ' . $field . ' = ? WHERE id = ?';
+            $upd = $pdo->prepare($sql);
+            $upd->execute([$newValue, $recordId]);
         }
-        $sql = 'UPDATE ' . $table . ' SET ' . $field . ' = ? WHERE id = ?';
-        $upd = $pdo->prepare($sql);
-        $upd->execute([$newValue, $recordId]);
 
         $review = $pdo->prepare(
             'UPDATE edit_requests SET status = "approved", reviewed_by = ?, reviewed_at = NOW() WHERE id = ?'
@@ -185,3 +203,10 @@ function api_er_reject(): void
     }
     api_ok(['rejected' => true]);
 }
+
+api_dispatch([
+    'list' => 'api_er_list',
+    'submit' => 'api_er_submit',
+    'approve' => 'api_er_approve',
+    'reject' => 'api_er_reject',
+]);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { Plus, Search, AlertCircle, Loader2, Download, X, RefreshCcw } from "lucide-react";
+import { Plus, Search, AlertCircle, Loader2, Download, RefreshCcw } from "lucide-react";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
@@ -287,13 +288,10 @@ function StockEntryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="bg-card rounded-2xl border border-border w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h3 className="text-base font-semibold text-foreground">Add stock entry</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
-        </div>
-        <form onSubmit={submit} className="px-5 py-5 space-y-3">
+    <AppModal open onClose={onClose} panelClassName="max-w-lg w-full" labelledBy="stock-entry-modal-title">
+      <AppModalHeader title="Add stock entry" titleId="stock-entry-modal-title" onClose={onClose} />
+      <form onSubmit={submit}>
+        <AppModalBody className="space-y-3">
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 flex items-start gap-2">
               <AlertCircle size={13} className="mt-0.5 flex-shrink-0" /> <span>{error}</span>
@@ -344,15 +342,15 @@ function StockEntryModal({
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Supplier batch no.</label>
             <input value={supplierBatchNo} onChange={e => setSupplierBatchNo(e.target.value)} maxLength={120} className={inputCls} />
           </div>
-          <div className="pt-2 flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="px-3 py-2 text-sm rounded-lg border border-border text-muted-foreground hover:text-foreground">Cancel</button>
-            <button disabled={saving} type="submit" className="px-4 py-2 text-sm font-semibold rounded-lg text-white disabled:opacity-70" style={{ background: "#C8900A" }}>
-              {saving ? "Saving…" : "Save entry"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </AppModalBody>
+        <AppModalFooter className="justify-end">
+          <button type="button" onClick={onClose} className="px-3 py-2 text-sm rounded-lg border border-border text-muted-foreground hover:text-foreground">Cancel</button>
+          <button disabled={saving} type="submit" className="px-4 py-2 text-sm font-semibold rounded-lg text-white disabled:opacity-70" style={{ background: "#C8900A" }}>
+            {saving ? "Saving…" : "Save entry"}
+          </button>
+        </AppModalFooter>
+      </form>
+    </AppModal>
   );
 }
 

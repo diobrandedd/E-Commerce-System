@@ -11,14 +11,18 @@
 | **Status** | `done` |
 
 ## 🚀 Active Feature / Sprint
-- **Current Focus:** Manual E2E (inventory connection + CSR pipelines)
-- **Latest shipped:** Partner waybill stamp (Flash OCR + iPYX first sheet) + Online Parcels CSR TL access — see [[002_Memory_Bank]]
+- **Current Focus:** Manual E2E (inventory connection + CSR pipelines + SPX packing list path)
+- **Latest shipped:** Shopee SPX Packing List.Standard Local import (product_info + PDF names + Order No. in master Excel) — see [[002_Memory_Bank]]
 
 ## 🛠️ Current Todo List
-- [ ] Manual E2E: CSR finalize batch → parcels in `packing` → prod deliveries scan/photo/ship → packaging totals drop
+- [ ] Manual E2E: Shopee SPX **packing list Excel + PDF** — import → B2T1 350ml variant pick → master Excel has Order No. + Name + Item/s
+- [ ] Manual E2E: CSR finalize batch → parcels in `packing` → **prod_manager** Deliveries scan/photo/ship → packaging totals drop
 - [ ] Manual E2E: parcel lookup (CSR TL/staff) and idempotent re-scan of shipped TN
-- [ ] Manual E2E: Shopee SPX confirm → review → stamp; VIP show completed + edit choice
+- [ ] Manual E2E: Shopee SPX PDF-only confirm → review → stamp; VIP show completed + edit choice
 - [ ] Manual E2E: duplicate tracking — try same TN across pipelines; confirm modal shows existing parcel/line
+- [ ] Re-finalize old batches if parcel lines used pre–semicolon-split parser (mixed Paragis + honey)
+- [x] Shopee SPX packing list import + Order No./Name master Excel merge (2026-06-05)
+- [x] Parcel parser semicolon split + other_items UI (2026-06-05)
 - [x] Partner Flash waybill match — OCR O→0 on P-IDs; iPYX Excel first sheet only (2026-06-05)
 - [x] Online Parcels CSR TL/staff API access — IMS `tl`/`staff` + CSR dept gate (2026-06-05)
 - [x] CSR variant picker stock indicators — Shopee + VIP; translucent scroll chevrons (2026-06-05)

@@ -117,53 +117,8 @@ export function FulfillmentSuccessPanel({
   );
 }
 
-export function FulfillmentModal({
-  open,
-  onClose,
-  children,
-  panelClassName,
-  labelledBy,
-}: {
-  open: boolean;
-  onClose: () => void;
-  children: ReactNode;
-  panelClassName?: string;
-  labelledBy?: string;
-}) {
-  const reduce = useReducedMotion();
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
-          <motion.button
-            type="button"
-            aria-label="Close"
-            className="absolute inset-0 bg-black/40"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={onClose}
-          />
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={labelledBy}
-            className={cn("relative w-full max-w-lg my-4 max-h-[90vh] overflow-y-auto", panelClassName)}
-            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.92, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 10 }}
-            transition={reduce ? { duration: 0.15 } : remarksSpring}
-            onClick={e => e.stopPropagation()}
-          >
-            {children}
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
-}
+/** @deprecated Import `AppModal` from `@/app/components/AppModal` for new code. */
+export { AppModal as FulfillmentModal } from "@/app/components/AppModal";
 
 export function FulfillmentPickerCard({
   index,

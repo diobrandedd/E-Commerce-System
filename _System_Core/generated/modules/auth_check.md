@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-06-05T04:27:27+02:00
+generated: 2026-06-05T06:53:55+02:00
 type: module
 function_count: 14
 ---
@@ -34,9 +34,9 @@ function_count: 14
 - `includes/auth_check.php`:132 — `ims_session_start();`
 - `includes/auth_check.php`:145 — `ims_session_start();`
 - `includes/auth_check.php`:161 — `ims_session_start();`
-- `includes/online_orders_generator.php`:647 — `ims_session_start();`
-- `includes/online_orders_generator.php`:809 — `ims_session_start();`
-- `includes/online_orders_generator.php`:825 — `ims_session_start();`
+- `includes/online_orders_generator.php`:648 — `ims_session_start();`
+- `includes/online_orders_generator.php`:813 — `ims_session_start();`
+- `includes/online_orders_generator.php`:829 — `ims_session_start();`
 - `includes/order_remarks.php`:276 — `ims_session_start();`
 - `includes/order_remarks.php`:315 — `ims_session_start();`
 - `includes/order_remarks.php`:331 — `ims_session_start();`
@@ -55,17 +55,17 @@ function_count: 14
 - `api/v1/_bootstrap.php`:131 — `$u = ims_current_user();`
 - `api/v1/auth.php`:69 — `$user = ims_current_user();`
 - `api/v1/auth.php`:113 — `$user = ims_current_user();`
-- `api/v1/deliveries.php`:11 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:20 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:75 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:90 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:112 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:133 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:160 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:193 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:218 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:241 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:266 — `$user = ims_current_user();`
+- `api/v1/deliveries.php`:12 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:21 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:77 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:92 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:114 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:135 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:162 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:195 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:220 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:243 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:268 — `$user = ims_current_user();`
 - `api/v1/order_remarks.php`:30 — `$user = ims_current_user();`
 - `api/v1/parcels.php`:10 — `$user = ims_current_user();`
 - `api/v1/pdf_to_excel.php`:29 — `$user = ims_current_user();`

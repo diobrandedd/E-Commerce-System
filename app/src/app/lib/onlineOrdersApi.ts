@@ -1,6 +1,7 @@
 import type { PackagingStockSnapshot } from "@/app/lib/honeyPackagingStock";
 import { api, API_BASE } from "@/app/lib/api";
 import { normalizePartnerStampResult } from "@/app/lib/normalizePartnerStampResult";
+import type { PdfToExcelRow } from "@/app/lib/pdfToExcelApi";
 import type {
   OnlineOrdersBatch,
   OnlineOrdersLineInput,
@@ -67,11 +68,21 @@ export async function onlineOrdersRunVipStamp(
 
 export async function onlineOrdersRunShopeeResolve(
   batchId: number,
-  rows: { tracking: string; name?: string; items: string; courier?: string }[],
+  rows: { tracking: string; order_no?: string | null; name?: string; items: string; courier?: string }[],
 ): Promise<{ excel_token: string; run_id: number; row_count: number }> {
   return api("online_orders.php", "run_shopee_resolve", {
     method: "POST",
     body: { batch_id: batchId, rows },
+  });
+}
+
+export async function onlineOrdersSpxImportPackingList(
+  excelToken: string,
+  pdfTokens: string[] = [],
+): Promise<{ rows: PdfToExcelRow[] }> {
+  return api("online_orders.php", "spx_import_packing_list", {
+    method: "POST",
+    body: { excel_token: excelToken, pdf_tokens: pdfTokens },
   });
 }
 

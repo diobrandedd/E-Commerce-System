@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Copy, Loader2, Check } from "lucide-react";
+import { AppModal, AppModalBody } from "@/app/components/AppModal";
 import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
@@ -399,13 +400,8 @@ function PackOutModal({ row, onClose, onDone }: { row: PrRow; onClose: () => voi
 
 function ModalShell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div
-        className="bg-card rounded-xl border p-6 w-full max-w-md my-4 relative z-[60]"
-        onClick={e => e.stopPropagation()}
-      >
-        {children}
-      </div>
-    </div>
+    <AppModal open onClose={onClose} panelClassName="max-w-md w-full">
+      <AppModalBody className="py-6">{children}</AppModalBody>
+    </AppModal>
   );
 }

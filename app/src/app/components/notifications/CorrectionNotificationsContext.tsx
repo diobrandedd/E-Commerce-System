@@ -28,9 +28,21 @@ export interface UnreadDiscountApproval {
   status: "pending" | "approved" | "declined";
 }
 
+export interface UnreadEditRequest {
+  id: number;
+  table_name: string;
+  record_id: number;
+  field_name: string;
+  reason: string;
+  requested_by_name: string;
+  created_at: string;
+  status: "pending" | "approved" | "rejected";
+}
+
 export type NotificationItem =
   | ({ kind: "correction" } & UnreadCorrection)
-  | ({ kind: "discount_approval" } & UnreadDiscountApproval);
+  | ({ kind: "discount_approval" } & UnreadDiscountApproval)
+  | ({ kind: "edit_request" } & UnreadEditRequest);
 
 interface CorrectionNotificationsContextValue {
   unreadCount: number;
@@ -57,22 +69,28 @@ export function CorrectionNotificationsProvider({ children }: { children: ReactN
       return;
     }
     try {
-      const [countRes, listRes, pendingDiscounts] = await Promise.all([
+      const [countRes, listRes, pendingDiscounts, pendingEdits] = await Promise.all([
         apiGet<{ count: number }>("honey.php", "correction_unread_count"),
         apiGet<{ requests: UnreadCorrection[] }>("honey.php", "correction_unread_list", { limit: 10 }),
         apiGet<{ rows: UnreadDiscountApproval[]; pending_count: number }>("pos_discounts.php", "list", {
           status: "pending",
           limit: "10",
         }),
+        apiGet<{ requests: UnreadEditRequest[] }>("edit_requests.php", "list", { status: "pending" }),
       ]);
 
       const correctionItems: NotificationItem[] = listRes.requests.map(r => ({ kind: "correction", ...r }));
       const discountItems: NotificationItem[] = pendingDiscounts.rows.map(r => ({ kind: "discount_approval", ...r }));
-      const merged = [...correctionItems, ...discountItems].sort((a, b) =>
+      const editItems: NotificationItem[] = pendingEdits.requests
+        .filter(r => r.status === "pending")
+        .slice(0, 10)
+        .map(r => ({ kind: "edit_request", ...r }));
+      const merged = [...correctionItems, ...discountItems, ...editItems].sort((a, b) =>
         String(b.created_at).localeCompare(String(a.created_at)),
       );
 
-      setUnreadCount((countRes.count ?? 0) + (pendingDiscounts.pending_count ?? 0));
+      const editPendingCount = pendingEdits.requests.filter(r => r.status === "pending").length;
+      setUnreadCount((countRes.count ?? 0) + (pendingDiscounts.pending_count ?? 0) + editPendingCount);
       setUnreadList(merged);
     } catch {
       setUnreadCount(0);

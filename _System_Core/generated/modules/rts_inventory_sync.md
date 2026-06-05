@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-06-05T04:27:33+02:00
+generated: 2026-06-05T06:54:01+02:00
 type: module
 function_count: 5
 ---

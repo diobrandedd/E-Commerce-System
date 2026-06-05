@@ -1,4 +1,5 @@
 import { apiGet, apiPost, apiPostForm } from "@/app/lib/api";
+import { submitEditRequest } from "@/app/lib/editRequestsApi";
 import type { OnlineParcel } from "@/app/lib/parcelsApi";
 
 export async function deliveriesBatchForDate(deliveryDate: string): Promise<{
@@ -9,10 +10,19 @@ export async function deliveriesBatchForDate(deliveryDate: string): Promise<{
   return apiGet("deliveries.php", "batch_for_date", { delivery_date: deliveryDate });
 }
 
+export interface DeliveryExistingRecording {
+  delivery_item_id: number;
+  photo_filename: string;
+  item_status: string;
+  tracking_number: string | null;
+  delivery_date: string;
+}
+
 export async function deliveriesParcelByTracking(tracking: string): Promise<{
   tracking_normalized: string;
   parcel: OnlineParcel | null;
-  recent_delivery_items: { delivery_item_id: number; photo_filename: string; tracking_number: string | null }[];
+  existing_recordings: DeliveryExistingRecording[];
+  already_recorded: boolean;
 }> {
   return apiGet("deliveries.php", "parcel_by_tracking", { tracking });
 }
@@ -23,6 +33,7 @@ export async function deliveriesUploadPhoto(
   clientHint: string,
 ): Promise<{
   batch_id: number;
+  batch_item_count: number;
   items: { delivery_item_id: number; tracking_number: string | null }[];
 }> {
   const form = new FormData();
@@ -58,20 +69,56 @@ export async function deliveriesReviewList(params: {
   });
 }
 
-export async function deliveriesVoidItem(itemId: number): Promise<void> {
-  await apiPost("deliveries.php", "void_item", { item_id: itemId });
+export async function deliveriesDeleteItem(itemId: number): Promise<void> {
+  await apiPost("deliveries.php", "delete_item", { item_id: itemId });
 }
 
 export async function deliveriesResolveItem(itemId: number, trackingNumber: string): Promise<void> {
   await apiPost("deliveries.php", "resolve_item", { item_id: itemId, tracking_number: trackingNumber });
 }
 
+/** Production manager — delete/edit goes through executive edit-request approval. */
+export async function deliveriesRequestDelete(itemId: number, reason: string): Promise<{ id: number }> {
+  return submitEditRequest({
+    table_name: "delivery_batch_items",
+    record_id: itemId,
+    field_name: "delete",
+    reason,
+  });
+}
+
+export async function deliveriesRequestEditContent(
+  itemId: number,
+  trackingNumber: string,
+  reason: string,
+): Promise<{ id: number }> {
+  return submitEditRequest({
+    table_name: "delivery_batch_items",
+    record_id: itemId,
+    field_name: "tracking_number",
+    new_value: trackingNumber,
+    reason,
+  });
+}
+
+export interface DeliveryReviewParcel {
+  id: number;
+  tracking_number: string;
+  recipient_name: string;
+  items_raw: string;
+  order_no: string | null;
+  courier: string;
+  status: string;
+}
+
 export interface DeliveryReviewRow {
   item_id: number;
   batch_id: number;
   photo_filename: string;
+  photo_url: string;
   item_status: string;
   tracking_number: string | null;
   voided_at: string | null;
   delivery_date: string;
+  parcel: DeliveryReviewParcel | null;
 }

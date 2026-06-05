@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../../includes/online_orders_generator.php';
+require_once __DIR__ . '/../../includes/shopee_spx_packing_list.php';
 
 $action = trim((string) ($_GET['action'] ?? $_POST['action'] ?? ''));
 
@@ -63,6 +64,7 @@ api_dispatch([
     'run_vip_stamp' => 'api_online_orders_run_vip_stamp',
     'run_shopee_resolve' => 'api_online_orders_run_shopee_resolve',
     'run_shopee_stamp' => 'api_online_orders_run_shopee_stamp',
+    'spx_import_packing_list' => 'api_online_orders_spx_import_packing_list',
     'packaging_stock' => 'api_online_orders_packaging_stock',
 ]);
 
@@ -267,6 +269,28 @@ function api_online_orders_run_shopee_stamp(): void
     $pdo = ims_pdo();
     try {
         $result = online_orders_run_shopee_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelToken);
+        api_ok($result);
+    } catch (RuntimeException $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_online_orders_spx_import_packing_list(): void
+{
+    api_method_allowed(['POST']);
+    api_online_orders_assert_access();
+    api_online_orders_require_csrf();
+
+    @ini_set('max_execution_time', '300');
+    $input = api_input();
+    $excelToken = trim((string) ($input['excel_token'] ?? ''));
+    $pdfTokens = is_array($input['pdf_tokens'] ?? null) ? array_values($input['pdf_tokens']) : [];
+    if ($excelToken === '') {
+        api_fail('excel_token required.', 400);
+    }
+
+    try {
+        $result = online_orders_spx_import_packing_list($excelToken, $pdfTokens);
         api_ok($result);
     } catch (RuntimeException $e) {
         api_fail($e->getMessage(), 400);

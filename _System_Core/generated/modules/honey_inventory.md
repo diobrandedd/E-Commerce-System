@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-06-05T04:27:28+02:00
+generated: 2026-06-05T06:53:56+02:00
 type: module
 function_count: 38
 ---
@@ -73,7 +73,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:778 — `$variant = honey_normalize_variant((string) $fields['variant']);`
 - `includes/honey_inventory.php`:809 — `$variant = honey_normalize_variant((string) $fields['variant']);`
 - `includes/honey_inventory.php`:993 — `$after = honey_normalize_variant($newValue);`
-- `includes/honey_parcel_inventory.php`:71 — `$variant = honey_normalize_variant($variant);`
+- `includes/honey_parcel_inventory.php`:76 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:142 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:159 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:210 — `$variant = honey_normalize_variant($variant);`
@@ -353,5 +353,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/honey.php`:181 — `api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));`
-- `api/v1/online_orders.php`:282 — `api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));`
+- `api/v1/online_orders.php`:306 — `api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));`
 

@@ -6,6 +6,7 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/qr_decode.php';
 require_once __DIR__ . '/rts_storage.php';
 require_once __DIR__ . '/rts_schema.php';
+require_once __DIR__ . '/delivery_edit_requests.php';
 require_once __DIR__ . '/online_order_parcels.php';
 
 const DELIVERIES_UPLOAD_MAX_BYTES = 20 * 1024 * 1024;
@@ -58,6 +59,9 @@ function deliveries_upload_photos(PDO $pdo, string $deliveryDate, array $files, 
     $outItems = [];
     $savedFiles = [];
 
+    // DDL in ensure_schema implicitly commits MySQL transactions — run before beginTransaction.
+    online_parcels_ensure_schema($pdo);
+
     $pdo->beginTransaction();
     try {
         $stFind = $pdo->prepare('SELECT id FROM delivery_batches WHERE delivery_date = ? LIMIT 1 FOR UPDATE');
@@ -96,13 +100,16 @@ function deliveries_upload_photos(PDO $pdo, string $deliveryDate, array $files, 
             if ($ext === '') {
                 throw new RuntimeException('Unsupported image type');
             }
-            $blob = file_get_contents($tmp);
-            if ($blob === false || $blob === '') {
-                throw new RuntimeException('Could not read upload');
-            }
-
             $hintRaw = ($hints !== null && isset($hints[$i])) ? trim((string) $hints[$i]) : '';
-            $class = deliveries_classify_upload($blob, $hintRaw);
+            if ($hintRaw !== '') {
+                $class = deliveries_classify_upload('', $hintRaw);
+            } else {
+                $blob = file_get_contents($tmp);
+                if ($blob === false || $blob === '') {
+                    throw new RuntimeException('Could not read upload');
+                }
+                $class = deliveries_classify_upload($blob, '');
+            }
 
             $baseName = 'deliv_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '_' . $i . '.' . $ext;
             $name = $monthKey . '/' . $baseName;
@@ -114,11 +121,20 @@ function deliveries_upload_photos(PDO $pdo, string $deliveryDate, array $files, 
 
             $parcelId = null;
             $tn = $class['tracking'] ?? null;
+            $tnNorm = '';
             if ($tn !== null && $tn !== '') {
-                $parcel = online_parcels_get_by_tracking($pdo, $tn);
-                if ($parcel !== null) {
-                    $parcelId = (int) $parcel['id'];
+                $tnNorm = online_parcels_normalize_tracking((string) $tn);
+                if ($tnNorm !== '') {
+                    $stParcel = $pdo->prepare('SELECT id FROM online_order_parcels WHERE tracking_number = ? LIMIT 1');
+                    $stParcel->execute([$tnNorm]);
+                    $pid = $stParcel->fetchColumn();
+                    if ($pid !== false) {
+                        $parcelId = (int) $pid;
+                    }
                 }
+            }
+            if ($tnNorm !== '' || $parcelId !== null) {
+                deliveries_assert_tracking_not_duplicate($pdo, $tnNorm, 0, $parcelId);
             }
 
             if ($hasParcelLink) {

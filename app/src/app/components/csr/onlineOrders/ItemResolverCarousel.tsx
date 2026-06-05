@@ -14,8 +14,10 @@ import type { PdfToExcelRow } from "@/app/lib/pdfToExcelApi";
 import {
   honeyItemLineText,
   honeySizeFromItemLine,
+  shopeePresetToResolvedItemsLine,
   shopeeRowIsReadyForExport,
   shopeeRowNeedsItemResolution,
+  variantPickTitle,
 } from "@/app/lib/honeyItemVariant";
 import { enrichShopeePresets } from "@/app/lib/honeyPackagingStock";
 import { useHoneyPackagingStock } from "@/app/hooks/useHoneyPackagingStock";
@@ -220,7 +222,7 @@ export function ItemResolverCarousel({
                     <p className="text-xs text-muted-foreground">{row.courier}</p>
                     {pdfItems && (
                       <p className="text-xs mt-1 text-amber-800 bg-amber-50 rounded px-2 py-1">
-                        From PDF: <span className="font-medium">{pdfItems}</span>
+                        Items: <span className="font-medium">{pdfItems}</span>
                       </p>
                     )}
 
@@ -275,9 +277,11 @@ export function ItemResolverCarousel({
                             <VariantCardStrip
                               presets={enrichShopeePresets(presetsForRow(row.items), packagingStock)}
                               selected={undefined}
-                              onSelect={v => startConfirm(row.page, v)}
+                              onSelect={v =>
+                                startConfirm(row.page, shopeePresetToResolvedItemsLine(row.items, v))
+                              }
                               disabled={disabled}
-                              title="Pick Light / Amber / Dark for this size"
+                              title={variantPickTitle(row.items)}
                             />
                             <input
                               type="text"
