@@ -74,6 +74,8 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 
 **SPA confirm + edit:** Resolutions need `confirmed: true` before export. Use `honeyItemLineText()` before any `.trim()` on item fields — API/JSON may send non-strings.
 
+**Review trap:** `ShopeeItemsReviewPanel` must **not** filter to `shopeeRowNeedsItemResolution()` only — users need the **full batch** visible before **Confirm all & build Excel** (fixed 2026-06-05).
+
 **Common bug:** Calling `honeyItemNeedsVariantResolution(row)` instead of `honeyItemNeedsVariantResolution(resolution.items)` → runtime `trim is not a function` because `row` is an object.
 
 ## Shopee SPX packing list `product_info`
@@ -97,7 +99,7 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 
 - **Excel scope:** iPYX partner workbook **first sheet only** (`Today's Order` daily list). Do not scan all sheets — `processor.py` and `online_orders_parse_ipyx_excel_paths()` both use sheet index 0.
 - **Stamp matching:** `waybill_stamper_process_uploads()` → `processor.py` builds `orders` dict keyed by `norm_tn()`; each PDF page TN looked up same way.
-- **Flash/Lazada P-IDs:** OCR often reads digit **0** as letter **O** (e.g. `P3623KK03MYAD` → `P3623KKO3MYAD`). Both Python `ocr_confusables_for_match()` and PHP `online_orders_ocr_confusables_for_match()` map **`O` → `0`** on `^P[A-Z0-9]+$` before compare.
+- **Flash/Lazada P-IDs:** OCR often reads digit **0** as letter **O** (e.g. `P3623KK03MYAD` → `P3623KKO3MYAD`). Both Python `ocr_confusables_for_match()` and PHP `online_orders_ocr_confusables_for_match()` map **`O` → `0`** on `^P[A-Z0-9]{11,17}$` before compare — **not** on Shopee express prefixes (`PH`, `SPEPH`, `SPX`), which legitimately end in letter **O** (e.g. `PH26239152010O`).
 - **Normalization chain:** `online_orders_normalize_tracking()` applies OCR fix — keeps duplicate-tracking checks and Excel parse aligned with stamper.
 - **Standalone stamper:** Same `processor.py` rules apply to legacy `api/v1/waybill.php?action=process` and Online Orders Partner step.
 

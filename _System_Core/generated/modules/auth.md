@@ -1,7 +1,7 @@
 ---
 title: auth
 source: includes/auth.php
-generated: 2026-06-05T06:53:54+02:00
+generated: 2026-06-05T08:03:19+02:00
 type: module
 function_count: 21
 ---
@@ -131,7 +131,7 @@ function_count: 21
 **Callers (2):**
 
 - `api/delivery_bulk.php`:98 — `$submitterId = rts_delivery_submitter_user_id($pdo);`
-- `includes/deliveries_upload.php`:213 — `return rts_delivery_submitter_user_id($pdo);`
+- `includes/deliveries_upload.php`:229 — `return rts_delivery_submitter_user_id($pdo);`
 
 ## rts_session_start {#rts_session_start}
 

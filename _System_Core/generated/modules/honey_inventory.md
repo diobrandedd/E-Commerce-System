@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-06-05T06:53:56+02:00
+generated: 2026-06-05T08:03:21+02:00
 type: module
 function_count: 38
 ---
@@ -73,14 +73,14 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:778 — `$variant = honey_normalize_variant((string) $fields['variant']);`
 - `includes/honey_inventory.php`:809 — `$variant = honey_normalize_variant((string) $fields['variant']);`
 - `includes/honey_inventory.php`:993 — `$after = honey_normalize_variant($newValue);`
-- `includes/honey_parcel_inventory.php`:76 — `$variant = honey_normalize_variant($variant);`
+- `includes/honey_parcel_inventory.php`:115 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:142 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:159 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:210 — `$variant = honey_normalize_variant($variant);`
 
 ## honey_packaging_size_columns {#honey_packaging_size_columns}
 
-**Callers (9):**
+**Callers (10):**
 
 - `includes/honey_inventory.php`:393 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_inventory.php`:409 — `[$curCol] = honey_packaging_size_columns($size);`
@@ -88,6 +88,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:584 — `[$curCol, $initCol] = honey_packaging_size_columns($size);`
 - `includes/honey_inventory.php`:821 — `[$curCol, $initCol] = honey_packaging_size_columns((string) $size);`
 - `includes/honey_inventory.php`:834 — `[$curCol, $initCol] = honey_packaging_size_columns($size);`
+- `includes/honey_parcel_inventory.php`:89 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_pos.php`:143 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_pos.php`:163 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/rts_inventory_sync.php`:153 — `[$curCol] = honey_packaging_size_columns($size);`

@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-06-05T06:53:55+02:00
+generated: 2026-06-05T08:03:19+02:00
 type: module
 function_count: 14
 ---
@@ -34,9 +34,9 @@ function_count: 14
 - `includes/auth_check.php`:132 — `ims_session_start();`
 - `includes/auth_check.php`:145 — `ims_session_start();`
 - `includes/auth_check.php`:161 — `ims_session_start();`
-- `includes/online_orders_generator.php`:648 — `ims_session_start();`
-- `includes/online_orders_generator.php`:813 — `ims_session_start();`
-- `includes/online_orders_generator.php`:829 — `ims_session_start();`
+- `includes/online_orders_generator.php`:652 — `ims_session_start();`
+- `includes/online_orders_generator.php`:817 — `ims_session_start();`
+- `includes/online_orders_generator.php`:833 — `ims_session_start();`
 - `includes/order_remarks.php`:276 — `ims_session_start();`
 - `includes/order_remarks.php`:315 — `ims_session_start();`
 - `includes/order_remarks.php`:331 — `ims_session_start();`

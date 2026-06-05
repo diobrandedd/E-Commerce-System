@@ -1,6 +1,26 @@
 # Project Change Log & Memory Bank
 
+> **Timeline index.** New entries link to [[problems/000_Problem_Index|Problem records]] (graph nodes: Problem → Cause → Fix → Files). Say **"save to memory bank"** in Cursor after chat-driven fixes.
+
 ## 📅 Recent Log Entries
+
+### 2026-06-05 — [[problems/records/2026-06-05_unified-requests-hub|Unified Requests hub]]
+Merged inventory corrections, edit requests, and POS discount approvals into one Requests hub with redirects.
+
+### 2026-06-05 — [[problems/records/2026-06-05_deliveries-delete-revert-ship|Deliveries delete reverts shipped parcel]]
+Deleting last delivery item now reverts parcel state and inventory deduction to allow clean rescan/re-ship.
+
+### 2026-06-05 — [[problems/records/2026-06-05_deliveries-save-latency|Deliveries save latency fix]]
+Done/Scan-next latency reduced via eager compressed background photo upload and fewer refresh calls.
+
+### 2026-06-05 — [[problems/records/2026-06-05_deliveries-sidebar-active-state|Deliveries sidebar active-state fix]]
+Set exact route matching so Add deliveries and Review batches do not highlight together.
+
+### 2026-06-05 — [[problems/records/2026-06-05_shopee-spx-review-full-list|Shopee SPX review shows full batch]]
+Review panel listed only ambiguous rows → fixed to show all pages before export. SPA rebuild.
+
+### 2026-06-05 — [[problems/records/2026-06-05_shopee-spx-tracking-o0|Shopee SPX tracking O→0 in master list]]
+`PH…O` normalized to `…0` in DB/master → narrowed OCR confusables to Flash/Lazada P-IDs. PHP + Python only.
 
 ### 2026-06-05 - Unified Requests hub (inventory + edit requests + POS discounts)
 - **Problem:** Delivery review edit/delete requests lived on a separate **Edit Requests** page (`/edit-requests`); executives expected them under sidebar **Requests** (`/inventory/requests`) alongside inventory corrections. Page was inventory-only — more request types coming.
@@ -139,8 +159,8 @@
   1. **OCR 0↔O** — `waybill-stamper/processor.py` OCR/text layer read `0` as `O` on marketplace `P…` parcel IDs; Excel had correct `P3623KK03MYAD`.
   2. **All sheets** — `processor.py` `parse_excel()` iterated every sheet; `online_orders_parse_ipyx_excel_paths()` used `getAllSheets()`. iPYX daily workbook: **only sheet 1** is today's orders; other sheets add noise or overwrite keys.
 - **Fixes:**
-  - **`norm_tn()` / `ocr_confusables_for_match()`** in `waybill-stamper/processor.py` — for `P[A-Z0-9]+` IDs, map **`O` → `0`** before lookup.
-  - **`online_orders_ocr_confusables_for_match()`** in `includes/online_orders_generator.php` — same rule inside **`online_orders_normalize_tracking()`** (duplicate checks + Excel keys stay aligned).
+  - **`norm_tn()` / `ocr_confusables_for_match()`** in `waybill-stamper/processor.py` — for Flash/Lazada `P[A-Z0-9]{11,17}` IDs, map **`O` → `0`** before lookup (excludes Shopee `PH`/`SPEPH`/`SPX`).
+  - **`online_orders_ocr_confusables_for_match()`** in `includes/online_orders_generator.php` — same scoped rule inside **`online_orders_normalize_tracking()`** (duplicate checks + Excel keys stay aligned).
   - **First sheet only** — `processor.py` reads `wb.sheetnames[0]` only; PHP `online_orders_parse_ipyx_excel_paths()` uses `$spreadsheet->getSheet(0)` only.
 - **Example:** PDF OCR `P3623KKO3MYAD` + Excel `P3623KK03MYAD` → both normalize to `P3623KK03MYAD` → MATCHED.
 - **Key files:** `waybill-stamper/processor.py`, `includes/online_orders_generator.php`
@@ -237,7 +257,7 @@
 - **What we did:** Standardized ambiguous honey variant flows in Online Orders so users **never auto-commit** a wrong Light/Amber/Dark pick.
 - **Shopee SPX (`ItemResolverCarousel` + `ShopeeSpxRunStep`):**
   - Pick preset or custom line → **“Is this correct?”** (`Yes, correct` / `Change`) before saving.
-  - New **`review`** phase: table of PDF vs final item → **Confirm all & build Excel**.
+  - New **`review`** phase: **full batch** table (Original vs Final item) → **Confirm all & build Excel** — not only edited/ambiguous rows (fixed 2026-06-05).
   - **`Show completed`** checkbox lists confirmed rows; **Edit item** clears resolution and reopens picker.
   - Resolutions require `confirmed: true` (`shopeeRowIsReadyForExport` in `honeyItemVariant.ts`).
 - **VIP (`AmbiguousOrderCarousel` + `VipRunStep`):**

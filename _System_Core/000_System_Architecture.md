@@ -33,6 +33,7 @@
 - **Product theory:** [[010_Product_Theory]]
 - Current Active Tasks: [[001_System_State]]
 - Project Change Log: [[002_Memory_Bank]]
+- Problem graph (chat fixes): [[problems/000_Problem_Index]]
 - Fragile / non-obvious traps: [[003_Fragile_Edges]]
 - SPA design (colors, layout): [[004_SPA_Design_System]]
 - SPA UX (modals, motion, feedback): [[005_SPA_UX_Patterns]]

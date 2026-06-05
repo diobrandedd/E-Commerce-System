@@ -125,7 +125,7 @@ Springs used consistently: stiffness 400–520, damping 30–34. Page enters oft
 2. **Confirm inline** — preset/custom does **not** commit until user taps **Yes, correct** (Shopee) or resolution is complete with `finalRemark` (VIP).
 3. **Show completed** — parent owns `showCompleted` state; pass `onShowCompletedChange={setShowCompleted}`. **Never** hardcode `false` or no-op handler.
 4. **Edit** — `onClearResolution(idx|page)` removes entry from `resolutions` state; card returns to picker. VIP: **Edit choice**; Shopee: **Edit item**.
-5. **Review gate (Shopee)** — optional table step before API `run_shopee_resolve` so user scans all lines once.
+5. **Review gate (Shopee)** — `ShopeeItemsReviewPanel` lists **every row** (page, tracking, Original, Final item) before `run_shopee_resolve` — not only carousel-edited lines. Scrollable + sticky header for long batches; **Edit** returns to `ItemResolverCarousel` for that page.
 
 **Components:**
 

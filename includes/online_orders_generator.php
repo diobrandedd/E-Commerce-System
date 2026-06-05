@@ -323,11 +323,15 @@ function online_orders_normalize_tracking(string $raw): string
 }
 
 /**
- * OCR fixes for waybill ↔ Excel matching (Flash/Lazada P-IDs: O vs 0).
+ * OCR fixes for waybill ↔ Excel matching (Flash/Lazada marketplace P-IDs: O vs 0).
+ * Never apply to Shopee express prefixes (PH, SPEPH, SPX) — those legitimately end in letter O.
  */
 function online_orders_ocr_confusables_for_match(string $tn): string
 {
-    if (preg_match('/^P[A-Z0-9]+$/', $tn) === 1 && str_contains($tn, 'O')) {
+    if (preg_match('/^(PH|SPEPH|SPX)/', $tn)) {
+        return $tn;
+    }
+    if (preg_match('/^P[A-Z0-9]{11,17}$/', $tn) === 1 && str_contains($tn, 'O')) {
         return str_replace('O', '0', $tn);
     }
 

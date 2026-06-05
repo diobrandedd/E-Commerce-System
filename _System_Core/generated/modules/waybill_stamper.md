@@ -1,7 +1,7 @@
 ---
 title: waybill_stamper
 source: includes/waybill_stamper.php
-generated: 2026-06-05T06:54:03+02:00
+generated: 2026-06-05T08:03:30+02:00
 type: module
 function_count: 17
 ---
@@ -122,12 +122,12 @@ function_count: 17
 
 - `api/v1/waybill.php`:93 — `$pdfs = waybill_stamper_resolve_stash_tokens($pdfTokenList, 'pdf');`
 - `api/v1/waybill.php`:94 — `$excels = waybill_stamper_resolve_stash_tokens($excelTokenList, 'excel');`
-- `includes/online_orders_generator.php`:525 — `$pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');`
-- `includes/online_orders_generator.php`:526 — `$excels = waybill_stamper_resolve_stash_tokens($excelTokens, 'excel');`
-- `includes/online_orders_generator.php`:578 — `$pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');`
-- `includes/online_orders_generator.php`:579 — `$excels = waybill_stamper_resolve_stash_tokens([$excelToken], 'excel');`
-- `includes/online_orders_generator.php`:721 — `$pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');`
-- `includes/online_orders_generator.php`:722 — `$excels = waybill_stamper_resolve_stash_tokens([$excelToken], 'excel');`
+- `includes/online_orders_generator.php`:529 — `$pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');`
+- `includes/online_orders_generator.php`:530 — `$excels = waybill_stamper_resolve_stash_tokens($excelTokens, 'excel');`
+- `includes/online_orders_generator.php`:582 — `$pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');`
+- `includes/online_orders_generator.php`:583 — `$excels = waybill_stamper_resolve_stash_tokens([$excelToken], 'excel');`
+- `includes/online_orders_generator.php`:725 — `$pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');`
+- `includes/online_orders_generator.php`:726 — `$excels = waybill_stamper_resolve_stash_tokens([$excelToken], 'excel');`
 - `includes/shopee_spx_packing_list.php`:199 — `$excels = waybill_stamper_resolve_stash_tokens([$excelToken], 'excel');`
 - `includes/shopee_spx_packing_list.php`:203 — `$pdfs = waybill_stamper_resolve_stash_tokens(array_values($pdfTokens), 'pdf');`
 
@@ -137,21 +137,21 @@ function_count: 17
 
 - `api/v1/waybill.php`:111 — `waybill_stamper_release_stash_tokens($stashTokensToRelease);`
 - `api/v1/waybill.php`:115 — `waybill_stamper_release_stash_tokens($stashTokensToRelease);`
-- `includes/online_orders_generator.php`:554 — `waybill_stamper_release_stash_tokens($stashRelease);`
 - `includes/online_orders_generator.php`:558 — `waybill_stamper_release_stash_tokens($stashRelease);`
-- `includes/online_orders_generator.php`:586 — `waybill_stamper_release_stash_tokens($stashRelease);`
+- `includes/online_orders_generator.php`:562 — `waybill_stamper_release_stash_tokens($stashRelease);`
 - `includes/online_orders_generator.php`:590 — `waybill_stamper_release_stash_tokens($stashRelease);`
-- `includes/online_orders_generator.php`:727 — `waybill_stamper_release_stash_tokens($stashRelease);`
-- `includes/online_orders_generator.php`:730 — `waybill_stamper_release_stash_tokens($stashRelease);`
+- `includes/online_orders_generator.php`:594 — `waybill_stamper_release_stash_tokens($stashRelease);`
+- `includes/online_orders_generator.php`:731 — `waybill_stamper_release_stash_tokens($stashRelease);`
+- `includes/online_orders_generator.php`:734 — `waybill_stamper_release_stash_tokens($stashRelease);`
 
 ## waybill_stamper_process_uploads {#waybill_stamper_process_uploads}
 
 **Callers (4):**
 
 - `api/v1/waybill.php`:110 — `$result = waybill_stamper_process_uploads($pdfs, $excels);`
-- `includes/online_orders_generator.php`:544 — `$stamp = waybill_stamper_process_uploads($pdfs, $excels);`
-- `includes/online_orders_generator.php`:584 — `$stamp = waybill_stamper_process_uploads($pdfs, $excels);`
-- `includes/online_orders_generator.php`:726 — `$stamp = waybill_stamper_process_uploads($pdfs, $excels);`
+- `includes/online_orders_generator.php`:548 — `$stamp = waybill_stamper_process_uploads($pdfs, $excels);`
+- `includes/online_orders_generator.php`:588 — `$stamp = waybill_stamper_process_uploads($pdfs, $excels);`
+- `includes/online_orders_generator.php`:730 — `$stamp = waybill_stamper_process_uploads($pdfs, $excels);`
 
 ## waybill_stamper_register_download {#waybill_stamper_register_download}
 

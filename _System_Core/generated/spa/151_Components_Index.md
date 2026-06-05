@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-05T06:54:04+02:00
+generated: 2026-06-05T08:03:31+02:00
 type: spa
 ---
 
@@ -22,7 +22,6 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/ui/dialog.tsx`
 - `app/src/app/components/ui/drawer.tsx`
 - `app/src/app/components/ui/sheet.tsx`
-- `app/src/app/pages/deliveries/DeliveriesPage.tsx`
 
 ## useReducedMotion
 
@@ -72,7 +71,6 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/csr/OnlineOrdersGeneratorPage.tsx`
 - `app/src/app/pages/csr/OrderRemarksPage.tsx`
 - `app/src/app/pages/csr/PdfToExcelPage.tsx`
-- `app/src/app/pages/deliveries/DeliveriesPage.tsx`
 
 ## POSModal
 

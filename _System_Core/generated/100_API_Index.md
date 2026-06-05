@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-05T06:53:54+02:00
+generated: 2026-06-05T08:03:16+02:00
 type: memory-bank
 ---
 
@@ -87,10 +87,11 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 |--------|---------|--------------|
 | `batch_for_date` | `api_deliveries_batch_for_date()` | `ims_pdo()` |
 | `upload_photo` | `api_deliveries_upload_photo()` | `ims_pdo()`, `deliveries_ims_submitter_app_user_id()`, `deliveries_upload_photos()` |
-| `parcel_by_tracking` | `api_deliveries_parcel_by_tracking()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_normalize_tracking()`, `online_parcels_get_by_tracking()`, `deliveries_find_existing_recordings()` |
+| `parcel_by_tracking` | `api_deliveries_parcel_by_tracking()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_normalize_tracking()`, `online_parcels_get_by_tracking()`, `deliveries_repair_orphaned_shipped_parcel()`, `deliveries_find_existing_recordings()` |
 | `ship_parcel` | `api_deliveries_ship_parcel()` | `ims_pdo()`, `online_parcels_ship()` |
-| `review_list` | `api_deliveries_review_list()` | `ims_pdo()` |
-| `void_item` | `api_deliveries_void_item()` | `ims_pdo()`, `deliveries_void_item_by_id()` |
+| `review_list` | `api_deliveries_review_list()` | `ims_pdo()`, `rts_db_has_column()`, `online_parcels_format_packing_photo()`, `deliveries_enrich_review_rows()` |
+| `void_item` | `api_deliveries_delete_item()` | `ims_pdo()`, `deliveries_delete_item_by_id()` |
+| `delete_item` | `api_deliveries_delete_item()` | `ims_pdo()`, `deliveries_delete_item_by_id()` |
 | `resolve_item` | `api_deliveries_resolve_item()` | `ims_pdo()`, `deliveries_resolve_item_by_id()` |
 
 ### `edit_requests.php`

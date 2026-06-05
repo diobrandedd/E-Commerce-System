@@ -1,7 +1,7 @@
 ---
 title: deliveries_upload
 source: includes/deliveries_upload.php
-generated: 2026-06-05T06:53:55+02:00
+generated: 2026-06-05T08:03:20+02:00
 type: module
 function_count: 3
 ---
@@ -19,26 +19,28 @@ function_count: 3
 - `includes/qr_decode.php`
 - `includes/rts_storage.php`
 - `includes/rts_schema.php`
+- `includes/delivery_edit_requests.php`
 - `includes/online_order_parcels.php`
 
 ## deliveries_upload_photos {#deliveries_upload_photos}
 
-**Tables:** `delivery_batches`, `delivery_batch_items`
+**Tables:** `delivery_batches`, `online_order_parcels`, `delivery_batch_items`
 
 **Callers (2):**
 
 - `api/delivery_bulk.php`:114 — `$result = deliveries_upload_photos(`
-- `api/v1/deliveries.php`:109 — `$result = deliveries_upload_photos($pdo, $deliveryDate, $files, $hints, $submitterId);`
+- `api/v1/deliveries.php`:110 — `$result = deliveries_upload_photos($pdo, $deliveryDate, $files, $hints, $submitterId);`
 
 ## deliveries_classify_upload {#deliveries_classify_upload}
 
-**Callers (1):**
+**Callers (2):**
 
-- `includes/deliveries_upload.php`:105 — `$class = deliveries_classify_upload($blob, $hintRaw);`
+- `includes/deliveries_upload.php`:105 — `$class = deliveries_classify_upload('', $hintRaw);`
+- `includes/deliveries_upload.php`:111 — `$class = deliveries_classify_upload($blob, '');`
 
 ## deliveries_ims_submitter_app_user_id {#deliveries_ims_submitter_app_user_id}
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:106 — `$submitterId = deliveries_ims_submitter_app_user_id($pdo);`
+- `api/v1/deliveries.php`:107 — `$submitterId = deliveries_ims_submitter_app_user_id($pdo);`
 

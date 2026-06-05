@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-05T06:53:54+02:00
+generated: 2026-06-05T08:03:18+02:00
 type: memory-bank
 table_count: 40
 ---
@@ -78,7 +78,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_find_existing_recordings]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_get_batch_item_row]] |
-| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_void_item_by_id]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_delete_item_by_id]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_resolve_item_by_id]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
@@ -209,7 +209,9 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_submit]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_approve]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_reject]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_delete_item_by_id]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#delivery_edit_request_assert_no_duplicate_pending]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#delivery_edit_request_validate_submit]] |
 | `includes/ims_exec_sidebar.php` | [[modules/ims_exec_sidebar#ims_render_exec_sidebar]] |
 
 ## `products`
@@ -333,6 +335,10 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
+| `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_revert_parcel_to_packing_if_shipped]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_enrich_review_rows]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_promote_from_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_tracking]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_id]] |
@@ -345,6 +351,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_apply_deduct]] |
+| `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
 
 ## `pos_sales`
 
@@ -422,6 +429,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_total_inventory_snapshot]] |
+| `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_packaging_availability]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_available_qty]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_deduct_packaging_aggregate]] |
@@ -432,6 +440,7 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_stock_out_sold]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_build_trace_chain]] |
+| `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_log_sale]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_log_sale]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |

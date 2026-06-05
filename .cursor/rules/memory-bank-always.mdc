@@ -15,7 +15,8 @@ Before any code change:
 After a change that touches shared logic (`includes/`, `api/`, DB schema, SPA API clients):
 
 1. Regenerate: `php tools/memory_bank/generate_all.php`
-2. Append one entry to `_System_Core/002_Memory_Bank.md` — what changed, why, and affected files/functions (from impact report)
+2. Create a problem record in `_System_Core/problems/records/YYYY-MM-DD_slug.md` (Problem → Cause → Fix → Files) using `problems/TEMPLATE_Problem_Record.md`; add linked `causes/` and `fixes/` notes when reusable
+3. Append one-line link in `_System_Core/002_Memory_Bank.md` pointing to the problem record
 
 Never hand-edit `_System_Core/generated/` — regenerate instead.
 

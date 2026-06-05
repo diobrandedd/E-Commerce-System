@@ -1,7 +1,7 @@
 ---
 title: rts_storage
 source: includes/rts_storage.php
-generated: 2026-06-05T06:54:02+02:00
+generated: 2026-06-05T08:03:29+02:00
 type: module
 function_count: 12
 ---
@@ -43,9 +43,10 @@ function_count: 12
 
 ## rts_storage_dir {#rts_storage_dir}
 
-**Callers (8):**
+**Callers (9):**
 
 - `api/upload_documentation.php`:106 — `$targetDir = rts_storage_dir(RTS_STORAGE_BUCKET_RTS);`
+- `includes/delivery_edit_requests.php`:109 — `$path = rts_storage_dir(RTS_STORAGE_BUCKET_DELIVERIES) . '/' . $safe;`
 - `includes/rts_storage.php`:95 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_DELIVERIES) . '/' . $month;`
 - `includes/rts_storage.php`:206 — `? rts_storage_dir($bucket)`
 - `includes/rts_storage.php`:225 — `$path = rts_storage_dir($bucket) . '/' . $safe;`
@@ -58,19 +59,20 @@ function_count: 12
 
 **Callers (2):**
 
-- `includes/deliveries_upload.php`:42 — `$monthKey = rts_storage_deliveries_month_key($deliveryDate);`
+- `includes/deliveries_upload.php`:43 — `$monthKey = rts_storage_deliveries_month_key($deliveryDate);`
 - `includes/rts_storage.php`:94 — `$month = rts_storage_deliveries_month_key($deliveryDate);`
 
 ## rts_storage_dir_deliveries_month {#rts_storage_dir_deliveries_month}
 
 **Callers (1):**
 
-- `includes/deliveries_upload.php`:43 — `$targetDir = rts_storage_dir_deliveries_month($deliveryDate);`
+- `includes/deliveries_upload.php`:44 — `$targetDir = rts_storage_dir_deliveries_month($deliveryDate);`
 
 ## rts_storage_normalize_stored_filename {#rts_storage_normalize_stored_filename}
 
-**Callers (2):**
+**Callers (3):**
 
+- `includes/delivery_edit_requests.php`:105 — `$safe = rts_storage_normalize_stored_filename(RTS_STORAGE_BUCKET_DELIVERIES, $photoFilename);`
 - `includes/rts_storage.php`:182 — `$safe = rts_storage_normalize_stored_filename($bucket, $filename);`
 - `includes/rts_storage.php`:221 — `$safe = rts_storage_normalize_stored_filename($bucket, $filename);`
 

@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-06-05T06:54:01+02:00
+generated: 2026-06-05T08:03:28+02:00
 type: module
 function_count: 13
 ---
@@ -25,11 +25,20 @@ function_count: 13
 
 ## rts_db_has_column {#rts_db_has_column}
 
-**Callers (13):**
+**Callers (22):**
 
 - `api/case.php`:552 — `if (rts_db_has_column($pdo, 'rts_cases', 'updated_at')) {`
-- `includes/deliveries_upload.php`:57 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
+- `api/v1/deliveries.php`:206 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
+- `api/v1/deliveries.php`:244 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
+- `includes/deliveries_upload.php`:58 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
+- `includes/delivery_edit_requests.php`:19 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
+- `includes/delivery_edit_requests.php`:81 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
+- `includes/delivery_edit_requests.php`:120 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
+- `includes/delivery_edit_requests.php`:264 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
+- `includes/delivery_edit_requests.php`:363 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
+- `includes/delivery_edit_requests.php`:418 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `includes/honey_parcel_inventory.php`:30 — `$hasParcelCol = rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id');`
+- `includes/honey_parcel_inventory.php`:99 — `if (rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id')) {`
 - `includes/online_order_parcels.php`:235 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `includes/online_order_parcels.php`:326 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `includes/online_order_parcels.php`:573 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`

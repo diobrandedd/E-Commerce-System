@@ -22,7 +22,7 @@ flowchart LR
 | **Theory** | [[010_Product_Theory]], `specs/*.md` | **You** | What the system *should* do — outcomes, rules, users, not file paths |
 | **Plan** | `plans/active/*.md` | **AI drafts**, you approve | How to build it — files, API actions, DB, risks, test steps |
 | **Build** | Repo code + `generated/` | **AI** (after approval) | Implementation grounded in [[000_System_Architecture]] and indexes |
-| **Record** | [[002_Memory_Bank]], [[001_System_State]] | **AI** after merge | What shipped, why, blast radius |
+| **Record** | [[002_Memory_Bank]], [[problems/000_Problem_Index]], [[001_System_State]] | **AI** after merge | What shipped, why, blast radius |
 
 **Theory is not code.** Specs describe behavior and constraints. Plans translate specs into repo-specific steps. Generated maps show what *exists today*.
 
@@ -92,8 +92,30 @@ Regenerate memory bank when done and append 002_Memory_Bank.
 
 1. Move plan `plans/active/` → `plans/archive/`.
 2. Update [[001_System_State]] (clear active spec/plan or set next).
-3. Append [[002_Memory_Bank]] with outcome + impact summary.
+3. Append [[002_Memory_Bank]] with one-line link → [[problems/000_Problem_Index|problem record]].
 4. Run `php tools/memory_bank/generate_all.php`.
+
+---
+
+## Quick chat fixes (no spec/plan)
+
+For **small bugs and optimizations** you solve in chat:
+
+1. Describe the issue → AI implements.
+2. Say **"save to memory bank"** (or combine: *"fix this and save to memory bank"*).
+3. AI creates:
+   - `problems/records/YYYY-MM-DD_short-slug.md` — **Problem** hub
+   - `problems/causes/...md` — **Cause** node (reusable if same root cause)
+   - `problems/fixes/...md` — **Fix** node
+   - **Files** table in the record (links to `generated/modules/` where applicable)
+   - One-line entry in [[002_Memory_Bank]]
+   - [[003_Fragile_Edges]] update if it is a trap future agents will miss
+
+Templates: [[problems/TEMPLATE_Problem_Record]] · [[problems/TEMPLATE_Cause]] · [[problems/TEMPLATE_Fix]]
+
+**Graph view:** open [[problems/000_Problem_Index]] → local graph → see Problem → Cause → Fix → Files chain.
+
+Large features still use spec → plan → implement above.
 
 ---
 

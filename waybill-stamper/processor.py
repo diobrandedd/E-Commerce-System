@@ -213,8 +213,11 @@ def ocr_confusables_for_match(s: str) -> str:
     """
     Map OCR-prone letters to digits for waybill ↔ Excel matching.
     Flash/Lazada marketplace parcel IDs (P…) often read letter O as digit 0.
+    Never apply to Shopee express prefixes (PH, SPEPH, SPX).
     """
-    if re.match(r'^P[A-Z0-9]+$', s) and 'O' in s:
+    if re.match(r'^(PH|SPEPH|SPX)', s):
+        return s
+    if re.match(r'^P[A-Z0-9]{11,17}$', s) and 'O' in s:
         return s.replace('O', '0')
     return s
 
