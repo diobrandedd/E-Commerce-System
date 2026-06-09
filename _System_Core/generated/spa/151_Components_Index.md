@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-05T10:39:50+02:00
+generated: 2026-06-09T09:53:09+02:00
 type: spa
 ---
 
@@ -68,8 +68,8 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 ## OrderRemarksToast
 
 - `app/src/app/components/csr/onlineFulfillmentMotion.tsx`
-- `app/src/app/components/csr/onlineOrders/ShopeeSpxRunStep.tsx`
-- `app/src/app/components/csr/onlineOrders/VipRunStep.tsx`
+- `app/src/app/components/csr/onlineOrders/SpxPrepTool.tsx`
+- `app/src/app/components/csr/onlineOrders/VipPrepTool.tsx`
 - `app/src/app/components/csr/orderRemarksMotion.tsx`
 - `app/src/app/pages/csr/OnlineOrdersGeneratorPage.tsx`
 - `app/src/app/pages/csr/OrderRemarksPage.tsx`

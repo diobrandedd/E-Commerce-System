@@ -36,6 +36,9 @@ export function honeyItemNeedsVariantResolution(items: unknown): boolean {
   if (!raw) return false;
   if (!/honey|350\s*ml|B2T1/i.test(raw)) return false;
 
+  if (/\d+\s+Gallon\s+Honey\s+(LIGHT|AMBER|DARK)\b/i.test(raw)) return false;
+  if (/\d+\s*[×x]\s*350\s*ml\s*\(\s*LAD\s*\)/i.test(raw)) return false;
+  if (/\d+\s*[×x]\s*350\s*ml\s*\(\s*[LAD]\s*\)/i.test(raw)) return false;
   if (/1LITER[-\s]*(Light|Amber|Dark)/i.test(raw)) return false;
   if (/1\s*Liter\s+Honey\s+(LIGHT|AMBER|DARK)/i.test(raw)) return false;
   if (/\b(light|amber|dark)\b/i.test(raw) && !/Light\s*&\s*Amber\s*&\s*Dark/i.test(raw)) {
@@ -98,6 +101,11 @@ export function shopeePresetToResolvedItemsLine(baseItems: unknown, preset: stri
       const letter = m[1].charAt(0).toUpperCase();
       return base.replace(/\+\s*350\s*ml\s*$/i, `+ 350ml (${letter})`);
     }
+  }
+  const gallonQty = base.match(/^(\d+)\s+Gallon\s+Honey\b/i);
+  const gallonVariant = pick.match(/^(Light|Amber|Dark)\s+Gallon$/i);
+  if (gallonQty && gallonVariant) {
+    return `${gallonQty[1]} Gallon Honey ${gallonVariant[1]!.toUpperCase()}`;
   }
   return pick;
 }

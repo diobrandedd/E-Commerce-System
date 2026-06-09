@@ -85,7 +85,11 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 - **Format:** Shopee export `Packing List.Standard Local_*.xlsx` — sheet 0, columns **`tracking_number`**, **`product_info`**, **`order_sn`** (not the same layout as partner iPYX).
 - **Import API:** `online_orders.php?action=spx_import_packing_list` — stash packing list as `excel` token + optional PDF tokens for **names only** (items stay from Excel).
 - **Auto-resolve:** `1LITER-Light|Amber|Dark` in `Variation Name` → packer line `1 Liter Honey …` — do not send to carousel.
-- **B2T1 trap:** `Light & Amber & Dark,350ml` → line `3L-HONEY (LAD) + 350ml`. **`LAD` alone must not mark row complete** — free 350ml still needs `(L|A|D)` suffix. PHP: `shopee_spx_items_need_variant_resolution()`; SPA: `honeyItemNeedsVariantResolution()` + `shopeePresetToResolvedItemsLine()` on confirm.
+- **Gallon auto-resolve:** `Product Name` contains `N Gallon` + `Variation Name` is `Light|Amber|Dark` → `{N} Gallon Honey {VARIANT}` using **N from product title**, not Shopee `Quantity:` (e.g. `1 Gallon …` + `Quantity: 2` → `1 Gallon Honey AMBER`). Same for `1 Liter` / `2 Liter` in title vs `Quantity`.
+- **Prep Excel download:** `waybill.php?action=stash_download&token=` serves stashed prep workbook without releasing token — offer on SPX/VIP ready screens and on **PDF + Excel stamper** before `run_unified_stamp`.
+- **Review edit:** Auto-resolved packing-list rows are not in `needsWork` — `ItemResolverCarousel` must inject `focusPage` row; review edit is **type-only** (no variant presets).
+- **Multi-item cell:** One `product_info` cell may list `[1] Product Name:… [2] Product Name:…` — same tracking row, multiple line items. `shopee_spx_split_product_info_blocks()` parses each block; merged packer text uses ` ; ` (matches `honey_parcel_item_parser`).
+- **B2T1 trap (two promos):** (1) **1L B2T1** — product title has `1 Liter`, variation `Light & Amber & Dark,350ml` → `3L-HONEY (LAD) + 350ml`; free 350ml still needs `(L|A|D)` suffix via carousel. (2) **350ml B2T1** — product title is `[BUY 2 TAKE 1] 350mL…` (no liter) → `3× 350ml (LAD)` complete, no 3L. Do not use `/LAD/i` alone on variation to infer 3L when product is 350-only.
 - **Master Excel:** `order_sn` → `order_no` through `run_shopee_resolve` → column B **Order No.**; PDF name → column C **Name**. PDF-only Shopee path still leaves Order No. blank.
 - **Tracking match for names:** `shopee_spx_merge_pdf_names()` uses `online_orders_normalize_tracking()` — same chain as duplicate checks / partner stamp.
 
@@ -132,7 +136,7 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 
 ## Online Orders duplicate tracking
 
-- **When it runs:** Before any insert via `online_orders_lines_append()` and pre-flight in `run_partner_stamp` / `run_shopee_resolve`. VIP lines saved once at **export** (`lines_append` in `VipRunStep`); **VIP stamp does not append again** (2026-06-05 fix — previously double-saved same TN).
+- **When it runs:** Before any insert via `online_orders_lines_append()` inside **`online_orders_run_unified_stamp()`** (and manual `lines_append` API). Prep tools (`tool_vip_prepare`, `tool_spx_prepare`, `tool_excel_register`) **do not** append lines — single append point at unified stamp avoids VIP/SPX double-save.
 - **Normalize:** Always compare via `online_orders_normalize_tracking()` — includes OCR **O→0** on Flash `P…` IDs (2026-06-05). Same helper as parcel promote (`rts_normalize_tracking_from_qr` + uppercase/strip). Phone-based VIP TNs (e.g. `+639…`) match parcel UNIQUE keys.
 - **Sources checked:** (1) `csr_online_order_lines` in non-cancelled batches, (2) `online_order_parcels`, (3) duplicate rows in the current upload payload.
 - **API:** `OnlineOrdersDuplicateTrackingException` → 409 + `data.duplicates`. Frontend must parse `e.data.duplicates`, not only `e.message`.
@@ -140,7 +144,7 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 
 ## Online Orders stamp UX (SPA)
 
-After any pipeline stamp, **`OnlineOrdersGeneratorPage` holds `stampResult`** and renders `StampResultPanel` until the user explicitly continues. Do not call `setStep("post_run")` on stamp API success — only on “Done — master Excel” or “Process another pipeline”.
+**Tools page (4):** VIP arranger / SPX merge / validate Excel = **prep only** (download → back to tools). **PDF + Excel stamper** = load Excel + PDFs → `run_unified_stamp` → **`stamp_result`** (`StampResultPanel`). After stamp success, stay on `stamp_result` until “Prepare more orders” or “Done — master Excel”. VIP must not embed stamp UI.
 
 ## Edit-request table whitelist
 

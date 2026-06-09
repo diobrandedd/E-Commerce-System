@@ -22,7 +22,7 @@ Staff should complete daily work **without switching between disconnected spread
 
 1. **Single source per workflow** — e.g. honey inventory stages (warehouse → production → packaging) are sequential truths; corrections go through approval, not silent DB edits.
 2. **RTS operational data vs SPA mirror** — cases still originate in legacy record flow; SPA inventory is a **synced mirror** for sell/deduct, not a replacement for case capture without an explicit product decision.
-3. **CSR waybill chain** — PDF-only input is valid: PDF → Excel → Stamper; tools must stay compatible end-to-end.
+3. **CSR waybill chain** — One batch workflow: **prep tools** (VIP arranger, SPX merge, validate Excel) produce downloadable iPYX sheets; **PDF + Excel stamper** (separate tools-page entry) matches PDFs to a prepared sheet via `run_unified_stamp` → master Excel + parcels. All prep outputs use the same iPYX column layout.
 4. **Financial traceability** — costing, supplier prices, and POS sales must be explainable from rows (audit-friendly).
 5. **Role-appropriate UI** — executives get breadth; POS gets speed and large touch targets; CSR gets batch tools.
 

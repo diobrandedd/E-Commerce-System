@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-05T10:39:35+02:00
+generated: 2026-06-09T09:52:57+02:00
 type: memory-bank
 ---
 
@@ -33,7 +33,7 @@ type: memory-bank
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/labels]] | 3 |
 | [[modules/online_order_parcels]] | 15 |
-| [[modules/online_orders_generator]] | 28 |
+| [[modules/online_orders_generator]] | 34 |
 | [[modules/order_remarks]] | 17 |
 | [[modules/pdf_to_excel]] | 15 |
 | [[modules/pos_discount_requests]] | 7 |
@@ -47,7 +47,7 @@ type: memory-bank
 | [[modules/rts_shop_couriers]] | 2 |
 | [[modules/rts_storage]] | 12 |
 | [[modules/shopee_spx_packing_list]] | 4 |
-| [[modules/shopee_spx_product_info]] | 3 |
+| [[modules/shopee_spx_product_info]] | 12 |
 | [[modules/sp_sort_service]] | 26 |
 | [[modules/suppliers]] | 12 |
-| [[modules/waybill_stamper]] | 17 |
+| [[modules/waybill_stamper]] | 18 |

@@ -86,6 +86,23 @@ export function waybillDownloadUrl(token: string): string {
   return url.toString();
 }
 
+export function waybillStashDownloadUrl(token: string): string {
+  const url = new URL("/rts/api/v1/waybill.php", window.location.origin);
+  url.searchParams.set("action", "stash_download");
+  url.searchParams.set("token", token);
+  return url.toString();
+}
+
+export function triggerWaybillStashDownload(token: string, filename = "Online_Orders_Prep.xlsx"): void {
+  const a = document.createElement("a");
+  a.href = waybillStashDownloadUrl(token);
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
 export function triggerWaybillDownload(token: string, filename: string): void {
   const a = document.createElement("a");
   a.href = waybillDownloadUrl(token);

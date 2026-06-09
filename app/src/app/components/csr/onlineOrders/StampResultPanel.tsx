@@ -59,7 +59,7 @@ export function StampResultPanel({
         </p>
         <div className="flex flex-wrap gap-3">
           <FulfillmentPressable variant="outline" disabled={busy} onClick={onProcessAnother}>
-            Process another pipeline
+            Prepare more orders
           </FulfillmentPressable>
           <FulfillmentPressable variant="primary" disabled={busy} onClick={onFinishBatch}>
             Done — master Excel for packers

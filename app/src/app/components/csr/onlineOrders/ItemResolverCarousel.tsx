@@ -14,6 +14,7 @@ import type { PdfToExcelRow } from "@/app/lib/pdfToExcelApi";
 import {
   honeyItemLineText,
   honeySizeFromItemLine,
+  shopeeFinalItemsForRow,
   shopeePresetToResolvedItemsLine,
   shopeeRowIsReadyForExport,
   shopeeRowNeedsItemResolution,
@@ -67,17 +68,31 @@ export function ItemResolverCarousel({
     [rows],
   );
 
+  /** Rows in carousel — includes focusPage even when packing list already auto-resolved the line. */
+  const carouselRows = useMemo(() => {
+    if (focusPage == null) return needsWork;
+    const focused = rows.find(r => r.page === focusPage);
+    if (focused && !needsWork.some(r => r.page === focusPage)) {
+      return [...needsWork, focused];
+    }
+    return needsWork;
+  }, [needsWork, rows, focusPage]);
+
   const pendingRows = useMemo(
-    () => needsWork.filter(r => !shopeeRowIsReadyForExport(r, resolutions[r.page])),
-    [needsWork, resolutions],
+    () =>
+      carouselRows.filter(r => {
+        if (focusPage === r.page) return true;
+        return !shopeeRowIsReadyForExport(r, resolutions[r.page]);
+      }),
+    [carouselRows, resolutions, focusPage],
   );
 
   const completedRows = useMemo(
-    () => needsWork.filter(r => shopeeRowIsReadyForExport(r, resolutions[r.page])),
-    [needsWork, resolutions],
+    () => carouselRows.filter(r => shopeeRowIsReadyForExport(r, resolutions[r.page])),
+    [carouselRows, resolutions],
   );
 
-  const visibleRows = showCompleted ? needsWork : pendingRows;
+  const visibleRows = showCompleted ? carouselRows : pendingRows;
   const doneCount = completedRows.length;
 
   const [activePage, setActivePage] = useState<number | null>(null);
@@ -87,14 +102,20 @@ export function ItemResolverCarousel({
   const reduceMotion = useReducedMotion();
 
   const currentPage = useMemo(() => {
-    if (focusPage != null && needsWork.some(r => r.page === focusPage)) return focusPage;
+    if (focusPage != null && rows.some(r => r.page === focusPage)) return focusPage;
     if (activePage != null && pendingRows.some(r => r.page === activePage)) return activePage;
     return pendingRows[0]?.page ?? null;
-  }, [focusPage, activePage, needsWork, pendingRows]);
+  }, [focusPage, activePage, pendingRows, rows]);
 
   useEffect(() => {
-    if (focusPage != null) setActivePage(focusPage);
-  }, [focusPage]);
+    if (focusPage != null) {
+      setActivePage(focusPage);
+      const row = rows.find(r => r.page === focusPage);
+      if (row) {
+        setCustom(shopeeFinalItemsForRow(row, resolutions[focusPage]));
+      }
+    }
+  }, [focusPage, rows, resolutions]);
 
   useEffect(() => {
     if (currentPage != null && confirmingPage !== currentPage) {
@@ -145,7 +166,8 @@ export function ItemResolverCarousel({
     setCustom("");
   };
 
-  if (needsWork.length === 0) {
+  const hasCarousel = carouselRows.length > 0;
+  if (!hasCarousel) {
     return (
       <p className="text-sm text-green-700 flex items-center gap-2">
         <CheckCircle2 size={18} /> All rows have packer-ready items from the PDF.
@@ -197,6 +219,8 @@ export function ItemResolverCarousel({
             {visibleRows.map(row => {
               const ready = shopeeRowIsReadyForExport(row, resolutions[row.page]);
               const active = row.page === currentPage;
+              const reviewEdit = focusPage === row.page;
+              const showEditor = active && (!ready || reviewEdit);
               const res = resolutions[row.page];
               const pdfItems = honeyItemLineText(row.items);
 
@@ -226,7 +250,7 @@ export function ItemResolverCarousel({
                       </p>
                     )}
 
-                    {ready && res?.items && (
+                    {ready && !reviewEdit && res?.items && (
                       <OrderRemarksDoneBadge show>
                         <p className="text-[10px] mt-2 p-2 rounded-lg bg-green-50 text-green-800 border border-green-200 break-words">
                           {res.items}
@@ -234,7 +258,7 @@ export function ItemResolverCarousel({
                       </OrderRemarksDoneBadge>
                     )}
 
-                    {ready && (
+                    {ready && !reviewEdit && (
                       <button
                         type="button"
                         disabled={disabled}
@@ -245,9 +269,37 @@ export function ItemResolverCarousel({
                       </button>
                     )}
 
-                    {!ready && active && (
+                    {showEditor && (
                       <div className="mt-3 space-y-2">
-                        {isConfirming ? (
+                        {reviewEdit ? (
+                          <>
+                            <label className="text-xs font-medium text-foreground block">
+                              Type the item line for packers
+                            </label>
+                            <input
+                              type="text"
+                              value={custom}
+                              onChange={e => setCustom(e.target.value)}
+                              placeholder="e.g. 1 Liter Honey AMBER"
+                              className="w-full text-sm border border-border rounded-lg px-3 py-2"
+                              disabled={disabled}
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              disabled={disabled || !custom.trim()}
+                              onClick={() => {
+                                const line = custom.trim();
+                                if (!line) return;
+                                onResolve(row.page, { items: line, confirmed: true });
+                                setCustom("");
+                              }}
+                              className="w-full text-xs font-semibold py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
+                            >
+                              Save item line
+                            </button>
+                          </>
+                        ) : isConfirming ? (
                           <OrderRemarksStepReveal show>
                             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
                               <p className="text-xs font-semibold text-foreground">Is this correct for packers?</p>
@@ -304,7 +356,7 @@ export function ItemResolverCarousel({
                       </div>
                     )}
 
-                    {!ready && !active && (
+                    {!showEditor && !active && (
                       <button
                         type="button"
                         disabled={disabled}

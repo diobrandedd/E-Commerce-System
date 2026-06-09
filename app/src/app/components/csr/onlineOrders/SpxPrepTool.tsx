@@ -1,23 +1,17 @@
-import { useCallback, useMemo, useState } from "react";
-import { CheckCircle2, FileText, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CheckCircle2, Download, FileText, Loader2 } from "lucide-react";
 import { FileZone } from "@/app/components/csr/FileZone";
-import { DuplicateTrackingModal } from "@/app/components/csr/onlineOrders/DuplicateTrackingModal";
-import { FulfillmentErrorBanner, FulfillmentSectionEnter } from "@/app/components/csr/onlineFulfillmentMotion";
+import { FulfillmentErrorBanner, FulfillmentPressable, FulfillmentSectionEnter } from "@/app/components/csr/onlineFulfillmentMotion";
 import { ItemResolverCarousel, type ShopeeRowResolution } from "@/app/components/csr/onlineOrders/ItemResolverCarousel";
 import { ShopeeItemsReviewPanel } from "@/app/components/csr/onlineOrders/ShopeeItemsReviewPanel";
 import { OrderRemarksToast } from "@/app/components/csr/orderRemarksMotion";
-import {
-  onlineOrdersRunShopeeResolve,
-  onlineOrdersRunShopeeStamp,
-  onlineOrdersSpxImportPackingList,
-} from "@/app/lib/onlineOrdersApi";
+import { onlineOrdersSpxImportPackingList, onlineOrdersToolSpxPrepare } from "@/app/lib/onlineOrdersApi";
 import { extractPdfToExcel, pdfToExcelUploadTooLarge } from "@/app/lib/pdfToExcelApi";
-import { waybillUploadTooLarge } from "@/app/lib/waybillApi";
-import { useDuplicateTrackingHandler } from "@/app/lib/useDuplicateTrackingHandler";
-import { apiPostForm, getCsrfToken, ApiError } from "@/app/lib/api";
-import type { PartnerStampResult } from "@/app/lib/onlineOrdersTypes";
+import type { OnlineOrdersPrepResult } from "@/app/lib/onlineOrdersTypes";
 import { shopeeFinalItemsForRow, shopeeRowIsReadyForExport } from "@/app/lib/honeyItemVariant";
 import type { PdfToExcelRow } from "@/app/lib/pdfToExcelApi";
+import { triggerWaybillStashDownload } from "@/app/lib/waybillApi";
+import { apiPostForm, getCsrfToken, ApiError } from "@/app/lib/api";
 
 async function stashWaybillFile(file: File, kind: "pdf" | "excel"): Promise<string> {
   const form = new FormData();
@@ -31,15 +25,13 @@ async function stashWaybillFile(file: File, kind: "pdf" | "excel"): Promise<stri
 }
 
 type ImportMode = "pdf_only" | "packing_list";
-type Phase = "extract" | "resolve" | "review" | "stamp";
+type Phase = "extract" | "resolve" | "review" | "ready";
 
-export function ShopeeSpxRunStep({
-  batchId,
-  onStampSuccess,
+export function SpxPrepTool({
+  onDone,
   onBack,
 }: {
-  batchId: number;
-  onStampSuccess: (result: PartnerStampResult) => void;
+  onDone: () => void;
   onBack: () => void;
 }) {
   const [phase, setPhase] = useState<Phase>("extract");
@@ -47,21 +39,13 @@ export function ShopeeSpxRunStep({
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
   const [packingListFile, setPackingListFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
-  const {
-    duplicateConflicts,
-    showDuplicateModal,
-    setShowDuplicateModal,
-    error,
-    setError,
-    clearErrors,
-    handleApiError,
-  } = useDuplicateTrackingHandler();
+  const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [rows, setRows] = useState<PdfToExcelRow[]>([]);
   const [resolutions, setResolutions] = useState<Record<number, ShopeeRowResolution>>({});
   const [showCompleted, setShowCompleted] = useState(false);
-  const [excelToken, setExcelToken] = useState<string | null>(null);
   const [editFocusPage, setEditFocusPage] = useState<number | null>(null);
+  const [prepResult, setPrepResult] = useState<OnlineOrdersPrepResult | null>(null);
 
   const allResolved = useMemo(() => {
     return rows.every(r => shopeeRowIsReadyForExport(r, resolutions[r.page]));
@@ -119,9 +103,9 @@ export function ShopeeSpxRunStep({
     window.setTimeout(() => setToast(null), 2800);
   };
 
-  const runResolve = async () => {
+  const runPrepare = async () => {
     setBusy(true);
-    clearErrors();
+    setError(null);
     try {
       const payload = rows
         .map(r => ({
@@ -133,41 +117,17 @@ export function ShopeeSpxRunStep({
           courier: r.courier || "SPX",
         }))
         .filter(r => r.items);
-      const res = await onlineOrdersRunShopeeResolve(batchId, payload);
-      setExcelToken(res.excel_token);
-      setPhase("stamp");
-      setToast("Excel ready — now stamp waybills");
-      window.setTimeout(() => setToast(null), 2800);
+      const prep = await onlineOrdersToolSpxPrepare(payload);
+      setPrepResult(prep);
+      setPhase("ready");
+      setToast("Excel built — download and check before stamping");
+      window.setTimeout(() => setToast(null), 3200);
     } catch (e) {
-      handleApiError(e, "Could not build order sheet.");
+      setError(e instanceof ApiError ? e.message : "Could not build order sheet.");
     } finally {
       setBusy(false);
     }
   };
-
-  const runStamp = useCallback(async () => {
-    if (!excelToken) return;
-    setBusy(true);
-    setError(null);
-    const sizeErr = waybillUploadTooLarge(pdfFiles);
-    if (sizeErr) {
-      setError(sizeErr);
-      setBusy(false);
-      return;
-    }
-    try {
-      const wbPdfTokens: string[] = [];
-      for (const f of pdfFiles) {
-        wbPdfTokens.push(await stashWaybillFile(f, "pdf"));
-      }
-      const res = await onlineOrdersRunShopeeStamp(batchId, wbPdfTokens, excelToken);
-      onStampSuccess(res);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Stamp failed.");
-    } finally {
-      setBusy(false);
-    }
-  }, [batchId, pdfFiles, excelToken, onStampSuccess]);
 
   const handleEditFromReview = (page: number) => {
     setResolutions(prev => {
@@ -184,14 +144,13 @@ export function ShopeeSpxRunStep({
     <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
       <OrderRemarksToast message={toast} />
       <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
-        ← Back to pipelines
+        ← Back to tools
       </button>
 
       {phase === "extract" && (
         <>
           <p className="text-sm text-muted-foreground">
-            Shopee SPX (ours): build the iPYX Excel from waybill PDFs, or from Shopee&apos;s packing list Excel
-            plus PDFs for names and stamping.
+            Build the iPYX Excel from waybill PDFs, or from Shopee&apos;s packing list Excel plus PDFs for names.
           </p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -258,6 +217,11 @@ export function ShopeeSpxRunStep({
 
       {phase === "resolve" && (
         <>
+          {editFocusPage != null && (
+            <p className="text-sm text-muted-foreground">
+              Editing page {editFocusPage} — type the item line exactly as packers should see it, then save.
+            </p>
+          )}
           <ItemResolverCarousel
             rows={rows}
             resolutions={resolutions}
@@ -265,7 +229,12 @@ export function ShopeeSpxRunStep({
             onShowCompletedChange={setShowCompleted}
             onResolve={(page, res) => {
               setResolutions(prev => ({ ...prev, [page]: res }));
-              if (editFocusPage === page) setEditFocusPage(null);
+              if (editFocusPage === page) {
+                setEditFocusPage(null);
+                setPhase("review");
+                setToast("Row updated — back on review");
+                window.setTimeout(() => setToast(null), 2800);
+              }
             }}
             onClearResolution={page => {
               setResolutions(prev => {
@@ -312,40 +281,53 @@ export function ShopeeSpxRunStep({
             <button
               type="button"
               disabled={busy || !allResolved}
-              onClick={() => void runResolve()}
+              onClick={() => void runPrepare()}
               className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
             >
               {busy ? <Loader2 size={16} className="animate-spin inline" /> : null}
-              Confirm all & build Excel
+              Build iPYX Excel
             </button>
           </div>
         </>
       )}
 
-      {phase === "stamp" && (
-        <>
-          <p className="text-sm text-green-700 flex items-center gap-2">
-            <CheckCircle2 size={18} /> Order sheet ready. Stamp waybills (same PDFs).
+      {phase === "ready" && prepResult && (
+        <div className="rounded-xl border border-green-200 bg-green-50/80 p-5 space-y-4">
+          <p className="text-sm text-green-800 flex items-center gap-2 font-medium">
+            <CheckCircle2 size={18} />
+            iPYX Excel ready ({prepResult.row_count} rows)
           </p>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void runStamp()}
-            className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary"
-          >
-            {busy ? <Loader2 size={16} className="animate-spin" /> : null}
-            Stamp waybills
-          </button>
-        </>
+          <p className="text-sm text-muted-foreground">
+            Download the sheet and verify names, items, and tracking numbers. Use PDF + Excel stamper when ready to
+            stamp waybills.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <FulfillmentPressable
+              variant="outline"
+              className="inline-flex items-center gap-2 px-4 py-2.5"
+              onClick={() => triggerWaybillStashDownload(prepResult.excel_token)}
+            >
+              <Download size={16} /> Download prepared Excel
+            </FulfillmentPressable>
+            <FulfillmentPressable variant="primary" className="inline-flex items-center gap-2 px-4 py-2.5" onClick={onDone}>
+              Back to tools
+            </FulfillmentPressable>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setPrepResult(null);
+                setPhase("review");
+              }}
+              className="text-sm text-muted-foreground hover:text-foreground px-2"
+            >
+              ← Back to review
+            </button>
+          </div>
+        </div>
       )}
 
       <FulfillmentErrorBanner message={error} />
-
-      <DuplicateTrackingModal
-        open={showDuplicateModal}
-        conflicts={duplicateConflicts}
-        onClose={() => setShowDuplicateModal(false)}
-      />
     </FulfillmentSectionEnter>
   );
 }

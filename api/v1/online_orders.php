@@ -60,6 +60,10 @@ api_dispatch([
     'batch_cancel' => 'api_online_orders_batch_cancel',
     'batch_finalize' => 'api_online_orders_batch_finalize',
     'lines_append' => 'api_online_orders_lines_append',
+    'tool_vip_prepare' => 'api_online_orders_tool_vip_prepare',
+    'tool_spx_prepare' => 'api_online_orders_tool_spx_prepare',
+    'tool_excel_register' => 'api_online_orders_tool_excel_register',
+    'run_unified_stamp' => 'api_online_orders_run_unified_stamp',
     'run_partner' => 'api_online_orders_run_partner',
     'run_vip_stamp' => 'api_online_orders_run_vip_stamp',
     'run_shopee_resolve' => 'api_online_orders_run_shopee_resolve',
@@ -172,6 +176,98 @@ function api_online_orders_lines_append(): void
         }
         online_orders_run_complete($pdo, $runId, ['lines_added' => $added, 'source' => 'manual_append']);
         api_ok(['lines_added' => $added, 'run_id' => $runId]);
+    } catch (Throwable $e) {
+        api_online_orders_fail_pipeline($e);
+    }
+}
+
+function api_online_orders_tool_vip_prepare(): void
+{
+    api_method_allowed(['POST']);
+    api_online_orders_assert_access();
+    api_online_orders_require_csrf();
+
+    $input = api_input();
+    $rows = $input['rows'] ?? [];
+    if (!is_array($rows) || $rows === []) {
+        api_fail('rows required.', 400);
+    }
+
+    try {
+        $result = online_orders_tool_vip_prepare($rows);
+        api_ok($result);
+    } catch (RuntimeException $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_online_orders_tool_spx_prepare(): void
+{
+    api_method_allowed(['POST']);
+    api_online_orders_assert_access();
+    api_online_orders_require_csrf();
+
+    $input = api_input();
+    $rows = $input['rows'] ?? [];
+    if (!is_array($rows) || $rows === []) {
+        api_fail('rows required.', 400);
+    }
+
+    try {
+        $result = online_orders_tool_spx_prepare($rows);
+        api_ok($result);
+    } catch (RuntimeException $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_online_orders_tool_excel_register(): void
+{
+    api_method_allowed(['POST']);
+    api_online_orders_assert_access();
+    api_online_orders_require_csrf();
+
+    $input = api_input();
+    $excelToken = trim((string) ($input['excel_token'] ?? ''));
+    $excelTokens = is_array($input['excel_tokens'] ?? null) ? array_values($input['excel_tokens']) : [];
+    if ($excelToken === '' && $excelTokens === []) {
+        api_fail('excel_token required.', 400);
+    }
+
+    try {
+        $result = online_orders_tool_excel_register($excelToken !== '' ? $excelToken : $excelTokens);
+        api_ok($result);
+    } catch (RuntimeException $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_online_orders_run_unified_stamp(): void
+{
+    api_method_allowed(['POST']);
+    api_online_orders_assert_access();
+    api_online_orders_require_csrf();
+
+    @ini_set('max_execution_time', '300');
+    $input = api_input();
+    $batchId = (int) ($input['batch_id'] ?? 0);
+    $pdfTokens = is_array($input['pdf_tokens'] ?? null) ? array_values($input['pdf_tokens']) : [];
+    $excelToken = trim((string) ($input['excel_token'] ?? ''));
+    $excelTokens = is_array($input['excel_tokens'] ?? null) ? array_values($input['excel_tokens']) : [];
+    $pipeline = trim((string) ($input['pipeline'] ?? 'unified'));
+    if ($batchId < 1) {
+        api_fail('batch_id required.', 400);
+    }
+    if ($excelToken === '' && $excelTokens === []) {
+        api_fail('excel_token required.', 400);
+    }
+
+    $user = ims_current_user();
+    $pdo = ims_pdo();
+    try {
+        $excelInput = $excelToken !== '' ? $excelToken : $excelTokens;
+        $result = online_orders_run_unified_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelInput, $pipeline);
+        api_ok($result);
     } catch (Throwable $e) {
         api_online_orders_fail_pipeline($e);
     }

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-05T10:39:35+02:00
+generated: 2026-06-09T09:52:56+02:00
 type: memory-bank
 ---
 
@@ -156,6 +156,10 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `batch_cancel` | `api_online_orders_batch_cancel()` | `ims_current_user()`, `ims_pdo()`, `online_orders_batch_cancel()` |
 | `batch_finalize` | `api_online_orders_batch_finalize()` | `ims_current_user()`, `ims_pdo()`, `online_orders_batch_finalize()` |
 | `lines_append` | `api_online_orders_lines_append()` | `ims_current_user()`, `ims_pdo()`, `online_orders_assert_active_batch()`, `online_orders_run_start()`, `online_orders_lines_append()`, `online_orders_run_complete()` |
+| `tool_vip_prepare` | `api_online_orders_tool_vip_prepare()` | `online_orders_tool_vip_prepare()` |
+| `tool_spx_prepare` | `api_online_orders_tool_spx_prepare()` | `online_orders_tool_spx_prepare()` |
+| `tool_excel_register` | `api_online_orders_tool_excel_register()` | `online_orders_tool_excel_register()` |
+| `run_unified_stamp` | `api_online_orders_run_unified_stamp()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_unified_stamp()` |
 | `run_partner` | `api_online_orders_run_partner()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_partner_stamp()` |
 | `run_vip_stamp` | `api_online_orders_run_vip_stamp()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_vip_stamp()` |
 | `run_shopee_resolve` | `api_online_orders_run_shopee_resolve()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_shopee_resolve()` |

@@ -1,7 +1,7 @@
 ---
 title: shopee_spx_packing_list
 source: includes/shopee_spx_packing_list.php
-generated: 2026-06-05T10:39:48+02:00
+generated: 2026-06-09T09:53:07+02:00
 type: module
 function_count: 4
 ---
@@ -42,5 +42,5 @@ function_count: 4
 
 **Callers (1):**
 
-- `api/v1/online_orders.php`:293 — `$result = online_orders_spx_import_packing_list($excelToken, $pdfTokens);`
+- `api/v1/online_orders.php`:389 — `$result = online_orders_spx_import_packing_list($excelToken, $pdfTokens);`
 

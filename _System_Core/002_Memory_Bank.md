@@ -4,6 +4,15 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-05 — [[problems/records/2026-06-05_online-orders-prep-stamper-split|Online Orders prep vs stamper + SPX follow-ups]]
+**Tools:** VIP/SPX/Excel = prep + download only; new **PDF + Excel stamper** on tools page (`WaybillStamperTool`). **SPX parse:** gallon+variant, `[1][2]` multi-item cells, B2T1 350ml vs 3L, title qty over Shopee Quantity. **UX:** `stash_download`, SPX review type-only edit, carousel fix for auto-resolved rows. Files: `shopee_spx_product_info.php`, `WaybillStamperTool.tsx`, `ItemResolverCarousel.tsx`, `waybill.php` stash_download.
+
+### 2026-06-05 — [[problems/records/2026-06-05_online-orders-two-phase-remake|Online Orders two-phase remake]]
+Backend `run_unified_stamp` + prep APIs; replaced three pipeline run steps with tools-page wizard (see prep-stamper-split for final UX).
+
+### 2026-06-05 — [[problems/records/2026-06-05_spx-gallon-variant-qty|SPX gallon qty + variant parse]]
+First gallon/B2T1 packing-list fixes; superseded detail in prep-stamper-split record.
+
 ### 2026-06-05 — [[problems/records/2026-06-05_rts-spa-followup-ux|RTS SPA follow-up UX]]
 Grouped RTS sidebar; sync toast + HR role; records table badges, line_count, compact filters, standard pagination footer.
 

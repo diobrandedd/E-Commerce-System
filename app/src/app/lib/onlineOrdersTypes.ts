@@ -1,4 +1,21 @@
-export type OnlineOrdersPipeline = "partner" | "vip" | "shopee_spx";
+export type OnlineOrdersPipeline = "partner" | "vip" | "shopee_spx" | "unified";
+
+export type OnlineOrdersPrepTool = "vip" | "spx" | "excel" | "stamper";
+
+export interface OnlineOrdersPrepRow {
+  order_no?: string | null;
+  name?: string;
+  items: string;
+  courier?: string;
+  tracking_number: string;
+}
+
+export interface OnlineOrdersPrepResult {
+  excel_token: string;
+  excel_tokens?: string[];
+  row_count: number;
+  rows: OnlineOrdersPrepRow[];
+}
 
 export interface OnlineOrdersBatchRun {
   id: number;

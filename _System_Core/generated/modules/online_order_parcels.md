@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-06-05T10:39:43+02:00
+generated: 2026-06-09T09:53:02+02:00
 type: module
 function_count: 15
 ---
@@ -65,7 +65,7 @@ function_count: 15
 
 **Callers (1):**
 
-- `includes/online_orders_generator.php`:875 — `$promote = online_parcels_promote_from_batch($pdo, $batchId);`
+- `includes/online_orders_generator.php`:1027 — `$promote = online_parcels_promote_from_batch($pdo, $batchId);`
 
 ## online_parcels_normalize_tracking {#online_parcels_normalize_tracking}
 

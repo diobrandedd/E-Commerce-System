@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-05T10:39:35+02:00
+generated: 2026-06-09T09:52:57+02:00
 type: memory-bank
 table_count: 40
 ---
@@ -326,8 +326,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_get]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_start]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_complete]] |
-| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_partner_stamp]] |
-| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_vip_stamp]] |
+| `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_run_unified_stamp]] |
 
 ## `csr_online_order_lines`
 

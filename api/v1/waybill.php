@@ -15,6 +15,14 @@ if ($action === 'download') {
     }
 }
 
+if ($action === 'stash_download') {
+    try {
+        waybill_stamper_serve_stash_download(trim((string) ($_GET['token'] ?? '')));
+    } catch (RuntimeException $e) {
+        api_fail($e->getMessage(), 403);
+    }
+}
+
 /**
  * Waybill stamper API (CSR TL + Executive).
  *

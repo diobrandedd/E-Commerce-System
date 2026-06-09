@@ -501,7 +501,7 @@ function online_orders_lines_append(
             isset($line['order_no']) && $line['order_no'] !== '' && $line['order_no'] !== null
                 ? (string) $line['order_no'] : null,
             trim((string) ($line['name'] ?? '')),
-            $items,
+            online_orders_normalize_items_display($items),
             trim((string) ($line['courier'] ?? '')),
             $tn,
             $pipeline,
@@ -509,6 +509,256 @@ function online_orders_lines_append(
         $count++;
     }
     return $count;
+}
+
+/**
+ * Normalize promo shorthand in item text before DB / Excel (e.g. B1T2 350ml → 3× 350ml).
+ */
+function online_orders_normalize_items_display(string $raw): string
+{
+    $text = trim($raw);
+    if ($text === '') {
+        return '';
+    }
+    if (preg_match('/\bB(\d+)T(\d+)\b/i', $text, $m)) {
+        $buy = max(1, (int) $m[1]);
+        $bonus = max(0, (int) $m[2]);
+        $total = $buy + $bonus;
+        $rest = trim(preg_replace('/\bB\d+T\d+\b/i', '', $text));
+        $size = $rest !== '' ? ' ' . $rest : '';
+        return $total . '×' . $size;
+    }
+
+    return $text;
+}
+
+/**
+ * @param list<array{order_no?:?string,name?:string,items:string,courier?:string,tracking_number:string}> $lines
+ * @return list<array{order_no:?string,name:string,items:string,courier:string,tracking_number:string}>
+ */
+function online_orders_normalize_line_payloads(array $lines): array
+{
+    $out = [];
+    foreach ($lines as $line) {
+        $tn = trim((string) ($line['tracking_number'] ?? ''));
+        $items = online_orders_normalize_items_display((string) ($line['items'] ?? ''));
+        if ($tn === '' || $items === '') {
+            continue;
+        }
+        $out[] = [
+            'order_no' => isset($line['order_no']) && $line['order_no'] !== '' && $line['order_no'] !== null
+                ? (string) $line['order_no'] : null,
+            'name' => trim((string) ($line['name'] ?? '')),
+            'items' => $items,
+            'courier' => trim((string) ($line['courier'] ?? '')),
+            'tracking_number' => $tn,
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * @param list<string>|string $excelTokens
+ * @return array{excel_token: string, row_count: int, rows: list<array<string, mixed>>}
+ */
+function online_orders_tool_excel_register(string|array $excelTokens): array
+{
+    $tokens = is_array($excelTokens) ? array_values($excelTokens) : [$excelTokens];
+    $tokens = array_filter(array_map(static fn ($t) => trim((string) $t), $tokens));
+    if ($tokens === []) {
+        throw new RuntimeException('excel_token required.');
+    }
+
+    $paths = waybill_stamper_resolve_stash_tokens($tokens, 'excel');
+    $parsed = online_orders_parse_ipyx_excel_paths($paths);
+    if ($parsed === []) {
+        throw new RuntimeException('No order rows found in Excel. Use the iPYX / partner column layout.');
+    }
+
+    $rows = [];
+    foreach ($parsed as $row) {
+        $rows[] = [
+            'order_no' => $row['order_no'],
+            'name' => $row['name'],
+            'items' => online_orders_normalize_items_display($row['items']),
+            'courier' => $row['courier'],
+            'tracking_number' => $row['tracking_number'],
+        ];
+    }
+
+    return [
+        'excel_token' => $tokens[0],
+        'excel_tokens' => $tokens,
+        'row_count' => count($rows),
+        'rows' => $rows,
+    ];
+}
+
+/**
+ * @param list<array{order_no?:?string,tracking:string,name?:string,items:string,courier?:string}> $rows
+ * @return array{excel_token: string, row_count: int, rows: list<array<string, mixed>>}
+ */
+function online_orders_tool_spx_prepare(array $rows): array
+{
+    $normalized = [];
+    foreach ($rows as $row) {
+        $tn = trim((string) ($row['tracking'] ?? $row['tracking_number'] ?? ''));
+        $items = online_orders_normalize_items_display(trim((string) ($row['items'] ?? '')));
+        if ($tn === '' || $items === '') {
+            continue;
+        }
+        $orderNo = isset($row['order_no']) && $row['order_no'] !== '' && $row['order_no'] !== null
+            ? trim((string) $row['order_no']) : null;
+        $normalized[] = [
+            'order_no' => $orderNo,
+            'tracking' => $tn,
+            'name' => trim((string) ($row['name'] ?? '')),
+            'items' => $items,
+            'courier' => trim((string) ($row['courier'] ?? 'SPX')),
+        ];
+    }
+    if ($normalized === []) {
+        throw new RuntimeException('No complete rows to prepare.');
+    }
+
+    $excelToken = online_orders_build_ipyx_excel_from_rows($normalized, 'Shopee SPX — Online Orders');
+
+    $preview = [];
+    foreach ($normalized as $row) {
+        $preview[] = [
+            'order_no' => $row['order_no'],
+            'name' => $row['name'],
+            'items' => $row['items'],
+            'courier' => $row['courier'],
+            'tracking_number' => $row['tracking'],
+        ];
+    }
+
+    return [
+        'excel_token' => $excelToken,
+        'row_count' => count($preview),
+        'rows' => $preview,
+    ];
+}
+
+/**
+ * @param list<array{name?:string,tracking_number:string,items:string,courier?:string,order_no?:?string}> $rows
+ * @return array{excel_token: string, row_count: int, rows: list<array<string, mixed>>}
+ */
+function online_orders_tool_vip_prepare(array $rows): array
+{
+    $normalized = [];
+    foreach ($rows as $row) {
+        $tn = trim((string) ($row['tracking_number'] ?? ''));
+        $items = online_orders_normalize_items_display(trim((string) ($row['items'] ?? '')));
+        if ($tn === '' || $items === '') {
+            continue;
+        }
+        $normalized[] = [
+            'order_no' => isset($row['order_no']) && $row['order_no'] !== '' && $row['order_no'] !== null
+                ? (string) $row['order_no'] : null,
+            'tracking' => $tn,
+            'name' => trim((string) ($row['name'] ?? '')),
+            'items' => $items,
+            'courier' => trim((string) ($row['courier'] ?? 'VIP')),
+        ];
+    }
+    if ($normalized === []) {
+        throw new RuntimeException('No complete VIP rows to prepare.');
+    }
+
+    $excelToken = online_orders_build_ipyx_excel_from_rows($normalized, 'VIP — Online Orders');
+    $preview = [];
+    foreach ($normalized as $row) {
+        $preview[] = [
+            'order_no' => $row['order_no'],
+            'name' => $row['name'],
+            'items' => $row['items'],
+            'courier' => $row['courier'],
+            'tracking_number' => $row['tracking'],
+        ];
+    }
+
+    return [
+        'excel_token' => $excelToken,
+        'row_count' => count($preview),
+        'rows' => $preview,
+    ];
+}
+
+/**
+ * Universal stamp: PDF + prepared Excel → stamp + parse + append lines.
+ *
+ * @param list<string> $pdfTokens
+ * @param list<string>|string $excelTokens
+ * @return array{stamp: array<string, mixed>, lines_added: int, run_id: int}
+ */
+function online_orders_run_unified_stamp(
+    PDO $pdo,
+    int $userId,
+    int $batchId,
+    array $pdfTokens,
+    string|array $excelTokens,
+    string $pipelineTag
+): array
+{
+    $allowed = ['partner', 'vip', 'shopee_spx', 'unified'];
+    if (!in_array($pipelineTag, $allowed, true)) {
+        $pipelineTag = 'unified';
+    }
+
+    online_orders_assert_active_batch($pdo, $userId, $batchId);
+
+    $excelTokenList = is_array($excelTokens) ? array_values($excelTokens) : [trim((string) $excelTokens)];
+    $excelTokenList = array_filter(array_map(static fn ($t) => trim((string) $t), $excelTokenList));
+    if ($excelTokenList === []) {
+        throw new RuntimeException('excel_token required.');
+    }
+
+    $pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');
+    $excels = waybill_stamper_resolve_stash_tokens($excelTokenList, 'excel');
+    $stashRelease = array_merge($pdfTokens, $excelTokenList);
+
+    $parsed = online_orders_parse_ipyx_excel_paths($excels);
+    $lines = online_orders_normalize_line_payloads(array_map(static function (array $row): array {
+        return [
+            'order_no' => $row['order_no'],
+            'name' => $row['name'],
+            'items' => $row['items'],
+            'courier' => $row['courier'],
+            'tracking_number' => $row['tracking_number'],
+        ];
+    }, $parsed));
+
+    if ($lines === []) {
+        throw new RuntimeException('No order rows found in prepared Excel.');
+    }
+
+    online_orders_assert_no_duplicate_tracking($pdo, $pipelineTag, $lines);
+
+    $runId = online_orders_run_start($pdo, $batchId, $pipelineTag);
+    try {
+        $stamp = waybill_stamper_process_uploads($pdfs, $excels);
+        $added = online_orders_lines_append($pdo, $batchId, $runId, $pipelineTag, $lines);
+        online_orders_run_complete($pdo, $runId, [
+            'stamp' => [
+                'matched' => $stamp['matched'],
+                'total' => $stamp['total'],
+                'unmatched' => $stamp['unmatched'],
+            ],
+            'lines_added' => $added,
+            'source' => 'unified_stamp',
+        ]);
+        waybill_stamper_release_stash_tokens($stashRelease);
+
+        return ['stamp' => $stamp, 'lines_added' => $added, 'run_id' => $runId];
+    } catch (Throwable $e) {
+        waybill_stamper_release_stash_tokens($stashRelease);
+        $fail = $pdo->prepare('UPDATE csr_online_batch_runs SET status = ? WHERE id = ?');
+        $fail->execute(['failed', $runId]);
+        throw $e;
+    }
 }
 
 /**
@@ -524,46 +774,7 @@ function online_orders_run_partner_stamp(
     array $excelTokens
 ): array
 {
-    online_orders_assert_active_batch($pdo, $userId, $batchId);
-
-    $pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');
-    $excels = waybill_stamper_resolve_stash_tokens($excelTokens, 'excel');
-    $stashRelease = array_merge($pdfTokens, $excelTokens);
-
-    $parsed = online_orders_parse_ipyx_excel_paths($excels);
-    $lines = [];
-    foreach ($parsed as $row) {
-        $lines[] = [
-            'order_no' => $row['order_no'],
-            'name' => $row['name'],
-            'items' => $row['items'],
-            'courier' => $row['courier'],
-            'tracking_number' => $row['tracking_number'],
-        ];
-    }
-    online_orders_assert_no_duplicate_tracking($pdo, 'partner', $lines);
-
-    $runId = online_orders_run_start($pdo, $batchId, 'partner');
-    try {
-        $stamp = waybill_stamper_process_uploads($pdfs, $excels);
-        $added = online_orders_lines_append($pdo, $batchId, $runId, 'partner', $lines);
-        online_orders_run_complete($pdo, $runId, [
-            'stamp' => [
-                'matched' => $stamp['matched'],
-                'total' => $stamp['total'],
-                'unmatched' => $stamp['unmatched'],
-            ],
-            'lines_added' => $added,
-        ]);
-        waybill_stamper_release_stash_tokens($stashRelease);
-
-        return ['stamp' => $stamp, 'lines_added' => $added, 'run_id' => $runId];
-    } catch (Throwable $e) {
-        waybill_stamper_release_stash_tokens($stashRelease);
-        $fail = $pdo->prepare('UPDATE csr_online_batch_runs SET status = ? WHERE id = ?');
-        $fail->execute(['failed', $runId]);
-        throw $e;
-    }
+    return online_orders_run_unified_stamp($pdo, $userId, $batchId, $pdfTokens, $excelTokens, 'partner');
 }
 
 /**
@@ -577,25 +788,7 @@ function online_orders_run_vip_stamp(
     string $excelToken
 ): array
 {
-    online_orders_assert_active_batch($pdo, $userId, $batchId);
-
-    $pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');
-    $excels = waybill_stamper_resolve_stash_tokens([$excelToken], 'excel');
-    $stashRelease = array_merge($pdfTokens, [$excelToken]);
-
-    $runId = online_orders_run_start($pdo, $batchId, 'vip');
-    try {
-        $stamp = waybill_stamper_process_uploads($pdfs, $excels);
-        online_orders_run_complete($pdo, $runId, ['stamp_matched' => $stamp['matched']]);
-        waybill_stamper_release_stash_tokens($stashRelease);
-
-        return ['stamp' => $stamp, 'lines_added' => 0, 'run_id' => $runId];
-    } catch (Throwable $e) {
-        waybill_stamper_release_stash_tokens($stashRelease);
-        $fail = $pdo->prepare('UPDATE csr_online_batch_runs SET status = ? WHERE id = ?');
-        $fail->execute(['failed', $runId]);
-        throw $e;
-    }
+    return online_orders_run_unified_stamp($pdo, $userId, $batchId, $pdfTokens, $excelToken, 'vip');
 }
 
 /**
@@ -657,6 +850,7 @@ function online_orders_build_ipyx_excel_from_rows(array $rows, string $label): s
         'path' => $path,
         'kind' => 'excel',
         'expires' => time() + 3600,
+        'filename' => 'Online_Orders_Prep_' . date('Y-m-d') . '.xlsx',
     ];
 
     return $token;
@@ -668,43 +862,14 @@ function online_orders_build_ipyx_excel_from_rows(array $rows, string $label): s
 function online_orders_run_shopee_resolve(PDO $pdo, int $userId, int $batchId, array $rows): array
 {
     online_orders_assert_active_batch($pdo, $userId, $batchId);
-    $normalized = [];
-    $linePayload = [];
-    foreach ($rows as $row) {
-        $tn = trim((string) ($row['tracking'] ?? ''));
-        $items = trim((string) ($row['items'] ?? ''));
-        if ($tn === '' || $items === '') {
-            continue;
-        }
-        $orderNo = isset($row['order_no']) && $row['order_no'] !== '' && $row['order_no'] !== null
-            ? trim((string) $row['order_no']) : null;
-        $normalized[] = [
-            'order_no' => $orderNo,
-            'tracking' => $tn,
-            'name' => trim((string) ($row['name'] ?? '')),
-            'items' => $items,
-            'courier' => trim((string) ($row['courier'] ?? 'SPX')),
-        ];
-        $linePayload[] = [
-            'order_no' => $orderNo,
-            'name' => trim((string) ($row['name'] ?? '')),
-            'items' => $items,
-            'courier' => trim((string) ($row['courier'] ?? 'SPX')),
-            'tracking_number' => $tn,
-        ];
-    }
-    if ($normalized === []) {
-        throw new RuntimeException('No complete rows to save.');
-    }
+    $prep = online_orders_tool_spx_prepare($rows);
 
-    online_orders_assert_no_duplicate_tracking($pdo, 'shopee_spx', $linePayload);
-
-    $runId = online_orders_run_start($pdo, $batchId, 'shopee_spx');
-    $excelToken = online_orders_build_ipyx_excel_from_rows($normalized, 'Shopee SPX — Online Orders');
-    online_orders_lines_append($pdo, $batchId, $runId, 'shopee_spx', $linePayload);
-    online_orders_run_complete($pdo, $runId, ['excel_token' => $excelToken, 'row_count' => count($normalized)]);
-
-    return ['excel_token' => $excelToken, 'run_id' => $runId, 'row_count' => count($normalized)];
+    return [
+        'excel_token' => $prep['excel_token'],
+        'run_id' => 0,
+        'row_count' => $prep['row_count'],
+        'rows' => $prep['rows'],
+    ];
 }
 
 /**
@@ -720,20 +885,7 @@ function online_orders_run_shopee_stamp(
     string $excelToken
 ): array
 {
-    online_orders_assert_active_batch($pdo, $userId, $batchId);
-
-    $pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');
-    $excels = waybill_stamper_resolve_stash_tokens([$excelToken], 'excel');
-    $stashRelease = array_merge($pdfTokens, [$excelToken]);
-
-    try {
-        $stamp = waybill_stamper_process_uploads($pdfs, $excels);
-        waybill_stamper_release_stash_tokens($stashRelease);
-        return ['stamp' => $stamp, 'lines_added' => 0];
-    } catch (Throwable $e) {
-        waybill_stamper_release_stash_tokens($stashRelease);
-        throw $e;
-    }
+    return online_orders_run_unified_stamp($pdo, $userId, $batchId, $pdfTokens, $excelToken, 'shopee_spx');
 }
 
 function online_orders_merge_master_workbook(PDO $pdo, int $batchId): string

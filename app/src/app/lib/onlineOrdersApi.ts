@@ -6,6 +6,7 @@ import type {
   OnlineOrdersBatch,
   OnlineOrdersLineInput,
   OnlineOrdersPipeline,
+  OnlineOrdersPrepResult,
   PartnerStampResult,
 } from "@/app/lib/onlineOrdersTypes";
 
@@ -40,6 +41,53 @@ export async function onlineOrdersLinesAppend(
     method: "POST",
     body: { batch_id: batchId, pipeline, lines },
   });
+}
+
+export async function onlineOrdersToolVipPrepare(
+  rows: OnlineOrdersLineInput[],
+): Promise<OnlineOrdersPrepResult> {
+  return api("online_orders.php", "tool_vip_prepare", {
+    method: "POST",
+    body: { rows },
+  });
+}
+
+export async function onlineOrdersToolSpxPrepare(
+  rows: { tracking: string; order_no?: string | null; name?: string; items: string; courier?: string }[],
+): Promise<OnlineOrdersPrepResult> {
+  return api("online_orders.php", "tool_spx_prepare", {
+    method: "POST",
+    body: { rows },
+  });
+}
+
+export async function onlineOrdersToolExcelRegister(
+  excelToken: string,
+  excelTokens?: string[],
+): Promise<OnlineOrdersPrepResult> {
+  return api("online_orders.php", "tool_excel_register", {
+    method: "POST",
+    body: excelTokens?.length ? { excel_tokens: excelTokens } : { excel_token: excelToken },
+  });
+}
+
+export async function onlineOrdersRunUnifiedStamp(
+  batchId: number,
+  pdfTokens: string[],
+  excelToken: string,
+  pipeline: OnlineOrdersPipeline,
+  excelTokens?: string[],
+): Promise<PartnerStampResult> {
+  const raw = await api("online_orders.php", "run_unified_stamp", {
+    method: "POST",
+    body: {
+      batch_id: batchId,
+      pdf_tokens: pdfTokens,
+      pipeline,
+      ...(excelTokens?.length ? { excel_tokens: excelTokens } : { excel_token: excelToken }),
+    },
+  });
+  return normalizePartnerStampResult(raw);
 }
 
 export async function onlineOrdersRunPartner(

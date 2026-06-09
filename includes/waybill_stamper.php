@@ -524,3 +524,54 @@ function waybill_stamper_serve_download(string $token): void
     @unlink($path);
     exit;
 }
+
+/** Download a stashed upload (prep Excel) without releasing the token — for review before stamp. */
+function waybill_stamper_serve_stash_download(string $token): void
+{
+    waybill_stamper_require_access();
+    ims_session_start();
+    waybill_stamper_stash_prune();
+
+    $token = preg_replace('/[^a-f0-9]/', '', strtolower($token));
+    if ($token === '') {
+        http_response_code(400);
+        echo 'Invalid stash token.';
+        exit;
+    }
+
+    $stash = $_SESSION['waybill_stash'] ?? [];
+    if (!is_array($stash)) {
+        http_response_code(404);
+        echo 'Stash not found.';
+        exit;
+    }
+
+    $meta = $stash[$token] ?? null;
+    if (!is_array($meta)) {
+        http_response_code(404);
+        echo 'Stash expired or not found.';
+        exit;
+    }
+
+    $path = (string) ($meta['path'] ?? '');
+    if ($path === '' || !is_file($path)) {
+        http_response_code(404);
+        echo 'Stashed file missing.';
+        exit;
+    }
+
+    $kind = (string) ($meta['kind'] ?? 'excel');
+    $defaultName = $kind === 'pdf' ? 'waybill_upload.pdf' : 'Online_Orders_Prep.xlsx';
+    $filename = (string) ($meta['filename'] ?? basename($path));
+    if ($filename === '' || $filename === '.') {
+        $filename = $defaultName;
+    }
+
+    $mime = $kind === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    header('Content-Type: ' . $mime);
+    header('Content-Disposition: attachment; filename="' . str_replace('"', '', $filename) . '"');
+    header('Content-Length: ' . (string) filesize($path));
+    header('Cache-Control: no-store');
+    readfile($path);
+    exit;
+}

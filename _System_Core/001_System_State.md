@@ -6,20 +6,22 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | _(none — last completed: [[specs/2026-06-05_RTS-SPA-Migration]])_ |
-| **Active Plan** | _(archived: [[plans/archive/2026-06-05_rts_spa_migration_plan]])_ |
-| **Status** | `done` |
+| **Active Spec** | — (pick next from [[specs/]] or [[006_AI_Directed_Engineering]]) |
+| **Active Plan** | — |
+| **Status** | `idle` — last shipped: Online Orders prep/stamper split + SPX parsing |
 
 ## 🚀 Active Feature / Sprint
-- **Current Focus:** Manual E2E (RTS SPA migration + inventory connection + CSR pipelines)
-- **Latest shipped:** RTS full SPA migration (record, records, dashboard via `api/v1/rts_cases.php`) — see [[002_Memory_Bank]]
+- **Current Focus:** Manual E2E (4-tool Online Orders flow, RTS SPA, CSR finalize → parcels)
+- **Latest shipped:** Online Orders prep vs PDF+Excel stamper split, SPX packing-list parsing — see [[002_Memory_Bank]]
 
 ## 🛠️ Current Todo List
 - [ ] Manual E2E: RTS SPA — create case, append lines, sync inventory, void/claim, dashboard counts
 - [ ] Manual E2E: Shopee SPX **packing list Excel + PDF** — import → B2T1 350ml variant pick → master Excel has Order No. + Name + Item/s
 - [ ] Manual E2E: CSR finalize batch → parcels in `packing` → **prod_manager** Deliveries scan/photo/ship → packaging totals drop
 - [ ] Manual E2E: parcel lookup (CSR TL/staff) and idempotent re-scan of shipped TN
-- [ ] Manual E2E: Shopee SPX PDF-only confirm → review → stamp; VIP show completed + edit choice
+- [ ] Manual E2E: Online Orders — VIP/SPX prep download only; PDF+Excel stamper; multi-cycle batch finalize
+- [ ] Manual E2E: SPX review edit (type item line); gallon/B2T1/multi-item `[1][2]` packing-list rows
+- [x] Online Orders prep vs stamper split + SPX product_info parsing (2026-06-05)
 - [ ] Manual E2E: duplicate tracking — try same TN across pipelines; confirm modal shows existing parcel/line
 - [ ] Re-finalize old batches if parcel lines used pre–semicolon-split parser (mixed Paragis + honey)
 - [x] Shopee SPX packing list import + Order No./Name master Excel merge (2026-06-05)
