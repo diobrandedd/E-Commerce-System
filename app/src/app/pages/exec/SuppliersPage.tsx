@@ -4,6 +4,7 @@ import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModa
 import { PageLayout } from "@/app/components/PageLayout";
 import { SupplierProfileModal } from "@/app/components/suppliers/SupplierProfileModal";
 import { SupplierHoneyPricesInline } from "@/app/components/suppliers/SupplierHoneyPricesInline";
+import { SupplierDeptPricesInline } from "@/app/components/suppliers/SupplierDeptPricesInline";
 import { fetchSupplierHoneyPrices } from "@/app/lib/honeyPricing";
 import {
   listSuppliers,
@@ -22,7 +23,7 @@ export function SuppliersPage() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<"add" | Supplier | null>(null);
   const [profileId, setProfileId] = useState<number | null>(null);
-  const [expandedHoneyId, setExpandedHoneyId] = useState<number | null>(null);
+  const [expandedPricingId, setExpandedPricingId] = useState<number | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,9 +67,12 @@ export function SuppliersPage() {
     }
   };
 
-  const toggleHoneyExpand = (s: Supplier) => {
-    setExpandedHoneyId(prev => (prev === s.id ? null : s.id));
+  const togglePricingExpand = (s: Supplier) => {
+    setExpandedPricingId(prev => (prev === s.id ? null : s.id));
   };
+
+  const supplierHasInlinePricing = (s: Supplier) =>
+    s.category === "honey" || s.category === "paragis" || s.category === "black_rice" || s.category === "cacao";
 
   return (
     <PageLayout title="Supplier Master" subtitle="Executive registers suppliers; production managers select from this list">
@@ -115,21 +119,25 @@ export function SuppliersPage() {
                 )}
                 {!loading && filtered.map((s, i) => {
                   const isHoney = s.category === "honey";
-                  const isExpanded = isHoney && expandedHoneyId === s.id;
+                  const isParagis = s.category === "paragis";
+                  const isBlackRice = s.category === "black_rice";
+                  const isCacao = s.category === "cacao";
+                  const hasPricing = supplierHasInlinePricing(s);
+                  const isExpanded = hasPricing && expandedPricingId === s.id;
                   return (
                     <Fragment key={s.id}>
                       <tr
                         role="button"
                         tabIndex={0}
-                        aria-expanded={isHoney ? isExpanded : undefined}
+                        aria-expanded={hasPricing ? isExpanded : undefined}
                         onClick={() => {
-                          if (isHoney) toggleHoneyExpand(s);
+                          if (hasPricing) togglePricingExpand(s);
                           else setProfileId(s.id);
                         }}
                         onKeyDown={e => {
                           if (e.key !== "Enter" && e.key !== " ") return;
                           e.preventDefault();
-                          if (isHoney) toggleHoneyExpand(s);
+                          if (hasPricing) togglePricingExpand(s);
                           else setProfileId(s.id);
                         }}
                         className={`border-b border-border hover:bg-secondary/30 cursor-pointer ${
@@ -138,7 +146,7 @@ export function SuppliersPage() {
                       >
                         <td className="px-6 py-3.5 font-semibold">
                           <span className="inline-flex items-center gap-1.5">
-                            {isHoney && (
+                            {hasPricing && (
                               isExpanded ? (
                                 <ChevronDown size={14} className="text-[#C8900A]" />
                               ) : (
@@ -180,13 +188,46 @@ export function SuppliersPage() {
                           </button>
                         </td>
                       </tr>
-                      {isExpanded && (
+                      {isExpanded && isHoney && (
                         <tr className="border-b border-border bg-secondary/20">
                           <td colSpan={7} className="px-6 py-4" onClick={e => e.stopPropagation()}>
                             <SupplierHoneyPricesInline
                               supplierId={s.id}
                               supplierName={s.display_name}
                               onPendingCountChange={setPendingCount}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                      {isExpanded && isParagis && (
+                        <tr className="border-b border-border bg-secondary/20">
+                          <td colSpan={7} className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                            <SupplierDeptPricesInline
+                              supplierId={s.id}
+                              supplierName={s.display_name}
+                              productKey="pt"
+                            />
+                          </td>
+                        </tr>
+                      )}
+                      {isExpanded && isBlackRice && (
+                        <tr className="border-b border-border bg-secondary/20">
+                          <td colSpan={7} className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                            <SupplierDeptPricesInline
+                              supplierId={s.id}
+                              supplierName={s.display_name}
+                              productKey="brc"
+                            />
+                          </td>
+                        </tr>
+                      )}
+                      {isExpanded && isCacao && (
+                        <tr className="border-b border-border bg-secondary/20">
+                          <td colSpan={7} className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                            <SupplierDeptPricesInline
+                              supplierId={s.id}
+                              supplierName={s.display_name}
+                              productKey="jar_cacao"
                             />
                           </td>
                         </tr>

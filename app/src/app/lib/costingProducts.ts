@@ -15,6 +15,7 @@ const SIZE_SET = new Set<string>(HONEY_COSTING_SIZES);
 export interface CostingProductLike {
   id: number;
   name: string;
+  dept_product_key?: string | null;
   dept_id: number;
   dept_name: string;
   size: string | null;
@@ -35,17 +36,25 @@ export function variantLabel(variant: string): string {
   return variant.charAt(0).toUpperCase() + variant.slice(1);
 }
 
+export function isDeptCatalogProduct(p: CostingProductLike): boolean {
+  const key = p.dept_product_key ?? "";
+  return key === "pt" || key === "brc" || key === "jar_cacao";
+}
+
 export function splitCostingProducts<T extends CostingProductLike>(products: T[]): {
   honey: T[];
+  dept: T[];
   other: T[];
 } {
   const honey: T[] = [];
+  const dept: T[] = [];
   const other: T[] = [];
   for (const p of products) {
     if (isHoneySku(p)) honey.push(p);
+    else if (isDeptCatalogProduct(p)) dept.push(p);
     else other.push(p);
   }
-  return { honey, other };
+  return { honey, dept, other };
 }
 
 export type HoneyVariantGroup<T extends CostingProductLike> = {

@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-06-09T09:52:57+02:00
+generated: 2026-06-10T10:59:59+02:00
 type: memory-bank
-edge_count: 173
+edge_count: 187
 ---
 
 
@@ -29,6 +29,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/costing.php` | `api/v1/_bootstrap.php` |
 | `api/v1/costing.php` | `api/v1/_costing_helpers.php` |
 | `api/v1/costing.php` | `includes/honey_volume.php` |
+| `api/v1/costing.php` | `includes/material_inventory.php` |
 | `api/v1/costing.php` | `includes/suppliers.php` |
 | `api/v1/dashboard.php` | `api/v1/_bootstrap.php` |
 | `api/v1/deliveries.php` | `api/v1/_bootstrap.php` |
@@ -38,6 +39,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/edit_requests.php` | `api/v1/_bootstrap.php` |
 | `api/v1/edit_requests.php` | `includes/delivery_edit_requests.php` |
 | `api/v1/honey.php` | `api/v1/_bootstrap.php` |
+| `api/v1/materials.php` | `api/v1/_bootstrap.php` |
 | `api/v1/online_orders.php` | `api/v1/_bootstrap.php` |
 | `api/v1/online_orders.php` | `includes/online_orders_generator.php` |
 | `api/v1/online_orders.php` | `includes/shopee_spx_packing_list.php` |
@@ -49,6 +51,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/pdf_to_excel.php` | `api/v1/_bootstrap.php` |
 | `api/v1/pdf_to_excel.php` | `includes/pdf_to_excel.php` |
 | `api/v1/pos.php` | `api/v1/_bootstrap.php` |
+| `api/v1/pos.php` | `includes/dept_pos.php` |
 | `api/v1/pos.php` | `includes/honey_pos.php` |
 | `api/v1/pos.php` | `includes/pos_discount_requests.php` |
 | `api/v1/pos_discounts.php` | `api/v1/_bootstrap.php` |
@@ -94,6 +97,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/admin_sidebar.php` | `includes/admin_nav.php` |
 | `includes/auth.php` | `includes/db.php` |
 | `includes/auth_check.php` | `includes/db.php` |
+| `includes/dashboard_inventory.php` | `includes/dept_products.php` |
 | `includes/db.php` | `includes/forwarding.php` |
 | `includes/deliveries_upload.php` | `includes/auth.php` |
 | `includes/deliveries_upload.php` | `includes/delivery_edit_requests.php` |
@@ -104,13 +108,22 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/delivery_edit_requests.php` | `includes/honey_parcel_inventory.php` |
 | `includes/delivery_edit_requests.php` | `includes/online_order_parcels.php` |
 | `includes/delivery_edit_requests.php` | `includes/rts_storage.php` |
+| `includes/dept_inventory.php` | `includes/dept_pricing.php` |
+| `includes/dept_inventory.php` | `includes/dept_products.php` |
+| `includes/dept_pos.php` | `includes/dept_inventory.php` |
+| `includes/dept_pos.php` | `includes/dept_products.php` |
+| `includes/dept_pricing.php` | `includes/dept_products.php` |
+| `includes/dept_pricing.php` | `includes/honey_inventory.php` |
+| `includes/dept_pricing.php` | `includes/suppliers.php` |
 | `includes/honey_inventory.php` | `includes/db.php` |
 | `includes/honey_inventory.php` | `includes/honey_pricing.php` |
 | `includes/honey_inventory.php` | `includes/honey_volume.php` |
 | `includes/honey_inventory.php` | `includes/suppliers.php` |
+| `includes/honey_parcel_inventory.php` | `includes/dept_inventory.php` |
 | `includes/honey_parcel_inventory.php` | `includes/honey_parcel_item_parser.php` |
 | `includes/honey_parcel_inventory.php` | `includes/honey_pos.php` |
 | `includes/honey_parcel_inventory.php` | `includes/rts_schema.php` |
+| `includes/honey_parcel_item_parser.php` | `includes/dept_products.php` |
 | `includes/honey_pos.php` | `includes/honey_inventory.php` |
 | `includes/honey_pricing.php` | `api/v1/_costing_helpers.php` |
 | `includes/honey_pricing.php` | `includes/honey_inventory.php` |
@@ -118,6 +131,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_pricing.php` | `includes/honey_volume.php` |
 | `includes/honey_sales_report.php` | `includes/dashboard_inventory.php` |
 | `includes/labels.php` | `includes/rts_products.php` |
+| `includes/material_inventory.php` | `includes/dept_products.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_inventory.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_item_parser.php` |
 | `includes/online_order_parcels.php` | `includes/qr_decode.php` |

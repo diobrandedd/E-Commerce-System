@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-06-09T09:53:09+02:00
+generated: 2026-06-10T11:00:15+02:00
 type: memory-bank
 ---
 
@@ -13,6 +13,7 @@ Backend index: [[100_API_Index]]
 
 | Client file | API path / action |
 |-------------|-------------------|
+| `app/src/app/lib/materials.ts` | `(action: add)` |
 | `app/src/app/lib/api.ts` | `/${path.replace(/^\/+/, "")}` |
 | `app/src/app/lib/onlineOrdersApi.ts` | `/online_orders.php?action=batch_download&token=${encodeURIComponent(token)}` |
 | `app/src/app/pages/exec/ARCreditsPage.tsx` | `ar.php` |
@@ -26,6 +27,7 @@ Backend index: [[100_API_Index]]
 | `app/src/app/pages/dept/DeptInventoryPage.tsx` | `honey.php` |
 | `app/src/app/pages/honey/HoneyPackagingPage.tsx` | `honey.php` |
 | `app/src/app/pages/honey/HoneyWarehousePage.tsx` | `honey.php` |
+| `app/src/app/lib/materials.ts` | `materials.php` |
 | `app/src/app/lib/onlineOrdersApi.ts` | `online_orders.php` |
 | `app/src/app/lib/parcelsApi.ts` | `parcels.php` |
 | `app/src/app/pages/InventoryRequestsPage.tsx` | `pos_discounts.php` |

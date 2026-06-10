@@ -1,6 +1,6 @@
 ---
 title: SPA Routes
-generated: 2026-06-09T09:53:09+02:00
+generated: 2026-06-10T11:00:15+02:00
 type: spa
 ---
 
@@ -14,18 +14,12 @@ Basename: `/rts/app/dist` (prod) · dev at `localhost:5173`
 | Path | Page component | Roles |
 |------|----------------|-------|
 | `/dashboard` | `DashboardPage` | any authenticated |
-| `/inventory/:dept` | `InventoryPage` | any authenticated |
 | `/inventory` | `InventoryPage` | any authenticated |
 | `/stock-input` | `InventoryPage` | any authenticated |
 | `/daily-count` | `InventoryPage` | any authenticated |
 | `/beginning-inventory` | `InventoryPage` | any authenticated |
 | `/edit-requests` | `EditRequestsPage` | any authenticated |
-| `/inventory/requests` | `InventoryRequestsPage` | executive,prod_manager,hr |
-| `/inventory/honey/warehouse` | `HoneyWarehousePage` | executive,prod_manager,hr |
-| `/inventory/honey/production` | `HoneyProductionPage` | executive,prod_manager,hr |
-| `/inventory/honey/packaging` | `HoneyPackagingPage` | executive,prod_manager,hr |
-| `/inventory/paragis` | `DeptInventoryPage` | executive,prod_manager,hr |
-| `/inventory/cacao-brc` | `DeptInventoryPage` | executive,prod_manager,hr |
+| `/inventory/:dept` | `InventoryPage` | any authenticated |
 | `/staff` | `StaffManagementPage` | executive |
 | `/reports` | `ReportsPage` | executive,prod_manager |
 | `/sales` | `SalesPage` | executive,prod_manager |
@@ -41,3 +35,6 @@ Basename: `/rts/app/dist` (prod) · dev at `localhost:5173`
 | `/deliveries/review` | `DeliveriesReviewPage` | executive,prod_manager |
 | `//` | `Root` | public or POS nested |
 | `/honey` | `POSHoneyPage` | public or POS nested |
+| `/paragis` | `POSDeptPage` | public or POS nested |
+| `/brc` | `POSDeptPage` | public or POS nested |
+| `/cacao` | `POSDeptPage` | public or POS nested |

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-09T09:52:57+02:00
+generated: 2026-06-10T10:59:59+02:00
 type: memory-bank
 ---
 
@@ -22,6 +22,10 @@ type: memory-bank
 | [[modules/deliveries_review_nav]] | 2 |
 | [[modules/deliveries_upload]] | 3 |
 | [[modules/delivery_edit_requests]] | 15 |
+| [[modules/dept_inventory]] | 8 |
+| [[modules/dept_pos]] | 2 |
+| [[modules/dept_pricing]] | 8 |
+| [[modules/dept_products]] | 21 |
 | [[modules/forwarding]] | 15 |
 | [[modules/honey_inventory]] | 38 |
 | [[modules/honey_parcel_inventory]] | 3 |
@@ -32,6 +36,7 @@ type: memory-bank
 | [[modules/honey_volume]] | 8 |
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/labels]] | 3 |
+| [[modules/material_inventory]] | 21 |
 | [[modules/online_order_parcels]] | 15 |
 | [[modules/online_orders_generator]] | 34 |
 | [[modules/order_remarks]] | 17 |

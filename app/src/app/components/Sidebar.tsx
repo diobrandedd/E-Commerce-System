@@ -35,29 +35,39 @@ interface NavItem {
   children?: NavChild[];
 }
 
-const HONEY_CHILDREN: NavLinkChild[] = [
-  { label: "Warehouse", to: "/inventory/honey/warehouse" },
-  { label: "Production", to: "/inventory/honey/production" },
-  { label: "Packaging", to: "/inventory/honey/packaging" },
+const HONEY_PRODUCT_CHILDREN: NavLinkChild[] = [
+  { label: "Warehouse", to: "/inventory/products/honey/warehouse" },
+  { label: "Production", to: "/inventory/products/honey/production" },
+  { label: "Packaging", to: "/inventory/products/honey/packaging" },
+];
+
+const RAW_MATERIALS_CHILDREN: NavLinkChild[] = [
+  { label: "Raw Honey", to: "/inventory/raw-materials/honey" },
+  { label: "Dried Paragis", to: "/inventory/raw-materials/paragis" },
+  { label: "Black Rice", to: "/inventory/raw-materials/black-rice" },
+  { label: "Cacao Beans", to: "/inventory/raw-materials/cacao" },
+];
+
+const PRODUCTS_CHILDREN: NavChild[] = [
+  { label: "Honey", children: HONEY_PRODUCT_CHILDREN },
+  { label: "Paragis Tea", to: "/inventory/products/paragis-tea" },
+  { label: "Black Rice Coffee", to: "/inventory/products/black-rice-coffee" },
+  { label: "Cacao Tablets", to: "/inventory/products/cacao-tablets" },
 ];
 
 function getNavItems(role: Role, dept: string, pendingCorrections: number): NavItem[] {
-  const inventoryHoney: NavItem = {
+  const inventoryNav: NavItem = {
     icon: Package,
     label: "Inventory",
-    to: "/inventory/honey/warehouse",
-    children: [
-      { label: "Honey", children: HONEY_CHILDREN },
-      { label: "Paragis", to: "/inventory/paragis" },
-      { label: "Cacao / BRC", to: "/inventory/cacao-brc" },
-    ],
-  };
-
-  const requestsItem: NavItem = {
-    icon: FileEdit,
-    label: "Requests",
-    to: "/inventory/requests",
+    to: "/inventory/raw-materials",
     badge: pendingCorrections > 0 ? pendingCorrections : undefined,
+    children: [
+      { label: "Raw Materials", children: RAW_MATERIALS_CHILDREN },
+      { label: "Packaging Materials", to: "/inventory/packaging-materials" },
+      { label: "Supplies", to: "/inventory/supplies" },
+      { label: "Products", children: PRODUCTS_CHILDREN },
+      { label: "Requests", to: "/inventory/requests" },
+    ],
   };
 
   const onlineOrdersItem: NavItem = {
@@ -101,8 +111,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     case "executive":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        inventoryHoney,
-        requestsItem,
+        inventoryNav,
         { icon: Users, label: "Staff Management", to: "/staff" },
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
@@ -118,8 +127,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     case "prod_manager":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        inventoryHoney,
-        requestsItem,
+        inventoryNav,
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
@@ -130,8 +138,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     case "hr":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        inventoryHoney,
-        { ...requestsItem, badge: undefined },
+        { ...inventoryNav, badge: undefined },
         rtsNavReadOnly,
       ];
     case "team_leader":
@@ -204,18 +211,36 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    () => new Set(["Inventory", ...(location.pathname.includes("/inventory/honey") ? ["Inventory>Honey"] : [])]),
-  );
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
+    const next = new Set<string>(["Inventory"]);
+    if (location.pathname.includes("/inventory/raw-materials")) {
+      next.add("Inventory>Raw Materials");
+    }
+    if (location.pathname.includes("/inventory/products")) {
+      next.add("Inventory>Products");
+      if (location.pathname.includes("/inventory/products/honey")) {
+        next.add("Inventory>Products>Honey");
+      }
+    }
+    return next;
+  });
   const [signingOut, setSigningOut] = useState(false);
   const { unreadCount: pendingCorrections } = useCorrectionNotifications();
 
   useEffect(() => {
-    if (location.pathname.includes("/inventory/honey")) {
+    if (location.pathname.includes("/inventory")) {
       setExpandedGroups(prev => {
         const next = new Set(prev);
         next.add("Inventory");
-        next.add("Inventory>Honey");
+        if (location.pathname.includes("/inventory/raw-materials")) {
+          next.add("Inventory>Raw Materials");
+        }
+        if (location.pathname.includes("/inventory/products")) {
+          next.add("Inventory>Products");
+          if (location.pathname.includes("/inventory/products/honey")) {
+            next.add("Inventory>Products>Honey");
+          }
+        }
         return next;
       });
     }

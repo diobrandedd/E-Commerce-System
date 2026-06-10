@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-06-09T09:52:58+02:00
+generated: 2026-06-10T11:00:00+02:00
 type: module
 function_count: 14
 ---
@@ -84,7 +84,7 @@ function_count: 14
 **Callers (7):**
 
 - `api/v1/auth.php`:50 — `if (ims_pos_authenticated()) {`
-- `api/v1/pos.php`:30 — `if (!ims_pos_authenticated()) {`
+- `api/v1/pos.php`:33 — `if (!ims_pos_authenticated()) {`
 - `auth/login.php`:8 — `if (ims_pos_authenticated()) {`
 - `dept/products.php`:17 — `$canDeductStock = !ims_pos_authenticated();`
 - `includes/auth_check.php`:164 — `if (!ims_pos_authenticated()) {`
@@ -108,7 +108,7 @@ function_count: 14
 **Callers (3):**
 
 - `api/v1/auth.php`:142 — `if (!ims_login_pos($pin)) {`
-- `api/v1/pos.php`:11 — `* `ims_login_pos()` — POS users cannot access any non-POS endpoint.`
+- `api/v1/pos.php`:12 — `* `ims_login_pos()` — POS users cannot access any non-POS endpoint.`
 - `auth/login.php`:25 — `if (ims_login_pos($pin)) {`
 
 ## ims_logout {#ims_logout}

@@ -5,6 +5,10 @@ import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_FORMULA_LITERS_BY_SIZE, HONEY_LITERS_PER_US_GALLON } from "@/app/lib/honeyPricing";
 import { splitCostingProducts, groupHoneyByVariant } from "@/app/lib/costingProducts";
+import {
+  deptDefaultFormulaStockName,
+  deptSuggestedFormulaQty,
+} from "@/app/lib/deptProducts";
 import { CostBadge, peso } from "@/app/lib/costingDisplay";
 import { CostingHoneyVariantGroups } from "@/app/components/costing/CostingHoneyVariantGroups";
 import { CostingDetailLoading, CostingDetailReveal } from "@/app/components/costing/costingMotion";
@@ -28,6 +32,7 @@ interface StockRow {
   price_changed_at?: string | null;
   price_direction?: "up" | "down" | "unchanged" | "unknown";
   is_honey_raw?: boolean;
+  category?: string | null;
 }
 
 interface ProductRow {
@@ -35,6 +40,7 @@ interface ProductRow {
   name: string;
   dept_id: number;
   dept_name: string;
+  dept_product_key?: string | null;
   size: string | null;
   variant: string | null;
   selling_price: string;
@@ -267,7 +273,7 @@ export function CostingPage() {
     return stocks.filter(s => s.supplier_id === sid);
   }, [stocks, supplierFilter]);
 
-  const { honey: honeyProducts, other: otherProducts } = useMemo(
+  const { honey: honeyProducts, dept: deptProducts, other: otherProducts } = useMemo(
     () => splitCostingProducts(products),
     [products],
   );
@@ -278,7 +284,7 @@ export function CostingPage() {
   );
 
   const productsSubtitle = useMemo(() => {
-    if (honeyProducts.length === 0 && otherProducts.length === 0) {
+    if (honeyProducts.length === 0 && deptProducts.length === 0 && otherProducts.length === 0) {
       return "No products yet.";
     }
     const parts: string[] = [];
@@ -287,11 +293,14 @@ export function CostingPage() {
         `${honeyProducts.length} honey SKU${honeyProducts.length === 1 ? "" : "s"} in ${honeyVariantCount} variant${honeyVariantCount === 1 ? "" : "s"}`,
       );
     }
+    if (deptProducts.length > 0) {
+      parts.push(`${deptProducts.length} dept product${deptProducts.length === 1 ? "" : "s"}`);
+    }
     if (otherProducts.length > 0) {
       parts.push(`${otherProducts.length} other`);
     }
     return `${parts.join(" · ")} — expand a size to inspect formula and history.`;
-  }, [honeyProducts.length, honeyVariantCount, otherProducts.length]);
+  }, [honeyProducts.length, honeyVariantCount, deptProducts.length, otherProducts.length]);
 
   const renderProductDetail = (p: ProductRow) => {
     const detail = detailsById[p.id];
@@ -511,6 +520,47 @@ export function CostingPage() {
           renderDetail={renderProductDetail}
           onRequestCreate={(variant, size) => openCreateProduct({ variant, size })}
         />
+
+        {deptProducts.length > 0 && (
+          <>
+            <h4 className="text-sm font-semibold text-foreground pt-2">Dept products (PT / BRC / Cacao)</h4>
+            {deptProducts.map(p => {
+              const isExpanded = expandedId === p.id;
+              const current = parseFloat(p.current_cost);
+              const baseline = parseFloat(p.baseline_cost);
+              const selling = parseFloat(p.selling_price);
+              const margin = selling - current;
+              const marginPct = selling > 0 ? ((margin / selling) * 100).toFixed(1) : "0.0";
+              return (
+                <div
+                  key={p.id}
+                  className={cn(
+                    "bg-card rounded-xl border overflow-hidden transition-all duration-200",
+                    isExpanded ? "border-[#C8900A]/35 shadow-md" : "border-border",
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleProduct(p.id)}
+                    className="w-full flex items-center gap-4 px-6 py-5 text-left hover:bg-secondary/30"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-foreground">{p.name}</span>
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{p.dept_name}</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-foreground">{peso(current)}</p>
+                      {isExec && <p className="text-xs text-muted-foreground">Sell {peso(selling)} · {marginPct}%</p>}
+                    </div>
+                  </button>
+                  <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">
+                    {renderProductDetail(p)}
+                  </CostingDetailReveal>
+                </div>
+              );
+            })}
+          </>
+        )}
 
         {otherProducts.length > 0 && (
           <>
@@ -1017,6 +1067,32 @@ function honeyRawStockNameForVariant(variant: string | null): string | null {
   return null;
 }
 
+function resolveSuggestedFormulaQty(product: ProductRow | null, stock: StockRow | undefined): string {
+  if (!product || !stock) return "";
+  const deptQty = deptSuggestedFormulaQty(product.dept_product_key, stock.name);
+  if (deptQty !== null) return deptQty;
+  const honeyStock = honeyRawStockNameForVariant(product.variant ?? null);
+  if (honeyStock && stock.name === honeyStock && product.size && HONEY_FORMULA_LITERS_BY_SIZE[product.size] != null) {
+    return String(HONEY_FORMULA_LITERS_BY_SIZE[product.size]);
+  }
+  return "";
+}
+
+function pickDefaultFormulaStock(product: ProductRow | null, stocks: StockRow[]): StockRow | undefined {
+  if (!product) return stocks[0];
+  const deptPreferred = deptDefaultFormulaStockName(product.dept_product_key ?? null);
+  if (deptPreferred) {
+    const match = stocks.find(s => s.name === deptPreferred);
+    if (match) return match;
+  }
+  const honeyPreferred = honeyRawStockNameForVariant(product.variant ?? null);
+  if (honeyPreferred) {
+    const match = stocks.find(s => s.name === honeyPreferred);
+    if (match) return match;
+  }
+  return stocks[0];
+}
+
 function AddFormulaModal({
   productId,
   product,
@@ -1031,17 +1107,18 @@ function AddFormulaModal({
   onSaved: (detail: ProductDetail) => void;
 }) {
   const targetStockName = honeyRawStockNameForVariant(product?.variant ?? null);
-  const suggestedQty =
-    product?.size && HONEY_FORMULA_LITERS_BY_SIZE[product.size] != null
-      ? String(HONEY_FORMULA_LITERS_BY_SIZE[product.size])
-      : "";
-
-  const defaultStock = stocks.find(s => targetStockName && s.name === targetStockName) ?? stocks[0];
+  const defaultStock = pickDefaultFormulaStock(product, stocks);
+  const initialSuggestedQty = resolveSuggestedFormulaQty(product, defaultStock);
 
   const stockGroups = useMemo(() => {
     const bySupplier = new Map<string, StockRow[]>();
+    const packaging: StockRow[] = [];
     const other: StockRow[] = [];
     for (const s of stocks) {
+      if (s.category === "packaging") {
+        packaging.push(s);
+        continue;
+      }
       if (s.supplier_id && s.supplier_display_name) {
         const key = s.supplier_display_name;
         if (!bySupplier.has(key)) bySupplier.set(key, []);
@@ -1050,13 +1127,32 @@ function AddFormulaModal({
         other.push(s);
       }
     }
-    return { bySupplier, other };
+    return { bySupplier, packaging, other };
   }, [stocks]);
 
   const [stockId, setStockId] = useState(String(defaultStock?.id ?? ""));
-  const [qty, setQty] = useState(suggestedQty);
+  const [qty, setQty] = useState(initialSuggestedQty);
+  const [qtyTouched, setQtyTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const selectedStock = stocks.find(s => String(s.id) === stockId);
+  const deptAutoQty = deptSuggestedFormulaQty(product?.dept_product_key, selectedStock?.name ?? "");
+  const isDeptAutoQty = deptAutoQty !== null;
+
+  useEffect(() => {
+    if (!selectedStock || qtyTouched) return;
+    const next = resolveSuggestedFormulaQty(product, selectedStock);
+    if (next !== "") setQty(next);
+  }, [stockId, selectedStock, product, qtyTouched]);
+
+  const handleStockChange = (nextId: string) => {
+    setStockId(nextId);
+    setQtyTouched(false);
+    const stock = stocks.find(s => String(s.id) === nextId);
+    const nextQty = resolveSuggestedFormulaQty(product, stock);
+    if (nextQty !== "") setQty(nextQty);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1080,13 +1176,19 @@ function AddFormulaModal({
     <ModalShell title="Add formula line" onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
         {error && <Banner kind="err">{error}</Banner>}
-        {product?.variant && targetStockName && (
+        {product?.dept_product_key && isDeptAutoQty && (
+          <p className="text-xs text-muted-foreground">
+            Dept BOM qty is set automatically from product rules ({selectedStock?.name}: <strong>{deptAutoQty}</strong> per
+            sell unit).
+          </p>
+        )}
+        {product?.variant && targetStockName && !product?.dept_product_key && (
           <p className="text-xs text-muted-foreground">
             For this product, add <span className="font-mono">{targetStockName}</span> from your chosen supplier.
-            {suggestedQty && (
+            {qty && product.size && (
               <>
                 {" "}
-                Suggested qty: <strong>{suggestedQty} L</strong> ({product.size}).
+                Suggested qty: <strong>{qty} L</strong> ({product.size}).
                 {product.size === "gallon" && (
                   <> Saved as exact <strong>{HONEY_LITERS_PER_US_GALLON}</strong> L (US gallon).</>
                 )}
@@ -1095,8 +1197,17 @@ function AddFormulaModal({
           </p>
         )}
         <Field label="Stock">
-          <select value={stockId} onChange={e => setStockId(e.target.value)} required className={inputCls}>
+          <select value={stockId} onChange={e => handleStockChange(e.target.value)} required className={inputCls}>
             <option value="">— Select —</option>
+            {stockGroups.packaging.length > 0 && (
+              <optgroup label="Packaging materials">
+                {stockGroups.packaging.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} — {peso(s.current_price)}/{s.unit}
+                  </option>
+                ))}
+              </optgroup>
+            )}
             {Array.from(stockGroups.bySupplier.entries()).map(([label, group]) => (
               <optgroup key={label} label={label}>
                 {group.map(s => (
@@ -1119,7 +1230,19 @@ function AddFormulaModal({
           </select>
         </Field>
         <Field label="Quantity per unit">
-          <input value={qty} onChange={e => setQty(e.target.value)} required type="number" step="any" min="0.00000001" className={inputCls} />
+          <input
+            value={qty}
+            onChange={e => {
+              setQtyTouched(true);
+              setQty(e.target.value);
+            }}
+            readOnly={isDeptAutoQty}
+            required
+            type="number"
+            step="any"
+            min="0.00000001"
+            className={cn(inputCls, isDeptAutoQty && "bg-secondary/50 text-muted-foreground cursor-default")}
+          />
         </Field>
         <ModalFooter onClose={onClose} saving={saving} submitLabel="Add line" />
       </form>

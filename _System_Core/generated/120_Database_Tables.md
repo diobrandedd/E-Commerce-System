@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-06-09T09:52:57+02:00
+generated: 2026-06-10T10:59:59+02:00
 type: memory-bank
-table_count: 40
+table_count: 43
 ---
 
 
@@ -134,8 +134,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_list]] |
-| `api/v1/honey.php` | [[modules/honey#api_honey_dept_list]] |
-| `api/v1/honey.php` | [[modules/honey#api_honey_dept_add_row]] |
+| `api/v1/materials.php` | [[modules/materials#api_materials_departments]] |
 | `api/v1/pos.php` | [[modules/pos#api_pos_products]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_stock_movement]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
@@ -143,8 +142,14 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_departments]] |
 | `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_dept_products_snapshot]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_fetch_row]] |
+| `includes/dept_products.php` | [[modules/dept_products#dept_product_dept_id]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_resolve_honey_dept_id]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_fetch_stock]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_user_is_csr_dept]] |
 | `includes/waybill_stamper.php` | [[modules/waybill_stamper#waybill_stamper_user_can_access]] |
 
@@ -166,6 +171,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_change_password]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
 
 ## `pos_pins`
@@ -194,7 +200,19 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_for_dept]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_add_entry]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
+| `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_upsert_supplier_costing_stocks]] |
+| `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_leaf_stock_id]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_upsert_supplier_costing_stocks]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_fetch_stock]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_create]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_update]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_adjust]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_values]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 
 ## `stock_entries`
 
@@ -207,6 +225,13 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_add_entry]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_supplier_priced]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_adjust]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_values]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 
 ## `edit_requests`
 
@@ -238,6 +263,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/pos.php` | [[modules/pos#api_pos_products]] |
 | `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_catalog_snapshot]] |
+| `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_product_map]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
@@ -295,6 +322,13 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_list_supplier_prices]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_save_supplier_prices]] |
 
+## `online_parcel_dept_deduct_lines`
+
+| File | Function |
+|------|----------|
+| `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_apply_deduct]] |
+| `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
+
 ## `pos_discount_requests`
 
 | File | Function |
@@ -338,6 +372,14 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_lines_append]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_merge_master_workbook]] |
 
+## `supplier_dept_prices`
+
+| File | Function |
+|------|----------|
+| `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_resolve_active_price]] |
+| `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_list_supplier_prices]] |
+| `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_save_supplier_prices]] |
+
 ## `online_order_parcels`
 
 | File | Function |
@@ -360,11 +402,23 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_apply_deduct]] |
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
 
+## `material_adjustment_requests`
+
+| File | Function |
+|------|----------|
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_submit]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_approve]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_reject]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_pending_count]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_mark_viewed]] |
+
 ## `pos_sales`
 
 | File | Function |
 |------|----------|
 | `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
+| `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
@@ -375,6 +429,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
+| `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
@@ -403,6 +458,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_reprice_pending_for_supplier]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_pending_warehouse_rows]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_pending_count]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/suppliers.php` | [[modules/suppliers#supplier_fetch_by_honey_code]] |
 
 ## `honey_production_rows`
@@ -470,12 +526,16 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
-| `api/v1/honey.php` | [[modules/honey#api_honey_dept_list]] |
-| `api/v1/honey.php` | [[modules/honey#api_honey_dept_add_row]] |
 | `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_dept_products_snapshot]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_fetch_row]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_ensure_row]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_supplier_priced]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_deduct]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
+| `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
 
 ## `rts_inventory_rows`
 
@@ -497,6 +557,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
+| `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_list_supplier_prices]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_sync_all_variant_stocks]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_list_supplier_prices]] |
 | `includes/suppliers.php` | [[modules/suppliers#supplier_fetch]] |

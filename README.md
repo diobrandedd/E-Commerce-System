@@ -46,7 +46,7 @@ Built app: `cd app && npm install && npm run build:prod` → `app/dist/`
 | **RTS inventory** | `/rts` | Executive, PM, HR, CSR | Mirror of returns; sync from legacy cases |
 | **Reports / Sales** | `/reports`, `/sales` | Executive, PM | POS + AR-backed reporting |
 | **AR credits** | `/ar` | Several roles | Staff credit tracking |
-| **Online Orders** | `/waybill/online-orders` | Executive, CSR TL, CSR staff | Batch wizard: partner stamp, VIP remarks, Shopee SPX → one master Excel |
+| **Online Orders** | `/waybill/online-orders` | Executive, CSR TL, CSR staff | Batch wizard: 4 tools (3 prep + PDF+Excel stamper) → one master Excel |
 | **Staff / settings** | `/staff`, `/settings` | Executive | User management |
 | **POS terminal** | `/pos`, `/pos/honey` | POS PIN | Walk-in sales |
 
@@ -69,7 +69,16 @@ RTS **operational** data still originates here; the SPA **inventory mirror** is 
 |------|-----------|-----|
 | **Online Orders Generator** | `/waybill/online-orders` | `api/v1/online_orders.php` |
 
-The wizard runs three pipelines in one batch session (partner seller stamp, VIP order remarks + stamp, Shopee SPX extract → resolve items → stamp). **Done** merges all parcel lines into one master iPYX-style Excel (cols B–H) and persists rows in `csr_online_order_lines` for future inventory use.
+One **active batch** per session. The **tools page** has **four independent cards** — there is no prep → stamper chain:
+
+| Tool | Job |
+|------|-----|
+| VIP Excel arranger | Courier Excel → resolve remarks → **download** iPYX sheet → **Back to tools** |
+| SPX name merge | Packing list / PDF → review → **download** iPYX sheet → **Back to tools** |
+| Validate existing Excel | Check partner workbook → **download** → **Back to tools** |
+| **PDF + Excel stamper** | User returns to tools and picks this separately: prepared Excel + waybill PDFs → `run_unified_stamp` → batch lines |
+
+**Done** merges all stamped parcel lines into one master iPYX-style Excel (cols B–H) and persists rows in `csr_online_order_lines` for parcels/inventory.
 
 Underlying engines (unchanged): `waybill-stamper/processor.py`, `pdf-to-excel/extractor.py`, `includes/order_remarks_workbook.py` — invoked via `waybill.php`, `pdf_to_excel.php`, and `order_remarks.php` from the orchestration layer in `includes/online_orders_generator.php`.
 

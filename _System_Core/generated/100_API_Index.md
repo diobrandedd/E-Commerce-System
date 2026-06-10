@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-09T09:52:56+02:00
+generated: 2026-06-10T10:59:59+02:00
 type: memory-bank
 ---
 
@@ -51,11 +51,11 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/costing.php`
 - **URL:** `/rts/api/v1/costing.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/suppliers.php`, `includes/honey_volume.php`, `api/v1/_costing_helpers.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/suppliers.php`, `includes/honey_volume.php`, `api/v1/_costing_helpers.php`, `includes/material_inventory.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `stocks_list` | `api_costing_stocks_list()` | `ims_pdo()`, `supplier_display_name()` |
+| `stocks_list` | `api_costing_stocks_list()` | `ims_pdo()`, `material_inventory_has_columns()`, `supplier_display_name()` |
 | `products_list` | `api_costing_products_list()` | `ims_pdo()` |
 | `product_view` | `api_costing_product_view()` | `ims_pdo()` |
 | `stock_update_price` | `api_costing_stock_update_price()` | `ims_pdo()` |
@@ -132,16 +132,44 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `correction_pending_count` | `api_honey_correction_pending_count()` | — |
 | `executive_adjust` | `api_honey_executive_adjust()` | `honey_executive_adjust()`, `ims_pdo()` |
 | `executive_edit` | `api_honey_executive_edit()` | `ims_pdo()`, `honey_executive_edit_row()` |
-| `correction_unread_count` | `api_honey_correction_unread_count()` | `honey_correction_unread_count()`, `ims_pdo()` |
+| `correction_unread_count` | `api_honey_correction_unread_count()` | `ims_pdo()`, `honey_correction_unread_count()`, `material_adjustment_pending_count()` |
 | `correction_unread_list` | `api_honey_correction_unread_list()` | `honey_correction_unread_list()`, `ims_pdo()` |
 | `correction_mark_viewed` | `api_honey_correction_mark_viewed()` | `honey_correction_mark_viewed()`, `ims_pdo()` |
-| `dept_list` | `api_honey_dept_list()` | `ims_pdo()` |
-| `dept_add_row` | `api_honey_dept_add_row()` | `ims_pdo()` |
+| `dept_list` | `api_honey_dept_list()` | `ims_pdo()`, `dept_inventory_catalog_snapshot()` |
+| `dept_catalog` | `api_honey_dept_catalog()` | `ims_pdo()`, `dept_inventory_catalog_snapshot()` |
+| `dept_stock_in` | `api_honey_dept_stock_in()` | `ims_pdo()`, `dept_inventory_stock_in()` |
+| `dept_add_row` | `api_honey_dept_add_row()` | — |
 | `supplier_honey_prices` | `api_honey_supplier_honey_prices()` | `ims_pdo()`, `honey_pricing_list_supplier_prices()`, `supplier_display_name()`, `honey_pricing_pending_count()` |
 | `supplier_honey_prices_save` | `api_honey_supplier_honey_prices_save()` | `ims_pdo()`, `honey_pricing_save_supplier_prices()`, `honey_pricing_reprice_pending_for_supplier()`, `honey_pricing_pending_count()` |
+| `supplier_dept_prices` | `api_honey_supplier_dept_prices()` | `ims_pdo()`, `dept_pricing_list_supplier_prices()`, `supplier_display_name()` |
+| `supplier_dept_prices_save` | `api_honey_supplier_dept_prices_save()` | `ims_pdo()`, `dept_pricing_save_supplier_prices()` |
 | `warehouse_pending_prices` | `api_honey_warehouse_pending_prices()` | `ims_pdo()`, `honey_pricing_pending_warehouse_rows()`, `honey_pricing_pending_count()` |
 | `warehouse_set_unit_cost` | `api_honey_warehouse_set_unit_cost()` | `honey_pricing_set_warehouse_row_cost()`, `ims_pdo()`, `honey_pricing_pending_count()` |
 | `pricing_sync_stocks` | `api_honey_pricing_sync_stocks()` | `honey_pricing_sync_all_variant_stocks()`, `ims_pdo()` |
+
+### `materials.php`
+
+- **Path:** `api/v1/materials.php`
+- **URL:** `/rts/api/v1/materials.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `catalog_list` | `api_materials_catalog_list()` | `ims_pdo()`, `material_inventory_list()` |
+| `catalog_create` | `api_materials_catalog_create()` | `ims_pdo()`, `material_inventory_create()` |
+| `catalog_update` | `api_materials_catalog_update()` | `ims_pdo()`, `material_inventory_update()` |
+| `on_hand_list` | `api_materials_on_hand_list()` | — |
+| `adjust` | `api_materials_adjust()` | `ims_pdo()`, `material_inventory_adjust()` |
+| `request_submit` | `api_materials_request_submit()` | `ims_pdo()`, `material_adjustment_submit()` |
+| `request_list` | `api_materials_request_list()` | `ims_pdo()`, `material_adjustment_list()` |
+| `request_approve` | `api_materials_request_approve()` | `ims_pdo()`, `material_adjustment_approve()` |
+| `request_reject` | `api_materials_request_reject()` | `ims_pdo()`, `material_adjustment_reject()` |
+| `request_pending_count` | `api_materials_request_pending_count()` | `material_adjustment_pending_count()`, `ims_pdo()` |
+| `request_mark_viewed` | `api_materials_request_mark_viewed()` | `material_adjustment_mark_viewed()`, `ims_pdo()` |
+| `raw_snapshot` | `api_materials_raw_snapshot()` | `material_raw_snapshot()`, `ims_pdo()` |
+| `raw_detail` | `api_materials_raw_detail()` | `material_inventory_raw_stock_by_slug()`, `ims_pdo()` |
+| `departments` | `api_materials_departments()` | `ims_pdo()` |
+| `set_values` | `api_materials_set_values()` | `ims_pdo()`, `material_packaging_set_values()` |
 
 ### `online_orders.php`
 
@@ -209,14 +237,16 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/pos.php`
 - **URL:** `/rts/api/v1/pos.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/pos_discount_requests.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_discount_requests.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
 | `products` | `api_pos_products()` | `ims_pdo()` |
 | `honey_catalog` | `api_pos_honey_catalog()` | `honey_pos_honey_catalog()`, `ims_pdo()` |
+| `dept_catalog` | `api_pos_dept_catalog()` | `dept_pos_catalog()`, `ims_pdo()` |
 | `checkout` | `api_pos_checkout()` | `ims_pdo()` |
 | `honey_checkout` | `api_pos_honey_checkout()` | `honey_pos_checkout()`, `ims_pdo()` |
+| `dept_checkout` | `api_pos_dept_checkout()` | `dept_pos_checkout()`, `ims_pdo()` |
 | `discount_request_create` | `api_pos_discount_request_create()` | `pos_discount_request_create()`, `ims_pdo()` |
 | `discount_request_status` | `api_pos_discount_request_status()` | `pos_discount_request_fetch_for_pin()`, `ims_pdo()` |
 

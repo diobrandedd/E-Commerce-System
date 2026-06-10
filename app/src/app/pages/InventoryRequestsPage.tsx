@@ -11,6 +11,12 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_SIZES, HONEY_VARIANTS } from "@/app/lib/honey";
+import {
+  approveMaterialRequest,
+  listMaterialRequests,
+  rejectMaterialRequest,
+  type MaterialAdjustmentRequest,
+} from "@/app/lib/materials";
 import type { Supplier } from "@/app/lib/suppliers";
 
 type CorrectionType = "qty_delta" | "set_qty" | "variant" | "supplier" | "packaging_size";
@@ -85,6 +91,10 @@ export function InventoryRequestsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { refresh: refreshNotifications, markViewed } = useCorrectionNotifications();
   const [requests, setRequests] = useState<CorrectionRequestDetail[]>([]);
+  const [materialRequests, setMaterialRequests] = useState<MaterialAdjustmentRequest[]>([]);
+  const [materialError, setMaterialError] = useState<string | null>(null);
+  const [actingMaterialId, setActingMaterialId] = useState<number | null>(null);
+  const [materialPage, setMaterialPage] = useState(1);
   const [discountQueue, setDiscountQueue] = useState<Array<{
     id: number;
     request_no: string;
@@ -109,10 +119,15 @@ export function InventoryRequestsPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiGet<{ requests: CorrectionRequestDetail[] }>("honey.php", "correction_list");
+      const [data, matData] = await Promise.all([
+        apiGet<{ requests: CorrectionRequestDetail[] }>("honey.php", "correction_list"),
+        listMaterialRequests(),
+      ]);
       setRequests(data.requests);
+      setMaterialRequests(matData.requests);
       setCorrectionPage(1);
       setDiscountPage(1);
+      setMaterialPage(1);
       if (isExec) {
         const discountData = await apiGet<{ rows: typeof discountQueue }>("pos_discounts.php", "list", { status: "pending", limit: "50" });
         setDiscountQueue(discountData.rows);
@@ -230,7 +245,45 @@ export function InventoryRequestsPage() {
   const discountStart = (discountSafePage - 1) * ROWS_PER_PAGE;
   const pagedDiscounts = discountQueue.slice(discountStart, discountStart + ROWS_PER_PAGE);
 
+  const materialTotal = materialRequests.length;
+  const materialTotalPages = Math.max(1, Math.ceil(materialTotal / ROWS_PER_PAGE));
+  const materialSafePage = Math.min(materialPage, materialTotalPages);
+  const materialStart = (materialSafePage - 1) * ROWS_PER_PAGE;
+  const pagedMaterialRequests = materialRequests.slice(materialStart, materialStart + ROWS_PER_PAGE);
+
+  const approveMaterial = async (id: number) => {
+    if (!confirm("Approve this material adjustment?")) return;
+    setActingMaterialId(id);
+    setMaterialError(null);
+    try {
+      await approveMaterialRequest(id);
+      await refresh();
+      await refreshNotifications();
+    } catch (e) {
+      setMaterialError(e instanceof ApiError ? e.message : "Could not approve request.");
+    } finally {
+      setActingMaterialId(null);
+    }
+  };
+
+  const rejectMaterial = async (id: number) => {
+    const note = prompt("Rejection note (required):") ?? "";
+    if (!note.trim()) return;
+    setActingMaterialId(id);
+    setMaterialError(null);
+    try {
+      await rejectMaterialRequest(id, note.trim());
+      await refresh();
+      await refreshNotifications();
+    } catch (e) {
+      setMaterialError(e instanceof ApiError ? e.message : "Could not reject request.");
+    } finally {
+      setActingMaterialId(null);
+    }
+  };
+
   const colSpan = isExec && !readonly ? 6 : 5;
+  const materialColSpan = isExec && !readonly ? 6 : 5;
 
   const showEditRequests = isExec || isPm;
 
@@ -328,6 +381,87 @@ export function InventoryRequestsPage() {
               page={correctionPage}
               setPage={setCorrectionPage}
               totalRows={correctionTotal}
+              perPage={ROWS_PER_PAGE}
+              noun="requests"
+            />
+          )}
+        </section>
+
+        <section id="material-adjustments-section">
+          <div className="px-1 pb-3">
+            <h3 className="text-sm font-semibold text-foreground">Packaging & supplies adjustments</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Production manager requests to add or deduct material on-hand</p>
+          </div>
+          {materialError && (
+            <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">{materialError}</div>
+          )}
+          <div className="bg-card rounded-xl border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
+                  {["Date", "Item", "Change", "Reason", "Status", isExec && !readonly ? "Review" : ""].filter(Boolean).map(h => (
+                    <th key={h} className="text-left px-4 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading && (
+                  <tr>
+                    <td colSpan={materialColSpan} className="py-8 text-center">
+                      <Loader2 className="inline animate-spin" size={14} />
+                    </td>
+                  </tr>
+                )}
+                {!loading && pagedMaterialRequests.length === 0 && (
+                  <tr>
+                    <td colSpan={materialColSpan} className="py-8 text-center text-sm text-muted-foreground">
+                      No material adjustment requests yet.
+                    </td>
+                  </tr>
+                )}
+                {!loading && pagedMaterialRequests.map(r => (
+                  <tr key={r.id} className="border-b">
+                    <td className="px-4 py-3 text-xs">{r.created_at}</td>
+                    <td className="px-4 py-3">{r.stock_name}</td>
+                    <td className="px-4 py-3">{r.summary ?? `${r.action} ${r.amount} ${r.unit}`}</td>
+                    <td className="px-4 py-3 max-w-xs truncate">{r.reason}</td>
+                    <td className="px-4 py-3 capitalize">{r.status}</td>
+                    {isExec && !readonly && (
+                      <td className="px-4 py-3">
+                        {r.status === "pending" ? (
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled={actingMaterialId === r.id}
+                              onClick={() => void approveMaterial(r.id)}
+                              className="text-xs font-semibold text-green-700"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              disabled={actingMaterialId === r.id}
+                              onClick={() => void rejectMaterial(r.id)}
+                              className="text-xs font-semibold text-red-600"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{r.reviewed_by_name ?? "—"}</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!loading && (
+            <TablePagination
+              page={materialPage}
+              setPage={setMaterialPage}
+              totalRows={materialTotal}
               perPage={ROWS_PER_PAGE}
               noun="requests"
             />

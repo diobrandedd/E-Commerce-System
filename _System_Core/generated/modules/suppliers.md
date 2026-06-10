@@ -1,7 +1,7 @@
 ---
 title: suppliers
 source: includes/suppliers.php
-generated: 2026-06-09T09:53:08+02:00
+generated: 2026-06-10T11:00:14+02:00
 type: module
 function_count: 12
 ---
@@ -20,10 +20,12 @@ function_count: 12
 
 ## supplier_display_name {#supplier_display_name}
 
-**Callers (9):**
+**Callers (11):**
 
-- `api/v1/costing.php`:80 — `$row['supplier_display_name'] = supplier_display_name(`
-- `api/v1/honey.php`:522 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
+- `api/v1/costing.php`:85 — `$row['supplier_display_name'] = supplier_display_name(`
+- `api/v1/honey.php`:586 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
+- `api/v1/honey.php`:648 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
+- `includes/dept_pricing.php`:156 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:133 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:564 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:604 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
@@ -50,9 +52,11 @@ function_count: 12
 
 **Tables:** `suppliers`
 
-**Callers (10):**
+**Callers (12):**
 
 - `api/v1/suppliers.php`:52 — `$row = supplier_fetch(ims_pdo(), $id);`
+- `includes/dept_pricing.php`:87 — `$supplier = supplier_fetch($pdo, $supplierId);`
+- `includes/dept_pricing.php`:151 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_inventory.php`:602 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_inventory.php`:1005 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_pricing.php`:128 — `$supplier = supplier_fetch($pdo, $supplierId);`

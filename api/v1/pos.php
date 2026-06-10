@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../../includes/honey_pos.php';
+require_once __DIR__ . '/../../includes/dept_pos.php';
 require_once __DIR__ . '/../../includes/pos_discount_requests.php';
 
 /**
@@ -19,8 +20,10 @@ require_once __DIR__ . '/../../includes/pos_discount_requests.php';
 api_dispatch([
     'products' => 'api_pos_products',
     'honey_catalog' => 'api_pos_honey_catalog',
+    'dept_catalog' => 'api_pos_dept_catalog',
     'checkout' => 'api_pos_checkout',
     'honey_checkout' => 'api_pos_honey_checkout',
+    'dept_checkout' => 'api_pos_dept_checkout',
     'discount_request_create' => 'api_pos_discount_request_create',
     'discount_request_status' => 'api_pos_discount_request_status',
 ]);
@@ -57,6 +60,39 @@ function api_pos_honey_catalog(): void
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }
+}
+
+function api_pos_dept_catalog(): void
+{
+    api_method_allowed(['GET']);
+    api_pos_require_session();
+    $deptKey = trim((string) ($_GET['dept'] ?? ''));
+    try {
+        api_ok(dept_pos_catalog(ims_pdo(), $deptKey !== '' ? $deptKey : null));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_pos_dept_checkout(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_pos_require_session();
+
+    $pinId = (int) ($_SESSION['pos_pin_id'] ?? 0);
+    $items = is_array($input['items'] ?? null) ? $input['items'] : [];
+    $buyerName = trim((string) ($input['buyer_name'] ?? 'Walk-in'));
+    $buyerCreds = trim((string) ($input['buyer_credentials'] ?? ''));
+
+    try {
+        $result = dept_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok($result);
 }
 
 function api_pos_checkout(): void

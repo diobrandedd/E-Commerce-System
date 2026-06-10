@@ -6,15 +6,19 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | — (pick next from [[specs/]] or [[006_AI_Directed_Engineering]]) |
-| **Active Plan** | — |
-| **Status** | `idle` — last shipped: Online Orders prep/stamper split + SPX parsing |
+| **Active Spec** | [[specs/Inventory Arrangement change]] |
+| **Active Plan** | [[plans/archive/2026-06-05_packaging-price-qty_plan]] (shipped) |
+| **Status** | `shipped` — packaging price/qty + costing formula link; manual E2E recommended |
 
 ## 🚀 Active Feature / Sprint
-- **Current Focus:** Manual E2E (4-tool Online Orders flow, RTS SPA, CSR finalize → parcels)
-- **Latest shipped:** Online Orders prep vs PDF+Excel stamper split, SPX packing-list parsing — see [[002_Memory_Bank]]
+- **Current Focus:** Manual E2E packaging set-values (exec/HR) → costing formula line with packaging stock
+- **Latest shipped:** Packaging price + qty — [[problems/records/2026-06-05_packaging-price-qty]]
 
 ## 🛠️ Current Todo List
+- [x] **PT v2:** `migration_phase17_pt_supplier_bom.sql`, supplier ₱/bag, stock-in bags→pouches (2026-06-05)
+- [x] **BRC v2:** `migration_phase18_brc_supplier_bom.sql`, black_rice supplier ₱/bag, 20 kg → 200 pouches (2026-06-05)
+- [ ] **Run** phase 16–18 migrations on prod if not done
+- [ ] Manual E2E: PT (1 bag → ~104 pouches) + BRC (1 bag → 200 pouches) → costing → parcel → POS
 - [ ] Manual E2E: RTS SPA — create case, append lines, sync inventory, void/claim, dashboard counts
 - [ ] Manual E2E: Shopee SPX **packing list Excel + PDF** — import → B2T1 350ml variant pick → master Excel has Order No. + Name + Item/s
 - [ ] Manual E2E: CSR finalize batch → parcels in `packing` → **prod_manager** Deliveries scan/photo/ship → packaging totals drop

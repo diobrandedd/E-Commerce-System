@@ -121,8 +121,8 @@ export function VipPrepTool({
         ← Back to tools
       </button>
       <p className="text-sm text-muted-foreground">
-        Upload VIP courier Excel (J&T / SPX), resolve variants, then download the arranged iPYX sheet. Use PDF +
-        Excel stamper from tools when you are ready to stamp waybills.
+        Upload VIP courier Excel (J&T / SPX), resolve variants, then download the arranged iPYX sheet. When ready to
+        stamp, go back to tools and open PDF + Excel stamper.
       </p>
       <FileZone
         label="VIP courier Excel"
@@ -192,7 +192,7 @@ export function VipPrepTool({
             Arranged Excel ready ({prepResult.row_count} rows)
           </p>
           <p className="text-sm text-muted-foreground">
-            Download the remarks export and iPYX sheet. When waybills are ready, use PDF + Excel stamper from tools.
+            Download the remarks export and iPYX sheet. Go back to tools, then open PDF + Excel stamper when waybills are ready.
           </p>
           <div className="flex flex-wrap gap-3">
             <FulfillmentPressable

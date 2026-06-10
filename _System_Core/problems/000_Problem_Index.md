@@ -30,6 +30,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-06-05_dept-products-pt-brc-cacao]]
 - [[records/2026-06-05_online-orders-prep-stamper-split]]
 - [[records/2026-06-05_online-orders-two-phase-remake]]
 - [[records/2026-06-05_spx-gallon-variant-qty]]

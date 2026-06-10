@@ -54,6 +54,17 @@ if (!function_exists('api_costing_resolve_formula_qty')) {
      */
     function api_costing_resolve_formula_qty(array $product, string $stockName, float $qty): float
     {
+        $deptKey = isset($product['dept_product_key']) ? trim((string) $product['dept_product_key']) : '';
+        if ($deptKey !== '') {
+            if (!function_exists('dept_product_formula_qty_for_stock')) {
+                require_once dirname(__DIR__, 2) . '/includes/dept_products.php';
+            }
+            $deptQty = dept_product_formula_qty_for_stock($deptKey, $stockName);
+            if ($deptQty !== null) {
+                return round($deptQty, 8);
+            }
+        }
+
         if (!api_costing_is_honey_raw_stock($stockName)) {
             return $qty;
         }
@@ -118,7 +129,7 @@ if (!function_exists('api_costing_enrich_stock_row')) {
 if (!function_exists('api_costing_fetch_product_scope')) {
     function api_costing_fetch_product_scope(PDO $pdo, int $productId, bool $canViewAll, int $userDeptId): array
     {
-        $sql = 'SELECT p.id, p.dept_id, p.name, p.size, p.variant, p.selling_price, p.baseline_cost,
+        $sql = 'SELECT p.id, p.dept_id, p.dept_product_key, p.name, p.size, p.variant, p.selling_price, p.baseline_cost,
                        COALESCE(SUM(f.qty_per_unit * s.current_price), 0) AS current_cost,
                        d.name AS dept_name
                 FROM products p
@@ -131,7 +142,7 @@ if (!function_exists('api_costing_fetch_product_scope')) {
             $sql .= ' AND p.dept_id = ?';
             $args[] = $userDeptId;
         }
-        $sql .= ' GROUP BY p.id LIMIT 1';
+        $sql .= ' GROUP BY p.id, p.dept_id, p.dept_product_key, p.name, p.size, p.variant, p.selling_price, p.baseline_cost, d.name LIMIT 1';
         $st = $pdo->prepare($sql);
         $st->execute($args);
         $row = $st->fetch();
@@ -141,6 +152,7 @@ if (!function_exists('api_costing_fetch_product_scope')) {
         return [
             'id' => (int) $row['id'],
             'dept_id' => (int) $row['dept_id'],
+            'dept_product_key' => $row['dept_product_key'] !== null ? (string) $row['dept_product_key'] : null,
             'dept_name' => (string) $row['dept_name'],
             'name' => (string) $row['name'],
             'size' => $row['size'] !== null ? (string) $row['size'] : null,

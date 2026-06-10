@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/dept_products.php';
+
 /**
  * Parse CSR / marketplace Item/s strings into packaging deduct lines.
  * Mirrors app/src/app/lib/orderRemarksParse.ts and pdf-to-excel/extractor.py rules.
  *
  * Multi-item lines use `;` or `+` (e.g. "3 Paragis Tea ; 1 Liter Honey AMBER").
- * Non-honey products are noted in other_items (inventory TBD) without blocking honey deduct.
+ * Non-honey dept catalog products are noted in other_items (with product_key when known).
  */
 
 const HONEY_PARCEL_VALID_3L = ['LAD', 'LLL', 'AAA', 'DDD', 'LAA', 'LLD', 'ADD', 'AAD'];
@@ -88,11 +90,20 @@ function honey_parcel_parse_segment(string $segment): array
         ];
     }
 
-    $otherLabel = honey_parcel_detect_other_product($segment);
-    if ($otherLabel !== null && !preg_match('/honey/i', $segment)) {
+    $other = honey_parcel_detect_other_product($segment);
+    if ($other !== null && !preg_match('/honey/i', $segment)) {
+        $item = [
+            'label' => $other['label'],
+            'qty' => $qty,
+            'raw' => trim($segment),
+        ];
+        if ($other['product_key'] !== null) {
+            $item['product_key'] = $other['product_key'];
+        }
+
         return [
             'deltas' => [],
-            'other_items' => [['label' => $otherLabel, 'qty' => $qty, 'raw' => trim($segment)]],
+            'other_items' => [$item],
             'errors' => [],
         ];
     }
@@ -159,24 +170,21 @@ function honey_parcel_extract_qty(string $segment): float
 }
 
 /**
- * Known non-honey catalog lines (not in packaging inventory yet — note only).
+ * Known non-honey lines. Dept catalog products include product_key for deduct.
+ *
+ * @return array{label: string, product_key: ?string}|null
  */
-function honey_parcel_detect_other_product(string $segment): ?string
+function honey_parcel_detect_other_product(string $segment): ?array
 {
-    if (preg_match('/paragis/i', $segment)) {
-        return 'Paragis Tea';
-    }
-    if (preg_match('/\bcacao|tablea/i', $segment)) {
-        return 'Cacao';
-    }
-    if (preg_match('/black\s*rice\s*coffee|\bbrc\b/i', $segment)) {
-        return 'Black Rice Coffee';
+    $deptDef = dept_product_resolve_segment($segment);
+    if ($deptDef !== null) {
+        return ['label' => $deptDef['label'], 'product_key' => $deptDef['key']];
     }
     if (preg_match('/pito[\s-]*pito/i', $segment)) {
-        return 'Pito-Pito';
+        return ['label' => 'Pito-Pito', 'product_key' => null];
     }
     if (preg_match('/honey\s*comb|honeycomb/i', $segment)) {
-        return 'Honey Comb';
+        return ['label' => 'Honey Comb', 'product_key' => null];
     }
 
     return null;
@@ -353,14 +361,20 @@ function honey_parcel_merge_other_items(array $items): array
     $map = [];
     foreach ($items as $item) {
         $label = (string) ($item['label'] ?? '');
+        $key = isset($item['product_key']) ? (string) $item['product_key'] : '';
         $q = (float) ($item['qty'] ?? 0);
         if ($label === '' || $q <= 0) {
             continue;
         }
-        if (!isset($map[$label])) {
-            $map[$label] = ['label' => $label, 'qty' => 0.0, 'raw' => (string) ($item['raw'] ?? $label)];
+        $mergeKey = $key !== '' ? 'k:' . $key : 'l:' . $label;
+        if (!isset($map[$mergeKey])) {
+            $row = ['label' => $label, 'qty' => 0.0, 'raw' => (string) ($item['raw'] ?? $label)];
+            if ($key !== '') {
+                $row['product_key'] = $key;
+            }
+            $map[$mergeKey] = $row;
         }
-        $map[$label]['qty'] += $q;
+        $map[$mergeKey]['qty'] += $q;
     }
     $out = [];
     foreach ($map as $row) {

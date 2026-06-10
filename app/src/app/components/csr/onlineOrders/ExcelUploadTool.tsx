@@ -58,7 +58,7 @@ export function ExcelUploadTool({
         ← Back to tools
       </button>
       <p className="text-sm text-muted-foreground">
-        Upload partner iPYX Excel (.xlsx). We validate columns and row count — use PDF + Excel stamper to stamp waybills.
+        Upload partner iPYX Excel (.xlsx). We validate columns and row count — go back to tools and open PDF + Excel stamper to stamp.
       </p>
       <FileZone
         label="iPYX order sheets"

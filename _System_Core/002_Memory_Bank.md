@@ -4,8 +4,23 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-05 — [[problems/records/2026-06-05_packaging-price-qty|Packaging materials price + quantity + costing]]
+**Shipped:** exec/HR set absolute `current_price` + `on_hand` on Packaging Materials (`materials.php set_values`); Costing formula picker **Packaging materials** optgroup; price changes recalc formula costs.
+
+### 2026-06-05 — [[problems/records/2026-06-05_inventory-arrangement|Inventory arrangement (four-branch IA)]]
+**Shipped:** Raw / Packaging / Supplies / Products sidebar; `materials.php` API; `stocks.category` + `on_hand`; prod_manager material requests; split dept product routes. Run `migration_phase20_inventory_arrangement.sql`.
+
+### 2026-06-05 — [[problems/records/2026-06-05_brc-supplier-bom-costing|Black Rice Coffee Supplier Master + BOM]]
+**BRC:** 20 kg bag → 200 pouches @ 100 g; `migration_phase18_brc_supplier_bom.sql`; `black_rice` supplier ₱/bag; stock-in bags→pouches. Math: [[specs/2026-06-05_brc-bom-math]].
+
+### 2026-06-05 — [[problems/records/2026-06-05_pt-supplier-bom-costing|Paragis Tea Supplier Master + BOM costing]]
+**PT v2:** `supplier_dept_prices` (₱/bag), `Paragis leaf — raw` + `PT pouch packaging` formula (0.0096 bag + 1 pouch per sell unit), stock-in bags→pouches via supplier picker. BRC/Cacao unchanged (1:1 placeholder). Run `migration_phase17_pt_supplier_bom.sql` after phase 16. **Math reference:** [[specs/2026-06-05_paragis-tea-bom-math]] (2500÷24 yield vs 24÷2500 costing).
+
+### 2026-06-05 — [[problems/records/2026-06-05_dept-products-pt-brc-cacao|Dept products PT / BRC / Jar Cacao full rollout]]
+**Shipped v1:** catalog `pt`/`brc`/`jar_cacao`, `migration_phase16_dept_products.sql`, `dept_inventory_stock_in` (qty + unit cost on receipt), costing seed + CostingPage dept section, parcel + POS deduct. **Pause / tomorrow:** align pricing with **Supplier Master** like honey (₱/unit list, supplier on stock-in) — categories exist in `suppliers` but no dept price API yet.
+
 ### 2026-06-05 — [[problems/records/2026-06-05_online-orders-prep-stamper-split|Online Orders prep vs stamper + SPX follow-ups]]
-**Tools:** VIP/SPX/Excel = prep + download only; new **PDF + Excel stamper** on tools page (`WaybillStamperTool`). **SPX parse:** gallon+variant, `[1][2]` multi-item cells, B2T1 350ml vs 3L, title qty over Shopee Quantity. **UX:** `stash_download`, SPX review type-only edit, carousel fix for auto-resolved rows. Files: `shopee_spx_product_info.php`, `WaybillStamperTool.tsx`, `ItemResolverCarousel.tsx`, `waybill.php` stash_download.
+**4 tools, no chain:** VIP/SPX/Excel = download only → **Back to tools**; user picks **PDF + Excel stamper** separately (`WaybillStamperTool`). Not prep→stamper. **SPX parse:** gallon+variant, `[1][2]` cells, B2T1 350ml, title qty. **UX:** `stash_download`, review type-only edit. README + `003_Fragile_Edges#Online Orders stamp UX` document the rule.
 
 ### 2026-06-05 — [[problems/records/2026-06-05_online-orders-two-phase-remake|Online Orders two-phase remake]]
 Backend `run_unified_stamp` + prep APIs; replaced three pipeline run steps with tools-page wizard (see prep-stamper-split for final UX).

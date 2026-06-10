@@ -38,6 +38,8 @@ tags: [problem, online-orders, spx, vip, waybill-stamper]
 
 SPA: `WaybillStamperTool.tsx` replaces `UnifiedStampStep.tsx`. `ToolsPicker` 2×2 grid.
 
+**Architecture rule (do not regress):** Prep tools never navigate to stamp step. User flow = prep → **Back to tools** → pick **PDF + Excel stamper** card. README + fragile edges updated 2026-06-05 to state this explicitly.
+
 ### Backend / parsing (`includes/shopee_spx_product_info.php`)
 
 - `shopee_spx_split_product_info_blocks()` — `[1]…[2]…` → ` ; ` merged lines

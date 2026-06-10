@@ -1,7 +1,7 @@
 ---
 title: dashboard_inventory
 source: includes/dashboard_inventory.php
-generated: 2026-06-09T09:52:58+02:00
+generated: 2026-06-10T11:00:00+02:00
 type: module
 function_count: 6
 ---
@@ -13,11 +13,15 @@ function_count: 6
 
 [[../130_Module_Index]] · [[../120_Database_Tables]] · [[../100_API_Index]]
 
+## Includes
+
+- `includes/dept_products.php`
+
 ## dashboard_inventory_resolve_range {#dashboard_inventory_resolve_range}
 
 **Callers (2):**
 
-- `includes/dashboard_inventory.php`:216 — `$range = dashboard_inventory_resolve_range($period, $from, $to);`
+- `includes/dashboard_inventory.php`:214 — `$range = dashboard_inventory_resolve_range($period, $from, $to);`
 - `includes/honey_sales_report.php`:21 — `$range = dashboard_inventory_resolve_range($period, $from, $to);`
 
 ## dashboard_honey_packaging_snapshot {#dashboard_honey_packaging_snapshot}
@@ -26,19 +30,19 @@ function_count: 6
 
 **Callers (1):**
 
-- `includes/dashboard_inventory.php`:225 — `'honey_packaging' => dashboard_honey_packaging_snapshot($pdo, $range),`
+- `includes/dashboard_inventory.php`:223 — `'honey_packaging' => dashboard_honey_packaging_snapshot($pdo, $range),`
 
 ## dashboard_dept_product_definitions {#dashboard_dept_product_definitions}
 
 **Callers (1):**
 
-- `includes/dashboard_inventory.php`:192 — `foreach (dashboard_dept_product_definitions() as $def) {`
+- `includes/dashboard_inventory.php`:186 — `foreach (dashboard_dept_product_definitions() as $def) {`
 
 ## dashboard_label_matches_product {#dashboard_label_matches_product}
 
 **Callers (1):**
 
-- `includes/dashboard_inventory.php`:198 — `if (!dashboard_label_matches_product((string) $row['product_label'], $def['patterns'])) {`
+- `includes/dashboard_inventory.php`:197 — `if ($rowKey === '' && dashboard_label_matches_product((string) $row['product_label'], $def['patterns'])) {`
 
 ## dashboard_dept_products_snapshot {#dashboard_dept_products_snapshot}
 
@@ -46,7 +50,7 @@ function_count: 6
 
 **Callers (1):**
 
-- `includes/dashboard_inventory.php`:226 — `'dept_products' => dashboard_dept_products_snapshot($pdo, $range),`
+- `includes/dashboard_inventory.php`:224 — `'dept_products' => dashboard_dept_products_snapshot($pdo, $range),`
 
 ## dashboard_inventory_snapshot {#dashboard_inventory_snapshot}
 

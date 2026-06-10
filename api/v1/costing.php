@@ -6,6 +6,7 @@ require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../../includes/suppliers.php';
 require_once __DIR__ . '/../../includes/honey_volume.php';
 require_once __DIR__ . '/_costing_helpers.php';
+require_once __DIR__ . '/../../includes/material_inventory.php';
 
 /**
  * Phase 4 — Product Costing API.  Reuses the transaction logic implemented
@@ -51,7 +52,11 @@ function api_costing_stocks_list(): void
     }
     $pdo = ims_pdo();
 
-    $sql = 'SELECT s.id, s.name, s.unit, s.current_price, s.dept_id, s.supplier_id,
+    $hasCategory = material_inventory_has_columns($pdo);
+    $categoryCol = $hasCategory ? 's.category,' : '';
+
+    $sql = "SELECT s.id, s.name, s.unit, s.current_price, s.dept_id, s.supplier_id,
+                   {$categoryCol}
                    s.supplier_name, s.supplier_code, s.created_at,
                    d.name AS dept_name,
                    sup.first_name AS supplier_first_name,
@@ -63,7 +68,7 @@ function api_costing_stocks_list(): void
                     WHERE sph.stock_id = s.id ORDER BY sph.id DESC LIMIT 1) AS price_changed_at
             FROM stocks s
             INNER JOIN departments d ON d.id = s.dept_id
-            LEFT JOIN suppliers sup ON sup.id = s.supplier_id';
+            LEFT JOIN suppliers sup ON sup.id = s.supplier_id";
     $params = [];
     if (!$canViewAll) {
         $sql .= ' WHERE s.dept_id = ?';
@@ -106,7 +111,7 @@ function api_costing_products_list(): void
     }
     $pdo = ims_pdo();
 
-    $sql = 'SELECT p.id, p.name, p.dept_id, p.size, p.variant, p.selling_price, p.baseline_cost, p.created_at,
+    $sql = 'SELECT p.id, p.name, p.dept_product_key, p.dept_id, p.size, p.variant, p.selling_price, p.baseline_cost, p.created_at,
                    d.name AS dept_name, u.name AS created_by_name,
                    COALESCE(SUM(f.qty_per_unit * s.current_price), 0) AS current_cost,
                    COUNT(f.id) AS formula_count

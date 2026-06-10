@@ -1,7 +1,7 @@
 ---
 title: pos_discount_requests
 source: includes/pos_discount_requests.php
-generated: 2026-06-09T09:53:04+02:00
+generated: 2026-06-10T11:00:09+02:00
 type: module
 function_count: 7
 ---
@@ -29,7 +29,7 @@ function_count: 7
 
 **Callers (1):**
 
-- `api/v1/pos.php`:197 — `$result = pos_discount_request_create(`
+- `api/v1/pos.php`:233 — `$result = pos_discount_request_create(`
 
 ## pos_discount_request_approve {#pos_discount_request_approve}
 
@@ -53,7 +53,7 @@ function_count: 7
 
 **Callers (1):**
 
-- `api/v1/pos.php`:224 — `$result = pos_discount_request_fetch_for_pin(ims_pdo(), $requestId, $pinId);`
+- `api/v1/pos.php`:260 — `$result = pos_discount_request_fetch_for_pin(ims_pdo(), $requestId, $pinId);`
 
 ## pos_discount_receipt_payload {#pos_discount_receipt_payload}
 

@@ -103,6 +103,19 @@ function online_parcels_ensure_schema(PDO $pdo): void
           KEY `idx_online_parcel_deduct_parcel` (`parcel_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `online_parcel_dept_deduct_lines` (
+          `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+          `parcel_id` INT UNSIGNED NOT NULL,
+          `dept_row_id` INT UNSIGNED NOT NULL,
+          `product_key` VARCHAR(32) NOT NULL,
+          `qty` DECIMAL(12,2) NOT NULL,
+          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          KEY `idx_opddl_parcel` (`parcel_id`),
+          KEY `idx_opddl_dept_row` (`dept_row_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
     $done = true;
 }
 
@@ -169,7 +182,10 @@ function online_parcels_promote_from_batch(PDO $pdo, int $batchId): array
             continue;
         }
 
-        $json = json_encode(['deltas' => $parsed['deltas']], JSON_UNESCAPED_UNICODE);
+        $json = json_encode(
+            ['deltas' => $parsed['deltas'], 'other_items' => $parsed['other_items'] ?? []],
+            JSON_UNESCAPED_UNICODE
+        );
         $ins->execute([
             $batchId,
             (int) $line['id'],

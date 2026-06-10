@@ -134,26 +134,20 @@ function dashboard_honey_packaging_snapshot(PDO $pdo, ?array $range): array
 /** @return list<array{key: string, label: string, dept: string, patterns: list<string>}> */
 function dashboard_dept_product_definitions(): array
 {
-    return [
-        [
-            'key' => 'paragis_tea',
-            'label' => 'Paragis tea',
-            'dept' => 'paragis',
-            'patterns' => ['paragis_tea', 'paragis tea', 'paragis tea pouch', 'pouch_pt'],
-        ],
-        [
-            'key' => 'black_rice_tea',
-            'label' => 'Black rice tea',
-            'dept' => 'cacao_brc',
-            'patterns' => ['black_rice_tea', 'black rice tea', 'black_rice_coffee', 'black rice coffee', 'pouch_brc'],
-        ],
-        [
-            'key' => 'jar_cacao',
-            'label' => 'Jar cacao',
-            'dept' => 'cacao_brc',
-            'patterns' => ['jar_cacao', 'jar cacao', 'jar_cacao_with_honey', 'jar cacao with honey'],
-        ],
-    ];
+    if (!function_exists('dept_product_catalog')) {
+        require_once __DIR__ . '/dept_products.php';
+    }
+    $defs = [];
+    foreach (dept_product_catalog() as $def) {
+        $defs[] = [
+            'key' => $def['key'],
+            'label' => $def['label'],
+            'dept' => $def['dept'],
+            'patterns' => $def['patterns'],
+        ];
+    }
+
+    return $defs;
 }
 
 function dashboard_label_matches_product(string $label, array $patterns): bool
@@ -180,7 +174,7 @@ function dashboard_dept_products_snapshot(PDO $pdo, ?array $range): array
     }
 
     $st = $pdo->prepare(
-        'SELECT dir.product_label, dir.current_qty, d.name AS dept_name
+        'SELECT dir.product_key, dir.product_label, dir.current_qty, d.name AS dept_name
          FROM dept_inventory_rows dir
          INNER JOIN departments d ON d.id = dir.dept_id
          WHERE dir.current_qty > 0' . $where
@@ -195,10 +189,14 @@ function dashboard_dept_products_snapshot(PDO $pdo, ?array $range): array
             if ((string) $row['dept_name'] !== $def['dept']) {
                 continue;
             }
-            if (!dashboard_label_matches_product((string) $row['product_label'], $def['patterns'])) {
+            $rowKey = trim((string) ($row['product_key'] ?? ''));
+            if ($rowKey !== '' && $rowKey === $def['key']) {
+                $total += (float) $row['current_qty'];
                 continue;
             }
-            $total += (float) $row['current_qty'];
+            if ($rowKey === '' && dashboard_label_matches_product((string) $row['product_label'], $def['patterns'])) {
+                $total += (float) $row['current_qty'];
+            }
         }
         $products[] = [
             'key' => $def['key'],

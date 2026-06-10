@@ -6,9 +6,9 @@ import { POSPageTransition } from "@/app/components/pos/posMotion";
 
 const CATEGORIES = [
   { key: "honey", label: "Honey", active: true, to: "/pos/honey" },
-  { key: "paragis", label: "Paragis Tea", active: false },
-  { key: "brc", label: "Black Rice Coffee", active: false },
-  { key: "cacao", label: "Jar Cacao", active: false },
+  { key: "paragis", label: "Paragis Tea", active: true, to: "/pos/paragis" },
+  { key: "brc", label: "Black Rice Coffee", active: true, to: "/pos/brc" },
+  { key: "cacao", label: "Jar Cacao", active: true, to: "/pos/cacao" },
 ] as const;
 
 export function POSCategoryPage() {

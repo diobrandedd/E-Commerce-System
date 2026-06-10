@@ -5,6 +5,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/_bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/honey_inventory.php';
 require_once dirname(__DIR__, 2) . '/includes/honey_pricing.php';
+require_once dirname(__DIR__, 2) . '/includes/dept_inventory.php';
+require_once dirname(__DIR__, 2) . '/includes/dept_pricing.php';
 
 api_dispatch([
     'warehouse_list' => 'api_honey_warehouse_list',
@@ -28,9 +30,13 @@ api_dispatch([
     'correction_unread_list' => 'api_honey_correction_unread_list',
     'correction_mark_viewed' => 'api_honey_correction_mark_viewed',
     'dept_list' => 'api_honey_dept_list',
+    'dept_catalog' => 'api_honey_dept_catalog',
+    'dept_stock_in' => 'api_honey_dept_stock_in',
     'dept_add_row' => 'api_honey_dept_add_row',
     'supplier_honey_prices' => 'api_honey_supplier_honey_prices',
     'supplier_honey_prices_save' => 'api_honey_supplier_honey_prices_save',
+    'supplier_dept_prices' => 'api_honey_supplier_dept_prices',
+    'supplier_dept_prices_save' => 'api_honey_supplier_dept_prices_save',
     'warehouse_pending_prices' => 'api_honey_warehouse_pending_prices',
     'warehouse_set_unit_cost' => 'api_honey_warehouse_set_unit_cost',
     'pricing_sync_stocks' => 'api_honey_pricing_sync_stocks',
@@ -319,7 +325,13 @@ function api_honey_correction_unread_count(): void
 
         return;
     }
-    api_ok(['count' => honey_correction_unread_count(ims_pdo())]);
+    $pdo = ims_pdo();
+    $count = honey_correction_unread_count($pdo);
+    if (is_file(dirname(__DIR__, 2) . '/includes/material_inventory.php')) {
+        require_once dirname(__DIR__, 2) . '/includes/material_inventory.php';
+        $count += material_adjustment_pending_count($pdo);
+    }
+    api_ok(['count' => $count]);
 }
 
 function api_honey_correction_unread_list(): void
@@ -450,42 +462,156 @@ function api_honey_dept_list(): void
     api_method_allowed(['GET']);
     api_honey_require_view();
     $deptKey = trim((string) ($_GET['dept'] ?? ''));
+    $productKey = trim((string) ($_GET['product_key'] ?? ''));
     $pdo = ims_pdo();
-    $st = $pdo->prepare(
-        'SELECT dir.id, dir.dept_id, d.name AS dept_name, dir.product_label, dir.current_qty, dir.initial_qty, dir.created_at
-         FROM dept_inventory_rows dir
-         INNER JOIN departments d ON d.id = dir.dept_id
-         WHERE (? = "" OR d.name = ?)
-         ORDER BY dir.id DESC'
+    $catalog = dept_inventory_catalog_snapshot(
+        $pdo,
+        $deptKey !== '' ? $deptKey : null,
+        $productKey !== '' ? $productKey : null
     );
-    $st->execute([$deptKey, $deptKey]);
-    api_ok(['rows' => $st->fetchAll()]);
+    $rows = array_map(static function (array $item): array {
+        return [
+            'id' => $item['dept_row_id'],
+            'dept_id' => $item['dept_id'],
+            'dept_name' => $item['dept'],
+            'product_key' => $item['key'],
+            'product_label' => $item['label'],
+            'unit' => $item['unit'],
+            'stock_in_unit' => $item['stock_in_unit'],
+            'inventory_unit' => $item['inventory_unit'],
+            'uses_supplier_pricing' => $item['uses_supplier_pricing'],
+            'tea_bags_per_pouch' => $item['tea_bags_per_pouch'],
+            'tea_bags_per_bag' => $item['tea_bags_per_bag'],
+            'grams_per_pouch' => $item['grams_per_pouch'],
+            'grams_per_bag' => $item['grams_per_bag'],
+            'pouches_per_bag' => $item['pouches_per_bag'],
+            'sell_units_per_bag' => $item['sell_units_per_bag'] ?? $item['pouches_per_bag'],
+            'grams_per_sell_unit' => $item['grams_per_sell_unit'] ?? null,
+            'current_qty' => $item['current_qty'],
+            'initial_qty' => $item['initial_qty'],
+            'last_stock_in_at' => $item['last_stock_in_at'],
+            'product_id' => $item['product_id'],
+            'selling_price' => $item['selling_price'],
+        ];
+    }, $catalog);
+    api_ok(['rows' => $rows]);
 }
 
-function api_honey_dept_add_row(): void
+function api_honey_dept_catalog(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    $deptKey = trim((string) ($_GET['dept'] ?? ''));
+    $pdo = ims_pdo();
+    api_ok(['products' => dept_inventory_catalog_snapshot($pdo, $deptKey !== '' ? $deptKey : null)]);
+}
+
+function api_honey_dept_stock_in(): void
 {
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
     $user = api_honey_require_mutate();
-    $deptKey = trim((string) ($input['dept'] ?? ''));
-    $label = trim((string) ($input['product_label'] ?? ''));
+    $productKey = trim((string) ($input['product_key'] ?? ''));
     $qty = (float) ($input['qty'] ?? 0);
-    if ($deptKey === '' || $label === '' || $qty <= 0) {
-        api_fail('Invalid dept row.', 422);
-    }
+    $supplierId = isset($input['supplier_id']) ? (int) $input['supplier_id'] : null;
+    $unitCost = isset($input['unit_cost']) ? (float) $input['unit_cost'] : null;
+    $arrivalDate = trim((string) ($input['arrival_date'] ?? date('Y-m-d')));
+    $note = trim((string) ($input['note'] ?? ''));
     $pdo = ims_pdo();
-    $st = $pdo->prepare('SELECT id FROM departments WHERE name = ? LIMIT 1');
-    $st->execute([$deptKey]);
-    $deptId = (int) $st->fetchColumn();
-    if ($deptId < 1) {
-        api_fail('Department not found.', 404);
+    $pdo->beginTransaction();
+    try {
+        $result = dept_inventory_stock_in(
+            $pdo,
+            (int) $user['id'],
+            $productKey,
+            $qty,
+            $arrivalDate,
+            $note !== '' ? $note : null,
+            $supplierId,
+            $unitCost
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
     }
-    $ins = $pdo->prepare(
-        'INSERT INTO dept_inventory_rows (dept_id, product_label, current_qty, initial_qty, created_by) VALUES (?, ?, ?, ?, ?)'
+    api_ok($result);
+}
+
+function api_honey_dept_add_row(): void
+{
+    api_method_allowed(['POST']);
+    api_fail('Use dept_stock_in with a catalog product_key instead.', 410);
+}
+
+function api_honey_supplier_dept_prices(): void
+{
+    api_method_allowed(['GET']);
+    api_require_role(['executive']);
+    $supplierId = isset($_GET['supplier_id']) ? (int) $_GET['supplier_id'] : 0;
+    $productKey = trim((string) ($_GET['product_key'] ?? ''));
+    $pdo = ims_pdo();
+    $prices = dept_pricing_list_supplier_prices(
+        $pdo,
+        $supplierId > 0 ? $supplierId : null,
+        $productKey !== '' ? $productKey : null
     );
-    $ins->execute([$deptId, $label, $qty, $qty, (int) $user['id']]);
-    api_ok(['id' => (int) $pdo->lastInsertId()]);
+
+    $latestByKey = [];
+    foreach ($prices as $p) {
+        $key = (int) $p['supplier_id'] . '|' . (string) $p['product_key'];
+        if (!isset($latestByKey[$key])) {
+            $latestByKey[$key] = [
+                'supplier_id' => (int) $p['supplier_id'],
+                'product_key' => (string) $p['product_key'],
+                'price_per_unit' => round((float) $p['price_per_unit'], 2),
+                'effective_from' => (string) $p['effective_from'],
+                'id' => (int) $p['id'],
+            ];
+        }
+    }
+
+    api_ok([
+        'prices' => array_values($latestByKey),
+        'history' => array_map(static function (array $p): array {
+            return [
+                'id' => (int) $p['id'],
+                'supplier_id' => (int) $p['supplier_id'],
+                'product_key' => (string) $p['product_key'],
+                'price_per_unit' => round((float) $p['price_per_unit'], 2),
+                'effective_from' => (string) $p['effective_from'],
+                'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),
+            ];
+        }, $prices),
+    ]);
+}
+
+function api_honey_supplier_dept_prices_save(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $supplierId = (int) ($input['supplier_id'] ?? 0);
+    $effectiveFrom = trim((string) ($input['effective_from'] ?? date('Y-m-d')));
+    $products = is_array($input['products'] ?? null) ? $input['products'] : [];
+
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $saved = dept_pricing_save_supplier_prices($pdo, $supplierId, $products, $effectiveFrom, (int) $user['id']);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok(['saved' => $saved]);
 }
 
 function api_honey_supplier_honey_prices(): void

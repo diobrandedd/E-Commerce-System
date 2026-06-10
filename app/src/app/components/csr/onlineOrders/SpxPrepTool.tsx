@@ -298,8 +298,8 @@ export function SpxPrepTool({
             iPYX Excel ready ({prepResult.row_count} rows)
           </p>
           <p className="text-sm text-muted-foreground">
-            Download the sheet and verify names, items, and tracking numbers. Use PDF + Excel stamper when ready to
-            stamp waybills.
+            Download the sheet and verify names, items, and tracking numbers. Go back to tools, then open PDF + Excel
+            stamper when ready.
           </p>
           <div className="flex flex-wrap gap-3">
             <FulfillmentPressable

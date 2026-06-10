@@ -127,8 +127,31 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 - **Nested transactions trap:** `online_parcels_ship()` wraps ship + deduct in one transaction. `honey_parcel_apply_deduct()` must use **`$ownsTransaction = !$pdo->inTransaction()`** (same as `honey_pos_checkout`) — inner `commit()` otherwise ends the outer transaction and `ship_parcel` fails with **“There is no active transaction”**.
 - **Packing photo in parcel UI** — not a column on `online_order_parcels`. Enriched at read time from `delivery_batch_items.photo_filename` (`online_parcels_find_packing_photo` / batch enrich on list). URL via `rts_storage_public_url` → `api/storage_media.php?b=deliveries_documentation`. Modal shows **Not yet packed** when null. Keep link order: `online_parcel_id` first, then tracking fallback.
 - **CSR access** — `online_parcels_user_can_access()` must accept IMS `tl`/`staff` in CSR dept, not only SPA labels `csr_tl`/`csr_staff` — see [[003_Fragile_Edges#IMS role vs SPA role (API gates)]].
-- **Parser** — `includes/honey_parcel_item_parser.php` must stay aligned with `orderRemarksParse.ts` / Shopee variant rules. **Semicolon/`+` split** per segment — do not apply one honey variant/qty to the whole line when Paragis/Cacao/etc. precede honey. Non-honey → `other_items` only (no deduct).
+- **Parser** — `includes/honey_parcel_item_parser.php` must stay aligned with `orderRemarksParse.ts` / Shopee variant rules. **Semicolon/`+` split** per segment — do not apply one honey variant/qty to the whole line when Paragis/Cacao/etc. precede honey. Catalog dept lines → `other_items` with `product_key` (`pt`, `brc`, `jar_cacao`); unknown lines (Pito-Pito, Honey Comb) remain note-only.
+- **Ship deduct** — `honey_parcel_apply_deduct()` deducts honey packaging **and** `dept_inventory_rows` via `online_parcel_dept_deduct_lines`; revert restores both. Fail-hard if insufficient dept stock.
 - **Deliveries auth** — SPA uses IMS (`executive`, `prod_manager` only); legacy `api/delivery_bulk.php` still uses `app_users` submitter id via `deliveries_upload.php`.
+
+## Dept catalog products (PT / BRC / Cacao)
+
+- **Catalog** — single source: `includes/dept_products.php` (`pt`, `brc`, `jar_cacao`). Parser, dashboard, stock-in, costing seed, parcel deduct, and POS must use the same keys.
+- **Paragis Tea BOM** — 1 supplier bag (**1 kg**) → 500 tea bags @ 2 g → **500÷24** ≈ 20.83 pouches. Costing leaf qty **24÷500 = 0.048** bag/pouch — [[specs/2026-06-05_paragis-tea-bom-math]].
+- **PT stock-in** — `dept_inventory_stock_in()` with `supplier_id` + qty in **bags**; price from Supplier Master; credits **pouches** on `dept_inventory_rows`; `stock_entries` log bags on leaf stock.
+- **Black Rice Coffee BOM** — 20 kg bag → **20,000÷100 = 200** pouches. Stock-in uses `dept_brc_pouches_per_bag()`; costing uses **100÷20,000 = 0.005** bag/pouch on `Black Rice Coffee — raw` + `BRC pouch packaging` qty `1`. See [[specs/2026-06-05_brc-bom-math]].
+- **Jar Cacao BOM** — 1 kg supplier bag → 1 sellable jar (`JAR_CACAO_GRAMS_PER_JAR = 1000`). Formula raw qty **1.0** bag/jar + packaging. `cacao` suppliers — [[specs/2026-06-05_jar-cacao-bom-math]].
+- **Dept pricing API** — `supplier_dept_prices` + `SupplierDeptPricesInline` for `paragis` suppliers (PT only today); mirror honey pattern in `includes/dept_pricing.php`.
+- **On-hand** — one row per `(dept_id, product_key)`; create-on-first-stock-in.
+- **Costing** — seeded 1:1 formula to `* — unit` stock rows; executive sets `selling_price` before POS sell.
+- **Combo SKUs** (PT w/ Honey, etc.) — still out of scope; honey deduct only until combo spec ships.
+
+## Inventory arrangement (material on-hand)
+
+- **Categories** — `stocks.category`: `raw_material`, `packaging`, `supply`, `costing_only`. Packaging/supplies use **`stocks.on_hand`** (authoritative for those items).
+- **Raw Honey gallons** — still **`honey_warehouse_rows`**, not `stocks.on_hand`. Raw Materials hub is read-only summary; stock-in stays Products → Honey → Warehouse.
+- **Dept sellables** — still **`dept_inventory_rows`**. Product routes split PT / BRC / Jar Cacao (`/inventory/products/*`).
+- **Material requests** — `material_adjustment_requests` + `api/v1/materials.php`; prod_manager submits, executive approves on Requests page. Badge count includes pending material requests in `correction_unread_count`.
+- **Auto-deduct packaging on production** — not in v1; do not deduct bottles/caps from honey bottling without a spec.
+- **Packaging price + on-hand** — executive and HR set **absolute** `current_price` and `on_hand` on Packaging Materials via `materials.php?action=set_values` (not add/deduct). Price changes call `api_costing_apply_price_change` — formula `current_cost` updates for linked products. **`on_hand` is operational inventory only**; formula qty is `qty_per_unit` on the product, not warehouse count.
+- **Packaging in costing** — `category = packaging` stocks appear in Add formula line under **Packaging materials** optgroup. Canonical price edit for those rows is the Packaging Materials page, not a second path on Costing → Stocks.
 
 ## Honey “total inventory” scope
 
@@ -144,7 +167,16 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 
 ## Online Orders stamp UX (SPA)
 
-**Tools page (4):** VIP arranger / SPX merge / validate Excel = **prep only** (download → back to tools). **PDF + Excel stamper** = load Excel + PDFs → `run_unified_stamp` → **`stamp_result`** (`StampResultPanel`). After stamp success, stay on `stamp_result` until “Prepare more orders” or “Done — master Excel”. VIP must not embed stamp UI.
+**Four tools, no prep → stamper chain.** Tools page cards are independent — VIP / SPX / validate Excel end with **Back to tools** (download only). User must **return to tools** and pick **PDF + Excel stamper** themselves. Do not reintroduce `UnifiedStampStep`, per-pipeline run steps, or “Continue to stamp” CTAs on prep screens.
+
+| Card | Ends with |
+|------|-----------|
+| VIP Excel arranger | Download iPYX → Back to tools |
+| SPX name merge | Download iPYX → Back to tools |
+| Validate existing Excel | Download / validate → Back to tools |
+| PDF + Excel stamper | `run_unified_stamp` → `stamp_result` |
+
+After stamp: `StampResultPanel` → **Back to tools** or **Done — master Excel**. Stamper is `WaybillStamperTool.tsx` only — not embedded in prep tools.
 
 ## Edit-request table whitelist
 

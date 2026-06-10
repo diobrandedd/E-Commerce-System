@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-09T09:53:09+02:00
+generated: 2026-06-10T11:00:15+02:00
 type: spa
 ---
 
@@ -61,6 +61,12 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/honey/HoneyPackagingPage.tsx`
 - `app/src/app/pages/honey/HoneyProductionPage.tsx`
 - `app/src/app/pages/honey/HoneyWarehousePage.tsx`
+- `app/src/app/pages/inventory/CacaoBrcHubPage.tsx`
+- `app/src/app/pages/inventory/MaterialsCategoryPage.tsx`
+- `app/src/app/pages/inventory/PackagingMaterialsPage.tsx`
+- `app/src/app/pages/inventory/RawHoneySummaryPage.tsx`
+- `app/src/app/pages/inventory/RawMaterialDetailPage.tsx`
+- `app/src/app/pages/inventory/RawMaterialsHubPage.tsx`
 - `app/src/app/pages/rts/RTSDashboardPage.tsx`
 - `app/src/app/pages/rts/RTSRecordPage.tsx`
 - `app/src/app/pages/rts/RTSRecordsPage.tsx`
@@ -78,11 +84,13 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 ## POSModal
 
 - `app/src/app/components/pos/posMotion.tsx`
+- `app/src/app/pages/pos/POSDeptPage.tsx`
 - `app/src/app/pages/pos/POSHoneyPage.tsx`
 
 ## FeedbackBurst
 
 - `app/src/app/components/pos/posMotion.tsx`
+- `app/src/app/pages/pos/POSDeptPage.tsx`
 - `app/src/app/pages/pos/POSHoneyPage.tsx`
 
 ## ModalShell
@@ -101,5 +109,8 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/honey/BatchTraceabilityDrawer.tsx`
 - `app/src/app/components/honey/CorrectionReviewModal.tsx`
 - `app/src/app/components/honey/ExecutiveRowEditModal.tsx`
+- `app/src/app/components/inventory/MaterialAdjustModal.tsx`
+- `app/src/app/components/inventory/MaterialCatalogModal.tsx`
+- `app/src/app/components/inventory/PackagingSetValuesModal.tsx`
 - `app/src/app/components/suppliers/SupplierProfileModal.tsx`
 

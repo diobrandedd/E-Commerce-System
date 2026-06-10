@@ -46,8 +46,8 @@ export function ToolsPicker({
     <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
       <p className="text-sm text-muted-foreground">
         {lineCount > 0
-          ? `${lineCount} parcel line(s) in this batch. Prepare more Excel sheets, stamp waybills, or finish the batch.`
-          : "Pick a prep tool to build Excel, or use the stamper when your sheet is ready."}
+          ? `${lineCount} parcel line(s) in this batch. Prep tools only download Excel — return here, then open PDF + Excel stamper when ready.`
+          : "Prep tools build or validate Excel (download only). When ready, pick PDF + Excel stamper — not automatic after prep."}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {TOOLS.map((t, i) => {

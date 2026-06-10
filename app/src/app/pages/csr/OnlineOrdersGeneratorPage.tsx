@@ -73,7 +73,7 @@ export function OnlineOrdersGeneratorPage() {
   const handlePrepDone = () => {
     resetPrep();
     setStep("tools");
-    setToast("Excel ready — use PDF + Excel stamper when you want to stamp");
+    setToast("Excel ready — back at tools; open PDF + Excel stamper when you want to stamp");
     window.setTimeout(() => setToast(null), 4000);
   };
 
@@ -167,7 +167,7 @@ export function OnlineOrdersGeneratorPage() {
   return (
     <PageLayout
       title="Online Orders"
-      subtitle="Prep tools build Excel; PDF + Excel stamper saves stamped waybills into the batch"
+      subtitle="Three prep tools download Excel only; pick PDF + Excel stamper separately from the tools page"
     >
       <OrderRemarksToast message={toast} />
 
@@ -276,7 +276,7 @@ export function OnlineOrdersGeneratorPage() {
           <FulfillmentSectionEnter className="max-w-lg space-y-4 bg-card rounded-xl border p-6">
             <p className="font-semibold text-foreground">Ready to finish batch</p>
             <p className="text-sm text-muted-foreground">
-              Prepare and stamp more orders, or finish and download the combined master Excel for packers.
+              Return to tools for more prep or stamping, or finish and download the combined master Excel for packers.
             </p>
             {lastStampResult?.stamp?.download_token && (
               <button
@@ -294,7 +294,7 @@ export function OnlineOrdersGeneratorPage() {
             )}
             <div className="flex flex-wrap gap-3">
               <FulfillmentPressable variant="outline" className="px-4 py-2.5" onClick={() => setStep("tools")}>
-                Prepare more orders
+                Back to tools
               </FulfillmentPressable>
               <FulfillmentPressable
                 variant="primary"

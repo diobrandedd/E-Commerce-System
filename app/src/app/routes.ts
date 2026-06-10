@@ -15,6 +15,12 @@ import { HoneyWarehousePage } from "./pages/honey/HoneyWarehousePage";
 import { HoneyProductionPage } from "./pages/honey/HoneyProductionPage";
 import { HoneyPackagingPage } from "./pages/honey/HoneyPackagingPage";
 import { DeptInventoryPage } from "./pages/dept/DeptInventoryPage";
+import { RawMaterialsHubPage } from "./pages/inventory/RawMaterialsHubPage";
+import { RawHoneySummaryPage } from "./pages/inventory/RawHoneySummaryPage";
+import { RawMaterialDetailPage } from "./pages/inventory/RawMaterialDetailPage";
+import { PackagingMaterialsPage } from "./pages/inventory/PackagingMaterialsPage";
+import { SuppliesInventoryPage } from "./pages/inventory/MaterialsCategoryPage";
+import { CacaoBrcHubPage } from "./pages/inventory/CacaoBrcHubPage";
 import { StaffManagementPage } from "./pages/exec/StaffManagementPage";
 import { CostingPage } from "./pages/exec/CostingPage";
 import { ARCreditsPage } from "./pages/exec/ARCreditsPage";
@@ -22,6 +28,7 @@ import { ReportsPage } from "./pages/exec/ReportsPage";
 import { SuppliersPage } from "./pages/exec/SuppliersPage";
 import { SettingsPage } from "./pages/exec/SettingsPage";
 import { POSCategoryPage } from "./pages/pos/POSCategoryPage";
+import { POSDeptPage } from "./pages/pos/POSDeptPage";
 import { POSHoneyPage } from "./pages/pos/POSHoneyPage";
 import { SalesPage } from "./pages/exec/SalesPage";
 import { OnlineOrdersGeneratorPage } from "./pages/csr/OnlineOrdersGeneratorPage";
@@ -37,6 +44,9 @@ const guarded = (
   opts: { roles?: Role[]; allowPOS?: boolean } = {}
 ) => createElement(RequireAuth, opts, createElement(Component));
 
+const invRoles: Role[] = ["executive", "prod_manager", "hr"];
+const invGuard = (Component: React.ComponentType) => guarded(Component, { roles: invRoles });
+
 // In production we ship under Apache at /rts/app/dist/ so React Router
 // needs a basename matching that path.  During `vite dev` we run at
 // http://localhost:5173/ with no basename.
@@ -51,18 +61,27 @@ export const router = createBrowserRouter(
         { index: true, Component: LoginPage },
 
         { path: "dashboard", element: guarded(DashboardPage) },
-        { path: "inventory/:dept", element: guarded(InventoryPage) },
         { path: "inventory", element: guarded(InventoryPage) },
         { path: "stock-input", element: guarded(InventoryPage) },
         { path: "daily-count", element: guarded(InventoryPage) },
         { path: "beginning-inventory", element: guarded(InventoryPage) },
         { path: "edit-requests", element: guarded(EditRequestsPage) },
-        { path: "inventory/requests", element: guarded(InventoryRequestsPage, { roles: ["executive", "prod_manager", "hr"] }) },
-        { path: "inventory/honey/warehouse", element: guarded(HoneyWarehousePage, { roles: ["executive", "prod_manager", "hr"] }) },
-        { path: "inventory/honey/production", element: guarded(HoneyProductionPage, { roles: ["executive", "prod_manager", "hr"] }) },
-        { path: "inventory/honey/packaging", element: guarded(HoneyPackagingPage, { roles: ["executive", "prod_manager", "hr"] }) },
-        { path: "inventory/paragis", element: guarded(DeptInventoryPage, { roles: ["executive", "prod_manager", "hr"] }) },
-        { path: "inventory/cacao-brc", element: guarded(DeptInventoryPage, { roles: ["executive", "prod_manager", "hr"] }) },
+        { path: "inventory/requests", element: guarded(InventoryRequestsPage, { roles: invRoles }) },
+        { path: "inventory/raw-materials", element: invGuard(RawMaterialsHubPage) },
+        { path: "inventory/raw-materials/honey", element: invGuard(RawHoneySummaryPage) },
+        { path: "inventory/raw-materials/:slug", element: invGuard(RawMaterialDetailPage) },
+        { path: "inventory/packaging-materials", element: invGuard(PackagingMaterialsPage) },
+        { path: "inventory/supplies", element: invGuard(SuppliesInventoryPage) },
+        { path: "inventory/products/honey/warehouse", element: invGuard(HoneyWarehousePage) },
+        { path: "inventory/products/honey/production", element: invGuard(HoneyProductionPage) },
+        { path: "inventory/products/honey/packaging", element: invGuard(HoneyPackagingPage) },
+        { path: "inventory/products/:productSlug", element: invGuard(DeptInventoryPage) },
+        { path: "inventory/honey/warehouse", element: createElement(Navigate, { to: "/inventory/products/honey/warehouse", replace: true }) },
+        { path: "inventory/honey/production", element: createElement(Navigate, { to: "/inventory/products/honey/production", replace: true }) },
+        { path: "inventory/honey/packaging", element: createElement(Navigate, { to: "/inventory/products/honey/packaging", replace: true }) },
+        { path: "inventory/paragis", element: createElement(Navigate, { to: "/inventory/products/paragis-tea", replace: true }) },
+        { path: "inventory/cacao-brc", element: invGuard(CacaoBrcHubPage) },
+        { path: "inventory/:dept", element: guarded(InventoryPage) },
 
         { path: "staff", element: guarded(StaffManagementPage, { roles: ["executive"] }) },
         { path: "reports", element: guarded(ReportsPage, { roles: ["executive", "prod_manager"] }) },
@@ -117,6 +136,9 @@ export const router = createBrowserRouter(
           children: [
             { index: true, Component: POSCategoryPage },
             { path: "honey", Component: POSHoneyPage },
+            { path: "paragis", Component: POSDeptPage },
+            { path: "brc", Component: POSDeptPage },
+            { path: "cacao", Component: POSDeptPage },
           ],
         },
       ],

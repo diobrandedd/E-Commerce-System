@@ -9,7 +9,7 @@ function rts_inv_product_label(string $productType, ?string $combo): string
     $map = [
         'honey' => 'Honey',
         'honey_with_other' => 'Honey w/ Other',
-        'pouch_pt' => 'Paragis',
+        'pouch_pt' => 'Paragis Tea',
         'pouch_pt_with_honey' => 'Paragis w/ Honey',
         'pouch_brc' => 'Black Rice Coffee',
         'jar_cacao' => 'Jar Cacao',

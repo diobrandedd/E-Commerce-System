@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-06-09T09:53:01+02:00
+generated: 2026-06-10T11:00:04+02:00
 type: module
 function_count: 10
 ---
@@ -54,7 +54,7 @@ function_count: 10
 
 **Callers (1):**
 
-- `api/v1/pos.php`:56 — `api_ok(honey_pos_honey_catalog(ims_pdo()));`
+- `api/v1/pos.php`:59 — `api_ok(honey_pos_honey_catalog(ims_pdo()));`
 
 ## honey_pos_available_qty {#honey_pos_available_qty}
 
@@ -71,7 +71,7 @@ function_count: 10
 
 **Callers (2):**
 
-- `includes/honey_parcel_inventory.php`:36 — `$used = honey_pos_deduct_packaging_aggregate($pdo, $variant, $size, $qty);`
+- `includes/honey_parcel_inventory.php`:59 — `$used = honey_pos_deduct_packaging_aggregate($pdo, $variant, $size, $qty);`
 - `includes/honey_pos.php`:365 — `honey_pos_deduct_packaging_aggregate($pdo, $line['variant'], $line['size'], $line['qty']);`
 
 ## honey_pos_log_sale {#honey_pos_log_sale}
@@ -96,6 +96,6 @@ function_count: 10
 
 **Callers (2):**
 
-- `api/v1/pos.php`:175 — `$result = honey_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds);`
+- `api/v1/pos.php`:211 — `$result = honey_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds);`
 - `includes/pos_discount_requests.php`:164 — `$result = honey_pos_checkout(`
 
