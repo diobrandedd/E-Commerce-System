@@ -11,6 +11,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_SIZES, HONEY_VARIANTS } from "@/app/lib/honey";
+import { PackagingOnHandRequestModal } from "@/app/components/inventory/PackagingOnHandRequestModal";
 import {
   approveMaterialRequest,
   listMaterialRequests,
@@ -87,7 +88,8 @@ export function InventoryRequestsPage() {
   const { user } = useAuth();
   const isExec = user?.role === "executive";
   const isPm = user?.role === "prod_manager";
-  const readonly = user?.role === "hr";
+  const isHr = user?.role === "hr";
+  const readonly = isHr;
   const [searchParams, setSearchParams] = useSearchParams();
   const { refresh: refreshNotifications, markViewed } = useCorrectionNotifications();
   const [requests, setRequests] = useState<CorrectionRequestDetail[]>([]);
@@ -111,6 +113,7 @@ export function InventoryRequestsPage() {
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
+  const [showPackagingRequest, setShowPackagingRequest] = useState(false);
   const [reviewId, setReviewId] = useState<number | null>(null);
   const [correctionPage, setCorrectionPage] = useState(1);
   const [discountPage, setDiscountPage] = useState(1);
@@ -292,7 +295,9 @@ export function InventoryRequestsPage() {
     ? "Review inventory corrections, edit requests (deliveries + more), and POS discount approvals"
     : isPm
       ? "Inventory corrections and your delivery edit/delete requests"
-      : "Inventory correction requests you have submitted";
+      : isHr
+        ? "Submit packaging count corrections and track approval status"
+        : "Inventory correction requests you have submitted";
 
   return (
     <PageLayout
@@ -311,6 +316,7 @@ export function InventoryRequestsPage() {
       }
     >
       <div className="space-y-10">
+        {!isHr && (
         <section id="inventory-corrections-section">
           <div className="px-1 pb-3">
             <h3 className="text-sm font-semibold text-foreground">Inventory corrections</h3>
@@ -386,11 +392,28 @@ export function InventoryRequestsPage() {
             />
           )}
         </section>
+        )}
 
         <section id="material-adjustments-section">
-          <div className="px-1 pb-3">
-            <h3 className="text-sm font-semibold text-foreground">Packaging & supplies adjustments</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Production manager requests to add or deduct material on-hand</p>
+          <div className="px-1 pb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Packaging & supplies adjustments</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isHr
+                  ? "Request packaging on-hand count corrections — executive approves"
+                  : "Production manager supply add/deduct requests; HR packaging count fixes"}
+              </p>
+            </div>
+            {isHr && (
+              <button
+                type="button"
+                onClick={() => setShowPackagingRequest(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-1.5 rounded-lg shrink-0"
+                style={{ background: "#C8900A" }}
+              >
+                <Plus size={13} /> Packaging count request
+              </button>
+            )}
           </div>
           {materialError && (
             <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">{materialError}</div>
@@ -541,6 +564,12 @@ export function InventoryRequestsPage() {
         )}
       </div>
       {showNew && <NewRequestModal onClose={() => setShowNew(false)} onDone={() => { setShowNew(false); refresh(); }} />}
+      {showPackagingRequest && (
+        <PackagingOnHandRequestModal
+          onClose={() => setShowPackagingRequest(false)}
+          onDone={() => { setShowPackagingRequest(false); void refresh(); }}
+        />
+      )}
       {reviewRequest && (
         <CorrectionReviewModal request={reviewRequest} onClose={closeReview} onDone={handleReviewDone} />
       )}

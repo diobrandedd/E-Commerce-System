@@ -56,18 +56,35 @@ const PRODUCTS_CHILDREN: NavChild[] = [
 ];
 
 function getNavItems(role: Role, dept: string, pendingCorrections: number): NavItem[] {
+  const inventoryChildren: NavChild[] = [
+    { label: "Raw Materials", children: RAW_MATERIALS_CHILDREN },
+    { label: "Packaging Materials", to: "/inventory/packaging-materials" },
+    { label: "Supplies", to: "/inventory/supplies" },
+    { label: "Products", children: PRODUCTS_CHILDREN },
+  ];
+
   const inventoryNav: NavItem = {
     icon: Package,
     label: "Inventory",
     to: "/inventory/raw-materials",
     badge: pendingCorrections > 0 ? pendingCorrections : undefined,
     children: [
-      { label: "Raw Materials", children: RAW_MATERIALS_CHILDREN },
-      { label: "Packaging Materials", to: "/inventory/packaging-materials" },
-      { label: "Supplies", to: "/inventory/supplies" },
-      { label: "Products", children: PRODUCTS_CHILDREN },
+      ...inventoryChildren,
       { label: "Requests", to: "/inventory/requests" },
     ],
+  };
+
+  const inventoryNavHr: NavItem = {
+    icon: Package,
+    label: "Inventory",
+    to: "/inventory/raw-materials",
+    children: inventoryChildren,
+  };
+
+  const requestsNav: NavItem = {
+    icon: ClipboardList,
+    label: "Requests",
+    to: "/inventory/requests",
   };
 
   const onlineOrdersItem: NavItem = {
@@ -138,7 +155,8 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     case "hr":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        { ...inventoryNav, badge: undefined },
+        inventoryNavHr,
+        requestsNav,
         rtsNavReadOnly,
       ];
     case "team_leader":

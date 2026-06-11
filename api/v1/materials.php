@@ -20,7 +20,9 @@ api_dispatch([
     'raw_snapshot' => 'api_materials_raw_snapshot',
     'raw_detail' => 'api_materials_raw_detail',
     'departments' => 'api_materials_departments',
-    'set_values' => 'api_materials_set_values',
+    'stock_in_lot' => 'api_materials_stock_in_lot',
+    'packaging_detail' => 'api_materials_packaging_detail',
+    'set_on_hand' => 'api_materials_set_on_hand',
 ]);
 
 function api_materials_require_view(): array
@@ -128,12 +130,38 @@ function api_materials_request_submit(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['prod_manager']);
+    $user = api_require_ims_user();
+    $role = (string) $user['role'];
     $stockId = (int) ($input['stock_id'] ?? 0);
     $action = trim((string) ($input['action'] ?? ''));
     $amount = (float) ($input['amount'] ?? 0);
     $reason = trim((string) ($input['reason'] ?? ''));
+    if ($stockId < 1) {
+        api_fail('stock_id required.', 422);
+    }
     $pdo = ims_pdo();
+    $row = material_inventory_fetch_stock($pdo, $stockId);
+    if ($row === null) {
+        api_fail('Stock not found.', 404);
+    }
+    $category = (string) $row['category'];
+    if ($category === 'packaging') {
+        if ($role !== 'hr') {
+            api_fail('Only HR can request packaging count corrections.', 403);
+        }
+        if ($action !== 'set_on_hand') {
+            api_fail('Packaging requests must set a target on-hand count.', 422);
+        }
+    } elseif ($category === 'supply') {
+        if ($role !== 'prod_manager') {
+            api_fail('Only production managers can request supply adjustments.', 403);
+        }
+        if (!in_array($action, ['add', 'deduct'], true)) {
+            api_fail('Supply requests must add or deduct quantity.', 422);
+        }
+    } else {
+        api_fail('This stock cannot be adjusted via request.', 422);
+    }
     try {
         $id = material_adjustment_submit($pdo, $stockId, $action, $amount, $reason, (int) $user['id']);
     } catch (Throwable $e) {
@@ -148,12 +176,14 @@ function api_materials_request_list(): void
     $user = api_materials_require_view();
     $role = (string) $user['role'];
     $pdo = ims_pdo();
-    $requestedBy = $role === 'prod_manager' ? (int) $user['id'] : null;
+    $requestedBy = in_array($role, ['prod_manager', 'hr'], true) ? (int) $user['id'] : null;
     $requests = material_adjustment_list($pdo, $requestedBy);
     api_ok([
         'requests' => $requests,
-        'readonly' => $role === 'hr',
+        'readonly' => false,
         'can_approve' => $role === 'executive',
+        'can_submit_packaging' => material_inventory_role_can_request_packaging($role),
+        'can_submit_supply' => $role === 'prod_manager',
     ]);
 }
 
@@ -245,35 +275,92 @@ function api_materials_departments(): void
     api_ok(['departments' => $st ? $st->fetchAll() : []]);
 }
 
-function api_materials_set_values(): void
+function api_materials_packaging_detail(): void
+{
+    api_method_allowed(['GET']);
+    api_materials_require_view();
+    $stockId = (int) ($_GET['stock_id'] ?? 0);
+    if ($stockId < 1) {
+        api_fail('stock_id required.', 422);
+    }
+    $pdo = ims_pdo();
+    $row = material_inventory_fetch_stock($pdo, $stockId);
+    if ($row === null || (string) $row['category'] !== 'packaging') {
+        api_fail('Packaging stock not found.', 404);
+    }
+    $row['on_hand'] = round((float) ($row['on_hand'] ?? 0), 2);
+    $row['current_price'] = round((float) ($row['current_price'] ?? 0), 2);
+    $entries = material_packaging_recent_entries($pdo, $stockId, 25);
+    api_ok([
+        'stock' => $row,
+        'entries' => $entries,
+    ]);
+}
+
+function api_materials_set_on_hand(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $stockId = (int) ($input['stock_id'] ?? 0);
+    $onHandRaw = trim((string) ($input['on_hand'] ?? ''));
+    $note = isset($input['note']) ? trim((string) $input['note']) : null;
+    if ($stockId < 1) {
+        api_fail('stock_id required.', 422);
+    }
+    if (!is_numeric($onHandRaw) || (float) $onHandRaw < 0) {
+        api_fail('On-hand must be 0 or greater.', 422);
+    }
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = material_packaging_set_on_hand(
+            $pdo,
+            $stockId,
+            (float) $onHandRaw,
+            (int) $user['id'],
+            $note
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_materials_stock_in_lot(): void
 {
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_role(['executive', 'hr']);
     $stockId = (int) ($input['stock_id'] ?? 0);
-    $priceRaw = trim((string) ($input['current_price'] ?? ''));
-    $onHandRaw = trim((string) ($input['on_hand'] ?? ''));
+    $totalRaw = trim((string) ($input['lot_total_price'] ?? ''));
+    $qtyRaw = trim((string) ($input['lot_qty'] ?? ''));
     $note = isset($input['note']) ? trim((string) $input['note']) : null;
 
     if ($stockId < 1) {
         api_fail('stock_id required.', 422);
     }
-    if (!is_numeric($priceRaw) || (float) $priceRaw < 0) {
-        api_fail('Price must be 0 or greater.', 422);
+    if (!is_numeric($totalRaw) || (float) $totalRaw < 0) {
+        api_fail('Total price must be 0 or greater.', 422);
     }
-    if (!is_numeric($onHandRaw) || (float) $onHandRaw < 0) {
-        api_fail('On-hand quantity must be 0 or greater.', 422);
+    if (!is_numeric($qtyRaw) || (float) $qtyRaw <= 0) {
+        api_fail('Quantity received must be greater than 0.', 422);
     }
 
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
-        $result = material_packaging_set_values(
+        $result = material_packaging_stock_in_lot(
             $pdo,
             $stockId,
-            (float) $priceRaw,
-            (float) $onHandRaw,
+            (float) $totalRaw,
+            (float) $qtyRaw,
             (int) $user['id'],
             $note
         );

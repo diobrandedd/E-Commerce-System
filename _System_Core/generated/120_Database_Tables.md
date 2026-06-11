@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-10T10:59:59+02:00
+generated: 2026-06-11T05:22:05+02:00
 type: memory-bank
 table_count: 43
 ---
@@ -171,6 +171,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_change_password]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
 
@@ -210,6 +211,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_update]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_adjust]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_values]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_in_lot]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_on_hand]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
@@ -230,6 +233,10 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_adjust]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_values]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_pool_unit_cost_from_lots]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_in_lot]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_on_hand]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 

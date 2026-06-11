@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-10T10:59:59+02:00
+generated: 2026-06-11T05:22:05+02:00
 type: memory-bank
 ---
 
@@ -160,8 +160,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `catalog_update` | `api_materials_catalog_update()` | `ims_pdo()`, `material_inventory_update()` |
 | `on_hand_list` | `api_materials_on_hand_list()` | — |
 | `adjust` | `api_materials_adjust()` | `ims_pdo()`, `material_inventory_adjust()` |
-| `request_submit` | `api_materials_request_submit()` | `ims_pdo()`, `material_adjustment_submit()` |
-| `request_list` | `api_materials_request_list()` | `ims_pdo()`, `material_adjustment_list()` |
+| `request_submit` | `api_materials_request_submit()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_adjustment_submit()` |
+| `request_list` | `api_materials_request_list()` | `ims_pdo()`, `material_adjustment_list()`, `material_inventory_role_can_request_packaging()` |
 | `request_approve` | `api_materials_request_approve()` | `ims_pdo()`, `material_adjustment_approve()` |
 | `request_reject` | `api_materials_request_reject()` | `ims_pdo()`, `material_adjustment_reject()` |
 | `request_pending_count` | `api_materials_request_pending_count()` | `material_adjustment_pending_count()`, `ims_pdo()` |
@@ -169,7 +169,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `raw_snapshot` | `api_materials_raw_snapshot()` | `material_raw_snapshot()`, `ims_pdo()` |
 | `raw_detail` | `api_materials_raw_detail()` | `material_inventory_raw_stock_by_slug()`, `ims_pdo()` |
 | `departments` | `api_materials_departments()` | `ims_pdo()` |
-| `set_values` | `api_materials_set_values()` | `ims_pdo()`, `material_packaging_set_values()` |
+| `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_packaging_stock_in_lot()` |
+| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_recent_entries()` |
+| `set_on_hand` | `api_materials_set_on_hand()` | `ims_pdo()`, `material_packaging_set_on_hand()` |
 
 ### `online_orders.php`
 

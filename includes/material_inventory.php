@@ -23,7 +23,12 @@ function material_inventory_role_can_adjust(string $role): bool
 
 function material_inventory_role_can_request(string $role): bool
 {
-    return $role === 'prod_manager';
+    return $role === 'prod_manager' || $role === 'hr';
+}
+
+function material_inventory_role_can_request_packaging(string $role): bool
+{
+    return $role === 'hr';
 }
 
 function material_inventory_role_can_set_packaging(string $role): bool
@@ -318,6 +323,233 @@ function material_packaging_set_values(
     ];
 }
 
+/**
+ * Parse `lot: ₱500.00/100pcs` batch labels written by stock-in.
+ *
+ * @return array{total: float, qty: float}|null
+ */
+function material_packaging_parse_lot_batch_label(string $label): ?array
+{
+    if (!preg_match('/^lot:\s*[^\d]*([\d,]+\.?\d*)\s*\/\s*([\d,]+\.?\d*)\s*pcs/iu', $label, $m)) {
+        return null;
+    }
+
+    return [
+        'total' => (float) str_replace(',', '', $m[1]),
+        'qty' => (float) str_replace(',', '', $m[2]),
+    ];
+}
+
+/**
+ * Derive pool unit cost from lot purchase entries. Pre-lot on-hand (e.g. legacy set_values)
+ * is valued at the average lot purchase unit so bad manual prices do not poison WAC.
+ */
+function material_packaging_pool_unit_cost_from_lots(PDO $pdo, int $stockId, float $poolOnHand): ?float
+{
+    $st = $pdo->prepare(
+        "SELECT qty, supplier_batch_no FROM stock_entries
+         WHERE stock_id = ? AND supplier_batch_no LIKE 'lot:%'
+         ORDER BY created_at ASC"
+    );
+    $st->execute([$stockId]);
+
+    $lotPurchaseValue = 0.0;
+    $lotPurchaseQty = 0.0;
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $parsed = material_packaging_parse_lot_batch_label((string) $row['supplier_batch_no']);
+        if ($parsed === null || $parsed['qty'] <= 0) {
+            continue;
+        }
+        $lotPurchaseValue += $parsed['total'];
+        $lotPurchaseQty += (float) $row['qty'];
+    }
+
+    if ($lotPurchaseQty <= 0) {
+        return null;
+    }
+
+    $avgLotUnit = $lotPurchaseValue / $lotPurchaseQty;
+    $nonLotQty = max(0.0, round($poolOnHand - $lotPurchaseQty, 2));
+    $totalValue = $lotPurchaseValue + ($nonLotQty * $avgLotUnit);
+
+    if ($poolOnHand <= 0) {
+        return round($avgLotUnit, 6);
+    }
+
+    return round($totalValue / $poolOnHand, 6);
+}
+
+/**
+ * Stock in a packaging purchase lot: add qty to pool and update unit cost (WAC when pool > 0).
+ *
+ * @return array{stock_id: int, on_hand: float, current_price: float, lot_unit: float, entry_id: int}
+ */
+function material_packaging_stock_in_lot(
+    PDO $pdo,
+    int $stockId,
+    float $lotTotalPrice,
+    float $lotQty,
+    int $userId,
+    ?string $note = null
+): array {
+    if ($lotTotalPrice < 0) {
+        throw new RuntimeException('Total price must be 0 or greater.');
+    }
+    if ($lotQty <= 0) {
+        throw new RuntimeException('Quantity received must be greater than 0.');
+    }
+    $row = material_inventory_fetch_stock($pdo, $stockId, true);
+    if ($row === null) {
+        throw new RuntimeException('Stock not found.');
+    }
+    if ((string) $row['category'] !== 'packaging') {
+        throw new RuntimeException('Only packaging materials can receive stock-in lots.');
+    }
+    if (!(int) ($row['is_active'] ?? 1)) {
+        throw new RuntimeException('Stock item is inactive.');
+    }
+
+    $oldOnHand = round((float) ($row['on_hand'] ?? 0), 2);
+    $oldPrice = round((float) ($row['current_price'] ?? 0), 6);
+    $lotUnit = round($lotTotalPrice / $lotQty, 6);
+    $newOnHand = round($oldOnHand + $lotQty, 2);
+
+    $batchLabel = sprintf(
+        'lot: ₱%s/%spcs',
+        number_format($lotTotalPrice, 2, '.', ''),
+        rtrim(rtrim(number_format($lotQty, 4, '.', ''), '0'), '.')
+    );
+    if ($note !== null && trim($note) !== '') {
+        $batchLabel .= ' — ' . trim($note);
+    }
+    $batchLabel = substr($batchLabel, 0, 120);
+
+    $ins = $pdo->prepare(
+        'INSERT INTO stock_entries (stock_id, dept_id, qty, batching_date, supplier_batch_no, entered_by)
+         VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    $ins->execute([
+        $stockId,
+        (int) $row['dept_id'],
+        $lotQty,
+        date('Y-m-d H:i:s'),
+        $batchLabel,
+        $userId,
+    ]);
+    $entryId = (int) $pdo->lastInsertId();
+
+    $pdo->prepare('UPDATE stocks SET on_hand = ? WHERE id = ?')->execute([$newOnHand, $stockId]);
+
+    $derivedPrice = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $newOnHand);
+    $newPrice = $derivedPrice ?? round($lotUnit, 6);
+
+    $oldPriceRounded = round($oldPrice, 2);
+    $newPriceRounded = round($newPrice, 2);
+    if ($newPriceRounded !== $oldPriceRounded) {
+        if (!function_exists('api_costing_apply_price_change')) {
+            require_once dirname(__DIR__) . '/api/v1/_costing_helpers.php';
+        }
+        api_costing_apply_price_change($pdo, $stockId, $oldPriceRounded, $newPriceRounded, $userId);
+    } else {
+        $pdo->prepare('UPDATE stocks SET current_price = ? WHERE id = ?')->execute([$newPriceRounded, $stockId]);
+    }
+
+    return [
+        'stock_id' => $stockId,
+        'on_hand' => $newOnHand,
+        'current_price' => $newPriceRounded,
+        'lot_unit' => round($lotUnit, 6),
+        'entry_id' => $entryId,
+    ];
+}
+
+/**
+ * Executive count correction — set absolute on-hand without changing unit cost.
+ *
+ * @return array{stock_id: int, on_hand: float, entry_id: int|null}
+ */
+function material_packaging_set_on_hand(
+    PDO $pdo,
+    int $stockId,
+    float $onHand,
+    int $userId,
+    ?string $note = null
+): array {
+    if ($onHand < 0) {
+        throw new RuntimeException('On-hand quantity cannot be negative.');
+    }
+    $row = material_inventory_fetch_stock($pdo, $stockId, true);
+    if ($row === null) {
+        throw new RuntimeException('Stock not found.');
+    }
+    if ((string) $row['category'] !== 'packaging') {
+        throw new RuntimeException('Only packaging materials support count correction.');
+    }
+    if (!(int) ($row['is_active'] ?? 1)) {
+        throw new RuntimeException('Stock item is inactive.');
+    }
+
+    $oldOnHand = round((float) ($row['on_hand'] ?? 0), 2);
+    $newOnHand = round($onHand, 2);
+    $entryId = null;
+
+    if ($newOnHand !== $oldOnHand) {
+        $delta = round($newOnHand - $oldOnHand, 2);
+        $auditNote = $note !== null && trim($note) !== '' ? trim($note) : 'Count correction';
+        $pdo->prepare('UPDATE stocks SET on_hand = ? WHERE id = ?')->execute([$newOnHand, $stockId]);
+        $ins = $pdo->prepare(
+            'INSERT INTO stock_entries (stock_id, dept_id, qty, batching_date, supplier_batch_no, entered_by)
+             VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        $ins->execute([
+            $stockId,
+            (int) $row['dept_id'],
+            $delta,
+            date('Y-m-d H:i:s'),
+            substr('count_correction: ' . $auditNote, 0, 120),
+            $userId,
+        ]);
+        $entryId = (int) $pdo->lastInsertId();
+    }
+
+    return [
+        'stock_id' => $stockId,
+        'on_hand' => $newOnHand,
+        'entry_id' => $entryId,
+    ];
+}
+
+/** @return list<array<string, mixed>> */
+function material_packaging_recent_entries(PDO $pdo, int $stockId, int $limit = 25): array
+{
+    $limit = max(1, min(100, $limit));
+    $st = $pdo->prepare(
+        'SELECT se.id, se.qty, se.supplier_batch_no, se.created_at, u.name AS entered_by_name
+         FROM stock_entries se
+         LEFT JOIN users u ON u.id = se.entered_by
+         WHERE se.stock_id = ?
+         ORDER BY se.created_at DESC
+         LIMIT ' . $limit
+    );
+    $st->execute([$stockId]);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as &$row) {
+        $row['qty'] = round((float) ($row['qty'] ?? 0), 2);
+        $label = (string) ($row['supplier_batch_no'] ?? '');
+        $parsed = material_packaging_parse_lot_batch_label($label);
+        $row['entry_kind'] = str_starts_with($label, 'lot:')
+            ? 'lot'
+            : (str_starts_with($label, 'count_correction:') ? 'count_correction' : 'other');
+        if ($parsed !== null) {
+            $row['lot_total_price'] = $parsed['total'];
+            $row['lot_qty'] = $parsed['qty'];
+            $row['lot_unit'] = round($parsed['total'] / $parsed['qty'], 6);
+        }
+    }
+
+    return $rows;
+}
+
 function material_adjustment_submit(
     PDO $pdo,
     int $stockId,
@@ -326,10 +558,14 @@ function material_adjustment_submit(
     string $reason,
     int $userId
 ): int {
-    if (!in_array($action, ['add', 'deduct'], true)) {
+    if (!in_array($action, ['add', 'deduct', 'set_on_hand'], true)) {
         throw new RuntimeException('Invalid action.');
     }
-    if ($amount <= 0) {
+    if ($action === 'set_on_hand') {
+        if ($amount < 0) {
+            throw new RuntimeException('Target on-hand cannot be negative.');
+        }
+    } elseif ($amount <= 0) {
         throw new RuntimeException('Amount must be positive.');
     }
     if (trim($reason) === '') {
@@ -339,8 +575,17 @@ function material_adjustment_submit(
     if ($row === null) {
         throw new RuntimeException('Stock not found.');
     }
-    if ((string) $row['category'] !== 'supply') {
-        throw new RuntimeException('Only supply items can be requested.');
+    $category = (string) $row['category'];
+    if ($category === 'packaging') {
+        if ($action !== 'set_on_hand') {
+            throw new RuntimeException('Packaging requests must set a target on-hand count.');
+        }
+    } elseif ($category === 'supply') {
+        if (!in_array($action, ['add', 'deduct'], true)) {
+            throw new RuntimeException('Supply requests must add or deduct quantity.');
+        }
+    } else {
+        throw new RuntimeException('Only packaging and supply items can be requested.');
     }
     $ins = $pdo->prepare(
         'INSERT INTO material_adjustment_requests (stock_id, action, amount, reason, requested_by)
@@ -382,8 +627,13 @@ function material_adjustment_summary(array $req): string
     $action = (string) ($req['action'] ?? '');
     $amount = $req['amount'] ?? '';
     $name = (string) ($req['stock_name'] ?? 'stock');
+    $unit = (string) ($req['unit'] ?? '');
 
-    return ucfirst($action) . ' ' . $amount . ' ' . ($req['unit'] ?? '') . ' — ' . $name;
+    if ($action === 'set_on_hand') {
+        return 'Set on-hand to ' . $amount . ' ' . $unit . ' — ' . $name;
+    }
+
+    return ucfirst($action) . ' ' . $amount . ' ' . $unit . ' — ' . $name;
 }
 
 function material_adjustment_approve(PDO $pdo, int $requestId, int $reviewerId): void
@@ -396,19 +646,33 @@ function material_adjustment_approve(PDO $pdo, int $requestId, int $reviewerId):
     if (!$req) {
         throw new RuntimeException('Request not found.');
     }
-    $result = material_inventory_adjust(
-        $pdo,
-        (int) $req['stock_id'],
-        (string) $req['action'],
-        (float) $req['amount'],
-        $reviewerId,
-        (string) $req['reason']
-    );
+    $stockId = (int) $req['stock_id'];
+    $action = (string) $req['action'];
+    $amount = (float) $req['amount'];
+    $reason = (string) $req['reason'];
+    $stock = material_inventory_fetch_stock($pdo, $stockId, true);
+    if ($stock === null) {
+        throw new RuntimeException('Stock not found.');
+    }
+    $category = (string) $stock['category'];
+    if ($category === 'packaging') {
+        if ($action !== 'set_on_hand') {
+            throw new RuntimeException('Packaging requests must set on-hand count.');
+        }
+        $result = material_packaging_set_on_hand($pdo, $stockId, $amount, $reviewerId, $reason);
+    } elseif ($category === 'supply') {
+        if (!in_array($action, ['add', 'deduct'], true)) {
+            throw new RuntimeException('Supply requests must add or deduct.');
+        }
+        $result = material_inventory_adjust($pdo, $stockId, $action, $amount, $reviewerId, $reason);
+    } else {
+        throw new RuntimeException('Unsupported stock category for adjustment.');
+    }
     $pdo->prepare(
         'UPDATE material_adjustment_requests
          SET status = "approved", reviewed_by = ?, reviewed_at = NOW(), applied_entry_id = ?
          WHERE id = ?'
-    )->execute([$reviewerId, $result['entry_id'], $requestId]);
+    )->execute([$reviewerId, $result['entry_id'] ?? null, $requestId]);
 }
 
 function material_adjustment_reject(PDO $pdo, int $requestId, int $reviewerId, string $note): void

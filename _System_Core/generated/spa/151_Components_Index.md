@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-10T11:00:15+02:00
+generated: 2026-06-11T05:22:21+02:00
 type: spa
 ---
 
@@ -111,6 +111,9 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/honey/ExecutiveRowEditModal.tsx`
 - `app/src/app/components/inventory/MaterialAdjustModal.tsx`
 - `app/src/app/components/inventory/MaterialCatalogModal.tsx`
-- `app/src/app/components/inventory/PackagingSetValuesModal.tsx`
+- `app/src/app/components/inventory/PackagingMaterialDetailModal.tsx`
+- `app/src/app/components/inventory/PackagingOnHandRequestModal.tsx`
+- `app/src/app/components/inventory/PackagingOnHandSetModal.tsx`
+- `app/src/app/components/inventory/PackagingStockInLotModal.tsx`
 - `app/src/app/components/suppliers/SupplierProfileModal.tsx`
 

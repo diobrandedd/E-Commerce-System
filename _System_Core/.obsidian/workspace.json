@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "cebe78744f69168e",
+        "id": "8d9865b457ab68c8",
         "type": "tabs",
         "children": [
           {
-            "id": "4912df807eab47c6",
+            "id": "1176b8ead49b7f1b",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -74,7 +74,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "0b6c2ca760104de3",
@@ -176,7 +177,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "4912df807eab47c6",
+  "active": "1176b8ead49b7f1b",
   "lastOpenFiles": [
     "generated/modules/waybill_stamper.md",
     "generated/modules/suppliers.md",

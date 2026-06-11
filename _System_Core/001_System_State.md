@@ -7,12 +7,12 @@
 | Field | Link |
 |-------|------|
 | **Active Spec** | [[specs/Inventory Arrangement change]] |
-| **Active Plan** | [[plans/archive/2026-06-05_packaging-price-qty_plan]] (shipped) |
-| **Status** | `shipped` — packaging price/qty + costing formula link; manual E2E recommended |
+| **Active Plan** | [[plans/archive/2026-06-05_packaging-lot-stock-in_plan]] (shipped) |
+| **Status** | `shipped` — packaging lot stock-in, detail UX, scroll patterns; run phase 21 migration on prod |
 
 ## 🚀 Active Feature / Sprint
-- **Current Focus:** Manual E2E packaging set-values (exec/HR) → costing formula line with packaging stock
-- **Latest shipped:** Packaging price + qty — [[problems/records/2026-06-05_packaging-price-qty]]
+- **Current Focus:** Manual E2E packaging lot stock-in + on-hand roles (exec set / HR request) + costing formula line
+- **Latest shipped:** Packaging UI scroll normalization — [[problems/records/2026-06-11_packaging-ui-scroll-normalization]] · pattern [[fixes/packaging-inventory-scroll-and-detail-ux]]
 
 ## 🛠️ Current Todo List
 - [x] **PT v2:** `migration_phase17_pt_supplier_bom.sql`, supplier ₱/bag, stock-in bags→pouches (2026-06-05)

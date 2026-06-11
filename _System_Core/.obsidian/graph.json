@@ -1,5 +1,5 @@
 {
-  "collapse-filter": false,
+  "collapse-filter": true,
   "search": "",
   "showTags": false,
   "showAttachments": true,
@@ -29,13 +29,6 @@
       }
     },
     {
-      "query": "Module",
-      "color": {
-        "a": 1,
-        "rgb": 16584089
-      }
-    },
-    {
       "query": "cause",
       "color": {
         "a": 1,
@@ -48,18 +41,25 @@
         "a": 1,
         "rgb": 1966335
       }
+    },
+    {
+      "query": "memory",
+      "color": {
+        "a": 1,
+        "rgb": 15081173
+      }
     }
   ],
-  "collapse-display": false,
+  "collapse-display": true,
   "showArrow": false,
   "textFadeMultiplier": 1.7,
   "nodeSizeMultiplier": 0.6359375,
   "lineSizeMultiplier": 0.814583333333333,
   "collapse-forces": false,
   "centerStrength": 0.4375,
-  "repelStrength": 8.64583333333333,
+  "repelStrength": 9.0625,
   "linkStrength": 0.458333333333333,
   "linkDistance": 241,
-  "scale": 0.13873223932665665,
+  "scale": 0.13873223932666057,
   "close": true
 }

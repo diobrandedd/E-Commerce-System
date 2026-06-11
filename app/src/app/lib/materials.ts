@@ -16,13 +16,25 @@ export interface MaterialStockRow {
   can_adjust?: boolean;
 }
 
+export interface PackagingStockEntry {
+  id: number;
+  qty: number;
+  supplier_batch_no: string;
+  created_at: string;
+  entered_by_name?: string | null;
+  entry_kind?: "lot" | "count_correction" | "other";
+  lot_total_price?: number;
+  lot_qty?: number;
+  lot_unit?: number;
+}
+
 export interface MaterialAdjustmentRequest {
   id: number;
   stock_id: number;
   stock_name: string;
   unit: string;
   category: string;
-  action: "add" | "deduct";
+  action: "add" | "deduct" | "set_on_hand";
   amount: string | number;
   reason: string;
   status: "pending" | "approved" | "rejected";
@@ -102,7 +114,42 @@ export function listMaterialRequests() {
     requests: MaterialAdjustmentRequest[];
     readonly: boolean;
     can_approve: boolean;
+    can_submit_packaging?: boolean;
+    can_submit_supply?: boolean;
   }>("materials.php", "request_list");
+}
+
+export function fetchPackagingDetail(stockId: number) {
+  return apiGet<{ stock: MaterialStockRow; entries: PackagingStockEntry[] }>(
+    "materials.php",
+    "packaging_detail",
+    { stock_id: stockId }
+  );
+}
+
+export function setPackagingOnHand(payload: {
+  stock_id: number;
+  on_hand: number;
+  note?: string;
+}) {
+  return apiPost<{ stock_id: number; on_hand: number; entry_id: number | null }>(
+    "materials.php",
+    "set_on_hand",
+    payload
+  );
+}
+
+export function submitPackagingOnHandRequest(payload: {
+  stock_id: number;
+  on_hand: number;
+  reason: string;
+}) {
+  return apiPost<{ id: number }>("materials.php", "request_submit", {
+    stock_id: payload.stock_id,
+    action: "set_on_hand",
+    amount: payload.on_hand,
+    reason: payload.reason,
+  });
 }
 
 export function approveMaterialRequest(id: number) {
@@ -125,16 +172,17 @@ export function listMaterialDepartments() {
   return apiGet<{ departments: Department[] }>("materials.php", "departments");
 }
 
-export function setPackagingValues(payload: {
+export function stockInPackagingLot(payload: {
   stock_id: number;
-  current_price: number;
-  on_hand: number;
+  lot_total_price: number;
+  lot_qty: number;
   note?: string;
 }) {
   return apiPost<{
     stock_id: number;
     on_hand: number;
     current_price: number;
-    entry_id: number | null;
-  }>("materials.php", "set_values", payload);
+    lot_unit: number;
+    entry_id: number;
+  }>("materials.php", "stock_in_lot", payload);
 }

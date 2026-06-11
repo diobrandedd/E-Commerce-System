@@ -310,13 +310,24 @@ Uploading **full phone resolution** on a final **Confirm** button causes multi-s
 
 ## Requests hub (unified approvals)
 
-**Route:** `/inventory/requests` · Sidebar label **Requests** (executive, prod_manager, hr).
+**Route:** `/inventory/requests` · Sidebar label **Requests**.
 
 **Not** inventory-only — use **sectioned tables** so new approval types plug in without new nav items.
 
+### Sidebar placement by role
+
+| Role | Where **Requests** lives |
+|------|-------------------------|
+| **Executive** | Under **Inventory** children (badge on Inventory when pending) |
+| **Prod manager** | Under **Inventory** children |
+| **HR** | **Top-level** sibling after Inventory (`ClipboardList` icon) — not nested in Inventory dropdown |
+
+HR page shows **Packaging & supplies adjustments** only (honey corrections section hidden). **Packaging count request** button opens `PackagingOnHandRequestModal`.
+
 | Section | API | Who acts |
 |---------|-----|----------|
-| **Inventory corrections** | `honey.php` `correction_list` | Exec reviews in `CorrectionReviewModal`; PM submits |
+| **Inventory corrections** | `honey.php` `correction_list` | Exec reviews in `CorrectionReviewModal`; PM submits — **hidden for HR** |
+| **Packaging & supplies adjustments** | `materials.php` `request_list` | Exec approves; PM supply add/deduct; HR packaging `set_on_hand` |
 | **Edit requests** | `edit_requests.php` `list` / `approve` / `reject` | Exec approves inline; PM/TL/staff submit (`delivery_batch_items`, `stock_entries`, …) |
 | **POS discount approvals** | `pos_discounts.php` `list` | Exec only |
 
@@ -390,6 +401,37 @@ Prefer **`FulfillmentPressable`** / **`FulfillmentTableRow`** / **`FulfillmentPi
 - Correction workflow: list on `InventoryRequestsPage` → `CorrectionReviewModal` for approve/reject.
 - Executive inline edit: `ExecutiveRowEditModal` on warehouse/production/packaging pages.
 - Traceability: `BatchTraceabilityDrawer` (drawer, not modal).
+
+## Packaging and materials inventory pages
+
+**Canonical reference:** [[fixes/packaging-inventory-scroll-and-detail-ux]] · live in `PackagingMaterialsPage.tsx` + `PackagingMaterialDetailModal.tsx`.
+
+### List page recipe
+
+1. **Summary cards** — `shrink-0` grid above the table (catalog count, in-stock count, totals).
+2. **Viewport-bound column** — outer wrapper `flex flex-col h-[calc(100dvh-8rem)] min-h-[18rem]` so the page does not grow past the viewport.
+3. **Table card** — `flex flex-col min-h-0 flex-1 overflow-hidden`; column headers `shrink-0`.
+4. **Scrollable body only** — `flex-1 min-h-0 overflow-y-auto overscroll-contain` around rows.
+5. **Clickable rows** — full-width `<button>`, `hover:bg-secondary/40`, chevron; opens detail modal (not inline actions in the table).
+
+Apply the same scroll split when refactoring **Supplies** (`MaterialsCategoryPage`) or other long material catalogs.
+
+### Detail modal recipe
+
+1. `AppModal` `max-h-[90vh]`; `AppModalBody` with `flex flex-col min-h-0 overflow-hidden` (override default body scroll).
+2. Metrics + action buttons: `shrink-0`.
+3. **Recent activity** (or audit log): inner `max-h-44 overflow-y-auto` — never let the modal body grow unbounded.
+4. Role actions in modal: **Stock in lot** (exec/HR), **Set on-hand** (exec), **Request count fix** (HR).
+
+### Material modals (inventory folder)
+
+| Modal | Use |
+|-------|-----|
+| `PackagingStockInLotModal` | Total ₱ + qty received → unit cost preview |
+| `PackagingOnHandSetModal` | Executive absolute count |
+| `PackagingOnHandRequestModal` | HR target count + reason |
+| `PackagingMaterialDetailModal` | Row detail shell + recent entries |
+| `MaterialAdjustModal` | Supplies add/deduct (exec) or request (PM) |
 
 ## Auth & loading states
 

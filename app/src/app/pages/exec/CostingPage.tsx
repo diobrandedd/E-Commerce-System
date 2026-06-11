@@ -1196,6 +1196,12 @@ function AddFormulaModal({
             )}
           </p>
         )}
+        {selectedStock?.category === "packaging" && (
+          <p className="text-xs text-muted-foreground">
+            Packaging unit cost comes from weighted-average stock-in on Packaging Materials. Quantity here is{" "}
+            <strong>per sellable unit</strong> (e.g. 1 bottle per 250ml jar), not warehouse on-hand.
+          </p>
+        )}
         <Field label="Stock">
           <select value={stockId} onChange={e => handleStockChange(e.target.value)} required className={inputCls}>
             <option value="">— Select —</option>

@@ -4,6 +4,18 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-11 — [[problems/records/2026-06-11_packaging-ui-scroll-normalization|Packaging UI scroll normalization]]
+**Shipped:** fixed stats + scrollable table body; capped modal activity scroll; HR Requests top-level in sidebar. **Pattern doc:** [[fixes/packaging-inventory-scroll-and-detail-ux]] · [[005_SPA_UX_Patterns#Packaging and materials inventory pages]].
+
+### 2026-06-11 — [[problems/records/2026-06-11_packaging-materials-ui-on-hand|Packaging Materials UI + on-hand roles]]
+**Shipped:** clickable row detail modal; executive `set_on_hand`; HR count requests on Requests; phase 21 migration for `set_on_hand` action.
+
+### 2026-06-11 — [[problems/records/2026-06-11_packaging-wac-legacy-price|Packaging WAC legacy price poison]]
+**Fixed:** unit cost now derived from lot purchase entries; pre-lot on-hand valued at average lot unit (fixes set_values baseline skew).
+
+### 2026-06-05 — [[problems/records/2026-06-05_packaging-lot-stock-in|Packaging lot stock-in + WAC]]
+**Shipped:** exec/HR stock in purchase lots (total ₱ + qty received) on Packaging Materials (`materials.php stock_in_lot`); WAC unit cost in `current_price`; pool `on_hand` adds qty; Costing helper text for per-unit formula qty.
+
 ### 2026-06-05 — [[problems/records/2026-06-05_packaging-price-qty|Packaging materials price + quantity + costing]]
 **Shipped:** exec/HR set absolute `current_price` + `on_hand` on Packaging Materials (`materials.php set_values`); Costing formula picker **Packaging materials** optgroup; price changes recalc formula costs.
 
