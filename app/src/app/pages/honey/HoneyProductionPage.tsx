@@ -5,6 +5,7 @@ import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditMo
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
 import { PageLayout } from "@/app/components/PageLayout";
+import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { useAuth } from "@/app/context/AuthContext";
 import { canExecutiveDirectEdit, canMutateHoneyInventory, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
@@ -70,7 +71,9 @@ export function HoneyProductionPage() {
   const pagedRows = rows.slice(start, start + perPage);
 
   return (
-    <PageLayout title="Honey — Production" subtitle="Stock-out to packaging (batch numbers generated)">
+    <PageLayout title="Raw Honey" subtitle="Production — stock-out to packaging (batch numbers generated)">
+      <div className="space-y-4">
+        <HoneyStageTabs />
       <div className="bg-card rounded-xl border overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -164,6 +167,7 @@ export function HoneyProductionPage() {
           onDone={() => { setEditRow(null); refresh(); }}
         />
       )}
+      </div>
     </PageLayout>
   );
 }

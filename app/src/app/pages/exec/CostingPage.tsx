@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { TrendingUp, TrendingDown, Plus, ChevronDown, History, Pencil, AlertCircle, RefreshCcw, Loader2, Trash2 } from "lucide-react";
+import { Plus, History, Pencil, AlertCircle, RefreshCcw, Trash2, BookOpen } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
@@ -11,6 +11,9 @@ import {
 } from "@/app/lib/deptProducts";
 import { CostBadge, peso } from "@/app/lib/costingDisplay";
 import { CostingHoneyVariantGroups } from "@/app/components/costing/CostingHoneyVariantGroups";
+import { CostingGuideModal } from "@/app/components/costing/CostingGuideModal";
+import { CostingProductMetrics, CostingRowColumnHeaders } from "@/app/components/costing/CostingProductMetrics";
+import { costingRowGridClass } from "@/app/components/costing/costingRowLayout";
 import { CostingDetailLoading, CostingDetailReveal } from "@/app/components/costing/costingMotion";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { cn } from "@/app/components/ui/utils";
@@ -53,7 +56,8 @@ interface ProductRow {
 
 interface FormulaRow {
   id: number;
-  stock_id: number;
+  stock_id: number | null;
+  is_custom?: boolean;
   stock_name: string;
   unit: string;
   qty_per_unit: number;
@@ -104,46 +108,17 @@ const fmtDate = (s: string | null | undefined) => {
   return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 };
 
-function StockPriceTrendBadge({ stock }: { stock: StockRow }) {
-  const current = parseFloat(stock.current_price);
-  const previous = stock.previous_price ?? null;
-  const direction = stock.price_direction ?? "unknown";
-
-  if (direction === "unknown" || previous === null || !Number.isFinite(current)) {
-    return <span className="text-xs text-muted-foreground">—</span>;
-  }
-  if (direction === "unchanged") {
-    return <span className="text-xs text-muted-foreground">No change</span>;
-  }
-  const diff = current - previous;
-  const pct = previous !== 0 ? ((diff / previous) * 100).toFixed(1) : "0.0";
-  const isUp = direction === "up";
-  return (
-    <span
-      className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-        isUp ? "bg-red-100 text-red-600" : "bg-green-100 text-green-700"
-      }`}
-      title={`Was ${peso(previous)}`}
-    >
-      {isUp ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-      {isUp ? "+" : ""}
-      {pct}%
-    </span>
-  );
-}
-
 export function CostingPage() {
   const { user } = useAuth();
   const isExec = user?.role === "executive";
 
   const [stocks, setStocks] = useState<StockRow[]>([]);
   const [products, setProducts] = useState<ProductRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [detailsById, setDetailsById] = useState<Record<number, ProductDetail | "loading">>({});
-  const [editingStock, setEditingStock] = useState<StockRow | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [creatingProduct, setCreatingProduct] = useState(false);
   const [createDefaults, setCreateDefaults] = useState<{ variant: string; size: string } | null>(null);
   const [addFormulaProductId, setAddFormulaProductId] = useState<number | null>(null);
@@ -152,12 +127,7 @@ export function CostingPage() {
     name: string;
     selling_price: string;
   } | null>(null);
-  const [supplierFilter, setSupplierFilter] = useState<string>("all");
-  const [stockPricesOpen, setStockPricesOpen] = useState(false);
-  const [honeyGuideOpen, setHoneyGuideOpen] = useState(false);
-
   const refresh = useCallback(async () => {
-    setLoading(true);
     setError(null);
     try {
       const [stocksRes, productsRes] = await Promise.all([
@@ -168,8 +138,6 @@ export function CostingPage() {
       setProducts(productsRes.products);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load costing data.");
-    } finally {
-      setLoading(false);
     }
   }, []);
 
@@ -204,14 +172,6 @@ export function CostingPage() {
     if (!detailsById[productId] || detailsById[productId] === "loading") {
       await fetchDetail(productId);
     }
-  };
-
-  const handleStockSaved = async () => {
-    setEditingStock(null);
-    flash("Stock updated. Affected products recosted.");
-    await refresh();
-    // Refresh any open detail panels
-    if (expandedId) await fetchDetail(expandedId);
   };
 
   const handleProductCreated = async () => {
@@ -253,25 +213,6 @@ export function CostingPage() {
     }
     return map;
   }, [stocks]);
-
-  const honeySupplierOptions = useMemo(() => {
-    const seen = new Map<number, string>();
-    for (const s of stocks) {
-      if (s.supplier_id && s.supplier_display_name) {
-        seen.set(s.supplier_id, s.supplier_display_name);
-      }
-    }
-    return Array.from(seen.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [stocks]);
-
-  const displayedStocks = useMemo(() => {
-    if (supplierFilter === "all") return stocks;
-    if (supplierFilter === "other") {
-      return stocks.filter(s => !s.supplier_id);
-    }
-    const sid = Number(supplierFilter);
-    return stocks.filter(s => s.supplier_id === sid);
-  }, [stocks, supplierFilter]);
 
   const { honey: honeyProducts, dept: deptProducts, other: otherProducts } = useMemo(
     () => splitCostingProducts(products),
@@ -331,11 +272,20 @@ export function CostingPage() {
 
   return (
     <PageLayout title="Product Costing" subtitle="Formula builder and live cost tracking" actions={
-      <button onClick={refresh} className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg border border-border">
-        <RefreshCcw size={13} /> Refresh
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg border border-border"
+        >
+          <BookOpen size={13} /> Guide
+        </button>
+        <button onClick={refresh} className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg border border-border">
+          <RefreshCcw size={13} /> Refresh
+        </button>
+      </div>
     }>
-      <div className="space-y-5">
+      <div className="flex flex-col gap-5 min-w-0 max-w-full">
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" /> <span>{error}</span>
@@ -345,320 +295,153 @@ export function CostingPage() {
           <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{notice}</div>
         )}
 
-        {isExec && (
-          <div className="rounded-lg border border-border bg-secondary/30 overflow-hidden">
+        {/* Products — header fixed, list scrolls inside viewport */}
+        <div className="flex flex-col min-h-0 min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-foreground">Products</h3>
+              <p className="text-xs text-muted-foreground">{productsSubtitle}</p>
+            </div>
             <button
-              type="button"
-              onClick={() => setHoneyGuideOpen(v => !v)}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/40 transition-colors"
+              onClick={() => openCreateProduct()}
+              className="flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg text-white shrink-0"
+              style={{ background: "#C8900A" }}
             >
-              <ChevronDown
-                size={16}
-                className={`text-muted-foreground flex-shrink-0 transition-transform ${honeyGuideOpen ? "rotate-180" : ""}`}
-              />
-              <div className="min-w-0 flex-1">
-                <span className="text-sm font-semibold text-foreground">Honey costing setup</span>
-                <span className="block text-xs text-muted-foreground mt-0.5">
-                  Supplier ₱/gallon → formula liters per bottle size
-                </span>
-              </div>
+              <Plus size={15} /> New Product
             </button>
-            {honeyGuideOpen && (
-              <div className="px-4 pb-4 pt-0 text-xs text-muted-foreground space-y-2 border-t border-border">
-                <p>
-                  <strong className="text-foreground">Purchase:</strong> Set ₱/gallon under{" "}
-                  <span className="font-semibold">Supplier Master</span> (expand a honey row). Costing stocks sync as ₱/liter (÷ 3.785).
-                </p>
-                <p>
-                  <strong className="text-foreground">Products:</strong> Add each variant × size below; formula raw-honey qty in liters:
-                </p>
-                <table className="w-full max-w-md text-[11px] border border-border rounded-lg overflow-hidden">
-                  <thead>
-                    <tr className="bg-secondary/50">
-                      <th className="text-left px-2 py-1 font-semibold">Bottle size</th>
-                      <th className="text-left px-2 py-1 font-semibold">Raw honey in formula</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      ["250ml", "0.25 L"],
-                      ["350ml", "0.35 L"],
-                      ["1L (liter)", "1.0 L"],
-                      ["Gallon jar", "3.785 L (1 US gal)"],
-                    ].map(([size, liters]) => (
-                      <tr key={size} className="border-t border-border">
-                        <td className="px-2 py-1">{size}</td>
-                        <td className="px-2 py-1 font-mono">{liters}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
-        )}
 
-        {/* Stock prices — collapsible */}
-        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-          <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-border">
-            <button
-              type="button"
-              onClick={() => setStockPricesOpen(v => !v)}
-              className="flex items-center gap-2 min-w-0 flex-1 text-left hover:opacity-80"
-            >
-              <ChevronDown
-                size={18}
-                className={`text-[#C8900A] flex-shrink-0 transition-transform ${stockPricesOpen ? "rotate-180" : ""}`}
-              />
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-foreground">Stock prices</h3>
-                <p className="text-xs text-muted-foreground truncate">
-                  {stockPricesOpen
-                    ? `${displayedStocks.length} shown — from Supplier Master (honey) or editable materials`
-                    : `${stocks.length} stocks — click to view supplier-linked prices`}
-                </p>
-              </div>
-            </button>
-            {stockPricesOpen && honeySupplierOptions.length > 0 && (
-              <label
-                className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold shrink-0"
-                onClick={e => e.stopPropagation()}
-              >
-                Supplier
-                <select
-                  value={supplierFilter}
-                  onChange={e => setSupplierFilter(e.target.value)}
-                  className="mt-1 block text-sm border rounded-lg px-2 py-1.5 bg-card min-w-[140px]"
-                >
-                  <option value="all">All suppliers</option>
-                  {honeySupplierOptions.map(([id, name]) => (
-                    <option key={id} value={String(id)}>{name}</option>
-                  ))}
-                  <option value="other">Other (no supplier link)</option>
-                </select>
-              </label>
-            )}
-          </div>
-          {stockPricesOpen && (
-          <div className="overflow-x-auto max-h-[min(280px,40vh)] overflow-y-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-secondary/40">
-                  {["Stock", "Department", "Unit", "Current price", "Change", "Last changed", "Source", isExec ? "Actions" : ""].map(h => (
-                    <th key={h} className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-5 py-3 first:pl-6">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading && (
-                  <tr><td colSpan={isExec ? 8 : 7} className="px-6 py-8 text-center text-sm text-muted-foreground"><Loader2 className="inline animate-spin mr-2" size={14} />Loading…</td></tr>
-                )}
-                {!loading && displayedStocks.length === 0 && (
-                  <tr><td colSpan={isExec ? 8 : 7} className="px-6 py-8 text-center text-sm text-muted-foreground">No stocks match this filter.</td></tr>
-                )}
-                {displayedStocks.map((s, i) => (
-                  <tr key={s.id} className={`border-b border-border last:border-0 hover:bg-secondary/20 transition-colors ${i % 2 ? "bg-secondary/10" : ""}`}>
-                    <td className="px-6 py-3 font-medium text-foreground">
-                      {s.name}
-                      {s.is_honey_raw && s.supplier_display_name && (
-                        <span className="block text-[10px] font-normal text-muted-foreground mt-0.5">
-                          {s.supplier_display_name}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-muted-foreground">{s.dept_name}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{s.unit}</td>
-                    <td className="px-5 py-3 font-semibold text-foreground">{peso(s.current_price)}</td>
-                    <td className="px-5 py-3">
-                      <StockPriceTrendBadge stock={s} />
-                    </td>
-                    <td className="px-5 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                      {fmtDate(s.price_changed_at ?? s.last_entry_at)}
-                    </td>
-                    <td className="px-5 py-3 text-xs font-mono text-muted-foreground max-w-[140px] truncate" title={s.supplier_code ?? undefined}>
-                      {s.supplier_code ?? (s.supplier_name ?? "—")}
-                    </td>
-                    {isExec && (
-                      <td className="px-5 py-3">
-                        {s.is_honey_raw ? (
-                          <span className="text-xs text-muted-foreground">Read-only</span>
-                        ) : (
-                          <button onClick={() => setEditingStock(s)} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:border-[#C8900A] hover:text-[#C8900A] transition-colors">
-                            <Pencil size={12} /> Edit
-                          </button>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          )}
-        </div>
+          <div className="mt-3 min-h-0 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-contain pr-1 space-y-3">
+            <CostingHoneyVariantGroups
+              honeyProducts={honeyProducts}
+              isExec={isExec}
+              expandedId={expandedId}
+              onToggleProduct={toggleProduct}
+              renderDetail={renderProductDetail}
+              onRequestCreate={(variant, size) => openCreateProduct({ variant, size })}
+            />
 
-        {/* Products */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Products</h3>
-            <p className="text-xs text-muted-foreground">{productsSubtitle}</p>
-          </div>
-          <button
-            onClick={() => openCreateProduct()}
-            className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg text-white"
-            style={{ background: "#C8900A" }}
-          >
-            <Plus size={15} /> New Product
-          </button>
-        </div>
-
-        <CostingHoneyVariantGroups
-          honeyProducts={honeyProducts}
-          isExec={isExec}
-          expandedId={expandedId}
-          onToggleProduct={toggleProduct}
-          renderDetail={renderProductDetail}
-          onRequestCreate={(variant, size) => openCreateProduct({ variant, size })}
-        />
-
-        {deptProducts.length > 0 && (
-          <>
-            <h4 className="text-sm font-semibold text-foreground pt-2">Dept products (PT / BRC / Cacao)</h4>
-            {deptProducts.map(p => {
-              const isExpanded = expandedId === p.id;
-              const current = parseFloat(p.current_cost);
-              const baseline = parseFloat(p.baseline_cost);
-              const selling = parseFloat(p.selling_price);
-              const margin = selling - current;
-              const marginPct = selling > 0 ? ((margin / selling) * 100).toFixed(1) : "0.0";
-              return (
-                <div
-                  key={p.id}
-                  className={cn(
-                    "bg-card rounded-xl border overflow-hidden transition-all duration-200",
-                    isExpanded ? "border-[#C8900A]/35 shadow-md" : "border-border",
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleProduct(p.id)}
-                    className="w-full flex items-center gap-4 px-6 py-5 text-left hover:bg-secondary/30"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <span className="font-semibold text-foreground">{p.name}</span>
-                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{p.dept_name}</span>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-foreground">{peso(current)}</p>
-                      {isExec && <p className="text-xs text-muted-foreground">Sell {peso(selling)} · {marginPct}%</p>}
-                    </div>
-                  </button>
-                  <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">
-                    {renderProductDetail(p)}
-                  </CostingDetailReveal>
+            {deptProducts.length > 0 && (
+              <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0, 0, 0, 0.05)" }}>
+                <div className="px-4 py-3 border-b border-border bg-[#C8900A]/[0.04]">
+                  <h4 className="text-sm font-semibold text-foreground">Dept products (PT / BRC / Cacao)</h4>
                 </div>
-              );
-            })}
-          </>
-        )}
-
-        {otherProducts.length > 0 && (
-          <>
-            <h4 className="text-sm font-semibold text-foreground pt-2">Other products</h4>
-            {otherProducts.map(p => {
-              const isExpanded = expandedId === p.id;
-              const current = parseFloat(p.current_cost);
-              const baseline = parseFloat(p.baseline_cost);
-              const selling = parseFloat(p.selling_price);
-              const margin = selling - current;
-              const marginPct = selling > 0 ? ((margin / selling) * 100).toFixed(1) : "0.0";
-              return (
-                <div
-                  key={p.id}
-                  className={cn(
-                    "bg-card rounded-xl border overflow-hidden transition-all duration-200",
-                    isExpanded ? "border-[#C8900A]/35 shadow-md" : "border-border",
-                  )}
-                  style={{ boxShadow: isExpanded ? undefined : "0 1px 4px rgba(0,0,0,0.05)" }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleProduct(p.id)}
-                    aria-expanded={isExpanded}
-                    className={cn(
-                      "w-full flex items-center gap-4 px-6 py-5 text-left transition-colors duration-200",
-                      isExpanded
-                        ? "bg-[#C8900A]/[0.06] hover:bg-[#C8900A]/[0.08]"
-                        : "hover:bg-secondary/30",
-                    )}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-foreground">{p.name}</span>
-                        {p.size && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                            {p.size}
-                          </span>
-                        )}
-                        {p.variant && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                            {p.variant}
-                          </span>
-                        )}
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                          {p.dept_name}
-                        </span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                          {p.formula_count} lines
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6 flex-shrink-0">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-xs text-muted-foreground">Production Cost</p>
-                        <p className="font-bold text-foreground">{peso(current)}</p>
-                      </div>
-                      {isExec && (
-                        <div className="text-right hidden sm:block">
-                          <p className="text-xs text-muted-foreground">Selling Price</p>
-                          <p className="font-bold text-foreground">{peso(selling)}</p>
-                        </div>
+                <CostingRowColumnHeaders isExec={isExec} labelCol="Product" />
+                {deptProducts.map(p => {
+                  const isExpanded = expandedId === p.id;
+                  const current = parseFloat(p.current_cost);
+                  const baseline = parseFloat(p.baseline_cost);
+                  const selling = parseFloat(p.selling_price);
+                  return (
+                    <div
+                      key={p.id}
+                      className={cn(
+                        "border-t border-border transition-colors duration-200",
+                        isExpanded && "bg-[#C8900A]/[0.04]",
                       )}
-                      {isExec && (
-                        <div className="text-right hidden md:block">
-                          <p className="text-xs text-muted-foreground">Margin</p>
-                          <p className={`font-bold ${margin > 0 ? "text-green-600" : "text-red-500"}`}>
-                            {peso(margin)} <span className="text-xs font-normal">({marginPct}%)</span>
-                          </p>
-                        </div>
-                      )}
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">vs Baseline</p>
-                        <CostBadge current={current} baseline={baseline} />
-                      </div>
-                      <ChevronDown
-                        size={16}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleProduct(p.id)}
+                        aria-expanded={isExpanded}
                         className={cn(
-                          "flex-shrink-0 transition-transform duration-300 ease-out",
-                          isExpanded ? "rotate-180 text-[#C8900A]" : "text-muted-foreground",
+                          "w-full px-4 py-2.5 text-left transition-colors duration-200",
+                          isExpanded
+                            ? "bg-[#C8900A]/[0.06] hover:bg-[#C8900A]/[0.08]"
+                            : "hover:bg-secondary/30",
                         )}
-                      />
+                      >
+                        <div className={costingRowGridClass}>
+                          <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span className="font-semibold text-foreground text-sm">{p.name}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{p.dept_name}</span>
+                            {p.formula_count > 0 && (
+                              <span className="text-[10px] text-muted-foreground">{p.formula_count} lines</span>
+                            )}
+                          </div>
+                          <CostingProductMetrics
+                            current={current}
+                            selling={selling}
+                            baseline={baseline}
+                            isExec={isExec}
+                            chevron={{ expanded: isExpanded }}
+                          />
+                        </div>
+                      </button>
+                      <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">
+                        {renderProductDetail(p)}
+                      </CostingDetailReveal>
                     </div>
-                  </button>
-                  <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">
-                    {renderProductDetail(p)}
-                  </CostingDetailReveal>
+                  );
+                })}
+              </div>
+            )}
+
+            {otherProducts.length > 0 && (
+              <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0, 0, 0, 0.05)" }}>
+                <div className="px-4 py-3 border-b border-border">
+                  <h4 className="text-sm font-semibold text-foreground">Other products</h4>
                 </div>
-              );
-            })}
-          </>
-        )}
+                <CostingRowColumnHeaders isExec={isExec} labelCol="Product" />
+                {otherProducts.map(p => {
+                  const isExpanded = expandedId === p.id;
+                  const current = parseFloat(p.current_cost);
+                  const baseline = parseFloat(p.baseline_cost);
+                  const selling = parseFloat(p.selling_price);
+                  return (
+                    <div
+                      key={p.id}
+                      className={cn(
+                        "border-t border-border transition-colors duration-200",
+                        isExpanded && "bg-[#C8900A]/[0.04]",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleProduct(p.id)}
+                        aria-expanded={isExpanded}
+                        className={cn(
+                          "w-full px-4 py-2.5 text-left transition-colors duration-200",
+                          isExpanded
+                            ? "bg-[#C8900A]/[0.06] hover:bg-[#C8900A]/[0.08]"
+                            : "hover:bg-secondary/30",
+                        )}
+                      >
+                        <div className={costingRowGridClass}>
+                          <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span className="font-semibold text-foreground text-sm">{p.name}</span>
+                            {p.size && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">{p.size}</span>
+                            )}
+                            {p.variant && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">{p.variant}</span>
+                            )}
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{p.dept_name}</span>
+                            <span className="text-[10px] text-muted-foreground">{p.formula_count} lines</span>
+                          </div>
+                          <CostingProductMetrics
+                            current={current}
+                            selling={selling}
+                            baseline={baseline}
+                            isExec={isExec}
+                            chevron={{ expanded: isExpanded }}
+                          />
+                        </div>
+                      </button>
+                      <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">
+                        {renderProductDetail(p)}
+                      </CostingDetailReveal>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Modals */}
-      {editingStock && isExec && (
-        <EditStockModal stock={editingStock} onClose={() => setEditingStock(null)} onSaved={handleStockSaved} />
-      )}
+      <CostingGuideModal open={guideOpen} onClose={() => setGuideOpen(false)} />
       {creatingProduct && (
         <CreateProductModal
           stocks={stocks}
@@ -732,8 +515,8 @@ function ProductDetailView({
   return (
     <div>
       {show_pricing && (
-        <div className="px-6 py-4 border-b border-border bg-secondary/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-6">
+        <div className="px-4 py-3 border-b border-border bg-secondary/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-4">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Selling price</p>
               <p className="text-lg font-bold text-foreground">{peso(product.selling_price)}</p>
@@ -762,27 +545,34 @@ function ProductDetailView({
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs sm:text-sm min-w-[36rem]">
           <thead>
             <tr className="border-b border-border bg-secondary/40">
-              {["Stock Used", "Qty / Unit", "Baseline price", "Current price", "Line cost (current)", "vs Baseline", "Actions"].map(h => (
-                <th key={h} className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-5 py-3 first:pl-6">{h}</th>
+              {["Stock", "Qty", "Base ₱", "Curr ₱", "Line ₱", "Δ", ""].map(h => (
+                <th key={h || "act"} className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-3 py-2 first:pl-4 whitespace-nowrap">{h || "Act"}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {formula_rows.length === 0 && (
-              <tr><td colSpan={7} className="px-6 py-6 text-center text-sm text-muted-foreground">No formula lines yet. Add one to start costing.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-5 text-center text-sm text-muted-foreground">No formula lines yet. Add one to start costing.</td></tr>
             )}
             {formula_rows.map(f => (
               <tr key={f.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
-                <td className="px-6 py-3 font-medium text-foreground">{f.stock_name}</td>
-                <td className="px-5 py-3 text-muted-foreground">{f.qty_per_unit} {f.unit}</td>
-                <td className="px-5 py-3 text-muted-foreground">{peso(f.price_at_creation)}</td>
-                <td className="px-5 py-3 font-medium text-foreground">{peso(f.current_price)}</td>
-                <td className="px-5 py-3 font-semibold text-foreground">{peso(f.current_line_cost)}</td>
-                <td className="px-5 py-3"><CostBadge current={f.current_line_cost} baseline={f.baseline_line_cost} /></td>
-                <td className="px-5 py-3">
+                <td className="px-4 py-2 font-medium text-foreground max-w-[9rem] truncate" title={f.stock_name}>
+                  {f.stock_name}
+                  {f.is_custom && (
+                    <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded-full bg-secondary text-muted-foreground">custom</span>
+                  )}
+                </td>
+                <td className="px-3 py-2 text-muted-foreground whitespace-nowrap tabular-nums">
+                  {f.is_custom ? `${f.qty_per_unit} × ${peso(f.current_price)}` : `${f.qty_per_unit} ${f.unit}`}
+                </td>
+                <td className="px-3 py-2 text-muted-foreground whitespace-nowrap tabular-nums">{peso(f.price_at_creation)}</td>
+                <td className="px-3 py-2 font-medium text-foreground whitespace-nowrap tabular-nums">{peso(f.current_price)}</td>
+                <td className="px-3 py-2 font-semibold text-foreground whitespace-nowrap tabular-nums">{peso(f.current_line_cost)}</td>
+                <td className="px-3 py-2 whitespace-nowrap"><CostBadge current={f.current_line_cost} baseline={f.baseline_line_cost} /></td>
+                <td className="px-3 py-2 whitespace-nowrap">
                   <button
                     onClick={() => deleteRow(f.id)}
                     disabled={busyRow === f.id}
@@ -796,16 +586,16 @@ function ProductDetailView({
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-border bg-secondary/30">
-              <td className="px-6 py-3 font-bold text-foreground" colSpan={4}>Total production cost per unit</td>
-              <td className="px-5 py-3 font-bold text-foreground">{peso(product.current_cost)}</td>
-              <td className="px-5 py-3"><CostBadge current={product.current_cost} baseline={product.baseline_cost} /></td>
-              <td className="px-5 py-3"></td>
+              <td className="px-4 py-2 font-bold text-foreground" colSpan={4}>Total per unit</td>
+              <td className="px-3 py-2 font-bold text-foreground tabular-nums">{peso(product.current_cost)}</td>
+              <td className="px-3 py-2"><CostBadge current={product.current_cost} baseline={product.baseline_cost} /></td>
+              <td className="px-3 py-2"></td>
             </tr>
           </tfoot>
         </table>
       </div>
 
-      <div className="px-6 py-3 border-t border-border flex justify-between items-center">
+      <div className="px-4 py-2.5 border-t border-border flex flex-wrap justify-between items-center gap-2">
         <p className="text-xs text-muted-foreground">Baseline: {peso(product.baseline_cost)} · Current: {peso(product.current_cost)}</p>
         <button onClick={onAddRow} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white" style={{ background: "#C8900A" }}>
           <Plus size={12} /> Add formula line
@@ -907,61 +697,6 @@ function EditSellingPriceModal({
           />
         </Field>
         <ModalFooter onClose={onClose} saving={saving} submitLabel="Save price" />
-      </form>
-    </ModalShell>
-  );
-}
-
-function EditStockModal({ stock, onClose, onSaved }: { stock: StockRow; onClose: () => void; onSaved: () => void }) {
-  const honeyRaw = !!stock.is_honey_raw;
-  const [name, setName] = useState(stock.name);
-  const [unit, setUnit] = useState(stock.unit);
-  const [supplierName, setSupplierName] = useState(stock.supplier_name ?? "");
-  const [supplierCode, setSupplierCode] = useState(stock.supplier_code ?? "");
-  const [price, setPrice] = useState(stock.current_price);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-    try {
-      await apiPost("costing.php", "stock_update_price", {
-        stock_id: stock.id,
-        name,
-        unit,
-        supplier_name: supplierName,
-        supplier_code: supplierCode,
-        current_price: honeyRaw ? stock.current_price : price,
-      });
-      onSaved();
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not save.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <ModalShell title={`Edit stock: ${stock.name}`} onClose={onClose}>
-      <form onSubmit={submit} className="space-y-3">
-        {error && <Banner kind="err">{error}</Banner>}
-        {honeyRaw && (
-          <p className="text-xs text-muted-foreground rounded-lg border border-border bg-secondary/30 px-3 py-2">
-            Price is set from Supplier Master (₱/gallon list). Current: {peso(stock.current_price)}/L.
-          </p>
-        )}
-        <Field label="Stock name"><input value={name} onChange={e => setName(e.target.value)} required maxLength={160} className={inputCls} /></Field>
-        <Field label="Unit"><input value={unit} onChange={e => setUnit(e.target.value)} required maxLength={32} className={inputCls} /></Field>
-        {!honeyRaw && (
-          <Field label="Current price"><input value={price} onChange={e => setPrice(e.target.value)} required type="number" step="0.01" min="0" className={inputCls} /></Field>
-        )}
-        <div className="grid grid-cols-2 gap-2">
-          <Field label="Supplier name"><input value={supplierName} onChange={e => setSupplierName(e.target.value)} maxLength={160} className={inputCls} /></Field>
-          <Field label="Supplier code"><input value={supplierCode} onChange={e => setSupplierCode(e.target.value)} maxLength={64} className={inputCls} /></Field>
-        </div>
-        <ModalFooter onClose={onClose} saving={saving} submitLabel="Save & recost" />
       </form>
     </ModalShell>
   );
@@ -1093,6 +828,8 @@ function pickDefaultFormulaStock(product: ProductRow | null, stocks: StockRow[])
   return stocks[0];
 }
 
+type FormulaLineMode = "stock" | "custom";
+
 function AddFormulaModal({
   productId,
   product,
@@ -1106,6 +843,7 @@ function AddFormulaModal({
   onClose: () => void;
   onSaved: (detail: ProductDetail) => void;
 }) {
+  const [mode, setMode] = useState<FormulaLineMode>("stock");
   const targetStockName = honeyRawStockNameForVariant(product?.variant ?? null);
   const defaultStock = pickDefaultFormulaStock(product, stocks);
   const initialSuggestedQty = resolveSuggestedFormulaQty(product, defaultStock);
@@ -1133,6 +871,9 @@ function AddFormulaModal({
   const [stockId, setStockId] = useState(String(defaultStock?.id ?? ""));
   const [qty, setQty] = useState(initialSuggestedQty);
   const [qtyTouched, setQtyTouched] = useState(false);
+  const [customLabel, setCustomLabel] = useState("");
+  const [customPrice, setCustomPrice] = useState("");
+  const [customQty, setCustomQty] = useState("1");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1159,11 +900,21 @@ function AddFormulaModal({
     setSaving(true);
     setError(null);
     try {
-      const detail = await apiPost<ProductDetail>("costing.php", "formula_add", {
-        product_id: productId,
-        stock_id: Number(stockId),
-        qty_per_unit: qty,
-      });
+      const payload =
+        mode === "custom"
+          ? {
+              product_id: productId,
+              is_custom: true,
+              line_label: customLabel.trim(),
+              unit_price: customPrice,
+              qty_per_unit: customQty,
+            }
+          : {
+              product_id: productId,
+              stock_id: Number(stockId),
+              qty_per_unit: qty,
+            };
+      const detail = await apiPost<ProductDetail>("costing.php", "formula_add", payload);
       onSaved(detail);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not save formula line.");
@@ -1176,6 +927,63 @@ function AddFormulaModal({
     <ModalShell title="Add formula line" onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
         {error && <Banner kind="err">{error}</Banner>}
+        <div className="flex rounded-lg border border-border p-0.5 bg-secondary/30">
+          {(["stock", "custom"] as const).map(m => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={cn(
+                "flex-1 text-xs font-semibold px-3 py-2 rounded-md transition-colors",
+                mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {m === "stock" ? "From stock" : "Custom cost"}
+            </button>
+          ))}
+        </div>
+        {mode === "custom" ? (
+          <>
+            <p className="text-xs text-muted-foreground">
+              Add overhead that is not tied to inventory — e.g. labor, shipping, utilities. Price is fixed per sellable unit unless you edit the line later.
+            </p>
+            <Field label="What is it?">
+              <input
+                value={customLabel}
+                onChange={e => setCustomLabel(e.target.value)}
+                required
+                maxLength={160}
+                placeholder="e.g. Labor, Shipping fee"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="₱ per unit">
+              <input
+                value={customPrice}
+                onChange={e => setCustomPrice(e.target.value)}
+                required
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Quantity per sellable unit">
+              <input
+                value={customQty}
+                onChange={e => setCustomQty(e.target.value)}
+                required
+                type="number"
+                step="any"
+                min="0.00000001"
+                className={inputCls}
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">Usually 1 for flat fees (labor per jar, shipping per pouch).</p>
+            </Field>
+          </>
+        ) : (
+          <>
         {product?.dept_product_key && isDeptAutoQty && (
           <p className="text-xs text-muted-foreground">
             Dept BOM qty is set automatically from product rules ({selectedStock?.name}: <strong>{deptAutoQty}</strong> per
@@ -1203,7 +1011,7 @@ function AddFormulaModal({
           </p>
         )}
         <Field label="Stock">
-          <select value={stockId} onChange={e => handleStockChange(e.target.value)} required className={inputCls}>
+          <select value={stockId} onChange={e => handleStockChange(e.target.value)} required={mode === "stock"} className={inputCls}>
             <option value="">— Select —</option>
             {stockGroups.packaging.length > 0 && (
               <optgroup label="Packaging materials">
@@ -1250,6 +1058,8 @@ function AddFormulaModal({
             className={cn(inputCls, isDeptAutoQty && "bg-secondary/50 text-muted-foreground cursor-default")}
           />
         </Field>
+          </>
+        )}
         <ModalFooter onClose={onClose} saving={saving} submitLabel="Add line" />
       </form>
     </ModalShell>

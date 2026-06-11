@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-11T05:22:21+02:00
+generated: 2026-06-11T11:15:44+02:00
 type: spa
 ---
 
@@ -64,9 +64,12 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/inventory/CacaoBrcHubPage.tsx`
 - `app/src/app/pages/inventory/MaterialsCategoryPage.tsx`
 - `app/src/app/pages/inventory/PackagingMaterialsPage.tsx`
+- `app/src/app/pages/inventory/RawDeptMaterialPage.tsx`
 - `app/src/app/pages/inventory/RawHoneySummaryPage.tsx`
-- `app/src/app/pages/inventory/RawMaterialDetailPage.tsx`
 - `app/src/app/pages/inventory/RawMaterialsHubPage.tsx`
+- `app/src/app/pages/inventory/SuppliesMaterialsPage.tsx`
+- `app/src/app/pages/products/DeptProductFinishedPage.tsx`
+- `app/src/app/pages/products/HoneyProductInventoryPage.tsx`
 - `app/src/app/pages/rts/RTSDashboardPage.tsx`
 - `app/src/app/pages/rts/RTSRecordPage.tsx`
 - `app/src/app/pages/rts/RTSRecordsPage.tsx`
@@ -101,8 +104,10 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 ## Dedicated modal/drawer components
 
 - `app/src/app/components/AppModal.tsx`
+- `app/src/app/components/costing/CostingGuideModal.tsx`
 - `app/src/app/components/csr/onlineOrders/BatchStartModal.tsx`
 - `app/src/app/components/csr/onlineOrders/DuplicateTrackingModal.tsx`
+- `app/src/app/components/dept/DeptStockInModal.tsx`
 - `app/src/app/components/fulfillment/DeliveryDuplicateScanModal.tsx`
 - `app/src/app/components/fulfillment/DeliveryReviewEditModal.tsx`
 - `app/src/app/components/fulfillment/OnlineParcelDetailModal.tsx`
@@ -115,5 +120,10 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/inventory/PackagingOnHandRequestModal.tsx`
 - `app/src/app/components/inventory/PackagingOnHandSetModal.tsx`
 - `app/src/app/components/inventory/PackagingStockInLotModal.tsx`
+- `app/src/app/components/inventory/SupplyIssueRequestModal.tsx`
+- `app/src/app/components/inventory/SupplyMaterialDetailModal.tsx`
+- `app/src/app/components/inventory/SupplyOnHandRequestModal.tsx`
+- `app/src/app/components/inventory/SupplyOnHandSetModal.tsx`
+- `app/src/app/components/inventory/SupplyStockInLotModal.tsx`
 - `app/src/app/components/suppliers/SupplierProfileModal.tsx`
 

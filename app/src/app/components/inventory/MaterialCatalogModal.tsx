@@ -27,15 +27,26 @@ export function MaterialCatalogModal({ category, onClose, onDone }: MaterialCata
     });
   }, []);
 
+  const isSupply = category === "supply";
+
   const submit = async () => {
-    if (!name.trim() || deptId < 1) {
+    if (!name.trim()) {
+      setError("Name is required.");
+      return;
+    }
+    if (!isSupply && deptId < 1) {
       setError("Name and department are required.");
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      await createMaterial({ name: name.trim(), dept_id: deptId, category, unit: unit.trim() || "pcs" });
+      await createMaterial({
+        name: name.trim(),
+        dept_id: isSupply ? 0 : deptId,
+        category,
+        unit: unit.trim() || "pcs",
+      });
       onDone();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not create item.");
@@ -66,18 +77,20 @@ export function MaterialCatalogModal({ category, onClose, onDone }: MaterialCata
             className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
           />
         </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">Department</label>
-          <select
-            value={deptId}
-            onChange={e => setDeptId(Number(e.target.value))}
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm bg-background"
-          >
-            {departments.map(d => (
-              <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
-          </select>
-        </div>
+        {!isSupply && (
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Department</label>
+            <select
+              value={deptId}
+              onChange={e => setDeptId(Number(e.target.value))}
+              className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm bg-background"
+            >
+              {departments.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </AppModalBody>
       <AppModalFooter>
         <button type="button" onClick={onClose} className="text-sm px-4 py-2 rounded-lg border border-border">Cancel</button>

@@ -30,6 +30,11 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-06-12_pt-make-tea-bags-blocked]]
+- [[records/2026-06-12_dept-production-wip-bom]]
+- [[records/2026-06-12_dept-raw-finished-split]]
+- [[records/2026-06-12_raw-honey-stage-tabs]]
+- [[records/2026-06-12_supplies-hr-lot-inventory]]
 - [[records/2026-06-05_dept-products-pt-brc-cacao]]
 - [[records/2026-06-05_online-orders-prep-stamper-split]]
 - [[records/2026-06-05_online-orders-two-phase-remake]]

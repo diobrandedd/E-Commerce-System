@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-11T05:22:05+02:00
+generated: 2026-06-11T11:15:27+02:00
 type: memory-bank
 ---
 
@@ -138,6 +138,16 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `dept_list` | `api_honey_dept_list()` | `ims_pdo()`, `dept_inventory_catalog_snapshot()` |
 | `dept_catalog` | `api_honey_dept_catalog()` | `ims_pdo()`, `dept_inventory_catalog_snapshot()` |
 | `dept_stock_in` | `api_honey_dept_stock_in()` | `ims_pdo()`, `dept_inventory_stock_in()` |
+| `dept_raw_detail` | `api_honey_dept_raw_detail()` | `dept_raw_detail_enriched()`, `ims_pdo()` |
+| `dept_raw_stock_in` | `api_honey_dept_raw_stock_in()` | `dept_product_by_key()`, `ims_pdo()`, `dept_raw_stock_in_bags()` |
+| `dept_raw_stock_out` | `api_honey_dept_raw_stock_out()` | `dept_product_key_valid()`, `ims_pdo()`, `dept_raw_stock_out_bags()` |
+| `dept_raw_produce` | `api_honey_dept_raw_produce()` | — |
+| `dept_pt_make_tea_bags` | `api_honey_dept_pt_make_tea_bags()` | `ims_pdo()`, `dept_pt_make_tea_bags()` |
+| `dept_pt_pouch` | `api_honey_dept_pt_pouch()` | `ims_pdo()`, `dept_pt_pouch()` |
+| `dept_brc_produce` | `api_honey_dept_brc_produce()` | `ims_pdo()`, `dept_brc_produce_pouches()` |
+| `dept_jar_produce` | `api_honey_dept_jar_produce()` | `ims_pdo()`, `dept_jar_produce()` |
+| `dept_wip_waste` | `api_honey_dept_wip_waste()` | `ims_pdo()`, `dept_wip_waste_tea_bags()` |
+| `dept_production_preview` | `api_honey_dept_production_preview()` | `dept_product_key_valid()`, `dept_production_preview_lines()`, `ims_pdo()` |
 | `dept_add_row` | `api_honey_dept_add_row()` | — |
 | `supplier_honey_prices` | `api_honey_supplier_honey_prices()` | `ims_pdo()`, `honey_pricing_list_supplier_prices()`, `supplier_display_name()`, `honey_pricing_pending_count()` |
 | `supplier_honey_prices_save` | `api_honey_supplier_honey_prices_save()` | `ims_pdo()`, `honey_pricing_save_supplier_prices()`, `honey_pricing_reprice_pending_for_supplier()`, `honey_pricing_pending_count()` |
@@ -156,12 +166,12 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
 | `catalog_list` | `api_materials_catalog_list()` | `ims_pdo()`, `material_inventory_list()` |
-| `catalog_create` | `api_materials_catalog_create()` | `ims_pdo()`, `material_inventory_create()` |
+| `catalog_create` | `api_materials_catalog_create()` | `material_inventory_role_can_create_supply_catalog()`, `ims_pdo()`, `material_inventory_create()` |
 | `catalog_update` | `api_materials_catalog_update()` | `ims_pdo()`, `material_inventory_update()` |
 | `on_hand_list` | `api_materials_on_hand_list()` | — |
 | `adjust` | `api_materials_adjust()` | `ims_pdo()`, `material_inventory_adjust()` |
-| `request_submit` | `api_materials_request_submit()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_adjustment_submit()` |
-| `request_list` | `api_materials_request_list()` | `ims_pdo()`, `material_adjustment_list()`, `material_inventory_role_can_request_packaging()` |
+| `request_submit` | `api_materials_request_submit()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_role_can_request_supply()`, `material_adjustment_submit()` |
+| `request_list` | `api_materials_request_list()` | `ims_pdo()`, `material_adjustment_list()`, `material_inventory_role_can_request_packaging()`, `material_inventory_role_can_request_supply()` |
 | `request_approve` | `api_materials_request_approve()` | `ims_pdo()`, `material_adjustment_approve()` |
 | `request_reject` | `api_materials_request_reject()` | `ims_pdo()`, `material_adjustment_reject()` |
 | `request_pending_count` | `api_materials_request_pending_count()` | `material_adjustment_pending_count()`, `ims_pdo()` |
@@ -169,9 +179,10 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `raw_snapshot` | `api_materials_raw_snapshot()` | `material_raw_snapshot()`, `ims_pdo()` |
 | `raw_detail` | `api_materials_raw_detail()` | `material_inventory_raw_stock_by_slug()`, `ims_pdo()` |
 | `departments` | `api_materials_departments()` | `ims_pdo()` |
-| `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_packaging_stock_in_lot()` |
+| `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_stock_in_lot()`, `material_supply_stock_in_lot()` |
 | `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_recent_entries()` |
-| `set_on_hand` | `api_materials_set_on_hand()` | `ims_pdo()`, `material_packaging_set_on_hand()` |
+| `supply_detail` | `api_materials_supply_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_supply_recent_entries()` |
+| `set_on_hand` | `api_materials_set_on_hand()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_set_on_hand()`, `material_supply_set_on_hand()` |
 
 ### `online_orders.php`
 

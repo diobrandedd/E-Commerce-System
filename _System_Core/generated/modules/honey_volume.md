@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-06-11T05:22:12+02:00
+generated: 2026-06-11T11:15:35+02:00
 type: module
 function_count: 8
 ---
@@ -23,7 +23,7 @@ function_count: 8
 
 **Callers (5):**
 
-- `api/v1/_costing_helpers.php`:79 — `$norm = honey_normalize_bottle_size((string) $size);`
+- `api/v1/_costing_helpers.php`:108 — `$norm = honey_normalize_bottle_size((string) $size);`
 - `includes/honey_volume.php`:33 — `return match (honey_normalize_bottle_size($size)) {`
 - `includes/honey_volume.php`:53 — `$size = honey_normalize_bottle_size((string) ($line['size'] ?? ''));`
 - `includes/honey_volume.php`:115 — `'size' => honey_normalize_bottle_size((string) ($line['size'] ?? '')),`
@@ -33,7 +33,7 @@ function_count: 8
 
 **Callers (2):**
 
-- `api/v1/_costing_helpers.php`:81 — `return honey_bottle_size_ml($norm) / 1000.0;`
+- `api/v1/_costing_helpers.php`:110 — `return honey_bottle_size_ml($norm) / 1000.0;`
 - `includes/honey_volume.php`:76 — `$total += $qty * honey_bottle_size_ml((string) ($line['size'] ?? ''));`
 
 ## honey_aggregate_bottle_lines {#honey_aggregate_bottle_lines}
@@ -64,5 +64,5 @@ function_count: 8
 
 **Callers (1):**
 
-- `api/v1/honey.php`:156 — `$lines = honey_parse_bottle_lines_from_input($input);`
+- `api/v1/honey.php`:167 — `$lines = honey_parse_bottle_lines_from_input($input);`
 

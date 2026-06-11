@@ -16,19 +16,21 @@ const PT_GRAMS_PER_TEA_BAG = 2;
 const PT_TEA_BAGS_PER_POUCH = 24;
 
 const PT_LEAF_STOCK_NAME = 'Paragis leaf — raw';
+const PT_TEA_BAG_SACHET_STOCK_NAME = 'PT tea bag sachet';
 const PT_PACKAGING_STOCK_NAME = 'PT pouch packaging';
 
-/** Supplier raw unit: 20 kg per bag. */
-const BRC_GRAMS_PER_BAG = 20000;
+/** Supplier raw unit: 1 kg per bag. */
+const BRC_GRAMS_PER_BAG = 1000;
 /** Sellable pouch contains ~100 g product. */
 const BRC_GRAMS_PER_POUCH = 100;
 
 const BRC_RAW_STOCK_NAME = 'Black Rice Coffee — raw';
 const BRC_PACKAGING_STOCK_NAME = 'BRC pouch packaging';
 
-/** Supplier raw unit: 1 kg per bag; one bag yields one sellable jar. */
+/** Supplier raw unit: 1 kg per bag; sellable jar = 220 g cacao (24 tablets inside). */
 const JAR_CACAO_GRAMS_PER_BAG = 1000;
-const JAR_CACAO_GRAMS_PER_JAR = 1000;
+const JAR_CACAO_GRAMS_PER_JAR = 220;
+const JAR_CACAO_TABLETS_PER_JAR = 24;
 
 const JAR_CACAO_RAW_STOCK_NAME = 'Jar Cacao — raw';
 const JAR_CACAO_PACKAGING_STOCK_NAME = 'Jar Cacao jar packaging';
@@ -123,6 +125,7 @@ function dept_product_catalog(): array
             'stock_name' => null,
             'leaf_stock_name' => PT_LEAF_STOCK_NAME,
             'packaging_stock_name' => PT_PACKAGING_STOCK_NAME,
+            'tea_bag_sachet_stock_name' => PT_TEA_BAG_SACHET_STOCK_NAME,
             'patterns' => ['paragis_tea', 'paragis tea', 'paragis tea pouch', 'pouch_pt', 'paragis', '\bpt\b'],
         ],
         [

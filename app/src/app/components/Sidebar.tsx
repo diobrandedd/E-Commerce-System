@@ -35,21 +35,21 @@ interface NavItem {
   children?: NavChild[];
 }
 
-const HONEY_PRODUCT_CHILDREN: NavLinkChild[] = [
-  { label: "Warehouse", to: "/inventory/products/honey/warehouse" },
-  { label: "Production", to: "/inventory/products/honey/production" },
-  { label: "Packaging", to: "/inventory/products/honey/packaging" },
+const HONEY_STAGE_CHILDREN: NavLinkChild[] = [
+  { label: "Warehouse", to: "/inventory/raw-materials/honey/warehouse" },
+  { label: "Production", to: "/inventory/raw-materials/honey/production" },
+  { label: "Packaging", to: "/inventory/raw-materials/honey/packaging" },
 ];
 
-const RAW_MATERIALS_CHILDREN: NavLinkChild[] = [
-  { label: "Raw Honey", to: "/inventory/raw-materials/honey" },
+const RAW_MATERIALS_CHILDREN: NavChild[] = [
+  { label: "Raw Honey", children: HONEY_STAGE_CHILDREN },
   { label: "Dried Paragis", to: "/inventory/raw-materials/paragis" },
   { label: "Black Rice", to: "/inventory/raw-materials/black-rice" },
   { label: "Cacao Beans", to: "/inventory/raw-materials/cacao" },
 ];
 
 const PRODUCTS_CHILDREN: NavChild[] = [
-  { label: "Honey", children: HONEY_PRODUCT_CHILDREN },
+  { label: "Honey", to: "/inventory/products/honey" },
   { label: "Paragis Tea", to: "/inventory/products/paragis-tea" },
   { label: "Black Rice Coffee", to: "/inventory/products/black-rice-coffee" },
   { label: "Cacao Tablets", to: "/inventory/products/cacao-tablets" },
@@ -197,7 +197,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
 const ROLE_LABELS: Record<Role, string> = {
   executive: "Executive",
   prod_manager: "Production Manager",
-  hr: "HR (read-only)",
+  hr: "HR",
   team_leader: "Team Leader",
   staff: "Staff",
   csr_staff: "CSR Staff",
@@ -225,6 +225,93 @@ function groupKey(parent: string, label: string) {
   return `${parent}>${label}`;
 }
 
+const RAW_HONEY_WAREHOUSE = "/inventory/raw-materials/honey/warehouse";
+
+function SidebarNestedChildren({
+  children,
+  parentKey,
+  expandedGroups,
+  toggleGroup,
+  ensureExpanded,
+  navigate,
+  onClose,
+}: {
+  children: NavChild[];
+  parentKey: string;
+  expandedGroups: Set<string>;
+  toggleGroup: (key: string) => void;
+  ensureExpanded: (key: string) => void;
+  navigate: (to: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      {children.map(child => {
+        if (isNavGroup(child)) {
+          const key = groupKey(parentKey, child.label);
+          const subExpanded = expandedGroups.has(key);
+          const isRawHoney = child.label === "Raw Honey";
+          return (
+            <div key={key}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (isRawHoney) {
+                    navigate(RAW_HONEY_WAREHOUSE);
+                    ensureExpanded(key);
+                    onClose();
+                    return;
+                  }
+                  toggleGroup(key);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
+                  isRawHoney
+                    ? "text-white/80 hover:text-white hover:bg-white/8 font-medium"
+                    : "text-white/50 hover:text-white hover:bg-white/8"
+                }`}
+              >
+                <span className="flex-1 text-left">{child.label}</span>
+                <ChevronDown
+                  size={12}
+                  className={`transition-transform duration-200 ${subExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+              {subExpanded && (
+                <div className="ml-4 mt-0.5 space-y-0.5">
+                  <SidebarNestedChildren
+                    children={child.children}
+                    parentKey={key}
+                    expandedGroups={expandedGroups}
+                    toggleGroup={toggleGroup}
+                    ensureExpanded={ensureExpanded}
+                    navigate={navigate}
+                    onClose={onClose}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        }
+        return (
+          <NavLink
+            key={child.to}
+            to={child.to}
+            end={child.end}
+            onClick={onClose}
+            className={({ isActive }) =>
+              `block px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
+                isActive ? "bg-[#C8900A] text-white font-semibold" : "text-white/50 hover:text-white hover:bg-white/8"
+              }`
+            }
+          >
+            {child.label}
+          </NavLink>
+        );
+      })}
+    </>
+  );
+}
+
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -239,6 +326,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       if (location.pathname.includes("/inventory/products/honey")) {
         next.add("Inventory>Products>Honey");
       }
+    }
+    if (location.pathname.includes("/inventory/raw-materials/honey")) {
+      next.add("Inventory>Raw Materials>Raw Honey");
     }
     return next;
   });
@@ -258,6 +348,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           if (location.pathname.includes("/inventory/products/honey")) {
             next.add("Inventory>Products>Honey");
           }
+        }
+        if (location.pathname.includes("/inventory/raw-materials/honey")) {
+          next.add("Inventory>Raw Materials>Raw Honey");
         }
         return next;
       });
@@ -290,6 +383,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
+      return next;
+    });
+  };
+
+  const ensureExpanded = (key: string) => {
+    setExpandedGroups(prev => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
       return next;
     });
   };
@@ -352,63 +454,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   </button>
                   {isExpanded && (
                     <div className="ml-8 mt-0.5 space-y-0.5">
-                      {children.map(child => {
-                        if (isNavGroup(child)) {
-                          const key = groupKey(label, child.label);
-                          const subExpanded = expandedGroups.has(key);
-                          return (
-                            <div key={key}>
-                              <button
-                                type="button"
-                                onClick={() => toggleGroup(key)}
-                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-white/50 hover:text-white hover:bg-white/8 transition-all duration-150"
-                              >
-                                <span className="flex-1 text-left">{child.label}</span>
-                                <ChevronDown
-                                  size={12}
-                                  className={`transition-transform duration-200 ${subExpanded ? "rotate-180" : ""}`}
-                                />
-                              </button>
-                              {subExpanded && (
-                                <div className="ml-4 mt-0.5 space-y-0.5">
-                                  {child.children.map(link => (
-                                    <NavLink
-                                      key={link.to}
-                                      to={link.to}
-                                      end={link.end}
-                                      onClick={onClose}
-                                      className={({ isActive }) =>
-                                        `block px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
-                                          isActive
-                                            ? "bg-[#C8900A] text-white font-semibold"
-                                            : "text-white/50 hover:text-white hover:bg-white/8"
-                                        }`
-                                      }
-                                    >
-                                      {link.label}
-                                    </NavLink>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }
-                        return (
-                          <NavLink
-                            key={child.to}
-                            to={child.to}
-                            end={child.end}
-                            onClick={onClose}
-                            className={({ isActive }) =>
-                              `block px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
-                                isActive ? "bg-[#C8900A] text-white font-semibold" : "text-white/50 hover:text-white hover:bg-white/8"
-                              }`
-                            }
-                          >
-                            {child.label}
-                          </NavLink>
-                        );
-                      })}
+                      <SidebarNestedChildren
+                        children={children}
+                        parentKey={label}
+                        expandedGroups={expandedGroups}
+                        toggleGroup={toggleGroup}
+                        ensureExpanded={ensureExpanded}
+                        navigate={navigate}
+                        onClose={onClose}
+                      />
                     </div>
                   )}
                 </div>

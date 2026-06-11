@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
+import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
 import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
@@ -57,8 +58,9 @@ export function HoneyWarehousePage() {
   const pagedRows = rows.slice(start, start + perPage);
 
   return (
-    <PageLayout title="Honey — Warehouse" subtitle="Stock-in and stock-out to production">
+    <PageLayout title="Raw Honey" subtitle="Warehouse — stock-in and stock-out to production">
       <div className="space-y-4">
+        <HoneyStageTabs />
         {error && <p className="text-sm text-red-600">{error}</p>}
         {canMutate && (
           <button onClick={() => setShowIn(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-white px-3 py-2 rounded-lg" style={{ background: "#C8900A" }}>

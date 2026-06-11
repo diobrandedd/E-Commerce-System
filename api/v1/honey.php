@@ -6,6 +6,7 @@ require_once __DIR__ . '/_bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/honey_inventory.php';
 require_once dirname(__DIR__, 2) . '/includes/honey_pricing.php';
 require_once dirname(__DIR__, 2) . '/includes/dept_inventory.php';
+require_once dirname(__DIR__, 2) . '/includes/dept_production.php';
 require_once dirname(__DIR__, 2) . '/includes/dept_pricing.php';
 
 api_dispatch([
@@ -32,6 +33,16 @@ api_dispatch([
     'dept_list' => 'api_honey_dept_list',
     'dept_catalog' => 'api_honey_dept_catalog',
     'dept_stock_in' => 'api_honey_dept_stock_in',
+    'dept_raw_detail' => 'api_honey_dept_raw_detail',
+    'dept_raw_stock_in' => 'api_honey_dept_raw_stock_in',
+    'dept_raw_stock_out' => 'api_honey_dept_raw_stock_out',
+    'dept_raw_produce' => 'api_honey_dept_raw_produce',
+    'dept_pt_make_tea_bags' => 'api_honey_dept_pt_make_tea_bags',
+    'dept_pt_pouch' => 'api_honey_dept_pt_pouch',
+    'dept_brc_produce' => 'api_honey_dept_brc_produce',
+    'dept_jar_produce' => 'api_honey_dept_jar_produce',
+    'dept_wip_waste' => 'api_honey_dept_wip_waste',
+    'dept_production_preview' => 'api_honey_dept_production_preview',
     'dept_add_row' => 'api_honey_dept_add_row',
     'supplier_honey_prices' => 'api_honey_supplier_honey_prices',
     'supplier_honey_prices_save' => 'api_honey_supplier_honey_prices_save',
@@ -539,6 +550,225 @@ function api_honey_dept_stock_in(): void
         api_fail($e->getMessage(), 400);
     }
     api_ok($result);
+}
+
+function api_honey_dept_raw_detail(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    $slug = trim((string) ($_GET['slug'] ?? ''));
+    $snapshot = dept_raw_detail_enriched(ims_pdo(), $slug);
+    if ($snapshot === null) {
+        api_fail('Unknown raw material.', 404);
+    }
+    api_ok($snapshot);
+}
+
+function api_honey_dept_raw_stock_in(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $productKey = trim((string) ($input['product_key'] ?? ''));
+    $def = dept_product_by_key($productKey);
+    if ($def === null || !($def['uses_supplier_pricing'] ?? false)) {
+        api_fail('Invalid product for raw stock-in.', 422);
+    }
+    $qty = (float) ($input['qty'] ?? 0);
+    $supplierId = isset($input['supplier_id']) ? (int) $input['supplier_id'] : null;
+    $arrivalDate = trim((string) ($input['arrival_date'] ?? date('Y-m-d')));
+    $note = trim((string) ($input['note'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_raw_stock_in_bags(
+            $pdo,
+            (int) $user['id'],
+            $productKey,
+            $def,
+            $qty,
+            $arrivalDate,
+            $note !== '' ? $note : null,
+            $supplierId
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_raw_stock_out(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $productKey = trim((string) ($input['product_key'] ?? ''));
+    if (!dept_product_key_valid($productKey)) {
+        api_fail('Invalid product.', 422);
+    }
+    $qty = (float) ($input['qty'] ?? 0);
+    $reason = trim((string) ($input['reason'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_raw_stock_out_bags(
+            $pdo,
+            (int) $user['id'],
+            $productKey,
+            $qty,
+            $reason !== '' ? $reason : null
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_raw_produce(): void
+{
+    api_method_allowed(['POST']);
+    api_fail('Use dept_pt_make_tea_bags / dept_pt_pouch or dept_brc_produce / dept_jar_produce.', 410);
+}
+
+function api_honey_dept_pt_make_tea_bags(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $qty = (float) ($input['qty'] ?? 0);
+    $note = trim((string) ($input['note'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_pt_make_tea_bags($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_pt_pouch(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $qty = (float) ($input['qty'] ?? 0);
+    $note = trim((string) ($input['note'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_pt_pouch($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_brc_produce(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $qty = (float) ($input['qty'] ?? 0);
+    $note = trim((string) ($input['note'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_brc_produce_pouches($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_jar_produce(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $qty = (float) ($input['qty'] ?? 0);
+    $note = trim((string) ($input['note'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_jar_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_wip_waste(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $qty = (float) ($input['qty'] ?? 0);
+    $reason = trim((string) ($input['reason'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_wip_waste_tea_bags($pdo, (int) $user['id'], $qty, $reason !== '' ? $reason : null);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_production_preview(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    $productKey = trim((string) ($_GET['product_key'] ?? ''));
+    $action = trim((string) ($_GET['action'] ?? ''));
+    $qty = (float) ($_GET['qty'] ?? 0);
+    if (!dept_product_key_valid($productKey)) {
+        api_fail('Invalid product.', 422);
+    }
+    if ($action === '' || $qty <= 0) {
+        api_fail('action and qty required.', 422);
+    }
+    try {
+        $preview = dept_production_preview_lines(ims_pdo(), $productKey, $action, $qty);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($preview);
 }
 
 function api_honey_dept_add_row(): void

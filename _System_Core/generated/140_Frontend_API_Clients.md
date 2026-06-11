@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-06-11T05:22:21+02:00
+generated: 2026-06-11T11:15:44+02:00
 type: memory-bank
 ---
 
@@ -14,6 +14,9 @@ Backend index: [[100_API_Index]]
 | Client file | API path / action |
 |-------------|-------------------|
 | `app/src/app/lib/materials.ts` | `(action: add)` |
+| `app/src/app/lib/materials.ts` | `(action: issue)` |
+| `app/src/app/pages/inventory/RawDeptMaterialPage.tsx` | `(action: make_tea_bags)` |
+| `app/src/app/pages/inventory/RawDeptMaterialPage.tsx` | `(action: pouch)` |
 | `app/src/app/lib/materials.ts` | `(action: set_on_hand)` |
 | `app/src/app/lib/api.ts` | `/${path.replace(/^\/+/, "")}` |
 | `app/src/app/lib/onlineOrdersApi.ts` | `/online_orders.php?action=batch_download&token=${encodeURIComponent(token)}` |
@@ -21,11 +24,12 @@ Backend index: [[100_API_Index]]
 | `app/src/app/pages/exec/CostingPage.tsx` | `costing.php` |
 | `app/src/app/lib/deliveriesApi.ts` | `deliveries.php` |
 | `app/src/app/lib/editRequestsApi.ts` | `edit_requests.php` |
+| `app/src/app/components/dept/DeptStockInModal.tsx` | `honey.php` |
 | `app/src/app/components/honey/CorrectionReviewModal.tsx` | `honey.php` |
 | `app/src/app/components/honey/ExecutiveRowEditModal.tsx` | `honey.php` |
 | `app/src/app/components/notifications/CorrectionNotificationsContext.tsx` | `honey.php` |
+| `app/src/app/lib/deptRawInventory.ts` | `honey.php` |
 | `app/src/app/pages/InventoryRequestsPage.tsx` | `honey.php` |
-| `app/src/app/pages/dept/DeptInventoryPage.tsx` | `honey.php` |
 | `app/src/app/pages/honey/HoneyPackagingPage.tsx` | `honey.php` |
 | `app/src/app/pages/honey/HoneyWarehousePage.tsx` | `honey.php` |
 | `app/src/app/lib/materials.ts` | `materials.php` |

@@ -12,6 +12,8 @@ import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_SIZES, HONEY_VARIANTS } from "@/app/lib/honey";
 import { PackagingOnHandRequestModal } from "@/app/components/inventory/PackagingOnHandRequestModal";
+import { SupplyIssueRequestModal } from "@/app/components/inventory/SupplyIssueRequestModal";
+import { SupplyOnHandRequestModal } from "@/app/components/inventory/SupplyOnHandRequestModal";
 import {
   approveMaterialRequest,
   listMaterialRequests,
@@ -114,6 +116,8 @@ export function InventoryRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [showPackagingRequest, setShowPackagingRequest] = useState(false);
+  const [showSupplyIssueRequest, setShowSupplyIssueRequest] = useState(false);
+  const [showSupplyCountRequest, setShowSupplyCountRequest] = useState(false);
   const [reviewId, setReviewId] = useState<number | null>(null);
   const [correctionPage, setCorrectionPage] = useState(1);
   const [discountPage, setDiscountPage] = useState(1);
@@ -286,7 +290,7 @@ export function InventoryRequestsPage() {
   };
 
   const colSpan = isExec && !readonly ? 6 : 5;
-  const materialColSpan = isExec && !readonly ? 6 : 5;
+  const materialColSpan = isExec && !readonly ? 7 : 6;
 
   const showEditRequests = isExec || isPm;
 
@@ -296,7 +300,7 @@ export function InventoryRequestsPage() {
     : isPm
       ? "Inventory corrections and your delivery edit/delete requests"
       : isHr
-        ? "Submit packaging count corrections and track approval status"
+        ? "Submit packaging count corrections, supply issues for staff, and track approval status"
         : "Inventory correction requests you have submitted";
 
   return (
@@ -397,22 +401,38 @@ export function InventoryRequestsPage() {
         <section id="material-adjustments-section">
           <div className="px-1 pb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Packaging & supplies adjustments</h3>
+              <h3 className="text-sm font-semibold text-foreground">Packaging & supply requests</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {isHr
-                  ? "Request packaging on-hand count corrections — executive approves"
-                  : "Production manager supply add/deduct requests; HR packaging count fixes"}
+                  ? "Packaging count fixes and supply issues (with requester name) — executive approves"
+                  : "HR supply issues and packaging count fixes awaiting executive approval"}
               </p>
             </div>
             {isHr && (
-              <button
-                type="button"
-                onClick={() => setShowPackagingRequest(true)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-1.5 rounded-lg shrink-0"
-                style={{ background: "#C8900A" }}
-              >
-                <Plus size={13} /> Packaging count request
-              </button>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowSupplyIssueRequest(true)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-1.5 rounded-lg"
+                  style={{ background: "#C8900A" }}
+                >
+                  <Plus size={13} /> Supply issue request
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPackagingRequest(true)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary/50"
+                >
+                  <Plus size={13} /> Packaging count
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSupplyCountRequest(true)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary/50"
+                >
+                  <Plus size={13} /> Supply count
+                </button>
+              </div>
             )}
           </div>
           {materialError && (
@@ -422,7 +442,7 @@ export function InventoryRequestsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
-                  {["Date", "Item", "Change", "Reason", "Status", isExec && !readonly ? "Review" : ""].filter(Boolean).map(h => (
+                  {["Date", "Item", "Change", "Requester", "Reason", "Status", isExec && !readonly ? "Review" : ""].filter(Boolean).map(h => (
                     <th key={h} className="text-left px-4 py-3">{h}</th>
                   ))}
                 </tr>
@@ -443,10 +463,25 @@ export function InventoryRequestsPage() {
                   </tr>
                 )}
                 {!loading && pagedMaterialRequests.map(r => (
-                  <tr key={r.id} className="border-b">
+                  <tr
+                    key={r.id}
+                    className={`border-b ${
+                      r.status === "pending" && r.action === "issue"
+                        ? "border-l-4 border-l-amber-400"
+                        : ""
+                    }`}
+                  >
                     <td className="px-4 py-3 text-xs">{r.created_at}</td>
-                    <td className="px-4 py-3">{r.stock_name}</td>
+                    <td className="px-4 py-3">
+                      {r.stock_name}
+                      {r.category === "supply" && r.action === "issue" && (
+                        <span className="ml-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">Supply issue</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">{r.summary ?? `${r.action} ${r.amount} ${r.unit}`}</td>
+                    <td className="px-4 py-3 text-xs">
+                      {r.action === "issue" ? (r.requester_name ?? "—") : "—"}
+                    </td>
                     <td className="px-4 py-3 max-w-xs truncate">{r.reason}</td>
                     <td className="px-4 py-3 capitalize">{r.status}</td>
                     {isExec && !readonly && (
@@ -568,6 +603,18 @@ export function InventoryRequestsPage() {
         <PackagingOnHandRequestModal
           onClose={() => setShowPackagingRequest(false)}
           onDone={() => { setShowPackagingRequest(false); void refresh(); }}
+        />
+      )}
+      {showSupplyIssueRequest && (
+        <SupplyIssueRequestModal
+          onClose={() => setShowSupplyIssueRequest(false)}
+          onDone={() => { setShowSupplyIssueRequest(false); void refresh(); }}
+        />
+      )}
+      {showSupplyCountRequest && (
+        <SupplyOnHandRequestModal
+          onClose={() => setShowSupplyCountRequest(false)}
+          onDone={() => { setShowSupplyCountRequest(false); void refresh(); }}
         />
       )}
       {reviewRequest && (

@@ -322,12 +322,12 @@ Uploading **full phone resolution** on a final **Confirm** button causes multi-s
 | **Prod manager** | Under **Inventory** children |
 | **HR** | **Top-level** sibling after Inventory (`ClipboardList` icon) — not nested in Inventory dropdown |
 
-HR page shows **Packaging & supplies adjustments** only (honey corrections section hidden). **Packaging count request** button opens `PackagingOnHandRequestModal`.
+HR page shows **Packaging & supply requests** only (honey corrections section hidden). Buttons: **Supply issue request** (`SupplyIssueRequestModal`), **Packaging count** (`PackagingOnHandRequestModal`), **Supply count** (`SupplyOnHandRequestModal`). Table includes **Requester** column for `action=issue`.
 
 | Section | API | Who acts |
 |---------|-----|----------|
 | **Inventory corrections** | `honey.php` `correction_list` | Exec reviews in `CorrectionReviewModal`; PM submits — **hidden for HR** |
-| **Packaging & supplies adjustments** | `materials.php` `request_list` | Exec approves; PM supply add/deduct; HR packaging `set_on_hand` |
+| **Packaging & supply requests** | `materials.php` `request_list` | Exec approves; HR supply `issue` + `set_on_hand`; HR packaging `set_on_hand` |
 | **Edit requests** | `edit_requests.php` `list` / `approve` / `reject` | Exec approves inline; PM/TL/staff submit (`delivery_batch_items`, `stock_entries`, …) |
 | **POS discount approvals** | `pos_discounts.php` `list` | Exec only |
 
@@ -402,6 +402,32 @@ Prefer **`FulfillmentPressable`** / **`FulfillmentTableRow`** / **`FulfillmentPi
 - Executive inline edit: `ExecutiveRowEditModal` on warehouse/production/packaging pages.
 - Traceability: `BatchTraceabilityDrawer` (drawer, not modal).
 
+## Product Costing page
+
+**Canonical reference:** [[fixes/costing-page-layout-and-guide]] · live in `CostingPage.tsx`, `CostingGuideModal.tsx`, `CostingProductMetrics.tsx`.
+
+### Layout
+
+1. **Header actions** — `Guide` (opens modal) + `Refresh`; no inline honey setup or stock price table.
+2. **Products panel** — `max-h-[calc(100dvh-9rem)] overflow-y-auto` for honey variants + dept card + other products.
+3. **Aligned columns** — `CostingRowColumnHeaders` + `costingHoneyRowGridClass` / `costingRowGridClass`; metrics use fixed rem widths, not `flex-1` stretch.
+4. **Page shell** — `PageLayout` main: `min-w-0 overflow-x-hidden`.
+
+### Add formula line modal
+
+| Tab | Use |
+|-----|-----|
+| **From stock** | Raw / packaging from dept stocks; dept BOM auto-qty |
+| **Custom cost** | Labor, shipping, utilities — `line_label` + ₱/unit + qty (no stock FK) |
+
+### Guide modal
+
+`CostingGuideModal` — scrollable sections; import math from `deptProducts.ts` / `honeyPricing.ts` (do not hardcode yields in prose).
+
+### Motion
+
+Use `costingMotion.tsx` (`CostingCollapsible`, `CostingDetailReveal`) for variant sections and expanded formula panels.
+
 ## Packaging and materials inventory pages
 
 **Canonical reference:** [[fixes/packaging-inventory-scroll-and-detail-ux]] · live in `PackagingMaterialsPage.tsx` + `PackagingMaterialDetailModal.tsx`.
@@ -414,7 +440,7 @@ Prefer **`FulfillmentPressable`** / **`FulfillmentTableRow`** / **`FulfillmentPi
 4. **Scrollable body only** — `flex-1 min-h-0 overflow-y-auto overscroll-contain` around rows.
 5. **Clickable rows** — full-width `<button>`, `hover:bg-secondary/40`, chevron; opens detail modal (not inline actions in the table).
 
-Apply the same scroll split when refactoring **Supplies** (`MaterialsCategoryPage`) or other long material catalogs.
+**Supplies** use the same recipe in `SuppliesMaterialsPage.tsx` — see [[005_SPA_UX_Patterns#Supplies inventory pages]].
 
 ### Detail modal recipe
 
@@ -431,7 +457,72 @@ Apply the same scroll split when refactoring **Supplies** (`MaterialsCategoryPag
 | `PackagingOnHandSetModal` | Executive absolute count |
 | `PackagingOnHandRequestModal` | HR target count + reason |
 | `PackagingMaterialDetailModal` | Row detail shell + recent entries |
-| `MaterialAdjustModal` | Supplies add/deduct (exec) or request (PM) |
+| `MaterialAdjustModal` | Legacy add/deduct (not used for supplies v2) |
+
+## Supplies inventory pages
+
+**Canonical reference:** [[fixes/supplies-hr-lot-inventory]] · live in `SuppliesMaterialsPage.tsx` + `SupplyMaterialDetailModal.tsx`.
+
+Same list/detail scroll recipe as packaging. Role actions in detail modal:
+
+- **Stock in lot** (exec/HR)
+- **Set on-hand** (exec)
+- **Issue request** (HR — requester name, qty, reason)
+- **Request count fix** (HR)
+
+| Modal | Use |
+|-------|-----|
+| `SupplyStockInLotModal` | Total ₱ + qty received → unit cost preview |
+| `SupplyOnHandSetModal` | Executive absolute count |
+| `SupplyOnHandRequestModal` | HR target count + reason |
+| `SupplyIssueRequestModal` | HR issue for named staff |
+| `SupplyMaterialDetailModal` | Row detail shell + recent entries |
+
+## Raw Honey (three stages)
+
+**Canonical reference:** [[fixes/raw-honey-stage-tabs]] · `HoneyStageTabs.tsx` + `HoneyWarehousePage` / `HoneyProductionPage` / `HoneyPackagingPage`.
+
+### Routes
+
+| Stage | Path |
+|-------|------|
+| Warehouse | `/inventory/raw-materials/honey/warehouse` |
+| Production | `/inventory/raw-materials/honey/production` |
+| Packaging | `/inventory/raw-materials/honey/packaging` |
+
+`/inventory/raw-materials/honey` redirects to **warehouse**. Legacy `/inventory/products/honey/*` redirects here too.
+
+### UX
+
+- Page title: **Raw Honey** on all three stages; subtitle names the stage.
+- **`HoneyStageTabs`** — pill nav below header, above tables/actions (not in sidebar only).
+- Sidebar: **Raw Materials → Raw Honey** expands to Warehouse / Production / Packaging.
+- **Products → Honey** (`/inventory/products/honey`) — finished bottled inventory dashboard (`HoneyBottledInventoryPanel`); batch row ops stay on Raw Materials → Packaging.
+
+### Roles
+
+- **prod_manager** — stock-in/out mutations on warehouse & production; packaging sell.
+- **executive** — direct row edit modals + view.
+- **hr** — view honey stages (no mutate); use Requests for corrections.
+
+Do **not** use `RawHoneySummaryPage` (`fetchRawSnapshot` read-only table) as the primary Raw Honey entry.
+
+## Dept raw production (Paragis / BRC / Jar)
+
+**Page:** `RawDeptMaterialPage.tsx` at `/inventory/raw-materials/{paragis|black-rice|cacao}`.
+
+### Paragis (pt)
+
+- Stat cards: **raw bags** | **tea bags (WIP)** | **finished pouches**.
+- Actions: Stock in · **Make tea bags** · **Pouch** · WIP waste · Bag waste.
+- Modals call `dept_production_preview` for stock-linked formula deduct lines (custom costing lines excluded).
+
+### BRC / Jar Cacao
+
+- Stat cards: raw bags | finished sell units.
+- **Produce** modal — single step; preview from formula.
+
+**Products** pages (`DeptProductFinishedPage`) — finished counts only; link back to raw for production.
 
 ## Auth & loading states
 

@@ -22,11 +22,13 @@ export interface PackagingStockEntry {
   supplier_batch_no: string;
   created_at: string;
   entered_by_name?: string | null;
-  entry_kind?: "lot" | "count_correction" | "other";
+  entry_kind?: "lot" | "count_correction" | "issue" | "other";
   lot_total_price?: number;
   lot_qty?: number;
   lot_unit?: number;
 }
+
+export type SupplyStockEntry = PackagingStockEntry;
 
 export interface MaterialAdjustmentRequest {
   id: number;
@@ -34,9 +36,10 @@ export interface MaterialAdjustmentRequest {
   stock_name: string;
   unit: string;
   category: string;
-  action: "add" | "deduct" | "set_on_hand";
+  action: "add" | "deduct" | "set_on_hand" | "issue";
   amount: string | number;
   reason: string;
+  requester_name?: string | null;
   status: "pending" | "approved" | "rejected";
   summary?: string;
   requested_by_name: string;
@@ -185,4 +188,67 @@ export function stockInPackagingLot(payload: {
     lot_unit: number;
     entry_id: number;
   }>("materials.php", "stock_in_lot", payload);
+}
+
+export function fetchSupplyDetail(stockId: number) {
+  return apiGet<{ stock: MaterialStockRow; entries: SupplyStockEntry[] }>(
+    "materials.php",
+    "supply_detail",
+    { stock_id: stockId }
+  );
+}
+
+export function setSupplyOnHand(payload: {
+  stock_id: number;
+  on_hand: number;
+  note?: string;
+}) {
+  return apiPost<{ stock_id: number; on_hand: number; entry_id: number | null }>(
+    "materials.php",
+    "set_on_hand",
+    payload
+  );
+}
+
+export function stockInSupplyLot(payload: {
+  stock_id: number;
+  lot_total_price: number;
+  lot_qty: number;
+  note?: string;
+}) {
+  return apiPost<{
+    stock_id: number;
+    on_hand: number;
+    current_price: number;
+    lot_unit: number;
+    entry_id: number;
+  }>("materials.php", "stock_in_lot", payload);
+}
+
+export function submitSupplyIssueRequest(payload: {
+  stock_id: number;
+  requester_name: string;
+  amount: number;
+  reason: string;
+}) {
+  return apiPost<{ id: number }>("materials.php", "request_submit", {
+    stock_id: payload.stock_id,
+    action: "issue",
+    amount: payload.amount,
+    requester_name: payload.requester_name,
+    reason: payload.reason,
+  });
+}
+
+export function submitSupplyOnHandRequest(payload: {
+  stock_id: number;
+  on_hand: number;
+  reason: string;
+}) {
+  return apiPost<{ id: number }>("materials.php", "request_submit", {
+    stock_id: payload.stock_id,
+    action: "set_on_hand",
+    amount: payload.on_hand,
+    reason: payload.reason,
+  });
 }

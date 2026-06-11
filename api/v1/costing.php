@@ -111,15 +111,16 @@ function api_costing_products_list(): void
     }
     $pdo = ims_pdo();
 
-    $sql = 'SELECT p.id, p.name, p.dept_product_key, p.dept_id, p.size, p.variant, p.selling_price, p.baseline_cost, p.created_at,
+    $unitExpr = api_costing_formula_current_unit_sql();
+    $sql = "SELECT p.id, p.name, p.dept_product_key, p.dept_id, p.size, p.variant, p.selling_price, p.baseline_cost, p.created_at,
                    d.name AS dept_name, u.name AS created_by_name,
-                   COALESCE(SUM(f.qty_per_unit * s.current_price), 0) AS current_cost,
+                   COALESCE(SUM(f.qty_per_unit * ({$unitExpr})), 0) AS current_cost,
                    COUNT(f.id) AS formula_count
             FROM products p
             INNER JOIN departments d ON d.id = p.dept_id
             INNER JOIN users u ON u.id = p.created_by
             LEFT JOIN product_formula f ON f.product_id = p.id
-            LEFT JOIN stocks s ON s.id = f.stock_id';
+            LEFT JOIN stocks s ON s.id = f.stock_id";
     $params = [];
     if (!$canViewAll) {
         $sql .= ' WHERE p.dept_id = ?';
@@ -334,27 +335,43 @@ function api_costing_formula_mutate(string $action): void
     $pdo->beginTransaction();
     try {
         if ($action === 'add') {
-            $stockId = (int) ($input['stock_id'] ?? 0);
             $qtyRaw = trim((string) ($input['qty_per_unit'] ?? ''));
-            if ($stockId < 1) {
-                throw new RuntimeException('Stock is required.');
-            }
             if (!is_numeric($qtyRaw) || (float) $qtyRaw <= 0) {
                 throw new RuntimeException('qty_per_unit must be > 0.');
             }
             $qty = (float) $qtyRaw;
-            $stStock = $pdo->prepare('SELECT id, name, current_price FROM stocks WHERE id = ? AND dept_id = ? LIMIT 1');
-            $stStock->execute([$stockId, $product['dept_id']]);
-            $stock = $stStock->fetch();
-            if (!$stock) {
-                throw new RuntimeException('Stock not found in same department.');
+
+            $isCustom = !empty($input['is_custom']) || !empty($input['custom']);
+            $stockId = (int) ($input['stock_id'] ?? 0);
+            if ($isCustom || $stockId < 1) {
+                $label = trim((string) ($input['line_label'] ?? $input['custom_label'] ?? ''));
+                $priceRaw = trim((string) ($input['unit_price'] ?? $input['custom_price'] ?? ''));
+                if ($label === '') {
+                    throw new RuntimeException('Custom line name is required.');
+                }
+                if (!is_numeric($priceRaw) || (float) $priceRaw < 0) {
+                    throw new RuntimeException('Custom price must be zero or greater.');
+                }
+                $price = round((float) $priceRaw, 2);
+                $ins = $pdo->prepare(
+                    'INSERT INTO product_formula (product_id, stock_id, line_label, qty_per_unit, price_at_creation)
+                     VALUES (?, NULL, ?, ?, ?)'
+                );
+                $ins->execute([$productId, $label, $qty, $price]);
+            } else {
+                $stStock = $pdo->prepare('SELECT id, name, current_price FROM stocks WHERE id = ? AND dept_id = ? LIMIT 1');
+                $stStock->execute([$stockId, $product['dept_id']]);
+                $stock = $stStock->fetch();
+                if (!$stock) {
+                    throw new RuntimeException('Stock not found in same department.');
+                }
+                $qty = api_costing_resolve_formula_qty($product, (string) $stock['name'], $qty);
+                $price = (float) $stock['current_price'];
+                $ins = $pdo->prepare(
+                    'INSERT INTO product_formula (product_id, stock_id, line_label, qty_per_unit, price_at_creation) VALUES (?, ?, NULL, ?, ?)'
+                );
+                $ins->execute([$productId, $stockId, $qty, $price]);
             }
-            $qty = api_costing_resolve_formula_qty($product, (string) $stock['name'], $qty);
-            $price = (float) $stock['current_price'];
-            $ins = $pdo->prepare(
-                'INSERT INTO product_formula (product_id, stock_id, qty_per_unit, price_at_creation) VALUES (?, ?, ?, ?)'
-            );
-            $ins->execute([$productId, $stockId, $qty, $price]);
         } elseif ($action === 'update') {
             $formulaId = (int) ($input['formula_id'] ?? 0);
             $stockId = (int) ($input['stock_id'] ?? 0);

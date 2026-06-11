@@ -7,18 +7,21 @@
 | Field | Link |
 |-------|------|
 | **Active Spec** | [[specs/Inventory Arrangement change]] |
-| **Active Plan** | [[plans/archive/2026-06-05_packaging-lot-stock-in_plan]] (shipped) |
-| **Status** | `shipped` — packaging lot stock-in, detail UX, scroll patterns; run phase 21 migration on prod |
+| **Active Plan** | — (ad-hoc costing session shipped 2026-06-11) |
+| **Status** | `shipped` — dept production WIP (phase 26) |
 
 ## 🚀 Active Feature / Sprint
-- **Current Focus:** Manual E2E packaging lot stock-in + on-hand roles (exec set / HR request) + costing formula line
-- **Latest shipped:** Packaging UI scroll normalization — [[problems/records/2026-06-11_packaging-ui-scroll-normalization]] · pattern [[fixes/packaging-inventory-scroll-and-detail-ux]]
+- **Current Focus:** Manual E2E Paragis Make tea bags → Pouch; prod migration backlog (phases 22–26)
+- **Latest shipped:** [[problems/records/2026-06-12_dept-production-wip-bom]] · [[specs/2026-06-12_paragis-production-wip]] · [[fixes/dept-production-wip-bom]]
 
 ## 🛠️ Current Todo List
 - [x] **PT v2:** `migration_phase17_pt_supplier_bom.sql`, supplier ₱/bag, stock-in bags→pouches (2026-06-05)
-- [x] **BRC v2:** `migration_phase18_brc_supplier_bom.sql`, black_rice supplier ₱/bag, 20 kg → 200 pouches (2026-06-05)
-- [ ] **Run** phase 16–18 migrations on prod if not done
-- [ ] Manual E2E: PT (1 bag → ~104 pouches) + BRC (1 bag → 200 pouches) → costing → parcel → POS
+- [x] **BRC v2:** supplier ₱/bag (phase 18); **1 kg BOM** corrected phase 23 (2026-06-11)
+- [x] **Jar Cacao BOM:** 220 g/jar, formula 0.22 — phase 22 (2026-06-11)
+- [x] **Costing UI + custom formula lines** — phase 24 (2026-06-11)
+- [ ] **Run** phase 22–26 migrations on prod if not done (`migration_phase26_dept_wip.sql` for Paragis WIP)
+- [ ] Manual E2E: Paragis — stock in bags → Make tea bags → Pouch → verify WIP + finished + packaging deduct
+- [ ] Manual E2E: PT (~20.83 pouches/bag) + BRC (10 pouches/bag) + Jar Cacao (~4.55 jars/bag) → costing → custom labor line → parcel → POS
 - [ ] Manual E2E: RTS SPA — create case, append lines, sync inventory, void/claim, dashboard counts
 - [ ] Manual E2E: Shopee SPX **packing list Excel + PDF** — import → B2T1 350ml variant pick → master Excel has Order No. + Name + Item/s
 - [ ] Manual E2E: CSR finalize batch → parcels in `packing` → **prod_manager** Deliveries scan/photo/ship → packaging totals drop

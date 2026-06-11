@@ -14,12 +14,12 @@ import { RTSDashboardPage } from "./pages/rts/RTSDashboardPage";
 import { HoneyWarehousePage } from "./pages/honey/HoneyWarehousePage";
 import { HoneyProductionPage } from "./pages/honey/HoneyProductionPage";
 import { HoneyPackagingPage } from "./pages/honey/HoneyPackagingPage";
-import { DeptInventoryPage } from "./pages/dept/DeptInventoryPage";
+import { HoneyProductInventoryPage } from "./pages/products/HoneyProductInventoryPage";
+import { ProductInventoryEntry } from "./pages/products/ProductInventoryEntry";
 import { RawMaterialsHubPage } from "./pages/inventory/RawMaterialsHubPage";
-import { RawHoneySummaryPage } from "./pages/inventory/RawHoneySummaryPage";
 import { RawMaterialDetailPage } from "./pages/inventory/RawMaterialDetailPage";
 import { PackagingMaterialsPage } from "./pages/inventory/PackagingMaterialsPage";
-import { SuppliesInventoryPage } from "./pages/inventory/MaterialsCategoryPage";
+import { SuppliesMaterialsPage } from "./pages/inventory/SuppliesMaterialsPage";
 import { CacaoBrcHubPage } from "./pages/inventory/CacaoBrcHubPage";
 import { StaffManagementPage } from "./pages/exec/StaffManagementPage";
 import { CostingPage } from "./pages/exec/CostingPage";
@@ -68,17 +68,21 @@ export const router = createBrowserRouter(
         { path: "edit-requests", element: guarded(EditRequestsPage) },
         { path: "inventory/requests", element: guarded(InventoryRequestsPage, { roles: invRoles }) },
         { path: "inventory/raw-materials", element: invGuard(RawMaterialsHubPage) },
-        { path: "inventory/raw-materials/honey", element: invGuard(RawHoneySummaryPage) },
+        { path: "inventory/raw-materials/honey", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
+        { path: "inventory/raw-materials/honey/warehouse", element: invGuard(HoneyWarehousePage) },
+        { path: "inventory/raw-materials/honey/production", element: invGuard(HoneyProductionPage) },
+        { path: "inventory/raw-materials/honey/packaging", element: invGuard(HoneyPackagingPage) },
         { path: "inventory/raw-materials/:slug", element: invGuard(RawMaterialDetailPage) },
         { path: "inventory/packaging-materials", element: invGuard(PackagingMaterialsPage) },
-        { path: "inventory/supplies", element: invGuard(SuppliesInventoryPage) },
-        { path: "inventory/products/honey/warehouse", element: invGuard(HoneyWarehousePage) },
-        { path: "inventory/products/honey/production", element: invGuard(HoneyProductionPage) },
-        { path: "inventory/products/honey/packaging", element: invGuard(HoneyPackagingPage) },
-        { path: "inventory/products/:productSlug", element: invGuard(DeptInventoryPage) },
-        { path: "inventory/honey/warehouse", element: createElement(Navigate, { to: "/inventory/products/honey/warehouse", replace: true }) },
-        { path: "inventory/honey/production", element: createElement(Navigate, { to: "/inventory/products/honey/production", replace: true }) },
-        { path: "inventory/honey/packaging", element: createElement(Navigate, { to: "/inventory/products/honey/packaging", replace: true }) },
+        { path: "inventory/supplies", element: invGuard(SuppliesMaterialsPage) },
+        { path: "inventory/products/honey", element: invGuard(HoneyProductInventoryPage) },
+        { path: "inventory/products/honey/warehouse", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
+        { path: "inventory/products/honey/production", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/production", replace: true }) },
+        { path: "inventory/products/honey/packaging", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/packaging", replace: true }) },
+        { path: "inventory/products/:productSlug", element: invGuard(ProductInventoryEntry) },
+        { path: "inventory/honey/warehouse", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
+        { path: "inventory/honey/production", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/production", replace: true }) },
+        { path: "inventory/honey/packaging", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/packaging", replace: true }) },
         { path: "inventory/paragis", element: createElement(Navigate, { to: "/inventory/products/paragis-tea", replace: true }) },
         { path: "inventory/cacao-brc", element: invGuard(CacaoBrcHubPage) },
         { path: "inventory/:dept", element: guarded(InventoryPage) },

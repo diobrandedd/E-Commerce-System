@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-06-11T05:22:05+02:00
+generated: 2026-06-11T11:15:27+02:00
 type: memory-bank
-table_count: 43
+table_count: 45
 ---
 
 
@@ -146,6 +146,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_products.php` | [[modules/dept_products#dept_product_dept_id]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_resolve_honey_dept_id]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_canonical_dept_id]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_fetch_stock]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
@@ -170,8 +171,9 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_change_password]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
-| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_recent_entries]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
 
@@ -201,9 +203,15 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_for_dept]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_add_entry]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_bags_on_hand]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_recent_entries]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_deduct_bags_fifo]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
 | `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_upsert_supplier_costing_stocks]] |
 | `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_leaf_stock_id]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_formula_deduct_lines]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_packaging_deduct]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_upsert_supplier_costing_stocks]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_fetch_stock]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
@@ -213,6 +221,9 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_values]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_on_hand]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_stock_in_lot]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_set_on_hand]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_apply_issue]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
@@ -228,15 +239,22 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_add_entry]] |
-| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_supplier_priced]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_bags_on_hand]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_recent_entries]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_stock_in_bags]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_deduct_bags_fifo]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_packaging_deduct]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_adjust]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_values]] |
-| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_pool_unit_cost_from_lots]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_pool_unit_cost_from_lots]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_on_hand]] |
-| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_recent_entries]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_stock_in_lot]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_set_on_hand]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_apply_issue]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 
@@ -272,6 +290,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_catalog_snapshot]] |
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_checkout]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_product_map]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
@@ -286,6 +305,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_build_product_detail]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_formula_mutate]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
 
 ## `stock_deductions`
 
@@ -420,6 +440,22 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_pending_count]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_mark_viewed]] |
 
+## `dept_wip_rows`
+
+| File | Function |
+|------|----------|
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_tables_ready]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_wip_fetch_row]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_wip_adjust]] |
+
+## `dept_production_entries`
+
+| File | Function |
+|------|----------|
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_tables_ready]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_log_entry]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
+
 ## `pos_sales`
 
 | File | Function |
@@ -536,9 +572,12 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_dept_products_snapshot]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_fetch_row]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_ensure_row]] |
-| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_supplier_priced]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_produce_from_bags]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_deduct]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_pt_pouch]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_brc_produce_pouches]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_jar_produce]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
@@ -564,6 +603,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_recent_entries]] |
 | `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_list_supplier_prices]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_sync_all_variant_stocks]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_list_supplier_prices]] |

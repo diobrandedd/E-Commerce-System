@@ -56,7 +56,9 @@ export function MaterialsCategoryPage({ category, title, subtitle }: MaterialsCa
               <th className="text-left px-4 py-3 text-xs uppercase text-muted-foreground">Item</th>
               <th className="text-left px-4 py-3 text-xs uppercase text-muted-foreground">On hand</th>
               <th className="text-left px-4 py-3 text-xs uppercase text-muted-foreground hidden sm:table-cell">Last change</th>
-              {(isExec || isPm) && <th className="text-left px-4 py-3 text-xs uppercase text-muted-foreground" />}
+              {(isExec || (isPm && category !== "supply")) && (
+                <th className="text-left px-4 py-3 text-xs uppercase text-muted-foreground" />
+              )}
             </tr>
           </thead>
           <tbody>
@@ -86,15 +88,17 @@ export function MaterialsCategoryPage({ category, title, subtitle }: MaterialsCa
                     ? new Date(row.last_entry_at.replace(" ", "T")).toLocaleString()
                     : "—"}
                 </td>
-                {(isExec || isPm) && (
+                {(isExec || (isPm && category !== "supply")) && (
                   <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => setAdjustStock(row)}
-                      className="text-xs font-semibold text-[#C8900A] hover:underline"
-                    >
-                      {isExec ? "Adjust" : "Request"}
-                    </button>
+                    {category !== "supply" && (
+                      <button
+                        type="button"
+                        onClick={() => setAdjustStock(row)}
+                        className="text-xs font-semibold text-[#C8900A] hover:underline"
+                      >
+                        {isExec ? "Adjust" : "Request"}
+                      </button>
+                    )}
                   </td>
                 )}
               </tr>
@@ -121,12 +125,5 @@ export function MaterialsCategoryPage({ category, title, subtitle }: MaterialsCa
   );
 }
 
-export function SuppliesInventoryPage() {
-  return (
-    <MaterialsCategoryPage
-      category="supply"
-      title="Supplies"
-      subtitle="Gloves, cleaning materials, and other consumables"
-    />
-  );
-}
+/** @deprecated Use SuppliesMaterialsPage — org-wide HR pool with lot stock-in */
+export { SuppliesMaterialsPage as SuppliesInventoryPage } from "./SuppliesMaterialsPage";

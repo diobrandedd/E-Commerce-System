@@ -29,7 +29,7 @@ interface StaffListPayload {
 const ROLE_LABELS: Record<string, string> = {
   executive: "Executive",
   prod_manager: "Production Manager",
-  hr: "HR (read-only)",
+  hr: "HR",
   tl: "Team Leader",
   staff: "Staff",
 };

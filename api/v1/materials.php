@@ -22,6 +22,7 @@ api_dispatch([
     'departments' => 'api_materials_departments',
     'stock_in_lot' => 'api_materials_stock_in_lot',
     'packaging_detail' => 'api_materials_packaging_detail',
+    'supply_detail' => 'api_materials_supply_detail',
     'set_on_hand' => 'api_materials_set_on_hand',
 ]);
 
@@ -59,11 +60,19 @@ function api_materials_catalog_create(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_ims_user();
+    $role = (string) $user['role'];
     $name = trim((string) ($input['name'] ?? ''));
     $deptId = (int) ($input['dept_id'] ?? 0);
     $category = trim((string) ($input['category'] ?? ''));
     $unit = trim((string) ($input['unit'] ?? 'pcs'));
+    if ($category === 'supply') {
+        if (!material_inventory_role_can_create_supply_catalog($role)) {
+            api_fail('Forbidden.', 403);
+        }
+    } elseif ($role !== 'executive') {
+        api_fail('Forbidden.', 403);
+    }
     $pdo = ims_pdo();
     try {
         $row = material_inventory_create($pdo, (int) $user['id'], $name, $deptId, $category, $unit);
@@ -153,17 +162,28 @@ function api_materials_request_submit(): void
             api_fail('Packaging requests must set a target on-hand count.', 422);
         }
     } elseif ($category === 'supply') {
-        if ($role !== 'prod_manager') {
-            api_fail('Only production managers can request supply adjustments.', 403);
+        if (!material_inventory_role_can_request_supply($role)) {
+            api_fail('Only HR can submit supply issue or count requests.', 403);
         }
-        if (!in_array($action, ['add', 'deduct'], true)) {
-            api_fail('Supply requests must add or deduct quantity.', 422);
+        if (!in_array($action, ['issue', 'set_on_hand'], true)) {
+            api_fail('Supply requests must issue stock or set on-hand count.', 422);
+        }
+        if ($action === 'issue' && trim((string) ($input['requester_name'] ?? '')) === '') {
+            api_fail('Requester name is required for supply issues.', 422);
         }
     } else {
         api_fail('This stock cannot be adjusted via request.', 422);
     }
     try {
-        $id = material_adjustment_submit($pdo, $stockId, $action, $amount, $reason, (int) $user['id']);
+        $id = material_adjustment_submit(
+            $pdo,
+            $stockId,
+            $action,
+            $amount,
+            $reason,
+            (int) $user['id'],
+            isset($input['requester_name']) ? trim((string) $input['requester_name']) : null
+        );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
     }
@@ -183,7 +203,7 @@ function api_materials_request_list(): void
         'readonly' => false,
         'can_approve' => $role === 'executive',
         'can_submit_packaging' => material_inventory_role_can_request_packaging($role),
-        'can_submit_supply' => $role === 'prod_manager',
+        'can_submit_supply' => material_inventory_role_can_request_supply($role),
     ]);
 }
 
@@ -297,6 +317,28 @@ function api_materials_packaging_detail(): void
     ]);
 }
 
+function api_materials_supply_detail(): void
+{
+    api_method_allowed(['GET']);
+    api_materials_require_view();
+    $stockId = (int) ($_GET['stock_id'] ?? 0);
+    if ($stockId < 1) {
+        api_fail('stock_id required.', 422);
+    }
+    $pdo = ims_pdo();
+    $row = material_inventory_fetch_stock($pdo, $stockId);
+    if ($row === null || (string) $row['category'] !== 'supply') {
+        api_fail('Supply stock not found.', 404);
+    }
+    $row['on_hand'] = round((float) ($row['on_hand'] ?? 0), 2);
+    $row['current_price'] = round((float) ($row['current_price'] ?? 0), 2);
+    $entries = material_supply_recent_entries($pdo, $stockId, 25);
+    api_ok([
+        'stock' => $row,
+        'entries' => $entries,
+    ]);
+}
+
 function api_materials_set_on_hand(): void
 {
     api_method_allowed(['POST']);
@@ -313,15 +355,32 @@ function api_materials_set_on_hand(): void
         api_fail('On-hand must be 0 or greater.', 422);
     }
     $pdo = ims_pdo();
+    $row = material_inventory_fetch_stock($pdo, $stockId);
+    if ($row === null) {
+        api_fail('Stock not found.', 404);
+    }
+    $category = (string) $row['category'];
     $pdo->beginTransaction();
     try {
-        $result = material_packaging_set_on_hand(
-            $pdo,
-            $stockId,
-            (float) $onHandRaw,
-            (int) $user['id'],
-            $note
-        );
+        if ($category === 'packaging') {
+            $result = material_packaging_set_on_hand(
+                $pdo,
+                $stockId,
+                (float) $onHandRaw,
+                (int) $user['id'],
+                $note
+            );
+        } elseif ($category === 'supply') {
+            $result = material_supply_set_on_hand(
+                $pdo,
+                $stockId,
+                (float) $onHandRaw,
+                (int) $user['id'],
+                $note
+            );
+        } else {
+            throw new RuntimeException('Only packaging or supply items support count correction.');
+        }
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
@@ -354,16 +413,35 @@ function api_materials_stock_in_lot(): void
     }
 
     $pdo = ims_pdo();
+    $row = material_inventory_fetch_stock($pdo, $stockId);
+    if ($row === null) {
+        api_fail('Stock not found.', 404);
+    }
+    $category = (string) $row['category'];
+    if (!in_array($category, ['packaging', 'supply'], true)) {
+        api_fail('Only packaging or supply items support lot stock-in.', 422);
+    }
     $pdo->beginTransaction();
     try {
-        $result = material_packaging_stock_in_lot(
-            $pdo,
-            $stockId,
-            (float) $totalRaw,
-            (float) $qtyRaw,
-            (int) $user['id'],
-            $note
-        );
+        if ($category === 'packaging') {
+            $result = material_packaging_stock_in_lot(
+                $pdo,
+                $stockId,
+                (float) $totalRaw,
+                (float) $qtyRaw,
+                (int) $user['id'],
+                $note
+            );
+        } else {
+            $result = material_supply_stock_in_lot(
+                $pdo,
+                $stockId,
+                (float) $totalRaw,
+                (float) $qtyRaw,
+                (int) $user['id'],
+                $note
+            );
+        }
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {

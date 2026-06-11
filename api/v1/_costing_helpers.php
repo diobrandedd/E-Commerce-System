@@ -11,6 +11,35 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
 
+if (!function_exists('api_costing_formula_current_unit_sql')) {
+    /** SQL expression: unit price for a formula line (custom lines use frozen price_at_creation). */
+    function api_costing_formula_current_unit_sql(): string
+    {
+        return 'CASE WHEN f.stock_id IS NULL THEN f.price_at_creation ELSE s.current_price END';
+    }
+}
+
+if (!function_exists('api_costing_formula_current_unit_sql_pf')) {
+    function api_costing_formula_current_unit_sql_pf(): string
+    {
+        return 'CASE WHEN pf.stock_id IS NULL THEN pf.price_at_creation ELSE s.current_price END';
+    }
+}
+
+if (!function_exists('api_costing_formula_row_current_unit')) {
+    /**
+     * @param array{stock_id: ?int, price_at_creation: float|string, current_price?: float|string} $row
+     */
+    function api_costing_formula_row_current_unit(array $row): float
+    {
+        if ($row['stock_id'] === null || $row['stock_id'] === '') {
+            return (float) $row['price_at_creation'];
+        }
+
+        return (float) ($row['current_price'] ?? $row['price_at_creation']);
+    }
+}
+
 if (!function_exists('api_costing_can_view_all')) {
     function api_costing_can_view_all(string $role): bool
     {
@@ -129,14 +158,15 @@ if (!function_exists('api_costing_enrich_stock_row')) {
 if (!function_exists('api_costing_fetch_product_scope')) {
     function api_costing_fetch_product_scope(PDO $pdo, int $productId, bool $canViewAll, int $userDeptId): array
     {
-        $sql = 'SELECT p.id, p.dept_id, p.dept_product_key, p.name, p.size, p.variant, p.selling_price, p.baseline_cost,
-                       COALESCE(SUM(f.qty_per_unit * s.current_price), 0) AS current_cost,
+        $unitExpr = api_costing_formula_current_unit_sql();
+        $sql = "SELECT p.id, p.dept_id, p.dept_product_key, p.name, p.size, p.variant, p.selling_price, p.baseline_cost,
+                       COALESCE(SUM(f.qty_per_unit * ({$unitExpr})), 0) AS current_cost,
                        d.name AS dept_name
                 FROM products p
                 INNER JOIN departments d ON d.id = p.dept_id
                 LEFT JOIN product_formula f ON f.product_id = p.id
                 LEFT JOIN stocks s ON s.id = f.stock_id
-                WHERE p.id = ?';
+                WHERE p.id = ?";
         $args = [$productId];
         if (!$canViewAll) {
             $sql .= ' AND p.dept_id = ?';
@@ -248,10 +278,10 @@ if (!function_exists('api_costing_build_product_detail')) {
         $product = api_costing_fetch_product_scope($pdo, $productId, $canViewAll, $userDeptId);
 
         $stFormula = $pdo->prepare(
-            'SELECT pf.id, pf.stock_id, pf.qty_per_unit, pf.price_at_creation,
+            'SELECT pf.id, pf.stock_id, pf.line_label, pf.qty_per_unit, pf.price_at_creation,
                     s.name AS stock_name, s.unit, s.current_price
              FROM product_formula pf
-             INNER JOIN stocks s ON s.id = pf.stock_id
+             LEFT JOIN stocks s ON s.id = pf.stock_id
              WHERE pf.product_id = ?
              ORDER BY pf.id ASC'
         );
@@ -261,12 +291,14 @@ if (!function_exists('api_costing_build_product_detail')) {
         foreach ($stFormula->fetchAll() as $r) {
             $qty = (float) $r['qty_per_unit'];
             $baselineUnit = (float) $r['price_at_creation'];
-            $currentUnit = (float) $r['current_price'];
+            $isCustom = $r['stock_id'] === null || $r['stock_id'] === '';
+            $currentUnit = api_costing_formula_row_current_unit($r);
             $rows[] = [
                 'id' => (int) $r['id'],
-                'stock_id' => (int) $r['stock_id'],
-                'stock_name' => (string) $r['stock_name'],
-                'unit' => (string) $r['unit'],
+                'stock_id' => $isCustom ? null : (int) $r['stock_id'],
+                'is_custom' => $isCustom,
+                'stock_name' => $isCustom ? (string) ($r['line_label'] ?? 'Custom') : (string) $r['stock_name'],
+                'unit' => $isCustom ? 'flat' : (string) $r['unit'],
                 'qty_per_unit' => $qty,
                 'price_at_creation' => $baselineUnit,
                 'current_price' => $currentUnit,
@@ -274,7 +306,9 @@ if (!function_exists('api_costing_build_product_detail')) {
                 'current_line_cost' => $qty * $currentUnit,
                 'delta' => ($qty * $currentUnit) - ($qty * $baselineUnit),
             ];
-            $stockIds[] = (int) $r['stock_id'];
+            if (!$isCustom) {
+                $stockIds[] = (int) $r['stock_id'];
+            }
         }
         $stockIds = array_values(array_unique($stockIds));
 

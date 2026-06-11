@@ -135,24 +135,33 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 
 - **Catalog** — single source: `includes/dept_products.php` (`pt`, `brc`, `jar_cacao`). Parser, dashboard, stock-in, costing seed, parcel deduct, and POS must use the same keys.
 - **Paragis Tea BOM** — 1 supplier bag (**1 kg**) → 500 tea bags @ 2 g → **500÷24** ≈ 20.83 pouches. Costing leaf qty **24÷500 = 0.048** bag/pouch — [[specs/2026-06-05_paragis-tea-bom-math]].
-- **PT stock-in** — `dept_inventory_stock_in()` with `supplier_id` + qty in **bags**; price from Supplier Master; credits **pouches** on `dept_inventory_rows`; `stock_entries` log bags on leaf stock.
-- **Black Rice Coffee BOM** — 20 kg bag → **20,000÷100 = 200** pouches. Stock-in uses `dept_brc_pouches_per_bag()`; costing uses **100÷20,000 = 0.005** bag/pouch on `Black Rice Coffee — raw` + `BRC pouch packaging` qty `1`. See [[specs/2026-06-05_brc-bom-math]].
-- **Jar Cacao BOM** — 1 kg supplier bag → 1 sellable jar (`JAR_CACAO_GRAMS_PER_JAR = 1000`). Formula raw qty **1.0** bag/jar + packaging. `cacao` suppliers — [[specs/2026-06-05_jar-cacao-bom-math]].
+- **PT production WIP** — Raw **bags** on leaf `stock_entries`; **tea bags** on `dept_wip_rows`; **pouches** on `dept_inventory_rows`. **Make tea bags** / **Pouch** deduct stock-linked formula lines only (custom lines excluded). See [[specs/2026-06-12_paragis-production-wip]] · [[fixes/dept-production-wip-bom]]. Run `migration_phase26_dept_wip.sql`.
+- **PT stock-in** — `dept_raw_stock_in_bags()` — supplier bags only; production via Make tea bags → Pouch.
+- **Black Rice Coffee BOM** — 1 kg bag → **1,000÷100 = 10** pouches. Stock-in uses `dept_brc_pouches_per_bag()`; costing uses **100÷1,000 = 0.1** bag/pouch on `Black Rice Coffee — raw` + `BRC pouch packaging` qty `1`. See [[specs/2026-06-05_brc-bom-math]]. Run `migration_phase23_brc_1kg_bom.sql` if formula still shows 0.005.
+- **Jar Cacao BOM** — 1 kg supplier bag → **~4.55** sellable jars (`JAR_CACAO_GRAMS_PER_JAR = 220`, 24 tablets inside jar). Formula raw qty **0.22** bag/jar + **1** packaging/jar. `cacao` suppliers ₱/bag — [[specs/2026-06-05_jar-cacao-bom-math]]. Run `migration_phase22_jar_cacao_220g_bom.sql` if formula still shows 1.0.
 - **Dept pricing API** — `supplier_dept_prices` + `SupplierDeptPricesInline` for `paragis` suppliers (PT only today); mirror honey pattern in `includes/dept_pricing.php`.
 - **On-hand** — one row per `(dept_id, product_key)`; create-on-first-stock-in.
-- **Costing** — seeded 1:1 formula to `* — unit` stock rows; executive sets `selling_price` before POS sell.
+- **Costing** — seeded 1:1 formula to `* — unit` stock rows; executive sets `selling_price` before POS sell. **Custom formula lines** (`line_label` + fixed ₱, `stock_id` NULL) for labor/shipping — `migration_phase24_formula_custom_lines.sql`; SPA Add formula → Custom cost.
+
+## Product Costing (SPA)
+
+- **Page** — `CostingPage.tsx`: products only (no inline stock table / honey setup). Header **Guide** → `CostingGuideModal` (BOM math for honey + PT/BRC/Jar Cacao + custom costs). Pattern: [[fixes/costing-page-layout-and-guide]] · [[005_SPA_UX_Patterns#Product Costing page]].
+- **Row grid** — `costingRowGridClass` / `CostingProductMetrics`; column headers per section. Avoid `flex-1` label + right metrics (causes zoom-out layout).
+- **Formula add** — stock-linked lines use dept auto-qty + packaging WAC; **Custom cost** for labor/shipping (`api_costing_formula_current_unit_sql` includes NULL `stock_id` lines).
+- **Rollup** — [[problems/records/2026-06-11_costing-session-rollup]] (phase 22–24 migrations + UI).
 - **Combo SKUs** (PT w/ Honey, etc.) — still out of scope; honey deduct only until combo spec ships.
 
 ## Inventory arrangement (material on-hand)
 
 - **Categories** — `stocks.category`: `raw_material`, `packaging`, `supply`, `costing_only`. Packaging/supplies use **`stocks.on_hand`** (authoritative for those items).
-- **Raw Honey gallons** — still **`honey_warehouse_rows`**, not `stocks.on_hand`. Raw Materials hub is read-only summary; stock-in stays Products → Honey → Warehouse.
+- **Raw Honey gallons** — still **`honey_warehouse_rows`** / `honey_production_rows` / `honey_packaging_rows` stage tables, not `stocks.on_hand`. **SPA:** Raw Materials → **Raw Honey** has in-page tabs (Warehouse / Production / Packaging) at `/inventory/raw-materials/honey/{stage}`; Products → Honey links to the same routes. Do not resurrect `RawHoneySummaryPage` read-only snapshot as the primary entry. See [[fixes/raw-honey-stage-tabs]].
 - **Dept sellables** — still **`dept_inventory_rows`**. Product routes split PT / BRC / Jar Cacao (`/inventory/products/*`).
 - **Material requests** — `material_adjustment_requests` + `api/v1/materials.php`; prod_manager submits, executive approves on Requests page. Badge count includes pending material requests in `correction_unread_count`.
 - **Auto-deduct packaging on production** — not in v1; do not deduct bottles/caps from honey bottling without a spec.
 - **Packaging lot stock-in** — executive and HR record purchase lots on Packaging Materials via `materials.php?action=stock_in_lot`: **total price paid** + **quantity received** → unit cost = total ÷ qty; `on_hand` **adds** lot qty (pool). Unit cost is **derived from lot purchase entries** (legacy `set_values` prices must not poison WAC). Price changes call `api_costing_apply_price_change`. **`on_hand` is operational inventory only**; formula qty is `qty_per_unit` per sellable unit.
-- **Packaging on-hand count** — **executive** sets absolute count via `materials.php?action=set_on_hand` (does not change unit cost). **HR** submits `set_on_hand` requests on **Requests** (`/inventory/requests`; `material_adjustment_requests.action = set_on_hand`; run `migration_phase21_packaging_on_hand_requests.sql`). HR sidebar: **Requests is top-level**, not under Inventory. Supplies stay prod_manager add/deduct requests only.
-- **Packaging Materials SPA** — long lists: scroll **table body only** (stats + headers fixed); detail modal scrolls **activity region only**. Pattern: [[005_SPA_UX_Patterns#Packaging and materials inventory pages]] · [[fixes/packaging-inventory-scroll-and-detail-ux]].
+- **Packaging on-hand count** — **executive** sets absolute count via `materials.php?action=set_on_hand` (does not change unit cost). **HR** submits `set_on_hand` requests on **Requests** (`/inventory/requests`; `material_adjustment_requests.action = set_on_hand`; run `migration_phase21_packaging_on_hand_requests.sql`). HR sidebar: **Requests is top-level**, not under Inventory.
+- **Supplies pool** — org-wide catalog (`category=supply`, canonical `dept_id` only in DB). **HR + executive** lot stock-in (`stock_in_lot`); WAC via `material_pool_unit_cost_from_lots`. **HR** submits `issue` (requires `requester_name`) or `set_on_hand` on Requests; executive approves → `material_supply_apply_issue` writes `issue: {name} — {reason}`. Run `migration_phase25_supplies_hr_lot.sql`. No prod_manager supply requests. Spec: [[specs/2026-06-12_supplies-hr-lot-inventory]] · [[fixes/supplies-hr-lot-inventory]].
+- **Packaging / Supplies SPA** — long lists: scroll **table body only** (stats + headers fixed); detail modal scrolls **activity region only**. Pattern: [[005_SPA_UX_Patterns#Packaging and materials inventory pages]] · [[005_SPA_UX_Patterns#Supplies inventory pages]].
 - **Packaging in costing** — `category = packaging` stocks appear in Add formula line under **Packaging materials** optgroup. Canonical price edit for those rows is the Packaging Materials page, not a second path on Costing → Stocks.
 
 ## Honey “total inventory” scope

@@ -8,17 +8,20 @@ export const PT_GRAMS_PER_TEA_BAG = 2;
 export const PT_TEA_BAGS_PER_POUCH = 24;
 
 export const PT_LEAF_STOCK_NAME = "Paragis leaf — raw";
+export const PT_TEA_BAG_SACHET_STOCK_NAME = "PT tea bag sachet";
 export const PT_PACKAGING_STOCK_NAME = "PT pouch packaging";
 
-export const BRC_GRAMS_PER_BAG = 20000;
+/** Supplier bag = 1 kg. */
+export const BRC_GRAMS_PER_BAG = 1000;
 export const BRC_GRAMS_PER_POUCH = 100;
 
 export const BRC_RAW_STOCK_NAME = "Black Rice Coffee — raw";
 export const BRC_PACKAGING_STOCK_NAME = "BRC pouch packaging";
 
-/** Supplier bag = 1 kg; one bag → one sellable jar. */
+/** Supplier bag = 1 kg; sellable jar = 220 g cacao (24 tablets inside). */
 export const JAR_CACAO_GRAMS_PER_BAG = 1000;
-export const JAR_CACAO_GRAMS_PER_JAR = 1000;
+export const JAR_CACAO_GRAMS_PER_JAR = 220;
+export const JAR_CACAO_TABLETS_PER_JAR = 24;
 
 export const JAR_CACAO_RAW_STOCK_NAME = "Jar Cacao — raw";
 export const JAR_CACAO_PACKAGING_STOCK_NAME = "Jar Cacao jar packaging";
@@ -177,7 +180,7 @@ export function deptStockInYieldHint(key: DeptSupplierProductKey): string {
     return `1 bag (1 kg) → ${ptTeaBagsPerBag().toLocaleString()} tea bags @ 2 g → ~${ptPouchesPerBag().toFixed(2)} pouches (${PT_TEA_BAGS_PER_POUCH} tea bags per pouch).`;
   }
   if (key === "brc") {
-    return `1 bag (20 kg) → ${brcPouchesPerBag().toLocaleString()} sellable pouches (${BRC_GRAMS_PER_POUCH} g per pouch).`;
+    return `1 bag (1 kg) → ${brcPouchesPerBag().toLocaleString()} sellable pouches (${BRC_GRAMS_PER_POUCH} g per pouch).`;
   }
-  return `1 bag (1 kg) → ${jarCacaoJarsPerBag().toLocaleString()} sellable jar(s) (${JAR_CACAO_GRAMS_PER_JAR} g per jar).`;
+  return `1 bag (1 kg) → ~${jarCacaoJarsPerBag().toFixed(2)} sellable jar(s) (${JAR_CACAO_GRAMS_PER_JAR} g per jar, ${JAR_CACAO_TABLETS_PER_JAR} tablets per jar).`;
 }

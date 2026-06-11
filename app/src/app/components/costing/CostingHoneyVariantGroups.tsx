@@ -7,7 +7,8 @@ import {
   type CostingProductLike,
   type HoneyVariantGroup,
 } from "@/app/lib/costingProducts";
-import { CostBadge, peso } from "@/app/lib/costingDisplay";
+import { CostingProductMetrics, CostingRowColumnHeaders } from "@/app/components/costing/CostingProductMetrics";
+import { costingHoneyRowGridClass } from "@/app/components/costing/costingRowLayout";
 import type { HoneyPricingVariant } from "@/app/lib/honeyPricing";
 import { cn } from "@/app/components/ui/utils";
 import {
@@ -27,28 +28,6 @@ function sizeLabel(size: string): string {
   if (size === "liter") return "Liter";
   if (size === "gallon") return "Gallon";
   return size;
-}
-
-function MarginCell({
-  current,
-  selling,
-  isExec,
-}: {
-  current: number;
-  selling: number;
-  isExec: boolean;
-}) {
-  if (!isExec) return null;
-  const margin = selling - current;
-  const marginPct = selling > 0 ? ((margin / selling) * 100).toFixed(1) : "0.0";
-  return (
-    <div className="text-right hidden md:block min-w-[100px]">
-      <p className="text-xs text-muted-foreground">Margin</p>
-      <p className={`font-bold text-sm ${margin > 0 ? "text-green-600" : "text-red-500"}`}>
-        {peso(margin)} <span className="text-xs font-normal">({marginPct}%)</span>
-      </p>
-    </div>
-  );
 }
 
 function HoneySizeRow<T extends CostingProductLike>({
@@ -81,53 +60,38 @@ function HoneySizeRow<T extends CostingProductLike>({
         onClick={onToggle}
         aria-expanded={isExpanded}
         className={cn(
-          "w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors duration-200",
+          "w-full px-4 py-2.5 text-left transition-colors duration-200",
           isExpanded
             ? "bg-[#C8900A]/[0.06] hover:bg-[#C8900A]/[0.08]"
             : "hover:bg-secondary/30",
         )}
       >
-        <div
-          className={cn(
-            "w-1 self-stretch rounded-full flex-shrink-0 min-h-[2rem] transition-all duration-200",
-            isExpanded && "w-1.5",
-          )}
-          style={{ background: SIZE_COLORS[size] ?? "#C8900A" }}
-          aria-hidden
-        />
-        <div className="flex-1 min-w-0 flex items-center gap-2">
-          <span className="font-semibold text-foreground text-sm">{sizeLabel(size)}</span>
-          {product.formula_count === 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-              Needs formula
-            </span>
-          )}
-          {product.formula_count > 0 && (
-            <span className="text-xs text-muted-foreground">{product.formula_count} lines</span>
-          )}
-        </div>
-        <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
-          <div className="text-right hidden sm:block min-w-[88px]">
-            <p className="text-xs text-muted-foreground">Production Cost</p>
-            <p className="font-bold text-sm text-foreground">{peso(current)}</p>
-          </div>
-          {isExec && (
-            <div className="text-right hidden sm:block min-w-[88px]">
-              <p className="text-xs text-muted-foreground">Selling Price</p>
-              <p className="font-bold text-sm text-foreground">{peso(selling)}</p>
-            </div>
-          )}
-          <MarginCell current={current} selling={selling} isExec={isExec} />
-          <div className="text-right min-w-[72px]">
-            <p className="text-xs text-muted-foreground">vs Baseline</p>
-            <CostBadge current={current} baseline={baseline} />
-          </div>
-          <ChevronDown
-            size={16}
+        <div className={costingHoneyRowGridClass}>
+          <div
             className={cn(
-              "text-muted-foreground flex-shrink-0 transition-transform duration-300 ease-out",
-              isExpanded ? "rotate-180 text-[#C8900A]" : "",
+              "w-1 self-stretch rounded-full flex-shrink-0 min-h-[1.5rem] transition-all duration-200",
+              isExpanded && "w-1.5",
             )}
+            style={{ background: SIZE_COLORS[size] ?? "#C8900A" }}
+            aria-hidden
+          />
+          <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className="font-semibold text-foreground text-sm">{sizeLabel(size)}</span>
+            {product.formula_count === 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                Needs formula
+              </span>
+            )}
+            {product.formula_count > 0 && (
+              <span className="text-[10px] text-muted-foreground">{product.formula_count} lines</span>
+            )}
+          </div>
+          <CostingProductMetrics
+            current={current}
+            selling={selling}
+            baseline={baseline}
+            isExec={isExec}
+            chevron={{ expanded: isExpanded }}
           />
         </div>
       </button>
@@ -171,7 +135,7 @@ function VariantSection<T extends CostingProductLike>({
         onClick={() => setSectionOpen(o => !o)}
         aria-expanded={sectionOpen}
         className={cn(
-          "w-full flex items-center gap-3 px-6 py-4 text-left transition-colors duration-200",
+          "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors duration-200",
           sectionOpen ? "bg-[#C8900A]/[0.05] hover:bg-[#C8900A]/[0.08]" : "hover:bg-secondary/30",
         )}
       >
@@ -213,6 +177,7 @@ function VariantSection<T extends CostingProductLike>({
       </button>
 
       <CostingCollapsible open={sectionOpen} className="border-t border-border">
+          <CostingRowColumnHeaders isExec={isExec} labelCol="Size" withColorBar />
           {HONEY_COSTING_SIZES.map(size => {
             const product = group.bySize.get(size);
             if (!product) {

@@ -205,6 +205,7 @@
     "generated/modules/honey_sales_report.md",
     "generated/modules/honey_pricing.md",
     "generated/modules/honey_pos.md",
+    "Untitled.base",
     "problems/records",
     "problems/fixes",
     "problems/causes",
@@ -213,7 +214,6 @@
     "plans/active",
     "plans",
     "specs",
-    "modules",
-    "generated/spa"
+    "modules"
   ]
 }

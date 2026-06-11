@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-06-11T05:22:07+02:00
+generated: 2026-06-11T11:15:29+02:00
 type: module
 function_count: 3
 ---
@@ -54,7 +54,7 @@ function_count: 3
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (146):**
+**Callers (156):**
 
 - `api/v1/_bootstrap.php`:176 — `$pdo = ims_pdo();`
 - `api/v1/ar.php`:26 — `$pdo = ims_pdo();`
@@ -63,11 +63,11 @@ function_count: 3
 - `api/v1/ar.php`:115 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:53 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:112 — `$pdo = ims_pdo();`
-- `api/v1/costing.php`:154 — `$pdo = ims_pdo();`
-- `api/v1/costing.php`:187 — `$pdo = ims_pdo();`
-- `api/v1/costing.php`:262 — `$pdo = ims_pdo();`
-- `api/v1/costing.php`:296 — `$pdo = ims_pdo();`
-- `api/v1/costing.php`:331 — `$pdo = ims_pdo();`
+- `api/v1/costing.php`:155 — `$pdo = ims_pdo();`
+- `api/v1/costing.php`:188 — `$pdo = ims_pdo();`
+- `api/v1/costing.php`:263 — `$pdo = ims_pdo();`
+- `api/v1/costing.php`:297 — `$pdo = ims_pdo();`
+- `api/v1/costing.php`:332 — `$pdo = ims_pdo();`
 - `api/v1/dashboard.php`:23 — `$pdo = ims_pdo();`
 - `api/v1/dashboard.php`:161 — `$snapshot = dashboard_inventory_snapshot(ims_pdo(), $period, $from, $to);`
 - `api/v1/deliveries.php`:62 — `$pdo = ims_pdo();`
@@ -81,5 +81,5 @@ function_count: 3
 - `api/v1/edit_requests.php`:81 — `$pdo = ims_pdo();`
 - `api/v1/edit_requests.php`:131 — `$pdo = ims_pdo();`
 - `api/v1/edit_requests.php`:194 — `$pdo = ims_pdo();`
-- _… and 121 more (run impact.php for full list)_
+- _… and 131 more (run impact.php for full list)_
 

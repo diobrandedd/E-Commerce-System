@@ -4,6 +4,36 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-12 — [[problems/records/2026-06-12_pt-make-tea-bags-blocked|PT Make tea bags blocked]]
+**Fixed:** Stock-in ≠ tea bags; formula packaging (Yarn/sachet) now maps to make_tea_bags stage; workflow help on raw page. **Cause:** [[causes/pt-stock-in-vs-make-tea-bags]] · **Pattern:** [[fixes/dept-production-wip-bom]].
+
+### 2026-06-12 — [[problems/records/2026-06-12_dept-production-wip-bom|Dept production WIP + BOM deduct]]
+**Shipped:** Paragis Make tea bags / Pouch with WIP; formula stock-linked deduct (custom excluded); BRC/Jar single produce; `migration_phase26_dept_wip.sql`. **Pattern:** [[fixes/dept-production-wip-bom]] · [[specs/2026-06-12_paragis-production-wip]].
+
+### 2026-06-12 — [[problems/records/2026-06-12_dept-raw-finished-split|Dept raw vs finished inventory]]
+**Shipped:** Raw Materials pages (Paragis / Black Rice / Cacao) — stock in, stock out, Produce; Products pages — finished counts only. **Pattern:** [[fixes/dept-raw-vs-finished-inventory]].
+
+### 2026-06-12 — [[problems/records/2026-06-12_raw-honey-stage-tabs|Raw Honey stage tabs]]
+**Fixed:** Raw Honey no longer shows read-only summary only — Warehouse / Production / Packaging tabs + routes under `/inventory/raw-materials/honey/{stage}`; sidebar nested Raw Honey; Products → Honey aliases same paths. **Pattern:** [[fixes/raw-honey-stage-tabs]] · [[005_SPA_UX_Patterns#Raw Honey (three stages)]].
+
+### 2026-06-12 — [[problems/records/2026-06-12_supplies-hr-lot-inventory|Supplies HR lot inventory]]
+**Shipped:** org-wide supplies pool; lot stock-in + WAC; HR issue requests with requester name; executive approval on Requests; `migration_phase25_supplies_hr_lot.sql`. **Pattern:** [[fixes/supplies-hr-lot-inventory]] · [[005_SPA_UX_Patterns#Supplies inventory pages]].
+
+### 2026-06-11 — [[problems/records/2026-06-11_costing-session-rollup|Product Costing session rollup]]
+**Shipped:** Jar Cacao 220 g BOM (phase 22) · BRC 1 kg BOM (phase 23) · Costing UI grid + Guide modal · custom formula lines (phase 24). **Pattern:** [[fixes/costing-page-layout-and-guide]] · [[005_SPA_UX_Patterns#Product Costing page]].
+
+### 2026-06-11 — [[problems/records/2026-06-11_costing-page-ux-refactor|Costing page UX refactor]]
+**Fixed:** removed honey setup + stock prices; grid-aligned rows; viewport scroll; Guide button.
+
+### 2026-06-11 — [[problems/records/2026-06-11_costing-custom-formula-lines|Costing custom formula lines]]
+**Added:** Labor/shipping etc. via Custom cost tab; `migration_phase24_formula_custom_lines.sql`.
+
+### 2026-06-11 — [[problems/records/2026-06-11_brc-1kg-bom|BRC 1 kg bag BOM]]
+**Fixed:** Supplier ₱/bag = 1 kg; 10 pouches/bag @ 100 g; formula raw **0.1** bag/pouch; `migration_phase23_brc_1kg_bom.sql`.
+
+### 2026-06-11 — [[problems/records/2026-06-11_jar-cacao-220g-bom|Jar Cacao 220 g BOM]]
+**Fixed:** 1 kg bag → ~4.55 jars @ 220 g; formula raw **0.22** bag/jar; `migration_phase22_jar_cacao_220g_bom.sql`.
+
 ### 2026-06-11 — [[problems/records/2026-06-11_packaging-ui-scroll-normalization|Packaging UI scroll normalization]]
 **Shipped:** fixed stats + scrollable table body; capped modal activity scroll; HR Requests top-level in sidebar. **Pattern doc:** [[fixes/packaging-inventory-scroll-and-detail-ux]] · [[005_SPA_UX_Patterns#Packaging and materials inventory pages]].
 
@@ -23,7 +53,7 @@
 **Shipped:** Raw / Packaging / Supplies / Products sidebar; `materials.php` API; `stocks.category` + `on_hand`; prod_manager material requests; split dept product routes. Run `migration_phase20_inventory_arrangement.sql`.
 
 ### 2026-06-05 — [[problems/records/2026-06-05_brc-supplier-bom-costing|Black Rice Coffee Supplier Master + BOM]]
-**BRC:** 20 kg bag → 200 pouches @ 100 g; `migration_phase18_brc_supplier_bom.sql`; `black_rice` supplier ₱/bag; stock-in bags→pouches. Math: [[specs/2026-06-05_brc-bom-math]].
+**BRC v1:** phase 18 supplier ₱/bag + placeholder 20 kg math. **Corrected 2026-06-11:** 1 kg bag → 10 pouches — see [[problems/records/2026-06-11_brc-1kg-bom]] · `migration_phase23_brc_1kg_bom.sql`.
 
 ### 2026-06-05 — [[problems/records/2026-06-05_pt-supplier-bom-costing|Paragis Tea Supplier Master + BOM costing]]
 **PT v2:** `supplier_dept_prices` (₱/bag), `Paragis leaf — raw` + `PT pouch packaging` formula (0.0096 bag + 1 pouch per sell unit), stock-in bags→pouches via supplier picker. BRC/Cacao unchanged (1:1 placeholder). Run `migration_phase17_pt_supplier_bom.sql` after phase 16. **Math reference:** [[specs/2026-06-05_paragis-tea-bom-math]] (2500÷24 yield vs 24÷2500 costing).
