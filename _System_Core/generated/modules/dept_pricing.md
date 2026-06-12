@@ -1,7 +1,7 @@
 ---
 title: dept_pricing
 source: includes/dept_pricing.php
-generated: 2026-06-11T11:15:30+02:00
+generated: 2026-06-12T05:33:52+02:00
 type: module
 function_count: 8
 ---
@@ -44,7 +44,7 @@ function_count: 8
 - `includes/dept_inventory.php`:308 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_pricing.php`:170 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_pricing.php`:238 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
-- `includes/dept_production.php`:75 — `$leaf = dept_pricing_leaf_stock_name($productKey);`
+- `includes/dept_production.php`:90 — `$leaf = dept_pricing_leaf_stock_name($productKey);`
 
 ## dept_pricing_list_supplier_prices {#dept_pricing_list_supplier_prices}
 

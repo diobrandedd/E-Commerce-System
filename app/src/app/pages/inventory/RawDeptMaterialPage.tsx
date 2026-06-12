@@ -352,16 +352,39 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   );
 }
 
-function PreviewLines({ lines }: { lines: DeptProductionPreviewLine[] }) {
-  if (lines.length === 0) return null;
+function ProductionPreviewPanel({
+  deductLines,
+  costOnlyLines,
+}: {
+  deductLines: DeptProductionPreviewLine[];
+  costOnlyLines: DeptProductionPreviewLine[];
+}) {
+  if (deductLines.length === 0 && costOnlyLines.length === 0) return null;
+  const peso = (n: number) =>
+    `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return (
-    <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 space-y-1">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Will deduct</p>
-      {lines.map((l, i) => (
-        <p key={i} className="text-xs text-muted-foreground">
-          {l.qty.toLocaleString(undefined, { maximumFractionDigits: 4 })} {l.unit} — {l.stock_name}
-        </p>
-      ))}
+    <div className="space-y-2">
+      {deductLines.length > 0 && (
+        <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2 space-y-1">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Will deduct</p>
+          {deductLines.map((l, i) => (
+            <p key={i} className="text-xs text-muted-foreground">
+              {l.qty.toLocaleString(undefined, { maximumFractionDigits: 4 })} {l.unit} — {l.stock_name}
+            </p>
+          ))}
+        </div>
+      )}
+      {costOnlyLines.length > 0 && (
+        <div className="rounded-lg border border-dashed border-border bg-secondary/10 px-3 py-2 space-y-1">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Cost only (pool)</p>
+          {costOnlyLines.map((l, i) => (
+            <p key={i} className="text-xs text-muted-foreground">
+              {l.qty.toLocaleString(undefined, { maximumFractionDigits: 4 })} {l.unit} — {l.stock_name}
+              {l.estimated_cost != null && l.estimated_cost > 0 ? ` · est. ${peso(l.estimated_cost)}` : ""}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -391,7 +414,8 @@ function ProductionQtyModal({
 }) {
   const [qty, setQty] = useState("");
   const [note, setNote] = useState("");
-  const [preview, setPreview] = useState<DeptProductionPreviewLine[]>([]);
+  const [deductPreview, setDeductPreview] = useState<DeptProductionPreviewLine[]>([]);
+  const [costOnlyPreview, setCostOnlyPreview] = useState<DeptProductionPreviewLine[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -400,14 +424,21 @@ function ProductionQtyModal({
 
   useEffect(() => {
     if (!Number.isFinite(n) || n <= 0) {
-      setPreview([]);
+      setDeductPreview([]);
+      setCostOnlyPreview([]);
       return;
     }
     setPreviewLoading(true);
     const t = window.setTimeout(() => {
       void fetchDeptProductionPreview(productKey, action, n)
-        .then(res => setPreview(res.lines))
-        .catch(() => setPreview([]))
+        .then(res => {
+          setDeductPreview(res.deduct_lines ?? res.lines);
+          setCostOnlyPreview(res.cost_only_lines ?? []);
+        })
+        .catch(() => {
+          setDeductPreview([]);
+          setCostOnlyPreview([]);
+        })
         .finally(() => setPreviewLoading(false));
     }, 300);
     return () => window.clearTimeout(t);
@@ -454,7 +485,9 @@ function ProductionQtyModal({
               <Loader2 size={12} className="animate-spin" /> Loading deduct preview…
             </p>
           )}
-          {!previewLoading && <PreviewLines lines={preview} />}
+          {!previewLoading && (
+            <ProductionPreviewPanel deductLines={deductPreview} costOnlyLines={costOnlyPreview} />
+          )}
           <div>
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Note (optional)</label>
             <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={255} className={inputCls} />

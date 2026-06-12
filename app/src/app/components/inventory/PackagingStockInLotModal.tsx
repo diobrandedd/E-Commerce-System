@@ -38,6 +38,10 @@ export function PackagingStockInLotModal({ stock, onClose, onDone }: PackagingSt
       setError("Enter a valid quantity received (greater than 0).");
       return;
     }
+    if (stock.unit === "roll" && Math.abs(qtyNum - Math.round(qtyNum)) > 0.0001) {
+      setError("Roll quantity must be a whole number (e.g. 1 or 2).");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -65,7 +69,10 @@ export function PackagingStockInLotModal({ stock, onClose, onDone }: PackagingSt
       <AppModalBody className="space-y-4">
         {error && <p className="text-sm text-red-600">{error}</p>}
         <p className="text-xs text-muted-foreground">
-          Enter the total amount paid for this delivery and how many pieces were received. Quantity is added to the on-hand pool. Unit cost (₱/pc) is derived from purchase lots — the preview below is what will be saved for costing.
+          Enter the total paid and how many {stock.unit}s received (e.g. 1 roll). Quantity is added to on-hand.
+          {stock.is_pool_packaging
+            ? " Pool items are not auto-deducted on production — costing uses the yield estimate."
+            : " Unit cost is derived from purchase lots for costing."}
         </p>
         <div>
           <label className="text-xs font-medium text-muted-foreground">Total price paid (₱)</label>
@@ -83,8 +90,8 @@ export function PackagingStockInLotModal({ stock, onClose, onDone }: PackagingSt
           <label className="text-xs font-medium text-muted-foreground">Quantity received ({stock.unit})</label>
           <input
             type="number"
-            min="0.0001"
-            step="any"
+            min={stock.unit === "roll" ? "1" : "0.0001"}
+            step={stock.unit === "roll" ? "1" : "any"}
             value={qty}
             onChange={e => setQty(e.target.value)}
             className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"

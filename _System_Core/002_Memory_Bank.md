@@ -4,6 +4,18 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-12 — [[problems/records/2026-06-12_packaging-inventory-role-split|Packaging inventory role split + docs]]
+**Shipped:** HR stock-in · PM deduct for use · exec all + logs. **Reusable patterns:** [[fixes/packaging-inventory-roles]] · [[fixes/inventory-role-permissions]] · [[fixes/page-guide-button-modal]] · `.cursor/rules/inventory-roles-and-guides.mdc` · [[005_SPA_UX_Patterns#Role-based inventory permissions]].
+
+### 2026-06-12 — Product Costing executive-only
+**Fixed:** HR and production manager blocked from `/costing` route, `costing.php` API, and packaging guide links. **Docs:** [[005_SPA_UX_Patterns#Product Costing page]].
+
+### 2026-06-05 — [[problems/fixes/page-guide-button-modal|Page guide = header button + modal]]
+**Pattern:** All page guides use muted border **Guide** button in `PageLayout` actions → scrollable `AppModal` (default closed). Never inline collapsible panels. **Live:** `CostingGuideModal`, `PackagingInventoryGuideModal`. **Docs:** [[005_SPA_UX_Patterns#Page guide button (mandatory)]].
+
+### 2026-06-05 — [[problems/records/2026-06-05_packaging-pool-yield-bootstrap|Packaging pool yield + bootstrap]]
+**Shipped:** `production_deduct` + `pool_yield_qty`; full packaging/formula seed + 12 honey SKUs; pool costing; honey bottling bottle/sticker deduct; SPA pool badges. **Spec:** [[specs/2026-06-05_packaging-production-deduct]] · `migration_phase27_packaging_bootstrap.sql`.
+
 ### 2026-06-12 — [[problems/records/2026-06-12_pt-make-tea-bags-blocked|PT Make tea bags blocked]]
 **Fixed:** Stock-in ≠ tea bags; formula packaging (Yarn/sachet) now maps to make_tea_bags stage; workflow help on raw page. **Cause:** [[causes/pt-stock-in-vs-make-tea-bags]] · **Pattern:** [[fixes/dept-production-wip-bom]].
 

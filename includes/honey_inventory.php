@@ -5,6 +5,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/suppliers.php';
 require_once __DIR__ . '/honey_volume.php';
+require_once __DIR__ . '/catalog_bootstrap.php';
+require_once __DIR__ . '/material_inventory.php';
+require_once __DIR__ . '/dept_production.php';
 
 /** Lazy-load pricing helpers (avoids circular require at bootstrap). */
 function honey_inventory_pricing(): void
@@ -311,6 +314,7 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
         $batchNo = (string) $existing['batch_no'];
     }
 
+    $packagingDeduct = [];
     $pdo->beginTransaction();
     try {
         $upd = $pdo->prepare(
@@ -354,6 +358,7 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
             )->execute([$liter, $liter, $ml250, $ml250, $ml350, $ml350, $gallon, $gallon, $packId]);
         }
 
+        $packagingDeduct = honey_bottling_deduct_packaging_stocks($pdo, $userId, $sizeQtys, $batchNo);
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
@@ -371,7 +376,70 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
         'used_gallons' => round($usedGallons, 4),
         'remaining_production_gallons' => round(max(0, $remaining), 4),
         'is_new_packaging_row' => $isNew,
+        'packaging_deduct' => $packagingDeduct ?? [],
     ];
+}
+
+/**
+ * Deduct per-unit honey packaging from stocks.on_hand when bottling.
+ *
+ * @param array<string, float> $sizeQtys
+ * @return list<array<string, mixed>>
+ */
+function honey_bottling_deduct_packaging_stocks(PDO $pdo, int $userId, array $sizeQtys, string $label): array
+{
+    if (!material_inventory_has_pool_columns($pdo)) {
+        return [];
+    }
+
+    $deptSt = $pdo->query("SELECT id FROM departments WHERE name IN ('honey', 'Honey') ORDER BY id ASC LIMIT 1");
+    $deptId = $deptSt ? (int) $deptSt->fetchColumn() : 0;
+    if ($deptId < 1) {
+        return [];
+    }
+
+    $applied = [];
+    $totalBottles = 0.0;
+    foreach (HONEY_SIZES as $size) {
+        $qty = (float) ($sizeQtys[$size] ?? 0);
+        if ($qty <= 0) {
+            continue;
+        }
+        $totalBottles += $qty;
+        $bottleName = catalog_honey_bottle_stock_name($size);
+        $st = $pdo->prepare(
+            'SELECT id FROM stocks WHERE dept_id = ? AND name = ? AND supplier_id IS NULL AND production_deduct = 1 LIMIT 1'
+        );
+        $st->execute([$deptId, $bottleName]);
+        $stockId = (int) $st->fetchColumn();
+        if ($stockId < 1) {
+            continue;
+        }
+        $res = dept_packaging_deduct($pdo, $stockId, $qty, $userId, 'bottling: ' . substr($label, 0, 100));
+        $applied[] = [
+            'stock_name' => $bottleName,
+            'qty' => $qty,
+            'on_hand' => $res['on_hand'],
+        ];
+    }
+
+    if ($totalBottles > 0) {
+        $st = $pdo->prepare(
+            'SELECT id FROM stocks WHERE dept_id = ? AND name = ? AND supplier_id IS NULL AND production_deduct = 1 LIMIT 1'
+        );
+        $st->execute([$deptId, CATALOG_HONEY_STICKER_STOCK_NAME]);
+        $stickerId = (int) $st->fetchColumn();
+        if ($stickerId > 0) {
+            $res = dept_packaging_deduct($pdo, $stickerId, $totalBottles, $userId, 'bottling: ' . substr($label, 0, 100));
+            $applied[] = [
+                'stock_name' => CATALOG_HONEY_STICKER_STOCK_NAME,
+                'qty' => $totalBottles,
+                'on_hand' => $res['on_hand'],
+            ];
+        }
+    }
+
+    return $applied;
 }
 
 function honey_packaging_stock_out_sold(PDO $pdo, int $userId, int $packagingRowId, array $sizeQtys, string $saleType): array

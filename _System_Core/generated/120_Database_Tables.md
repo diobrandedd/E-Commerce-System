@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-11T11:15:27+02:00
+generated: 2026-06-12T05:33:49+02:00
 type: memory-bank
 table_count: 45
 ---
@@ -144,6 +144,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_dept_products_snapshot]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_fetch_row]] |
 | `includes/dept_products.php` | [[modules/dept_products#dept_product_dept_id]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_bottling_deduct_packaging_stocks]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_resolve_honey_dept_id]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_canonical_dept_id]] |
@@ -192,6 +193,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | File | Function |
 |------|----------|
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_fetch_product_scope]] |
+| `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_recalculate_baseline]] |
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_apply_price_change]] |
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_build_product_detail]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
@@ -212,6 +214,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_formula_deduct_lines]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_packaging_deduct]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_bottling_deduct_packaging_stocks]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_upsert_supplier_costing_stocks]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_fetch_stock]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
@@ -219,8 +222,10 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_update]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_adjust]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_values]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_pool_yield]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_on_hand]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_for_use]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_set_on_hand]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_apply_issue]] |
@@ -251,6 +256,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_unit_cost_from_lots]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_on_hand]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_for_use]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_set_on_hand]] |

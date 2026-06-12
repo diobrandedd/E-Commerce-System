@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-11T11:15:27+02:00
+generated: 2026-06-12T05:33:49+02:00
 type: memory-bank
 ---
 
@@ -16,6 +16,7 @@ type: memory-bank
 | [[modules/admin_sidebar_styles]] | 0 |
 | [[modules/auth]] | 21 |
 | [[modules/auth_check]] | 14 |
+| [[modules/catalog_bootstrap]] | 8 |
 | [[modules/courier_detect]] | 1 |
 | [[modules/dashboard_inventory]] | 6 |
 | [[modules/db]] | 3 |
@@ -25,10 +26,10 @@ type: memory-bank
 | [[modules/dept_inventory]] | 16 |
 | [[modules/dept_pos]] | 2 |
 | [[modules/dept_pricing]] | 8 |
-| [[modules/dept_production]] | 20 |
+| [[modules/dept_production]] | 22 |
 | [[modules/dept_products]] | 21 |
 | [[modules/forwarding]] | 15 |
-| [[modules/honey_inventory]] | 38 |
+| [[modules/honey_inventory]] | 39 |
 | [[modules/honey_parcel_inventory]] | 3 |
 | [[modules/honey_parcel_item_parser]] | 12 |
 | [[modules/honey_pos]] | 10 |
@@ -37,7 +38,7 @@ type: memory-bank
 | [[modules/honey_volume]] | 8 |
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/labels]] | 3 |
-| [[modules/material_inventory]] | 38 |
+| [[modules/material_inventory]] | 45 |
 | [[modules/online_order_parcels]] | 15 |
 | [[modules/online_orders_generator]] | 34 |
 | [[modules/order_remarks]] | 17 |

@@ -91,7 +91,7 @@ export const router = createBrowserRouter(
         { path: "reports", element: guarded(ReportsPage, { roles: ["executive", "prod_manager"] }) },
         { path: "sales", element: guarded(SalesPage, { roles: ["executive", "prod_manager"] }) },
         { path: "suppliers", element: guarded(SuppliersPage, { roles: ["executive"] }) },
-        { path: "costing", element: guarded(CostingPage, { roles: ["executive", "prod_manager"] }) },
+        { path: "costing", element: guarded(CostingPage, { roles: ["executive"] }) },
         { path: "ar", element: guarded(ARCreditsPage) },
         {
           path: "waybill/online-orders",

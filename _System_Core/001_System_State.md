@@ -8,18 +8,18 @@
 |-------|------|
 | **Active Spec** | [[specs/Inventory Arrangement change]] |
 | **Active Plan** | — (ad-hoc costing session shipped 2026-06-11) |
-| **Status** | `shipped` — dept production WIP (phase 26) |
+| **Status** | `shipped` — packaging pool yield bootstrap (phase 27) |
 
 ## 🚀 Active Feature / Sprint
-- **Current Focus:** Manual E2E Paragis Make tea bags → Pouch; prod migration backlog (phases 22–26)
-- **Latest shipped:** [[problems/records/2026-06-12_dept-production-wip-bom]] · [[specs/2026-06-12_paragis-production-wip]] · [[fixes/dept-production-wip-bom]]
+- **Current Focus:** E2E packaging bootstrap + Paragis produce with pool costing; run phase 27 on prod
+- **Latest shipped:** [[problems/records/2026-06-12_packaging-inventory-role-split]] · [[fixes/packaging-inventory-roles]] · [[fixes/inventory-role-permissions]] · [[fixes/page-guide-button-modal]]
 
 ## 🛠️ Current Todo List
 - [x] **PT v2:** `migration_phase17_pt_supplier_bom.sql`, supplier ₱/bag, stock-in bags→pouches (2026-06-05)
 - [x] **BRC v2:** supplier ₱/bag (phase 18); **1 kg BOM** corrected phase 23 (2026-06-11)
 - [x] **Jar Cacao BOM:** 220 g/jar, formula 0.22 — phase 22 (2026-06-11)
 - [x] **Costing UI + custom formula lines** — phase 24 (2026-06-11)
-- [ ] **Run** phase 22–26 migrations on prod if not done (`migration_phase26_dept_wip.sql` for Paragis WIP)
+- [ ] **Run** phase 22–28 migrations on prod if not done (`migration_phase28_honey_bottle_dedup.sql` after phase 27 if bottle duplicates)
 - [ ] Manual E2E: Paragis — stock in bags → Make tea bags → Pouch → verify WIP + finished + packaging deduct
 - [ ] Manual E2E: PT (~20.83 pouches/bag) + BRC (10 pouches/bag) + Jar Cacao (~4.55 jars/bag) → costing → custom labor line → parcel → POS
 - [ ] Manual E2E: RTS SPA — create case, append lines, sync inventory, void/claim, dashboard counts

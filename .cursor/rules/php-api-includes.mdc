@@ -13,5 +13,7 @@ alwaysApply: false
 - Before editing a function in `includes/`: run `php tools/memory_bank/impact.php <function_name>`
 - Do **not** add new `includes/` → `api/v1/` `require` chains (legacy: `honey_pricing.php` → `_costing_helpers.php`)
 - Mutating API actions: enforce CSRF via `api_require_csrf()` and role checks via `api_require_role()`
+- **Materials / packaging roles:** use helpers in `material_inventory.php` (`material_inventory_role_can_stock_in_packaging`, `_deduct_packaging`, `_set_packaging_on_hand`); return `permissions` on detail endpoints — see `_System_Core/problems/fixes/packaging-inventory-roles.md`
+- **Product Costing API:** executive only (`api_require_role(['executive'])` on all `costing.php` actions)
 
 Index: `_System_Core/generated/100_API_Index.md` · Include graph: `110_Include_Graph.md`

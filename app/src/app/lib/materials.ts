@@ -14,6 +14,11 @@ export interface MaterialStockRow {
   current_price?: string;
   last_entry_at?: string | null;
   can_adjust?: boolean;
+  production_deduct?: number;
+  is_pool_packaging?: boolean;
+  pool_yield_qty?: number | null;
+  pool_yield_unit?: string | null;
+  pool_estimated_remaining?: number | null;
 }
 
 export interface PackagingStockEntry {
@@ -22,7 +27,7 @@ export interface PackagingStockEntry {
   supplier_batch_no: string;
   created_at: string;
   entered_by_name?: string | null;
-  entry_kind?: "lot" | "count_correction" | "issue" | "other";
+  entry_kind?: "lot" | "count_correction" | "issue" | "use" | "other";
   lot_total_price?: number;
   lot_qty?: number;
   lot_unit?: number;
@@ -122,11 +127,47 @@ export function listMaterialRequests() {
   }>("materials.php", "request_list");
 }
 
+export interface PackagingDetailPermissions {
+  can_stock_in: boolean;
+  can_deduct: boolean;
+  can_set_on_hand: boolean;
+  can_set_pool_yield: boolean;
+  can_view_extended_log: boolean;
+}
+
 export function fetchPackagingDetail(stockId: number) {
-  return apiGet<{ stock: MaterialStockRow; entries: PackagingStockEntry[] }>(
+  return apiGet<{
+    stock: MaterialStockRow;
+    entries: PackagingStockEntry[];
+    permissions?: PackagingDetailPermissions;
+  }>(
     "materials.php",
     "packaging_detail",
     { stock_id: stockId }
+  );
+}
+
+export function deductPackagingForUse(payload: {
+  stock_id: number;
+  qty: number;
+  reason: string;
+}) {
+  return apiPost<{ stock_id: number; on_hand: number; entry_id: number }>(
+    "materials.php",
+    "packaging_deduct",
+    payload
+  );
+}
+
+export function setPackagingPoolYield(payload: {
+  stock_id: number;
+  pool_yield_qty: number;
+  pool_yield_unit?: string;
+}) {
+  return apiPost<{ result: { stock_id: number; pool_yield_qty: number }; stock: MaterialStockRow }>(
+    "materials.php",
+    "set_pool_yield",
+    payload
   );
 }
 

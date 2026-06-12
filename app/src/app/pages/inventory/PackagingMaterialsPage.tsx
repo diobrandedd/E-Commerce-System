@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronRight, Loader2, Package, Plus } from "lucide-react";
+import { BookOpen, ChevronRight, Loader2, Package, Plus, Search } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { MaterialCatalogModal } from "@/app/components/inventory/MaterialCatalogModal";
+import { PackagingInventoryGuideModal } from "@/app/components/inventory/PackagingInventoryGuideModal";
 import { PackagingMaterialDetailModal } from "@/app/components/inventory/PackagingMaterialDetailModal";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { listMaterials, type MaterialStockRow } from "@/app/lib/materials";
+import { cn } from "@/app/components/ui/utils";
 
 const peso = (v: string | number | undefined) => {
   const n = typeof v === "string" ? parseFloat(v) : Number(v ?? 0);
@@ -13,15 +15,27 @@ const peso = (v: string | number | undefined) => {
   return `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
+type StockFilter = "all" | "per_unit" | "pool" | "out_of_stock";
+
+const FILTER_CHIPS: { id: StockFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "per_unit", label: "Per-unit" },
+  { id: "pool", label: "Pool" },
+  { id: "out_of_stock", label: "Out of stock" },
+];
+
 export function PackagingMaterialsPage() {
   const { user } = useAuth();
   const isExec = user?.role === "executive";
   const isHr = user?.role === "hr";
-  const canStockIn = isExec || isHr;
+  const isPm = user?.role === "prod_manager";
   const [items, setItems] = useState<MaterialStockRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [detailRow, setDetailRow] = useState<MaterialStockRow | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<StockFilter>("all");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -38,45 +52,115 @@ export function PackagingMaterialsPage() {
 
   const stats = useMemo(() => {
     const inStock = items.filter(i => Number(i.on_hand) > 0).length;
-    const totalOnHand = items.reduce((sum, i) => sum + Number(i.on_hand ?? 0), 0);
-    return { count: items.length, inStock, totalOnHand };
+    const outOfStock = items.length - inStock;
+    const perUnit = items.filter(i => !i.is_pool_packaging).length;
+    const pool = items.filter(i => i.is_pool_packaging).length;
+    const perUnitStocked = items.filter(i => !i.is_pool_packaging && Number(i.on_hand) > 0).length;
+    const poolStocked = items.filter(i => i.is_pool_packaging && Number(i.on_hand) > 0).length;
+    return { count: items.length, inStock, outOfStock, perUnit, pool, perUnitStocked, poolStocked };
   }, [items]);
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter(row => {
+      if (filter === "per_unit" && row.is_pool_packaging) return false;
+      if (filter === "pool" && !row.is_pool_packaging) return false;
+      if (filter === "out_of_stock" && Number(row.on_hand ?? 0) > 0) return false;
+      if (q && !row.name.toLowerCase().includes(q) && !row.unit.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [items, search, filter]);
 
   return (
     <PageLayout
       title="Packaging Materials"
-      subtitle="Purchase lots, unit cost for costing, and on-hand pool — click a row for details"
+      subtitle="HR stock-in · production deducts for use · executive full control — click a row for details"
       actions={
-        isExec ? (
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-2 rounded-lg"
-            style={{ background: "#C8900A" }}
+            onClick={() => setGuideOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg border border-border"
           >
-            <Plus size={14} /> Add item
+            <BookOpen size={13} /> Guide
           </button>
-        ) : undefined
+          {isExec && (
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-2 rounded-lg"
+              style={{ background: "#C8900A" }}
+            >
+              <Plus size={14} /> Add item
+            </button>
+          )}
+        </div>
       }
     >
-      <div className="flex flex-col h-[calc(100dvh-8rem)] min-h-[18rem] min-w-0">
-        <div className="grid grid-cols-3 gap-3 mb-5 shrink-0">
+      <div className="flex flex-col h-[calc(100dvh-8rem)] min-h-[18rem] min-w-0 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
           <div className="rounded-xl border bg-card px-4 py-3">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Catalog items</p>
             <p className="text-xl font-semibold mt-1">{stats.count}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              {stats.perUnit} per-unit · {stats.pool} pool
+            </p>
           </div>
           <div className="rounded-xl border bg-card px-4 py-3">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">With stock</p>
-            <p className="text-xl font-semibold mt-1">{stats.inStock}</p>
+            <p className="text-xl font-semibold mt-1 text-emerald-700 dark:text-emerald-400">{stats.inStock}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              {stats.perUnitStocked} per-unit · {stats.poolStocked} pool
+            </p>
           </div>
           <div className="rounded-xl border bg-card px-4 py-3">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Total pieces</p>
-            <p className="text-xl font-semibold mt-1">{stats.totalOnHand.toLocaleString()}</p>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Out of stock</p>
+            <p className={cn("text-xl font-semibold mt-1", stats.outOfStock > 0 && "text-amber-700 dark:text-amber-400")}>
+              {stats.outOfStock}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">SKUs at zero on-hand</p>
+          </div>
+          <div className="rounded-xl border border-dashed bg-secondary/20 px-4 py-3 col-span-2 lg:col-span-1">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Production impact</p>
+            <p className="text-sm font-medium mt-1 leading-snug">
+              Per-unit items block production when empty
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Pool rolls are cost-only</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0">
+          <div className="relative flex-1 min-w-0">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search packaging…"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-background"
+            />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {FILTER_CHIPS.map(chip => (
+              <button
+                key={chip.id}
+                type="button"
+                onClick={() => setFilter(chip.id)}
+                className={cn(
+                  "text-[11px] font-medium px-2.5 py-1.5 rounded-full border transition-colors",
+                  filter === chip.id
+                    ? "border-[#C8900A]/50 bg-[#C8900A]/10 text-[#8a6507]"
+                    : "border-border text-muted-foreground hover:bg-secondary/50",
+                )}
+              >
+                {chip.label}
+              </button>
+            ))}
           </div>
         </div>
 
         <div className="bg-card rounded-xl border overflow-hidden flex flex-col min-h-0 flex-1">
-          <div className="hidden sm:grid sm:grid-cols-[1fr_120px_120px_160px_28px] gap-2 px-4 py-3 border-b bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium shrink-0">
+          <div className="hidden sm:grid sm:grid-cols-[1fr_110px_130px_150px_24px] gap-2 px-4 py-2.5 border-b bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium shrink-0">
             <span>Item</span>
             <span>Unit cost</span>
             <span>On hand</span>
@@ -98,24 +182,65 @@ export function PackagingMaterialsPage() {
               </div>
             )}
 
-            {!loading && items.map(row => {
+            {!loading && items.length > 0 && filteredItems.length === 0 && (
+              <div className="py-12 text-center text-muted-foreground text-sm">
+                No items match your search or filter.
+              </div>
+            )}
+
+            {!loading && filteredItems.map(row => {
               const onHand = Number(row.on_hand ?? 0);
               const hasStock = onHand > 0;
+              const isPool = Boolean(row.is_pool_packaging);
               return (
                 <button
                   key={row.id}
                   type="button"
                   onClick={() => setDetailRow(row)}
-                  className="w-full text-left border-b last:border-b-0 px-4 py-3.5 hover:bg-secondary/40 transition-colors group"
+                  className={cn(
+                    "w-full text-left border-b last:border-b-0 px-4 py-2.5 hover:bg-secondary/40 transition-colors group",
+                    !hasStock && "bg-amber-50/50 dark:bg-amber-950/10",
+                  )}
                 >
-                  <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_120px_120px_160px_28px] sm:gap-2 sm:items-center">
+                  <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_110px_130px_150px_24px] sm:gap-2 sm:items-center">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{row.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{row.unit}</p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="font-medium text-sm truncate">{row.name}</p>
+                        {isPool ? (
+                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                            Pool
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-[#C8900A]/10 text-[#8a6507]">
+                            Per-unit
+                          </span>
+                        )}
+                        {!hasStock && (
+                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                            Empty
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {row.unit}
+                        {isPool && row.pool_yield_qty != null && row.pool_yield_unit && (
+                          <span className="text-muted-foreground/80">
+                            {" "}· ~{Number(row.pool_yield_qty).toLocaleString()} {row.pool_yield_unit.replace(/_/g, " ")}s/{row.unit}
+                          </span>
+                        )}
+                      </p>
                     </div>
-                    <div className="hidden sm:block text-sm">{peso(row.current_price)}</div>
-                    <div className="hidden sm:block">
-                      <span className={`text-sm font-medium ${hasStock ? "text-foreground" : "text-muted-foreground"}`}>
+                    <div className="hidden sm:block text-sm tabular-nums">
+                      {peso(row.current_price)}
+                      <span className="text-[10px] text-muted-foreground block">/{row.unit}</span>
+                    </div>
+                    <div className="hidden sm:block tabular-nums">
+                      <span
+                        className={cn(
+                          "text-sm font-medium",
+                          hasStock ? "text-foreground" : "text-amber-700 dark:text-amber-400",
+                        )}
+                      >
                         {onHand.toLocaleString()} {row.unit}
                       </span>
                     </div>
@@ -127,10 +252,12 @@ export function PackagingMaterialsPage() {
                     <div className="sm:flex sm:justify-end text-muted-foreground group-hover:text-[#C8900A]">
                       <ChevronRight size={16} />
                     </div>
-                    <div className="sm:hidden flex gap-3 text-xs text-muted-foreground mt-1 col-span-full">
-                      <span>{peso(row.current_price)}/pc</span>
+                    <div className="sm:hidden flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-1 col-span-full">
+                      <span>{peso(row.current_price)}/{row.unit}</span>
                       <span>·</span>
-                      <span>{onHand} {row.unit}</span>
+                      <span className={!hasStock ? "text-amber-700 dark:text-amber-400 font-medium" : undefined}>
+                        {onHand.toLocaleString()} {row.unit}
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -152,11 +279,16 @@ export function PackagingMaterialsPage() {
           stock={detailRow}
           isExec={isExec}
           isHr={isHr}
-          canStockIn={canStockIn}
+          isPm={isPm}
           onClose={() => setDetailRow(null)}
           onChanged={() => void refresh()}
         />
       )}
+      <PackagingInventoryGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        role={user?.role}
+      />
     </PageLayout>
   );
 }

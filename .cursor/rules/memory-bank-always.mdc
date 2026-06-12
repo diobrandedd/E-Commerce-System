@@ -9,8 +9,9 @@ Before any code change:
 
 1. Read `_System_Core/000_System_Architecture.md` and `_System_Core/003_Fragile_Edges.md`
 2. For **React/UI** work, also read `_System_Core/004_SPA_Design_System.md` and `_System_Core/005_SPA_UX_Patterns.md`
-3. For edits in `includes/`, run `php tools/memory_bank/impact.php <function_name>` (Windows: `c:\xampp\php\php.exe tools/memory_bank/impact.php <function_name>`) and follow all callers listed
-4. Check `_System_Core/generated/` for backend maps; check `_System_Core/generated/spa/` for routes, theme, motion, and UI pattern usage
+3. For **inventory / packaging / supplies / materials API** work, also read `_System_Core/problems/fixes/inventory-role-permissions.md` and `_System_Core/problems/fixes/packaging-inventory-roles.md` (and `.cursor/rules/inventory-roles-and-guides.mdc`)
+4. For edits in `includes/`, run `php tools/memory_bank/impact.php <function_name>` (Windows: `c:\xampp\php\php.exe tools/memory_bank/impact.php <function_name>`) and follow all callers listed
+5. Check `_System_Core/generated/` for backend maps; check `_System_Core/generated/spa/` for routes, theme, motion, and UI pattern usage
 
 After a change that touches shared logic (`includes/`, `api/`, DB schema, SPA API clients):
 

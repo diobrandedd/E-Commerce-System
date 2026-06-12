@@ -28,6 +28,9 @@ export interface DeptProductionPreviewLine {
   kind: string;
   unit: string;
   qty: number;
+  estimated_cost?: number;
+  pool_yield_qty?: number | null;
+  pool_yield_unit?: string | null;
 }
 
 export interface DeptRawSnapshot {
@@ -59,6 +62,8 @@ export function fetchDeptProductionPreview(productKey: string, action: string, q
     action: string;
     qty: number;
     lines: DeptProductionPreviewLine[];
+    deduct_lines: DeptProductionPreviewLine[];
+    cost_only_lines: DeptProductionPreviewLine[];
     used_formula: boolean;
   }>("honey.php", "dept_production_preview", {
     product_key: productKey,

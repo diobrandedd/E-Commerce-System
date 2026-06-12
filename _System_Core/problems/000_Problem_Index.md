@@ -28,8 +28,15 @@ flowchart LR
   fix --> patterns
 ```
 
+## Reusable fix patterns (inventory & UX)
+
+- [[fixes/packaging-inventory-roles]] — HR stock-in / PM deduct / exec all
+- [[fixes/inventory-role-permissions]] — PHP helpers + API `permissions` + SPA guides
+- [[fixes/page-guide-button-modal]] — Guide header button + modal (not inline panel)
+
 ## Records (newest first)
 
+- [[records/2026-06-12_packaging-inventory-role-split]]
 - [[records/2026-06-12_pt-make-tea-bags-blocked]]
 - [[records/2026-06-12_dept-production-wip-bom]]
 - [[records/2026-06-12_dept-raw-finished-split]]

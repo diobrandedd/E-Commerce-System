@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-06-11T11:15:27+02:00
+generated: 2026-06-12T05:33:49+02:00
 type: memory-bank
-edge_count: 189
+edge_count: 195
 ---
 
 
@@ -97,6 +97,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/admin_sidebar.php` | `includes/admin_nav.php` |
 | `includes/auth.php` | `includes/db.php` |
 | `includes/auth_check.php` | `includes/db.php` |
+| `includes/catalog_bootstrap.php` | `includes/honey_volume.php` |
 | `includes/dashboard_inventory.php` | `includes/dept_products.php` |
 | `includes/db.php` | `includes/forwarding.php` |
 | `includes/deliveries_upload.php` | `includes/auth.php` |
@@ -115,11 +116,15 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_pricing.php` | `includes/dept_products.php` |
 | `includes/dept_pricing.php` | `includes/honey_inventory.php` |
 | `includes/dept_pricing.php` | `includes/suppliers.php` |
+| `includes/dept_production.php` | `includes/catalog_bootstrap.php` |
 | `includes/dept_production.php` | `includes/dept_inventory.php` |
 | `includes/dept_production.php` | `includes/material_inventory.php` |
+| `includes/honey_inventory.php` | `includes/catalog_bootstrap.php` |
 | `includes/honey_inventory.php` | `includes/db.php` |
+| `includes/honey_inventory.php` | `includes/dept_production.php` |
 | `includes/honey_inventory.php` | `includes/honey_pricing.php` |
 | `includes/honey_inventory.php` | `includes/honey_volume.php` |
+| `includes/honey_inventory.php` | `includes/material_inventory.php` |
 | `includes/honey_inventory.php` | `includes/suppliers.php` |
 | `includes/honey_parcel_inventory.php` | `includes/dept_inventory.php` |
 | `includes/honey_parcel_inventory.php` | `includes/honey_parcel_item_parser.php` |
@@ -133,6 +138,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_pricing.php` | `includes/honey_volume.php` |
 | `includes/honey_sales_report.php` | `includes/dashboard_inventory.php` |
 | `includes/labels.php` | `includes/rts_products.php` |
+| `includes/material_inventory.php` | `includes/catalog_bootstrap.php` |
 | `includes/material_inventory.php` | `includes/dept_products.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_inventory.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_item_parser.php` |

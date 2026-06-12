@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/dept_products.php';
+require_once __DIR__ . '/catalog_bootstrap.php';
 
 const MATERIAL_CATEGORIES = ['raw_material', 'packaging', 'supply', 'costing_only'];
 
@@ -31,9 +32,25 @@ function material_inventory_role_can_request_packaging(string $role): bool
     return $role === 'hr';
 }
 
-function material_inventory_role_can_set_packaging(string $role): bool
+function material_inventory_role_can_stock_in_packaging(string $role): bool
 {
     return $role === 'executive' || $role === 'hr';
+}
+
+function material_inventory_role_can_deduct_packaging(string $role): bool
+{
+    return $role === 'executive' || $role === 'prod_manager';
+}
+
+function material_inventory_role_can_set_packaging_on_hand(string $role): bool
+{
+    return $role === 'executive';
+}
+
+/** @deprecated use material_inventory_role_can_set_packaging_on_hand */
+function material_inventory_role_can_set_packaging(string $role): bool
+{
+    return material_inventory_role_can_set_packaging_on_hand($role);
 }
 
 function material_inventory_role_can_stock_in_supply(string $role): bool
@@ -83,6 +100,49 @@ function material_inventory_has_columns(PDO $pdo): bool
     return $cache;
 }
 
+function material_inventory_has_pool_columns(PDO $pdo): bool
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    try {
+        $st = $pdo->query(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stocks' AND COLUMN_NAME = 'pool_yield_qty'"
+        );
+        $cache = ((int) $st->fetchColumn()) > 0;
+    } catch (Throwable) {
+        $cache = false;
+    }
+
+    return $cache;
+}
+
+/** @param array<string, mixed> $row */
+function material_inventory_enrich_packaging_row(array $row): array
+{
+    $row['on_hand'] = round((float) ($row['on_hand'] ?? 0), 2);
+    $row['current_price'] = round((float) ($row['current_price'] ?? 0), 2);
+    $row['can_adjust'] = false;
+    $row['can_set_packaging'] = (string) ($row['category'] ?? '') === 'packaging';
+    $row['can_stock_in'] = in_array((string) ($row['category'] ?? ''), ['packaging', 'supply'], true);
+    $productionDeduct = (int) ($row['production_deduct'] ?? 1);
+    $row['production_deduct'] = $productionDeduct;
+    $row['is_pool_packaging'] = (string) ($row['category'] ?? '') === 'packaging' && $productionDeduct === 0;
+    if ($row['is_pool_packaging']) {
+        $row['pool_yield_qty'] = $row['pool_yield_qty'] !== null ? (float) $row['pool_yield_qty'] : null;
+        $row['pool_yield_unit'] = $row['pool_yield_unit'] ?? null;
+        $row['pool_estimated_remaining'] = catalog_pool_estimated_remaining($row);
+    } else {
+        $row['pool_yield_qty'] = null;
+        $row['pool_yield_unit'] = null;
+        $row['pool_estimated_remaining'] = null;
+    }
+
+    return $row;
+}
+
 /** @return array<string, mixed>|null */
 function material_inventory_fetch_stock(PDO $pdo, int $stockId, bool $forUpdate = false): ?array
 {
@@ -116,8 +176,12 @@ function material_inventory_list(PDO $pdo, ?string $category = null, bool $activ
     if ($activeOnly) {
         $where[] = 's.is_active = 1';
     }
+    $poolCols = material_inventory_has_pool_columns($pdo)
+        ? ', s.production_deduct, s.pool_yield_qty, s.pool_yield_unit'
+        : '';
     $sql = 'SELECT s.id, s.name, s.dept_id, s.unit, s.category, s.on_hand, s.is_active,
-                   s.current_price, s.supplier_id, s.supplier_name, s.supplier_code,
+                   s.current_price, s.supplier_id, s.supplier_name, s.supplier_code'
+        . $poolCols . ',
                    d.name AS dept_name,
                    (SELECT MAX(se.created_at) FROM stock_entries se WHERE se.stock_id = s.id) AS last_entry_at
             FROM stocks s
@@ -128,11 +192,7 @@ function material_inventory_list(PDO $pdo, ?string $category = null, bool $activ
     $st->execute($params);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as &$row) {
-        $row['on_hand'] = round((float) ($row['on_hand'] ?? 0), 2);
-        $row['current_price'] = round((float) ($row['current_price'] ?? 0), 2);
-        $row['can_adjust'] = false;
-        $row['can_set_packaging'] = (string) $row['category'] === 'packaging';
-        $row['can_stock_in'] = in_array((string) $row['category'], ['packaging', 'supply'], true);
+        $row = material_inventory_enrich_packaging_row($row);
     }
 
     return $rows;
@@ -370,19 +430,70 @@ function material_packaging_set_values(
 }
 
 /**
- * Parse `lot: ₱500.00/100pcs` batch labels written by stock-in.
+ * Update rough yield estimate for pool-only packaging (executive).
  *
- * @return array{total: float, qty: float}|null
+ * @return array{stock_id: int, pool_yield_qty: float, pool_yield_unit: ?string}
+ */
+function material_packaging_set_pool_yield(
+    PDO $pdo,
+    int $stockId,
+    float $poolYieldQty,
+    ?string $poolYieldUnit,
+    int $userId
+): array {
+    if (!material_inventory_has_pool_columns($pdo)) {
+        throw new RuntimeException('Pool yield columns missing. Run migration_phase27_packaging_bootstrap.sql.');
+    }
+    if ($poolYieldQty <= 0) {
+        throw new RuntimeException('Yield estimate must be greater than zero.');
+    }
+    $row = material_inventory_fetch_stock($pdo, $stockId, true);
+    if ($row === null) {
+        throw new RuntimeException('Stock not found.');
+    }
+    if ((string) $row['category'] !== 'packaging') {
+        throw new RuntimeException('Only packaging materials support yield estimates.');
+    }
+    if ((int) ($row['production_deduct'] ?? 1) !== 0) {
+        throw new RuntimeException('Yield estimates apply to pool-only packaging only.');
+    }
+    $unit = $poolYieldUnit !== null && trim($poolYieldUnit) !== '' ? trim($poolYieldUnit) : ($row['pool_yield_unit'] ?? null);
+    $yield = round($poolYieldQty, 4);
+    $pdo->prepare('UPDATE stocks SET pool_yield_qty = ?, pool_yield_unit = ? WHERE id = ?')
+        ->execute([$yield, $unit, $stockId]);
+
+    if (!function_exists('api_costing_apply_price_change')) {
+        require_once dirname(__DIR__) . '/api/v1/_costing_helpers.php';
+    }
+    $price = round((float) ($row['current_price'] ?? 0), 2);
+    api_costing_apply_price_change($pdo, $stockId, $price, $price, $userId);
+
+    return [
+        'stock_id' => $stockId,
+        'pool_yield_qty' => $yield,
+        'pool_yield_unit' => $unit,
+    ];
+}
+
+/**
+ * Parse `lot: ₱500.00/100roll` (or legacy `.../100pcs`) batch labels from stock-in.
+ *
+ * @return array{total: float, qty: float, unit: string}|null
  */
 function material_parse_lot_batch_label(string $label): ?array
 {
-    if (!preg_match('/^lot:\s*[^\d]*([\d,]+\.?\d*)\s*\/\s*([\d,]+\.?\d*)\s*pcs/iu', $label, $m)) {
+    if (!preg_match(
+        '/^lot:\s*[^\d]*([\d,]+\.?\d*)\s*\/\s*([\d,]+\.?\d*)\s*([a-z][a-z0-9_]*)/iu',
+        $label,
+        $m
+    )) {
         return null;
     }
 
     return [
         'total' => (float) str_replace(',', '', $m[1]),
         'qty' => (float) str_replace(',', '', $m[2]),
+        'unit' => strtolower((string) $m[3]),
     ];
 }
 
@@ -471,10 +582,18 @@ function material_packaging_stock_in_lot(
     $lotUnit = round($lotTotalPrice / $lotQty, 6);
     $newOnHand = round($oldOnHand + $lotQty, 2);
 
+    $stockUnit = trim((string) ($row['unit'] ?? 'pcs'));
+    if ($stockUnit === '') {
+        $stockUnit = 'pcs';
+    }
+    if ($stockUnit === 'roll' && abs($lotQty - round($lotQty)) > 0.0001) {
+        throw new RuntimeException('Roll quantity must be a whole number (e.g. 1 roll, 2 rolls).');
+    }
     $batchLabel = sprintf(
-        'lot: ₱%s/%spcs',
+        'lot: ₱%s/%s%s',
         number_format($lotTotalPrice, 2, '.', ''),
-        rtrim(rtrim(number_format($lotQty, 4, '.', ''), '0'), '.')
+        rtrim(rtrim(number_format($lotQty, 4, '.', ''), '0'), '.'),
+        $stockUnit
     );
     if ($note !== null && trim($note) !== '') {
         $batchLabel .= ' — ' . trim($note);
@@ -576,6 +695,74 @@ function material_packaging_set_on_hand(
     ];
 }
 
+/**
+ * Record packaging taken for production use (production manager / executive).
+ *
+ * @return array{stock_id: int, on_hand: float, entry_id: int}
+ */
+function material_packaging_deduct_for_use(
+    PDO $pdo,
+    int $stockId,
+    float $qty,
+    int $userId,
+    string $reason
+): array {
+    if ($qty <= 0) {
+        throw new RuntimeException('Quantity must be greater than 0.');
+    }
+    $reason = trim($reason);
+    if ($reason === '') {
+        throw new RuntimeException('Reason is required.');
+    }
+    $row = material_inventory_fetch_stock($pdo, $stockId, true);
+    if ($row === null) {
+        throw new RuntimeException('Stock not found.');
+    }
+    if ((string) $row['category'] !== 'packaging') {
+        throw new RuntimeException('Only packaging materials can be deducted for use.');
+    }
+    if (!(int) ($row['is_active'] ?? 1)) {
+        throw new RuntimeException('Stock item is inactive.');
+    }
+
+    $stockUnit = trim((string) ($row['unit'] ?? 'pcs'));
+    if ($stockUnit === '') {
+        $stockUnit = 'pcs';
+    }
+    if ($stockUnit === 'roll' && abs($qty - round($qty)) > 0.0001) {
+        throw new RuntimeException('Roll quantity must be a whole number (e.g. 1 roll).');
+    }
+
+    $current = round((float) ($row['on_hand'] ?? 0), 2);
+    $deductQty = round($qty, 2);
+    $next = round($current - $deductQty, 2);
+    if ($next < 0) {
+        throw new RuntimeException('Insufficient on-hand quantity.');
+    }
+
+    $batchLabel = substr('use: ' . $reason, 0, 120);
+    $ins = $pdo->prepare(
+        'INSERT INTO stock_entries (stock_id, dept_id, qty, batching_date, supplier_batch_no, entered_by)
+         VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    $ins->execute([
+        $stockId,
+        (int) $row['dept_id'],
+        -$deductQty,
+        date('Y-m-d H:i:s'),
+        $batchLabel,
+        $userId,
+    ]);
+    $entryId = (int) $pdo->lastInsertId();
+    $pdo->prepare('UPDATE stocks SET on_hand = ? WHERE id = ?')->execute([$next, $stockId]);
+
+    return [
+        'stock_id' => $stockId,
+        'on_hand' => $next,
+        'entry_id' => $entryId,
+    ];
+}
+
 /** @return list<array<string, mixed>> */
 function material_pool_recent_entries(PDO $pdo, int $stockId, int $limit = 25): array
 {
@@ -598,7 +785,9 @@ function material_pool_recent_entries(PDO $pdo, int $stockId, int $limit = 25): 
             ? 'lot'
             : (str_starts_with($label, 'count_correction:')
                 ? 'count_correction'
-                : (str_starts_with($label, 'issue:') ? 'issue' : 'other'));
+                : (str_starts_with($label, 'use:')
+                    ? 'use'
+                    : (str_starts_with($label, 'issue:') ? 'issue' : 'other')));
         if ($parsed !== null) {
             $row['lot_total_price'] = $parsed['total'];
             $row['lot_qty'] = $parsed['qty'];

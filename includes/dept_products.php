@@ -34,6 +34,11 @@ const JAR_CACAO_TABLETS_PER_JAR = 24;
 
 const JAR_CACAO_RAW_STOCK_NAME = 'Jar Cacao — raw';
 const JAR_CACAO_PACKAGING_STOCK_NAME = 'Jar Cacao jar packaging';
+const JAR_CACAO_STICKER_STOCK_NAME = 'Jar Cacao sticker';
+const JAR_CACAO_FOIL_STOCK_NAME = 'Jar Cacao foil';
+
+const PT_YARN_STOCK_NAME = 'Paragis Tea Bag Yarn';
+const PT_PAPER_ROLL_STOCK_NAME = 'PT tea bag paper roll';
 
 function dept_pt_tea_bags_per_bag(): float
 {
@@ -283,6 +288,15 @@ function dept_product_formula_qty_for_stock(string $productKey, string $stockNam
     }
     $pack = $def['packaging_stock_name'] ?? null;
     if ($pack !== null && $stockName === $pack) {
+        return 1.0;
+    }
+    if ($productKey === 'jar_cacao' && $stockName === JAR_CACAO_STICKER_STOCK_NAME) {
+        return 1.0;
+    }
+    if ($productKey === 'pt' && in_array($stockName, [PT_YARN_STOCK_NAME, PT_PAPER_ROLL_STOCK_NAME], true)) {
+        return (float) PT_TEA_BAGS_PER_POUCH;
+    }
+    if ($productKey === 'jar_cacao' && $stockName === JAR_CACAO_FOIL_STOCK_NAME) {
         return 1.0;
     }
     $legacy = $def['stock_name'] ?? null;

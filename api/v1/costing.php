@@ -43,7 +43,7 @@ api_dispatch([
 function api_costing_stocks_list(): void
 {
     api_method_allowed(['GET']);
-    $user = api_require_ims_user();
+    $user = api_require_role(['executive']);
     $role = (string) $user['role'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
     $canViewAll = api_costing_can_view_all($role);
@@ -102,7 +102,7 @@ function api_costing_stocks_list(): void
 function api_costing_products_list(): void
 {
     api_method_allowed(['GET']);
-    $user = api_require_ims_user();
+    $user = api_require_role(['executive']);
     $role = (string) $user['role'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
     $canViewAll = api_costing_can_view_all($role);
@@ -139,7 +139,7 @@ function api_costing_products_list(): void
 function api_costing_product_view(): void
 {
     api_method_allowed(['GET', 'POST']);
-    $user = api_require_ims_user();
+    $user = api_require_role(['executive']);
     $role = (string) $user['role'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
     $canViewAll = api_costing_can_view_all($role);
@@ -225,14 +225,11 @@ function api_costing_product_create(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_ims_user();
+    $user = api_require_role(['executive']);
     $role = (string) $user['role'];
-    if (!api_costing_can_manage_products($role)) {
-        api_fail('Forbidden.', 403);
-    }
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
     $canViewAll = api_costing_can_view_all($role);
-    $canEditPricing = $role === 'executive';
+    $canEditPricing = true;
 
     $name = trim((string) ($input['name'] ?? ''));
     $deptId = $canViewAll ? (int) ($input['dept_id'] ?? 0) : $userDeptId;
@@ -316,11 +313,8 @@ function api_costing_formula_mutate(string $action): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_ims_user();
+    $user = api_require_role(['executive']);
     $role = (string) $user['role'];
-    if (!api_costing_can_manage_products($role)) {
-        api_fail('Forbidden.', 403);
-    }
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
     $canViewAll = api_costing_can_view_all($role);
 

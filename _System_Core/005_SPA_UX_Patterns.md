@@ -9,6 +9,56 @@
 3. **Feedback after user actions** — successful mutations should show toast, burst, or inline banner; errors use animated red banner (`FulfillmentErrorBanner` / `OrderRemarksToast`).
 4. **Hover on interactive UI** — clickable cards, table rows, and buttons get visible highlight + drop shadow on hover (see [[#Feedback animations & hover (mandatory)]]).
 5. **Exec/inventory/CSR pages** → wrap in `PageLayout`. **POS** → use `posMotion` kit only.
+6. **Page guides** → header **Guide** button opens a scrollable `AppModal` — never an inline collapsible panel on the page body. See [[#Page guide button (mandatory)]].
+
+## Page guide button (mandatory)
+
+**Canonical reference:** [[fixes/page-guide-button-modal]] · live in `CostingGuideModal.tsx`, `PackagingInventoryGuideModal.tsx`.
+
+When a page needs user-facing help or role-specific workflow docs:
+
+1. **Button** — in `PageLayout` `actions`, left of primary CTAs (Add item, New product, etc.):
+
+```tsx
+<button
+  type="button"
+  onClick={() => setGuideOpen(true)}
+  className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg border border-border"
+>
+  <BookOpen size={13} /> Guide
+</button>
+```
+
+2. **State** — `const [guideOpen, setGuideOpen] = useState(false)`; default **closed**.
+3. **Modal** — sibling at bottom of page JSX: `<FeatureGuideModal open={guideOpen} onClose={() => setGuideOpen(false)} />`.
+4. **Modal shell** — `AppModal` `max-h-[90vh]`; `AppModalBody` `overflow-y-auto overscroll-contain`; sections with titled blocks (copy `GuideSection` from `CostingGuideModal.tsx`).
+5. **Role-specific content** — switch inside the modal body (`useAuth().role`), not separate pages.
+6. **Do not** — inline accordion/collapsible guide panels in the page body; gold-highlight toggle states; default-open guides.
+
+| Page | Modal component |
+|------|-----------------|
+| Product Costing | `CostingGuideModal` |
+| Packaging Materials | `PackagingInventoryGuideModal` |
+
+### Guide content rules
+
+- **Role badge** in modal title when content varies by role.
+- **No forbidden links** — if a role cannot access a route (e.g. Product Costing for HR/PM), use plain text; only executive gets `<Link to="/costing">`.
+- **Copy `GuideSection`** from `CostingGuideModal.tsx` or `PackagingInventoryGuideModal.tsx` for new guides.
+
+## Role-based inventory permissions (mandatory)
+
+**Canonical reference:** [[fixes/inventory-role-permissions]] · [[fixes/packaging-inventory-roles]] · backend: `includes/material_inventory.php`.
+
+| Principle | Rule |
+|-----------|------|
+| **Source of truth** | PHP role helpers + API gates; SPA reads `permissions` from detail APIs |
+| **Packaging** | HR stock-in · PM deduct for use · executive all + set on-hand + pool yield + extended log |
+| **Supplies** | HR stock-in + issue/count requests · executive approve + set on-hand ([[#Supplies inventory pages]]) |
+| **Product Costing** | **Executive only** — route, sidebar, API, guides ([[#Product Costing page]]) |
+| **Guides** | Document each role’s actions in `*GuideModal`; keep in sync when permissions change |
+
+When adding or changing inventory role behavior: update helpers → API → SPA → guide modal → `problems/fixes/` note → `002_Memory_Bank.md`.
 
 ## Modal patterns — `AppModal` is the standard
 
@@ -406,6 +456,10 @@ Prefer **`FulfillmentPressable`** / **`FulfillmentTableRow`** / **`FulfillmentPi
 
 **Canonical reference:** [[fixes/costing-page-layout-and-guide]] · live in `CostingPage.tsx`, `CostingGuideModal.tsx`, `CostingProductMetrics.tsx`.
 
+### Access
+
+**Executive only** — route guard, sidebar link, and `costing.php` API (`api_require_role(['executive'])`). HR and production manager do not see Product Costing.
+
 ### Layout
 
 1. **Header actions** — `Guide` (opens modal) + `Refresh`; no inline honey setup or stock price table.
@@ -430,11 +484,23 @@ Use `costingMotion.tsx` (`CostingCollapsible`, `CostingDetailReveal`) for varian
 
 ## Packaging and materials inventory pages
 
-**Canonical reference:** [[fixes/packaging-inventory-scroll-and-detail-ux]] · live in `PackagingMaterialsPage.tsx` + `PackagingMaterialDetailModal.tsx`.
+**Canonical reference:** [[fixes/packaging-inventory-roles]] · [[fixes/packaging-inventory-scroll-and-detail-ux]] · live in `PackagingMaterialsPage.tsx` + `PackagingMaterialDetailModal.tsx`.
+
+### Guide modal
+
+`PackagingInventoryGuideModal` — same **Guide** header button pattern as Product Costing ([[#Page guide button (mandatory)]]). Role-specific workflow inside the modal:
+
+| Role | Packaging page actions |
+|------|------------------------|
+| **HR** | **Stock in lot** (total ₱ + qty) — primary receiver |
+| **Production Manager** | **Deduct for use** (qty + reason) — records production usage |
+| **Executive** | All of the above + **set on-hand**, **pool yield**, **add catalog**, extended **activity log** (100 entries) |
+
+Shared **Per-unit vs Pool** legend in the modal.
 
 ### List page recipe
 
-1. **Summary cards** — `shrink-0` grid above the table (catalog count, in-stock count, totals).
+1. **Summary cards** — `shrink-0` grid above the table (catalog count, in-stock / out-of-stock SKU counts, per-unit vs pool breakdown — do not sum mixed units as “total pieces”).
 2. **Viewport-bound column** — outer wrapper `flex flex-col h-[calc(100dvh-8rem)] min-h-[18rem]` so the page does not grow past the viewport.
 3. **Table card** — `flex flex-col min-h-0 flex-1 overflow-hidden`; column headers `shrink-0`.
 4. **Scrollable body only** — `flex-1 min-h-0 overflow-y-auto overscroll-contain` around rows.
@@ -446,8 +512,8 @@ Use `costingMotion.tsx` (`CostingCollapsible`, `CostingDetailReveal`) for varian
 
 1. `AppModal` `max-h-[90vh]`; `AppModalBody` with `flex flex-col min-h-0 overflow-hidden` (override default body scroll).
 2. Metrics + action buttons: `shrink-0`.
-3. **Recent activity** (or audit log): inner `max-h-44 overflow-y-auto` — never let the modal body grow unbounded.
-4. Role actions in modal: **Stock in lot** (exec/HR), **Set on-hand** (exec), **Request count fix** (HR).
+3. **Recent activity** (or **Activity log** for executive): inner `max-h-44` (or `max-h-64` when extended) `overflow-y-auto` — never let the modal body grow unbounded.
+4. Role actions in modal: **Stock in lot** (HR + exec), **Deduct for use** (prod manager + exec), **Set on-hand** (exec only). Permissions from `packaging_detail` API.
 
 ### Material modals (inventory folder)
 
@@ -455,7 +521,7 @@ Use `costingMotion.tsx` (`CostingCollapsible`, `CostingDetailReveal`) for varian
 |-------|-----|
 | `PackagingStockInLotModal` | Total ₱ + qty received → unit cost preview |
 | `PackagingOnHandSetModal` | Executive absolute count |
-| `PackagingOnHandRequestModal` | HR target count + reason |
+| `PackagingDeductModal` | Prod manager / exec usage deduct (qty + reason) |
 | `PackagingMaterialDetailModal` | Row detail shell + recent entries |
 | `MaterialAdjustModal` | Legacy add/deduct (not used for supplies v2) |
 

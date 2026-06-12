@@ -9,8 +9,9 @@ alwaysApply: false
 Before adding or changing React UI:
 
 1. Read `_System_Core/004_SPA_Design_System.md` (colors, PageLayout, tokens)
-2. Read `_System_Core/005_SPA_UX_Patterns.md` (modals, toasts, motion rules)
+2. Read `_System_Core/005_SPA_UX_Patterns.md` (modals, toasts, motion rules, **page guides**, **inventory role permissions**)
 3. Check `_System_Core/generated/spa/151_Components_Index.md` for existing patterns on similar pages
+4. **Inventory pages:** follow `.cursor/rules/inventory-roles-and-guides.mdc` — Guide = header button + modal; permissions from API; no costing links for non-executive
 
 ## Must follow
 
@@ -21,5 +22,6 @@ Before adding or changing React UI:
 - **Feedback animations:** every new feature gets toast/banner/step motion on success and error — use `onlineFulfillmentMotion.tsx` (CSR/fulfillment) or `orderRemarksMotion.tsx` / `posMotion.tsx` by domain
 - **Hover affordance:** clickable rows, cards, and buttons must show highlight + drop shadow on hover — use `FulfillmentTableRow`, `FulfillmentPickerCard`, `FulfillmentPressable`, or exported `fulfillmentHover*` classes
 - **API calls:** use `app/src/app/lib/api.ts` helpers; see `_System_Core/generated/140_Frontend_API_Clients.md`
+- **Page guides:** muted border **Guide** in `PageLayout` actions → `*GuideModal` (closed by default); never inline accordion on page body — see `CostingGuideModal`, `PackagingInventoryGuideModal`
 
 Auto maps: `_System_Core/generated/spa/` (routes, theme, motion exports)

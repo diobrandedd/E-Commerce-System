@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/dept_inventory.php';
 require_once __DIR__ . '/material_inventory.php';
+require_once __DIR__ . '/catalog_bootstrap.php';
 
 function dept_production_tables_ready(PDO $pdo): bool
 {
@@ -27,7 +28,8 @@ function dept_production_load_formula_lines(PDO $pdo, string $productKey): array
 {
     $st = $pdo->prepare(
         'SELECT pf.id AS formula_id, pf.stock_id, pf.qty_per_unit, pf.line_label,
-                s.name AS stock_name, s.category, s.unit, s.on_hand, s.dept_id
+                s.name AS stock_name, s.category, s.unit, s.on_hand, s.dept_id,
+                s.current_price, s.production_deduct, s.pool_yield_qty, s.pool_yield_unit
          FROM products p
          INNER JOIN product_formula pf ON pf.product_id = p.id
          INNER JOIN stocks s ON s.id = pf.stock_id
@@ -47,8 +49,21 @@ function dept_production_load_formula_lines(PDO $pdo, string $productKey): array
             'qty_per_unit' => (float) $row['qty_per_unit'],
             'on_hand' => round((float) ($row['on_hand'] ?? 0), 4),
             'dept_id' => (int) $row['dept_id'],
+            'current_price' => round((float) ($row['current_price'] ?? 0), 4),
+            'production_deduct' => (int) ($row['production_deduct'] ?? 1),
+            'pool_yield_qty' => $row['pool_yield_qty'] !== null ? (float) $row['pool_yield_qty'] : null,
+            'pool_yield_unit' => $row['pool_yield_unit'] !== null ? (string) $row['pool_yield_unit'] : null,
         ];
     }, $rows);
+}
+
+function dept_production_stock_deducts(array $line): bool
+{
+    if (($line['category'] ?? '') === 'packaging') {
+        return (int) ($line['production_deduct'] ?? 1) === 1;
+    }
+
+    return true;
 }
 
 function dept_production_pt_stage_for_stock(string $stockName, string $category = ''): ?string
@@ -100,14 +115,6 @@ function dept_production_fallback_deduct_lines(string $productKey, string $actio
             'unit' => 'bag',
             'qty' => $bags,
         ];
-        $lines[] = [
-            'stock_id' => 0,
-            'stock_name' => PT_TEA_BAG_SACHET_STOCK_NAME,
-            'kind' => 'packaging',
-            'unit' => 'pcs',
-            'qty' => $qty,
-        ];
-
         return $lines;
     }
     if ($productKey === 'pt' && $action === 'pouch') {
@@ -175,11 +182,14 @@ function dept_production_formula_deduct_lines(PDO $pdo, string $productKey, stri
 
     if ($productKey === 'pt') {
         foreach ($formulaLines as $line) {
+            if (!dept_production_stock_deducts($line)) {
+                continue;
+            }
             $stage = dept_production_pt_stage_for_stock($line['stock_name'], $line['category']);
             if ($stage === null) {
                 throw new RuntimeException(
                     'Formula stock "' . $line['stock_name'] . '" is not used at Make tea bags or Pouch. '
-                    . 'Use leaf + tea-bag packaging on the formula for the fill step, and '
+                    . 'Use leaf on the formula for the fill step, and '
                     . PT_PACKAGING_STOCK_NAME . ' for the pouch step — or remove the extra line from Product Costing.'
                 );
             }
@@ -206,6 +216,9 @@ function dept_production_formula_deduct_lines(PDO $pdo, string $productKey, stri
             throw new RuntimeException('Invalid production action for this product.');
         }
         foreach ($formulaLines as $line) {
+            if (!dept_production_stock_deducts($line)) {
+                continue;
+            }
             $deductQty = round($line['qty_per_unit'] * $qty, 6);
             if ($deductQty <= 0) {
                 continue;
@@ -442,16 +455,71 @@ function dept_production_recent_entries(PDO $pdo, string $productKey, int $limit
     }, $rows);
 }
 
+/**
+ * @return list<array<string, mixed>>
+ */
+function dept_production_cost_only_lines(PDO $pdo, string $productKey, string $action, float $qty): array
+{
+    $formulaLines = dept_production_load_formula_lines($pdo, $productKey);
+    $costOnly = [];
+
+    foreach ($formulaLines as $line) {
+        if (dept_production_stock_deducts($line)) {
+            continue;
+        }
+        if ($productKey === 'pt') {
+            $stage = dept_production_pt_stage_for_stock($line['stock_name'], $line['category']);
+            if ($stage !== null && $stage !== $action) {
+                continue;
+            }
+        } elseif ($action !== 'produce') {
+            continue;
+        }
+
+        $perSellable = (float) $line['qty_per_unit'];
+        if ($productKey === 'pt' && $action === 'make_tea_bags') {
+            $consumeQty = $qty;
+            $consumeUnit = $line['pool_yield_unit'] ?? 'tea_bag';
+        } elseif ($productKey === 'pt' && $action === 'pouch') {
+            $consumeQty = round($perSellable * $qty, 6);
+            $consumeUnit = $line['pool_yield_unit'] ?? 'tea_bag';
+        } else {
+            $consumeQty = round($perSellable * $qty, 6);
+            $consumeUnit = $line['pool_yield_unit'] ?? (string) $line['unit'];
+        }
+
+        $yield = (float) ($line['pool_yield_qty'] ?? 0);
+        $rollPrice = (float) ($line['current_price'] ?? 0);
+        $estCost = $yield > 0 ? round(($consumeQty / $yield) * $rollPrice, 4) : 0.0;
+
+        $costOnly[] = [
+            'stock_id' => (int) $line['stock_id'],
+            'stock_name' => $line['stock_name'],
+            'kind' => 'cost_only',
+            'unit' => $consumeUnit,
+            'qty' => $consumeQty,
+            'estimated_cost' => $estCost,
+            'pool_yield_qty' => $line['pool_yield_qty'],
+            'pool_yield_unit' => $line['pool_yield_unit'],
+        ];
+    }
+
+    return $costOnly;
+}
+
 /** @return array<string, mixed> */
 function dept_production_preview_lines(PDO $pdo, string $productKey, string $action, float $qty): array
 {
-    $lines = dept_production_formula_deduct_lines($pdo, $productKey, $action, $qty);
+    $deductLines = dept_production_formula_deduct_lines($pdo, $productKey, $action, $qty);
+    $costOnlyLines = dept_production_cost_only_lines($pdo, $productKey, $action, $qty);
 
     return [
         'product_key' => $productKey,
         'action' => $action,
         'qty' => $qty,
-        'lines' => $lines,
+        'lines' => $deductLines,
+        'deduct_lines' => $deductLines,
+        'cost_only_lines' => $costOnlyLines,
         'used_formula' => dept_production_load_formula_lines($pdo, $productKey) !== [],
     ];
 }

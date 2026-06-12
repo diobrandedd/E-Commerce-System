@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-06-11T11:15:35+02:00
+generated: 2026-06-12T05:33:57+02:00
 type: module
 function_count: 8
 ---
@@ -21,9 +21,11 @@ function_count: 8
 
 ## honey_normalize_bottle_size {#honey_normalize_bottle_size}
 
-**Callers (5):**
+**Callers (7):**
 
-- `api/v1/_costing_helpers.php`:108 — `$norm = honey_normalize_bottle_size((string) $size);`
+- `api/v1/_costing_helpers.php`:143 — `$norm = honey_normalize_bottle_size((string) $size);`
+- `includes/catalog_bootstrap.php`:27 — `$norm = honey_normalize_bottle_size($size);`
+- `includes/catalog_bootstrap.php`:50 — `return honey_bottle_size_ml(honey_normalize_bottle_size($size)) / 1000.0;`
 - `includes/honey_volume.php`:33 — `return match (honey_normalize_bottle_size($size)) {`
 - `includes/honey_volume.php`:53 — `$size = honey_normalize_bottle_size((string) ($line['size'] ?? ''));`
 - `includes/honey_volume.php`:115 — `'size' => honey_normalize_bottle_size((string) ($line['size'] ?? '')),`
@@ -31,16 +33,17 @@ function_count: 8
 
 ## honey_bottle_size_ml {#honey_bottle_size_ml}
 
-**Callers (2):**
+**Callers (3):**
 
-- `api/v1/_costing_helpers.php`:110 — `return honey_bottle_size_ml($norm) / 1000.0;`
+- `api/v1/_costing_helpers.php`:145 — `return honey_bottle_size_ml($norm) / 1000.0;`
+- `includes/catalog_bootstrap.php`:50 — `return honey_bottle_size_ml(honey_normalize_bottle_size($size)) / 1000.0;`
 - `includes/honey_volume.php`:76 — `$total += $qty * honey_bottle_size_ml((string) ($line['size'] ?? ''));`
 
 ## honey_aggregate_bottle_lines {#honey_aggregate_bottle_lines}
 
 **Callers (1):**
 
-- `includes/honey_inventory.php`:284 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
+- `includes/honey_inventory.php`:287 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
 
 ## honey_lines_total_ml {#honey_lines_total_ml}
 
@@ -58,7 +61,7 @@ function_count: 8
 
 **Callers (1):**
 
-- `includes/honey_inventory.php`:285 — `$usedGallons = honey_lines_to_gallons($lines);`
+- `includes/honey_inventory.php`:288 — `$usedGallons = honey_lines_to_gallons($lines);`
 
 ## honey_parse_bottle_lines_from_input {#honey_parse_bottle_lines_from_input}
 

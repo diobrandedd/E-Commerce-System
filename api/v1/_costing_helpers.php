@@ -15,20 +15,39 @@ if (!function_exists('api_costing_formula_current_unit_sql')) {
     /** SQL expression: unit price for a formula line (custom lines use frozen price_at_creation). */
     function api_costing_formula_current_unit_sql(): string
     {
-        return 'CASE WHEN f.stock_id IS NULL THEN f.price_at_creation ELSE s.current_price END';
+        return 'CASE
+            WHEN f.stock_id IS NULL THEN f.price_at_creation
+            WHEN s.production_deduct = 0 AND COALESCE(s.pool_yield_qty, 0) > 0 THEN s.current_price / s.pool_yield_qty
+            ELSE s.current_price
+        END';
     }
 }
 
 if (!function_exists('api_costing_formula_current_unit_sql_pf')) {
     function api_costing_formula_current_unit_sql_pf(): string
     {
-        return 'CASE WHEN pf.stock_id IS NULL THEN pf.price_at_creation ELSE s.current_price END';
+        return 'CASE
+            WHEN pf.stock_id IS NULL THEN pf.price_at_creation
+            WHEN s.production_deduct = 0 AND COALESCE(s.pool_yield_qty, 0) > 0 THEN s.current_price / s.pool_yield_qty
+            ELSE s.current_price
+        END';
+    }
+}
+
+if (!function_exists('api_costing_formula_baseline_unit_sql_pf')) {
+    function api_costing_formula_baseline_unit_sql_pf(): string
+    {
+        return 'CASE
+            WHEN pf.stock_id IS NULL THEN pf.price_at_creation
+            WHEN s.production_deduct = 0 AND COALESCE(s.pool_yield_qty, 0) > 0 THEN pf.price_at_creation / s.pool_yield_qty
+            ELSE pf.price_at_creation
+        END';
     }
 }
 
 if (!function_exists('api_costing_formula_row_current_unit')) {
     /**
-     * @param array{stock_id: ?int, price_at_creation: float|string, current_price?: float|string} $row
+     * @param array{stock_id: ?int, price_at_creation: float|string, current_price?: float|string, production_deduct?: int|string, pool_yield_qty?: float|string|null} $row
      */
     function api_costing_formula_row_current_unit(array $row): float
     {
@@ -36,21 +55,29 @@ if (!function_exists('api_costing_formula_row_current_unit')) {
             return (float) $row['price_at_creation'];
         }
 
-        return (float) ($row['current_price'] ?? $row['price_at_creation']);
+        $price = (float) ($row['current_price'] ?? $row['price_at_creation']);
+        if ((int) ($row['production_deduct'] ?? 1) === 0) {
+            $yield = (float) ($row['pool_yield_qty'] ?? 0);
+            if ($yield > 0) {
+                return round($price / $yield, 8);
+            }
+        }
+
+        return $price;
     }
 }
 
 if (!function_exists('api_costing_can_view_all')) {
     function api_costing_can_view_all(string $role): bool
     {
-        return $role === 'executive' || $role === 'prod_manager';
+        return $role === 'executive';
     }
 }
 
 if (!function_exists('api_costing_can_manage_products')) {
     function api_costing_can_manage_products(string $role): bool
     {
-        return $role === 'executive' || $role === 'prod_manager' || $role === 'tl';
+        return $role === 'executive';
     }
 }
 
@@ -94,10 +121,18 @@ if (!function_exists('api_costing_resolve_formula_qty')) {
             }
         }
 
+        if (!function_exists('catalog_honey_packaging_formula_qty')) {
+            require_once dirname(__DIR__, 2) . '/includes/catalog_bootstrap.php';
+        }
+        $size = isset($product['size']) ? (string) $product['size'] : null;
+        $honeyPackQty = catalog_honey_packaging_formula_qty($stockName, $size);
+        if ($honeyPackQty !== null) {
+            return $honeyPackQty;
+        }
+
         if (!api_costing_is_honey_raw_stock($stockName)) {
             return $qty;
         }
-        $size = $product['size'] ?? null;
         if ($size === null || $size === '') {
             return $qty;
         }
@@ -197,7 +232,13 @@ if (!function_exists('api_costing_fetch_product_scope')) {
 if (!function_exists('api_costing_recalculate_baseline')) {
     function api_costing_recalculate_baseline(PDO $pdo, int $productId): float
     {
-        $st = $pdo->prepare('SELECT COALESCE(SUM(qty_per_unit * price_at_creation), 0) FROM product_formula WHERE product_id = ?');
+        $unitExpr = api_costing_formula_baseline_unit_sql_pf();
+        $st = $pdo->prepare(
+            "SELECT COALESCE(SUM(pf.qty_per_unit * ({$unitExpr})), 0)
+             FROM product_formula pf
+             LEFT JOIN stocks s ON s.id = pf.stock_id
+             WHERE pf.product_id = ?"
+        );
         $st->execute([$productId]);
         $baseline = (float) $st->fetchColumn();
         $upd = $pdo->prepare('UPDATE products SET baseline_cost = ? WHERE id = ?');
@@ -216,10 +257,14 @@ if (!function_exists('api_costing_apply_price_change')) {
         $oldCostMap = [];
         if ($affectedIds !== []) {
             $in = implode(',', array_fill(0, count($affectedIds), '?'));
+            $unitExpr = api_costing_formula_current_unit_sql_pf();
             $stOldCosts = $pdo->prepare(
-                "SELECT pf.product_id, COALESCE(SUM(pf.qty_per_unit * s.current_price), 0) AS current_cost
+                "SELECT pf.product_id,
+                        COALESCE(SUM(
+                            pf.qty_per_unit * CASE WHEN pf.stock_id IS NULL THEN pf.price_at_creation ELSE ({$unitExpr}) END
+                        ), 0) AS current_cost
                  FROM product_formula pf
-                 INNER JOIN stocks s ON s.id = pf.stock_id
+                 LEFT JOIN stocks s ON s.id = pf.stock_id
                  WHERE pf.product_id IN ($in)
                  GROUP BY pf.product_id"
             );
@@ -242,10 +287,14 @@ if (!function_exists('api_costing_apply_price_change')) {
         }
 
         $in = implode(',', array_fill(0, count($affectedIds), '?'));
+        $unitExpr = api_costing_formula_current_unit_sql_pf();
         $stNewCosts = $pdo->prepare(
-            "SELECT pf.product_id, COALESCE(SUM(pf.qty_per_unit * s.current_price), 0) AS current_cost
+            "SELECT pf.product_id,
+                    COALESCE(SUM(
+                        pf.qty_per_unit * CASE WHEN pf.stock_id IS NULL THEN pf.price_at_creation ELSE ({$unitExpr}) END
+                    ), 0) AS current_cost
              FROM product_formula pf
-             INNER JOIN stocks s ON s.id = pf.stock_id
+             LEFT JOIN stocks s ON s.id = pf.stock_id
              WHERE pf.product_id IN ($in)
              GROUP BY pf.product_id"
         );
@@ -279,7 +328,8 @@ if (!function_exists('api_costing_build_product_detail')) {
 
         $stFormula = $pdo->prepare(
             'SELECT pf.id, pf.stock_id, pf.line_label, pf.qty_per_unit, pf.price_at_creation,
-                    s.name AS stock_name, s.unit, s.current_price
+                    s.name AS stock_name, s.unit, s.current_price,
+                    s.production_deduct, s.pool_yield_qty, s.pool_yield_unit
              FROM product_formula pf
              LEFT JOIN stocks s ON s.id = pf.stock_id
              WHERE pf.product_id = ?
@@ -290,21 +340,28 @@ if (!function_exists('api_costing_build_product_detail')) {
         $stockIds = [];
         foreach ($stFormula->fetchAll() as $r) {
             $qty = (float) $r['qty_per_unit'];
-            $baselineUnit = (float) $r['price_at_creation'];
             $isCustom = $r['stock_id'] === null || $r['stock_id'] === '';
+            $baselineRow = $r;
+            $baselineRow['current_price'] = $r['price_at_creation'];
+            $baselineUnit = api_costing_formula_row_current_unit($baselineRow);
             $currentUnit = api_costing_formula_row_current_unit($r);
+            $isPool = !$isCustom && (int) ($r['production_deduct'] ?? 1) === 0;
+            $poolYield = $isPool ? (float) ($r['pool_yield_qty'] ?? 0) : null;
             $rows[] = [
                 'id' => (int) $r['id'],
                 'stock_id' => $isCustom ? null : (int) $r['stock_id'],
                 'is_custom' => $isCustom,
+                'is_pool_packaging' => $isPool,
+                'pool_yield_qty' => $poolYield,
+                'pool_yield_unit' => $isPool ? ($r['pool_yield_unit'] ?? null) : null,
                 'stock_name' => $isCustom ? (string) ($r['line_label'] ?? 'Custom') : (string) $r['stock_name'],
                 'unit' => $isCustom ? 'flat' : (string) $r['unit'],
                 'qty_per_unit' => $qty,
                 'price_at_creation' => $baselineUnit,
                 'current_price' => $currentUnit,
-                'baseline_line_cost' => $qty * $baselineUnit,
-                'current_line_cost' => $qty * $currentUnit,
-                'delta' => ($qty * $currentUnit) - ($qty * $baselineUnit),
+                'baseline_line_cost' => round($qty * $baselineUnit, 4),
+                'current_line_cost' => round($qty * $currentUnit, 4),
+                'delta' => round(($qty * $currentUnit) - ($qty * $baselineUnit), 4),
             ];
             if (!$isCustom) {
                 $stockIds[] = (int) $r['stock_id'];

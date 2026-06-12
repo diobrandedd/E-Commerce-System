@@ -58,6 +58,9 @@ interface FormulaRow {
   id: number;
   stock_id: number | null;
   is_custom?: boolean;
+  is_pool_packaging?: boolean;
+  pool_yield_qty?: number | null;
+  pool_yield_unit?: string | null;
   stock_name: string;
   unit: string;
   qty_per_unit: number;
@@ -564,9 +567,16 @@ function ProductDetailView({
                   {f.is_custom && (
                     <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded-full bg-secondary text-muted-foreground">custom</span>
                   )}
+                  {f.is_pool_packaging && (
+                    <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded-full bg-secondary text-muted-foreground">pool</span>
+                  )}
                 </td>
                 <td className="px-3 py-2 text-muted-foreground whitespace-nowrap tabular-nums">
-                  {f.is_custom ? `${f.qty_per_unit} × ${peso(f.current_price)}` : `${f.qty_per_unit} ${f.unit}`}
+                  {f.is_custom
+                    ? `${f.qty_per_unit} × ${peso(f.current_price)}`
+                    : f.is_pool_packaging && f.pool_yield_qty
+                      ? `${f.qty_per_unit} ${f.pool_yield_unit ?? f.unit} ÷ ${f.pool_yield_qty.toLocaleString()}`
+                      : `${f.qty_per_unit} ${f.unit}`}
                 </td>
                 <td className="px-3 py-2 text-muted-foreground whitespace-nowrap tabular-nums">{peso(f.price_at_creation)}</td>
                 <td className="px-3 py-2 font-medium text-foreground whitespace-nowrap tabular-nums">{peso(f.current_price)}</td>

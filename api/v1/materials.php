@@ -24,6 +24,8 @@ api_dispatch([
     'packaging_detail' => 'api_materials_packaging_detail',
     'supply_detail' => 'api_materials_supply_detail',
     'set_on_hand' => 'api_materials_set_on_hand',
+    'set_pool_yield' => 'api_materials_set_pool_yield',
+    'packaging_deduct' => 'api_materials_packaging_deduct',
 ]);
 
 function api_materials_require_view(): array
@@ -298,7 +300,8 @@ function api_materials_departments(): void
 function api_materials_packaging_detail(): void
 {
     api_method_allowed(['GET']);
-    api_materials_require_view();
+    $user = api_materials_require_view();
+    $role = (string) $user['role'];
     $stockId = (int) ($_GET['stock_id'] ?? 0);
     if ($stockId < 1) {
         api_fail('stock_id required.', 422);
@@ -308,13 +311,101 @@ function api_materials_packaging_detail(): void
     if ($row === null || (string) $row['category'] !== 'packaging') {
         api_fail('Packaging stock not found.', 404);
     }
-    $row['on_hand'] = round((float) ($row['on_hand'] ?? 0), 2);
-    $row['current_price'] = round((float) ($row['current_price'] ?? 0), 2);
-    $entries = material_packaging_recent_entries($pdo, $stockId, 25);
+    $row = material_inventory_enrich_packaging_row($row);
+    $logLimit = $role === 'executive' ? 100 : 25;
+    $entries = material_packaging_recent_entries($pdo, $stockId, $logLimit);
     api_ok([
         'stock' => $row,
         'entries' => $entries,
+        'permissions' => [
+            'can_stock_in' => material_inventory_role_can_stock_in_packaging($role),
+            'can_deduct' => material_inventory_role_can_deduct_packaging($role),
+            'can_set_on_hand' => material_inventory_role_can_set_packaging_on_hand($role),
+            'can_set_pool_yield' => $role === 'executive',
+            'can_view_extended_log' => $role === 'executive',
+        ],
     ]);
+}
+
+function api_materials_packaging_deduct(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_ims_user();
+    $role = (string) $user['role'];
+    if (!material_inventory_role_can_deduct_packaging($role)) {
+        api_fail('Forbidden.', 403);
+    }
+    $stockId = (int) ($input['stock_id'] ?? 0);
+    $qtyRaw = trim((string) ($input['qty'] ?? $input['amount'] ?? ''));
+    $reason = trim((string) ($input['reason'] ?? ''));
+    if ($stockId < 1) {
+        api_fail('stock_id required.', 422);
+    }
+    if (!is_numeric($qtyRaw) || (float) $qtyRaw <= 0) {
+        api_fail('Quantity must be greater than 0.', 422);
+    }
+    if ($reason === '') {
+        api_fail('Reason is required.', 422);
+    }
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = material_packaging_deduct_for_use(
+            $pdo,
+            $stockId,
+            (float) $qtyRaw,
+            (int) $user['id'],
+            $reason
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_materials_set_pool_yield(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $stockId = (int) ($input['stock_id'] ?? 0);
+    $yieldRaw = trim((string) ($input['pool_yield_qty'] ?? ''));
+    $yieldUnit = isset($input['pool_yield_unit']) ? trim((string) $input['pool_yield_unit']) : null;
+    if ($stockId < 1) {
+        api_fail('stock_id required.', 422);
+    }
+    if (!is_numeric($yieldRaw) || (float) $yieldRaw <= 0) {
+        api_fail('pool_yield_qty must be greater than zero.', 422);
+    }
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = material_packaging_set_pool_yield(
+            $pdo,
+            $stockId,
+            (float) $yieldRaw,
+            $yieldUnit,
+            (int) $user['id']
+        );
+        $pdo->commit();
+        $row = material_inventory_fetch_stock($pdo, $stockId);
+        api_ok([
+            'result' => $result,
+            'stock' => $row !== null ? material_inventory_enrich_packaging_row($row) : null,
+        ]);
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
 }
 
 function api_materials_supply_detail(): void

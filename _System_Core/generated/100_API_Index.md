@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-11T11:15:27+02:00
+generated: 2026-06-12T05:33:49+02:00
 type: memory-bank
 ---
 
@@ -180,9 +180,11 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `raw_detail` | `api_materials_raw_detail()` | `material_inventory_raw_stock_by_slug()`, `ims_pdo()` |
 | `departments` | `api_materials_departments()` | `ims_pdo()` |
 | `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_stock_in_lot()`, `material_supply_stock_in_lot()` |
-| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_recent_entries()` |
+| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()`, `material_packaging_recent_entries()`, `material_inventory_role_can_stock_in_packaging()`, `material_inventory_role_can_deduct_packaging()`, `material_inventory_role_can_set_packaging_on_hand()` |
 | `supply_detail` | `api_materials_supply_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_supply_recent_entries()` |
 | `set_on_hand` | `api_materials_set_on_hand()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_set_on_hand()`, `material_supply_set_on_hand()` |
+| `set_pool_yield` | `api_materials_set_pool_yield()` | `ims_pdo()`, `material_packaging_set_pool_yield()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()` |
+| `packaging_deduct` | `api_materials_packaging_deduct()` | `material_inventory_role_can_deduct_packaging()`, `ims_pdo()`, `material_packaging_deduct_for_use()` |
 
 ### `online_orders.php`
 

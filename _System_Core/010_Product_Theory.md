@@ -13,18 +13,19 @@ Staff should complete daily work **without switching between disconnected spread
 
 | Role | Primary jobs |
 |------|----------------|
-| **Executive** | Oversight, staff, suppliers, costing, settings, corrections approval |
-| **Production manager / HR** | Honey pipeline, dept inventory, RTS mirror, correction requests |
+| **Executive** | Oversight, staff, suppliers, **Product Costing (only role)**, settings, material request approval, full packaging/supplies control |
+| **HR** | **Packaging stock-in** (purchase lots), supplies stock-in + issue requests, inventory requests, RTS read-only |
+| **Production manager** | Dept production (produce, BOM preview), **packaging deduct for use**, honey pipeline, RTS, deliveries — **no Product Costing** |
 | **CSR TL / staff** | Waybill tools, RTS recording (legacy + SPA) |
 | **POS** | Walk-in sales — honey + dept products (PT, BRC, Jar Cacao) |
 
 ## Domain principles (theory)
 
-1. **Single source per workflow** — Inventory IA has four branches: **Raw Materials**, **Packaging Materials**, **Supplies**, and **Products** (finished goods). Honey uses warehouse → production → packaging (gallons then bottles). **Paragis Tea** uses raw bags → WIP tea bags → finished pouches with formula-driven material deduct ([[specs/2026-06-12_paragis-production-wip]]). **BRC / Jar Cacao** produce finished units from raw bags in one step. Packaging and supplies use `stocks.on_hand` with lot stock-in (WAC unit cost). **Packaging:** executive `set_on_hand`; HR count requests. **Supplies:** org-wide HR pool — HR stock-in lots + **issue** requests (requester name) for staff; executive approves on Requests. See [[specs/2026-06-12_supplies-hr-lot-inventory]]. **Paragis Tea**, **BRC**, and **Jar Cacao** each have BOM costing stocks — see [[specs/2026-06-05_paragis-tea-bom-math]] and related BOM notes. Honey/dept qty corrections and material requests go through approval, not silent DB edits.
+1. **Single source per workflow** — Inventory IA has four branches: **Raw Materials**, **Packaging Materials**, **Supplies**, and **Products** (finished goods). **Packaging Materials roles:** **HR** records purchase lots (total ₱ + qty); **production manager** **deducts for use** when materials go to the floor; **executive** can do all of that plus direct on-hand edits, pool yield, catalog, and full activity logs ([[fixes/packaging-inventory-roles]]). **Per-unit** vs **pool** packaging: per-unit counted in pieces; pool tracked in whole rolls with yield-based costing ([[specs/2026-06-05_packaging-production-deduct]]). Honey uses warehouse → production → packaging (gallons then bottles). **Paragis Tea** uses raw bags → WIP tea bags → finished pouches ([[specs/2026-06-12_paragis-production-wip]]). **BRC / Jar Cacao** produce finished units from raw bags in one step. **Supplies:** org-wide HR pool — HR stock-in lots + **issue** requests; executive approves on Requests ([[specs/2026-06-12_supplies-hr-lot-inventory]]). **Product Costing** is executive-only. Honey/dept qty corrections and supply requests go through approval where specified; packaging on-hand corrections are executive direct set, not HR requests.
 2. **RTS operational data vs SPA mirror** — cases still originate in legacy record flow; SPA inventory is a **synced mirror** for sell/deduct, not a replacement for case capture without an explicit product decision.
 3. **CSR waybill chain** — One batch workflow: **prep tools** (VIP arranger, SPX merge, validate Excel) produce downloadable iPYX sheets; **PDF + Excel stamper** (separate tools-page entry) matches PDFs to a prepared sheet via `run_unified_stamp` → master Excel + parcels. All prep outputs use the same iPYX column layout.
 4. **Financial traceability** — costing, supplier prices, and POS sales must be explainable from rows (audit-friendly).
-5. **Role-appropriate UI** — executives get breadth; POS gets speed and large touch targets; CSR gets batch tools.
+5. **Role-appropriate UI** — each role sees only their actions on inventory pages; page **Guide** modals document role workflows ([[fixes/page-guide-button-modal]]); executives get breadth; POS gets speed and large touch targets; CSR gets batch tools.
 
 ## Non-goals (unless spec says otherwise)
 

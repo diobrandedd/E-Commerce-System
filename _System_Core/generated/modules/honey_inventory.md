@@ -1,9 +1,9 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-06-11T11:15:32+02:00
+generated: 2026-06-12T05:33:54+02:00
 type: module
-function_count: 38
+function_count: 39
 ---
 
 
@@ -18,14 +18,17 @@ function_count: 38
 - `includes/db.php`
 - `includes/suppliers.php`
 - `includes/honey_volume.php`
+- `includes/catalog_bootstrap.php`
+- `includes/material_inventory.php`
+- `includes/dept_production.php`
 - `includes/honey_pricing.php`
 
 ## honey_inventory_pricing {#honey_inventory_pricing}
 
 **Callers (2):**
 
-- `includes/honey_inventory.php`:162 — `honey_inventory_pricing();`
-- `includes/honey_inventory.php`:180 — `honey_inventory_pricing();`
+- `includes/honey_inventory.php`:165 — `honey_inventory_pricing();`
+- `includes/honey_inventory.php`:183 — `honey_inventory_pricing();`
 
 ## honey_role_can_view {#honey_role_can_view}
 
@@ -51,29 +54,29 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (7):**
 
 - `includes/dept_pricing.php`:157 — `$supplierCode = honey_supplier_code($supplierName, date('Y-m-d'));`
-- `includes/honey_inventory.php`:134 — `$code = honey_supplier_code($supplierName, $arrivalDate);`
-- `includes/honey_inventory.php`:565 — `$code = honey_supplier_code($supplierName, (string) $wh['arrival_date']);`
-- `includes/honey_inventory.php`:605 — `$code = honey_supplier_code($supplierName, (string) $wh['arrival_date']);`
-- `includes/honey_inventory.php`:741 — `$code = honey_supplier_code($supplierName, (string) $wh['arrival_date']);`
-- `includes/honey_inventory.php`:1010 — `? honey_supplier_code($newName, (string) $ctx['arrival_date'])`
+- `includes/honey_inventory.php`:137 — `$code = honey_supplier_code($supplierName, $arrivalDate);`
+- `includes/honey_inventory.php`:633 — `$code = honey_supplier_code($supplierName, (string) $wh['arrival_date']);`
+- `includes/honey_inventory.php`:673 — `$code = honey_supplier_code($supplierName, (string) $wh['arrival_date']);`
+- `includes/honey_inventory.php`:809 — `$code = honey_supplier_code($supplierName, (string) $wh['arrival_date']);`
+- `includes/honey_inventory.php`:1078 — `? honey_supplier_code($newName, (string) $ctx['arrival_date'])`
 - `includes/honey_pricing.php`:134 — `$supplierCode = honey_supplier_code($supplierName, date('Y-m-d'));`
 
 ## honey_batch_no {#honey_batch_no}
 
 **Callers (1):**
 
-- `includes/honey_inventory.php`:308 — `$batchNo = honey_batch_no((string) $pr['supplier_code'], $bottlingDate);`
+- `includes/honey_inventory.php`:311 — `$batchNo = honey_batch_no((string) $pr['supplier_code'], $bottlingDate);`
 
 ## honey_normalize_variant {#honey_normalize_variant}
 
 **Callers (10):**
 
-- `includes/honey_inventory.php`:153 — `$variant = honey_normalize_variant((string) ($row['variant'] ?? ''));`
-- `includes/honey_inventory.php`:526 — `$variant = honey_normalize_variant($newValue);`
-- `includes/honey_inventory.php`:749 — `$variant = honey_normalize_variant((string) $fields['variant']);`
-- `includes/honey_inventory.php`:778 — `$variant = honey_normalize_variant((string) $fields['variant']);`
-- `includes/honey_inventory.php`:809 — `$variant = honey_normalize_variant((string) $fields['variant']);`
-- `includes/honey_inventory.php`:993 — `$after = honey_normalize_variant($newValue);`
+- `includes/honey_inventory.php`:156 — `$variant = honey_normalize_variant((string) ($row['variant'] ?? ''));`
+- `includes/honey_inventory.php`:594 — `$variant = honey_normalize_variant($newValue);`
+- `includes/honey_inventory.php`:817 — `$variant = honey_normalize_variant((string) $fields['variant']);`
+- `includes/honey_inventory.php`:846 — `$variant = honey_normalize_variant((string) $fields['variant']);`
+- `includes/honey_inventory.php`:877 — `$variant = honey_normalize_variant((string) $fields['variant']);`
+- `includes/honey_inventory.php`:1061 — `$after = honey_normalize_variant($newValue);`
 - `includes/honey_parcel_inventory.php`:166 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:142 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:159 — `$variant = honey_normalize_variant($variant);`
@@ -83,12 +86,12 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (10):**
 
-- `includes/honey_inventory.php`:393 — `[$curCol] = honey_packaging_size_columns($size);`
-- `includes/honey_inventory.php`:409 — `[$curCol] = honey_packaging_size_columns($size);`
-- `includes/honey_inventory.php`:489 — `[$curCol] = honey_packaging_size_columns($size);`
-- `includes/honey_inventory.php`:584 — `[$curCol, $initCol] = honey_packaging_size_columns($size);`
-- `includes/honey_inventory.php`:821 — `[$curCol, $initCol] = honey_packaging_size_columns((string) $size);`
-- `includes/honey_inventory.php`:834 — `[$curCol, $initCol] = honey_packaging_size_columns($size);`
+- `includes/honey_inventory.php`:461 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/honey_inventory.php`:477 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/honey_inventory.php`:557 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/honey_inventory.php`:652 — `[$curCol, $initCol] = honey_packaging_size_columns($size);`
+- `includes/honey_inventory.php`:889 — `[$curCol, $initCol] = honey_packaging_size_columns((string) $size);`
+- `includes/honey_inventory.php`:902 — `[$curCol, $initCol] = honey_packaging_size_columns($size);`
 - `includes/honey_parcel_inventory.php`:122 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_pos.php`:143 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_pos.php`:163 — `[$curCol] = honey_packaging_size_columns($size);`
@@ -100,12 +103,12 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (10):**
 
-- `includes/honey_inventory.php`:228 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
-- `includes/honey_inventory.php`:560 — `$wh = honey_fetch_warehouse($pdo, $rowId);`
-- `includes/honey_inventory.php`:595 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
-- `includes/honey_inventory.php`:679 — `$wh = $pr ? honey_fetch_warehouse($pdo, (int) $pr['warehouse_row_id']) : null;`
-- `includes/honey_inventory.php`:733 — `$wh = honey_fetch_warehouse($pdo, $rowId);`
-- `includes/honey_inventory.php`:892 — `$wh = honey_fetch_warehouse($pdo, $rowId);`
+- `includes/honey_inventory.php`:231 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
+- `includes/honey_inventory.php`:628 — `$wh = honey_fetch_warehouse($pdo, $rowId);`
+- `includes/honey_inventory.php`:663 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
+- `includes/honey_inventory.php`:747 — `$wh = $pr ? honey_fetch_warehouse($pdo, (int) $pr['warehouse_row_id']) : null;`
+- `includes/honey_inventory.php`:801 — `$wh = honey_fetch_warehouse($pdo, $rowId);`
+- `includes/honey_inventory.php`:960 — `$wh = honey_fetch_warehouse($pdo, $rowId);`
 - `includes/honey_pricing.php`:70 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
 - `includes/honey_pricing.php`:312 — `$wh = honey_fetch_warehouse($pdo, (int) $wid);`
 - `includes/honey_pricing.php`:344 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
@@ -117,10 +120,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/honey_inventory.php`:276 — `$pr = honey_fetch_production($pdo, $productionRowId);`
-- `includes/honey_inventory.php`:678 — `$pr = honey_fetch_production($pdo, (int) $pk['production_row_id']);`
-- `includes/honey_inventory.php`:773 — `$pr = honey_fetch_production($pdo, $rowId);`
-- `includes/honey_inventory.php`:910 — `$pr = honey_fetch_production($pdo, $rowId);`
+- `includes/honey_inventory.php`:279 — `$pr = honey_fetch_production($pdo, $productionRowId);`
+- `includes/honey_inventory.php`:746 — `$pr = honey_fetch_production($pdo, (int) $pk['production_row_id']);`
+- `includes/honey_inventory.php`:841 — `$pr = honey_fetch_production($pdo, $rowId);`
+- `includes/honey_inventory.php`:978 — `$pr = honey_fetch_production($pdo, $rowId);`
 
 ## honey_fetch_packaging {#honey_fetch_packaging}
 
@@ -128,9 +131,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/honey_inventory.php`:379 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
-- `includes/honey_inventory.php`:804 — `$pk = honey_fetch_packaging($pdo, $rowId);`
-- `includes/honey_inventory.php`:927 — `$pk = honey_fetch_packaging($pdo, $rowId);`
+- `includes/honey_inventory.php`:447 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
+- `includes/honey_inventory.php`:872 — `$pk = honey_fetch_packaging($pdo, $rowId);`
+- `includes/honey_inventory.php`:995 — `$pk = honey_fetch_packaging($pdo, $rowId);`
 
 ## honey_fetch_packaging_by_production {#honey_fetch_packaging_by_production}
 
@@ -138,7 +141,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/honey_inventory.php`:304 — `$existing = honey_fetch_packaging_by_production($pdo, $productionRowId);`
+- `includes/honey_inventory.php`:307 — `$existing = honey_fetch_packaging_by_production($pdo, $productionRowId);`
 
 ## honey_warehouse_stock_in {#honey_warehouse_stock_in}
 
@@ -153,14 +156,14 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/honey.php`:100 — `'pending_count' => honey_warehouse_has_pricing_columns($pdo) ? honey_pricing_pending_count($pdo) : 0,`
-- `includes/honey_inventory.php`:136 — `$hasPricingCols = honey_warehouse_has_pricing_columns($pdo);`
+- `includes/honey_inventory.php`:139 — `$hasPricingCols = honey_warehouse_has_pricing_columns($pdo);`
 
 ## honey_warehouse_unit_cost_column {#honey_warehouse_unit_cost_column}
 
 **Callers (2):**
 
 - `api/v1/honey.php`:82 — `$costCol = honey_warehouse_unit_cost_column($pdo);`
-- `includes/honey_inventory.php`:189 — `return honey_warehouse_unit_cost_column($pdo) !== null;`
+- `includes/honey_inventory.php`:192 — `return honey_warehouse_unit_cost_column($pdo) !== null;`
 
 ## honey_warehouse_normalize_cost_row {#honey_warehouse_normalize_cost_row}
 
@@ -184,6 +187,14 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/honey.php`:168 — `$result = honey_production_stock_out(`
 
+## honey_bottling_deduct_packaging_stocks {#honey_bottling_deduct_packaging_stocks}
+
+**Tables:** `departments`, `stocks`
+
+**Callers (1):**
+
+- `includes/honey_inventory.php`:361 — `$packagingDeduct = honey_bottling_deduct_packaging_stocks($pdo, $userId, $sizeQtys, $batchNo);`
+
 ## honey_packaging_stock_out_sold {#honey_packaging_stock_out_sold}
 
 **Tables:** `honey_sales_log`, `honey_packaging_rows`
@@ -205,7 +216,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/honey.php`:387 — `honey_apply_correction_request($pdo, $req);`
-- `includes/honey_inventory.php`:446 — `honey_apply_correction_request($pdo, [`
+- `includes/honey_inventory.php`:514 — `honey_apply_correction_request($pdo, [`
 
 ## honey_cascade_warehouse_metadata {#honey_cascade_warehouse_metadata}
 
@@ -213,10 +224,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/honey_inventory.php`:529 — `honey_cascade_warehouse_metadata($pdo, $rowId, null, $variant);`
-- `includes/honey_inventory.php`:569 — `honey_cascade_warehouse_metadata($pdo, $rowId, $supplierId, null);`
-- `includes/honey_inventory.php`:746 — `honey_cascade_warehouse_metadata($pdo, $rowId, $supplierId, null);`
-- `includes/honey_inventory.php`:752 — `honey_cascade_warehouse_metadata($pdo, $rowId, null, $variant);`
+- `includes/honey_inventory.php`:597 — `honey_cascade_warehouse_metadata($pdo, $rowId, null, $variant);`
+- `includes/honey_inventory.php`:637 — `honey_cascade_warehouse_metadata($pdo, $rowId, $supplierId, null);`
+- `includes/honey_inventory.php`:814 — `honey_cascade_warehouse_metadata($pdo, $rowId, $supplierId, null);`
+- `includes/honey_inventory.php`:820 — `honey_cascade_warehouse_metadata($pdo, $rowId, null, $variant);`
 
 ## honey_log_edit {#honey_log_edit}
 
@@ -224,21 +235,21 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (15):**
 
-- `includes/honey_inventory.php`:742 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'supplier_id', (string) $wh['supplier_id'], (string) $supplierId);`
-- `includes/honey_inventory.php`:750 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $wh['variant'], $variant);`
-- `includes/honey_inventory.php`:760 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $wh['current_qty'], (string) $qty);`
-- `includes/honey_inventory.php`:762 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $wh['initial_qty'], (string) $qty);`
-- `includes/honey_inventory.php`:779 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $pr['variant'], $variant);`
-- `includes/honey_inventory.php`:791 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $pr['current_qty'], (string) $qty);`
-- `includes/honey_inventory.php`:793 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $pr['initial_qty'], (string) $qty);`
-- `includes/honey_inventory.php`:810 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $pk['variant'], $variant);`
-- `includes/honey_inventory.php`:823 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, $curCol, $old, (string) $qty);`
-- `includes/honey_inventory.php`:825 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, $initCol, (string) ($pk[$initCol] ?? '0'), (string) $qty);`
-- `includes/honey_inventory.php`:835 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, $curCol, (string) ($pk[$curCol] ?? '0'), (string) $qty);`
-- `includes/honey_inventory.php`:837 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, $initCol, (string) ($pk[$initCol] ?? '0'), (string) $qty);`
-- `includes/honey_inventory.php`:857 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'product_label', (string) $row['product_label'], $label);`
-- `includes/honey_inventory.php`:867 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $row['current_qty'], (string) $qty);`
-- `includes/honey_inventory.php`:869 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $row['initial_qty'], (string) $qty);`
+- `includes/honey_inventory.php`:810 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'supplier_id', (string) $wh['supplier_id'], (string) $supplierId);`
+- `includes/honey_inventory.php`:818 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $wh['variant'], $variant);`
+- `includes/honey_inventory.php`:828 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $wh['current_qty'], (string) $qty);`
+- `includes/honey_inventory.php`:830 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $wh['initial_qty'], (string) $qty);`
+- `includes/honey_inventory.php`:847 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $pr['variant'], $variant);`
+- `includes/honey_inventory.php`:859 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $pr['current_qty'], (string) $qty);`
+- `includes/honey_inventory.php`:861 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $pr['initial_qty'], (string) $qty);`
+- `includes/honey_inventory.php`:878 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $pk['variant'], $variant);`
+- `includes/honey_inventory.php`:891 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, $curCol, $old, (string) $qty);`
+- `includes/honey_inventory.php`:893 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, $initCol, (string) ($pk[$initCol] ?? '0'), (string) $qty);`
+- `includes/honey_inventory.php`:903 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, $curCol, (string) ($pk[$curCol] ?? '0'), (string) $qty);`
+- `includes/honey_inventory.php`:905 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, $initCol, (string) ($pk[$initCol] ?? '0'), (string) $qty);`
+- `includes/honey_inventory.php`:925 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'product_label', (string) $row['product_label'], $label);`
+- `includes/honey_inventory.php`:935 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $row['current_qty'], (string) $qty);`
+- `includes/honey_inventory.php`:937 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $row['initial_qty'], (string) $qty);`
 
 ## honey_traceability {#honey_traceability}
 
@@ -254,9 +265,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/honey_inventory.php`:645 — `$matches[] = honey_build_trace_chain($pdo, $pk);`
-- `includes/honey_inventory.php`:655 — `$matches[] = honey_build_trace_chain($pdo, $pk);`
-- `includes/honey_inventory.php`:669 — `$matches[] = honey_build_trace_chain($pdo, $pk);`
+- `includes/honey_inventory.php`:713 — `$matches[] = honey_build_trace_chain($pdo, $pk);`
+- `includes/honey_inventory.php`:723 — `$matches[] = honey_build_trace_chain($pdo, $pk);`
+- `includes/honey_inventory.php`:737 — `$matches[] = honey_build_trace_chain($pdo, $pk);`
 
 ## honey_correction_row_options {#honey_correction_row_options}
 
@@ -276,10 +287,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/honey_inventory.php`:759 — `$resetBaseline = honey_executive_qty_resets_baseline($fields);`
-- `includes/honey_inventory.php`:790 — `$resetBaseline = honey_executive_qty_resets_baseline($fields);`
-- `includes/honey_inventory.php`:814 — `$resetBaseline = honey_executive_qty_resets_baseline($fields);`
-- `includes/honey_inventory.php`:866 — `$resetBaseline = honey_executive_qty_resets_baseline($fields);`
+- `includes/honey_inventory.php`:827 — `$resetBaseline = honey_executive_qty_resets_baseline($fields);`
+- `includes/honey_inventory.php`:858 — `$resetBaseline = honey_executive_qty_resets_baseline($fields);`
+- `includes/honey_inventory.php`:882 — `$resetBaseline = honey_executive_qty_resets_baseline($fields);`
+- `includes/honey_inventory.php`:934 — `$resetBaseline = honey_executive_qty_resets_baseline($fields);`
 
 ## honey_executive_edit_row {#honey_executive_edit_row}
 
@@ -288,7 +299,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/honey.php`:453 — `honey_executive_edit_row(`
-- `includes/honey_inventory.php`:717 — `honey_executive_edit_row($pdo, 0, $stage, $rowTable, $rowId, [`
+- `includes/honey_inventory.php`:785 — `honey_executive_edit_row($pdo, 0, $stage, $rowTable, $rowId, [`
 
 ## honey_correction_row_context {#honey_correction_row_context}
 
@@ -296,27 +307,27 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/honey_inventory.php`:1088 — `$ctx = honey_correction_row_context($pdo, $req);`
+- `includes/honey_inventory.php`:1156 — `$ctx = honey_correction_row_context($pdo, $req);`
 
 ## honey_correction_change_preview {#honey_correction_change_preview}
 
 **Callers (1):**
 
-- `includes/honey_inventory.php`:1090 — `$req['change_preview'] = honey_correction_change_preview($pdo, $req, $ctx);`
+- `includes/honey_inventory.php`:1158 — `$req['change_preview'] = honey_correction_change_preview($pdo, $req, $ctx);`
 
 ## honey_correction_enrich {#honey_correction_enrich}
 
 **Callers (2):**
 
 - `api/v1/honey.php`:311 — `honey_correction_enrich($pdo, $row);`
-- `includes/honey_inventory.php`:1154 — `honey_correction_enrich($pdo, $r);`
+- `includes/honey_inventory.php`:1222 — `honey_correction_enrich($pdo, $r);`
 
 ## honey_correction_summary {#honey_correction_summary}
 
 **Callers (2):**
 
-- `includes/honey_inventory.php`:985 — `'headline' => honey_correction_summary($req),`
-- `includes/honey_inventory.php`:1091 — `$req['summary'] = honey_correction_summary($req);`
+- `includes/honey_inventory.php`:1053 — `'headline' => honey_correction_summary($req),`
+- `includes/honey_inventory.php`:1159 — `$req['summary'] = honey_correction_summary($req);`
 
 ## honey_correction_unread_count {#honey_correction_unread_count}
 
@@ -346,7 +357,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/honey_inventory.php`:1243 — `$agg = honey_packaging_variant_inventory_breakdown($st ? $st->fetchAll(PDO::FETCH_ASSOC) : []);`
+- `includes/honey_inventory.php`:1311 — `$agg = honey_packaging_variant_inventory_breakdown($st ? $st->fetchAll(PDO::FETCH_ASSOC) : []);`
 
 ## honey_packaging_total_inventory_snapshot {#honey_packaging_total_inventory_snapshot}
 
