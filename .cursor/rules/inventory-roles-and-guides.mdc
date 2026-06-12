@@ -13,6 +13,16 @@ alwaysApply: false
 - `_System_Core/problems/fixes/page-guide-button-modal.md`
 - `_System_Core/005_SPA_UX_Patterns.md` — §Page guide button, §Role-based inventory permissions, §Packaging and materials inventory pages
 
+## Supplies roles (canonical)
+
+| Role | Actions |
+|------|---------|
+| **HR** | Add item, stock in lot, **issue request** (approval required) |
+| **Production manager** | View only |
+| **Executive** | All HR actions + set on-hand; approve/deny on Requests |
+
+`supply_detail.permissions` from API. Guides: `SuppliesInventoryGuideModal`, `InventoryRequestsGuideModal`.
+
 ## Packaging Materials roles (canonical)
 
 | Role | Actions |
@@ -38,5 +48,5 @@ Enforce in `material_inventory.php` helpers + `materials.php` API. Return `permi
 
 1. PHP role helper → API gate → `permissions` in detail response
 2. SPA buttons driven by permissions
-3. Update `PackagingInventoryGuideModal` (or new guide modal) for affected roles
+3. Update the page `*GuideModal` (`PackagingInventoryGuideModal`, `SuppliesInventoryGuideModal`, `InventoryRequestsGuideModal`) for affected roles
 4. Append `_System_Core/002_Memory_Bank.md` + fix note under `problems/fixes/` if pattern is reusable

@@ -117,14 +117,14 @@ export function submitMaterialRequest(payload: {
   return apiPost<{ id: number }>("materials.php", "request_submit", payload);
 }
 
-export function listMaterialRequests() {
+export function listMaterialRequests(filters?: { category?: string; request_action?: string }) {
   return apiGet<{
     requests: MaterialAdjustmentRequest[];
     readonly: boolean;
     can_approve: boolean;
     can_submit_packaging?: boolean;
     can_submit_supply?: boolean;
-  }>("materials.php", "request_list");
+  }>("materials.php", "request_list", filters);
 }
 
 export interface PackagingDetailPermissions {
@@ -231,12 +231,47 @@ export function stockInPackagingLot(payload: {
   }>("materials.php", "stock_in_lot", payload);
 }
 
+export interface SupplyDetailPermissions {
+  can_stock_in: boolean;
+  can_issue_request: boolean;
+  can_set_on_hand: boolean;
+  can_create_catalog: boolean;
+  can_view_extended_log: boolean;
+}
+
+export interface UnreadMaterialRequest {
+  id: number;
+  stock_name: string;
+  unit: string;
+  category: string;
+  action: string;
+  amount: string | number;
+  reason: string;
+  requester_name?: string | null;
+  status: string;
+  summary?: string;
+  requested_by_name: string;
+  created_at: string;
+}
+
 export function fetchSupplyDetail(stockId: number) {
-  return apiGet<{ stock: MaterialStockRow; entries: SupplyStockEntry[] }>(
+  return apiGet<{
+    stock: MaterialStockRow;
+    entries: SupplyStockEntry[];
+    permissions?: SupplyDetailPermissions;
+  }>(
     "materials.php",
     "supply_detail",
     { stock_id: stockId }
   );
+}
+
+export function listUnreadMaterialRequests(limit = 10) {
+  return apiGet<{ requests: UnreadMaterialRequest[] }>("materials.php", "request_unread_list", { limit });
+}
+
+export function markMaterialRequestViewed(id: number) {
+  return apiPost("materials.php", "request_mark_viewed", { id });
 }
 
 export function setSupplyOnHand(payload: {

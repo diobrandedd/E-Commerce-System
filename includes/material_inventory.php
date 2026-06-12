@@ -60,7 +60,24 @@ function material_inventory_role_can_stock_in_supply(string $role): bool
 
 function material_inventory_role_can_request_supply(string $role): bool
 {
-    return $role === 'hr';
+    return material_inventory_role_can_issue_supply($role);
+}
+
+function material_inventory_role_can_issue_supply(string $role): bool
+{
+    return $role === 'hr' || $role === 'executive';
+}
+
+/** @return array{can_stock_in: bool, can_issue_request: bool, can_set_on_hand: bool, can_create_catalog: bool, can_view_extended_log: bool} */
+function material_supply_detail_permissions(string $role): array
+{
+    return [
+        'can_stock_in' => material_inventory_role_can_stock_in_supply($role),
+        'can_issue_request' => material_inventory_role_can_issue_supply($role),
+        'can_set_on_hand' => $role === 'executive',
+        'can_create_catalog' => material_inventory_role_can_create_supply_catalog($role),
+        'can_view_extended_log' => $role === 'executive',
+    ];
 }
 
 function material_inventory_role_can_create_supply_catalog(string $role): bool
@@ -845,10 +862,15 @@ function material_supply_stock_in_lot(
     $lotUnit = round($lotTotalPrice / $lotQty, 6);
     $newOnHand = round($oldOnHand + $lotQty, 2);
 
+    $stockUnit = trim((string) ($row['unit'] ?? 'pcs'));
+    if ($stockUnit === '') {
+        $stockUnit = 'pcs';
+    }
     $batchLabel = sprintf(
-        'lot: ₱%s/%spcs',
+        'lot: ₱%s/%s%s',
         number_format($lotTotalPrice, 2, '.', ''),
-        rtrim(rtrim(number_format($lotQty, 4, '.', ''), '0'), '.')
+        rtrim(rtrim(number_format($lotQty, 4, '.', ''), '0'), '.'),
+        $stockUnit
     );
     if ($note !== null && trim($note) !== '') {
         $batchLabel .= ' — ' . trim($note);
@@ -1062,18 +1084,34 @@ function material_adjustment_submit(
 }
 
 /** @return list<array<string, mixed>> */
-function material_adjustment_list(PDO $pdo, ?int $requestedBy = null): array
-{
+function material_adjustment_list(
+    PDO $pdo,
+    ?int $requestedBy = null,
+    ?string $category = null,
+    ?string $action = null,
+): array {
     $sql = 'SELECT mar.*, s.name AS stock_name, s.unit, s.category,
                    u.name AS requested_by_name, r.name AS reviewed_by_name
             FROM material_adjustment_requests mar
             INNER JOIN stocks s ON s.id = mar.stock_id
             INNER JOIN users u ON u.id = mar.requested_by
             LEFT JOIN users r ON r.id = mar.reviewed_by';
+    $where = [];
     $params = [];
     if ($requestedBy !== null && $requestedBy > 0) {
-        $sql .= ' WHERE mar.requested_by = ?';
+        $where[] = 'mar.requested_by = ?';
         $params[] = $requestedBy;
+    }
+    if ($category !== null && trim($category) !== '') {
+        $where[] = 's.category = ?';
+        $params[] = trim($category);
+    }
+    if ($action !== null && trim($action) !== '') {
+        $where[] = 'mar.action = ?';
+        $params[] = trim($action);
+    }
+    if ($where !== []) {
+        $sql .= ' WHERE ' . implode(' AND ', $where);
     }
     $sql .= ' ORDER BY mar.status = "pending" DESC, mar.created_at DESC LIMIT 500';
     $st = $pdo->prepare($sql);
@@ -1203,6 +1241,35 @@ function material_adjustment_mark_viewed(PDO $pdo, int $requestId): void
         )->execute([$requestId]);
     } catch (Throwable) {
         // Table may not exist pre-migration.
+    }
+}
+
+/** @return list<array<string, mixed>> */
+function material_adjustment_unread_list(PDO $pdo, int $limit = 10): array
+{
+    $limit = max(1, min(50, $limit));
+    try {
+        $st = $pdo->prepare(
+            'SELECT mar.id, mar.action, mar.amount, mar.reason, mar.requester_name, mar.created_at, mar.status,
+                    s.name AS stock_name, s.unit, s.category,
+                    u.name AS requested_by_name
+             FROM material_adjustment_requests mar
+             INNER JOIN stocks s ON s.id = mar.stock_id
+             INNER JOIN users u ON u.id = mar.requested_by
+             WHERE mar.status = "pending" AND mar.executive_viewed_at IS NULL
+               AND s.category = "supply" AND mar.action = "issue"
+             ORDER BY mar.created_at DESC
+             LIMIT ' . $limit
+        );
+        $st->execute();
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$row) {
+            $row['summary'] = material_adjustment_summary($row);
+        }
+
+        return $rows;
+    } catch (Throwable) {
+        return [];
     }
 }
 

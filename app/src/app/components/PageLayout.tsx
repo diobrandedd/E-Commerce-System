@@ -38,13 +38,21 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
     navigate(`/inventory/requests?request=${id}`);
   };
 
+  const openSupplyRequest = (id: number) => {
+    setBellOpen(false);
+    navigate(`/inventory/requests?supply_request=${id}#supply-requests-section`);
+  };
+
   return (
-    <div className="min-h-screen flex bg-background" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div
+      className="h-dvh flex overflow-hidden bg-background"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         <header
-          className="sticky top-0 z-10 bg-card border-b border-border flex items-center justify-between px-6 py-4"
+          className="shrink-0 z-10 bg-card border-b border-border flex items-center justify-between px-6 py-4"
           style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
         >
           <div className="flex items-center gap-3">
@@ -112,6 +120,10 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
                                 void openCorrectionRequest(r.id);
                                 return;
                               }
+                              if (r.kind === "supply_request") {
+                                openSupplyRequest(r.id);
+                                return;
+                              }
                               setBellOpen(false);
                               if (r.kind === "edit_request") {
                                 navigate("/inventory/requests#edit-requests-section");
@@ -126,6 +138,19 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
                                 <p className="text-xs font-semibold text-foreground capitalize">{r.stage}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                                   {r.summary ?? r.reason}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  {r.requested_by_name} · {r.created_at}
+                                </p>
+                              </>
+                            ) : r.kind === "supply_request" ? (
+                              <>
+                                <p className="text-xs font-semibold text-foreground">
+                                  Supply issue request · {r.stock_name}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                  {r.requester_name ? `${r.requester_name} · ` : ""}
+                                  {r.amount} {r.unit} · {r.reason}
                                 </p>
                                 <p className="text-[10px] text-muted-foreground mt-1">
                                   {r.requested_by_name} · {r.created_at}
@@ -171,7 +196,9 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 max-w-full overflow-x-hidden">{children}</main>
+        <main className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto overscroll-contain min-w-0 max-w-full overflow-x-hidden">
+          {children}
+        </main>
       </div>
     </div>
   );

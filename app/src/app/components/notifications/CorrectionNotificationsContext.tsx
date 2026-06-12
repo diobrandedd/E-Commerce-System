@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { useLocation } from "react-router";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost } from "@/app/lib/api";
+import { listUnreadMaterialRequests, markMaterialRequestViewed, type UnreadMaterialRequest } from "@/app/lib/materials";
 import { onLiveRefresh } from "@/app/lib/liveRefresh";
 
 export interface UnreadCorrection {
@@ -42,13 +43,15 @@ export interface UnreadEditRequest {
 export type NotificationItem =
   | ({ kind: "correction" } & UnreadCorrection)
   | ({ kind: "discount_approval" } & UnreadDiscountApproval)
-  | ({ kind: "edit_request" } & UnreadEditRequest);
+  | ({ kind: "edit_request" } & UnreadEditRequest)
+  | ({ kind: "supply_request" } & UnreadMaterialRequest);
 
 interface CorrectionNotificationsContextValue {
   unreadCount: number;
   unreadList: NotificationItem[];
   refresh: () => Promise<void>;
   markViewed: (id: number) => Promise<void>;
+  markMaterialViewed: (id: number) => Promise<void>;
 }
 
 const POLL_MS = 15000;
@@ -69,7 +72,7 @@ export function CorrectionNotificationsProvider({ children }: { children: ReactN
       return;
     }
     try {
-      const [countRes, listRes, pendingDiscounts, pendingEdits] = await Promise.all([
+      const [countRes, listRes, pendingDiscounts, pendingEdits, supplyUnread] = await Promise.all([
         apiGet<{ count: number }>("honey.php", "correction_unread_count"),
         apiGet<{ requests: UnreadCorrection[] }>("honey.php", "correction_unread_list", { limit: 10 }),
         apiGet<{ rows: UnreadDiscountApproval[]; pending_count: number }>("pos_discounts.php", "list", {
@@ -77,6 +80,7 @@ export function CorrectionNotificationsProvider({ children }: { children: ReactN
           limit: "10",
         }),
         apiGet<{ requests: UnreadEditRequest[] }>("edit_requests.php", "list", { status: "pending" }),
+        listUnreadMaterialRequests(10),
       ]);
 
       const correctionItems: NotificationItem[] = listRes.requests.map(r => ({ kind: "correction", ...r }));
@@ -85,7 +89,8 @@ export function CorrectionNotificationsProvider({ children }: { children: ReactN
         .filter(r => r.status === "pending")
         .slice(0, 10)
         .map(r => ({ kind: "edit_request", ...r }));
-      const merged = [...correctionItems, ...discountItems, ...editItems].sort((a, b) =>
+      const supplyItems: NotificationItem[] = supplyUnread.requests.map(r => ({ kind: "supply_request", ...r }));
+      const merged = [...correctionItems, ...supplyItems, ...discountItems, ...editItems].sort((a, b) =>
         String(b.created_at).localeCompare(String(a.created_at)),
       );
 
@@ -134,8 +139,18 @@ export function CorrectionNotificationsProvider({ children }: { children: ReactN
     [isExec],
   );
 
+  const markMaterialViewed = useCallback(
+    async (id: number) => {
+      if (!isExec) return;
+      await markMaterialRequestViewed(id);
+      setUnreadList(prev => prev.filter(item => !(item.kind === "supply_request" && item.id === id)));
+      setUnreadCount(c => Math.max(0, c - 1));
+    },
+    [isExec],
+  );
+
   return (
-    <CorrectionNotificationsContext.Provider value={{ unreadCount, unreadList, refresh, markViewed }}>
+    <CorrectionNotificationsContext.Provider value={{ unreadCount, unreadList, refresh, markViewed, markMaterialViewed }}>
       {children}
     </CorrectionNotificationsContext.Provider>
   );
@@ -149,6 +164,7 @@ export function useCorrectionNotifications(): CorrectionNotificationsContextValu
       unreadList: [],
       refresh: async () => {},
       markViewed: async () => {},
+      markMaterialViewed: async () => {},
     };
   }
   return ctx;

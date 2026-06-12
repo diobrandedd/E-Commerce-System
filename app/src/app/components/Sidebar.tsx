@@ -1,11 +1,17 @@
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
-  ChevronDown, Truck, DollarSign, RotateCcw, ClipboardList,
-  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, Printer, PackageCheck,
+  Truck, DollarSign, RotateCcw, ClipboardList,
+  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, PackageCheck,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
+import {
+  SidebarNavChevron,
+  SidebarNavCollapse,
+  SidebarNavToggleButton,
+} from "@/app/components/layout/sidebarNavMotion";
 import { useAuth, Role } from "@/app/context/AuthContext";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
 
@@ -67,11 +73,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     icon: Package,
     label: "Inventory",
     to: "/inventory/raw-materials",
-    badge: pendingCorrections > 0 ? pendingCorrections : undefined,
-    children: [
-      ...inventoryChildren,
-      { label: "Requests", to: "/inventory/requests" },
-    ],
+    children: inventoryChildren,
   };
 
   const inventoryNavHr: NavItem = {
@@ -81,11 +83,12 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     children: inventoryChildren,
   };
 
-  const requestsNav: NavItem = {
+  const requestsNav = (badge?: number): NavItem => ({
     icon: ClipboardList,
     label: "Requests",
     to: "/inventory/requests",
-  };
+    badge: badge && badge > 0 ? badge : undefined,
+  });
 
   const onlineOrdersItem: NavItem = {
     icon: Package,
@@ -129,6 +132,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         inventoryNav,
+        requestsNav(pendingCorrections),
         { icon: Users, label: "Staff Management", to: "/staff" },
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
@@ -145,6 +149,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         inventoryNav,
+        requestsNav(),
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
@@ -156,7 +161,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         inventoryNavHr,
-        requestsNav,
+        requestsNav(),
         rtsNavReadOnly,
       ];
     case "team_leader":
@@ -244,6 +249,8 @@ function SidebarNestedChildren({
   navigate: (to: string) => void;
   onClose: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
+
   return (
     <>
       {children.map(child => {
@@ -251,33 +258,38 @@ function SidebarNestedChildren({
           const key = groupKey(parentKey, child.label);
           const subExpanded = expandedGroups.has(key);
           const isRawHoney = child.label === "Raw Honey";
+          const toggleClass = `w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors duration-150 ${
+            isRawHoney
+              ? "text-white/80 hover:text-white hover:bg-white/8 font-medium"
+              : "text-white/50 hover:text-white hover:bg-white/8"
+          }`;
           return (
             <div key={key}>
-              <button
-                type="button"
-                onClick={() => {
-                  if (isRawHoney) {
+              {isRawHoney ? (
+                <motion.button
+                  type="button"
+                  whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                  onClick={() => {
                     navigate(RAW_HONEY_WAREHOUSE);
                     ensureExpanded(key);
                     onClose();
-                    return;
-                  }
-                  toggleGroup(key);
-                }}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
-                  isRawHoney
-                    ? "text-white/80 hover:text-white hover:bg-white/8 font-medium"
-                    : "text-white/50 hover:text-white hover:bg-white/8"
-                }`}
-              >
-                <span className="flex-1 text-left">{child.label}</span>
-                <ChevronDown
-                  size={12}
-                  className={`transition-transform duration-200 ${subExpanded ? "rotate-180" : ""}`}
-                />
-              </button>
-              {subExpanded && (
-                <div className="ml-4 mt-0.5 space-y-0.5">
+                  }}
+                  className={toggleClass}
+                >
+                  <span className="flex-1 text-left">{child.label}</span>
+                  <SidebarNavChevron expanded={subExpanded} size={12} />
+                </motion.button>
+              ) : (
+                <SidebarNavToggleButton
+                  onClick={() => toggleGroup(key)}
+                  className={toggleClass}
+                >
+                  <span className="flex-1 text-left">{child.label}</span>
+                  <SidebarNavChevron expanded={subExpanded} size={12} />
+                </SidebarNavToggleButton>
+              )}
+              <SidebarNavCollapse open={subExpanded} className="ml-4 mt-0.5">
+                <div className="space-y-0.5 pb-0.5">
                   <SidebarNestedChildren
                     children={child.children}
                     parentKey={key}
@@ -288,7 +300,7 @@ function SidebarNestedChildren({
                     onClose={onClose}
                   />
                 </div>
-              )}
+              </SidebarNavCollapse>
             </div>
           );
         }
@@ -336,7 +348,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const { unreadCount: pendingCorrections } = useCorrectionNotifications();
 
   useEffect(() => {
-    if (location.pathname.includes("/inventory")) {
+    if (location.pathname.includes("/inventory") && !location.pathname.startsWith("/inventory/requests")) {
       setExpandedGroups(prev => {
         const next = new Set(prev);
         next.add("Inventory");
@@ -417,7 +429,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <div className="fixed inset-0 bg-black/30 z-20 lg:hidden" onClick={onClose} />
       )}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-30 w-64 flex flex-col bg-[#2a1f00] transition-transform duration-300 ${
+        className={`fixed lg:relative inset-y-0 left-0 z-30 w-64 shrink-0 h-dvh flex flex-col min-h-0 bg-[#2a1f00] transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
@@ -438,22 +450,22 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </span>
         </div>
 
-        <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
+        <nav className="pyx-scroll-dark flex-1 min-h-0 px-3 py-2 space-y-0.5 overflow-y-auto overscroll-contain">
           {navItems.map(({ icon: Icon, label, to, children, badge }) => {
             if (children) {
               const isExpanded = expandedGroups.has(label);
               return (
                 <div key={label}>
-                  <button
+                  <SidebarNavToggleButton
                     onClick={() => toggleGroup(label)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8 transition-all duration-150"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8 transition-colors duration-150"
                   >
                     <Icon size={17} />
                     <span className="flex-1 text-left">{label}</span>
-                    <ChevronDown size={14} className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                  </button>
-                  {isExpanded && (
-                    <div className="ml-8 mt-0.5 space-y-0.5">
+                    <SidebarNavChevron expanded={isExpanded} size={14} />
+                  </SidebarNavToggleButton>
+                  <SidebarNavCollapse open={isExpanded} className="ml-8 mt-0.5">
+                    <div className="space-y-0.5 pb-0.5">
                       <SidebarNestedChildren
                         children={children}
                         parentKey={label}
@@ -464,7 +476,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                         onClose={onClose}
                       />
                     </div>
-                  )}
+                  </SidebarNavCollapse>
                 </div>
               );
             }
@@ -491,7 +503,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           })}
         </nav>
 
-        <div className="px-3 py-4 border-t border-white/10">
+        <div className="shrink-0 px-3 py-4 border-t border-white/10">
           <div className="flex items-center gap-3 px-3 py-2 mb-1">
             <div className="w-8 h-8 rounded-full bg-[#C8900A] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
               {initials}

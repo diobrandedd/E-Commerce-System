@@ -3,21 +3,20 @@ import { Loader2 } from "lucide-react";
 import { Link } from "react-router";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { SupplyIssueRequestModal } from "@/app/components/inventory/SupplyIssueRequestModal";
-import { SupplyOnHandRequestModal } from "@/app/components/inventory/SupplyOnHandRequestModal";
 import { SupplyOnHandSetModal } from "@/app/components/inventory/SupplyOnHandSetModal";
 import { SupplyStockInLotModal } from "@/app/components/inventory/SupplyStockInLotModal";
+import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
+import { useAuth } from "@/app/context/AuthContext";
 import {
   fetchSupplyDetail,
   type MaterialStockRow,
+  type SupplyDetailPermissions,
   type SupplyStockEntry,
 } from "@/app/lib/materials";
 import { ApiError } from "@/app/lib/api";
 
 interface SupplyMaterialDetailModalProps {
   stock: MaterialStockRow;
-  isExec: boolean;
-  isHr: boolean;
-  canStockIn: boolean;
   onClose: () => void;
   onChanged: () => void;
 }
@@ -43,21 +42,24 @@ function formatEntryLine(entry: SupplyStockEntry, unit: string) {
   return `${label} · ${entry.qty >= 0 ? "+" : ""}${entry.qty} ${unit}`;
 }
 
-export function SupplyMaterialDetailModal({
-  stock,
-  isExec,
-  isHr,
-  canStockIn,
-  onClose,
-  onChanged,
-}: SupplyMaterialDetailModalProps) {
+const defaultPermissions = (role: string | undefined): SupplyDetailPermissions => ({
+  can_stock_in: role === "executive" || role === "hr",
+  can_issue_request: role === "executive" || role === "hr",
+  can_set_on_hand: role === "executive",
+  can_create_catalog: role === "executive" || role === "hr",
+  can_view_extended_log: role === "executive",
+});
+
+export function SupplyMaterialDetailModal({ stock, onClose, onChanged }: SupplyMaterialDetailModalProps) {
+  const { user } = useAuth();
+  const { refresh: refreshNotifications } = useCorrectionNotifications();
   const [detail, setDetail] = useState<MaterialStockRow | null>(stock);
   const [entries, setEntries] = useState<SupplyStockEntry[]>([]);
+  const [permissions, setPermissions] = useState<SupplyDetailPermissions>(() => defaultPermissions(user?.role));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showStockIn, setShowStockIn] = useState(false);
   const [showSetOnHand, setShowSetOnHand] = useState(false);
-  const [showCountRequest, setShowCountRequest] = useState(false);
   const [showIssueRequest, setShowIssueRequest] = useState(false);
 
   const refresh = useCallback(async () => {
@@ -67,6 +69,7 @@ export function SupplyMaterialDetailModal({
       const data = await fetchSupplyDetail(stock.id);
       setDetail(data.stock);
       setEntries(data.entries);
+      if (data.permissions) setPermissions(data.permissions);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load details.");
     } finally {
@@ -84,10 +87,14 @@ export function SupplyMaterialDetailModal({
   const handleChildDone = () => {
     setShowStockIn(false);
     setShowSetOnHand(false);
-    setShowCountRequest(false);
     setShowIssueRequest(false);
     void refresh();
     onChanged();
+  };
+
+  const handleIssueDone = () => {
+    handleChildDone();
+    void refreshNotifications();
   };
 
   return (
@@ -120,7 +127,7 @@ export function SupplyMaterialDetailModal({
           </div>
 
           <div className="flex flex-wrap gap-2 shrink-0">
-            {canStockIn && (
+            {permissions.can_stock_in && (
               <button
                 type="button"
                 onClick={() => setShowStockIn(true)}
@@ -130,7 +137,7 @@ export function SupplyMaterialDetailModal({
                 Stock in lot
               </button>
             )}
-            {isExec && (
+            {permissions.can_set_on_hand && (
               <button
                 type="button"
                 onClick={() => setShowSetOnHand(true)}
@@ -139,31 +146,24 @@ export function SupplyMaterialDetailModal({
                 Set on-hand
               </button>
             )}
-            {isHr && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowIssueRequest(true)}
-                  className="text-xs font-semibold text-white px-3 py-2 rounded-lg"
-                  style={{ background: "#C8900A" }}
-                >
-                  Issue request
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCountRequest(true)}
-                  className="text-xs font-semibold px-3 py-2 rounded-lg border border-border hover:bg-secondary/50"
-                >
-                  Request count fix
-                </button>
-                <Link
-                  to="/inventory/requests#material-adjustments-section"
-                  onClick={onClose}
-                  className="text-xs font-medium text-[#C8900A] px-3 py-2 hover:underline"
-                >
-                  View my requests →
-                </Link>
-              </>
+            {permissions.can_issue_request && (
+              <button
+                type="button"
+                onClick={() => setShowIssueRequest(true)}
+                className="text-xs font-semibold text-white px-3 py-2 rounded-lg"
+                style={{ background: "#C8900A" }}
+              >
+                Issue request
+              </button>
+            )}
+            {permissions.can_issue_request && (
+              <Link
+                to="/inventory/requests#supply-requests-section"
+                onClick={onClose}
+                className="text-xs font-medium text-[#C8900A] px-3 py-2 hover:underline"
+              >
+                View my requests →
+              </Link>
             )}
           </div>
 
@@ -205,11 +205,8 @@ export function SupplyMaterialDetailModal({
       {showSetOnHand && (
         <SupplyOnHandSetModal stock={row} onClose={() => setShowSetOnHand(false)} onDone={handleChildDone} />
       )}
-      {showCountRequest && (
-        <SupplyOnHandRequestModal stock={row} onClose={() => setShowCountRequest(false)} onDone={handleChildDone} />
-      )}
       {showIssueRequest && (
-        <SupplyIssueRequestModal stock={row} onClose={() => setShowIssueRequest(false)} onDone={handleChildDone} />
+        <SupplyIssueRequestModal stock={row} onClose={() => setShowIssueRequest(false)} onDone={handleIssueDone} />
       )}
     </>
   );

@@ -17,6 +17,7 @@ api_dispatch([
     'request_reject' => 'api_materials_request_reject',
     'request_pending_count' => 'api_materials_request_pending_count',
     'request_mark_viewed' => 'api_materials_request_mark_viewed',
+    'request_unread_list' => 'api_materials_request_unread_list',
     'raw_snapshot' => 'api_materials_raw_snapshot',
     'raw_detail' => 'api_materials_raw_detail',
     'departments' => 'api_materials_departments',
@@ -199,7 +200,10 @@ function api_materials_request_list(): void
     $role = (string) $user['role'];
     $pdo = ims_pdo();
     $requestedBy = in_array($role, ['prod_manager', 'hr'], true) ? (int) $user['id'] : null;
-    $requests = material_adjustment_list($pdo, $requestedBy);
+    $category = isset($_GET['category']) ? trim((string) $_GET['category']) : null;
+    // `action` is the API router param — use `request_action` for mar.action filter.
+    $requestAction = isset($_GET['request_action']) ? trim((string) $_GET['request_action']) : null;
+    $requests = material_adjustment_list($pdo, $requestedBy, $category ?: null, $requestAction ?: null);
     api_ok([
         'requests' => $requests,
         'readonly' => false,
@@ -268,6 +272,16 @@ function api_materials_request_mark_viewed(): void
     $id = (int) ($input['id'] ?? 0);
     material_adjustment_mark_viewed(ims_pdo(), $id);
     api_ok(['viewed' => true]);
+}
+
+function api_materials_request_unread_list(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_role(['executive']);
+    unset($user);
+    $limit = (int) ($_GET['limit'] ?? 10);
+    $requests = material_adjustment_unread_list(ims_pdo(), $limit);
+    api_ok(['requests' => $requests]);
 }
 
 function api_materials_raw_snapshot(): void
@@ -411,7 +425,8 @@ function api_materials_set_pool_yield(): void
 function api_materials_supply_detail(): void
 {
     api_method_allowed(['GET']);
-    api_materials_require_view();
+    $user = api_materials_require_view();
+    $role = (string) $user['role'];
     $stockId = (int) ($_GET['stock_id'] ?? 0);
     if ($stockId < 1) {
         api_fail('stock_id required.', 422);
@@ -423,10 +438,12 @@ function api_materials_supply_detail(): void
     }
     $row['on_hand'] = round((float) ($row['on_hand'] ?? 0), 2);
     $row['current_price'] = round((float) ($row['current_price'] ?? 0), 2);
-    $entries = material_supply_recent_entries($pdo, $stockId, 25);
+    $logLimit = $role === 'executive' ? 100 : 25;
+    $entries = material_supply_recent_entries($pdo, $stockId, $logLimit);
     api_ok([
         'stock' => $row,
         'entries' => $entries,
+        'permissions' => material_supply_detail_permissions($role),
     ]);
 }
 

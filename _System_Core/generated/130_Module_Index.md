@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-12T05:33:49+02:00
+generated: 2026-06-12T07:27:35+02:00
 type: memory-bank
 ---
 
@@ -38,7 +38,7 @@ type: memory-bank
 | [[modules/honey_volume]] | 8 |
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/labels]] | 3 |
-| [[modules/material_inventory]] | 45 |
+| [[modules/material_inventory]] | 48 |
 | [[modules/online_order_parcels]] | 15 |
 | [[modules/online_orders_generator]] | 34 |
 | [[modules/order_remarks]] | 17 |

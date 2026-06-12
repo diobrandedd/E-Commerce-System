@@ -4,6 +4,18 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-12 — [[fixes/pyx-scrollbars|Global Pyx scrollbars + sidebar dropdown motion]]
+**Shipped:** themed slim scrollbars on all `overflow-y-auto`; fade-in on scroll/hover; `SidebarNavCollapse` animations. **Docs:** [[005_SPA_UX_Patterns#Pyx scrollbars (mandatory)]].
+
+### 2026-06-12 — [[fixes/page-layout-fixed-sidebar|Fixed sidebar shell]]
+**Shipped:** `PageLayout` `h-dvh overflow-hidden`; sidebar viewport-fixed; only `<main>` scrolls. **Docs:** [[005_SPA_UX_Patterns#Fixed sidebar shell (mandatory)]].
+
+### 2026-06-12 — Requests page empty (material `request_list` filter bug)
+**Fixed:** `request_list` read `$_GET['action']` (API router = `request_list`) as `mar.action` filter → zero rows. Use `request_action` query param instead.
+
+### 2026-06-12 — [[problems/records/2026-06-12_supplies-requests-hub|Supplies requests hub UX]]
+**Shipped:** `#supply-requests-section` + review modal · Guides on Supplies + Requests · bell `supply_request` notifications · `supply_detail.permissions`. **Pattern:** [[fixes/supplies-hr-lot-inventory]] · [[005_SPA_UX_Patterns#Requests hub]].
+
 ### 2026-06-12 — [[problems/records/2026-06-12_packaging-inventory-role-split|Packaging inventory role split + docs]]
 **Shipped:** HR stock-in · PM deduct for use · exec all + logs. **Reusable patterns:** [[fixes/packaging-inventory-roles]] · [[fixes/inventory-role-permissions]] · [[fixes/page-guide-button-modal]] · `.cursor/rules/inventory-roles-and-guides.mdc` · [[005_SPA_UX_Patterns#Role-based inventory permissions]].
 

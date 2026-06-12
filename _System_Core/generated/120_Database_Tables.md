@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-12T05:33:49+02:00
+generated: 2026-06-12T07:27:35+02:00
 type: memory-bank
 table_count: 45
 ---
@@ -176,6 +176,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_unread_list]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
 
 ## `pos_pins`
@@ -230,6 +231,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_set_on_hand]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_apply_issue]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_unread_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 
@@ -445,6 +447,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_reject]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_pending_count]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_mark_viewed]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_unread_list]] |
 
 ## `dept_wip_rows`
 

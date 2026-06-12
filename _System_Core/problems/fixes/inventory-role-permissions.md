@@ -14,7 +14,8 @@ tags: [fix, inventory, roles, permissions, spa, api]
 | Surface | HR | Production manager | Executive |
 |---------|----|--------------------|-----------|
 | **Packaging Materials** | Stock in lot | Deduct for use | All + set on-hand + pool yield + catalog + full log |
-| **Supplies** | Stock in lot; issue/count **requests** | — | Approve requests; set on-hand |
+| **Supplies** | Add item, stock in lot, **issue request** | View only | All HR actions + set on-hand; approve on Requests |
+| **Requests hub** | Track supply issues; submit packaging count | Honey corrections | Review supply issues, corrections, edits, discounts |
 | **Product Costing** | — | — | **Only role** (route + `costing.php` API) |
 | **Raw / dept production** | View (where routed) | Produce, BOM preview | All |
 

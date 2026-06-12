@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-06-12T05:33:51+02:00
+generated: 2026-06-12T07:27:37+02:00
 type: module
 function_count: 3
 ---
@@ -54,7 +54,7 @@ function_count: 3
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (158):**
+**Callers (159):**
 
 - `api/v1/_bootstrap.php`:176 — `$pdo = ims_pdo();`
 - `api/v1/ar.php`:26 — `$pdo = ims_pdo();`
@@ -81,5 +81,5 @@ function_count: 3
 - `api/v1/edit_requests.php`:81 — `$pdo = ims_pdo();`
 - `api/v1/edit_requests.php`:131 — `$pdo = ims_pdo();`
 - `api/v1/edit_requests.php`:194 — `$pdo = ims_pdo();`
-- _… and 133 more (run impact.php for full list)_
+- _… and 134 more (run impact.php for full list)_
 

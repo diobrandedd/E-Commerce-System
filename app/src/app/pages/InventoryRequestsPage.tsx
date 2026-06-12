@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { CheckCircle2, Loader2, Plus, XCircle } from "lucide-react";
+import { BookOpen, CheckCircle2, Loader2, Plus, XCircle } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { CorrectionReviewModal, type CorrectionRequestDetail } from "@/app/components/honey/CorrectionReviewModal";
 import { EditRequestsSection } from "@/app/components/requests/EditRequestsSection";
+import { InventoryRequestsGuideModal } from "@/app/components/requests/InventoryRequestsGuideModal";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
 import { useAuth } from "@/app/context/AuthContext";
@@ -13,7 +14,7 @@ import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_SIZES, HONEY_VARIANTS } from "@/app/lib/honey";
 import { PackagingOnHandRequestModal } from "@/app/components/inventory/PackagingOnHandRequestModal";
 import { SupplyIssueRequestModal } from "@/app/components/inventory/SupplyIssueRequestModal";
-import { SupplyOnHandRequestModal } from "@/app/components/inventory/SupplyOnHandRequestModal";
+import { SupplyRequestReviewModal } from "@/app/components/inventory/SupplyRequestReviewModal";
 import {
   approveMaterialRequest,
   listMaterialRequests,
@@ -93,12 +94,15 @@ export function InventoryRequestsPage() {
   const isHr = user?.role === "hr";
   const readonly = isHr;
   const [searchParams, setSearchParams] = useSearchParams();
-  const { refresh: refreshNotifications, markViewed } = useCorrectionNotifications();
+  const { refresh: refreshNotifications, markViewed, markMaterialViewed } = useCorrectionNotifications();
   const [requests, setRequests] = useState<CorrectionRequestDetail[]>([]);
   const [materialRequests, setMaterialRequests] = useState<MaterialAdjustmentRequest[]>([]);
   const [materialError, setMaterialError] = useState<string | null>(null);
-  const [actingMaterialId, setActingMaterialId] = useState<number | null>(null);
-  const [materialPage, setMaterialPage] = useState(1);
+  const [actingPackagingId, setActingPackagingId] = useState<number | null>(null);
+  const [supplyPage, setSupplyPage] = useState(1);
+  const [packagingPage, setPackagingPage] = useState(1);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [supplyReviewRequest, setSupplyReviewRequest] = useState<MaterialAdjustmentRequest | null>(null);
   const [discountQueue, setDiscountQueue] = useState<Array<{
     id: number;
     request_no: string;
@@ -117,11 +121,11 @@ export function InventoryRequestsPage() {
   const [showNew, setShowNew] = useState(false);
   const [showPackagingRequest, setShowPackagingRequest] = useState(false);
   const [showSupplyIssueRequest, setShowSupplyIssueRequest] = useState(false);
-  const [showSupplyCountRequest, setShowSupplyCountRequest] = useState(false);
   const [reviewId, setReviewId] = useState<number | null>(null);
   const [correctionPage, setCorrectionPage] = useState(1);
   const [discountPage, setDiscountPage] = useState(1);
   const markedViewedRef = useRef<Set<number>>(new Set());
+  const markedMaterialViewedRef = useRef<Set<number>>(new Set());
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -134,7 +138,8 @@ export function InventoryRequestsPage() {
       setMaterialRequests(matData.requests);
       setCorrectionPage(1);
       setDiscountPage(1);
-      setMaterialPage(1);
+      setSupplyPage(1);
+      setPackagingPage(1);
       if (isExec) {
         const discountData = await apiGet<{ rows: typeof discountQueue }>("pos_discounts.php", "list", { status: "pending", limit: "50" });
         setDiscountQueue(discountData.rows);
@@ -252,15 +257,73 @@ export function InventoryRequestsPage() {
   const discountStart = (discountSafePage - 1) * ROWS_PER_PAGE;
   const pagedDiscounts = discountQueue.slice(discountStart, discountStart + ROWS_PER_PAGE);
 
-  const materialTotal = materialRequests.length;
-  const materialTotalPages = Math.max(1, Math.ceil(materialTotal / ROWS_PER_PAGE));
-  const materialSafePage = Math.min(materialPage, materialTotalPages);
-  const materialStart = (materialSafePage - 1) * ROWS_PER_PAGE;
-  const pagedMaterialRequests = materialRequests.slice(materialStart, materialStart + ROWS_PER_PAGE);
+  const supplyRequests = useMemo(
+    () => materialRequests.filter(r => r.category === "supply" && r.action === "issue"),
+    [materialRequests],
+  );
+  const packagingRequests = useMemo(
+    () => materialRequests.filter(r => r.category === "packaging" && r.action === "set_on_hand"),
+    [materialRequests],
+  );
 
-  const approveMaterial = async (id: number) => {
-    if (!confirm("Approve this material adjustment?")) return;
-    setActingMaterialId(id);
+  const supplyTotal = supplyRequests.length;
+  const supplyTotalPages = Math.max(1, Math.ceil(supplyTotal / ROWS_PER_PAGE));
+  const supplySafePage = Math.min(supplyPage, supplyTotalPages);
+  const supplyStart = (supplySafePage - 1) * ROWS_PER_PAGE;
+  const pagedSupplyRequests = supplyRequests.slice(supplyStart, supplyStart + ROWS_PER_PAGE);
+
+  const packagingTotal = packagingRequests.length;
+  const packagingTotalPages = Math.max(1, Math.ceil(packagingTotal / ROWS_PER_PAGE));
+  const packagingSafePage = Math.min(packagingPage, packagingTotalPages);
+  const packagingStart = (packagingSafePage - 1) * ROWS_PER_PAGE;
+  const pagedPackagingRequests = packagingRequests.slice(packagingStart, packagingStart + ROWS_PER_PAGE);
+
+  const markMaterialViewedOnce = useCallback(
+    async (id: number) => {
+      if (!isExec || markedMaterialViewedRef.current.has(id)) return;
+      markedMaterialViewedRef.current.add(id);
+      await markMaterialViewed(id);
+    },
+    [isExec, markMaterialViewed],
+  );
+
+  const openSupplyReview = useCallback(
+    (request: MaterialAdjustmentRequest) => {
+      setSupplyReviewRequest(request);
+      setSearchParams({ supply_request: String(request.id) }, { replace: true });
+      if (request.status === "pending") {
+        void markMaterialViewedOnce(request.id);
+      }
+    },
+    [markMaterialViewedOnce, setSearchParams],
+  );
+
+  const closeSupplyReview = () => {
+    setSupplyReviewRequest(null);
+    const next = new URLSearchParams(searchParams);
+    next.delete("supply_request");
+    setSearchParams(next, { replace: true });
+  };
+
+  const supplyRequestParam = searchParams.get("supply_request");
+  const supplyRequestIdFromUrl = supplyRequestParam ? parseInt(supplyRequestParam, 10) : 0;
+
+  useEffect(() => {
+    if (supplyRequestIdFromUrl < 1) {
+      setSupplyReviewRequest(null);
+      return;
+    }
+    if (supplyRequests.length === 0) return;
+    const req = supplyRequests.find(r => r.id === supplyRequestIdFromUrl);
+    if (req) {
+      setSupplyReviewRequest(req);
+      if (req.status === "pending") void markMaterialViewedOnce(req.id);
+    }
+  }, [supplyRequestIdFromUrl, supplyRequests, markMaterialViewedOnce]);
+
+  const approvePackaging = async (id: number) => {
+    if (!confirm("Approve this packaging count request?")) return;
+    setActingPackagingId(id);
     setMaterialError(null);
     try {
       await approveMaterialRequest(id);
@@ -269,14 +332,14 @@ export function InventoryRequestsPage() {
     } catch (e) {
       setMaterialError(e instanceof ApiError ? e.message : "Could not approve request.");
     } finally {
-      setActingMaterialId(null);
+      setActingPackagingId(null);
     }
   };
 
-  const rejectMaterial = async (id: number) => {
+  const rejectPackaging = async (id: number) => {
     const note = prompt("Rejection note (required):") ?? "";
     if (!note.trim()) return;
-    setActingMaterialId(id);
+    setActingPackagingId(id);
     setMaterialError(null);
     try {
       await rejectMaterialRequest(id, note.trim());
@@ -285,12 +348,13 @@ export function InventoryRequestsPage() {
     } catch (e) {
       setMaterialError(e instanceof ApiError ? e.message : "Could not reject request.");
     } finally {
-      setActingMaterialId(null);
+      setActingPackagingId(null);
     }
   };
 
   const colSpan = isExec && !readonly ? 6 : 5;
-  const materialColSpan = isExec && !readonly ? 7 : 6;
+  const supplyColSpan = isExec && !readonly ? 7 : 6;
+  const packagingColSpan = isExec && !readonly ? 6 : 5;
 
   const showEditRequests = isExec || isPm;
 
@@ -308,15 +372,24 @@ export function InventoryRequestsPage() {
       title={pageTitle}
       subtitle={pageSubtitle}
       actions={
-        isPm ? (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowNew(true)}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-1.5 rounded-lg"
-            style={{ background: "#C8900A" }}
+            type="button"
+            onClick={() => setGuideOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg border border-border"
           >
-            <Plus size={13} /> New request
+            <BookOpen size={13} /> Guide
           </button>
-        ) : undefined
+          {isPm && (
+            <button
+              onClick={() => setShowNew(true)}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-1.5 rounded-lg"
+              style={{ background: "#C8900A" }}
+            >
+              <Plus size={13} /> New request
+            </button>
+          )}
+        </div>
       }
     >
       <div className="space-y-10">
@@ -398,41 +471,25 @@ export function InventoryRequestsPage() {
         </section>
         )}
 
-        <section id="material-adjustments-section">
+        <section id="supply-requests-section">
           <div className="px-1 pb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Packaging & supply requests</h3>
+              <h3 className="text-sm font-semibold text-foreground">Supply issue requests</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {isHr
-                  ? "Packaging count fixes and supply issues (with requester name) — executive approves"
-                  : "HR supply issues and packaging count fixes awaiting executive approval"}
+                  ? "Submit deduct-for-use requests with requester name — executive approves before on-hand changes"
+                  : "HR supply issues awaiting executive approval"}
               </p>
             </div>
             {isHr && (
-              <div className="flex flex-wrap gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowSupplyIssueRequest(true)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-1.5 rounded-lg"
-                  style={{ background: "#C8900A" }}
-                >
-                  <Plus size={13} /> Supply issue request
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPackagingRequest(true)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary/50"
-                >
-                  <Plus size={13} /> Packaging count
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowSupplyCountRequest(true)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary/50"
-                >
-                  <Plus size={13} /> Supply count
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowSupplyIssueRequest(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-1.5 rounded-lg shrink-0"
+                style={{ background: "#C8900A" }}
+              >
+                <Plus size={13} /> Supply issue request
+              </button>
             )}
           </div>
           {materialError && (
@@ -442,7 +499,7 @@ export function InventoryRequestsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
-                  {["Date", "Item", "Change", "Requester", "Reason", "Status", isExec && !readonly ? "Review" : ""].filter(Boolean).map(h => (
+                  {["Date", "Item", "Qty", "Requester", "Reason", "Status", isExec && !readonly ? "Review" : ""].filter(Boolean).map(h => (
                     <th key={h} className="text-left px-4 py-3">{h}</th>
                   ))}
                 </tr>
@@ -450,38 +507,110 @@ export function InventoryRequestsPage() {
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan={materialColSpan} className="py-8 text-center">
+                    <td colSpan={supplyColSpan} className="py-8 text-center">
                       <Loader2 className="inline animate-spin" size={14} />
                     </td>
                   </tr>
                 )}
-                {!loading && pagedMaterialRequests.length === 0 && (
+                {!loading && pagedSupplyRequests.length === 0 && (
                   <tr>
-                    <td colSpan={materialColSpan} className="py-8 text-center text-sm text-muted-foreground">
-                      No material adjustment requests yet.
+                    <td colSpan={supplyColSpan} className="py-8 text-center text-sm text-muted-foreground">
+                      No supply issue requests yet.
                     </td>
                   </tr>
                 )}
-                {!loading && pagedMaterialRequests.map(r => (
+                {!loading && pagedSupplyRequests.map(r => (
                   <tr
                     key={r.id}
                     className={`border-b ${
-                      r.status === "pending" && r.action === "issue"
-                        ? "border-l-4 border-l-amber-400"
-                        : ""
+                      isExec && r.status === "pending" ? "cursor-pointer hover:bg-secondary/30 border-l-4 border-l-amber-400" : ""
                     }`}
+                    onClick={() => isExec && openSupplyReview(r)}
                   >
                     <td className="px-4 py-3 text-xs">{r.created_at}</td>
-                    <td className="px-4 py-3">
-                      {r.stock_name}
-                      {r.category === "supply" && r.action === "issue" && (
-                        <span className="ml-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">Supply issue</span>
-                      )}
+                    <td className="px-4 py-3">{r.stock_name}</td>
+                    <td className="px-4 py-3">{r.amount} {r.unit}</td>
+                    <td className="px-4 py-3 text-xs">{r.requester_name ?? "—"}</td>
+                    <td className="px-4 py-3 max-w-xs truncate">{r.reason}</td>
+                    <td className="px-4 py-3 capitalize">{r.status}</td>
+                    {isExec && !readonly && (
+                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                        {r.status === "pending" ? (
+                          <button
+                            type="button"
+                            onClick={() => openSupplyReview(r)}
+                            className="text-xs text-[#C8900A] font-semibold"
+                          >
+                            Review
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{r.reviewed_by_name ?? "—"}</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!loading && (
+            <TablePagination
+              page={supplyPage}
+              setPage={setSupplyPage}
+              totalRows={supplyTotal}
+              perPage={ROWS_PER_PAGE}
+              noun="requests"
+            />
+          )}
+        </section>
+
+        <section id="packaging-requests-section">
+          <div className="px-1 pb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Packaging count requests</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Packaging on-hand corrections submitted by HR — executive approves
+              </p>
+            </div>
+            {isHr && (
+              <button
+                type="button"
+                onClick={() => setShowPackagingRequest(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary/50 shrink-0"
+              >
+                <Plus size={13} /> Packaging count
+              </button>
+            )}
+          </div>
+          <div className="bg-card rounded-xl border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
+                  {["Date", "Item", "Change", "Reason", "Status", isExec && !readonly ? "Review" : ""].filter(Boolean).map(h => (
+                    <th key={h} className="text-left px-4 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading && (
+                  <tr>
+                    <td colSpan={packagingColSpan} className="py-8 text-center">
+                      <Loader2 className="inline animate-spin" size={14} />
                     </td>
-                    <td className="px-4 py-3">{r.summary ?? `${r.action} ${r.amount} ${r.unit}`}</td>
-                    <td className="px-4 py-3 text-xs">
-                      {r.action === "issue" ? (r.requester_name ?? "—") : "—"}
+                  </tr>
+                )}
+                {!loading && pagedPackagingRequests.length === 0 && (
+                  <tr>
+                    <td colSpan={packagingColSpan} className="py-8 text-center text-sm text-muted-foreground">
+                      No packaging count requests yet.
                     </td>
+                  </tr>
+                )}
+                {!loading && pagedPackagingRequests.map(r => (
+                  <tr key={r.id} className="border-b">
+                    <td className="px-4 py-3 text-xs">{r.created_at}</td>
+                    <td className="px-4 py-3">{r.stock_name}</td>
+                    <td className="px-4 py-3">{r.summary ?? `Set on-hand → ${r.amount} ${r.unit}`}</td>
                     <td className="px-4 py-3 max-w-xs truncate">{r.reason}</td>
                     <td className="px-4 py-3 capitalize">{r.status}</td>
                     {isExec && !readonly && (
@@ -490,16 +619,16 @@ export function InventoryRequestsPage() {
                           <div className="flex gap-2">
                             <button
                               type="button"
-                              disabled={actingMaterialId === r.id}
-                              onClick={() => void approveMaterial(r.id)}
+                              disabled={actingPackagingId === r.id}
+                              onClick={() => void approvePackaging(r.id)}
                               className="text-xs font-semibold text-green-700"
                             >
                               Approve
                             </button>
                             <button
                               type="button"
-                              disabled={actingMaterialId === r.id}
-                              onClick={() => void rejectMaterial(r.id)}
+                              disabled={actingPackagingId === r.id}
+                              onClick={() => void rejectPackaging(r.id)}
                               className="text-xs font-semibold text-red-600"
                             >
                               Reject
@@ -517,9 +646,9 @@ export function InventoryRequestsPage() {
           </div>
           {!loading && (
             <TablePagination
-              page={materialPage}
-              setPage={setMaterialPage}
-              totalRows={materialTotal}
+              page={packagingPage}
+              setPage={setPackagingPage}
+              totalRows={packagingTotal}
               perPage={ROWS_PER_PAGE}
               noun="requests"
             />
@@ -608,18 +737,28 @@ export function InventoryRequestsPage() {
       {showSupplyIssueRequest && (
         <SupplyIssueRequestModal
           onClose={() => setShowSupplyIssueRequest(false)}
-          onDone={() => { setShowSupplyIssueRequest(false); void refresh(); }}
-        />
-      )}
-      {showSupplyCountRequest && (
-        <SupplyOnHandRequestModal
-          onClose={() => setShowSupplyCountRequest(false)}
-          onDone={() => { setShowSupplyCountRequest(false); void refresh(); }}
+          onDone={() => {
+            setShowSupplyIssueRequest(false);
+            void refresh();
+            void refreshNotifications();
+          }}
         />
       )}
       {reviewRequest && (
         <CorrectionReviewModal request={reviewRequest} onClose={closeReview} onDone={handleReviewDone} />
       )}
+      {supplyReviewRequest && (
+        <SupplyRequestReviewModal
+          request={supplyReviewRequest}
+          onClose={closeSupplyReview}
+          onDone={async () => {
+            closeSupplyReview();
+            await refresh();
+            await refreshNotifications();
+          }}
+        />
+      )}
+      <InventoryRequestsGuideModal open={guideOpen} onClose={() => setGuideOpen(false)} role={user?.role} />
     </PageLayout>
   );
 }

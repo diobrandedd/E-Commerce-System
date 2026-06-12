@@ -10,10 +10,40 @@
 4. **Hover on interactive UI** — clickable cards, table rows, and buttons get visible highlight + drop shadow on hover (see [[#Feedback animations & hover (mandatory)]]).
 5. **Exec/inventory/CSR pages** → wrap in `PageLayout`. **POS** → use `posMotion` kit only.
 6. **Page guides** → header **Guide** button opens a scrollable `AppModal` — never an inline collapsible panel on the page body. See [[#Page guide button (mandatory)]].
+7. **Fixed sidebar shell** → sidebar stays viewport-height; **only `<main>` scrolls**. See [[#Fixed sidebar shell (mandatory)]].
+8. **Pyx scrollbars** → every `overflow-y-auto` / `overflow-auto` uses themed slim thumb unless `no-pyx-scroll`. See [[#Pyx scrollbars (mandatory)]].
+
+## Pyx scrollbars (mandatory)
+
+**Canonical reference:** [[fixes/pyx-scrollbars]] · `theme.css` · `usePyxScrollDocument` in `Root.tsx`.
+
+- **Light regions:** `overflow-y-auto` — thumb fades in on hover/scroll
+- **Dark regions (sidebar):** `pyx-scroll-dark`
+- **Opt out:** `no-pyx-scroll` (rare — tiny Radix popovers if needed)
+- **Do not** ship default OS scrollbar chrome on app scroll areas
+
+Sidebar nav dropdowns: `SidebarNavCollapse` + tap feedback (`sidebarNavMotion.tsx`).
+
+## Fixed sidebar shell (mandatory)
+
+**Canonical reference:** [[fixes/page-layout-fixed-sidebar]] · live in `PageLayout.tsx`, `Sidebar.tsx`.
+
+Admin-style layout (like J&T): scrolling the page content must **not** move the sidebar.
+
+| Layer | Rule |
+|-------|------|
+| `PageLayout` root | `h-dvh flex overflow-hidden` — never `min-h-screen` |
+| Sidebar | `h-dvh shrink-0`; nav area `overflow-y-auto` when items overflow |
+| Main column | `flex-1 min-h-0 overflow-hidden` |
+| `<main>` | `flex-1 min-h-0 overflow-y-auto` — sole vertical scroll for page body |
+
+**New pages:** use `PageLayout`; put long tables/lists in the main scroll area or an inner `overflow-y-auto` panel — do not reintroduce document-level scroll.
+
+**Exempt:** Login, POS (no `PageLayout`).
 
 ## Page guide button (mandatory)
 
-**Canonical reference:** [[fixes/page-guide-button-modal]] · live in `CostingGuideModal.tsx`, `PackagingInventoryGuideModal.tsx`.
+**Canonical reference:** [[fixes/page-guide-button-modal]] · live in `CostingGuideModal.tsx`, `PackagingInventoryGuideModal.tsx`, `SuppliesInventoryGuideModal.tsx`, `InventoryRequestsGuideModal.tsx`.
 
 When a page needs user-facing help or role-specific workflow docs:
 
@@ -39,6 +69,8 @@ When a page needs user-facing help or role-specific workflow docs:
 |------|-----------------|
 | Product Costing | `CostingGuideModal` |
 | Packaging Materials | `PackagingInventoryGuideModal` |
+| Supplies | `SuppliesInventoryGuideModal` |
+| Requests | `InventoryRequestsGuideModal` |
 
 ### Guide content rules
 
@@ -54,7 +86,8 @@ When a page needs user-facing help or role-specific workflow docs:
 |-----------|------|
 | **Source of truth** | PHP role helpers + API gates; SPA reads `permissions` from detail APIs |
 | **Packaging** | HR stock-in · PM deduct for use · executive all + set on-hand + pool yield + extended log |
-| **Supplies** | HR stock-in + issue/count requests · executive approve + set on-hand ([[#Supplies inventory pages]]) |
+| **Supplies** | HR add item + stock-in + issue request · PM view only · executive all + set on-hand · approve on Requests ([[#Supplies inventory pages]]) |
+| **Requests hub** | `#supply-requests-section` + `#packaging-requests-section` · supply review modal · bell notifications ([[#Requests hub]]) |
 | **Product Costing** | **Executive only** — route, sidebar, API, guides ([[#Product Costing page]]) |
 | **Guides** | Document each role’s actions in `*GuideModal`; keep in sync when permissions change |
 
@@ -529,20 +562,38 @@ Shared **Per-unit vs Pool** legend in the modal.
 
 **Canonical reference:** [[fixes/supplies-hr-lot-inventory]] · live in `SuppliesMaterialsPage.tsx` + `SupplyMaterialDetailModal.tsx`.
 
-Same list/detail scroll recipe as packaging. Role actions in detail modal:
+Same list/detail scroll recipe as packaging (stats, search, out-of-stock row styling). Header **Guide** → `SuppliesInventoryGuideModal`. HR gets prominent **Issue request** in header (not only in detail modal).
 
-- **Stock in lot** (exec/HR)
-- **Set on-hand** (exec)
-- **Issue request** (HR — requester name, qty, reason)
-- **Request count fix** (HR)
+`supply_detail.permissions` drives detail actions:
+
+| Permission | HR | PM | Executive |
+|------------|----|----|-----------|
+| `can_stock_in` | ✓ | — | ✓ |
+| `can_issue_request` | ✓ | — | ✓ |
+| `can_set_on_hand` | — | — | ✓ |
+| `can_create_catalog` | ✓ | — | ✓ |
+| `can_view_extended_log` | — | — | ✓ (100 rows) |
 
 | Modal | Use |
 |-------|-----|
+| `SuppliesInventoryGuideModal` | Role workflow (links to `#supply-requests-section`) |
 | `SupplyStockInLotModal` | Total ₱ + qty received → unit cost preview |
 | `SupplyOnHandSetModal` | Executive absolute count |
-| `SupplyOnHandRequestModal` | HR target count + reason |
-| `SupplyIssueRequestModal` | HR issue for named staff |
+| `SupplyIssueRequestModal` | HR issue for named staff (header or detail) |
 | `SupplyMaterialDetailModal` | Row detail shell + recent entries |
+
+## Requests hub
+
+**Canonical reference:** [[fixes/supplies-hr-lot-inventory]] · live in `InventoryRequestsPage.tsx`.
+
+Header **Guide** → `InventoryRequestsGuideModal`. Split material tables:
+
+| Section ID | Rows | Review UX |
+|------------|------|-----------|
+| `#supply-requests-section` | `category=supply` + `action=issue` | Executive row click → `SupplyRequestReviewModal` (approve / deny with note); `markMaterialRequestViewed` on open |
+| `#packaging-requests-section` | `category=packaging` + `action=set_on_hand` | Inline approve/reject (legacy) |
+
+**Notifications:** `CorrectionNotificationsContext` merges `request_unread_list` as `supply_request` items; bell navigates to `?supply_request={id}#supply-requests-section`. Badge count stays on aggregated `correction_unread_count` (includes material pending).
 
 ## Raw Honey (three stages)
 

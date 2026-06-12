@@ -39,7 +39,13 @@ import { PageLayout } from "@/app/components/PageLayout";
 </PageLayout>
 ```
 
-Provides: sidebar, sticky header, notification bell (executive corrections), mobile menu.
+Provides: fixed sidebar (viewport height, does not scroll with main), header bar, notification bell (executive corrections), mobile menu.
+
+### Page shell
+
+- **Shell:** `h-dvh overflow-hidden` — sidebar + main column fill the viewport.
+- **Scroll:** only `<main>` scrolls; sidebar nav scrolls internally when needed.
+- **Pattern doc:** [[fixes/page-layout-fixed-sidebar]] · [[005_SPA_UX_Patterns#Fixed sidebar shell (mandatory)]].
 
 **POS pages** (`/pos`, `/pos/honey`) do **not** use `PageLayout` — full-screen terminal UX with `POSHeader` and `posMotion` transitions.
 

@@ -17,6 +17,8 @@ Before adding or changing React UI:
 
 - **Colors:** use Tailwind semantic tokens (`bg-background`, `bg-primary`, `text-muted-foreground`) — not random hex in new code
 - **Exec/inventory/CSR pages:** wrap in `PageLayout` unless POS full-screen
+- **Fixed sidebar:** `PageLayout` shell is `h-dvh overflow-hidden` — only `<main>` scrolls; sidebar stays fixed (see [[fixes/page-layout-fixed-sidebar]]). Never `min-h-screen` on the layout shell
+- **Scrollbars:** all `overflow-y-auto` / `overflow-auto` get Pyx slim thumb (fade on hover/scroll); sidebar uses `pyx-scroll-dark`; opt out with `no-pyx-scroll` only when necessary ([[fixes/pyx-scrollbars]])
 - **Modals:** always use `AppModal` (+ Header/Body/Footer) from `components/AppModal.tsx`; see `.cursor/rules/app-modal.mdc`. `FulfillmentModal` is an alias. POS uses `POSModal`. Never new inline `fixed inset-0` dialogs.
 - **Motion:** import from `motion/react`; always use `useReducedMotion()` and disable animation when true
 - **Feedback animations:** every new feature gets toast/banner/step motion on success and error — use `onlineFulfillmentMotion.tsx` (CSR/fulfillment) or `orderRemarksMotion.tsx` / `posMotion.tsx` by domain

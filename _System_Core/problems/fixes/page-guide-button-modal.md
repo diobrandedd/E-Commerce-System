@@ -15,6 +15,8 @@ User-facing page guides use a **Guide** button in `PageLayout` actions that open
 |------|--------|-------|
 | Product Costing | `CostingPage.tsx` header actions | `CostingGuideModal.tsx` |
 | Packaging Materials | `PackagingMaterialsPage.tsx` header actions | `PackagingInventoryGuideModal.tsx` |
+| Supplies | `SuppliesMaterialsPage.tsx` header actions | `SuppliesInventoryGuideModal.tsx` |
+| Requests | `InventoryRequestsPage.tsx` header actions | `InventoryRequestsGuideModal.tsx` |
 
 ## Button classes (copy exactly)
 

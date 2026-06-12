@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-12T05:34:07+02:00
+generated: 2026-06-12T07:27:56+02:00
 type: spa
 ---
 
@@ -122,10 +122,13 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/inventory/PackagingOnHandRequestModal.tsx`
 - `app/src/app/components/inventory/PackagingOnHandSetModal.tsx`
 - `app/src/app/components/inventory/PackagingStockInLotModal.tsx`
+- `app/src/app/components/inventory/SuppliesInventoryGuideModal.tsx`
 - `app/src/app/components/inventory/SupplyIssueRequestModal.tsx`
 - `app/src/app/components/inventory/SupplyMaterialDetailModal.tsx`
 - `app/src/app/components/inventory/SupplyOnHandRequestModal.tsx`
 - `app/src/app/components/inventory/SupplyOnHandSetModal.tsx`
+- `app/src/app/components/inventory/SupplyRequestReviewModal.tsx`
 - `app/src/app/components/inventory/SupplyStockInLotModal.tsx`
+- `app/src/app/components/requests/InventoryRequestsGuideModal.tsx`
 - `app/src/app/components/suppliers/SupplierProfileModal.tsx`
 
