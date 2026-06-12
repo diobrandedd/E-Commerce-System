@@ -1,7 +1,7 @@
 ---
 title: pdf_to_excel
 source: includes/pdf_to_excel.php
-generated: 2026-06-12T07:27:49+02:00
+generated: 2026-06-12T11:00:20+02:00
 type: module
 function_count: 15
 ---

@@ -160,7 +160,7 @@ export function WaybillStamperPage() {
       title="Waybill Stamper"
       subtitle="Match courier waybills to Excel orders and stamp item lines for packers"
     >
-      <div className="space-y-6 max-w-4xl">
+      <div className="space-y-6">
         <div className="bg-card rounded-xl border border-border p-4 text-sm text-muted-foreground">
           <p>
             Upload PDF waybills (TikTok, Lazada, Shopee) and iPYX Excel order sheets. The system reads each

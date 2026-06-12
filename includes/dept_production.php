@@ -66,6 +66,15 @@ function dept_production_stock_deducts(array $line): bool
     return true;
 }
 
+function dept_production_pt_action_matches_stage(string $action, string $stage): bool
+{
+    if ($action === $stage) {
+        return true;
+    }
+
+    return $action === 'use_raw_bags' && $stage === 'make_tea_bags';
+}
+
 function dept_production_pt_stage_for_stock(string $stockName, string $category = ''): ?string
 {
     if ($stockName === PT_LEAF_STOCK_NAME) {
@@ -106,6 +115,17 @@ function dept_production_line_kind(string $productKey, string $stockName, string
 function dept_production_fallback_deduct_lines(string $productKey, string $action, float $qty): array
 {
     $lines = [];
+    if ($productKey === 'pt' && $action === 'use_raw_bags') {
+        $lines[] = [
+            'stock_id' => 0,
+            'stock_name' => PT_LEAF_STOCK_NAME,
+            'kind' => 'raw_bag',
+            'unit' => 'bag',
+            'qty' => round($qty, 6),
+        ];
+
+        return $lines;
+    }
     if ($productKey === 'pt' && $action === 'make_tea_bags') {
         $bags = round($qty * (PT_GRAMS_PER_TEA_BAG / PT_GRAMS_PER_BAG), 6);
         $lines[] = [
@@ -193,13 +213,21 @@ function dept_production_formula_deduct_lines(PDO $pdo, string $productKey, stri
                     . PT_PACKAGING_STOCK_NAME . ' for the pouch step — or remove the extra line from Product Costing.'
                 );
             }
-            if ($stage !== $action) {
+            if (!dept_production_pt_action_matches_stage($action, $stage)) {
                 continue;
             }
             $perPouch = $line['qty_per_unit'];
-            $deductQty = $action === 'make_tea_bags'
-                ? round($perPouch / PT_TEA_BAGS_PER_POUCH * $qty, 6)
-                : round($perPouch * $qty, 6);
+            $lineKind = dept_production_line_kind($productKey, $line['stock_name'], $line['category']);
+            if ($action === 'use_raw_bags' && $lineKind === 'raw_bag') {
+                $deductQty = round($qty, 6);
+            } elseif ($action === 'use_raw_bags') {
+                $teaBagsDerived = round($qty * dept_pt_tea_bags_per_bag(), 6);
+                $deductQty = round($perPouch / PT_TEA_BAGS_PER_POUCH * $teaBagsDerived, 6);
+            } elseif ($action === 'make_tea_bags') {
+                $deductQty = round($perPouch / PT_TEA_BAGS_PER_POUCH * $qty, 6);
+            } else {
+                $deductQty = round($perPouch * $qty, 6);
+            }
             if ($deductQty <= 0) {
                 continue;
             }
@@ -469,7 +497,7 @@ function dept_production_cost_only_lines(PDO $pdo, string $productKey, string $a
         }
         if ($productKey === 'pt') {
             $stage = dept_production_pt_stage_for_stock($line['stock_name'], $line['category']);
-            if ($stage !== null && $stage !== $action) {
+            if ($stage !== null && !dept_production_pt_action_matches_stage($action, $stage)) {
                 continue;
             }
         } elseif ($action !== 'produce') {
@@ -479,6 +507,9 @@ function dept_production_cost_only_lines(PDO $pdo, string $productKey, string $a
         $perSellable = (float) $line['qty_per_unit'];
         if ($productKey === 'pt' && $action === 'make_tea_bags') {
             $consumeQty = $qty;
+            $consumeUnit = $line['pool_yield_unit'] ?? 'tea_bag';
+        } elseif ($productKey === 'pt' && $action === 'use_raw_bags') {
+            $consumeQty = round($qty * dept_pt_tea_bags_per_bag(), 6);
             $consumeUnit = $line['pool_yield_unit'] ?? 'tea_bag';
         } elseif ($productKey === 'pt' && $action === 'pouch') {
             $consumeQty = round($perSellable * $qty, 6);
@@ -513,7 +544,7 @@ function dept_production_preview_lines(PDO $pdo, string $productKey, string $act
     $deductLines = dept_production_formula_deduct_lines($pdo, $productKey, $action, $qty);
     $costOnlyLines = dept_production_cost_only_lines($pdo, $productKey, $action, $qty);
 
-    return [
+    $preview = [
         'product_key' => $productKey,
         'action' => $action,
         'qty' => $qty,
@@ -521,6 +552,46 @@ function dept_production_preview_lines(PDO $pdo, string $productKey, string $act
         'deduct_lines' => $deductLines,
         'cost_only_lines' => $costOnlyLines,
         'used_formula' => dept_production_load_formula_lines($pdo, $productKey) !== [],
+    ];
+    if ($productKey === 'pt' && $action === 'use_raw_bags') {
+        $derivedTeaBags = round($qty * dept_pt_tea_bags_per_bag(), 2);
+        $preview['derived_tea_bags'] = $derivedTeaBags;
+        $preview['packable_pouches'] = (int) floor($derivedTeaBags / PT_TEA_BAGS_PER_POUCH);
+    }
+
+    return $preview;
+}
+
+/** @return array<string, mixed> */
+function dept_pt_use_raw_bags(PDO $pdo, int $userId, float $bags, ?string $note = null): array
+{
+    if (!dept_production_tables_ready($pdo)) {
+        throw new RuntimeException('Production tables missing. Run migration_phase26_dept_wip.sql.');
+    }
+    if ($bags <= 0) {
+        throw new RuntimeException('Bag count must be > 0.');
+    }
+    $bags = round($bags, 6);
+    $onHand = dept_raw_bags_on_hand($pdo, 'pt');
+    if ($bags > $onHand + 0.0001) {
+        throw new RuntimeException(
+            'Not enough raw bags on hand (' . round($onHand, 2) . ' available, need ' . round($bags, 2) . ').'
+        );
+    }
+    $teaBags = round($bags * dept_pt_tea_bags_per_bag(), 2);
+    $label = $note !== null && trim($note) !== '' ? 'use_raw_bags: ' . trim($note) : 'use_raw_bags';
+    $deductPlan = dept_production_formula_deduct_lines($pdo, 'pt', 'use_raw_bags', $bags);
+    $applied = dept_production_apply_deduct_lines($pdo, $userId, 'pt', $deductPlan, $label);
+    dept_wip_adjust($pdo, $userId, 'pt', $teaBags);
+    $entryId = dept_production_log_entry($pdo, 'pt', 'use_raw_bags', $bags, $userId, $note, $applied);
+
+    return [
+        'entry_id' => $entryId,
+        'bags_used' => $bags,
+        'tea_bags_added' => $teaBags,
+        'wip_tea_bags' => dept_wip_on_hand($pdo, 'pt'),
+        'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'pt'),
+        'deduct_lines' => $applied,
     ];
 }
 

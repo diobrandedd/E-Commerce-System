@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-12T07:27:35+02:00
+generated: 2026-06-12T11:00:06+02:00
 type: memory-bank
 ---
 
@@ -51,12 +51,12 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/costing.php`
 - **URL:** `/rts/api/v1/costing.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/suppliers.php`, `includes/honey_volume.php`, `api/v1/_costing_helpers.php`, `includes/material_inventory.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/suppliers.php`, `includes/honey_volume.php`, `api/v1/_costing_helpers.php`, `includes/material_inventory.php`, `includes/parcel_pack_costing.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
 | `stocks_list` | `api_costing_stocks_list()` | `ims_pdo()`, `material_inventory_has_columns()`, `supplier_display_name()` |
-| `products_list` | `api_costing_products_list()` | `ims_pdo()` |
+| `products_list` | `api_costing_products_list()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_reference_addon_for_product()` |
 | `product_view` | `api_costing_product_view()` | `ims_pdo()` |
 | `stock_update_price` | `api_costing_stock_update_price()` | `ims_pdo()` |
 | `formula_add` | `api_costing_formula_add()` | — |
@@ -64,6 +64,10 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `formula_delete` | `api_costing_formula_delete()` | — |
 | `product_create` | `api_costing_product_create()` | `ims_pdo()` |
 | `product_update_selling_price` | `api_costing_product_update_selling_price()` | `ims_pdo()` |
+| `parcel_tiers_list` | `api_costing_parcel_tiers_list()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_list_tiers()` |
+| `parcel_tier_line_save` | `api_costing_parcel_tier_line_save()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_save_tier_line()`, `parcel_pack_tier_cost_estimate()` |
+| `parcel_tier_line_delete` | `api_costing_parcel_tier_line_delete()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_delete_tier_line()`, `parcel_pack_tier_cost_estimate()` |
+| `parcel_cost_preview` | `api_costing_parcel_cost_preview()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_tier_cost_estimate_by_key()`, `parcel_pack_preview_from_items_raw()` |
 
 ### `dashboard.php`
 
@@ -142,6 +146,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `dept_raw_stock_in` | `api_honey_dept_raw_stock_in()` | `dept_product_by_key()`, `ims_pdo()`, `dept_raw_stock_in_bags()` |
 | `dept_raw_stock_out` | `api_honey_dept_raw_stock_out()` | `dept_product_key_valid()`, `ims_pdo()`, `dept_raw_stock_out_bags()` |
 | `dept_raw_produce` | `api_honey_dept_raw_produce()` | — |
+| `dept_pt_use_raw_bags` | `api_honey_dept_pt_use_raw_bags()` | `ims_pdo()`, `dept_pt_use_raw_bags()` |
 | `dept_pt_make_tea_bags` | `api_honey_dept_pt_make_tea_bags()` | `ims_pdo()`, `dept_pt_make_tea_bags()` |
 | `dept_pt_pouch` | `api_honey_dept_pt_pouch()` | `ims_pdo()`, `dept_pt_pouch()` |
 | `dept_brc_produce` | `api_honey_dept_brc_produce()` | `ims_pdo()`, `dept_brc_produce_pouches()` |

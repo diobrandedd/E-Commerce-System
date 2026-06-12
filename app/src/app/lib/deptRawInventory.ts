@@ -65,6 +65,8 @@ export function fetchDeptProductionPreview(productKey: string, action: string, q
     deduct_lines: DeptProductionPreviewLine[];
     cost_only_lines: DeptProductionPreviewLine[];
     used_formula: boolean;
+    derived_tea_bags?: number;
+    packable_pouches?: number;
   }>("honey.php", "dept_production_preview", {
     product_key: productKey,
     action,
@@ -88,6 +90,10 @@ export function deptRawStockOut(payload: {
   reason?: string;
 }) {
   return apiPost("honey.php", "dept_raw_stock_out", payload);
+}
+
+export function deptPtUseRawBags(payload: { qty: number; note?: string }) {
+  return apiPost("honey.php", "dept_pt_use_raw_bags", payload);
 }
 
 export function deptPtMakeTeaBags(payload: { qty: number; note?: string }) {

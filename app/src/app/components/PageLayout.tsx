@@ -5,6 +5,16 @@ import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/app/context/AuthContext";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
 import { formatEditRequestCategory, formatEditRequestField } from "@/app/lib/editRequestsApi";
+import { cn } from "@/app/components/ui/utils";
+
+/** Centered content column widths — header and main share the same max width. */
+const CONTENT_WIDTH_CLASS = {
+  default: "max-w-6xl",
+  wide: "max-w-7xl",
+  full: "max-w-none",
+} as const;
+
+export type PageLayoutContentWidth = keyof typeof CONTENT_WIDTH_CLASS;
 
 interface PageLayoutProps {
   title: string;
@@ -12,9 +22,18 @@ interface PageLayoutProps {
   actions?: ReactNode;
   children: ReactNode;
   notificationCount?: number;
+  /** Centered column width. Default `default` (max-w-6xl). Use `full` only for wide data grids. */
+  contentWidth?: PageLayoutContentWidth;
 }
 
-export function PageLayout({ title, subtitle, actions, children, notificationCount = 0 }: PageLayoutProps) {
+export function PageLayout({
+  title,
+  subtitle,
+  actions,
+  children,
+  notificationCount = 0,
+  contentWidth = "default",
+}: PageLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
@@ -24,6 +43,10 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
   const { unreadCount, unreadList, refresh: refreshNotifications } = useCorrectionNotifications();
 
   const badgeCount = isExec ? unreadCount : notificationCount;
+  const contentChromeClass = cn(
+    "w-full mx-auto px-4 sm:px-6",
+    CONTENT_WIDTH_CLASS[contentWidth],
+  );
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -52,10 +75,11 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
 
       <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         <header
-          className="shrink-0 z-10 bg-card border-b border-border flex items-center justify-between px-6 py-4"
+          className="shrink-0 z-10 bg-card border-b border-border"
           style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
         >
-          <div className="flex items-center gap-3">
+          <div className={cn(contentChromeClass, "flex items-center justify-between py-4")}>
+            <div className="flex items-center gap-3 min-w-0">
             <button
               className="lg:hidden text-muted-foreground hover:text-foreground"
               onClick={() => setSidebarOpen(true)}
@@ -66,8 +90,8 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
               <h2 className="text-base font-semibold text-foreground">{title}</h2>
               {subtitle && <p className="text-xs text-muted-foreground hidden sm:block">{subtitle}</p>}
             </div>
-          </div>
-          <div className="flex items-center gap-3">
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
             {actions}
             <div className="relative" ref={bellRef}>
               <button
@@ -193,11 +217,12 @@ export function PageLayout({ title, subtitle, actions, children, notificationCou
                 </div>
               )}
             </div>
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 min-h-0 p-4 sm:p-6 overflow-y-auto overscroll-contain min-w-0 max-w-full overflow-x-hidden">
-          {children}
+        <main className="pyx-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain min-w-0 overflow-x-hidden">
+          <div className={cn(contentChromeClass, "py-4 sm:py-6")}>{children}</div>
         </main>
       </div>
     </div>

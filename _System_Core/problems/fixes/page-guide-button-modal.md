@@ -17,6 +17,8 @@ User-facing page guides use a **Guide** button in `PageLayout` actions that open
 | Packaging Materials | `PackagingMaterialsPage.tsx` header actions | `PackagingInventoryGuideModal.tsx` |
 | Supplies | `SuppliesMaterialsPage.tsx` header actions | `SuppliesInventoryGuideModal.tsx` |
 | Requests | `InventoryRequestsPage.tsx` header actions | `InventoryRequestsGuideModal.tsx` |
+| Dried Paragis (raw) | `RawDeptMaterialPage.tsx` header actions | `ParagisProductionGuideModal.tsx` |
+| Black Rice / Cacao (raw) | `RawDeptMaterialPage.tsx` header actions | `DeptRawProduceGuideModal.tsx` |
 
 ## Button classes (copy exactly)
 

@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-06-12T07:27:41+02:00
+generated: 2026-06-12T11:00:13+02:00
 type: module
 function_count: 39
 ---
@@ -34,14 +34,14 @@ function_count: 39
 
 **Callers (1):**
 
-- `api/v1/honey.php`:59 — `if (!honey_role_can_view((string) $user['role']) && !honey_role_can_mutate((string) $user['role'])) {`
+- `api/v1/honey.php`:60 — `if (!honey_role_can_view((string) $user['role']) && !honey_role_can_mutate((string) $user['role'])) {`
 
 ## honey_role_can_mutate {#honey_role_can_mutate}
 
 **Callers (2):**
 
-- `api/v1/honey.php`:59 — `if (!honey_role_can_view((string) $user['role']) && !honey_role_can_mutate((string) $user['role'])) {`
-- `api/v1/honey.php`:69 — `if (!honey_role_can_mutate((string) $user['role'])) {`
+- `api/v1/honey.php`:60 — `if (!honey_role_can_view((string) $user['role']) && !honey_role_can_mutate((string) $user['role'])) {`
+- `api/v1/honey.php`:70 — `if (!honey_role_can_mutate((string) $user['role'])) {`
 
 ## honey_role_can_executive_edit {#honey_role_can_executive_edit}
 
@@ -149,27 +149,27 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:112 — `$result = honey_warehouse_stock_in(`
+- `api/v1/honey.php`:113 — `$result = honey_warehouse_stock_in(`
 
 ## honey_warehouse_has_pricing_columns {#honey_warehouse_has_pricing_columns}
 
 **Callers (2):**
 
-- `api/v1/honey.php`:100 — `'pending_count' => honey_warehouse_has_pricing_columns($pdo) ? honey_pricing_pending_count($pdo) : 0,`
+- `api/v1/honey.php`:101 — `'pending_count' => honey_warehouse_has_pricing_columns($pdo) ? honey_pricing_pending_count($pdo) : 0,`
 - `includes/honey_inventory.php`:139 — `$hasPricingCols = honey_warehouse_has_pricing_columns($pdo);`
 
 ## honey_warehouse_unit_cost_column {#honey_warehouse_unit_cost_column}
 
 **Callers (2):**
 
-- `api/v1/honey.php`:82 — `$costCol = honey_warehouse_unit_cost_column($pdo);`
+- `api/v1/honey.php`:83 — `$costCol = honey_warehouse_unit_cost_column($pdo);`
 - `includes/honey_inventory.php`:192 — `return honey_warehouse_unit_cost_column($pdo) !== null;`
 
 ## honey_warehouse_normalize_cost_row {#honey_warehouse_normalize_cost_row}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:93 — `static fn (array $r) => honey_pricing_enrich_warehouse_row(honey_warehouse_normalize_cost_row($r)),`
+- `api/v1/honey.php`:94 — `static fn (array $r) => honey_pricing_enrich_warehouse_row(honey_warehouse_normalize_cost_row($r)),`
 
 ## honey_warehouse_stock_out {#honey_warehouse_stock_out}
 
@@ -177,7 +177,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:132 — `$result = honey_warehouse_stock_out(`
+- `api/v1/honey.php`:133 — `$result = honey_warehouse_stock_out(`
 
 ## honey_production_stock_out {#honey_production_stock_out}
 
@@ -185,7 +185,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:168 — `$result = honey_production_stock_out(`
+- `api/v1/honey.php`:169 — `$result = honey_production_stock_out(`
 
 ## honey_bottling_deduct_packaging_stocks {#honey_bottling_deduct_packaging_stocks}
 
@@ -201,7 +201,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:208 — `$result = honey_packaging_stock_out_sold(`
+- `api/v1/honey.php`:209 — `$result = honey_packaging_stock_out_sold(`
 
 ## honey_apply_correction {#honey_apply_correction}
 
@@ -215,7 +215,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/honey.php`:387 — `honey_apply_correction_request($pdo, $req);`
+- `api/v1/honey.php`:388 — `honey_apply_correction_request($pdo, $req);`
 - `includes/honey_inventory.php`:514 — `honey_apply_correction_request($pdo, [`
 
 ## honey_cascade_warehouse_metadata {#honey_cascade_warehouse_metadata}
@@ -257,7 +257,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:226 — `api_ok(honey_traceability(ims_pdo(), $q));`
+- `api/v1/honey.php`:227 — `api_ok(honey_traceability(ims_pdo(), $q));`
 
 ## honey_build_trace_chain {#honey_build_trace_chain}
 
@@ -275,13 +275,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:321 — `api_ok(['options' => honey_correction_row_options(ims_pdo(), $stage)]);`
+- `api/v1/honey.php`:322 — `api_ok(['options' => honey_correction_row_options(ims_pdo(), $stage)]);`
 
 ## honey_executive_adjust {#honey_executive_adjust}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:430 — `honey_executive_adjust(`
+- `api/v1/honey.php`:431 — `honey_executive_adjust(`
 
 ## honey_executive_qty_resets_baseline {#honey_executive_qty_resets_baseline}
 
@@ -298,7 +298,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/honey.php`:453 — `honey_executive_edit_row(`
+- `api/v1/honey.php`:454 — `honey_executive_edit_row(`
 - `includes/honey_inventory.php`:785 — `honey_executive_edit_row($pdo, 0, $stage, $rowTable, $rowId, [`
 
 ## honey_correction_row_context {#honey_correction_row_context}
@@ -319,7 +319,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/honey.php`:311 — `honey_correction_enrich($pdo, $row);`
+- `api/v1/honey.php`:312 — `honey_correction_enrich($pdo, $row);`
 - `includes/honey_inventory.php`:1222 — `honey_correction_enrich($pdo, $r);`
 
 ## honey_correction_summary {#honey_correction_summary}
@@ -335,7 +335,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:340 — `$count = honey_correction_unread_count($pdo);`
+- `api/v1/honey.php`:341 — `$count = honey_correction_unread_count($pdo);`
 
 ## honey_correction_unread_list {#honey_correction_unread_list}
 
@@ -343,7 +343,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:353 — `$rows = honey_correction_unread_list(ims_pdo(), $limit);`
+- `api/v1/honey.php`:354 — `$rows = honey_correction_unread_list(ims_pdo(), $limit);`
 
 ## honey_correction_mark_viewed {#honey_correction_mark_viewed}
 
@@ -351,7 +351,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:367 — `honey_correction_mark_viewed(ims_pdo(), $id);`
+- `api/v1/honey.php`:368 — `honey_correction_mark_viewed(ims_pdo(), $id);`
 
 ## honey_packaging_variant_inventory_breakdown {#honey_packaging_variant_inventory_breakdown}
 
@@ -365,6 +365,6 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/honey.php`:198 — `api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));`
+- `api/v1/honey.php`:199 — `api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));`
 - `api/v1/online_orders.php`:402 — `api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));`
 

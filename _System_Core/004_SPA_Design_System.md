@@ -45,7 +45,8 @@ Provides: fixed sidebar (viewport height, does not scroll with main), header bar
 
 - **Shell:** `h-dvh overflow-hidden` — sidebar + main column fill the viewport.
 - **Scroll:** only `<main>` scrolls; sidebar nav scrolls internally when needed.
-- **Pattern doc:** [[fixes/page-layout-fixed-sidebar]] · [[005_SPA_UX_Patterns#Fixed sidebar shell (mandatory)]].
+- **Centered content:** header + main children share `w-full mx-auto max-w-6xl px-4 sm:px-6` (override with `contentWidth="wide"` | `"full"`).
+- **Pattern docs:** [[fixes/page-layout-fixed-sidebar]] · [[fixes/page-layout-centered-content]] · [[005_SPA_UX_Patterns#Fixed sidebar shell (mandatory)]] · [[005_SPA_UX_Patterns#Centered page content (mandatory)]].
 
 **POS pages** (`/pos`, `/pos/honey`) do **not** use `PageLayout` — full-screen terminal UX with `POSHeader` and `posMotion` transitions.
 

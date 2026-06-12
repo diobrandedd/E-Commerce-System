@@ -37,6 +37,7 @@ api_dispatch([
     'dept_raw_stock_in' => 'api_honey_dept_raw_stock_in',
     'dept_raw_stock_out' => 'api_honey_dept_raw_stock_out',
     'dept_raw_produce' => 'api_honey_dept_raw_produce',
+    'dept_pt_use_raw_bags' => 'api_honey_dept_pt_use_raw_bags',
     'dept_pt_make_tea_bags' => 'api_honey_dept_pt_make_tea_bags',
     'dept_pt_pouch' => 'api_honey_dept_pt_pouch',
     'dept_brc_produce' => 'api_honey_dept_brc_produce',
@@ -637,7 +638,29 @@ function api_honey_dept_raw_stock_out(): void
 function api_honey_dept_raw_produce(): void
 {
     api_method_allowed(['POST']);
-    api_fail('Use dept_pt_make_tea_bags / dept_pt_pouch or dept_brc_produce / dept_jar_produce.', 410);
+    api_fail('Use dept_pt_use_raw_bags / dept_pt_pouch or dept_brc_produce / dept_jar_produce.', 410);
+}
+
+function api_honey_dept_pt_use_raw_bags(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $qty = (float) ($input['qty'] ?? 0);
+    $note = trim((string) ($input['note'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_pt_use_raw_bags($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
 }
 
 function api_honey_dept_pt_make_tea_bags(): void

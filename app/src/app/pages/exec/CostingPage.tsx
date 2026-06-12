@@ -12,7 +12,13 @@ import {
 import { CostBadge, peso } from "@/app/lib/costingDisplay";
 import { CostingHoneyVariantGroups } from "@/app/components/costing/CostingHoneyVariantGroups";
 import { CostingGuideModal } from "@/app/components/costing/CostingGuideModal";
+import { ParcelPackCostingPanel } from "@/app/components/costing/ParcelPackCostingPanel";
 import { CostingProductMetrics, CostingRowColumnHeaders } from "@/app/components/costing/CostingProductMetrics";
+import {
+  CostingParcelProductMetrics,
+  CostingParcelRowColumnHeaders,
+  costingParcelRowGridClass,
+} from "@/app/components/costing/CostingParcelMetrics";
 import { costingRowGridClass } from "@/app/components/costing/costingRowLayout";
 import { CostingDetailLoading, CostingDetailReveal } from "@/app/components/costing/costingMotion";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
@@ -52,7 +58,13 @@ interface ProductRow {
   formula_count: number;
   created_by_name: string;
   created_at: string;
+  parcel_addon_typical?: number | null;
+  landed_typical?: number | null;
+  margin_typical?: number | null;
+  parcel_addon?: { scenario: string; cost_typical: number } | null;
 }
+
+type CostingViewMode = "product" | "parcel";
 
 interface FormulaRow {
   id: number;
@@ -122,6 +134,8 @@ export function CostingPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [detailsById, setDetailsById] = useState<Record<number, ProductDetail | "loading">>({});
   const [guideOpen, setGuideOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<CostingViewMode>("product");
+  const [parcelReady, setParcelReady] = useState(false);
   const [creatingProduct, setCreatingProduct] = useState(false);
   const [createDefaults, setCreateDefaults] = useState<{ variant: string; size: string } | null>(null);
   const [addFormulaProductId, setAddFormulaProductId] = useState<number | null>(null);
@@ -133,16 +147,18 @@ export function CostingPage() {
   const refresh = useCallback(async () => {
     setError(null);
     try {
+      const includeParcel = viewMode === "parcel";
       const [stocksRes, productsRes] = await Promise.all([
         apiGet<{ stocks: StockRow[] }>("costing.php", "stocks_list"),
-        apiGet<{ products: ProductRow[] }>("costing.php", "products_list"),
+        apiGet<{ products: ProductRow[]; parcel_ready?: boolean }>("costing.php", "products_list", includeParcel ? { parcel: "1" } : undefined),
       ]);
       setStocks(stocksRes.stocks);
       setProducts(productsRes.products);
+      setParcelReady(Boolean(productsRes.parcel_ready));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load costing data.");
     }
-  }, []);
+  }, [viewMode]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -274,7 +290,7 @@ export function CostingPage() {
   };
 
   return (
-    <PageLayout title="Product Costing" subtitle="Formula builder and live cost tracking" actions={
+    <PageLayout contentWidth="wide" title="Product Costing" subtitle={viewMode === "product" ? "Formula builder and live cost tracking" : "Parcel packaging tiers and landed cost estimates"} actions={
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -296,6 +312,26 @@ export function CostingPage() {
         )}
         {notice && (
           <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{notice}</div>
+        )}
+
+        <div className="flex rounded-lg border border-border p-0.5 bg-secondary/30 max-w-md">
+          {(["product", "parcel"] as const).map(m => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setViewMode(m)}
+              className={cn(
+                "flex-1 text-xs font-semibold px-3 py-2 rounded-md transition-colors",
+                viewMode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {m === "product" ? "Product COGS" : "Parcel packaging"}
+            </button>
+          ))}
+        </div>
+
+        {viewMode === "parcel" && (
+          <ParcelPackCostingPanel onNotice={flash} />
         )}
 
         {/* Products — header fixed, list scrolls inside viewport */}
@@ -322,6 +358,7 @@ export function CostingPage() {
               onToggleProduct={toggleProduct}
               renderDetail={renderProductDetail}
               onRequestCreate={(variant, size) => openCreateProduct({ variant, size })}
+              parcelMode={viewMode === "parcel" && parcelReady}
             />
 
             {deptProducts.length > 0 && (
@@ -329,12 +366,18 @@ export function CostingPage() {
                 <div className="px-4 py-3 border-b border-border bg-[#C8900A]/[0.04]">
                   <h4 className="text-sm font-semibold text-foreground">Dept products (PT / BRC / Cacao)</h4>
                 </div>
-                <CostingRowColumnHeaders isExec={isExec} labelCol="Product" />
+                {viewMode === "parcel" && parcelReady ? (
+                  <CostingParcelRowColumnHeaders isExec={isExec} labelCol="Product" />
+                ) : (
+                  <CostingRowColumnHeaders isExec={isExec} labelCol="Product" />
+                )}
                 {deptProducts.map(p => {
                   const isExpanded = expandedId === p.id;
                   const current = parseFloat(p.current_cost);
                   const baseline = parseFloat(p.baseline_cost);
                   const selling = parseFloat(p.selling_price);
+                  const parcelAddon = p.parcel_addon_typical ?? null;
+                  const landed = p.landed_typical ?? null;
                   return (
                     <div
                       key={p.id}
@@ -354,21 +397,36 @@ export function CostingPage() {
                             : "hover:bg-secondary/30",
                         )}
                       >
-                        <div className={costingRowGridClass}>
+                        <div className={viewMode === "parcel" && parcelReady ? costingParcelRowGridClass : costingRowGridClass}>
                           <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                             <span className="font-semibold text-foreground text-sm">{p.name}</span>
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{p.dept_name}</span>
                             {p.formula_count > 0 && (
                               <span className="text-[10px] text-muted-foreground">{p.formula_count} lines</span>
                             )}
+                            {viewMode === "parcel" && p.parcel_addon?.scenario && (
+                              <span className="text-[10px] text-muted-foreground">ref: {p.parcel_addon.scenario}</span>
+                            )}
                           </div>
-                          <CostingProductMetrics
-                            current={current}
-                            selling={selling}
-                            baseline={baseline}
-                            isExec={isExec}
-                            chevron={{ expanded: isExpanded }}
-                          />
+                          {viewMode === "parcel" && parcelReady ? (
+                            <CostingParcelProductMetrics
+                              cogs={current}
+                              parcelAddon={parcelAddon}
+                              landed={landed}
+                              selling={selling}
+                              baseline={baseline}
+                              isExec={isExec}
+                              chevron={{ expanded: isExpanded }}
+                            />
+                          ) : (
+                            <CostingProductMetrics
+                              current={current}
+                              selling={selling}
+                              baseline={baseline}
+                              isExec={isExec}
+                              chevron={{ expanded: isExpanded }}
+                            />
+                          )}
                         </div>
                       </button>
                       <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">

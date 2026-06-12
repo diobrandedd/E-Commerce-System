@@ -1,7 +1,7 @@
 ---
 title: admin_sidebar
 source: includes/admin_sidebar.php
-generated: 2026-06-12T07:27:35+02:00
+generated: 2026-06-12T11:00:08+02:00
 type: module
 function_count: 3
 ---
@@ -35,7 +35,7 @@ function_count: 3
 
 ## setOpen {#setopen}
 
-**Callers (17):**
+**Callers (19):**
 
 - `includes/admin_sidebar.php`:53 — `btn.addEventListener('click', function () { setOpen(!panel.classList.contains('open')); });`
 - `includes/admin_sidebar.php`:55 — `a.addEventListener('click', function () { setOpen(false); });`
@@ -49,6 +49,8 @@ function_count: 3
 - `records.php`:846 — `setOpen(!panel.classList.contains('open'));`
 - `records.php`:852 — `setOpen(false);`
 - `records.php`:881 — `setOpen(false);`
+- `app/src/app/components/requests/EditRequestsSection.tsx`:115 — `setOpen(true);`
+- `app/src/app/components/requests/RequestsHubSection.tsx`:54 — `onClick={() => setOpen(!open)}`
 - `app/src/app/components/suppliers/SupplierCombobox.tsx`:34 — `setOpen(false);`
 - `app/src/app/components/suppliers/SupplierCombobox.tsx`:63 — `setOpen(false);`
 - `app/src/app/components/suppliers/SupplierCombobox.tsx`:74 — `setOpen(true);`

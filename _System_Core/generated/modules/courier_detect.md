@@ -1,7 +1,7 @@
 ---
 title: courier_detect
 source: includes/courier_detect.php
-generated: 2026-06-12T07:27:37+02:00
+generated: 2026-06-12T11:00:09+02:00
 type: module
 function_count: 1
 ---

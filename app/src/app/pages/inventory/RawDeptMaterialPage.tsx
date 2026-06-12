@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Loader2, Minus, Plus, Factory, Package } from "lucide-react";
+import { BookOpen, Loader2, Minus, Plus, Factory, Package } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { useAuth } from "@/app/context/AuthContext";
@@ -11,6 +11,7 @@ import {
   deptStockInYieldHint,
   deptSupplierCategoryForProduct,
   PT_TEA_BAGS_PER_POUCH,
+  ptTeaBagsPerBag,
   type DeptSupplierProductKey,
 } from "@/app/lib/deptProducts";
 import { RAW_MATERIAL_ROUTES, type RawMaterialRoute } from "@/app/lib/inventoryRoutes";
@@ -18,7 +19,9 @@ import {
   deptBrcProduce,
   deptJarProduce,
   deptPtMakeTeaBags,
+  deptPtUseRawBags,
   deptPtPouch,
+  type DeptProductionEntry,
   deptRawStockIn,
   deptRawStockOut,
   deptWipWaste,
@@ -28,6 +31,8 @@ import {
   type DeptRawSnapshot,
 } from "@/app/lib/deptRawInventory";
 import { listSuppliers, type Supplier } from "@/app/lib/suppliers";
+import { DeptRawProduceGuideModal } from "@/app/components/inventory/DeptRawProduceGuideModal";
+import { ParagisProductionGuideModal } from "@/app/components/inventory/ParagisProductionGuideModal";
 
 function formatWhen(raw: string | null | undefined) {
   if (!raw) return "—";
@@ -43,13 +48,31 @@ function entryLabel(entry: DeptRawSnapshot["entries"][number]) {
 
 function productionActionLabel(action: string): string {
   const map: Record<string, string> = {
-    make_tea_bags: "Make tea bags",
+    use_raw_bags: "Use raw bags",
+    make_tea_bags: "Make tea bags (exact count)",
     pouch: "Pouch",
     produce_brc: "Produce pouches",
     produce_jar: "Produce jars",
     wip_waste: "WIP waste",
   };
   return map[action] ?? action.replace(/_/g, " ");
+}
+
+function formatProductionQty(entry: DeptProductionEntry): string {
+  if (entry.action === "use_raw_bags") {
+    const tea = Math.round(entry.qty * ptTeaBagsPerBag());
+    return `${entry.qty} bag${entry.qty === 1 ? "" : "s"} → ~${tea.toLocaleString()} tea bags`;
+  }
+  if (entry.action === "make_tea_bags") {
+    return `${entry.qty.toLocaleString()} tea bags`;
+  }
+  if (entry.action === "pouch") {
+    return `${entry.qty.toLocaleString()} pouch${entry.qty === 1 ? "" : "es"}`;
+  }
+  if (entry.action === "wip_waste") {
+    return `${entry.qty.toLocaleString()} tea bags wasted`;
+  }
+  return entry.qty.toLocaleString();
 }
 
 interface RawDeptMaterialPageProps {
@@ -61,15 +84,19 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const canMutate = canMutateHoneyInventory(user?.role);
   const productKey = route.productKey;
   const isParagis = productKey === "pt";
+  const isSingleStageProduce = productKey === "brc" || productKey === "jar_cacao";
+  const showGuide = isParagis || isSingleStageProduce;
   const [data, setData] = useState<DeptRawSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showStockIn, setShowStockIn] = useState(false);
   const [showWarehouseWaste, setShowWarehouseWaste] = useState(false);
-  const [showMakeTeaBags, setShowMakeTeaBags] = useState(false);
+  const [showUseRawBags, setShowUseRawBags] = useState(false);
+  const [showMakeTeaBagsAdvanced, setShowMakeTeaBagsAdvanced] = useState(false);
   const [showPouch, setShowPouch] = useState(false);
   const [showWipWaste, setShowWipWaste] = useState(false);
   const [showProduce, setShowProduce] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -87,7 +114,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   useEffect(() => { void refresh(); }, [refresh]);
   useLiveRefresh(refresh);
 
-  const yieldHint = deptStockInYieldHint(productKey);
   const wipTeaBags = data?.wip_tea_bags ?? 0;
   const maxPouchesFromWip = Math.floor(wipTeaBags / PT_TEA_BAGS_PER_POUCH);
 
@@ -103,6 +129,15 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           >
             {route.finishedTitle} →
           </Link>
+          {showGuide && (
+            <button
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg border border-border"
+            >
+              <BookOpen size={13} /> Guide
+            </button>
+          )}
           {canMutate && (
             <>
               <button
@@ -118,10 +153,10 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                   <button
                     type="button"
                     disabled={(data?.bags_on_hand ?? 0) <= 0}
-                    onClick={() => setShowMakeTeaBags(true)}
+                    onClick={() => setShowUseRawBags(true)}
                     className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#C8900A] text-[#8a6506] disabled:opacity-40"
                   >
-                    <Factory size={13} /> Make tea bags
+                    <Factory size={13} /> Use raw bags
                   </button>
                   <button
                     type="button"
@@ -170,7 +205,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
       ) : !data ? (
         <p className="text-sm text-red-600">{loadError ?? "Could not load raw inventory."}</p>
       ) : (
-        <div className="space-y-5 max-w-4xl">
+        <div className="space-y-5">
           <div className={`grid gap-3 ${isParagis ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-3"}`}>
             <div className="rounded-xl border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Raw bags</p>
@@ -197,27 +232,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             </div>
           </div>
 
-          {isParagis && (
-            <div className="rounded-xl border bg-card px-4 py-3 space-y-2">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">How Paragis production works</p>
-              <ol className="text-sm space-y-1.5 list-decimal list-inside text-foreground">
-                <li><strong>Stock in</strong> — receive sealed 1 kg supplier bags (you did this).</li>
-                <li><strong>Make tea bags</strong> — enter how many filled tea bags (2 g) you made; raw leaf + tea-bag packaging deduct; <strong>Tea bags (WIP)</strong> goes up.</li>
-                <li><strong>Pouch</strong> — enter how many retail pouches (24 tea bags each) you packed; WIP tea bags + pouch packaging deduct; <strong>Finished pouches</strong> goes up.</li>
-              </ol>
-              <p className="text-xs text-muted-foreground">
-                Materials come from Product Costing formula lines (stock-linked only). Use <strong>Make tea bags</strong> next — not Stock in again.
-              </p>
-            </div>
-          )}
-
-          {yieldHint && (
-            <div className="rounded-xl border border-[#C8900A]/25 bg-[#C8900A]/5 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-wide text-[#8a6506] font-semibold mb-1">Production yield</p>
-              <p className="text-sm leading-relaxed">{yieldHint}</p>
-            </div>
-          )}
-
           <div className="rounded-xl border bg-card overflow-hidden">
             <div className="px-5 py-4 border-b bg-secondary/30">
               <p className="text-sm font-semibold">Production activity</p>
@@ -239,7 +253,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                       <tr key={e.id} className="border-b last:border-0 hover:bg-secondary/10">
                         <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{formatWhen(e.created_at)}</td>
                         <td className="px-4 py-2.5">{productionActionLabel(e.action)}</td>
-                        <td className="px-4 py-2.5 font-medium">{e.qty}</td>
+                        <td className="px-4 py-2.5 font-medium">{formatProductionQty(e)}</td>
                         <td className="px-4 py-2.5 text-muted-foreground">{e.note ?? "—"}</td>
                       </tr>
                     ))}
@@ -284,6 +298,27 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
         </div>
       )}
 
+      {isParagis && (
+        <ParagisProductionGuideModal
+          open={guideOpen}
+          onClose={() => setGuideOpen(false)}
+          role={user?.role}
+          canMutate={canMutate}
+          onOpenExactTeaBagCount={
+            canMutate && (data?.bags_on_hand ?? 0) > 0
+              ? () => setShowMakeTeaBagsAdvanced(true)
+              : undefined
+          }
+        />
+      )}
+      {isSingleStageProduce && (
+        <DeptRawProduceGuideModal
+          productKey={productKey}
+          open={guideOpen}
+          onClose={() => setGuideOpen(false)}
+          role={user?.role}
+        />
+      )}
       {showStockIn && (
         <RawStockInModal
           productKey={productKey}
@@ -301,16 +336,24 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           onDone={() => { setShowWarehouseWaste(false); void refresh(); }}
         />
       )}
-      {showMakeTeaBags && (
+      {showUseRawBags && data && (
+        <UseRawBagsModal
+          maxBags={data.bags_on_hand}
+          onClose={() => setShowUseRawBags(false)}
+          onDone={() => { setShowUseRawBags(false); void refresh(); }}
+        />
+      )}
+      {showMakeTeaBagsAdvanced && (
         <ProductionQtyModal
-          title="Make tea bags"
+          title="Make tea bags (exact count)"
           label="Tea bags produced"
           unit="tea bags"
           productKey="pt"
           action="make_tea_bags"
-          onClose={() => setShowMakeTeaBags(false)}
+          hint="Advanced: only use when you have an exact count. For normal runs, use Use raw bags instead."
+          onClose={() => setShowMakeTeaBagsAdvanced(false)}
           onSubmit={(qty, note) => deptPtMakeTeaBags({ qty, note })}
-          onDone={() => { setShowMakeTeaBags(false); void refresh(); }}
+          onDone={() => { setShowMakeTeaBagsAdvanced(false); void refresh(); }}
         />
       )}
       {showPouch && data && (
@@ -389,10 +432,133 @@ function ProductionPreviewPanel({
   );
 }
 
+function UseRawBagsModal({
+  maxBags,
+  onClose,
+  onDone,
+}: {
+  maxBags: number;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [bags, setBags] = useState("");
+  const [note, setNote] = useState("");
+  const [deductPreview, setDeductPreview] = useState<DeptProductionPreviewLine[]>([]);
+  const [costOnlyPreview, setCostOnlyPreview] = useState<DeptProductionPreviewLine[]>([]);
+  const [derivedTeaBags, setDerivedTeaBags] = useState<number | null>(null);
+  const [packablePouches, setPackablePouches] = useState<number | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inputCls = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background";
+  const n = parseFloat(bags);
+  const teaPerBag = ptTeaBagsPerBag();
+
+  useEffect(() => {
+    if (!Number.isFinite(n) || n <= 0) {
+      setDeductPreview([]);
+      setCostOnlyPreview([]);
+      setDerivedTeaBags(null);
+      setPackablePouches(null);
+      return;
+    }
+    setDerivedTeaBags(Math.round(n * teaPerBag));
+    setPackablePouches(Math.floor((n * teaPerBag) / PT_TEA_BAGS_PER_POUCH));
+    setPreviewLoading(true);
+    const t = window.setTimeout(() => {
+      void fetchDeptProductionPreview("pt", "use_raw_bags", n)
+        .then(res => {
+          setDeductPreview(res.deduct_lines ?? res.lines);
+          setCostOnlyPreview(res.cost_only_lines ?? []);
+          if (res.derived_tea_bags != null) setDerivedTeaBags(Math.round(res.derived_tea_bags));
+          if (res.packable_pouches != null) setPackablePouches(res.packable_pouches);
+        })
+        .catch(() => {
+          setDeductPreview([]);
+          setCostOnlyPreview([]);
+        })
+        .finally(() => setPreviewLoading(false));
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [n, teaPerBag]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await deptPtUseRawBags({ qty: parseFloat(bags), note: note.trim() || undefined });
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not save.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <AppModal open onClose={onClose} panelClassName="max-w-md w-full" labelledBy="use-raw-bags-title">
+      <AppModalHeader title="Use raw bags" titleId="use-raw-bags-title" onClose={onClose} />
+      <form onSubmit={submit}>
+        <AppModalBody className="space-y-3">
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          <p className="text-xs text-muted-foreground">
+            Each 1 kg bag yields ~{teaPerBag.toLocaleString()} tea bags at 2 g each. Enter how many bags you opened — no need to count every tea bag.
+          </p>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+              Bags opened (1 kg each) — max {maxBags.toLocaleString()}
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              max={maxBags}
+              value={bags}
+              onChange={e => setBags(e.target.value)}
+              required
+              className={inputCls}
+            />
+          </div>
+          {Number.isFinite(n) && n > 0 && derivedTeaBags != null && (
+            <div className="rounded-lg border border-[#C8900A]/25 bg-[#C8900A]/5 px-3 py-2 text-xs text-[#8a6506]">
+              <p className="font-semibold">Estimated WIP credit</p>
+              <p className="mt-0.5">
+                ~{derivedTeaBags.toLocaleString()} tea bags
+                {packablePouches != null && packablePouches > 0
+                  ? ` · enough for ~${packablePouches.toLocaleString()} pouch${packablePouches === 1 ? "" : "es"}`
+                  : ""}
+              </p>
+            </div>
+          )}
+          {previewLoading && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Loader2 size={12} className="animate-spin" /> Loading deduct preview…
+            </p>
+          )}
+          {!previewLoading && (
+            <ProductionPreviewPanel deductLines={deductPreview} costOnlyLines={costOnlyPreview} />
+          )}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Note (optional)</label>
+            <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={255} className={inputCls} />
+          </div>
+        </AppModalBody>
+        <AppModalFooter>
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-border">Cancel</button>
+          <button type="submit" disabled={saving} className="px-4 py-2 text-sm font-semibold rounded-lg text-white disabled:opacity-50" style={{ background: "#C8900A" }}>
+            {saving ? "Saving…" : "Confirm"}
+          </button>
+        </AppModalFooter>
+      </form>
+    </AppModal>
+  );
+}
+
 function ProductionQtyModal({
   title,
   label,
-  unit,
+  unit: _unit,
   productKey,
   action,
   maxQty,

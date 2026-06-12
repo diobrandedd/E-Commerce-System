@@ -1,6 +1,6 @@
 ---
 title: Motion Patterns
-generated: 2026-06-12T07:27:56+02:00
+generated: 2026-06-12T11:00:26+02:00
 type: spa
 ---
 
@@ -47,6 +47,13 @@ type: spa
 - `OrderRemarksAnimatedCount()`
 - `OrderRemarksAllDonePanel()`
 - `OrderRemarksCollapsible()`
+
+## `app/src/app/components/layout/sidebarNavMotion.tsx`
+
+- `sidebarNavCollapseTransition()`
+- `SidebarNavCollapse()`
+- `SidebarNavChevron()`
+- `SidebarNavToggleButton()`
 
 ## `app/src/app/components/pos/posMotion.tsx`
 

@@ -17,16 +17,17 @@ tags: [paragis, pt, wip, production, bom]
 
 ## Actions
 
-1. **Make tea bags** — input: tea bag count. Deduct **leaf only** (`production_deduct = 1`). Yarn / paper roll are pool-only (costing via yield; no deduct). Credit WIP.
-2. **Pouch** — input: pouch count. Deduct `PT pouch packaging`; WIP −24×pouches; finished +pouches.
-3. **WIP waste** — −tea bags WIP only.
-4. **Warehouse waste** — −sealed bags (FIFO).
+1. **Use raw bags** (primary) — input: **1 kg supplier bags opened** (whole or fractional). Deduct raw leaf by bag qty; credit WIP with **derived** tea bags (`bags × 500` at 2 g each). Staff do not count individual tea bags.
+2. **Make tea bags** (advanced) — input: exact tea bag count. Same deduct/WIP math as before; kept for edge cases only.
+3. **Pouch** — input: pouch count. Deduct `PT pouch packaging`; WIP −24×pouches; finished +pouches.
+4. **WIP waste** — −tea bags WIP only.
+5. **Warehouse waste** — −sealed bags (FIFO).
 
 ## Packaging SKUs & formula stages
 
 | Formula stock | Production deduct | Costing qty (per pouch) |
 |---------------|-------------------|-------------------------|
-| `Paragis leaf — raw` | Make tea bags: `÷ 24 × tea_bags` | 0.0096 bag |
+| `Paragis leaf — raw` | Use raw bags: `× bags`; Make tea bags: `÷ 24 × tea_bags` | 0.0096 bag |
 | `PT pouch packaging` | Pouch: `× pouches` | 1 |
 | `Paragis Tea Bag Yarn` | No — pool | 24 tea bags (÷ yield for ₱) |
 | `PT tea bag paper roll` | No — pool | 24 tea bags (÷ yield for ₱) |

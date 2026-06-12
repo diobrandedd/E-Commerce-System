@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { RequestsHubSection } from "@/app/components/requests/RequestsHubSection";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { ApiError } from "@/app/lib/api";
 import {
@@ -63,15 +64,28 @@ interface EditRequestsSectionProps {
   isReviewer: boolean;
   readonly?: boolean;
   onChanged?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EditRequestsSection({ isReviewer, readonly = false, onChanged }: EditRequestsSectionProps) {
+export function EditRequestsSection({
+  isReviewer,
+  readonly = false,
+  onChanged,
+  open: controlledOpen,
+  onOpenChange,
+}: EditRequestsSectionProps) {
   const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [requests, setRequests] = useState<EditRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actingOn, setActingOn] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const autoOpenRef = useRef(false);
+
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -93,6 +107,14 @@ export function EditRequestsSection({ isReviewer, readonly = false, onChanged }:
   useLiveRefresh(refresh);
 
   const pendingCount = useMemo(() => requests.filter((r) => r.status === "pending").length, [requests]);
+
+  useEffect(() => {
+    if (loading || autoOpenRef.current || controlledOpen != null) return;
+    if (pendingCount > 0) {
+      autoOpenRef.current = true;
+      setOpen(true);
+    }
+  }, [loading, pendingCount, controlledOpen, setOpen]);
 
   const totalPages = Math.max(1, Math.ceil(requests.length / ROWS_PER_PAGE));
   const safePage = Math.min(page, totalPages);
@@ -133,17 +155,20 @@ export function EditRequestsSection({ isReviewer, readonly = false, onChanged }:
   };
 
   return (
-    <section id="edit-requests-section">
-      <div className="px-1 pb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Edit requests</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {isReviewer
-              ? "Deliveries review fixes, inventory row edits, and other staff-submitted changes"
-              : "Track delivery delete/edit and other requests awaiting executive approval"}
-          </p>
-        </div>
-        {isReviewer && (
+    <RequestsHubSection
+      id="edit-requests-section"
+      title="Edit requests"
+      subtitle={
+        isReviewer
+          ? "Deliveries review fixes, inventory row edits, and other staff-submitted changes"
+          : "Track delivery delete/edit and other requests awaiting executive approval"
+      }
+      pendingCount={statusFilter === "pending" ? pendingCount : 0}
+      totalCount={requests.length}
+      open={open}
+      onOpenChange={setOpen}
+      headerActions={
+        isReviewer ? (
           <div className="flex flex-wrap items-center gap-2">
             {(["pending", "approved", "rejected", "all"] as const).map((s) => (
               <button
@@ -161,14 +186,14 @@ export function EditRequestsSection({ isReviewer, readonly = false, onChanged }:
               </button>
             ))}
           </div>
-        )}
-      </div>
-
+        ) : undefined
+      }
+    >
       {error && (
         <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">{error}</div>
       )}
 
-      <div className="bg-card rounded-xl border overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
@@ -255,6 +280,6 @@ export function EditRequestsSection({ isReviewer, readonly = false, onChanged }:
       {!loading && (
         <TablePagination page={page} setPage={setPage} totalRows={requests.length} noun="requests" />
       )}
-    </section>
+    </RequestsHubSection>
   );
 }

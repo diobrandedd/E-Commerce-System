@@ -203,7 +203,7 @@ export function OrderRemarksPage() {
       }
     >
       <OrderRemarksToast message={toast} />
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="space-y-6">
         {error && (
           <motion.div
             initial={reduceMotion ? false : { opacity: 0, y: -8 }}

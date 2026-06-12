@@ -101,7 +101,7 @@ export function DeptProductFinishedPage() {
           <Loader2 className="inline animate-spin" size={20} />
         </div>
       ) : (
-        <div className="space-y-5 max-w-4xl">
+        <div className="space-y-5">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="rounded-xl border bg-card px-4 py-3 col-span-2 lg:col-span-1">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">On hand</p>

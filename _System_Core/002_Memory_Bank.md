@@ -4,6 +4,24 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-05 — [[problems/records/2026-06-05_online-parcel-pack-costing|Parcel pack costing (tier-based)]]
+**Shipped:** Product Costing **Parcel packaging** tab — composition tiers (`parcel_pack_tiers`), min/typical/max bubble wrap, Item/s preview, landed cost columns. Manufacturing `product_formula` unchanged. **Fix:** [[fixes/online-parcel-pack-costing]] · **Spec:** [[specs/2026-06-05_online-parcel-pack-costing]] · migration `phase30`.
+
+### 2026-06-12 — [[problems/records/2026-06-12_dept-raw-ux-session|Dept raw UX session rollup]] ⭐
+**Start here for agents:** centered `PageLayout` · Paragis **Use raw bags** (`dept_pt_use_raw_bags`) · production **Guide** modals on all raw dept pages (Paragis / BRC / Cacao). **Fixes:** [[fixes/page-layout-centered-content]] · [[fixes/paragis-use-raw-bags]] · [[fixes/dept-raw-material-guides]]. **E2E still open** on [[001_System_State]].
+
+### 2026-06-12 — [[fixes/dept-raw-material-guides|Dept raw material Guide modals]]
+**Shipped:** `ParagisProductionGuideModal` + `DeptRawProduceGuideModal` (BRC/Cacao); removed inline workflow/yield panels from `RawDeptMaterialPage`. **Pattern:** [[fixes/page-guide-button-modal]].
+
+### 2026-06-12 — [[fixes/paragis-use-raw-bags|Paragis use raw bags (no tea-bag counting)]]
+**Shipped:** `dept_pt_use_raw_bags` — staff enter 1 kg bags opened; WIP derived at 500 tea bags/bag. **Spec:** [[specs/2026-06-12_paragis-production-wip]].
+
+### 2026-06-12 — [[fixes/page-layout-centered-content|Centered page content]]
+**Shipped:** `PageLayout` centers header + main in `max-w-6xl mx-auto` (`contentWidth` for wide/full). **Docs:** golden rule #9 in [[005_SPA_UX_Patterns]] · `.cursor/rules/spa-ui-design.mdc`.
+
+### 2026-06-12 — Requests hub collapsible sections
+**Shipped:** `RequestsHubSection` accordion on `/inventory/requests` — pending badges, hash auto-expand, animated collapse.
+
 ### 2026-06-12 — [[fixes/pyx-scrollbars|Global Pyx scrollbars + sidebar dropdown motion]]
 **Shipped:** themed slim scrollbars on all `overflow-y-auto`; fade-in on scroll/hover; `SidebarNavCollapse` animations. **Docs:** [[005_SPA_UX_Patterns#Pyx scrollbars (mandatory)]].
 

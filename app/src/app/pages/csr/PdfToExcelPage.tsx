@@ -224,7 +224,7 @@ export function PdfToExcelPage() {
       subtitle="Extract Shopee waybill PDFs into iPYX order sheets when workers send PDFs without Excel"
     >
       <OrderRemarksToast message={toast} />
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="space-y-6">
         {error && (
           <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm">
             <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />

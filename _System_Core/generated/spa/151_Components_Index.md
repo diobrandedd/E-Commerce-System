@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-12T07:27:56+02:00
+generated: 2026-06-12T11:00:26+02:00
 type: spa
 ---
 
@@ -26,13 +26,16 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 ## useReducedMotion
 
 - `app/src/app/components/AppModal.tsx`
+- `app/src/app/components/Sidebar.tsx`
 - `app/src/app/components/costing/costingMotion.tsx`
 - `app/src/app/components/csr/AmbiguousOrderCarousel.tsx`
 - `app/src/app/components/csr/onlineFulfillmentMotion.tsx`
 - `app/src/app/components/csr/onlineOrders/ItemResolverCarousel.tsx`
 - `app/src/app/components/csr/orderRemarksMotion.tsx`
+- `app/src/app/components/layout/sidebarNavMotion.tsx`
 - `app/src/app/components/pos/POSReceiptView.tsx`
 - `app/src/app/components/pos/posMotion.tsx`
+- `app/src/app/components/requests/RequestsHubSection.tsx`
 - `app/src/app/pages/csr/OrderRemarksPage.tsx`
 
 ## PageLayout
@@ -114,6 +117,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/honey/BatchTraceabilityDrawer.tsx`
 - `app/src/app/components/honey/CorrectionReviewModal.tsx`
 - `app/src/app/components/honey/ExecutiveRowEditModal.tsx`
+- `app/src/app/components/inventory/DeptRawProduceGuideModal.tsx`
 - `app/src/app/components/inventory/MaterialAdjustModal.tsx`
 - `app/src/app/components/inventory/MaterialCatalogModal.tsx`
 - `app/src/app/components/inventory/PackagingDeductModal.tsx`
@@ -122,6 +126,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/inventory/PackagingOnHandRequestModal.tsx`
 - `app/src/app/components/inventory/PackagingOnHandSetModal.tsx`
 - `app/src/app/components/inventory/PackagingStockInLotModal.tsx`
+- `app/src/app/components/inventory/ParagisProductionGuideModal.tsx`
 - `app/src/app/components/inventory/SuppliesInventoryGuideModal.tsx`
 - `app/src/app/components/inventory/SupplyIssueRequestModal.tsx`
 - `app/src/app/components/inventory/SupplyMaterialDetailModal.tsx`

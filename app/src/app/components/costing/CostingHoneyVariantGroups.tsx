@@ -8,6 +8,11 @@ import {
   type HoneyVariantGroup,
 } from "@/app/lib/costingProducts";
 import { CostingProductMetrics, CostingRowColumnHeaders } from "@/app/components/costing/CostingProductMetrics";
+import {
+  CostingParcelProductMetrics,
+  CostingParcelRowColumnHeaders,
+  costingParcelHoneyRowGridClass,
+} from "@/app/components/costing/CostingParcelMetrics";
 import { costingHoneyRowGridClass } from "@/app/components/costing/costingRowLayout";
 import type { HoneyPricingVariant } from "@/app/lib/honeyPricing";
 import { cn } from "@/app/components/ui/utils";
@@ -36,17 +41,25 @@ function HoneySizeRow<T extends CostingProductLike>({
   isExec,
   onToggle,
   detailPanel,
+  parcelMode,
 }: {
   product: T;
   isExpanded: boolean;
   isExec: boolean;
   onToggle: () => void;
   detailPanel: ReactNode;
+  parcelMode?: boolean;
 }) {
   const current = parseFloat(product.current_cost);
   const baseline = parseFloat(product.baseline_cost);
   const selling = parseFloat(product.selling_price);
   const size = product.size ?? "";
+  const parcelAddon =
+    "parcel_addon_typical" in product && product.parcel_addon_typical != null
+      ? Number(product.parcel_addon_typical)
+      : null;
+  const landed =
+    "landed_typical" in product && product.landed_typical != null ? Number(product.landed_typical) : null;
 
   return (
     <div
@@ -66,7 +79,7 @@ function HoneySizeRow<T extends CostingProductLike>({
             : "hover:bg-secondary/30",
         )}
       >
-        <div className={costingHoneyRowGridClass}>
+        <div className={parcelMode ? costingParcelHoneyRowGridClass : costingHoneyRowGridClass}>
           <div
             className={cn(
               "w-1 self-stretch rounded-full flex-shrink-0 min-h-[1.5rem] transition-all duration-200",
@@ -85,14 +98,29 @@ function HoneySizeRow<T extends CostingProductLike>({
             {product.formula_count > 0 && (
               <span className="text-[10px] text-muted-foreground">{product.formula_count} lines</span>
             )}
+            {parcelMode && "parcel_addon" in product && product.parcel_addon?.scenario && (
+              <span className="text-[10px] text-muted-foreground">ref: {product.parcel_addon.scenario}</span>
+            )}
           </div>
-          <CostingProductMetrics
-            current={current}
-            selling={selling}
-            baseline={baseline}
-            isExec={isExec}
-            chevron={{ expanded: isExpanded }}
-          />
+          {parcelMode ? (
+            <CostingParcelProductMetrics
+              cogs={current}
+              parcelAddon={parcelAddon}
+              landed={landed}
+              selling={selling}
+              baseline={baseline}
+              isExec={isExec}
+              chevron={{ expanded: isExpanded }}
+            />
+          ) : (
+            <CostingProductMetrics
+              current={current}
+              selling={selling}
+              baseline={baseline}
+              isExec={isExec}
+              chevron={{ expanded: isExpanded }}
+            />
+          )}
         </div>
       </button>
       <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">
@@ -110,6 +138,7 @@ function VariantSection<T extends CostingProductLike>({
   renderDetail,
   onRequestCreate,
   defaultOpen,
+  parcelMode,
 }: {
   group: HoneyVariantGroup<T>;
   isExec: boolean;
@@ -118,6 +147,7 @@ function VariantSection<T extends CostingProductLike>({
   renderDetail: (product: T) => ReactNode;
   onRequestCreate?: (variant: HoneyPricingVariant, size: string) => void;
   defaultOpen: boolean;
+  parcelMode?: boolean;
 }) {
   const [sectionOpen, setSectionOpen] = useState(defaultOpen);
   const stats = variantGroupStats(group, isExec);
@@ -177,7 +207,11 @@ function VariantSection<T extends CostingProductLike>({
       </button>
 
       <CostingCollapsible open={sectionOpen} className="border-t border-border">
-          <CostingRowColumnHeaders isExec={isExec} labelCol="Size" withColorBar />
+          {parcelMode ? (
+            <CostingParcelRowColumnHeaders isExec={isExec} labelCol="Size" withColorBar />
+          ) : (
+            <CostingRowColumnHeaders isExec={isExec} labelCol="Size" withColorBar />
+          )}
           {HONEY_COSTING_SIZES.map(size => {
             const product = group.bySize.get(size);
             if (!product) {
@@ -215,6 +249,7 @@ function VariantSection<T extends CostingProductLike>({
                 isExec={isExec}
                 onToggle={() => onToggleProduct(product.id)}
                 detailPanel={isExpanded ? renderDetail(product) : null}
+                parcelMode={parcelMode}
               />
             );
           })}
@@ -230,6 +265,7 @@ export function CostingHoneyVariantGroups<T extends CostingProductLike>({
   onToggleProduct,
   renderDetail,
   onRequestCreate,
+  parcelMode,
 }: {
   honeyProducts: T[];
   isExec: boolean;
@@ -237,6 +273,7 @@ export function CostingHoneyVariantGroups<T extends CostingProductLike>({
   onToggleProduct: (id: number) => void;
   renderDetail: (product: T) => ReactNode;
   onRequestCreate?: (variant: HoneyPricingVariant, size: string) => void;
+  parcelMode?: boolean;
 }) {
   const groups = useMemo(() => groupHoneyByVariant(honeyProducts), [honeyProducts]);
 
@@ -260,6 +297,7 @@ export function CostingHoneyVariantGroups<T extends CostingProductLike>({
             renderDetail={renderDetail}
             onRequestCreate={onRequestCreate}
             defaultOpen={idx === 0}
+            parcelMode={parcelMode}
           />
         </CostingSectionEnter>
       ))}

@@ -33,9 +33,14 @@ flowchart LR
 - [[fixes/packaging-inventory-roles]] — HR stock-in / PM deduct / exec all
 - [[fixes/inventory-role-permissions]] — PHP helpers + API `permissions` + SPA guides
 - [[fixes/page-guide-button-modal]] — Guide header button + modal (not inline panel)
+- [[fixes/page-layout-centered-content]] — `PageLayout` centered column (`contentWidth`)
+- [[fixes/paragis-use-raw-bags]] — PT production: bags opened → derived WIP (not tea-bag count)
+- [[fixes/dept-raw-material-guides]] — Raw dept pages: Paragis / BRC / Cacao guide modals
 
 ## Records (newest first)
 
+- [[records/2026-06-12_dept-raw-ux-session]] — **rollup:** centered layout + PT use raw bags + raw guides
+- [[records/2026-06-12_paragis-use-raw-bags]]
 - [[records/2026-06-12_packaging-inventory-role-split]]
 - [[records/2026-06-12_pt-make-tea-bags-blocked]]
 - [[records/2026-06-12_dept-production-wip-bom]]

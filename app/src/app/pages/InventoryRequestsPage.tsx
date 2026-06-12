@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useLocation, useSearchParams } from "react-router";
 import { BookOpen, CheckCircle2, Loader2, Plus, XCircle } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { CorrectionReviewModal, type CorrectionRequestDetail } from "@/app/components/honey/CorrectionReviewModal";
 import { EditRequestsSection } from "@/app/components/requests/EditRequestsSection";
 import { InventoryRequestsGuideModal } from "@/app/components/requests/InventoryRequestsGuideModal";
+import { RequestsHubSection } from "@/app/components/requests/RequestsHubSection";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
 import { useAuth } from "@/app/context/AuthContext";
@@ -93,6 +94,7 @@ export function InventoryRequestsPage() {
   const isPm = user?.role === "prod_manager";
   const isHr = user?.role === "hr";
   const readonly = isHr;
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { refresh: refreshNotifications, markViewed, markMaterialViewed } = useCorrectionNotifications();
   const [requests, setRequests] = useState<CorrectionRequestDetail[]>([]);
@@ -126,6 +128,8 @@ export function InventoryRequestsPage() {
   const [discountPage, setDiscountPage] = useState(1);
   const markedViewedRef = useRef<Set<number>>(new Set());
   const markedMaterialViewedRef = useRef<Set<number>>(new Set());
+  const sectionsInitRef = useRef(false);
+  const [sectionOpen, setSectionOpen] = useState<Record<string, boolean>>({});
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -155,15 +159,6 @@ export function InventoryRequestsPage() {
     refresh();
   }, [refresh]);
   useLiveRefresh(refresh);
-
-  useEffect(() => {
-    const hash = window.location.hash.replace("#", "");
-    if (!hash) return;
-    const el = document.getElementById(hash);
-    if (el) {
-      window.requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "start" }));
-    }
-  }, []);
 
   const markViewedOnce = useCallback(
     async (id: number) => {
@@ -278,6 +273,59 @@ export function InventoryRequestsPage() {
   const packagingStart = (packagingSafePage - 1) * ROWS_PER_PAGE;
   const pagedPackagingRequests = packagingRequests.slice(packagingStart, packagingStart + ROWS_PER_PAGE);
 
+  const correctionPending = useMemo(
+    () => requests.filter(r => r.status === "pending").length,
+    [requests],
+  );
+  const supplyPending = useMemo(
+    () => supplyRequests.filter(r => r.status === "pending").length,
+    [supplyRequests],
+  );
+  const packagingPending = useMemo(
+    () => packagingRequests.filter(r => r.status === "pending").length,
+    [packagingRequests],
+  );
+
+  const setSection = useCallback((id: string, open: boolean) => {
+    setSectionOpen(prev => ({ ...prev, [id]: open }));
+  }, []);
+
+  useEffect(() => {
+    if (loading || sectionsInitRef.current) return;
+    sectionsInitRef.current = true;
+    const hash = location.hash.replace("#", "");
+    setSectionOpen({
+      "inventory-corrections-section":
+        hash === "inventory-corrections-section" || (!isHr && correctionPending > 0),
+      "supply-requests-section":
+        hash === "supply-requests-section" || supplyPending > 0 || (isHr && supplyTotal > 0),
+      "packaging-requests-section":
+        hash === "packaging-requests-section" || packagingPending > 0,
+      "edit-requests-section": hash === "edit-requests-section",
+      "discount-approvals-section":
+        hash === "discount-approvals-section" || discountTotal > 0,
+    });
+  }, [
+    loading,
+    isHr,
+    correctionPending,
+    supplyPending,
+    packagingPending,
+    supplyTotal,
+    discountTotal,
+    location.hash,
+  ]);
+
+  useEffect(() => {
+    const hash = location.hash.replace("#", "");
+    if (!hash) return;
+    setSectionOpen(prev => (prev[hash] ? prev : { ...prev, [hash]: true }));
+    const el = document.getElementById(hash);
+    if (el) {
+      window.requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  }, [location.hash]);
+
   const markMaterialViewedOnce = useCallback(
     async (id: number) => {
       if (!isExec || markedMaterialViewedRef.current.has(id)) return;
@@ -313,6 +361,7 @@ export function InventoryRequestsPage() {
       setSupplyReviewRequest(null);
       return;
     }
+    setSectionOpen(prev => ({ ...prev, "supply-requests-section": true }));
     if (supplyRequests.length === 0) return;
     const req = supplyRequests.find(r => r.id === supplyRequestIdFromUrl);
     if (req) {
@@ -392,14 +441,18 @@ export function InventoryRequestsPage() {
         </div>
       }
     >
-      <div className="space-y-10">
+      <div className="space-y-3">
         {!isHr && (
-        <section id="inventory-corrections-section">
-          <div className="px-1 pb-3">
-            <h3 className="text-sm font-semibold text-foreground">Inventory corrections</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Honey warehouse / production / packaging qty and metadata fixes</p>
-          </div>
-          <div className="bg-card rounded-xl border overflow-x-auto">
+        <RequestsHubSection
+          id="inventory-corrections-section"
+          title="Inventory corrections"
+          subtitle="Honey warehouse / production / packaging qty and metadata fixes"
+          pendingCount={correctionPending}
+          totalCount={correctionTotal}
+          open={sectionOpen["inventory-corrections-section"]}
+          onOpenChange={open => setSection("inventory-corrections-section", open)}
+        >
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
@@ -468,20 +521,23 @@ export function InventoryRequestsPage() {
               noun="requests"
             />
           )}
-        </section>
+        </RequestsHubSection>
         )}
 
-        <section id="supply-requests-section">
-          <div className="px-1 pb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Supply issue requests</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {isHr
-                  ? "Submit deduct-for-use requests with requester name — executive approves before on-hand changes"
-                  : "HR supply issues awaiting executive approval"}
-              </p>
-            </div>
-            {isHr && (
+        <RequestsHubSection
+          id="supply-requests-section"
+          title="Supply issue requests"
+          subtitle={
+            isHr
+              ? "Submit deduct-for-use requests with requester name — executive approves before on-hand changes"
+              : "HR supply issues awaiting executive approval"
+          }
+          pendingCount={supplyPending}
+          totalCount={supplyTotal}
+          open={sectionOpen["supply-requests-section"]}
+          onOpenChange={open => setSection("supply-requests-section", open)}
+          headerActions={
+            isHr ? (
               <button
                 type="button"
                 onClick={() => setShowSupplyIssueRequest(true)}
@@ -490,12 +546,13 @@ export function InventoryRequestsPage() {
               >
                 <Plus size={13} /> Supply issue request
               </button>
-            )}
-          </div>
+            ) : undefined
+          }
+        >
           {materialError && (
             <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">{materialError}</div>
           )}
-          <div className="bg-card rounded-xl border overflow-x-auto">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
@@ -562,17 +619,18 @@ export function InventoryRequestsPage() {
               noun="requests"
             />
           )}
-        </section>
+        </RequestsHubSection>
 
-        <section id="packaging-requests-section">
-          <div className="px-1 pb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Packaging count requests</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Packaging on-hand corrections submitted by HR — executive approves
-              </p>
-            </div>
-            {isHr && (
+        <RequestsHubSection
+          id="packaging-requests-section"
+          title="Packaging count requests"
+          subtitle="Packaging on-hand corrections submitted by HR — executive approves"
+          pendingCount={packagingPending}
+          totalCount={packagingTotal}
+          open={sectionOpen["packaging-requests-section"]}
+          onOpenChange={open => setSection("packaging-requests-section", open)}
+          headerActions={
+            isHr ? (
               <button
                 type="button"
                 onClick={() => setShowPackagingRequest(true)}
@@ -580,9 +638,10 @@ export function InventoryRequestsPage() {
               >
                 <Plus size={13} /> Packaging count
               </button>
-            )}
-          </div>
-          <div className="bg-card rounded-xl border overflow-x-auto">
+            ) : undefined
+          }
+        >
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
@@ -653,23 +712,28 @@ export function InventoryRequestsPage() {
               noun="requests"
             />
           )}
-        </section>
+        </RequestsHubSection>
 
         {showEditRequests && (
           <EditRequestsSection
             isReviewer={isExec}
             readonly={readonly}
             onChanged={() => void refreshNotifications()}
+            open={sectionOpen["edit-requests-section"]}
+            onOpenChange={open => setSection("edit-requests-section", open)}
           />
         )}
 
         {isExec && (
-          <section id="discount-approvals-section">
-            <div className="px-1 pb-3">
-              <h3 className="text-sm font-semibold text-foreground">POS discount approvals</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">POS cart discounts awaiting executive approval</p>
-            </div>
-            <div className="bg-card rounded-xl border overflow-hidden">
+          <RequestsHubSection
+            id="discount-approvals-section"
+            title="POS discount approvals"
+            subtitle="POS cart discounts awaiting executive approval"
+            pendingCount={discountTotal}
+            open={sectionOpen["discount-approvals-section"]}
+            onOpenChange={open => setSection("discount-approvals-section", open)}
+          >
+            <div className="rounded-lg border border-border overflow-hidden">
               {discountError && (
                 <div className="px-4 py-2 text-xs text-red-700 bg-red-50 border-b border-red-200">{discountError}</div>
               )}
@@ -724,7 +788,7 @@ export function InventoryRequestsPage() {
                 noun="approvals"
               />
             )}
-          </section>
+          </RequestsHubSection>
         )}
       </div>
       {showNew && <NewRequestModal onClose={() => setShowNew(false)} onDone={() => { setShowNew(false); refresh(); }} />}

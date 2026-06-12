@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-06-12T07:27:35+02:00
+generated: 2026-06-12T11:00:07+02:00
 type: memory-bank
-table_count: 45
+table_count: 47
 ---
 
 
@@ -234,6 +234,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_unread_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_tier_lines]] |
 
 ## `stock_entries`
 
@@ -464,6 +465,23 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_tables_ready]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_log_entry]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
+
+## `parcel_pack_tiers`
+
+| File | Function |
+|------|----------|
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_tables_ready]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_tier_by_key]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_tier_cost_estimate]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_list_tiers]] |
+
+## `parcel_pack_tier_lines`
+
+| File | Function |
+|------|----------|
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_tier_lines]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_save_tier_line]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_delete_tier_line]] |
 
 ## `pos_sales`
 

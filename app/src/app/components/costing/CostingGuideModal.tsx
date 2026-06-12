@@ -166,6 +166,21 @@ export function CostingGuideModal({ open, onClose }: { open: boolean; onClose: (
           <p>Example: ₱500/bag → raw ≈ ₱{(500 * jarCacaoBagsPerJar()).toFixed(2)}/jar.</p>
         </GuideSection>
 
+        <GuideSection title="Parcel packaging (separate from product COGS)">
+          <p>
+            Use the <strong className="text-foreground">Parcel packaging</strong> tab on Costing for online-order fulfillment
+            materials — bubble wrap, cushions, courier pouch, foam wrap. These are <em>not</em> duplicated in each product formula.
+          </p>
+          <p>
+            Costs are grouped into <strong className="text-foreground">tiers</strong> by parcel composition (e.g. 1×1L honey,
+            2×1L honey, 1–2 PT/BRC units). Bubble wrap uses min / typical / max qty because floor usage varies 2–4 wraps.
+          </p>
+          <p>
+            <strong className="text-foreground">Landed cost</strong> on the parcel tab = product manufacturing COGS + reference
+            parcel add-on for that family. Mixed parcels sum applicable tiers (honey + dept + cacao). 250/350 ml solo rules are TBD.
+          </p>
+        </GuideSection>
+
         <GuideSection title="Custom costs (labor, shipping, etc.)">
           <p>
             On any product, use <strong className="text-foreground">Add formula line → Custom cost</strong> to enter a

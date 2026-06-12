@@ -12,6 +12,21 @@
 6. **Page guides** → header **Guide** button opens a scrollable `AppModal` — never an inline collapsible panel on the page body. See [[#Page guide button (mandatory)]].
 7. **Fixed sidebar shell** → sidebar stays viewport-height; **only `<main>` scrolls**. See [[#Fixed sidebar shell (mandatory)]].
 8. **Pyx scrollbars** → every `overflow-y-auto` / `overflow-auto` uses themed slim thumb unless `no-pyx-scroll`. See [[#Pyx scrollbars (mandatory)]].
+9. **Centered page content** → `PageLayout` centers header + main in `max-w-6xl mx-auto` by default; do not add redundant page-level `max-w-*` wrappers. See [[#Centered page content (mandatory)]].
+
+## Centered page content (mandatory)
+
+**Canonical reference:** [[fixes/page-layout-centered-content]] · `PageLayout.tsx` (`contentWidth` prop).
+
+| `contentWidth` | Max width | When |
+|----------------|-----------|------|
+| `default` (implicit) | `max-w-6xl` | Almost all exec/inventory/CSR pages |
+| `wide` | `max-w-7xl` | Wide formula/costing grids, dense tables |
+| `full` | none | Rare — only when content must use full main column |
+
+Header and main body share the same `w-full mx-auto px-4 sm:px-6` chrome so title and cards align.
+
+**Do not** put `max-w-5xl` / `max-w-4xl` on the page root inside `PageLayout` — the shell owns width. For intentionally narrow hubs/forms, use inner `max-w-* mx-auto`.
 
 ## Pyx scrollbars (mandatory)
 
@@ -43,7 +58,7 @@ Admin-style layout (like J&T): scrolling the page content must **not** move the 
 
 ## Page guide button (mandatory)
 
-**Canonical reference:** [[fixes/page-guide-button-modal]] · live in `CostingGuideModal.tsx`, `PackagingInventoryGuideModal.tsx`, `SuppliesInventoryGuideModal.tsx`, `InventoryRequestsGuideModal.tsx`.
+**Canonical reference:** [[fixes/page-guide-button-modal]] · live in `CostingGuideModal.tsx`, `PackagingInventoryGuideModal.tsx`, `SuppliesInventoryGuideModal.tsx`, `InventoryRequestsGuideModal.tsx`, `ParagisProductionGuideModal.tsx`, `DeptRawProduceGuideModal.tsx`.
 
 When a page needs user-facing help or role-specific workflow docs:
 
@@ -71,6 +86,8 @@ When a page needs user-facing help or role-specific workflow docs:
 | Packaging Materials | `PackagingInventoryGuideModal` |
 | Supplies | `SuppliesInventoryGuideModal` |
 | Requests | `InventoryRequestsGuideModal` |
+| Dried Paragis (raw) | `ParagisProductionGuideModal` |
+| Black Rice / Cacao (raw) | `DeptRawProduceGuideModal` (`brc` \| `jar_cacao`) |
 
 ### Guide content rules
 
@@ -496,9 +513,17 @@ Prefer **`FulfillmentPressable`** / **`FulfillmentTableRow`** / **`FulfillmentPi
 ### Layout
 
 1. **Header actions** — `Guide` (opens modal) + `Refresh`; no inline honey setup or stock price table.
-2. **Products panel** — `max-h-[calc(100dvh-9rem)] overflow-y-auto` for honey variants + dept card + other products.
-3. **Aligned columns** — `CostingRowColumnHeaders` + `costingHoneyRowGridClass` / `costingRowGridClass`; metrics use fixed rem widths, not `flex-1` stretch.
-4. **Page shell** — `PageLayout` main: `min-w-0 overflow-x-hidden`.
+2. **View toggle** — segmented **Product COGS** | **Parcel packaging** (`CostingPage`); parcel mode shows `ParcelPackCostingPanel` (tier editor + Item/s preview) above the product list.
+3. **Products panel** — `max-h-[calc(100dvh-9rem)] overflow-y-auto` for honey variants + dept card + other products.
+4. **Aligned columns** — `CostingRowColumnHeaders` + `costingHoneyRowGridClass` / `costingRowGridClass` (product mode); parcel mode uses `CostingParcelRowColumnHeaders` + landed columns (prod COGS, parcel add-on, landed, margin).
+5. **Page shell** — `PageLayout` main: `min-w-0 overflow-x-hidden`.
+
+### Parcel packaging tab
+
+- **Tiers** — `parcel_pack_tiers` + `parcel_pack_tier_lines` (composition-based, not per-SKU `product_formula`). API: `costing.php` `parcel_tiers_list`, `parcel_tier_line_save`, `parcel_cost_preview`.
+- **Variable materials** — bubble wrap lines use min / typical / max qty; UI shows cost band.
+- **Mixed parcels** — preview sums applicable family tiers from `honey_parcel_parse_items_string` shape.
+- **Phase 1** — costing only; ship deduct of fulfillment packaging is Phase 2 ([[specs/2026-06-05_online-parcel-pack-costing]]).
 
 ### Add formula line modal
 
@@ -586,7 +611,9 @@ Same list/detail scroll recipe as packaging (stats, search, out-of-stock row sty
 
 **Canonical reference:** [[fixes/supplies-hr-lot-inventory]] · live in `InventoryRequestsPage.tsx`.
 
-Header **Guide** → `InventoryRequestsGuideModal`. Split material tables:
+Header **Guide** → `InventoryRequestsGuideModal`. Each category is a **collapsible** `RequestsHubSection` (click header to expand) — auto-opens sections with **pending** items or hash deep-link (`#supply-requests-section`). Compact `space-y-3` stack; `max-w-5xl` content width.
+
+Split material tables:
 
 | Section ID | Rows | Review UX |
 |------------|------|-----------|
@@ -628,10 +655,22 @@ Do **not** use `RawHoneySummaryPage` (`fetchRawSnapshot` read-only table) as the
 
 **Page:** `RawDeptMaterialPage.tsx` at `/inventory/raw-materials/{paragis|black-rice|cacao}`.
 
+**Canonical reference:** [[fixes/dept-raw-material-guides]] · [[fixes/paragis-use-raw-bags]] · [[fixes/dept-production-wip-bom]].
+
+### Guide (mandatory)
+
+Header **Guide** on all three raw pages — no inline workflow/yield panels on page body.
+
+| Product | Modal |
+|---------|-------|
+| Paragis | `ParagisProductionGuideModal` |
+| Black Rice / Cacao | `DeptRawProduceGuideModal` |
+
 ### Paragis (pt)
 
 - Stat cards: **raw bags** | **tea bags (WIP)** | **finished pouches**.
-- Actions: Stock in · **Make tea bags** · **Pouch** · WIP waste · Bag waste.
+- Actions: Stock in · **Use raw bags** · **Pouch** · WIP waste · Bag waste (advanced: exact tea bag count via guide footer).
+- Floor input: **bags opened** (not individual tea bag count) → WIP derived at 500/bag.
 - Modals call `dept_production_preview` for stock-linked formula deduct lines (custom costing lines excluded).
 
 ### BRC / Jar Cacao

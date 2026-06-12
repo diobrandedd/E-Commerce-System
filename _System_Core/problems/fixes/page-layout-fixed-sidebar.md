@@ -34,6 +34,10 @@ tags: [pagelayout, sidebar, scroll, ux]
 
 `PageLayout.tsx` · `Sidebar.tsx`
 
+## Related
+
+**Centered content column** (header + main share `max-w-6xl mx-auto`): [[fixes/page-layout-centered-content]]
+
 ## Links
 
 [[005_SPA_UX_Patterns#Fixed sidebar shell (mandatory)]] · [[004_SPA_Design_System#Page shell]]

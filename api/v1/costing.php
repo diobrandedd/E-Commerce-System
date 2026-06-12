@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../includes/suppliers.php';
 require_once __DIR__ . '/../../includes/honey_volume.php';
 require_once __DIR__ . '/_costing_helpers.php';
 require_once __DIR__ . '/../../includes/material_inventory.php';
+require_once __DIR__ . '/../../includes/parcel_pack_costing.php';
 
 /**
  * Phase 4 — Product Costing API.  Reuses the transaction logic implemented
@@ -33,6 +34,10 @@ api_dispatch([
     'formula_delete' => 'api_costing_formula_delete',
     'product_create' => 'api_costing_product_create',
     'product_update_selling_price' => 'api_costing_product_update_selling_price',
+    'parcel_tiers_list' => 'api_costing_parcel_tiers_list',
+    'parcel_tier_line_save' => 'api_costing_parcel_tier_line_save',
+    'parcel_tier_line_delete' => 'api_costing_parcel_tier_line_delete',
+    'parcel_cost_preview' => 'api_costing_parcel_cost_preview',
 ]);
 
 // --------------------------------------------------------------------------
@@ -129,10 +134,37 @@ function api_costing_products_list(): void
     $sql .= ' GROUP BY p.id ORDER BY p.created_at DESC, p.id DESC';
     $st = $pdo->prepare($sql);
     $st->execute($params);
+    $products = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    $includeParcel = !empty($_GET['parcel']) && parcel_pack_tables_ready($pdo);
+    if ($includeParcel) {
+        foreach ($products as &$row) {
+            $addon = parcel_pack_reference_addon_for_product(
+                $pdo,
+                isset($row['dept_product_key']) ? (string) $row['dept_product_key'] : null,
+                isset($row['size']) ? (string) $row['size'] : null
+            );
+            $cogs = round((float) ($row['current_cost'] ?? 0), 4);
+            $row['parcel_addon'] = $addon;
+            if ($addon !== null) {
+                $row['parcel_addon_typical'] = $addon['cost_typical'];
+                $row['landed_typical'] = round($cogs + (float) $addon['cost_typical'], 4);
+                $selling = round((float) ($row['selling_price'] ?? 0), 4);
+                $row['margin_typical'] = $selling > 0
+                    ? round($selling - (float) $row['landed_typical'], 4)
+                    : null;
+            } else {
+                $row['parcel_addon_typical'] = null;
+                $row['landed_typical'] = null;
+                $row['margin_typical'] = null;
+            }
+        }
+        unset($row);
+    }
     api_ok([
-        'products' => $st->fetchAll(),
+        'products' => $products,
         'show_pricing' => api_costing_show_pricing($role),
         'can_manage_products' => api_costing_can_manage_products($role),
+        'parcel_ready' => parcel_pack_tables_ready($pdo),
     ]);
 }
 
@@ -429,4 +461,132 @@ function api_costing_formula_update(): void
 function api_costing_formula_delete(): void
 {
     api_costing_formula_mutate('delete');
+}
+
+function api_costing_parcel_tiers_list(): void
+{
+    api_method_allowed(['GET']);
+    api_require_role(['executive']);
+    $pdo = ims_pdo();
+    if (!parcel_pack_tables_ready($pdo)) {
+        api_ok(['tiers' => [], 'ready' => false]);
+    }
+    api_ok([
+        'tiers' => parcel_pack_list_tiers($pdo, true),
+        'ready' => true,
+    ]);
+}
+
+function api_costing_parcel_tier_line_save(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_require_role(['executive']);
+    $pdo = ims_pdo();
+    if (!parcel_pack_tables_ready($pdo)) {
+        api_fail('Parcel pack costing tables are not installed.', 503);
+    }
+    $tierId = (int) ($input['tier_id'] ?? 0);
+    $lineId = isset($input['line_id']) ? (int) $input['line_id'] : null;
+    if ($lineId !== null && $lineId < 1) {
+        $lineId = null;
+    }
+    $stockId = isset($input['stock_id']) && (int) $input['stock_id'] > 0 ? (int) $input['stock_id'] : null;
+    $lineLabel = trim((string) ($input['line_label'] ?? ''));
+    $qtyTypRaw = trim((string) ($input['qty_typical'] ?? ''));
+    $qtyMinRaw = trim((string) ($input['qty_min'] ?? ''));
+    $qtyMaxRaw = trim((string) ($input['qty_max'] ?? ''));
+    $unit = trim((string) ($input['unit'] ?? 'pcs'));
+    $sortOrder = (int) ($input['sort_order'] ?? 0);
+    if ($tierId < 1) {
+        api_fail('tier_id is required.', 422);
+    }
+    if (!is_numeric($qtyTypRaw) || (float) $qtyTypRaw <= 0) {
+        api_fail('qty_typical must be > 0.', 422);
+    }
+    $qtyTyp = (float) $qtyTypRaw;
+    $qtyMin = $qtyMinRaw !== '' && is_numeric($qtyMinRaw) ? (float) $qtyMinRaw : null;
+    $qtyMax = $qtyMaxRaw !== '' && is_numeric($qtyMaxRaw) ? (float) $qtyMaxRaw : null;
+    if ($stockId === null && $lineLabel === '') {
+        api_fail('stock_id or line_label is required.', 422);
+    }
+    try {
+        $result = parcel_pack_save_tier_line(
+            $pdo,
+            $tierId,
+            $lineId,
+            $stockId,
+            $lineLabel === '' ? null : $lineLabel,
+            $qtyTyp,
+            $qtyMin,
+            $qtyMax,
+            $unit === '' ? 'pcs' : $unit,
+            $sortOrder
+        );
+        $estimate = parcel_pack_tier_cost_estimate($pdo, $tierId);
+        api_ok([
+            'line_id' => $result['line_id'],
+            'lines' => $result['lines'],
+            'tier' => $estimate,
+        ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_costing_parcel_tier_line_delete(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_require_role(['executive']);
+    $pdo = ims_pdo();
+    if (!parcel_pack_tables_ready($pdo)) {
+        api_fail('Parcel pack costing tables are not installed.', 503);
+    }
+    $tierId = (int) ($input['tier_id'] ?? 0);
+    $lineId = (int) ($input['line_id'] ?? 0);
+    if ($tierId < 1 || $lineId < 1) {
+        api_fail('tier_id and line_id are required.', 422);
+    }
+    try {
+        parcel_pack_delete_tier_line($pdo, $lineId, $tierId);
+        $estimate = parcel_pack_tier_cost_estimate($pdo, $tierId);
+        api_ok(['tier' => $estimate]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_costing_parcel_cost_preview(): void
+{
+    api_method_allowed(['GET', 'POST']);
+    api_require_role(['executive']);
+    $pdo = ims_pdo();
+    if (!parcel_pack_tables_ready($pdo)) {
+        api_fail('Parcel pack costing tables are not installed.', 503);
+    }
+    $input = $_SERVER['REQUEST_METHOD'] === 'POST' ? api_input() : $_REQUEST;
+    $itemsRaw = trim((string) ($input['items_raw'] ?? ''));
+    $tierKey = trim((string) ($input['tier_key'] ?? ''));
+    try {
+        if ($tierKey !== '') {
+            $est = parcel_pack_tier_cost_estimate_by_key($pdo, $tierKey);
+            api_ok([
+                'tier_key' => $tierKey,
+                'tiers' => [$est],
+                'cost_typical' => $est['cost_typical'],
+                'cost_min' => $est['cost_min'],
+                'cost_max' => $est['cost_max'],
+                'warnings' => [],
+            ]);
+        }
+        if ($itemsRaw === '') {
+            api_fail('items_raw or tier_key is required.', 422);
+        }
+        api_ok(parcel_pack_preview_from_items_raw($pdo, $itemsRaw));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
 }
