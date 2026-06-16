@@ -36,10 +36,18 @@ flowchart LR
 - [[fixes/page-layout-centered-content]] — `PageLayout` centered column (`contentWidth`)
 - [[fixes/paragis-use-raw-bags]] — PT production: bags opened → derived WIP (not tea-bag count)
 - [[fixes/dept-raw-material-guides]] — Raw dept pages: Paragis / BRC / Cacao guide modals
+- [[fixes/online-parcel-pack-costing]] — Tier-based parcel packaging COGS (separate from product_formula)
+- [[fixes/parcel-pack-landed-view-modal]] — Costing parcel tab: landed list primary, tiers in modal
+- [[fixes/parcel-pack-ascii-labels-migration]] — Fix `???` tier labels after Windows SQL import
+- [[fixes/raw-dept-mobile-first-actions-and-lists]] — Raw materials page is phone-first: compact header actions + mobile activity cards
+- [[fixes/inventory-mobile-action-modal-and-cards]] — Packaging/Supplies mobile consistency: actions modal + stacked card rows
 
 ## Records (newest first)
 
-- [[records/2026-06-12_dept-raw-ux-session]] — **rollup:** centered layout + PT use raw bags + raw guides
+- [[records/2026-06-16_inventory-mobile-consistency]] — packaging/supplies mobile header + row consistency
+- [[records/2026-06-16_raw-dept-mobile-layout]] — raw materials page phone layout and action overflow fix
+- [[records/2026-06-05_parcel-pack-ship-bugs]] — **rollup:** 500 closure, UTF-8 ???, TBD preview, modal UX
+- [[records/2026-06-05_online-parcel-pack-costing]] — Phase 1 parcel pack tier costing
 - [[records/2026-06-12_paragis-use-raw-bags]]
 - [[records/2026-06-12_packaging-inventory-role-split]]
 - [[records/2026-06-12_pt-make-tea-bags-blocked]]

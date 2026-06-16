@@ -98,9 +98,6 @@ function HoneySizeRow<T extends CostingProductLike>({
             {product.formula_count > 0 && (
               <span className="text-[10px] text-muted-foreground">{product.formula_count} lines</span>
             )}
-            {parcelMode && "parcel_addon" in product && product.parcel_addon?.scenario && (
-              <span className="text-[10px] text-muted-foreground">ref: {product.parcel_addon.scenario}</span>
-            )}
           </div>
           {parcelMode ? (
             <CostingParcelProductMetrics

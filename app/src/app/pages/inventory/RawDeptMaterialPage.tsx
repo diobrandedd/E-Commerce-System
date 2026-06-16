@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, Loader2, Minus, Plus, Factory, Package } from "lucide-react";
+import { BookOpen, Loader2, Minus, Plus, Factory, Package, ListChecks } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { useAuth } from "@/app/context/AuthContext";
@@ -97,6 +97,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const [showWipWaste, setShowWipWaste] = useState(false);
   const [showProduce, setShowProduce] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -122,7 +123,29 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
       title={route.title}
       subtitle={route.subtitle}
       actions={
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
+          <div className="sm:hidden flex items-center gap-2">
+            {showGuide && (
+              <button
+                type="button"
+                onClick={() => setGuideOpen(true)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg border border-border"
+              >
+                <BookOpen size={12} /> Guide
+              </button>
+            )}
+            {canMutate && (
+              <button
+                type="button"
+                onClick={() => setActionsOpen(true)}
+                className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#C8900A] text-[#8a6506]"
+              >
+                <ListChecks size={12} /> Actions
+              </button>
+            )}
+          </div>
+
+          <div className="hidden sm:flex flex-wrap items-center gap-2">
           <Link
             to={route.finishedProductPath}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary"
@@ -195,6 +218,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
               </button>
             </>
           )}
+          </div>
         </div>
       }
     >
@@ -206,7 +230,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
         <p className="text-sm text-red-600">{loadError ?? "Could not load raw inventory."}</p>
       ) : (
         <div className="space-y-5">
-          <div className={`grid gap-3 ${isParagis ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-3"}`}>
+          <div className={`grid gap-3 ${isParagis ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
             <div className="rounded-xl border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Raw bags</p>
               <p className="text-2xl font-semibold mt-1">{data.bags_on_hand.toLocaleString()}</p>
@@ -239,7 +263,18 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             {(data.production_entries?.length ?? 0) === 0 ? (
               <p className="px-5 py-8 text-sm text-muted-foreground text-center">No production entries yet.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="sm:hidden divide-y divide-border">
+                {data.production_entries.map(e => (
+                  <div key={e.id} className="px-4 py-3 space-y-1.5">
+                    <p className="text-[11px] text-muted-foreground">{formatWhen(e.created_at)}</p>
+                    <p className="text-sm font-medium text-foreground">{productionActionLabel(e.action)}</p>
+                    <p className="text-sm">{formatProductionQty(e)}</p>
+                    <p className="text-xs text-muted-foreground">{e.note ?? "—"}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-secondary/20">
@@ -260,6 +295,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
 
@@ -270,7 +306,20 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             {data.entries.length === 0 ? (
               <p className="px-5 py-8 text-sm text-muted-foreground text-center">No bag entries yet.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="sm:hidden divide-y divide-border">
+                {data.entries.map(e => (
+                  <div key={e.id} className="px-4 py-3 space-y-1.5">
+                    <p className="text-[11px] text-muted-foreground">{formatWhen(e.created_at)}</p>
+                    <p className="text-sm font-medium text-foreground">{e.supplier_name ?? "—"}</p>
+                    <p className={`text-sm font-medium ${e.qty < 0 ? "text-red-700" : ""}`}>
+                      {e.qty > 0 ? "+" : ""}{e.qty} {data.unit}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{entryLabel(e)}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-secondary/20">
@@ -293,9 +342,30 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
         </div>
+      )}
+
+      {actionsOpen && canMutate && (
+        <RawActionsModal
+          finishedProductPath={route.finishedProductPath}
+          finishedTitle={route.finishedTitle}
+          isParagis={isParagis}
+          canUseRawBags={(data?.bags_on_hand ?? 0) > 0}
+          canPouch={maxPouchesFromWip > 0 || wipTeaBags >= PT_TEA_BAGS_PER_POUCH}
+          canWipWaste={wipTeaBags > 0}
+          canBagWaste={(data?.bags_on_hand ?? 0) > 0}
+          canProduce={(data?.bags_on_hand ?? 0) > 0}
+          onClose={() => setActionsOpen(false)}
+          onStockIn={() => { setActionsOpen(false); setShowStockIn(true); }}
+          onUseRawBags={() => { setActionsOpen(false); setShowUseRawBags(true); }}
+          onPouch={() => { setActionsOpen(false); setShowPouch(true); }}
+          onWipWaste={() => { setActionsOpen(false); setShowWipWaste(true); }}
+          onProduce={() => { setActionsOpen(false); setShowProduce(true); }}
+          onBagWaste={() => { setActionsOpen(false); setShowWarehouseWaste(true); }}
+        />
       )}
 
       {isParagis && (
@@ -392,6 +462,82 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
         />
       )}
     </PageLayout>
+  );
+}
+
+function RawActionsModal({
+  finishedProductPath,
+  finishedTitle,
+  isParagis,
+  canUseRawBags,
+  canPouch,
+  canWipWaste,
+  canBagWaste,
+  canProduce,
+  onClose,
+  onStockIn,
+  onUseRawBags,
+  onPouch,
+  onWipWaste,
+  onProduce,
+  onBagWaste,
+}: {
+  finishedProductPath: string;
+  finishedTitle: string;
+  isParagis: boolean;
+  canUseRawBags: boolean;
+  canPouch: boolean;
+  canWipWaste: boolean;
+  canBagWaste: boolean;
+  canProduce: boolean;
+  onClose: () => void;
+  onStockIn: () => void;
+  onUseRawBags: () => void;
+  onPouch: () => void;
+  onWipWaste: () => void;
+  onProduce: () => void;
+  onBagWaste: () => void;
+}) {
+  const btnCls = "w-full text-left px-3 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-secondary disabled:opacity-40";
+  return (
+    <AppModal open onClose={onClose} panelClassName="max-w-sm w-full" labelledBy="raw-actions-title">
+      <AppModalHeader title="Quick actions" titleId="raw-actions-title" onClose={onClose} />
+      <AppModalBody className="space-y-2">
+        <Link
+          to={finishedProductPath}
+          onClick={onClose}
+          className="block w-full text-left px-3 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-secondary"
+        >
+          Open {finishedTitle}
+        </Link>
+        <button type="button" onClick={onStockIn} className={btnCls}>
+          <span className="inline-flex items-center gap-2"><Plus size={14} /> Stock in</span>
+        </button>
+        {isParagis ? (
+          <>
+            <button type="button" onClick={onUseRawBags} disabled={!canUseRawBags} className={btnCls}>
+              <span className="inline-flex items-center gap-2"><Factory size={14} /> Use raw bags</span>
+            </button>
+            <button type="button" onClick={onPouch} disabled={!canPouch} className={btnCls}>
+              <span className="inline-flex items-center gap-2"><Package size={14} /> Pouch</span>
+            </button>
+            <button type="button" onClick={onWipWaste} disabled={!canWipWaste} className={btnCls}>
+              <span className="inline-flex items-center gap-2"><Minus size={14} /> WIP waste</span>
+            </button>
+          </>
+        ) : (
+          <button type="button" onClick={onProduce} disabled={!canProduce} className={btnCls}>
+            <span className="inline-flex items-center gap-2"><Factory size={14} /> Produce</span>
+          </button>
+        )}
+        <button type="button" onClick={onBagWaste} disabled={!canBagWaste} className={btnCls}>
+          <span className="inline-flex items-center gap-2"><Minus size={14} /> Bag waste</span>
+        </button>
+      </AppModalBody>
+      <AppModalFooter>
+        <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-border">Close</button>
+      </AppModalFooter>
+    </AppModal>
   );
 }
 

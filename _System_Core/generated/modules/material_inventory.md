@@ -1,7 +1,7 @@
 ---
 title: material_inventory
 source: includes/material_inventory.php
-generated: 2026-06-12T11:00:16+02:00
+generated: 2026-06-16T09:49:01+02:00
 type: module
 function_count: 48
 ---
@@ -245,7 +245,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:242 — `$lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
+- `includes/parcel_pack_costing.php`:243 — `$lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
 
 ## material_packaging_stock_in_lot {#material_packaging_stock_in_lot}
 

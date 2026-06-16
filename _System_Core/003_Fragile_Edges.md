@@ -129,7 +129,10 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 - **CSR access** — `online_parcels_user_can_access()` must accept IMS `tl`/`staff` in CSR dept, not only SPA labels `csr_tl`/`csr_staff` — see [[003_Fragile_Edges#IMS role vs SPA role (API gates)]].
 - **Parser** — `includes/honey_parcel_item_parser.php` must stay aligned with `orderRemarksParse.ts` / Shopee variant rules. **Semicolon/`+` split** per segment — do not apply one honey variant/qty to the whole line when Paragis/Cacao/etc. precede honey. Catalog dept lines → `other_items` with `product_key` (`pt`, `brc`, `jar_cacao`); unknown lines (Pito-Pito, Honey Comb) remain note-only.
 - **Ship deduct** — `honey_parcel_apply_deduct()` deducts honey packaging **and** `dept_inventory_rows` via `online_parcel_dept_deduct_lines`; revert restores both. Fail-hard if insufficient dept stock. **Does not** deduct fulfillment packaging (bubble wrap, cushions, courier pouch) — Phase 1 parcel pack tiers are **costing-only** via `includes/parcel_pack_costing.php`; do not duplicate those lines into `product_formula`.
-- **Parcel pack costing** — `parcel_pack_tiers` keyed by order composition (`honey_parcel_parse_items_string` → tier keys). Mixed parcels **sum** family tiers. Bubble wrap uses min/typical/max — not fixed roll yield. 250/350 ml solo = TBD tier. WAC from packaging stock lots (`material_packaging_pool_unit_cost_from_lots`).
+- **Parcel pack costing** — `parcel_pack_tiers` keyed by order composition (`honey_parcel_parse_items_string` → tier keys). Mixed parcels **sum** family tiers. Bubble wrap uses min/typical/max — not fixed roll yield. 250/350 ml solo = TBD tier (`is_active=0`). WAC from packaging stock lots (`material_packaging_pool_unit_cost_from_lots`). **UI:** landed product list on tab; tier editor in `ParcelPackTiersModal` — [[fixes/parcel-pack-landed-view-modal]].
+- **Parcel pack migrations (Windows)** — SQL seed strings must be **ASCII-only** (`Honey - 1x 1L`, not em dash / ×). Pipe via `Get-Content -Encoding UTF8 -Raw | mysql`. If labels show `???`, run `migration_phase31_parcel_pack_ascii_fix.sql` — [[causes/sql-migration-powershell-utf8-corruption]].
+- **`parcel_pack_fetch_tier_lines`** — `array_map` closure must `use ($pdo)` or parcel API returns 500 — [[causes/parcel-pack-closure-missing-pdo-use]].
+- **TBD tier preview** — `parcel_pack_preview_tier_by_key()` returns warning + ₱0; do not `activeOnly` throw — [[causes/parcel-tier-inactive-preview-500]].
 - **Deliveries auth** — SPA uses IMS (`executive`, `prod_manager` only); legacy `api/delivery_bulk.php` still uses `app_users` submitter id via `deliveries_upload.php`.
 
 ## Dept catalog products (PT / BRC / Cacao)
@@ -215,6 +218,13 @@ When `config.php` sets `storage.root` (e.g. `C:/xampp/htdocs/rts_storage`), stas
 - `online_orders/{outputs,work}`
 
 Resolved via `rts_storage_csr_tool_root()` in `includes/rts_storage.php`. If `storage.root` is empty, legacy paths remain under `rts/storage/`. Downloads still use PHP session tokens (not public URLs).
+
+## Mobile-first SPA traps
+
+- This system is used on warehouse and production phones; do not validate UI only on desktop.
+- `PageLayout` header is one row — too many page `actions` buttons will crush title/subtitle on narrow widths. Use compact mobile actions + modal sheet pattern.
+- Dense tables (activity logs, stock entries) must have a mobile stacked-card fallback; horizontal 4-column tables are unreadable on 360px screens.
+- After mobile-sensitive edits, smoke test at ~360x800 in browser responsive mode before ship.
 
 ## Before you edit shared code
 

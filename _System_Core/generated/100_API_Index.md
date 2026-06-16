@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-12T11:00:06+02:00
+generated: 2026-06-16T09:48:54+02:00
 type: memory-bank
 ---
 
@@ -67,7 +67,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `parcel_tiers_list` | `api_costing_parcel_tiers_list()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_list_tiers()` |
 | `parcel_tier_line_save` | `api_costing_parcel_tier_line_save()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_save_tier_line()`, `parcel_pack_tier_cost_estimate()` |
 | `parcel_tier_line_delete` | `api_costing_parcel_tier_line_delete()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_delete_tier_line()`, `parcel_pack_tier_cost_estimate()` |
-| `parcel_cost_preview` | `api_costing_parcel_cost_preview()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_tier_cost_estimate_by_key()`, `parcel_pack_preview_from_items_raw()` |
+| `parcel_cost_preview` | `api_costing_parcel_cost_preview()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_preview_tier_by_key()`, `parcel_pack_preview_from_items_raw()` |
 
 ### `dashboard.php`
 

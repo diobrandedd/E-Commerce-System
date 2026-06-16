@@ -29,7 +29,7 @@ export function CostingParcelRowColumnHeaders({
       <span className={cn(costingRowHeaderClass, "sm:hidden text-right")}>Landed / margin</span>
       <span className="sm:hidden" />
       <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Prod. COGS</span>
-      <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Parcel</span>
+      <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Pack (typ.)</span>
       <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Landed</span>
       {isExec && <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Margin</span>}
       <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Baseline</span>

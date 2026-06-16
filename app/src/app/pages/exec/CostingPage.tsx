@@ -12,7 +12,7 @@ import {
 import { CostBadge, peso } from "@/app/lib/costingDisplay";
 import { CostingHoneyVariantGroups } from "@/app/components/costing/CostingHoneyVariantGroups";
 import { CostingGuideModal } from "@/app/components/costing/CostingGuideModal";
-import { ParcelPackCostingPanel } from "@/app/components/costing/ParcelPackCostingPanel";
+import { ParcelPackLandedIntro, ParcelPackTiersModal } from "@/app/components/costing/ParcelPackTiersModal";
 import { CostingProductMetrics, CostingRowColumnHeaders } from "@/app/components/costing/CostingProductMetrics";
 import {
   CostingParcelProductMetrics,
@@ -136,6 +136,7 @@ export function CostingPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const [viewMode, setViewMode] = useState<CostingViewMode>("product");
   const [parcelReady, setParcelReady] = useState(false);
+  const [parcelTiersModalOpen, setParcelTiersModalOpen] = useState(false);
   const [creatingProduct, setCreatingProduct] = useState(false);
   const [createDefaults, setCreateDefaults] = useState<{ variant: string; size: string } | null>(null);
   const [addFormulaProductId, setAddFormulaProductId] = useState<number | null>(null);
@@ -247,6 +248,9 @@ export function CostingPage() {
     if (honeyProducts.length === 0 && deptProducts.length === 0 && otherProducts.length === 0) {
       return "No products yet.";
     }
+    if (viewMode === "parcel" && parcelReady) {
+      return "Typical landed cost per SKU — manufacturing plus reference parcel packaging. Open tier rules to edit materials or try a real order.";
+    }
     const parts: string[] = [];
     if (honeyProducts.length > 0) {
       parts.push(
@@ -260,7 +264,7 @@ export function CostingPage() {
       parts.push(`${otherProducts.length} other`);
     }
     return `${parts.join(" · ")} — expand a size to inspect formula and history.`;
-  }, [honeyProducts.length, honeyVariantCount, deptProducts.length, otherProducts.length]);
+  }, [honeyProducts.length, honeyVariantCount, deptProducts.length, otherProducts.length, viewMode, parcelReady]);
 
   const renderProductDetail = (p: ProductRow) => {
     const detail = detailsById[p.id];
@@ -290,7 +294,7 @@ export function CostingPage() {
   };
 
   return (
-    <PageLayout contentWidth="wide" title="Product Costing" subtitle={viewMode === "product" ? "Formula builder and live cost tracking" : "Parcel packaging tiers and landed cost estimates"} actions={
+    <PageLayout contentWidth="wide" title="Product Costing" subtitle={viewMode === "product" ? "Formula builder and live cost tracking" : "Landed cost per product (manufacturing + packaging)"} actions={
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -330,24 +334,37 @@ export function CostingPage() {
           ))}
         </div>
 
-        {viewMode === "parcel" && (
-          <ParcelPackCostingPanel onNotice={flash} />
+        {viewMode === "parcel" && parcelReady && (
+          <ParcelPackLandedIntro onOpenTiers={() => setParcelTiersModalOpen(true)} />
         )}
 
         {/* Products — header fixed, list scrolls inside viewport */}
         <div className="flex flex-col min-h-0 min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-foreground">Products</h3>
+              <h3 className="text-sm font-semibold text-foreground">
+                {viewMode === "parcel" ? "Landed cost by product" : "Products"}
+              </h3>
               <p className="text-xs text-muted-foreground">{productsSubtitle}</p>
             </div>
-            <button
-              onClick={() => openCreateProduct()}
-              className="flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg text-white shrink-0"
-              style={{ background: "#C8900A" }}
-            >
-              <Plus size={15} /> New Product
-            </button>
+            {viewMode === "product" && (
+              <button
+                onClick={() => openCreateProduct()}
+                className="flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg text-white shrink-0"
+                style={{ background: "#C8900A" }}
+              >
+                <Plus size={15} /> New Product
+              </button>
+            )}
+            {viewMode === "parcel" && parcelReady && (
+              <button
+                type="button"
+                onClick={() => setParcelTiersModalOpen(true)}
+                className="flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg border border-border hover:bg-secondary/40 shrink-0"
+              >
+                Tier rules
+              </button>
+            )}
           </div>
 
           <div className="mt-3 min-h-0 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-contain pr-1 space-y-3">
@@ -403,9 +420,6 @@ export function CostingPage() {
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{p.dept_name}</span>
                             {p.formula_count > 0 && (
                               <span className="text-[10px] text-muted-foreground">{p.formula_count} lines</span>
-                            )}
-                            {viewMode === "parcel" && p.parcel_addon?.scenario && (
-                              <span className="text-[10px] text-muted-foreground">ref: {p.parcel_addon.scenario}</span>
                             )}
                           </div>
                           {viewMode === "parcel" && parcelReady ? (
@@ -503,6 +517,12 @@ export function CostingPage() {
 
       {/* Modals */}
       <CostingGuideModal open={guideOpen} onClose={() => setGuideOpen(false)} />
+      <ParcelPackTiersModal
+        open={parcelTiersModalOpen}
+        onClose={() => setParcelTiersModalOpen(false)}
+        onNotice={flash}
+        onTiersChanged={refresh}
+      />
       {creatingProduct && (
         <CreateProductModal
           stocks={stocks}

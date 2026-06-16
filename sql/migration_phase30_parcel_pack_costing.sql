@@ -55,24 +55,24 @@ WHERE @dept_fulfillment IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM stocks WHERE name = 'Parcel bubble wrap' AND supplier_id IS NULL LIMIT 1);
 
 INSERT INTO `stocks` (`name`, `dept_id`, `unit`, `category`, `on_hand`, `current_price`, `production_deduct`, `created_by`)
-SELECT 'Parcel cushion — standard', @dept_fulfillment, 'pcs', 'packaging', 0.00, 0.00, 0, @bootstrap_user_id
+SELECT 'Parcel cushion - standard', @dept_fulfillment, 'pcs', 'packaging', 0.00, 0.00, 0, @bootstrap_user_id
 WHERE @dept_fulfillment IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM stocks WHERE name = 'Parcel cushion — standard' AND supplier_id IS NULL LIMIT 1);
+  AND NOT EXISTS (SELECT 1 FROM stocks WHERE name = 'Parcel cushion - standard' AND supplier_id IS NULL LIMIT 1);
 
 INSERT INTO `stocks` (`name`, `dept_id`, `unit`, `category`, `on_hand`, `current_price`, `production_deduct`, `created_by`)
-SELECT 'Parcel cushion — medium', @dept_fulfillment, 'pcs', 'packaging', 0.00, 0.00, 0, @bootstrap_user_id
+SELECT 'Parcel cushion - medium', @dept_fulfillment, 'pcs', 'packaging', 0.00, 0.00, 0, @bootstrap_user_id
 WHERE @dept_fulfillment IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM stocks WHERE name = 'Parcel cushion — medium' AND supplier_id IS NULL LIMIT 1);
+  AND NOT EXISTS (SELECT 1 FROM stocks WHERE name = 'Parcel cushion - medium' AND supplier_id IS NULL LIMIT 1);
 
 INSERT INTO `stocks` (`name`, `dept_id`, `unit`, `category`, `on_hand`, `current_price`, `production_deduct`, `created_by`)
-SELECT 'Parcel cushion — large', @dept_fulfillment, 'pcs', 'packaging', 0.00, 0.00, 0, @bootstrap_user_id
+SELECT 'Parcel cushion - large', @dept_fulfillment, 'pcs', 'packaging', 0.00, 0.00, 0, @bootstrap_user_id
 WHERE @dept_fulfillment IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM stocks WHERE name = 'Parcel cushion — large' AND supplier_id IS NULL LIMIT 1);
+  AND NOT EXISTS (SELECT 1 FROM stocks WHERE name = 'Parcel cushion - large' AND supplier_id IS NULL LIMIT 1);
 
 INSERT INTO `stocks` (`name`, `dept_id`, `unit`, `category`, `on_hand`, `current_price`, `production_deduct`, `created_by`)
-SELECT 'Parcel cushion — small separator', @dept_fulfillment, 'pcs', 'packaging', 0.00, 0.00, 0, @bootstrap_user_id
+SELECT 'Parcel cushion - small separator', @dept_fulfillment, 'pcs', 'packaging', 0.00, 0.00, 0, @bootstrap_user_id
 WHERE @dept_fulfillment IS NOT NULL
-  AND NOT EXISTS (SELECT 1 FROM stocks WHERE name = 'Parcel cushion — small separator' AND supplier_id IS NULL LIMIT 1);
+  AND NOT EXISTS (SELECT 1 FROM stocks WHERE name = 'Parcel cushion - small separator' AND supplier_id IS NULL LIMIT 1);
 
 INSERT INTO `stocks` (`name`, `dept_id`, `unit`, `category`, `on_hand`, `current_price`, `production_deduct`, `created_by`)
 SELECT 'Courier pouch bag', @dept_fulfillment, 'pcs', 'packaging', 0.00, 0.00, 0, @bootstrap_user_id
@@ -85,43 +85,43 @@ WHERE @dept_fulfillment IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM stocks WHERE name = 'Parcel insulation foam wrap' AND supplier_id IS NULL LIMIT 1);
 
 SET @stock_bubble := (SELECT id FROM stocks WHERE name = 'Parcel bubble wrap' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
-SET @stock_cush_std := (SELECT id FROM stocks WHERE name = 'Parcel cushion — standard' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
-SET @stock_cush_med := (SELECT id FROM stocks WHERE name = 'Parcel cushion — medium' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
-SET @stock_cush_lg := (SELECT id FROM stocks WHERE name = 'Parcel cushion — large' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
-SET @stock_cush_sep := (SELECT id FROM stocks WHERE name = 'Parcel cushion — small separator' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
+SET @stock_cush_std := (SELECT id FROM stocks WHERE name = 'Parcel cushion - standard' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
+SET @stock_cush_med := (SELECT id FROM stocks WHERE name = 'Parcel cushion - medium' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
+SET @stock_cush_lg := (SELECT id FROM stocks WHERE name = 'Parcel cushion - large' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
+SET @stock_cush_sep := (SELECT id FROM stocks WHERE name = 'Parcel cushion - small separator' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
 SET @stock_pouch := (SELECT id FROM stocks WHERE name = 'Courier pouch bag' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
 SET @stock_foam := (SELECT id FROM stocks WHERE name = 'Parcel insulation foam wrap' AND supplier_id IS NULL ORDER BY id ASC LIMIT 1);
 
 INSERT INTO `parcel_pack_tiers` (`family`, `tier_key`, `label`, `match_rule`, `sort_order`)
-SELECT 'honey', 'honey_1x_1L', 'Honey — 1× 1L', '{"honey_1L_count":1}', 10
+SELECT 'honey', 'honey_1x_1L', 'Honey - 1x 1L', '{"honey_1L_count":1}', 10
 WHERE NOT EXISTS (SELECT 1 FROM parcel_pack_tiers WHERE tier_key = 'honey_1x_1L');
 
 INSERT INTO `parcel_pack_tiers` (`family`, `tier_key`, `label`, `match_rule`, `sort_order`)
-SELECT 'honey', 'honey_2x_1L', 'Honey — 2× 1L', '{"honey_1L_count":2}', 20
+SELECT 'honey', 'honey_2x_1L', 'Honey - 2x 1L', '{"honey_1L_count":2}', 20
 WHERE NOT EXISTS (SELECT 1 FROM parcel_pack_tiers WHERE tier_key = 'honey_2x_1L');
 
 INSERT INTO `parcel_pack_tiers` (`family`, `tier_key`, `label`, `match_rule`, `sort_order`)
-SELECT 'honey', 'honey_3x_1L', 'Honey — 3× 1L', '{"honey_1L_count":3}', 30
+SELECT 'honey', 'honey_3x_1L', 'Honey - 3x 1L', '{"honey_1L_count":3}', 30
 WHERE NOT EXISTS (SELECT 1 FROM parcel_pack_tiers WHERE tier_key = 'honey_3x_1L');
 
 INSERT INTO `parcel_pack_tiers` (`family`, `tier_key`, `label`, `match_rule`, `sort_order`, `is_active`)
-SELECT 'honey', 'honey_250_350_solo', 'Honey — 250/350 solo (TBD)', '{"honey_250_350_solo":true}', 40, 0
+SELECT 'honey', 'honey_250_350_solo', 'Honey - 250/350 solo (TBD)', '{"honey_250_350_solo":true}', 40, 0
 WHERE NOT EXISTS (SELECT 1 FROM parcel_pack_tiers WHERE tier_key = 'honey_250_350_solo');
 
 INSERT INTO `parcel_pack_tiers` (`family`, `tier_key`, `label`, `match_rule`, `sort_order`)
-SELECT 'dept_pt_brc', 'dept_1_2_units', 'PT/BRC — 1–2 units', '{"dept_units_min":1,"dept_units_max":2}', 10
+SELECT 'dept_pt_brc', 'dept_1_2_units', 'PT/BRC - 1-2 units', '{"dept_units_min":1,"dept_units_max":2}', 10
 WHERE NOT EXISTS (SELECT 1 FROM parcel_pack_tiers WHERE tier_key = 'dept_1_2_units');
 
 INSERT INTO `parcel_pack_tiers` (`family`, `tier_key`, `label`, `match_rule`, `sort_order`)
-SELECT 'dept_pt_brc', 'dept_3_4_units', 'PT/BRC — 3–4 units', '{"dept_units_min":3,"dept_units_max":4}', 20
+SELECT 'dept_pt_brc', 'dept_3_4_units', 'PT/BRC - 3-4 units', '{"dept_units_min":3,"dept_units_max":4}', 20
 WHERE NOT EXISTS (SELECT 1 FROM parcel_pack_tiers WHERE tier_key = 'dept_3_4_units');
 
 INSERT INTO `parcel_pack_tiers` (`family`, `tier_key`, `label`, `match_rule`, `sort_order`)
-SELECT 'jar_cacao', 'cacao_1_2_jars', 'Cacao — 1–2 jars', '{"jar_units_min":1,"jar_units_max":2}', 10
+SELECT 'jar_cacao', 'cacao_1_2_jars', 'Cacao - 1-2 jars', '{"jar_units_min":1,"jar_units_max":2}', 10
 WHERE NOT EXISTS (SELECT 1 FROM parcel_pack_tiers WHERE tier_key = 'cacao_1_2_jars');
 
 INSERT INTO `parcel_pack_tiers` (`family`, `tier_key`, `label`, `match_rule`, `sort_order`)
-SELECT 'jar_cacao', 'cacao_3_4_jars', 'Cacao — 3–4 jars', '{"jar_units_min":3,"jar_units_max":4}', 20
+SELECT 'jar_cacao', 'cacao_3_4_jars', 'Cacao - 3-4 jars', '{"jar_units_min":3,"jar_units_max":4}', 20
 WHERE NOT EXISTS (SELECT 1 FROM parcel_pack_tiers WHERE tier_key = 'cacao_3_4_jars');
 
 -- Tier lines (idempotent via NOT EXISTS on tier+stock+label)

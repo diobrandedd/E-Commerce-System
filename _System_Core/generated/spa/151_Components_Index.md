@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-12T11:00:26+02:00
+generated: 2026-06-16T09:49:09+02:00
 type: spa
 ---
 
@@ -108,6 +108,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 
 - `app/src/app/components/AppModal.tsx`
 - `app/src/app/components/costing/CostingGuideModal.tsx`
+- `app/src/app/components/costing/ParcelPackTiersModal.tsx`
 - `app/src/app/components/csr/onlineOrders/BatchStartModal.tsx`
 - `app/src/app/components/csr/onlineOrders/DuplicateTrackingModal.tsx`
 - `app/src/app/components/dept/DeptStockInModal.tsx`

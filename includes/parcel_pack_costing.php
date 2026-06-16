@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/honey_parcel_item_parser.php';
 require_once __DIR__ . '/dept_products.php';
+require_once __DIR__ . '/dept_inventory.php';
 require_once __DIR__ . '/material_inventory.php';
 
 function parcel_pack_tables_ready(PDO $pdo): bool
@@ -212,7 +213,7 @@ function parcel_pack_fetch_tier_lines(PDO $pdo, int $tierId): array
     $st->execute([$tierId]);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-    return array_map(static function (array $row): array {
+    return array_map(static function (array $row) use ($pdo): array {
         return [
             'id' => (int) $row['id'],
             'tier_id' => (int) $row['tier_id'],
@@ -308,14 +309,60 @@ function parcel_pack_tier_cost_estimate(PDO $pdo, int $tierId): array
 }
 
 /** @return array<string, mixed> */
-function parcel_pack_tier_cost_estimate_by_key(PDO $pdo, string $tierKey): array
+function parcel_pack_tier_cost_estimate_by_key(PDO $pdo, string $tierKey, bool $activeOnly = true): array
 {
-    $tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, true);
+    $tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, $activeOnly);
     if ($tier === null) {
         throw new RuntimeException('Parcel pack tier not found: ' . $tierKey);
     }
 
     return parcel_pack_tier_cost_estimate($pdo, (int) $tier['id']);
+}
+
+/**
+ * @param array<string, mixed> $tierRow
+ */
+function parcel_pack_tier_is_placeholder(array $tierRow): bool
+{
+    if ((int) ($tierRow['is_active'] ?? 1) === 0) {
+        return true;
+    }
+    $rule = $tierRow['match_rule'] ?? [];
+    if (is_string($rule)) {
+        $rule = json_decode($rule, true);
+    }
+
+    return is_array($rule) && !empty($rule['honey_250_350_solo']);
+}
+
+/** @return array<string, mixed> */
+function parcel_pack_preview_tier_by_key(PDO $pdo, string $tierKey): array
+{
+    $tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, false);
+    if ($tier === null) {
+        throw new RuntimeException('Parcel pack tier not found.');
+    }
+    if (parcel_pack_tier_is_placeholder($tier)) {
+        return [
+            'tier_key' => $tierKey,
+            'tiers' => [],
+            'cost_typical' => 0.0,
+            'cost_min' => 0.0,
+            'cost_max' => 0.0,
+            'warnings' => ['This tier is not defined yet — add rules and materials when research is complete.'],
+        ];
+    }
+
+    $est = parcel_pack_tier_cost_estimate($pdo, (int) $tier['id']);
+
+    return [
+        'tier_key' => $tierKey,
+        'tiers' => [$est],
+        'cost_typical' => $est['cost_typical'],
+        'cost_min' => $est['cost_min'],
+        'cost_max' => $est['cost_max'],
+        'warnings' => [],
+    ];
 }
 
 /** @return list<array<string, mixed>> */

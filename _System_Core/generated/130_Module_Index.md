@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-12T11:00:07+02:00
+generated: 2026-06-16T09:48:54+02:00
 type: memory-bank
 ---
 
@@ -42,7 +42,7 @@ type: memory-bank
 | [[modules/online_order_parcels]] | 15 |
 | [[modules/online_orders_generator]] | 34 |
 | [[modules/order_remarks]] | 17 |
-| [[modules/parcel_pack_costing]] | 19 |
+| [[modules/parcel_pack_costing]] | 21 |
 | [[modules/pdf_to_excel]] | 15 |
 | [[modules/pos_discount_requests]] | 7 |
 | [[modules/qr_decode]] | 13 |

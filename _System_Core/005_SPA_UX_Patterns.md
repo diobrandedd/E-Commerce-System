@@ -13,6 +13,7 @@
 7. **Fixed sidebar shell** → sidebar stays viewport-height; **only `<main>` scrolls**. See [[#Fixed sidebar shell (mandatory)]].
 8. **Pyx scrollbars** → every `overflow-y-auto` / `overflow-auto` uses themed slim thumb unless `no-pyx-scroll`. See [[#Pyx scrollbars (mandatory)]].
 9. **Centered page content** → `PageLayout` centers header + main in `max-w-6xl mx-auto` by default; do not add redundant page-level `max-w-*` wrappers. See [[#Centered page content (mandatory)]].
+10. **Mobile-first is mandatory** — this system is used on phones daily; every new/edited page must ship a usable `<640px` layout (no header action overflow, no unreadable 4-column tables, no clipped primary actions). Prefer mobile action modal / stacked cards when table density is too high.
 
 ## Centered page content (mandatory)
 
@@ -504,7 +505,7 @@ Prefer **`FulfillmentPressable`** / **`FulfillmentTableRow`** / **`FulfillmentPi
 
 ## Product Costing page
 
-**Canonical reference:** [[fixes/costing-page-layout-and-guide]] · live in `CostingPage.tsx`, `CostingGuideModal.tsx`, `CostingProductMetrics.tsx`.
+**Canonical reference:** [[fixes/costing-page-layout-and-guide]] · [[fixes/online-parcel-pack-costing]] · [[records/2026-06-05_parcel-pack-ship-bugs]] · live in `CostingPage.tsx`, `ParcelPackTiersModal.tsx`, `CostingGuideModal.tsx`, `CostingParcelMetrics.tsx`.
 
 ### Access
 
@@ -513,16 +514,18 @@ Prefer **`FulfillmentPressable`** / **`FulfillmentTableRow`** / **`FulfillmentPi
 ### Layout
 
 1. **Header actions** — `Guide` (opens modal) + `Refresh`; no inline honey setup or stock price table.
-2. **View toggle** — segmented **Product COGS** | **Parcel packaging** (`CostingPage`); parcel mode shows `ParcelPackCostingPanel` (tier editor + Item/s preview) above the product list.
-3. **Products panel** — `max-h-[calc(100dvh-9rem)] overflow-y-auto` for honey variants + dept card + other products.
-4. **Aligned columns** — `CostingRowColumnHeaders` + `costingHoneyRowGridClass` / `costingRowGridClass` (product mode); parcel mode uses `CostingParcelRowColumnHeaders` + landed columns (prod COGS, parcel add-on, landed, margin).
-5. **Page shell** — `PageLayout` main: `min-w-0 overflow-x-hidden`.
+2. **View toggle** — segmented **Product COGS** | **Parcel packaging** (`CostingPage`).
+3. **Parcel tab (primary view)** — `ParcelPackLandedIntro` one-liner + **landed cost by product** list (`CostingParcelMetrics`: Prod. COGS, Pack (typ.), Landed, Margin). **Tier rules & calculator** open `ParcelPackTiersModal` — do not inline full tier editor on the page ([[fixes/parcel-pack-landed-view-modal]]).
+4. **Products panel** — `max-h-[calc(100dvh-9rem)] overflow-y-auto` for honey variants + dept card.
+5. **Aligned columns** — product mode: `CostingRowColumnHeaders`; parcel mode: `CostingParcelRowColumnHeaders`.
+6. **Page shell** — `PageLayout` `contentWidth="wide"`; main `min-w-0 overflow-x-hidden`.
 
 ### Parcel packaging tab
 
-- **Tiers** — `parcel_pack_tiers` + `parcel_pack_tier_lines` (composition-based, not per-SKU `product_formula`). API: `costing.php` `parcel_tiers_list`, `parcel_tier_line_save`, `parcel_cost_preview`.
-- **Variable materials** — bubble wrap lines use min / typical / max qty; UI shows cost band.
-- **Mixed parcels** — preview sums applicable family tiers from `honey_parcel_parse_items_string` shape.
+- **Landed list** — `products_list&parcel=1` adds `parcel_addon_typical`, `landed_typical`, `margin_typical` per reference parcel shape (1L honey, 1-2 dept units, etc.).
+- **Tier modal** — tabs **Try an order** (Item/s preview) | **Edit tier rules** (material qty min/typ/max). Exclude TBD / inactive tiers from preview dropdown.
+- **Tiers (backend)** — `parcel_pack_tiers` + `parcel_pack_tier_lines`. API: `parcel_tiers_list`, `parcel_tier_line_save`, `parcel_cost_preview`.
+- **Migrations** — ASCII-only seed labels; run phase31 if UI shows `???` — [[fixes/parcel-pack-ascii-labels-migration]].
 - **Phase 1** — costing only; ship deduct of fulfillment packaging is Phase 2 ([[specs/2026-06-05_online-parcel-pack-costing]]).
 
 ### Add formula line modal
@@ -542,7 +545,7 @@ Use `costingMotion.tsx` (`CostingCollapsible`, `CostingDetailReveal`) for varian
 
 ## Packaging and materials inventory pages
 
-**Canonical reference:** [[fixes/packaging-inventory-roles]] · [[fixes/packaging-inventory-scroll-and-detail-ux]] · live in `PackagingMaterialsPage.tsx` + `PackagingMaterialDetailModal.tsx`.
+**Canonical reference:** [[fixes/packaging-inventory-roles]] · [[fixes/packaging-inventory-scroll-and-detail-ux]] · [[fixes/inventory-mobile-action-modal-and-cards]] · live in `PackagingMaterialsPage.tsx` + `PackagingMaterialDetailModal.tsx`.
 
 ### Guide modal
 
@@ -563,6 +566,8 @@ Shared **Per-unit vs Pool** legend in the modal.
 3. **Table card** — `flex flex-col min-h-0 flex-1 overflow-hidden`; column headers `shrink-0`.
 4. **Scrollable body only** — `flex-1 min-h-0 overflow-y-auto overscroll-contain` around rows.
 5. **Clickable rows** — full-width `<button>`, `hover:bg-secondary/40`, chevron; opens detail modal (not inline actions in the table).
+6. **Phone controls** — header keeps `Guide` + `Actions`; open a mobile actions modal for create/request actions. Do not keep 3+ tiny CTA buttons inline on mobile.
+7. **Phone rows** — use stacked mobile cards (`sm:hidden`) and keep dense table only on `sm+`.
 
 **Supplies** use the same recipe in `SuppliesMaterialsPage.tsx` — see [[005_SPA_UX_Patterns#Supplies inventory pages]].
 
@@ -585,9 +590,9 @@ Shared **Per-unit vs Pool** legend in the modal.
 
 ## Supplies inventory pages
 
-**Canonical reference:** [[fixes/supplies-hr-lot-inventory]] · live in `SuppliesMaterialsPage.tsx` + `SupplyMaterialDetailModal.tsx`.
+**Canonical reference:** [[fixes/supplies-hr-lot-inventory]] · [[fixes/inventory-mobile-action-modal-and-cards]] · live in `SuppliesMaterialsPage.tsx` + `SupplyMaterialDetailModal.tsx`.
 
-Same list/detail scroll recipe as packaging (stats, search, out-of-stock row styling). Header **Guide** → `SuppliesInventoryGuideModal`. HR gets prominent **Issue request** in header (not only in detail modal).
+Same list/detail scroll recipe as packaging (stats, search, out-of-stock row styling). Header **Guide** → `SuppliesInventoryGuideModal`. On phone, use `Actions` modal for `Issue request` / `Add item`; desktop keeps inline CTA buttons.
 
 `supply_detail.permissions` drives detail actions:
 
@@ -655,7 +660,7 @@ Do **not** use `RawHoneySummaryPage` (`fetchRawSnapshot` read-only table) as the
 
 **Page:** `RawDeptMaterialPage.tsx` at `/inventory/raw-materials/{paragis|black-rice|cacao}`.
 
-**Canonical reference:** [[fixes/dept-raw-material-guides]] · [[fixes/paragis-use-raw-bags]] · [[fixes/dept-production-wip-bom]].
+**Canonical reference:** [[fixes/dept-raw-material-guides]] · [[fixes/paragis-use-raw-bags]] · [[fixes/dept-production-wip-bom]] · [[fixes/raw-dept-mobile-first-actions-and-lists]].
 
 ### Guide (mandatory)
 
@@ -672,6 +677,8 @@ Header **Guide** on all three raw pages — no inline workflow/yield panels on p
 - Actions: Stock in · **Use raw bags** · **Pouch** · WIP waste · Bag waste (advanced: exact tea bag count via guide footer).
 - Floor input: **bags opened** (not individual tea bag count) → WIP derived at 500/bag.
 - Modals call `dept_production_preview` for stock-linked formula deduct lines (custom costing lines excluded).
+- **Phone layout:** top bar uses compact actions (`Finished`, `Guide`, `Actions`) and opens `RawActionsModal` for all mutate actions. Do not place 5–7 action buttons directly in header on mobile.
+- **Phone activity lists:** show stacked cards (`When`, `Action`, `Qty`, `Note`) on small screens; keep desktop table only at `sm+`.
 
 ### BRC / Jar Cacao
 

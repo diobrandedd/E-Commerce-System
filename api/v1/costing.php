@@ -572,15 +572,7 @@ function api_costing_parcel_cost_preview(): void
     $tierKey = trim((string) ($input['tier_key'] ?? ''));
     try {
         if ($tierKey !== '') {
-            $est = parcel_pack_tier_cost_estimate_by_key($pdo, $tierKey);
-            api_ok([
-                'tier_key' => $tierKey,
-                'tiers' => [$est],
-                'cost_typical' => $est['cost_typical'],
-                'cost_min' => $est['cost_min'],
-                'cost_max' => $est['cost_max'],
-                'warnings' => [],
-            ]);
+            api_ok(parcel_pack_preview_tier_by_key($pdo, $tierKey));
         }
         if ($itemsRaw === '') {
             api_fail('items_raw or tier_key is required.', 422);

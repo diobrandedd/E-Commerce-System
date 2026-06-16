@@ -4,6 +4,15 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-16 — [[problems/records/2026-06-16_inventory-mobile-consistency|Inventory mobile consistency rollout]]
+**Shipped:** same phone pattern on Packaging + Supplies pages — compact `Guide + Actions` header, mobile actions modal, stacked card rows (`sm:hidden`) with desktop tables preserved. **Fix:** [[fixes/inventory-mobile-action-modal-and-cards]].
+
+### 2026-06-16 — [[problems/records/2026-06-16_raw-dept-mobile-layout|Raw dept mobile-first layout]]
+**Shipped:** `/inventory/raw-materials/*` phone UX fix — compact header controls + `RawActionsModal`, mobile stacked activity cards, desktop tables preserved. **Rule:** mobile-first mandatory in [[005_SPA_UX_Patterns#Golden rules]]. **Fix:** [[fixes/raw-dept-mobile-first-actions-and-lists]].
+
+### 2026-06-05 — [[problems/records/2026-06-05_parcel-pack-ship-bugs|Parcel pack ship bugs rollup]] ⭐
+**Read for agents:** 500 (`$pdo` closure) · `???` labels (PowerShell UTF-8 migration) · TBD tier preview · landed-view + tier modal UX. **Causes:** [[causes/parcel-pack-closure-missing-pdo-use]] · [[causes/sql-migration-powershell-utf8-corruption]] · [[causes/parcel-tier-inactive-preview-500]]. **Fixes:** [[fixes/parcel-pack-pdo-closure-500]] · [[fixes/parcel-pack-ascii-labels-migration]] · [[fixes/parcel-pack-landed-view-modal]]. Run **phase31** migration on Windows.
+
 ### 2026-06-05 — [[problems/records/2026-06-05_online-parcel-pack-costing|Parcel pack costing (tier-based)]]
 **Shipped:** Product Costing **Parcel packaging** tab — composition tiers (`parcel_pack_tiers`), min/typical/max bubble wrap, Item/s preview, landed cost columns. Manufacturing `product_formula` unchanged. **Fix:** [[fixes/online-parcel-pack-costing]] · **Spec:** [[specs/2026-06-05_online-parcel-pack-costing]] · migration `phase30`.
 

@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-06-12T11:00:10+02:00
+generated: 2026-06-16T09:48:56+02:00
 type: module
 function_count: 16
 ---
@@ -149,7 +149,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `includes/honey_parcel_inventory.php`:30 — `$key = dept_inventory_resolve_other_item((string) ($other['label'] ?? '')) ?? '';`
-- `includes/parcel_pack_costing.php`:50 — `$key = dept_inventory_resolve_other_item((string) ($item['label'] ?? '')) ?? '';`
+- `includes/parcel_pack_costing.php`:51 — `$key = dept_inventory_resolve_other_item((string) ($item['label'] ?? '')) ?? '';`
 
 ## dept_inventory_catalog_snapshot {#dept_inventory_catalog_snapshot}
 

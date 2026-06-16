@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookOpen, ChevronRight, Loader2, Package, Plus, Search } from "lucide-react";
+import { BookOpen, ChevronRight, Loader2, Package, Plus, Search, ListChecks } from "lucide-react";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { MaterialCatalogModal } from "@/app/components/inventory/MaterialCatalogModal";
 import { SuppliesInventoryGuideModal } from "@/app/components/inventory/SuppliesInventoryGuideModal";
@@ -37,6 +38,7 @@ export function SuppliesMaterialsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showIssueRequest, setShowIssueRequest] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [detailRow, setDetailRow] = useState<MaterialStockRow | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StockFilter>("all");
@@ -83,6 +85,23 @@ export function SuppliesMaterialsPage() {
       subtitle="Org-wide pool — lot stock-in, unit cost, and HR-submitted issues — click a row for details"
       actions={
         <div className="flex items-center gap-2">
+          <div className="sm:hidden flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg border border-border"
+            >
+              <BookOpen size={12} /> Guide
+            </button>
+            <button
+              type="button"
+              onClick={() => setActionsOpen(true)}
+              className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#C8900A] text-[#8a6506]"
+            >
+              <ListChecks size={12} /> Actions
+            </button>
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
           <button
             type="button"
             onClick={() => setGuideOpen(true)}
@@ -109,11 +128,12 @@ export function SuppliesMaterialsPage() {
               <Plus size={14} /> Add item
             </button>
           )}
+          </div>
         </div>
       }
     >
       <div className="flex flex-col h-[calc(100dvh-8rem)] min-h-[18rem] min-w-0 gap-4">
-        <div className="grid grid-cols-3 gap-3 shrink-0">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 shrink-0">
           <div className="rounded-xl border bg-card px-4 py-3">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Catalog items</p>
             <p className="text-xl font-semibold mt-1">{stats.count}</p>
@@ -183,7 +203,49 @@ export function SuppliesMaterialsPage() {
               </div>
             )}
 
-            {!loading && filteredItems.map(row => {
+            {!loading && (
+              <div className="sm:hidden divide-y divide-border">
+                {filteredItems.map(row => {
+                  const onHand = Number(row.on_hand ?? 0);
+                  const hasStock = onHand > 0;
+                  return (
+                    <button
+                      key={row.id}
+                      type="button"
+                      onClick={() => setDetailRow(row)}
+                      className={cn(
+                        "w-full text-left px-4 py-3 space-y-2 hover:bg-secondary/30 transition-colors",
+                        !hasStock && "bg-red-50/30 dark:bg-red-950/10",
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm text-foreground leading-snug break-words">{row.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{row.unit}</p>
+                        </div>
+                        <ChevronRight size={14} className="text-muted-foreground" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-md bg-secondary/30 px-2 py-1.5">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Unit cost</p>
+                          <p className="mt-0.5 text-foreground tabular-nums">{peso(row.current_price)}/{row.unit}</p>
+                        </div>
+                        <div className="rounded-md bg-secondary/30 px-2 py-1.5">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">On hand</p>
+                          <p className={cn("mt-0.5 tabular-nums", !hasStock && "text-red-600 font-medium")}>
+                            {onHand.toLocaleString()} {row.unit}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {!loading && (
+              <div className="hidden sm:block">
+                {filteredItems.map(row => {
               const onHand = Number(row.on_hand ?? 0);
               const hasStock = onHand > 0;
               return (
@@ -215,15 +277,12 @@ export function SuppliesMaterialsPage() {
                     <div className="sm:flex sm:justify-end text-muted-foreground group-hover:text-[#C8900A]">
                       <ChevronRight size={16} />
                     </div>
-                    <div className="sm:hidden flex gap-3 text-xs text-muted-foreground mt-1 col-span-full">
-                      <span>{peso(row.current_price)}/pc</span>
-                      <span>·</span>
-                      <span className={!hasStock ? "text-red-600" : ""}>{onHand} {row.unit}</span>
-                    </div>
                   </div>
                 </button>
               );
             })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -243,6 +302,21 @@ export function SuppliesMaterialsPage() {
           onDone={handleIssueDone}
         />
       )}
+      {actionsOpen && (
+        <SuppliesMobileActionsModal
+          canIssueRequest={canIssueRequest}
+          canCreateCatalog={canCreateCatalog}
+          onClose={() => setActionsOpen(false)}
+          onIssueRequest={() => {
+            setActionsOpen(false);
+            setShowIssueRequest(true);
+          }}
+          onAddItem={() => {
+            setActionsOpen(false);
+            setShowCreate(true);
+          }}
+        />
+      )}
       {detailRow && (
         <SupplyMaterialDetailModal
           stock={detailRow}
@@ -251,5 +325,50 @@ export function SuppliesMaterialsPage() {
         />
       )}
     </PageLayout>
+  );
+}
+
+function SuppliesMobileActionsModal({
+  canIssueRequest,
+  canCreateCatalog,
+  onClose,
+  onIssueRequest,
+  onAddItem,
+}: {
+  canIssueRequest: boolean;
+  canCreateCatalog: boolean;
+  onClose: () => void;
+  onIssueRequest: () => void;
+  onAddItem: () => void;
+}) {
+  return (
+    <AppModal open onClose={onClose} panelClassName="max-w-sm w-full" labelledBy="supplies-actions-title">
+      <AppModalHeader title="Supplies actions" titleId="supplies-actions-title" onClose={onClose} />
+      <AppModalBody className="space-y-2">
+        {canIssueRequest && (
+          <button
+            type="button"
+            onClick={onIssueRequest}
+            className="w-full text-left px-3 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-secondary"
+          >
+            Submit issue request
+          </button>
+        )}
+        {canCreateCatalog && (
+          <button
+            type="button"
+            onClick={onAddItem}
+            className="w-full text-left px-3 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-secondary"
+          >
+            Add catalog item
+          </button>
+        )}
+      </AppModalBody>
+      <AppModalFooter>
+        <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-border">
+          Close
+        </button>
+      </AppModalFooter>
+    </AppModal>
   );
 }

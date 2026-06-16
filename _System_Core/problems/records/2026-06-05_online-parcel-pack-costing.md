@@ -1,25 +1,40 @@
-# Online parcel pack costing (tier-based)
+---
+date: 2026-06-05
+type: problem-record
+status: fixed
+area: parcel-pack-costing
+tags: [problem, costing, feature]
+---
 
-**Date:** 2026-06-05  
-**Status:** Shipped (Phase 1 — costing only)
+# Problem: Online parcel pack costing (tier-based) — feature ship
 
-## Problem
+> Phase 1 feature record. **Post-ship bugs:** [[records/2026-06-05_parcel-pack-ship-bugs]] ⭐
 
-Product formulas model per-unit manufacturing BOM, not per-parcel fulfillment packaging. Bubble wrap usage varies by order composition (1L count, dept units, jar count). Duplicating parcel lines into every honey SKU would be wrong.
+## Symptom
+
+Manufacturing `product_formula` cannot model per-parcel fulfillment packaging (bubble wrap varies by 1L count; same SKU in different parcel shapes).
 
 ## Cause
 
-Single `product_formula` rollup assumes fixed qty per sellable unit. Parcel materials are keyed by **order shape**, not product SKU.
+COGS rollup is per sellable unit; parcel materials are keyed by **order composition**, not product SKU.
+
+→ See feature design in [[specs/2026-06-05_online-parcel-pack-costing]]
 
 ## Fix
 
-- DB tiers + lines seeded for honey / PT+BRC / jar cacao families
-- `parcel_pack_costing.php` resolves tiers from `honey_parcel_parse_items_string`, sums mixed parcels, estimates min/typical/max from packaging WAC
-- Costing UI second tab for tier edit + preview; landed cost columns on product list
-
-**Fix note:** [[fixes/online-parcel-pack-costing]]  
-**Spec:** [[specs/2026-06-05_online-parcel-pack-costing]]
+→ [[fixes/online-parcel-pack-costing]]
 
 ## Files
 
-See fix note file list.
+| Role | Path |
+|------|------|
+| Spec | [[specs/2026-06-05_online-parcel-pack-costing]] |
+| Migrations | `sql/migration_phase30_*.sql`, `sql/migration_phase31_*.sql` |
+| Backend | `includes/parcel_pack_costing.php`, `api/v1/costing.php` |
+| SPA | `CostingPage.tsx`, `ParcelPackTiersModal.tsx` |
+
+## Links
+
+- **Ship bugs rollup:** [[records/2026-06-05_parcel-pack-ship-bugs]]
+- **Fragile edges:** [[003_Fragile_Edges]] (Online order parcels + parcel pack costing bullets)
+- **Patterns:** [[005_SPA_UX_Patterns#Product Costing page]]
