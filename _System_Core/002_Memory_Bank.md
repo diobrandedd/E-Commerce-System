@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-16 — [[problems/records/2026-06-16_deliveries-cancel-scan-log|Deliveries cancel scan + inventory restore log]]
+**Shipped:** scanner `Mark cancelled` flow for `packing` and `shipped` parcels, shipped-deduct auto-revert, and Deliveries Review cancelled-orders log table. **Fix:** [[fixes/deliveries-cancel-scan-revert-and-log]].
+
 ### 2026-06-16 — [[problems/records/2026-06-16_inventory-mobile-consistency|Inventory mobile consistency rollout]]
 **Shipped:** same phone pattern on Packaging + Supplies pages — compact `Guide + Actions` header, mobile actions modal, stacked card rows (`sm:hidden`) with desktop tables preserved. **Fix:** [[fixes/inventory-mobile-action-modal-and-cards]].
 

@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-06-16T09:49:00+02:00
+generated: 2026-06-16T10:40:54+02:00
 type: module
 function_count: 10
 ---

@@ -139,7 +139,7 @@ export function DeliveriesPage() {
         setStep("idle");
         return;
       }
-      if (res.already_recorded && res.existing_recordings.length > 0) {
+      if (res.already_recorded && res.existing_recordings.length > 0 && res.parcel.status === "packing") {
         setDuplicateRecordings(res.existing_recordings);
         setDuplicateOpen(true);
         setStep("idle");
@@ -338,7 +338,11 @@ export function DeliveriesPage() {
               </div>
               <span
                 className={`inline-block text-xs font-semibold px-2 py-0.5 rounded ${
-                  parcel.status === "packing" ? "bg-amber-100 text-amber-900" : "bg-green-100 text-green-900"
+                  parcel.status === "packing"
+                    ? "bg-amber-100 text-amber-900"
+                    : parcel.status === "shipped"
+                      ? "bg-green-100 text-green-900"
+                      : "bg-red-100 text-red-900"
                 }`}
               >
                 {parcel.status}
@@ -411,7 +415,7 @@ export function DeliveriesPage() {
                   type="button"
                   className="flex-1 rounded-lg border border-border py-2 text-sm font-semibold"
                   onClick={() => void finishParcel(true)}
-                  disabled={busy || !photoPreview}
+                  disabled={busy || !photoPreview || parcel.status !== "packing"}
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Scan next parcel"}
                 </button>
@@ -419,7 +423,7 @@ export function DeliveriesPage() {
                   variant="primary"
                   className="flex-1 rounded-lg py-2 text-sm font-bold"
                   onClick={() => void finishParcel(false)}
-                  disabled={busy || !photoPreview}
+                  disabled={busy || !photoPreview || parcel.status !== "packing"}
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Done"}
                 </FulfillmentPressable>

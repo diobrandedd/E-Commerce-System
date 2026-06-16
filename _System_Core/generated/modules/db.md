@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-06-16T09:48:56+02:00
+generated: 2026-06-16T10:40:49+02:00
 type: module
 function_count: 3
 ---
@@ -54,7 +54,7 @@ function_count: 3
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (164):**
+**Callers (166):**
 
 - `api/v1/_bootstrap.php`:176 — `$pdo = ims_pdo();`
 - `api/v1/ar.php`:26 — `$pdo = ims_pdo();`
@@ -74,12 +74,12 @@ function_count: 3
 - `api/v1/costing.php`:566 — `$pdo = ims_pdo();`
 - `api/v1/dashboard.php`:23 — `$pdo = ims_pdo();`
 - `api/v1/dashboard.php`:161 — `$snapshot = dashboard_inventory_snapshot(ims_pdo(), $period, $from, $to);`
-- `api/v1/deliveries.php`:62 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:106 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:127 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:164 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:193 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:284 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:305 — `$pdo = ims_pdo();`
-- _… and 139 more (run impact.php for full list)_
+- `api/v1/deliveries.php`:64 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:108 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:129 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:166 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:199 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:231 — `$pdo = ims_pdo();`
+- `api/v1/deliveries.php`:254 — `$pdo = ims_pdo();`
+- _… and 141 more (run impact.php for full list)_
 

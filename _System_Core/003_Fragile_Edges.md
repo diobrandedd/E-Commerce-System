@@ -45,6 +45,8 @@ Full-resolution phone photos (multi‑MB) uploaded on a **Confirm** button are t
 - **Orphan repair:** `parcel_by_tracking` calls `deliveries_repair_orphaned_shipped_parcel()` — `shipped` with zero photos → auto `packing` (fixes rows deleted before this fix).
 - **Do not** delete `delivery_batch_items` without considering `online_parcel_deduct_lines` if the parcel was shipped.
 - If **other** delivery photos still exist for same tracking, delete does **not** unship.
+- **Cancellation scan path:** `api/v1/deliveries.php?action=cancel_parcel_scan` allows `packing` + `shipped` parcels. For `shipped`, it must run `honey_parcel_revert_deduct()` before status change to `cancelled`; otherwise stock stays deducted while parcel is cancelled.
+- **Audit requirement:** every scanner cancellation writes `delivery_cancel_events` (previous status, inventory reverted flag, actor). Do not set `online_order_parcels.status = 'cancelled'` directly without the event insert.
 
 ## Runtime schema probes
 

@@ -55,6 +55,26 @@ export async function deliveriesShipParcel(
   });
 }
 
+export interface DeliveryCancelResult {
+  parcel: OnlineParcel;
+  already_cancelled: boolean;
+  previous_status: "packing" | "shipped" | "cancelled" | "returned" | string;
+  inventory_reverted: boolean;
+  cancel_event_id: number | null;
+  message?: string;
+}
+
+export async function deliveriesCancelParcelScan(
+  trackingNumber: string,
+  note?: string,
+): Promise<DeliveryCancelResult> {
+  return apiPost("deliveries.php", "cancel_parcel_scan", {
+    tracking_number: trackingNumber,
+    cancel_source: "scanner",
+    note: note?.trim() ? note.trim() : undefined,
+  });
+}
+
 export async function deliveriesReviewList(params: {
   q?: string;
   from?: string;
@@ -67,6 +87,34 @@ export async function deliveriesReviewList(params: {
     ...params,
     void_only: params.void_only ? "1" : undefined,
   });
+}
+
+export interface DeliveryCancelLogRow {
+  id: number;
+  online_parcel_id: number;
+  tracking_number: string;
+  previous_status: string;
+  inventory_reverted: boolean;
+  cancel_source: string;
+  note: string | null;
+  cancelled_by_user_id: number | null;
+  cancelled_by_name: string | null;
+  cancelled_by_username: string | null;
+  created_at: string;
+  recipient_name: string | null;
+  items_raw: string | null;
+  order_no: string | null;
+  courier: string | null;
+}
+
+export async function deliveriesCancelLogList(params: {
+  q?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  per_page?: number;
+}): Promise<{ rows: DeliveryCancelLogRow[]; total: number; page: number; per_page: number }> {
+  return apiGet("deliveries.php", "cancel_log_list", params);
 }
 
 export async function deliveriesDeleteItem(itemId: number): Promise<void> {

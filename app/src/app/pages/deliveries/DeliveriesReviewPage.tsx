@@ -73,15 +73,26 @@ export function DeliveriesReviewPage() {
           : "View delivery photos — submit edit or delete requests for executives"
       }
       actions={
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Link
+            to="/deliveries/cancelled"
+            className="sm:hidden text-xs font-semibold rounded-lg border border-border px-2.5 py-1.5 text-muted-foreground"
+          >
+            Cancelled
+          </Link>
+          <div className="hidden sm:flex flex-wrap items-center gap-3">
+            <Link to="/deliveries/cancelled" className="text-xs font-semibold rounded-lg border border-border px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40">
+              Cancelled page
+            </Link>
+            <Link to="/deliveries" className="text-sm font-semibold text-[#C8900A]">
+              ← Add deliveries
+            </Link>
+          </div>
           {!isExecutive && (
             <Link to="/inventory/requests#edit-requests-section" className="text-sm font-semibold text-[#C8900A]">
               My requests
             </Link>
           )}
-          <Link to="/deliveries" className="text-sm font-semibold text-[#C8900A]">
-            ← Add deliveries
-          </Link>
         </div>
       }
     >
@@ -252,6 +263,7 @@ export function DeliveriesReviewPage() {
           void load();
         }}
       />
+
     </PageLayout>
   );
 }

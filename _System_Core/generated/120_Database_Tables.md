@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-06-16T09:48:54+02:00
+generated: 2026-06-16T10:40:47+02:00
 type: memory-bank
-table_count: 47
+table_count: 48
 ---
 
 
@@ -177,6 +177,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_unread_list]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel_log_list]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
 
 ## `pos_pins`
@@ -429,6 +430,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_id]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_list]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel_log_list]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_existing_tracking_map]] |
 
 ## `online_parcel_deduct_lines`
@@ -482,6 +485,13 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_tier_lines]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_save_tier_line]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_delete_tier_line]] |
+
+## `delivery_cancel_events`
+
+| File | Function |
+|------|----------|
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel_log_list]] |
 
 ## `pos_sales`
 

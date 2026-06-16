@@ -41,10 +41,12 @@ flowchart LR
 - [[fixes/parcel-pack-ascii-labels-migration]] — Fix `???` tier labels after Windows SQL import
 - [[fixes/raw-dept-mobile-first-actions-and-lists]] — Raw materials page is phone-first: compact header actions + mobile activity cards
 - [[fixes/inventory-mobile-action-modal-and-cards]] — Packaging/Supplies mobile consistency: actions modal + stacked card rows
+- [[fixes/deliveries-cancel-scan-revert-and-log]] — Cancel scanner path with shipped-inventory revert + cancellation audit table
 
 ## Records (newest first)
 
 - [[records/2026-06-16_inventory-mobile-consistency]] — packaging/supplies mobile header + row consistency
+- [[records/2026-06-16_deliveries-cancel-scan-log]] — deliveries cancel scanner + inventory restore + log table
 - [[records/2026-06-16_raw-dept-mobile-layout]] — raw materials page phone layout and action overflow fix
 - [[records/2026-06-05_parcel-pack-ship-bugs]] — **rollup:** 500 closure, UTF-8 ???, TBD preview, modal UX
 - [[records/2026-06-05_online-parcel-pack-costing]] — Phase 1 parcel pack tier costing

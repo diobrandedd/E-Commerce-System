@@ -375,6 +375,7 @@ Uploading **full phone resolution** on a final **Confirm** button causes multi-s
 **Routes:** `/deliveries` (scan label → take packing photo → ship) · `/deliveries/review` (batch review / edit requests / executive delete).
 
 **Sidebar:** **Add deliveries** uses `end: true` — see [[#Sidebar navigation — sibling routes]].
+Deliveries now has three sibling routes under one group: `/deliveries`, `/deliveries/review`, `/deliveries/cancelled`.
 
 **Standard flow:**
 
@@ -383,6 +384,14 @@ Uploading **full phone resolution** on a final **Confirm** button causes multi-s
 3. Upload/take **photo** (required before Done / Scan next) — **compresses + uploads in background** on capture; retake cancels in-flight upload via `uploadGenRef`.
 4. **Done / Scan next** → `ship_parcel` only (photo usually already saved); packaging stock deduct; parcel → `shipped`.
 5. CSR / prod view **Online parcels** detail — packing photo from deliveries enrich.
+
+**Cancellation scan (new):**
+
+- In scanned parcel preview, `Mark cancelled` supports both statuses:
+  - `packing` → mark `cancelled`
+  - `shipped` → restore deducted inventory first, then mark `cancelled`
+- Use explicit confirm copy that explains inventory restore behavior when status is `shipped`.
+- Keep cancellation auditable via `cancel_log_list` table on Deliveries Review (time, tracking, previous status, inventory restored, cancelled by).
 
 **Add deliveries feedback (fulfillment motion):**
 
@@ -402,6 +411,12 @@ Uploading **full phone resolution** on a final **Confirm** button causes multi-s
 - **View** → `AppModal` with full detail: tracking, recipient, items, order no., courier, parcel status, packing photo.
 - API `review_list` returns `photo_url` + optional `parcel` via `deliveries_enrich_review_rows()`.
 - PM submits **edit/delete requests** on **Requests → Edit requests** (see [[#Requests hub (unified approvals)]]); executive **hard-deletes** mistaken rows (`delete_item`) or approves PM delete requests — last photo delete **reverts ship** + restores packaging stock.
+
+**Cancelled page UX:**
+
+- Use `/deliveries/cancelled` for courier-cancel workflows (not Add deliveries).
+- Scanner + manual tracking input live on Cancelled page; cancellation log table is on the same page.
+- On phone, keep Deliveries page-header actions minimal (max 1 compact action chip). Move extra shortcuts into page body to prevent title/action overlap.
 
 **Duplicate scan:** `DeliveryDuplicateScanModal` when tracking already recorded for the date.
 
@@ -626,6 +641,12 @@ Split material tables:
 | `#packaging-requests-section` | `category=packaging` + `action=set_on_hand` | Inline approve/reject (legacy) |
 
 **Notifications:** `CorrectionNotificationsContext` merges `request_unread_list` as `supply_request` items; bell navigates to `?supply_request={id}#supply-requests-section`. Badge count stays on aggregated `correction_unread_count` (includes material pending).
+
+**Mobile header safety (mandatory):**
+
+- `RequestsHubSection` headers must stack on phone (`flex-col`) and only align title/actions in one row at `sm+`.
+- Dense header actions (status chips, filters, quick buttons) must be horizontal-scroll chips on phone (`overflow-x-auto`, `whitespace-nowrap`) instead of shrinking subtitle width.
+- Never let header actions compress subtitle into word-by-word wrapping.
 
 ## Raw Honey (three stages)
 

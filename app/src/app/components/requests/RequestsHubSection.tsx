@@ -48,7 +48,7 @@ export function RequestsHubSection({
 
   return (
     <section id={id} className={cn("rounded-xl border border-border bg-card overflow-hidden", className)}>
-      <div className="flex items-start gap-2 px-4 py-3.5">
+      <div className="flex flex-col gap-2 px-4 py-3.5 sm:flex-row sm:items-start sm:gap-2">
         <button
           type="button"
           onClick={() => setOpen(!open)}
@@ -81,7 +81,10 @@ export function RequestsHubSection({
           </div>
         </button>
         {headerActions ? (
-          <div className="shrink-0 flex flex-wrap items-center gap-2 pt-0.5" onClick={e => e.stopPropagation()}>
+          <div
+            className="w-full sm:w-auto shrink-0 flex items-center gap-2 overflow-x-auto no-pyx-scroll whitespace-nowrap pt-0.5"
+            onClick={e => e.stopPropagation()}
+          >
             {headerActions}
           </div>
         ) : null}

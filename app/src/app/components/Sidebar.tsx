@@ -109,6 +109,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     children: [
       { label: "Add deliveries", to: "/deliveries", end: true },
       { label: "Review batches", to: "/deliveries/review" },
+      { label: "Cancelled", to: "/deliveries/cancelled" },
     ],
   };
 

@@ -1,7 +1,7 @@
 ---
 title: delivery_edit_requests
 source: includes/delivery_edit_requests.php
-generated: 2026-06-16T09:48:56+02:00
+generated: 2026-06-16T10:40:49+02:00
 type: module
 function_count: 15
 ---
@@ -25,7 +25,7 @@ function_count: 15
 
 **Callers (4):**
 
-- `api/v1/deliveries.php`:139 — `$existingRecordings = deliveries_find_existing_recordings($pdo, $tracking, $parcelId);`
+- `api/v1/deliveries.php`:141 — `$existingRecordings = deliveries_find_existing_recordings($pdo, $tracking, $parcelId);`
 - `includes/delivery_edit_requests.php`:64 — `$existing = deliveries_find_existing_recordings($pdo, $tracking, $parcelId);`
 - `includes/delivery_edit_requests.php`:178 — `if (deliveries_find_existing_recordings($pdo, $tracking, $parcelId) !== []) {`
 - `includes/delivery_edit_requests.php`:227 — `$remaining = deliveries_find_existing_recordings($pdo, $tracking, $parcelId);`
@@ -73,7 +73,7 @@ function_count: 15
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:136 — `$parcel = deliveries_repair_orphaned_shipped_parcel($pdo, $parcel);`
+- `api/v1/deliveries.php`:138 — `$parcel = deliveries_repair_orphaned_shipped_parcel($pdo, $parcel);`
 
 ## deliveries_delete_item_by_id {#deliveries_delete_item_by_id}
 
@@ -82,7 +82,7 @@ function_count: 15
 **Callers (4):**
 
 - `api/delivery_resolve.php`:52 — `$deleted = deliveries_delete_item_by_id($pdo, $itemId);`
-- `api/v1/deliveries.php`:286 — `api_ok(['deleted' => deliveries_delete_item_by_id($pdo, $itemId)]);`
+- `api/v1/deliveries.php`:347 — `api_ok(['deleted' => deliveries_delete_item_by_id($pdo, $itemId)]);`
 - `includes/delivery_edit_requests.php`:251 — `return deliveries_delete_item_by_id($pdo, $itemId);`
 - `includes/delivery_edit_requests.php`:389 — `if (!deliveries_delete_item_by_id($pdo, $itemId)) {`
 
@@ -98,7 +98,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/deliveries.php`:307 — `deliveries_resolve_item_by_id($pdo, $itemId, $tracking);`
+- `api/v1/deliveries.php`:368 — `deliveries_resolve_item_by_id($pdo, $itemId, $tracking);`
 - `includes/delivery_edit_requests.php`:397 — `deliveries_resolve_item_by_id($pdo, $itemId, (string) ($req['new_value'] ?? ''));`
 
 ## delivery_edit_request_normalize_values {#delivery_edit_request_normalize_values}
@@ -137,5 +137,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:267 — `$rows = deliveries_enrich_review_rows($pdo, $rows);`
+- `api/v1/deliveries.php`:328 — `$rows = deliveries_enrich_review_rows($pdo, $rows);`
 

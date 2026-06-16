@@ -116,6 +116,23 @@ function online_parcels_ensure_schema(PDO $pdo): void
           KEY `idx_opddl_dept_row` (`dept_row_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `delivery_cancel_events` (
+          `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+          `online_parcel_id` INT UNSIGNED NOT NULL,
+          `tracking_number` VARCHAR(96) NOT NULL,
+          `previous_status` ENUM("packing","shipped","cancelled","returned") NOT NULL,
+          `inventory_reverted` TINYINT(1) NOT NULL DEFAULT 0,
+          `cancel_source` VARCHAR(32) NOT NULL DEFAULT "scanner",
+          `note` VARCHAR(255) NULL DEFAULT NULL,
+          `cancelled_by_user_id` INT UNSIGNED NULL DEFAULT NULL,
+          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          KEY `idx_dce_parcel` (`online_parcel_id`),
+          KEY `idx_dce_tracking` (`tracking_number`),
+          KEY `idx_dce_created_at` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
     $done = true;
 }
 
@@ -607,4 +624,209 @@ function online_parcels_ship(
     $fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);
 
     return ['parcel' => $fresh ?? $parcel, 'already_shipped' => false];
+}
+
+/**
+ * @return array{
+ *   parcel: array<string,mixed>,
+ *   already_cancelled: bool,
+ *   previous_status: string,
+ *   inventory_reverted: bool,
+ *   event_id: int|null
+ * }
+ */
+function online_parcels_cancel(
+    PDO $pdo,
+    int $userId,
+    string $tracking,
+    string $cancelSource = 'scanner',
+    ?string $note = null
+): array {
+    online_parcels_ensure_schema($pdo);
+    $tracking = online_parcels_normalize_tracking($tracking);
+    if ($tracking === '') {
+        throw new RuntimeException('Invalid tracking number.');
+    }
+
+    $parcel = online_parcels_get_by_tracking($pdo, $tracking);
+    if ($parcel === null) {
+        throw new RuntimeException('No online order parcel found for this tracking number.');
+    }
+
+    $source = trim($cancelSource);
+    if ($source === '') {
+        $source = 'scanner';
+    }
+    $note = $note !== null ? trim($note) : null;
+    if ($note === '') {
+        $note = null;
+    }
+    if ($note !== null && function_exists('mb_substr')) {
+        $note = mb_substr($note, 0, 255);
+    } elseif ($note !== null) {
+        $note = substr($note, 0, 255);
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $lock = $pdo->prepare(
+            'SELECT id, tracking_number, status, items_raw
+             FROM online_order_parcels
+             WHERE id = ?
+             FOR UPDATE'
+        );
+        $lock->execute([(int) $parcel['id']]);
+        $locked = $lock->fetch(PDO::FETCH_ASSOC);
+        if ($locked === false) {
+            throw new RuntimeException('Parcel not found.');
+        }
+
+        $previousStatus = (string) ($locked['status'] ?? '');
+        if ($previousStatus === 'cancelled') {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            $fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);
+
+            return [
+                'parcel' => $fresh ?? $parcel,
+                'already_cancelled' => true,
+                'previous_status' => 'cancelled',
+                'inventory_reverted' => false,
+                'event_id' => null,
+            ];
+        }
+
+        if (!in_array($previousStatus, ['packing', 'shipped'], true)) {
+            throw new RuntimeException('Parcel cannot be cancelled (status: ' . $previousStatus . ').');
+        }
+
+        $inventoryReverted = false;
+        if ($previousStatus === 'shipped') {
+            honey_parcel_revert_deduct($pdo, (int) $locked['id']);
+            $inventoryReverted = true;
+        }
+
+        $upd = $pdo->prepare(
+            'UPDATE online_order_parcels
+             SET status = "cancelled",
+                 ship_date = NULL,
+                 shipped_by_user_id = NULL,
+                 deducted_at = NULL,
+                 return_date = NULL
+             WHERE id = ?'
+        );
+        $upd->execute([(int) $locked['id']]);
+
+        $insEvent = $pdo->prepare(
+            'INSERT INTO delivery_cancel_events
+                (online_parcel_id, tracking_number, previous_status, inventory_reverted, cancel_source, note, cancelled_by_user_id)
+             VALUES
+                (?, ?, ?, ?, ?, ?, ?)'
+        );
+        $insEvent->execute([
+            (int) $locked['id'],
+            (string) $locked['tracking_number'],
+            $previousStatus,
+            $inventoryReverted ? 1 : 0,
+            $source,
+            $note,
+            $userId > 0 ? $userId : null,
+        ]);
+        $eventId = (int) $pdo->lastInsertId();
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    $fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);
+
+    return [
+        'parcel' => $fresh ?? $parcel,
+        'already_cancelled' => false,
+        'previous_status' => isset($previousStatus) ? $previousStatus : (string) ($parcel['status'] ?? ''),
+        'inventory_reverted' => $inventoryReverted ?? false,
+        'event_id' => $eventId ?? null,
+    ];
+}
+
+/**
+ * @return array{rows: list<array<string,mixed>>, total: int}
+ */
+function online_parcels_cancel_log_list(PDO $pdo, string $q, string $from, string $to, int $page, int $perPage): array
+{
+    online_parcels_ensure_schema($pdo);
+    $page = max(1, $page);
+    $perPage = min(100, max(10, $perPage));
+    $offset = ($page - 1) * $perPage;
+
+    $where = ['1=1'];
+    $params = [];
+    if ($from !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+        $where[] = 'DATE(e.created_at) >= ?';
+        $params[] = $from;
+    }
+    if ($to !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
+        $where[] = 'DATE(e.created_at) <= ?';
+        $params[] = $to;
+    }
+    if ($q !== '') {
+        $like = '%' . $q . '%';
+        $where[] = '(e.tracking_number LIKE ? OR p.recipient_name LIKE ? OR p.items_raw LIKE ? OR p.order_no LIKE ? OR u.name LIKE ? OR u.username LIKE ?)';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    $whereSql = implode(' AND ', $where);
+    $countSql = "SELECT COUNT(*)
+                 FROM delivery_cancel_events e
+                 LEFT JOIN online_order_parcels p ON p.id = e.online_parcel_id
+                 LEFT JOIN users u ON u.id = e.cancelled_by_user_id
+                 WHERE {$whereSql}";
+    $stc = $pdo->prepare($countSql);
+    $stc->execute($params);
+    $total = (int) $stc->fetchColumn();
+
+    $sql = "SELECT e.id, e.online_parcel_id, e.tracking_number, e.previous_status, e.inventory_reverted,
+                   e.cancel_source, e.note, e.cancelled_by_user_id, e.created_at,
+                   p.recipient_name, p.items_raw, p.order_no, p.courier,
+                   u.name AS cancelled_by_name, u.username AS cancelled_by_username
+            FROM delivery_cancel_events e
+            LEFT JOIN online_order_parcels p ON p.id = e.online_parcel_id
+            LEFT JOIN users u ON u.id = e.cancelled_by_user_id
+            WHERE {$whereSql}
+            ORDER BY e.id DESC
+            LIMIT {$perPage} OFFSET {$offset}";
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+    $rows = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $rows[] = [
+            'id' => (int) ($row['id'] ?? 0),
+            'online_parcel_id' => (int) ($row['online_parcel_id'] ?? 0),
+            'tracking_number' => (string) ($row['tracking_number'] ?? ''),
+            'previous_status' => (string) ($row['previous_status'] ?? ''),
+            'inventory_reverted' => ((int) ($row['inventory_reverted'] ?? 0)) === 1,
+            'cancel_source' => (string) ($row['cancel_source'] ?? ''),
+            'note' => $row['note'] !== null ? (string) $row['note'] : null,
+            'cancelled_by_user_id' => $row['cancelled_by_user_id'] !== null ? (int) $row['cancelled_by_user_id'] : null,
+            'cancelled_by_name' => $row['cancelled_by_name'] !== null ? (string) $row['cancelled_by_name'] : null,
+            'cancelled_by_username' => $row['cancelled_by_username'] !== null ? (string) $row['cancelled_by_username'] : null,
+            'created_at' => (string) ($row['created_at'] ?? ''),
+            'recipient_name' => $row['recipient_name'] !== null ? (string) $row['recipient_name'] : null,
+            'items_raw' => $row['items_raw'] !== null ? (string) $row['items_raw'] : null,
+            'order_no' => $row['order_no'] !== null ? (string) $row['order_no'] : null,
+            'courier' => $row['courier'] !== null ? (string) $row['courier'] : null,
+        ];
+    }
+
+    return ['rows' => $rows, 'total' => $total];
 }

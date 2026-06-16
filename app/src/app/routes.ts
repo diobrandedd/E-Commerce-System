@@ -34,6 +34,7 @@ import { SalesPage } from "./pages/exec/SalesPage";
 import { OnlineOrdersGeneratorPage } from "./pages/csr/OnlineOrdersGeneratorPage";
 import { DeliveriesPage } from "./pages/deliveries/DeliveriesPage";
 import { DeliveriesReviewPage } from "./pages/deliveries/DeliveriesReviewPage";
+import { DeliveriesCancelledPage } from "./pages/deliveries/DeliveriesCancelledPage";
 import { OnlineParcelsPage } from "./pages/fulfillment/OnlineParcelsPage";
 import type { Role } from "./context/AuthContext";
 
@@ -123,6 +124,7 @@ export const router = createBrowserRouter(
 
         { path: "deliveries", element: guarded(DeliveriesPage, { roles: ["executive", "prod_manager"] }) },
         { path: "deliveries/review", element: guarded(DeliveriesReviewPage, { roles: ["executive", "prod_manager"] }) },
+        { path: "deliveries/cancelled", element: guarded(DeliveriesCancelledPage, { roles: ["executive", "prod_manager"] }) },
         {
           path: "fulfillment/online-parcels",
           element: guarded(OnlineParcelsPage, {

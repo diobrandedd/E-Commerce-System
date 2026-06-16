@@ -1,7 +1,7 @@
 ---
 title: honey_parcel_inventory
 source: includes/honey_parcel_inventory.php
-generated: 2026-06-16T09:49:00+02:00
+generated: 2026-06-16T10:40:54+02:00
 type: module
 function_count: 3
 ---
@@ -26,15 +26,16 @@ function_count: 3
 
 **Callers (1):**
 
-- `includes/online_order_parcels.php`:580 — `honey_parcel_apply_deduct($pdo, (int) $parcel['id'], $userId, (string) $locked['items_raw']);`
+- `includes/online_order_parcels.php`:597 — `honey_parcel_apply_deduct($pdo, (int) $parcel['id'], $userId, (string) $locked['items_raw']);`
 
 ## honey_parcel_revert_deduct {#honey_parcel_revert_deduct}
 
 **Tables:** `online_parcel_deduct_lines`, `online_parcel_dept_deduct_lines`, `honey_sales_log`, `honey_packaging_rows`, `dept_inventory_rows`
 
-**Callers (1):**
+**Callers (2):**
 
 - `includes/delivery_edit_requests.php`:152 — `honey_parcel_revert_deduct($pdo, $parcelId);`
+- `includes/online_order_parcels.php`:706 — `honey_parcel_revert_deduct($pdo, (int) $locked['id']);`
 
 ## honey_parcel_log_sale {#honey_parcel_log_sale}
 
