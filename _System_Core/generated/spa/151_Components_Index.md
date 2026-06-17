@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-16T10:41:06+02:00
+generated: 2026-06-17T08:19:12+02:00
 type: spa
 ---
 
@@ -32,6 +32,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/csr/onlineFulfillmentMotion.tsx`
 - `app/src/app/components/csr/onlineOrders/ItemResolverCarousel.tsx`
 - `app/src/app/components/csr/orderRemarksMotion.tsx`
+- `app/src/app/components/layout/appFeedbackMotion.tsx`
 - `app/src/app/components/layout/sidebarNavMotion.tsx`
 - `app/src/app/components/pos/POSReceiptView.tsx`
 - `app/src/app/components/pos/posMotion.tsx`
@@ -41,6 +42,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 ## PageLayout
 
 - `app/src/app/components/PageLayout.tsx`
+- `app/src/app/components/layout/appFeedbackMotion.tsx`
 - `app/src/app/pages/DashboardPage.tsx`
 - `app/src/app/pages/EditRequestsPage.tsx`
 - `app/src/app/pages/InventoryPage.tsx`
@@ -50,6 +52,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/csr/OrderRemarksPage.tsx`
 - `app/src/app/pages/csr/PdfToExcelPage.tsx`
 - `app/src/app/pages/csr/WaybillStamperPage.tsx`
+- `app/src/app/pages/deliveries/DeliveriesCancelledPage.tsx`
 - `app/src/app/pages/deliveries/DeliveriesPage.tsx`
 - `app/src/app/pages/deliveries/DeliveriesReviewPage.tsx`
 - `app/src/app/pages/dept/DeptInventoryPage.tsx`
@@ -61,6 +64,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/exec/StaffManagementPage.tsx`
 - `app/src/app/pages/exec/SuppliersPage.tsx`
 - `app/src/app/pages/fulfillment/OnlineParcelsPage.tsx`
+- `app/src/app/pages/fulfillment/PackingMaterialsStagingPage.tsx`
 - `app/src/app/pages/honey/HoneyPackagingPage.tsx`
 - `app/src/app/pages/honey/HoneyProductionPage.tsx`
 - `app/src/app/pages/honey/HoneyWarehousePage.tsx`
@@ -109,12 +113,16 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/AppModal.tsx`
 - `app/src/app/components/costing/CostingGuideModal.tsx`
 - `app/src/app/components/costing/ParcelPackTiersModal.tsx`
+- `app/src/app/components/csr/OnlineOrdersGuideModal.tsx`
 - `app/src/app/components/csr/onlineOrders/BatchStartModal.tsx`
 - `app/src/app/components/csr/onlineOrders/DuplicateTrackingModal.tsx`
 - `app/src/app/components/dept/DeptStockInModal.tsx`
+- `app/src/app/components/exec/StaffManagementGuideModal.tsx`
+- `app/src/app/components/fulfillment/DeliveriesReviewGuideModal.tsx`
 - `app/src/app/components/fulfillment/DeliveryDuplicateScanModal.tsx`
 - `app/src/app/components/fulfillment/DeliveryReviewEditModal.tsx`
 - `app/src/app/components/fulfillment/OnlineParcelDetailModal.tsx`
+- `app/src/app/components/fulfillment/OnlineParcelsGuideModal.tsx`
 - `app/src/app/components/honey/BatchTraceabilityDrawer.tsx`
 - `app/src/app/components/honey/CorrectionReviewModal.tsx`
 - `app/src/app/components/honey/ExecutiveRowEditModal.tsx`
@@ -126,6 +134,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/inventory/PackagingMaterialDetailModal.tsx`
 - `app/src/app/components/inventory/PackagingOnHandRequestModal.tsx`
 - `app/src/app/components/inventory/PackagingOnHandSetModal.tsx`
+- `app/src/app/components/inventory/PackagingPriceLotModal.tsx`
 - `app/src/app/components/inventory/PackagingStockInLotModal.tsx`
 - `app/src/app/components/inventory/ParagisProductionGuideModal.tsx`
 - `app/src/app/components/inventory/SuppliesInventoryGuideModal.tsx`
@@ -135,6 +144,8 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/inventory/SupplyOnHandSetModal.tsx`
 - `app/src/app/components/inventory/SupplyRequestReviewModal.tsx`
 - `app/src/app/components/inventory/SupplyStockInLotModal.tsx`
+- `app/src/app/components/pos/POSGuideModal.tsx`
 - `app/src/app/components/requests/InventoryRequestsGuideModal.tsx`
 - `app/src/app/components/suppliers/SupplierProfileModal.tsx`
+- `app/src/app/components/suppliers/SuppliersGuideModal.tsx`
 

@@ -4,6 +4,24 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-17 — [[problems/records/2026-06-17_fulfillment-packing-staging|Fulfillment packing staging + on-hold re-waybill]]
+**Shipped:** Warehouse → for-packing issue layer; ship consumes staging; HR price-only; PM stock-in/issue; Deliveries On hold + Re-waybill; CSR TL view on-hold parcels. **Spec:** [[specs/2026-06-17_fulfillment-packing-staging]] · **Fix:** [[fixes/packaging-inventory-roles]].
+
+### 2026-06-17 — [[problems/records/2026-06-17_fulfillment-packaging-recipes|Fulfillment packaging recipes + ship deduct]]
+**Shipped:** Spreadsheet-aligned SKUs, 37 parcel recipes, combo-first matcher, fractional roll deduct on ship. **Fix:** [[fixes/fulfillment-packaging-recipes]] · **Spec:** [[specs/2026-06-17_fulfillment-packaging-recipes]].
+
+### 2026-06-17 — Guides + tours: Staff, Suppliers, Online Orders/Parcels, POS
+**Shipped:** `StaffManagementGuideModal`, `SuppliersGuideModal`, `OnlineOrdersGuideModal`, `OnlineParcelsGuideModal`, `POSGuideModal` (category/product); matching `tour/guides/*` modules wired on `/staff`, `/suppliers`, `/waybill/online-orders`, `/fulfillment/online-parcels`, `/pos` (+ honey/dept product screens). **Docs:** [[005_SPA_UX_Patterns#Page guide button (mandatory)]].
+
+### 2026-06-17 — [[problems/fixes/page-interactive-tour|Interactive tours on all guide modals]]
+**Shipped:** Start tour on every `*GuideModal` — Costing, Packaging, Supplies, Requests, Paragis, BRC/Cacao, Deliveries review. Shared `GuideTourFooter` + `tour/guides/*` step modules.
+
+### 2026-06-17 — [[problems/fixes/app-feedback-motion|App-wide feedback motion kit + mandatory agent rule]]
+**Shipped:** `appFeedbackMotion.tsx` (notices, pressables, hovers); global `Button` tap/hover; `AppModal` close press; `.cursor/rules/feedback-animations.mdc` always-on.
+
+### 2026-06-17 — [[problems/records/2026-06-17_deliveries-review-interactive-tour|Deliveries review interactive tour pilot]]
+**Shipped:** `driver.js` page tour — Guide modal + **Start tour** on Deliveries review (spotlight, arrows, step text). **Fix:** [[fixes/page-interactive-tour]].
+
 ### 2026-06-16 — [[problems/records/2026-06-16_deliveries-cancel-scan-log|Deliveries cancel scan + inventory restore log]]
 **Shipped:** scanner `Mark cancelled` flow for `packing` and `shipped` parcels, shipped-deduct auto-revert, and Deliveries Review cancelled-orders log table. **Fix:** [[fixes/deliveries-cancel-scan-revert-and-log]].
 

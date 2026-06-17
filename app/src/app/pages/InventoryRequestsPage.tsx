@@ -6,6 +6,8 @@ import { PageLayout } from "@/app/components/PageLayout";
 import { CorrectionReviewModal, type CorrectionRequestDetail } from "@/app/components/honey/CorrectionReviewModal";
 import { EditRequestsSection } from "@/app/components/requests/EditRequestsSection";
 import { InventoryRequestsGuideModal } from "@/app/components/requests/InventoryRequestsGuideModal";
+import { runInventoryRequestsTour } from "@/app/components/tour/guides/inventoryRequestsTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { RequestsHubSection } from "@/app/components/requests/RequestsHubSection";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
@@ -822,7 +824,15 @@ export function InventoryRequestsPage() {
           }}
         />
       )}
-      <InventoryRequestsGuideModal open={guideOpen} onClose={() => setGuideOpen(false)} role={user?.role} />
+      <InventoryRequestsGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        role={user?.role}
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runInventoryRequestsTour(user?.role));
+        }}
+      />
     </PageLayout>
   );
 }

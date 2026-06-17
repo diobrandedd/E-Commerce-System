@@ -24,13 +24,24 @@ function parcel_pack_tables_ready(PDO $pdo): bool
 }
 
 /**
- * @return array{honey_1L_count: float, dept_units: float, jar_units: float, honey_250ml: float, honey_350ml: float}
+ * @return array{
+ *   honey_1L_count: float,
+ *   honey_250ml: float,
+ *   honey_350ml: float,
+ *   honey_gallon_count: float,
+ *   honey_comb_count: float,
+ *   dept_pt: float,
+ *   dept_brc: float,
+ *   dept_units: float,
+ *   jar_units: float
+ * }
  */
 function parcel_pack_order_shape_from_parsed(array $parsed): array
 {
     $honey1L = 0.0;
     $h250 = 0.0;
     $h350 = 0.0;
+    $hGallon = 0.0;
     foreach ($parsed['deltas'] ?? [] as $d) {
         $size = (string) ($d['size'] ?? '');
         $qty = (float) ($d['qty'] ?? 0);
@@ -40,34 +51,145 @@ function parcel_pack_order_shape_from_parsed(array $parsed): array
             $h250 += $qty;
         } elseif ($size === '350ml') {
             $h350 += $qty;
+        } elseif ($size === 'gallon') {
+            $hGallon += $qty;
         }
     }
 
-    $deptUnits = 0.0;
+    $deptPt = 0.0;
+    $deptBrc = 0.0;
     $jarUnits = 0.0;
+    $honeyComb = 0.0;
     foreach ($parsed['other_items'] ?? [] as $item) {
         $key = isset($item['product_key']) ? trim((string) $item['product_key']) : '';
         if ($key === '') {
             $key = dept_inventory_resolve_other_item((string) ($item['label'] ?? '')) ?? '';
         }
+        $label = (string) ($item['label'] ?? '');
         $qty = (float) ($item['qty'] ?? 0);
-        if ($qty <= 0 || $key === '') {
+        if ($qty <= 0) {
             continue;
         }
-        if ($key === 'pt' || $key === 'brc') {
-            $deptUnits += $qty;
+        if ($key === 'pt') {
+            $deptPt += $qty;
+        } elseif ($key === 'brc') {
+            $deptBrc += $qty;
         } elseif ($key === 'jar_cacao') {
             $jarUnits += $qty;
+        } elseif ($key === '' && preg_match('/honey\s*comb|honeycomb/i', $label)) {
+            $honeyComb += $qty;
         }
     }
 
     return [
         'honey_1L_count' => round($honey1L, 4),
-        'dept_units' => round($deptUnits, 4),
-        'jar_units' => round($jarUnits, 4),
         'honey_250ml' => round($h250, 4),
         'honey_350ml' => round($h350, 4),
+        'honey_gallon_count' => round($hGallon, 4),
+        'honey_comb_count' => round($honeyComb, 4),
+        'dept_pt' => round($deptPt, 4),
+        'dept_brc' => round($deptBrc, 4),
+        'dept_units' => round($deptPt + $deptBrc, 4),
+        'jar_units' => round($jarUnits, 4),
     ];
+}
+
+function parcel_pack_shape_float_eq(float $a, float $b): bool
+{
+    return abs($a - $b) < 0.0001;
+}
+
+/** @param array<string, float> $shape */
+function parcel_pack_shape_has_honey(array $shape): bool
+{
+    return ($shape['honey_1L_count'] ?? 0) > 0
+        || ($shape['honey_250ml'] ?? 0) > 0
+        || ($shape['honey_350ml'] ?? 0) > 0
+        || ($shape['honey_gallon_count'] ?? 0) > 0;
+}
+
+/** @param array<string, float> $shape */
+function parcel_pack_shape_is_bulk_only(array $shape, string $size): bool
+{
+    if (($shape['dept_pt'] ?? 0) > 0 || ($shape['dept_brc'] ?? 0) > 0 || ($shape['jar_units'] ?? 0) > 0) {
+        return false;
+    }
+    if (($shape['honey_comb_count'] ?? 0) > 0) {
+        return false;
+    }
+    if ($size === '350') {
+        if (($shape['honey_250ml'] ?? 0) > 0 || ($shape['honey_1L_count'] ?? 0) > 0 || ($shape['honey_gallon_count'] ?? 0) > 0) {
+            return false;
+        }
+
+        return ($shape['honey_350ml'] ?? 0) > 0;
+    }
+    if ($size === '250') {
+        if (($shape['honey_350ml'] ?? 0) > 0 || ($shape['honey_1L_count'] ?? 0) > 0 || ($shape['honey_gallon_count'] ?? 0) > 0) {
+            return false;
+        }
+
+        return ($shape['honey_250ml'] ?? 0) > 0;
+    }
+
+    return false;
+}
+
+/** @param array<string, float> $shape */
+function parcel_pack_shape_is_solo_honey(array $shape): bool
+{
+    return parcel_pack_shape_has_honey($shape)
+        && ($shape['dept_pt'] ?? 0) <= 0
+        && ($shape['dept_brc'] ?? 0) <= 0
+        && ($shape['jar_units'] ?? 0) <= 0
+        && ($shape['honey_comb_count'] ?? 0) <= 0;
+}
+
+/** @param array<string, float> $shape */
+function parcel_pack_shape_is_solo_dept_pt(array $shape): bool
+{
+    return ($shape['dept_pt'] ?? 0) > 0
+        && ($shape['dept_brc'] ?? 0) <= 0
+        && !parcel_pack_shape_has_honey($shape)
+        && ($shape['jar_units'] ?? 0) <= 0
+        && ($shape['honey_comb_count'] ?? 0) <= 0;
+}
+
+/** @param array<string, float> $shape */
+function parcel_pack_shape_is_solo_dept_brc(array $shape): bool
+{
+    return ($shape['dept_brc'] ?? 0) > 0
+        && ($shape['dept_pt'] ?? 0) <= 0
+        && !parcel_pack_shape_has_honey($shape)
+        && ($shape['jar_units'] ?? 0) <= 0
+        && ($shape['honey_comb_count'] ?? 0) <= 0;
+}
+
+/** @param array<string, float> $shape */
+function parcel_pack_shape_is_solo_jar(array $shape): bool
+{
+    return ($shape['jar_units'] ?? 0) > 0
+        && ($shape['dept_pt'] ?? 0) <= 0
+        && ($shape['dept_brc'] ?? 0) <= 0
+        && !parcel_pack_shape_has_honey($shape)
+        && ($shape['honey_comb_count'] ?? 0) <= 0;
+}
+
+/** @param array<string, float> $shape */
+function parcel_pack_shape_is_combo(array $shape): bool
+{
+    $kinds = 0;
+    if (parcel_pack_shape_has_honey($shape)) {
+        $kinds++;
+    }
+    if (($shape['dept_pt'] ?? 0) > 0 || ($shape['dept_brc'] ?? 0) > 0) {
+        $kinds++;
+    }
+    if (($shape['jar_units'] ?? 0) > 0) {
+        $kinds++;
+    }
+
+    return $kinds >= 2;
 }
 
 /**
@@ -76,77 +198,154 @@ function parcel_pack_order_shape_from_parsed(array $parsed): array
  */
 function parcel_pack_tier_matches(array $rule, array $shape): bool
 {
-    if (!empty($rule['honey_250_350_solo'])) {
+    if (isset($rule['bulk_350ml_exact'])) {
+        $want = (int) $rule['bulk_350ml_exact'];
+        if ((int) round((float) ($shape['honey_350ml'] ?? 0)) !== $want) {
+            return false;
+        }
+
+        return parcel_pack_shape_is_bulk_only($shape, '350');
+    }
+    if (isset($rule['bulk_250ml_exact'])) {
+        $want = (int) $rule['bulk_250ml_exact'];
+        if ((int) round((float) ($shape['honey_250ml'] ?? 0)) !== $want) {
+            return false;
+        }
+
+        return parcel_pack_shape_is_bulk_only($shape, '250');
+    }
+    if (!empty($rule['honey_comb_min'])) {
+        if (($shape['honey_comb_count'] ?? 0) < (float) $rule['honey_comb_min']) {
+            return false;
+        }
+
+        return ($shape['honey_comb_count'] ?? 0) > 0
+            && !parcel_pack_shape_has_honey($shape)
+            && ($shape['dept_pt'] ?? 0) <= 0
+            && ($shape['dept_brc'] ?? 0) <= 0
+            && ($shape['jar_units'] ?? 0) <= 0;
+    }
+    if (!empty($rule['combo'])) {
+        if (!parcel_pack_shape_is_combo($shape)) {
+            return false;
+        }
+    }
+    if (!empty($rule['solo_honey']) && !parcel_pack_shape_is_solo_honey($shape)) {
         return false;
     }
-    if (isset($rule['honey_1L_count'])) {
-        $want = (int) $rule['honey_1L_count'];
-
-        return (int) round((float) ($shape['honey_1L_count'] ?? 0)) === $want;
+    if (!empty($rule['solo_dept_pt']) && !parcel_pack_shape_is_solo_dept_pt($shape)) {
+        return false;
     }
-    if (isset($rule['dept_units_min'], $rule['dept_units_max'])) {
-        $units = (float) ($shape['dept_units'] ?? 0);
-        if ($units <= 0) {
+    if (!empty($rule['solo_dept_brc']) && !parcel_pack_shape_is_solo_dept_brc($shape)) {
+        return false;
+    }
+    if (!empty($rule['solo_jar']) && !parcel_pack_shape_is_solo_jar($shape)) {
+        return false;
+    }
+
+    $intFields = ['honey_1L_count', 'honey_250ml', 'honey_350ml', 'honey_gallon_count', 'jar_units', 'dept_pt', 'dept_brc'];
+    foreach ($intFields as $field) {
+        if (array_key_exists($field, $rule) && !str_ends_with($field, '_min') && !str_ends_with($field, '_max')) {
+            if ((int) round((float) ($shape[$field] ?? 0)) !== (int) $rule[$field]) {
+                return false;
+            }
+        }
+    }
+
+    $ranges = [
+        ['dept_pt_min', 'dept_pt_max', 'dept_pt'],
+        ['dept_brc_min', 'dept_brc_max', 'dept_brc'],
+        ['jar_units_min', 'jar_units_max', 'jar_units'],
+    ];
+    foreach ($ranges as [$minKey, $maxKey, $shapeKey]) {
+        if (isset($rule[$minKey], $rule[$maxKey])) {
+            $units = (float) ($shape[$shapeKey] ?? 0);
+            if ($units < (float) $rule[$minKey] || $units > (float) $rule[$maxKey]) {
+                return false;
+            }
+        } elseif (isset($rule[$minKey])) {
+            if ((float) ($shape[$shapeKey] ?? 0) < (float) $rule[$minKey]) {
+                return false;
+            }
+        }
+    }
+
+    $honeyFields = ['honey_1L_count', 'honey_250ml', 'honey_350ml', 'honey_gallon_count'];
+    if (!empty($rule['solo_honey']) || !empty($rule['combo'])) {
+        foreach ($honeyFields as $field) {
+            if (!array_key_exists($field, $rule) && ($shape[$field] ?? 0) > 0) {
+                return false;
+            }
+        }
+    }
+    if (!empty($rule['combo'])) {
+        if (isset($rule['dept_pt_min']) && !isset($rule['dept_brc_min']) && ($shape['dept_brc'] ?? 0) > 0) {
             return false;
         }
-
-        return $units >= (float) $rule['dept_units_min'] && $units <= (float) $rule['dept_units_max'];
-    }
-    if (isset($rule['jar_units_min'], $rule['jar_units_max'])) {
-        $units = (float) ($shape['jar_units'] ?? 0);
-        if ($units <= 0) {
+        if (isset($rule['dept_brc_min']) && !isset($rule['dept_pt_min']) && ($shape['dept_pt'] ?? 0) > 0) {
             return false;
         }
-
-        return $units >= (float) $rule['jar_units_min'] && $units <= (float) $rule['jar_units_max'];
+        if (isset($rule['jar_units_min']) || isset($rule['jar_units'])) {
+            if (!isset($rule['dept_pt_min']) && !isset($rule['dept_brc_min'])) {
+                if (($shape['dept_pt'] ?? 0) > 0 || ($shape['dept_brc'] ?? 0) > 0) {
+                    // jar+honey combo allows dept 0
+                }
+            }
+        }
+        if ((isset($rule['dept_pt_min']) || isset($rule['dept_brc_min'])) && !isset($rule['jar_units_min']) && !isset($rule['jar_units'])) {
+            if (($shape['jar_units'] ?? 0) > 0) {
+                return false;
+            }
+        }
     }
 
-    return false;
+    return true;
+}
+
+function parcel_pack_resolve_tier_key_from_shape(PDO $pdo, array $shape): ?string
+{
+    if (!parcel_pack_tables_ready($pdo)) {
+        return null;
+    }
+    $st = $pdo->query(
+        'SELECT tier_key, match_rule FROM parcel_pack_tiers WHERE is_active = 1 ORDER BY sort_order ASC, id ASC'
+    );
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    foreach ($rows as $row) {
+        $rule = $row['match_rule'];
+        if (is_string($rule)) {
+            $rule = json_decode($rule, true);
+        }
+        if (!is_array($rule)) {
+            continue;
+        }
+        if (parcel_pack_tier_matches($rule, $shape)) {
+            return (string) $row['tier_key'];
+        }
+    }
+
+    return null;
 }
 
 function parcel_pack_pick_honey_tier_key(array $shape): ?string
 {
-    $count = (int) round((float) ($shape['honey_1L_count'] ?? 0));
-    if ($count === 1) {
-        return 'honey_1x_1L';
-    }
-    if ($count === 2) {
-        return 'honey_2x_1L';
-    }
-    if ($count >= 3) {
-        return 'honey_3x_1L';
-    }
+    unset($shape);
 
     return null;
 }
 
 function parcel_pack_pick_dept_tier_key(array $shape): ?string
 {
-    $units = (float) ($shape['dept_units'] ?? 0);
-    if ($units <= 0) {
-        return null;
-    }
-    if ($units <= 2) {
-        return 'dept_1_2_units';
-    }
-    if ($units <= 4) {
-        return 'dept_3_4_units';
-    }
+    unset($shape);
 
-    return 'dept_3_4_units';
+    return null;
 }
 
 function parcel_pack_pick_cacao_tier_key(array $shape): ?string
 {
-    $units = (float) ($shape['jar_units'] ?? 0);
-    if ($units <= 0) {
-        return null;
-    }
-    if ($units <= 2) {
-        return 'cacao_1_2_jars';
-    }
+    unset($shape);
 
-    return 'cacao_3_4_jars';
+    return null;
 }
 
 /**
@@ -154,21 +353,17 @@ function parcel_pack_pick_cacao_tier_key(array $shape): ?string
  */
 function parcel_pack_resolve_tier_keys_from_shape(array $shape): array
 {
-    $keys = [];
-    $honeyKey = parcel_pack_pick_honey_tier_key($shape);
-    if ($honeyKey !== null) {
-        $keys[] = $honeyKey;
-    }
-    $deptKey = parcel_pack_pick_dept_tier_key($shape);
-    if ($deptKey !== null) {
-        $keys[] = $deptKey;
-    }
-    $cacaoKey = parcel_pack_pick_cacao_tier_key($shape);
-    if ($cacaoKey !== null) {
-        $keys[] = $cacaoKey;
-    }
+    return [];
+}
 
-    return $keys;
+/**
+ * @return list<string>
+ */
+function parcel_pack_resolve_tier_keys_from_shape_db(PDO $pdo, array $shape): array
+{
+    $key = parcel_pack_resolve_tier_key_from_shape($pdo, $shape);
+
+    return $key !== null ? [$key] : [];
 }
 
 /**
@@ -182,7 +377,7 @@ function parcel_pack_resolve_tier_keys_from_items_raw(PDO $pdo, string $itemsRaw
     $parsed = honey_parcel_parse_items_string($itemsRaw);
     $shape = parcel_pack_order_shape_from_parsed($parsed);
 
-    return parcel_pack_resolve_tier_keys_from_shape($shape);
+    return parcel_pack_resolve_tier_keys_from_shape_db($pdo, $shape);
 }
 
 /** @return array<string, mixed>|null */
@@ -204,7 +399,8 @@ function parcel_pack_fetch_tier_by_key(PDO $pdo, string $tierKey, bool $activeOn
 function parcel_pack_fetch_tier_lines(PDO $pdo, int $tierId): array
 {
     $st = $pdo->prepare(
-        'SELECT l.*, s.name AS stock_name, s.current_price, s.unit AS stock_unit, s.on_hand
+        'SELECT l.*, s.name AS stock_name, s.current_price, s.unit AS stock_unit, s.on_hand,
+                s.pool_yield_qty, s.pool_yield_unit
          FROM parcel_pack_tier_lines l
          LEFT JOIN stocks s ON s.id = l.stock_id
          WHERE l.tier_id = ?
@@ -241,11 +437,19 @@ function parcel_pack_line_unit_cost(PDO $pdo, array $lineRow): float
     $onHand = (float) ($lineRow['on_hand'] ?? 0);
     $stockId = (int) $lineRow['stock_id'];
     $lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);
-    if ($lotUnit !== null && $lotUnit > 0) {
-        return round($lotUnit, 6);
+    $rollCost = ($lotUnit !== null && $lotUnit > 0)
+        ? round($lotUnit, 6)
+        : round((float) ($lineRow['current_price'] ?? 0), 6);
+
+    $lineUnit = (string) ($lineRow['unit'] ?? 'pcs');
+    if ($lineUnit === 'bubble_piece') {
+        $yield = (float) ($lineRow['pool_yield_qty'] ?? 0);
+        if ($yield > 0) {
+            return round($rollCost / $yield, 6);
+        }
     }
 
-    return round((float) ($lineRow['current_price'] ?? 0), 6);
+    return $rollCost;
 }
 
 /**
@@ -408,40 +612,39 @@ function parcel_pack_preview_from_items_raw(PDO $pdo, string $itemsRaw): array
 {
     $parsed = honey_parcel_parse_items_string($itemsRaw);
     $shape = parcel_pack_order_shape_from_parsed($parsed);
-    $tierKeys = parcel_pack_resolve_tier_keys_from_shape($shape);
+    $tierKey = parcel_pack_resolve_tier_key_from_shape($pdo, $shape);
+    $tierKeys = $tierKey !== null ? [$tierKey] : [];
     $tiers = [];
     $typical = 0.0;
     $min = 0.0;
     $max = 0.0;
-    foreach ($tierKeys as $key) {
+    if ($tierKey !== null) {
         try {
-            $est = parcel_pack_tier_cost_estimate_by_key($pdo, $key);
+            $est = parcel_pack_tier_cost_estimate_by_key($pdo, $tierKey);
             $tiers[] = $est;
-            $typical += (float) $est['cost_typical'];
-            $min += (float) $est['cost_min'];
-            $max += (float) $est['cost_max'];
+            $typical = (float) $est['cost_typical'];
+            $min = (float) $est['cost_min'];
+            $max = (float) $est['cost_max'];
         } catch (Throwable) {
-            continue;
+            $tierKeys = [];
         }
     }
 
     $warnings = [];
-    if ($shape['honey_250ml'] > 0 || $shape['honey_350ml'] > 0) {
-        $warnings[] = '250ml/350ml honey rules are not defined yet (TBD tier).';
-    }
     if ($parsed['errors'] !== []) {
         foreach ($parsed['errors'] as $err) {
             $warnings[] = $err;
         }
     }
-    if ($tierKeys === [] && trim($itemsRaw) !== '') {
-        $warnings[] = 'No parcel pack tier matched this order shape.';
+    if ($tierKey === null && trim($itemsRaw) !== '') {
+        $warnings[] = 'No parcel pack recipe matched this order shape.';
     }
 
     return [
         'items_raw' => $itemsRaw,
         'order_shape' => $shape,
         'tier_keys' => $tierKeys,
+        'tier_key' => $tierKey,
         'tiers' => $tiers,
         'cost_typical' => round($typical, 4),
         'cost_min' => round($min, 4),
@@ -449,6 +652,38 @@ function parcel_pack_preview_from_items_raw(PDO $pdo, string $itemsRaw): array
         'warnings' => $warnings,
         'parsed_errors' => $parsed['errors'],
     ];
+}
+
+/**
+ * Resolve fulfillment packaging lines for ship deduct (typical qty per line).
+ *
+ * @return list<array{stock_id: int, qty: float, unit: string, stock_name: string}>
+ */
+function parcel_pack_fulfillment_lines_for_items_raw(PDO $pdo, string $itemsRaw): array
+{
+    $preview = parcel_pack_preview_from_items_raw($pdo, $itemsRaw);
+    if (($preview['tier_key'] ?? null) === null || $preview['tiers'] === []) {
+        throw new RuntimeException('No fulfillment packaging recipe for this parcel.');
+    }
+    $tier = $preview['tiers'][0];
+    $out = [];
+    foreach ($tier['lines'] as $line) {
+        $stockId = $line['stock_id'] ?? null;
+        if ($stockId === null || (int) $stockId < 1) {
+            continue;
+        }
+        $out[] = [
+            'stock_id' => (int) $stockId,
+            'qty' => (float) ($line['qty_typical'] ?? 0),
+            'unit' => (string) ($line['unit'] ?? 'pcs'),
+            'stock_name' => (string) ($line['stock_name'] ?? $line['line_label'] ?? ''),
+        ];
+    }
+    if ($out === []) {
+        throw new RuntimeException('Fulfillment recipe has no stock lines.');
+    }
+
+    return $out;
 }
 
 /** @return array<string, mixed> */
@@ -522,7 +757,7 @@ function parcel_pack_reference_addon_for_product(PDO $pdo, ?string $deptProductK
         return null;
     }
     if ($deptProductKey === 'pt' || $deptProductKey === 'brc') {
-        $est = parcel_pack_tier_cost_estimate_by_key($pdo, 'dept_1_2_units');
+        $est = parcel_pack_tier_cost_estimate_by_key($pdo, 'dept_pt_1_2');
 
         return [
             'scenario' => '1–2 units parcel',
@@ -532,7 +767,7 @@ function parcel_pack_reference_addon_for_product(PDO $pdo, ?string $deptProductK
         ];
     }
     if ($deptProductKey === 'jar_cacao') {
-        $est = parcel_pack_tier_cost_estimate_by_key($pdo, 'cacao_1_2_jars');
+        $est = parcel_pack_tier_cost_estimate_by_key($pdo, 'cacao_1_jar');
 
         return [
             'scenario' => '1–2 jars parcel',

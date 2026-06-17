@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-16T10:40:47+02:00
+generated: 2026-06-17T08:18:48+02:00
 type: memory-bank
 ---
 
@@ -95,6 +95,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `ship_parcel` | `api_deliveries_ship_parcel()` | `ims_pdo()`, `online_parcels_ship()` |
 | `cancel_parcel_scan` | `api_deliveries_cancel_parcel_scan()` | `ims_pdo()`, `online_parcels_cancel()` |
 | `cancel_log_list` | `api_deliveries_cancel_log_list()` | `ims_pdo()`, `online_parcels_cancel_log_list()` |
+| `hold_parcel` | `api_deliveries_hold_parcel()` | `ims_pdo()`, `online_parcels_hold()` |
+| `rewaybill` | `api_deliveries_rewaybill()` | `ims_pdo()`, `online_parcels_rewaybill()` |
 | `review_list` | `api_deliveries_review_list()` | `ims_pdo()`, `rts_db_has_column()`, `online_parcels_format_packing_photo()`, `deliveries_enrich_review_rows()` |
 | `void_item` | `api_deliveries_delete_item()` | `ims_pdo()`, `deliveries_delete_item_by_id()` |
 | `delete_item` | `api_deliveries_delete_item()` | `ims_pdo()`, `deliveries_delete_item_by_id()` |
@@ -112,6 +114,19 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `submit` | `api_er_submit()` | `ims_pdo()`, `delivery_edit_request_validate_submit()`, `delivery_edit_request_normalize_values()` |
 | `approve` | `api_er_approve()` | `ims_pdo()`, `delivery_edit_request_apply()` |
 | `reject` | `api_er_reject()` | `ims_pdo()` |
+
+### `fulfillment_packing.php`
+
+- **Path:** `api/v1/fulfillment_packing.php`
+- **URL:** `/rts/api/v1/fulfillment_packing.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `packing_balances_list` | `api_fulfillment_packing_balances_list()` | `ims_pdo()`, `fulfillment_packing_balances_list()` |
+| `packing_issue_create` | `api_fulfillment_packing_issue_create()` | `ims_pdo()`, `fulfillment_packing_issue_create()` |
+| `packing_issues_list` | `api_fulfillment_packing_issues_list()` | `ims_pdo()`, `fulfillment_packing_issues_list()` |
+| `packing_issue_estimate` | `api_fulfillment_packing_issue_estimate()` | `ims_pdo()`, `fulfillment_packing_estimate_parcels()` |
 
 ### `honey.php`
 
@@ -187,12 +202,13 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `raw_snapshot` | `api_materials_raw_snapshot()` | `material_raw_snapshot()`, `ims_pdo()` |
 | `raw_detail` | `api_materials_raw_detail()` | `material_inventory_raw_stock_by_slug()`, `ims_pdo()` |
 | `departments` | `api_materials_departments()` | `ims_pdo()` |
-| `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_stock_in_lot()`, `material_supply_stock_in_lot()` |
-| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()`, `material_packaging_recent_entries()`, `material_inventory_role_can_stock_in_packaging()`, `material_inventory_role_can_deduct_packaging()`, `material_inventory_role_can_set_packaging_on_hand()` |
+| `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_role_can_stock_in_packaging()`, `material_packaging_stock_in_lot()`, `material_supply_stock_in_lot()` |
+| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()`, `material_packaging_recent_entries()`, `material_inventory_role_can_stock_in_packaging()`, `material_inventory_role_can_edit_packaging_price()`, `material_inventory_role_can_deduct_packaging()`, `material_inventory_role_can_set_packaging_on_hand()` |
 | `supply_detail` | `api_materials_supply_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_supply_recent_entries()`, `material_supply_detail_permissions()` |
 | `set_on_hand` | `api_materials_set_on_hand()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_set_on_hand()`, `material_supply_set_on_hand()` |
 | `set_pool_yield` | `api_materials_set_pool_yield()` | `ims_pdo()`, `material_packaging_set_pool_yield()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()` |
 | `packaging_deduct` | `api_materials_packaging_deduct()` | `material_inventory_role_can_deduct_packaging()`, `ims_pdo()`, `material_packaging_deduct_for_use()` |
+| `packaging_price_lot` | `api_materials_packaging_price_lot()` | `material_inventory_role_can_edit_packaging_price()`, `ims_pdo()`, `material_packaging_record_invoice_price()` |
 
 ### `online_orders.php`
 

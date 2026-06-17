@@ -1,6 +1,7 @@
 import { BookOpen } from "lucide-react";
 import { Link } from "react-router";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { GuideTourFooter, GuideWalkthroughSection } from "@/app/components/tour/GuideTourFooter";
 import type { Role } from "@/app/context/AuthContext";
 
 const ROLE_LABELS: Partial<Record<Role, string>> = {
@@ -33,10 +34,19 @@ function TypeLegend() {
       <div className="rounded-lg border border-dashed bg-secondary/20 px-3 py-2">
         <p className="font-semibold text-foreground">
           <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-full bg-secondary mr-1.5">Pool</span>
-          Rolls — yarn, paper, seals, foil
+          Rolls — yarn, paper, seals, foil, bubble wrap
         </p>
         <p className="mt-1">
           Tracked in <strong className="text-foreground">whole rolls</strong>. Deduct a roll when opened; costing uses a yield estimate per roll.
+        </p>
+      </div>
+      <div className="rounded-lg border bg-amber-50/50 px-3 py-2 sm:col-span-2">
+        <p className="font-semibold text-foreground">
+          <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-full bg-[#C8900A]/15 text-[#8a6507] mr-1.5">Fulfillment</span>
+          Parcel ship — bubble rolls, cushion pieces/column rolls, pouches, foam, cardboard
+        </p>
+        <p className="mt-1">
+          Use the <strong className="text-foreground">Fulfillment</strong> filter. Stock in whole rolls (bubble, column cushions) or pieces (LAD, liter cushions, pouches). System deducts on parcel ship — fractional rolls snap to 1/16.
         </p>
       </div>
     </div>
@@ -129,9 +139,10 @@ interface PackagingInventoryGuideModalProps {
   open: boolean;
   onClose: () => void;
   role: Role | undefined;
+  onStartTour: () => void;
 }
 
-export function PackagingInventoryGuideModal({ open, onClose, role }: PackagingInventoryGuideModalProps) {
+export function PackagingInventoryGuideModal({ open, onClose, role, onStartTour }: PackagingInventoryGuideModalProps) {
   const roleLabel = role ? ROLE_LABELS[role] : undefined;
   const isExec = role === "executive";
 
@@ -186,7 +197,10 @@ export function PackagingInventoryGuideModal({ open, onClose, role }: PackagingI
         <GuideSection title="Tips">
           <TipsCopy isExec={isExec} />
         </GuideSection>
+
+        <GuideWalkthroughSection />
       </AppModalBody>
+      <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />
     </AppModal>
   );
 }

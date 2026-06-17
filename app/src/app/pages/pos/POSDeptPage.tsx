@@ -3,7 +3,10 @@ import { useNavigate, useParams } from "react-router";
 import { AnimatePresence } from "motion/react";
 import { AlertCircle, Loader2, Minus, Plus } from "lucide-react";
 import { POSHeader } from "@/app/components/pos/POSHeader";
+import { POSGuideModal } from "@/app/components/pos/POSGuideModal";
 import { POSReceiptView } from "@/app/components/pos/POSReceiptView";
+import { runPosProductTour } from "@/app/components/tour/guides/posTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import type { HoneyCheckoutResult } from "@/app/lib/posHoney";
 import {
   ActionFeedbackButton,
@@ -43,6 +46,7 @@ export function POSDeptPage() {
   const [buyerCreds, setBuyerCreds] = useState("");
   const [receipt, setReceipt] = useState<HoneyCheckoutResult | null>(null);
   const [feedback, setFeedback] = useState<"success" | "error" | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -153,7 +157,13 @@ export function POSDeptPage() {
 
   return (
     <POSPageTransition className="min-h-screen bg-background flex flex-col" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      <POSHeader title={title} subtitle="Walk-in sale" onExit={handleExit} onBack={() => navigate("/pos")} />
+      <POSHeader
+        title={title}
+        subtitle="Walk-in sale"
+        onExit={handleExit}
+        onBack={() => navigate("/pos")}
+        onGuide={() => setGuideOpen(true)}
+      />
 
       <main className="flex-1 p-4 sm:p-6 max-w-lg mx-auto w-full flex flex-col gap-4">
         {loading && (
@@ -167,7 +177,7 @@ export function POSDeptPage() {
           </div>
         )}
         {product && !loading && (
-          <>
+          <div data-tour="pos-product-grid" className="space-y-4">
             <div className="rounded-2xl border bg-card p-5 text-center">
               <p className="text-lg font-bold text-foreground">{product.label}</p>
               <p className="text-sm text-muted-foreground mt-1">
@@ -202,11 +212,11 @@ export function POSDeptPage() {
                 Add {qty} to cart · {peso(lineTotal)}
               </ActionFeedbackButton>
             )}
-          </>
+          </div>
         )}
 
         {cart.length > 0 && (
-          <div className="mt-auto border-t pt-4 space-y-2">
+          <div data-tour="pos-cart" className="mt-auto border-t pt-4 space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase">Cart</p>
             <AnimatePresence>
               {cart.map(line => (
@@ -224,6 +234,7 @@ export function POSDeptPage() {
             </div>
             <button
               type="button"
+              data-tour="pos-checkout-bar"
               onClick={() => setShowCheckout(true)}
               className="w-full py-3 rounded-xl text-white font-bold"
               style={{ background: "#1a1a1a" }}
@@ -264,6 +275,16 @@ export function POSDeptPage() {
           </div>
         </POSModal>
       )}
+
+      <POSGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        context="product"
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runPosProductTour());
+        }}
+      />
     </POSPageTransition>
   );
 }

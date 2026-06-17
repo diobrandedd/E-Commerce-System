@@ -1,6 +1,16 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { cn } from "@/app/components/ui/utils";
+import {
+  AppPressable,
+  AppErrorBanner,
+  appFeedbackEase,
+  appFeedbackSpring,
+  appHoverCard,
+  appHoverPressableOutline,
+  appHoverPressablePrimary,
+  appHoverRow,
+} from "@/app/components/layout/appFeedbackMotion";
 
 export {
   OrderRemarksToast as FulfillmentToast,
@@ -11,18 +21,14 @@ export {
 
 import { remarksEase, remarksSpring } from "@/app/components/csr/orderRemarksMotion";
 
-/** Tailwind hover tokens — reuse on cards, rows, and pressables. */
-export const fulfillmentHoverCard =
-  "transition-all duration-200 ease-out hover:border-[#C8900A]/55 hover:shadow-lg hover:shadow-[#C8900A]/12 hover:ring-2 hover:ring-[#C8900A]/15";
-
-export const fulfillmentHoverRow =
-  "transition-[background-color,box-shadow] duration-200 ease-out hover:bg-secondary/50 hover:shadow-[0_4px_14px_-4px_rgba(0,0,0,0.14)]";
-
-export const fulfillmentHoverPressableOutline =
-  "transition-all duration-200 ease-out hover:bg-secondary/60 hover:border-[#C8900A]/40 hover:shadow-md hover:shadow-black/5";
-
-export const fulfillmentHoverPressablePrimary =
-  "transition-all duration-200 ease-out hover:brightness-105 hover:shadow-lg hover:shadow-[#C8900A]/25";
+/** @deprecated Use `appHoverCard` from `appFeedbackMotion` in new code. */
+export const fulfillmentHoverCard = appHoverCard;
+/** @deprecated Use `appHoverRow` from `appFeedbackMotion`. */
+export const fulfillmentHoverRow = appHoverRow;
+/** @deprecated Use `appHoverPressableOutline` from `appFeedbackMotion`. */
+export const fulfillmentHoverPressableOutline = appHoverPressableOutline;
+/** @deprecated Use `appHoverPressablePrimary` from `appFeedbackMotion`. */
+export const fulfillmentHoverPressablePrimary = appHoverPressablePrimary;
 
 export function FulfillmentSectionEnter({
   children,
@@ -76,24 +82,7 @@ export function FulfillmentStepSwitch({
 }
 
 export function FulfillmentErrorBanner({ message }: { message: string | null }) {
-  const reduce = useReducedMotion();
-
-  return (
-    <AnimatePresence initial={false}>
-      {message && (
-        <motion.div
-          role="alert"
-          initial={reduce ? false : { opacity: 0, y: -6, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={reduce ? undefined : { opacity: 0, y: -4, scale: 0.98 }}
-          transition={remarksEase}
-          className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-800"
-        >
-          {message}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+  return <AppErrorBanner message={message} />;
 }
 
 export function FulfillmentSuccessPanel({
@@ -194,25 +183,16 @@ export function FulfillmentPressable({
   className?: string;
   type?: "button" | "submit";
 }) {
-  const reduce = useReducedMotion();
-
   return (
-    <motion.button
-      type={type}
+    <AppPressable
+      variant={variant}
       disabled={disabled}
       onClick={onClick}
-      whileTap={disabled || reduce ? undefined : { scale: 0.97 }}
-      whileHover={disabled || reduce ? undefined : { y: -1 }}
-      className={cn(
-        "text-sm font-semibold px-5 py-2.5 rounded-lg disabled:opacity-50 disabled:pointer-events-none",
-        variant === "primary"
-          ? cn("text-primary-foreground bg-primary", fulfillmentHoverPressablePrimary)
-          : cn("border border-border", fulfillmentHoverPressableOutline),
-        className,
-      )}
+      className={className}
+      type={type}
     >
       {children}
-    </motion.button>
+    </AppPressable>
   );
 }
 

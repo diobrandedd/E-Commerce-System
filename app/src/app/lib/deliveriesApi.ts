@@ -75,6 +75,31 @@ export async function deliveriesCancelParcelScan(
   });
 }
 
+export async function deliveriesHoldParcel(
+  trackingNumber: string,
+  note?: string,
+): Promise<{
+  parcel: OnlineParcel;
+  already_on_hold: boolean;
+  previous_status: string;
+  message?: string;
+}> {
+  return apiPost("deliveries.php", "hold_parcel", {
+    tracking_number: trackingNumber,
+    note: note?.trim() ? note.trim() : undefined,
+  });
+}
+
+export async function deliveriesRewaybill(
+  oldTracking: string,
+  newTracking: string,
+): Promise<{ parcel: OnlineParcel; history_id: number; message?: string }> {
+  return apiPost("deliveries.php", "rewaybill", {
+    old_tracking: oldTracking,
+    new_tracking: newTracking,
+  });
+}
+
 export async function deliveriesReviewList(params: {
   q?: string;
   from?: string;

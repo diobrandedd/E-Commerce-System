@@ -129,6 +129,7 @@ export function listMaterialRequests(filters?: { category?: string; request_acti
 
 export interface PackagingDetailPermissions {
   can_stock_in: boolean;
+  can_edit_price?: boolean;
   can_deduct: boolean;
   can_set_on_hand: boolean;
   can_set_pool_yield: boolean;
@@ -229,6 +230,20 @@ export function stockInPackagingLot(payload: {
     lot_unit: number;
     entry_id: number;
   }>("materials.php", "stock_in_lot", payload);
+}
+
+export function recordPackagingInvoicePrice(payload: {
+  stock_id: number;
+  lot_total_price: number;
+  lot_qty: number;
+  note?: string;
+}) {
+  return apiPost<{
+    stock_id: number;
+    current_price: number;
+    lot_unit: number;
+    entry_id: number;
+  }>("materials.php", "packaging_price_lot", payload);
 }
 
 export interface SupplyDetailPermissions {

@@ -4,6 +4,8 @@ import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/co
 import { PageLayout } from "@/app/components/PageLayout";
 import { MaterialCatalogModal } from "@/app/components/inventory/MaterialCatalogModal";
 import { PackagingInventoryGuideModal } from "@/app/components/inventory/PackagingInventoryGuideModal";
+import { runPackagingInventoryTour } from "@/app/components/tour/guides/packagingInventoryTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { PackagingMaterialDetailModal } from "@/app/components/inventory/PackagingMaterialDetailModal";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
@@ -16,14 +18,25 @@ const peso = (v: string | number | undefined) => {
   return `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-type StockFilter = "all" | "per_unit" | "pool" | "out_of_stock";
+type StockFilter = "all" | "per_unit" | "pool" | "out_of_stock" | "fulfillment";
 
 const FILTER_CHIPS: { id: StockFilter; label: string }[] = [
   { id: "all", label: "All" },
+  { id: "fulfillment", label: "For packing" },
   { id: "per_unit", label: "Per-unit" },
   { id: "pool", label: "Pool" },
   { id: "out_of_stock", label: "Out of stock" },
 ];
+
+function isFulfillmentPackagingRow(name: string): boolean {
+  const n = name.toLowerCase();
+  return n.startsWith("bubble wrap roll")
+    || n.startsWith("cushion piece")
+    || n.startsWith("cushion column roll")
+    || n.startsWith("courier pouch")
+    || n.startsWith("insulation foam sheet")
+    || n.startsWith("cardboard box");
+}
 
 export function PackagingMaterialsPage() {
   const { user } = useAuth();
@@ -65,6 +78,7 @@ export function PackagingMaterialsPage() {
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter(row => {
+      if (filter === "fulfillment" && !isFulfillmentPackagingRow(row.name)) return false;
       if (filter === "per_unit" && row.is_pool_packaging) return false;
       if (filter === "pool" && !row.is_pool_packaging) return false;
       if (filter === "out_of_stock" && Number(row.on_hand ?? 0) > 0) return false;
@@ -118,7 +132,7 @@ export function PackagingMaterialsPage() {
       }
     >
       <div className="flex flex-col h-[calc(100dvh-8rem)] min-h-[18rem] min-w-0 gap-4">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0" data-tour="packaging-stats">
           <div className="rounded-xl border bg-card px-4 py-3">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Catalog items</p>
             <p className="text-xl font-semibold mt-1">{stats.count}</p>
@@ -149,7 +163,7 @@ export function PackagingMaterialsPage() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0" data-tour="packaging-filters">
           <div className="relative flex-1 min-w-0">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -179,7 +193,7 @@ export function PackagingMaterialsPage() {
           </div>
         </div>
 
-        <div className="bg-card rounded-xl border overflow-hidden flex flex-col min-h-0 flex-1">
+        <div className="bg-card rounded-xl border overflow-hidden flex flex-col min-h-0 flex-1" data-tour="packaging-catalog">
           <div className="hidden sm:grid sm:grid-cols-[1fr_110px_130px_150px_24px] gap-2 px-4 py-2.5 border-b bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium shrink-0">
             <span>Item</span>
             <span>Unit cost</span>
@@ -366,6 +380,10 @@ export function PackagingMaterialsPage() {
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
         role={user?.role}
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runPackagingInventoryTour(user?.role));
+        }}
       />
     </PageLayout>
   );

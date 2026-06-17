@@ -22,8 +22,8 @@ Before adding or changing React UI:
 - **Scrollbars:** all `overflow-y-auto` / `overflow-auto` get Pyx slim thumb (fade on hover/scroll); sidebar uses `pyx-scroll-dark`; opt out with `no-pyx-scroll` only when necessary ([[fixes/pyx-scrollbars]])
 - **Modals:** always use `AppModal` (+ Header/Body/Footer) from `components/AppModal.tsx`; see `.cursor/rules/app-modal.mdc`. `FulfillmentModal` is an alias. POS uses `POSModal`. Never new inline `fixed inset-0` dialogs.
 - **Motion:** import from `motion/react`; always use `useReducedMotion()` and disable animation when true
-- **Feedback animations:** every new feature gets toast/banner/step motion on success and error — use `onlineFulfillmentMotion.tsx` (CSR/fulfillment) or `orderRemarksMotion.tsx` / `posMotion.tsx` by domain
-- **Hover affordance:** clickable rows, cards, and buttons must show highlight + drop shadow on hover — use `FulfillmentTableRow`, `FulfillmentPickerCard`, `FulfillmentPressable`, or exported `fulfillmentHover*` classes
+- **Feedback animations (mandatory):** `.cursor/rules/feedback-animations.mdc` — `appFeedbackMotion.tsx` for notices, pressables, hovers; CSR/POS use domain kits below; never ship static banners or inert buttons
+- **Hover affordance:** `appHoverCard` / `appHoverRow`, `AppPressable`, `Button`, or CSR `FulfillmentTableRow` / `FulfillmentPickerCard`
 - **API calls:** use `app/src/app/lib/api.ts` helpers; see `_System_Core/generated/140_Frontend_API_Clients.md`
 - **Page guides:** muted border **Guide** in `PageLayout` actions → `*GuideModal` (closed by default); never inline accordion on page body — see `CostingGuideModal`, `PackagingInventoryGuideModal`
 

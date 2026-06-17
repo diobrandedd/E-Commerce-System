@@ -1,7 +1,11 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { Plus, Search, Edit2, Loader2, Camera, Eye, ChevronDown, ChevronRight } from "lucide-react";
+import { BookOpen, Plus, Search, Edit2, Loader2, Camera, Eye, ChevronDown, ChevronRight } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
+import { SuppliersGuideModal } from "@/app/components/suppliers/SuppliersGuideModal";
+import { appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
+import { runSupplierMasterTour } from "@/app/components/tour/guides/supplierMasterTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { SupplierProfileModal } from "@/app/components/suppliers/SupplierProfileModal";
 import { SupplierHoneyPricesInline } from "@/app/components/suppliers/SupplierHoneyPricesInline";
 import { SupplierDeptPricesInline } from "@/app/components/suppliers/SupplierDeptPricesInline";
@@ -26,6 +30,7 @@ export function SuppliersPage() {
   const [expandedPricingId, setExpandedPricingId] = useState<number | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -75,17 +80,28 @@ export function SuppliersPage() {
     s.category === "honey" || s.category === "paragis" || s.category === "black_rice" || s.category === "cacao";
 
   return (
-    <PageLayout title="Supplier Master" subtitle="Executive registers suppliers; production managers select from this list">
+    <PageLayout
+      title="Supplier Master"
+      subtitle="Executive registers suppliers; production managers select from this list"
+      actions={
+        <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
+          <BookOpen size={13} /> Guide
+        </button>
+      }
+    >
       <div className="space-y-5">
         {error && <p className="text-sm text-red-600">{error}</p>}
         {pendingCount > 0 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div
+            data-tour="supplier-pending-banner"
+            className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          >
             <strong>{pendingCount}</strong> warehouse delivery row{pendingCount === 1 ? "" : "s"} still need a supplier
             price. Expand a honey supplier below and save ₱/gallon rates.
           </div>
         )}
-        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border gap-4">
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }} data-tour="supplier-table">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border gap-4" data-tour="supplier-toolbar">
             <div className="relative flex-1 max-w-xs">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -257,6 +273,15 @@ export function SuppliersPage() {
           onSaved={() => { setModal(null); refresh(); }}
         />
       )}
+
+      <SuppliersGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runSupplierMasterTour());
+        }}
+      />
     </PageLayout>
   );
 }

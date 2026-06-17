@@ -102,6 +102,12 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     to: "/fulfillment/online-parcels",
   };
 
+  const forPackingItem: NavItem = {
+    icon: Package,
+    label: "For packing",
+    to: "/fulfillment/packing-materials",
+  };
+
   const deliveriesItem: NavItem = {
     icon: Truck,
     label: "Deliveries",
@@ -139,6 +145,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
         onlineOrdersItem,
         onlineParcelsItem,
+        forPackingItem,
         deliveriesItem,
         { icon: Truck, label: "Supplier Master", to: "/suppliers" },
         { icon: DollarSign, label: "Product Costing", to: "/costing" },
@@ -154,6 +161,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
+        forPackingItem,
         deliveriesItem,
         onlineParcelsItem,
         rtsNavFull,

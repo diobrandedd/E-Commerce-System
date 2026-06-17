@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/material_inventory.php';
+require_once dirname(__DIR__, 2) . '/includes/fulfillment_packing.php';
 
 api_dispatch([
     'catalog_list' => 'api_materials_catalog_list',
@@ -27,6 +28,7 @@ api_dispatch([
     'set_on_hand' => 'api_materials_set_on_hand',
     'set_pool_yield' => 'api_materials_set_pool_yield',
     'packaging_deduct' => 'api_materials_packaging_deduct',
+    'packaging_price_lot' => 'api_materials_packaging_price_lot',
 ]);
 
 function api_materials_require_view(): array
@@ -333,6 +335,7 @@ function api_materials_packaging_detail(): void
         'entries' => $entries,
         'permissions' => [
             'can_stock_in' => material_inventory_role_can_stock_in_packaging($role),
+            'can_edit_price' => material_inventory_role_can_edit_packaging_price($role),
             'can_deduct' => material_inventory_role_can_deduct_packaging($role),
             'can_set_on_hand' => material_inventory_role_can_set_packaging_on_hand($role),
             'can_set_pool_yield' => $role === 'executive',
@@ -504,7 +507,8 @@ function api_materials_stock_in_lot(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive', 'hr']);
+    $user = api_require_ims_user();
+    $role = (string) $user['role'];
     $stockId = (int) ($input['stock_id'] ?? 0);
     $totalRaw = trim((string) ($input['lot_total_price'] ?? ''));
     $qtyRaw = trim((string) ($input['lot_qty'] ?? ''));
@@ -529,6 +533,12 @@ function api_materials_stock_in_lot(): void
     if (!in_array($category, ['packaging', 'supply'], true)) {
         api_fail('Only packaging or supply items support lot stock-in.', 422);
     }
+    if ($category === 'packaging' && !material_inventory_role_can_stock_in_packaging($role)) {
+        api_fail('Forbidden.', 403);
+    }
+    if ($category === 'supply' && !in_array($role, ['executive', 'hr'], true)) {
+        api_fail('Forbidden.', 403);
+    }
     $pdo->beginTransaction();
     try {
         if ($category === 'packaging') {
@@ -550,6 +560,52 @@ function api_materials_stock_in_lot(): void
                 $note
             );
         }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_materials_packaging_price_lot(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_ims_user();
+    $role = (string) $user['role'];
+    if (!material_inventory_role_can_edit_packaging_price($role)) {
+        api_fail('Forbidden.', 403);
+    }
+    $stockId = (int) ($input['stock_id'] ?? 0);
+    $totalRaw = trim((string) ($input['lot_total_price'] ?? ''));
+    $qtyRaw = trim((string) ($input['lot_qty'] ?? ''));
+    $note = isset($input['note']) ? trim((string) $input['note']) : null;
+
+    if ($stockId < 1) {
+        api_fail('stock_id required.', 422);
+    }
+    if (!is_numeric($totalRaw) || (float) $totalRaw < 0) {
+        api_fail('Total price must be 0 or greater.', 422);
+    }
+    if (!is_numeric($qtyRaw) || (float) $qtyRaw <= 0) {
+        api_fail('Invoice quantity must be greater than 0.', 422);
+    }
+
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = material_packaging_record_invoice_price(
+            $pdo,
+            $stockId,
+            (float) $totalRaw,
+            (float) $qtyRaw,
+            (int) $user['id'],
+            $note
+        );
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {

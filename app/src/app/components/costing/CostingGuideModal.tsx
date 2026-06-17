@@ -1,5 +1,6 @@
 import { BookOpen } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { GuideTourFooter, GuideWalkthroughSection } from "@/app/components/tour/GuideTourFooter";
 import {
   HONEY_FORMULA_LITERS_BY_SIZE,
   HONEY_LITERS_PER_US_GALLON,
@@ -53,7 +54,15 @@ function GuideTable({
   );
 }
 
-export function CostingGuideModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function CostingGuideModal({
+  open,
+  onClose,
+  onStartTour,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onStartTour: () => void;
+}) {
   const honeyRows: [string, string][] = [
     ["250 ml bottle", `${HONEY_FORMULA_LITERS_BY_SIZE["250ml"]} L`],
     ["350 ml bottle", `${HONEY_FORMULA_LITERS_BY_SIZE["350ml"]} L`],
@@ -198,7 +207,10 @@ export function CostingGuideModal({ open, onClose }: { open: boolean; onClose: (
             <li>Set selling price; margin updates live when costs move.</li>
           </ol>
         </GuideSection>
+
+        <GuideWalkthroughSection />
       </AppModalBody>
+      <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />
     </AppModal>
   );
 }

@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Eye, Loader2, Pencil } from "lucide-react";
+import { BookOpen, Eye, Loader2, Pencil } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
+import { DeliveriesReviewGuideModal } from "@/app/components/fulfillment/DeliveriesReviewGuideModal";
+import { runDeliveriesReviewTour } from "@/app/components/fulfillment/deliveriesReviewTour";
 import { DeliveryReviewEditModal } from "@/app/components/fulfillment/DeliveryReviewEditModal";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
+import { AppErrorBanner, AppSuccessNotice, appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
+import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { deliveriesReviewList, type DeliveryReviewRow } from "@/app/lib/deliveriesApi";
 import { ApiError } from "@/app/lib/api";
@@ -40,6 +45,7 @@ export function DeliveriesReviewPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [editRow, setEditRow] = useState<DeliveryReviewRow | null>(null);
   const [viewRow, setViewRow] = useState<DeliveryReviewRow | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -74,6 +80,13 @@ export function DeliveriesReviewPage() {
       }
       actions={
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setGuideOpen(true)}
+            className={appHeaderActionClass}
+          >
+            <BookOpen size={13} /> Guide
+          </button>
           <Link
             to="/deliveries/cancelled"
             className="sm:hidden text-xs font-semibold rounded-lg border border-border px-2.5 py-1.5 text-muted-foreground"
@@ -96,7 +109,7 @@ export function DeliveriesReviewPage() {
         </div>
       }
     >
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4" data-tour="deliveries-review-filters">
         <input
           className="rounded-lg border border-border px-3 py-2 text-sm"
           placeholder="Search tracking, name, items…"
@@ -105,27 +118,29 @@ export function DeliveriesReviewPage() {
         />
         <input type="date" className="rounded-lg border border-border px-2 py-2 text-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
         <input type="date" className="rounded-lg border border-border px-2 py-2 text-sm" value={to} onChange={(e) => setTo(e.target.value)} />
-        <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground" onClick={() => void load()}>
+        <Button type="button" onClick={() => void load()}>
           Search
-        </button>
+        </Button>
       </div>
 
-      {notice && (
-        <p className="text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-3">{notice}</p>
-      )}
-      {error && <p className="text-sm text-destructive mb-3">{error}</p>}
+      <AppSuccessNotice message={notice} />
+      <AppErrorBanner message={error} />
       {busy && <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
 
-      <div className="overflow-x-auto rounded-xl border border-border">
+      <div className="overflow-x-auto rounded-xl border border-border" data-tour="deliveries-review-table">
         <table className="w-full text-sm">
           <thead className="bg-muted/40">
             <tr>
               <th className="px-3 py-2 text-left">ID</th>
               <th className="px-3 py-2 text-left">Date</th>
               <th className="px-3 py-2 text-left">Tracking</th>
-              <th className="px-3 py-2 text-left">Photo</th>
+              <th className="px-3 py-2 text-left" data-tour="deliveries-review-photo">
+                Photo
+              </th>
               <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left w-28" />
+              <th className="px-3 py-2 text-left w-28" data-tour="deliveries-review-actions">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -177,6 +192,7 @@ export function DeliveriesReviewPage() {
         <p className="text-sm text-muted-foreground text-center py-6">No delivery records match your filters.</p>
       )}
 
+      <div data-tour="deliveries-review-pagination">
       <p className="text-xs text-muted-foreground mt-2">
         {total} row{total === 1 ? "" : "s"} · page {page}
         {!isExecutive ? " · Executives approve on Requests → Edit requests" : null}
@@ -189,6 +205,17 @@ export function DeliveriesReviewPage() {
           Next
         </button>
       </div>
+      </div>
+
+      <DeliveriesReviewGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        isExecutive={isExecutive}
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runDeliveriesReviewTour({ isExecutive }));
+        }}
+      />
 
       <AppModal
         open={viewRow !== null}

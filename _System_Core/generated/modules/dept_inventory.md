@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-06-16T10:40:49+02:00
+generated: 2026-06-17T08:18:54+02:00
 type: module
 function_count: 16
 ---
@@ -142,14 +142,14 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `includes/dept_pos.php`:119 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
-- `includes/honey_parcel_inventory.php`:78 — `$deducted = dept_inventory_deduct($pdo, $productKey, (float) $qty);`
+- `includes/honey_parcel_inventory.php`:81 — `$deducted = dept_inventory_deduct($pdo, $productKey, (float) $qty);`
 
 ## dept_inventory_resolve_other_item {#dept_inventory_resolve_other_item}
 
 **Callers (2):**
 
-- `includes/honey_parcel_inventory.php`:30 — `$key = dept_inventory_resolve_other_item((string) ($other['label'] ?? '')) ?? '';`
-- `includes/parcel_pack_costing.php`:51 — `$key = dept_inventory_resolve_other_item((string) ($item['label'] ?? '')) ?? '';`
+- `includes/honey_parcel_inventory.php`:32 — `$key = dept_inventory_resolve_other_item((string) ($other['label'] ?? '')) ?? '';`
+- `includes/parcel_pack_costing.php`:66 — `$key = dept_inventory_resolve_other_item((string) ($item['label'] ?? '')) ?? '';`
 
 ## dept_inventory_catalog_snapshot {#dept_inventory_catalog_snapshot}
 

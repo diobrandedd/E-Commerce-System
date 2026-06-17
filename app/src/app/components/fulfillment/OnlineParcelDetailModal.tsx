@@ -18,12 +18,13 @@ function ParcelStatusBadge({ status }: { status: OnlineParcel["status"] }) {
   const styles: Record<OnlineParcel["status"], string> = {
     packing: "bg-amber-100 text-amber-900 border-amber-200",
     shipped: "bg-green-100 text-green-900 border-green-200",
+    on_hold: "bg-violet-100 text-violet-900 border-violet-200",
     cancelled: "bg-red-100 text-red-900 border-red-200",
     returned: "bg-secondary text-muted-foreground border-border",
   };
   return (
-    <span className={`inline-flex text-xs font-semibold capitalize px-2.5 py-0.5 rounded-md border ${styles[status]}`}>
-      {status}
+    <span className={`inline-flex text-xs font-semibold capitalize px-2.5 py-0.5 rounded-md border ${styles[status] ?? "bg-secondary text-muted-foreground border-border"}`}>
+      {status.replace(/_/g, " ")}
     </span>
   );
 }

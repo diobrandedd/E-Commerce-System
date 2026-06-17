@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-06-16T10:41:06+02:00
+generated: 2026-06-17T08:19:12+02:00
 type: memory-bank
 ---
 
@@ -25,6 +25,7 @@ Backend index: [[100_API_Index]]
 | `app/src/app/pages/exec/CostingPage.tsx` | `costing.php` |
 | `app/src/app/lib/deliveriesApi.ts` | `deliveries.php` |
 | `app/src/app/lib/editRequestsApi.ts` | `edit_requests.php` |
+| `app/src/app/lib/fulfillmentPackingApi.ts` | `fulfillment_packing.php` |
 | `app/src/app/components/dept/DeptStockInModal.tsx` | `honey.php` |
 | `app/src/app/components/honey/CorrectionReviewModal.tsx` | `honey.php` |
 | `app/src/app/components/honey/ExecutiveRowEditModal.tsx` | `honey.php` |

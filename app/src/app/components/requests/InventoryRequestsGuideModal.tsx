@@ -1,5 +1,6 @@
 import { BookOpen } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { GuideTourFooter, GuideWalkthroughSection } from "@/app/components/tour/GuideTourFooter";
 import type { Role } from "@/app/context/AuthContext";
 
 const ROLE_LABELS: Partial<Record<Role, string>> = {
@@ -75,9 +76,10 @@ interface InventoryRequestsGuideModalProps {
   open: boolean;
   onClose: () => void;
   role: Role | undefined;
+  onStartTour: () => void;
 }
 
-export function InventoryRequestsGuideModal({ open, onClose, role }: InventoryRequestsGuideModalProps) {
+export function InventoryRequestsGuideModal({ open, onClose, role, onStartTour }: InventoryRequestsGuideModalProps) {
   const roleLabel = role ? ROLE_LABELS[role] : undefined;
 
   return (
@@ -131,7 +133,10 @@ export function InventoryRequestsGuideModal({ open, onClose, role }: InventoryRe
             <li><strong className="text-foreground">Inventory corrections</strong> — honey pipeline (exec / PM)</li>
           </ul>
         </GuideSection>
+
+        <GuideWalkthroughSection />
       </AppModalBody>
+      <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />
     </AppModal>
   );
 }

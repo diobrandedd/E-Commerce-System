@@ -1,6 +1,6 @@
 ---
 title: Motion Patterns
-generated: 2026-06-16T10:41:06+02:00
+generated: 2026-06-17T08:19:12+02:00
 type: spa
 ---
 
@@ -47,6 +47,23 @@ type: spa
 - `OrderRemarksAnimatedCount()`
 - `OrderRemarksAllDonePanel()`
 - `OrderRemarksCollapsible()`
+
+## `app/src/app/components/layout/appFeedbackMotion.tsx`
+
+- `appFeedbackEase()`
+- `appFeedbackSpring()`
+- `appHoverCard()`
+- `appHoverRow()`
+- `appHoverPressableOutline()`
+- `appHoverPressablePrimary()`
+- `appHeaderActionClass()`
+- `AppSectionEnter()`
+- `AppStepSwitch()`
+- `AppSuccessNotice()`
+- `AppErrorNotice()`
+- `AppErrorBanner()`
+- `AppTaskCompletePanel()`
+- `AppPressable()`
 
 ## `app/src/app/components/layout/sidebarNavMotion.tsx`
 

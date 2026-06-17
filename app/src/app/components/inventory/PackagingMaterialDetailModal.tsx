@@ -4,6 +4,7 @@ import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModa
 import { PackagingDeductModal } from "@/app/components/inventory/PackagingDeductModal";
 import { PackagingOnHandSetModal } from "@/app/components/inventory/PackagingOnHandSetModal";
 import { PackagingStockInLotModal } from "@/app/components/inventory/PackagingStockInLotModal";
+import { PackagingPriceLotModal } from "@/app/components/inventory/PackagingPriceLotModal";
 import {
   fetchPackagingDetail,
   setPackagingPoolYield,
@@ -48,7 +49,8 @@ const defaultPermissions = (
   isHr: boolean,
   isPm: boolean,
 ): PackagingDetailPermissions => ({
-  can_stock_in: isExec || isHr,
+  can_stock_in: isExec || isPm,
+  can_edit_price: isExec || isHr,
   can_deduct: isExec || isPm,
   can_set_on_hand: isExec,
   can_set_pool_yield: isExec,
@@ -71,6 +73,7 @@ export function PackagingMaterialDetailModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showStockIn, setShowStockIn] = useState(false);
+  const [showPriceLot, setShowPriceLot] = useState(false);
   const [showDeduct, setShowDeduct] = useState(false);
   const [showSetOnHand, setShowSetOnHand] = useState(false);
   const [yieldQty, setYieldQty] = useState("");
@@ -130,6 +133,7 @@ export function PackagingMaterialDetailModal({
 
   const handleChildDone = () => {
     setShowStockIn(false);
+    setShowPriceLot(false);
     setShowDeduct(false);
     setShowSetOnHand(false);
     void refresh();
@@ -208,6 +212,16 @@ export function PackagingMaterialDetailModal({
           </div>
 
           <div className="flex flex-wrap gap-2 shrink-0">
+            {permissions.can_edit_price && !permissions.can_stock_in && (
+              <button
+                type="button"
+                onClick={() => setShowPriceLot(true)}
+                className="text-xs font-semibold text-white px-3 py-2 rounded-lg"
+                style={{ background: "#C8900A" }}
+              >
+                Update price
+              </button>
+            )}
             {permissions.can_stock_in && (
               <button
                 type="button"
@@ -274,6 +288,9 @@ export function PackagingMaterialDetailModal({
 
       {showStockIn && (
         <PackagingStockInLotModal stock={row} onClose={() => setShowStockIn(false)} onDone={handleChildDone} />
+      )}
+      {showPriceLot && (
+        <PackagingPriceLotModal stock={row} onClose={() => setShowPriceLot(false)} onDone={handleChildDone} />
       )}
       {showDeduct && (
         <PackagingDeductModal stock={row} onClose={() => setShowDeduct(false)} onDone={handleChildDone} />

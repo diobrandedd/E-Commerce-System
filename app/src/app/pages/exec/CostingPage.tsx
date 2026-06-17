@@ -12,6 +12,8 @@ import {
 import { CostBadge, peso } from "@/app/lib/costingDisplay";
 import { CostingHoneyVariantGroups } from "@/app/components/costing/CostingHoneyVariantGroups";
 import { CostingGuideModal } from "@/app/components/costing/CostingGuideModal";
+import { runCostingTour } from "@/app/components/tour/guides/costingTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { ParcelPackLandedIntro, ParcelPackTiersModal } from "@/app/components/costing/ParcelPackTiersModal";
 import { CostingProductMetrics, CostingRowColumnHeaders } from "@/app/components/costing/CostingProductMetrics";
 import {
@@ -318,7 +320,7 @@ export function CostingPage() {
           <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{notice}</div>
         )}
 
-        <div className="flex rounded-lg border border-border p-0.5 bg-secondary/30 max-w-md">
+        <div className="flex rounded-lg border border-border p-0.5 bg-secondary/30 max-w-md" data-tour="costing-view-toggle">
           {(["product", "parcel"] as const).map(m => (
             <button
               key={m}
@@ -340,7 +342,7 @@ export function CostingPage() {
 
         {/* Products — header fixed, list scrolls inside viewport */}
         <div className="flex flex-col min-h-0 min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 shrink-0" data-tour="costing-products-header">
             <div className="min-w-0">
               <h3 className="text-sm font-semibold text-foreground">
                 {viewMode === "parcel" ? "Landed cost by product" : "Products"}
@@ -367,7 +369,7 @@ export function CostingPage() {
             )}
           </div>
 
-          <div className="mt-3 min-h-0 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-contain pr-1 space-y-3">
+          <div className="mt-3 min-h-0 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-contain pr-1 space-y-3" data-tour="costing-products-list">
             <CostingHoneyVariantGroups
               honeyProducts={honeyProducts}
               isExec={isExec}
@@ -516,7 +518,14 @@ export function CostingPage() {
       </div>
 
       {/* Modals */}
-      <CostingGuideModal open={guideOpen} onClose={() => setGuideOpen(false)} />
+      <CostingGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runCostingTour());
+        }}
+      />
       <ParcelPackTiersModal
         open={parcelTiersModalOpen}
         onClose={() => setParcelTiersModalOpen(false)}

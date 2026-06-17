@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { BookOpen, Loader2, Search } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
+import { OnlineParcelsGuideModal } from "@/app/components/fulfillment/OnlineParcelsGuideModal";
+import { appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
+import { runOnlineParcelsTour } from "@/app/components/tour/guides/onlineParcelsTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
+import { useAuth } from "@/app/context/AuthContext";
 import {
   OnlineParcelDetailModal,
   ParcelStatusBadgeInline,
@@ -74,6 +79,8 @@ function rowAccentClass(status: OnlineParcel["status"]): string {
       return "border-l-4 border-l-amber-400";
     case "shipped":
       return "border-l-4 border-l-green-500";
+    case "on_hold":
+      return "border-l-4 border-l-violet-400";
     case "cancelled":
     case "returned":
       return "border-l-4 border-l-red-400";
@@ -88,6 +95,7 @@ function showToast(setter: (v: string | null) => void, message: string, ms = 280
 }
 
 export function OnlineParcelsPage() {
+  const { user } = useAuth();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [rows, setRows] = useState<OnlineParcel[]>([]);
@@ -98,6 +106,7 @@ export function OnlineParcelsPage() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [selected, setSelected] = useState<OnlineParcel | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const load = useCallback(async (quiet = false) => {
     setLoading(true);
@@ -146,11 +155,19 @@ export function OnlineParcelsPage() {
   const colSpan = 7;
 
   return (
-    <PageLayout title="Online parcels" subtitle="Search or scan tracking to view parcel contents">
+    <PageLayout
+      title="Online parcels"
+      subtitle="Search or scan tracking to view parcel contents"
+      actions={
+        <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
+          <BookOpen size={13} /> Guide
+        </button>
+      }
+    >
       <FulfillmentToast message={toast} />
 
       <FulfillmentSectionEnter className="space-y-4">
-        <div className="flex flex-wrap gap-2 max-w-3xl">
+        <div className="flex flex-wrap gap-2 max-w-3xl" data-tour="online-parcels-filters">
           <div className="flex flex-1 min-w-[220px] gap-2">
             <input
               className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
@@ -180,6 +197,7 @@ export function OnlineParcelsPage() {
             <option value="">All statuses</option>
             <option value="packing">Packing</option>
             <option value="shipped">Shipped</option>
+            <option value="on_hold">On hold</option>
             <option value="cancelled">Cancelled</option>
             <option value="returned">Returned</option>
           </select>
@@ -199,7 +217,7 @@ export function OnlineParcelsPage() {
           <p className="text-xs text-muted-foreground mt-0.5">Click a row to view full parcel details</p>
         </div>
 
-        <div className="bg-card rounded-xl border overflow-x-auto">
+        <div className="bg-card rounded-xl border overflow-x-auto" data-tour="online-parcels-table">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
@@ -208,7 +226,7 @@ export function OnlineParcelsPage() {
                 <th className="text-left px-4 py-3">Courier</th>
                 <th className="text-left px-4 py-3">Pipeline</th>
                 <th className="text-left px-4 py-3">Items</th>
-                <th className="text-left px-4 py-3">Status</th>
+                <th className="text-left px-4 py-3" data-tour="online-parcels-status-col">Status</th>
                 <th className="text-left px-4 py-3">Ship date</th>
               </tr>
             </thead>
@@ -264,6 +282,16 @@ export function OnlineParcelsPage() {
       </FulfillmentSectionEnter>
 
       <OnlineParcelDetailModal parcel={selected} onClose={() => setSelected(null)} />
+
+      <OnlineParcelsGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        role={user?.role}
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runOnlineParcelsTour(user?.role));
+        }}
+      />
     </PageLayout>
   );
 }

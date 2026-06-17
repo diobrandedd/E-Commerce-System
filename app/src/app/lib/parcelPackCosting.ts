@@ -35,7 +35,8 @@ export interface ParcelCostPreview {
   items_raw?: string;
   order_shape?: Record<string, number>;
   tier_keys?: string[];
-  tiers: ParcelPackTier[];
+  tier_key?: string | null;
+  tiers: Array<ParcelPackTier & { tier_id?: number; label?: string }>;
   cost_typical: number;
   cost_min: number;
   cost_max: number;

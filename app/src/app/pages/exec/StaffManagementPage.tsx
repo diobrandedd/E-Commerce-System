@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, Edit2, ToggleLeft, ToggleRight, KeyRound, AlertCircle, Loader2 } from "lucide-react";
+import { BookOpen, Plus, Search, Edit2, ToggleLeft, ToggleRight, KeyRound, AlertCircle, Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
+import { StaffManagementGuideModal } from "@/app/components/exec/StaffManagementGuideModal";
+import { appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
+import { runStaffManagementTour } from "@/app/components/tour/guides/staffManagementTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 
 interface StaffUser {
@@ -78,6 +82,7 @@ export function StaffManagementPage() {
   const [editing, setEditing] = useState<StaffUser | null>(null);
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
@@ -153,7 +158,15 @@ export function StaffManagementPage() {
   };
 
   return (
-    <PageLayout title="Staff Management" subtitle="Manage system users and role assignments">
+    <PageLayout
+      title="Staff Management"
+      subtitle="Manage system users and role assignments"
+      actions={
+        <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
+          <BookOpen size={13} /> Guide
+        </button>
+      }
+    >
       <div className="space-y-5">
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
@@ -164,7 +177,7 @@ export function StaffManagementPage() {
           <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{notice}</div>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4" data-tour="staff-stats">
           {[
             { label: "Total Staff", value: totals.total },
             { label: "Active", value: totals.active },
@@ -179,7 +192,7 @@ export function StaffManagementPage() {
         </div>
 
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border gap-4">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border gap-4" data-tour="staff-toolbar">
             <div className="relative flex-1 max-w-xs">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -197,12 +210,18 @@ export function StaffManagementPage() {
               <Plus size={15} /> Add Staff
             </button>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" data-tour="staff-table">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40">
                   {["Name / username", "Role", "Department", "Employee ID", "Status", "Actions"].map(h => (
-                    <th key={h} className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-5 py-3 first:pl-6">{h}</th>
+                    <th
+                      key={h}
+                      className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-5 py-3 first:pl-6"
+                      {...(h === "Actions" ? { "data-tour": "staff-actions-col" } : {})}
+                    >
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -282,6 +301,15 @@ export function StaffManagementPage() {
           }}
         />
       )}
+
+      <StaffManagementGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runStaffManagementTour());
+        }}
+      />
     </PageLayout>
   );
 }

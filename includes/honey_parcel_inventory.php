@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/honey_pos.php';
 require_once __DIR__ . '/honey_parcel_item_parser.php';
 require_once __DIR__ . '/dept_inventory.php';
+require_once __DIR__ . '/parcel_pack_costing.php';
 require_once __DIR__ . '/rts_schema.php';
 
 /**
@@ -13,7 +14,8 @@ require_once __DIR__ . '/rts_schema.php';
  * @return array{
  *   deducted: list<array{variant: string, size: string, qty: float}>,
  *   dept_deducted: list<array{product_key: string, qty: float}>,
- *   lines: list<array{packaging_row_id: int, variant: string, size: string, qty: float}>
+ *   lines: list<array{packaging_row_id: int, variant: string, size: string, qty: float}>,
+ *   fulfillment_deducted: list<array{stock_id: int, qty: float, unit: string}>
  * }
  */
 function honey_parcel_apply_deduct(PDO $pdo, int $parcelId, int $userId, string $itemsRaw): array
@@ -50,6 +52,7 @@ function honey_parcel_apply_deduct(PDO $pdo, int $parcelId, int $userId, string 
     try {
         $allLines = [];
         $deptDeducted = [];
+        $fulfillmentDeducted = [];
         $hasParcelCol = rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id');
 
         foreach ($parsed['deltas'] as $delta) {
@@ -84,6 +87,8 @@ function honey_parcel_apply_deduct(PDO $pdo, int $parcelId, int $userId, string 
             $deptDeducted[] = ['product_key' => $productKey, 'qty' => $deducted['qty']];
         }
 
+        $fulfillmentDeducted = parcel_fulfillment_apply_deduct($pdo, $parcelId, $userId, $itemsRaw);
+
         if ($ownsTransaction) {
             $pdo->commit();
         }
@@ -94,7 +99,12 @@ function honey_parcel_apply_deduct(PDO $pdo, int $parcelId, int $userId, string 
         throw $e;
     }
 
-    return ['deducted' => $parsed['deltas'], 'dept_deducted' => $deptDeducted, 'lines' => $allLines];
+    return [
+        'deducted' => $parsed['deltas'],
+        'dept_deducted' => $deptDeducted,
+        'lines' => $allLines,
+        'fulfillment_deducted' => $fulfillmentDeducted,
+    ];
 }
 
 /**
@@ -146,6 +156,8 @@ function honey_parcel_revert_deduct(PDO $pdo, int $parcelId): void
     if ($deptLines !== []) {
         $pdo->prepare('DELETE FROM online_parcel_dept_deduct_lines WHERE parcel_id = ?')->execute([$parcelId]);
     }
+
+    parcel_fulfillment_revert_deduct($pdo, $parcelId);
 
     if (rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id')) {
         $pdo->prepare(

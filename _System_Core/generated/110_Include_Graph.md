@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-06-16T10:40:47+02:00
+generated: 2026-06-17T08:18:50+02:00
 type: memory-bank
-edge_count: 200
+edge_count: 206
 ---
 
 
@@ -39,6 +39,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/deliveries.php` | `includes/online_order_parcels.php` |
 | `api/v1/edit_requests.php` | `api/v1/_bootstrap.php` |
 | `api/v1/edit_requests.php` | `includes/delivery_edit_requests.php` |
+| `api/v1/fulfillment_packing.php` | `api/v1/_bootstrap.php` |
 | `api/v1/honey.php` | `api/v1/_bootstrap.php` |
 | `api/v1/materials.php` | `api/v1/_bootstrap.php` |
 | `api/v1/online_orders.php` | `api/v1/_bootstrap.php` |
@@ -120,6 +121,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_production.php` | `includes/catalog_bootstrap.php` |
 | `includes/dept_production.php` | `includes/dept_inventory.php` |
 | `includes/dept_production.php` | `includes/material_inventory.php` |
+| `includes/fulfillment_packing.php` | `includes/material_inventory.php` |
+| `includes/fulfillment_packing.php` | `includes/parcel_pack_costing.php` |
 | `includes/honey_inventory.php` | `includes/catalog_bootstrap.php` |
 | `includes/honey_inventory.php` | `includes/db.php` |
 | `includes/honey_inventory.php` | `includes/dept_production.php` |
@@ -130,6 +133,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_parcel_inventory.php` | `includes/dept_inventory.php` |
 | `includes/honey_parcel_inventory.php` | `includes/honey_parcel_item_parser.php` |
 | `includes/honey_parcel_inventory.php` | `includes/honey_pos.php` |
+| `includes/honey_parcel_inventory.php` | `includes/parcel_pack_costing.php` |
 | `includes/honey_parcel_inventory.php` | `includes/rts_schema.php` |
 | `includes/honey_parcel_item_parser.php` | `includes/dept_products.php` |
 | `includes/honey_pos.php` | `includes/honey_inventory.php` |
@@ -141,6 +145,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/labels.php` | `includes/rts_products.php` |
 | `includes/material_inventory.php` | `includes/catalog_bootstrap.php` |
 | `includes/material_inventory.php` | `includes/dept_products.php` |
+| `includes/material_inventory.php` | `includes/fulfillment_packing.php` |
+| `includes/material_inventory.php` | `includes/fulfillment_packing.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_inventory.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_item_parser.php` |
 | `includes/online_order_parcels.php` | `includes/qr_decode.php` |

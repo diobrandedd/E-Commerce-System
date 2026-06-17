@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-06-16T10:40:47+02:00
+generated: 2026-06-17T08:18:50+02:00
 type: memory-bank
-table_count: 48
+table_count: 54
 ---
 
 
@@ -173,6 +173,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_change_password]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
@@ -216,6 +217,11 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_formula_deduct_lines]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_packaging_deduct]] |
+| `includes/fulfillment_pack_tier_seed.php` | [[modules/fulfillment_pack_tier_seed#fulfillment_pack_stock_ids_by_name]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issue_create]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_balances_list]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#material_packaging_record_invoice_price]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_bottling_deduct_packaging_stocks]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_upsert_supplier_costing_stocks]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_fetch_stock]] |
@@ -228,6 +234,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_on_hand]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_for_use]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_fulfillment_line]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#parcel_fulfillment_revert_deduct]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_set_on_hand]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_apply_issue]] |
@@ -254,6 +262,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_deduct_bags_fifo]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_packaging_deduct]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issue_create]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#material_packaging_record_invoice_price]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_adjust]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_values]] |
@@ -261,6 +271,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_on_hand]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_for_use]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_fulfillment_line]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_set_on_hand]] |
@@ -404,6 +415,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_promote_from_batch]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_rewaybill]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_get]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_existing_tracking_map]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_lines_append]] |
@@ -431,6 +443,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_list]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_hold]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_rewaybill]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel_log_list]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_existing_tracking_map]] |
 
@@ -473,7 +487,9 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/fulfillment_pack_tier_seed.php` | [[modules/fulfillment_pack_tier_seed#fulfillment_pack_tier_seed]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_tables_ready]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_resolve_tier_key_from_shape]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_tier_by_key]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_tier_cost_estimate]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_list_tiers]] |
@@ -482,6 +498,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/fulfillment_pack_tier_seed.php` | [[modules/fulfillment_pack_tier_seed#fulfillment_pack_tier_seed]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_tier_lines]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_save_tier_line]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_delete_tier_line]] |
@@ -492,6 +509,51 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel_log_list]] |
+
+## `online_parcel_fulfillment_deduct_lines`
+
+| File | Function |
+|------|----------|
+| `includes/material_inventory.php` | [[modules/material_inventory#parcel_fulfillment_already_deducted]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#parcel_fulfillment_apply_deduct]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#parcel_fulfillment_revert_deduct]] |
+
+## `fulfillment_packing_balances`
+
+| File | Function |
+|------|----------|
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_tables_ready]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_get_balance]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issue_create]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_consume_line]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_balances_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#parcel_fulfillment_revert_deduct]] |
+
+## `fulfillment_packing_issues`
+
+| File | Function |
+|------|----------|
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issue_create]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
+
+## `fulfillment_packing_issue_lines`
+
+| File | Function |
+|------|----------|
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issue_create]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
+
+## `online_parcel_tracking_history`
+
+| File | Function |
+|------|----------|
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_rewaybill]] |
+
+## `online_parcel_hold_events`
+
+| File | Function |
+|------|----------|
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_hold]] |
 
 ## `pos_sales`
 

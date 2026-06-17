@@ -36,6 +36,7 @@ import { DeliveriesPage } from "./pages/deliveries/DeliveriesPage";
 import { DeliveriesReviewPage } from "./pages/deliveries/DeliveriesReviewPage";
 import { DeliveriesCancelledPage } from "./pages/deliveries/DeliveriesCancelledPage";
 import { OnlineParcelsPage } from "./pages/fulfillment/OnlineParcelsPage";
+import { PackingMaterialsStagingPage } from "./pages/fulfillment/PackingMaterialsStagingPage";
 import type { Role } from "./context/AuthContext";
 
 // Wrap a page component in RequireAuth.  Using createElement to keep this
@@ -130,6 +131,10 @@ export const router = createBrowserRouter(
           element: guarded(OnlineParcelsPage, {
             roles: ["executive", "prod_manager", "csr_tl", "csr_staff"],
           }),
+        },
+        {
+          path: "fulfillment/packing-materials",
+          element: guarded(PackingMaterialsStagingPage, { roles: ["executive", "prod_manager"] }),
         },
 
         {

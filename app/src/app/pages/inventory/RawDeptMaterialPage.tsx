@@ -33,6 +33,9 @@ import {
 import { listSuppliers, type Supplier } from "@/app/lib/suppliers";
 import { DeptRawProduceGuideModal } from "@/app/components/inventory/DeptRawProduceGuideModal";
 import { ParagisProductionGuideModal } from "@/app/components/inventory/ParagisProductionGuideModal";
+import { runDeptRawProduceTour } from "@/app/components/tour/guides/deptRawProduceTour";
+import { runParagisProductionTour } from "@/app/components/tour/guides/paragisProductionTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 
 function formatWhen(raw: string | null | undefined) {
   if (!raw) return "—";
@@ -230,7 +233,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
         <p className="text-sm text-red-600">{loadError ?? "Could not load raw inventory."}</p>
       ) : (
         <div className="space-y-5">
-          <div className={`grid gap-3 ${isParagis ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
+          <div className={`grid gap-3 ${isParagis ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`} data-tour="raw-dept-metrics">
             <div className="rounded-xl border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Raw bags</p>
               <p className="text-2xl font-semibold mt-1">{data.bags_on_hand.toLocaleString()}</p>
@@ -256,7 +259,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             </div>
           </div>
 
-          <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="rounded-xl border bg-card overflow-hidden" data-tour="raw-dept-production-log">
             <div className="px-5 py-4 border-b bg-secondary/30">
               <p className="text-sm font-semibold">Production activity</p>
             </div>
@@ -299,7 +302,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             )}
           </div>
 
-          <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="rounded-xl border bg-card overflow-hidden" data-tour="raw-dept-activity">
             <div className="px-5 py-4 border-b bg-secondary/30">
               <p className="text-sm font-semibold">Raw bag entries</p>
             </div>
@@ -379,6 +382,10 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
               ? () => setShowMakeTeaBagsAdvanced(true)
               : undefined
           }
+          onStartTour={() => {
+            setGuideOpen(false);
+            startPageTourAfterModalClose(() => runParagisProductionTour());
+          }}
         />
       )}
       {isSingleStageProduce && (
@@ -387,6 +394,10 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           open={guideOpen}
           onClose={() => setGuideOpen(false)}
           role={user?.role}
+          onStartTour={() => {
+            setGuideOpen(false);
+            startPageTourAfterModalClose(() => runDeptRawProduceTour(productKey));
+          }}
         />
       )}
       {showStockIn && (

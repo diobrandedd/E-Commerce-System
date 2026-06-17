@@ -1,7 +1,7 @@
 ---
 title: honey_parcel_inventory
 source: includes/honey_parcel_inventory.php
-generated: 2026-06-16T10:40:54+02:00
+generated: 2026-06-17T08:18:59+02:00
 type: module
 function_count: 3
 ---
@@ -18,6 +18,7 @@ function_count: 3
 - `includes/honey_pos.php`
 - `includes/honey_parcel_item_parser.php`
 - `includes/dept_inventory.php`
+- `includes/parcel_pack_costing.php`
 - `includes/rts_schema.php`
 
 ## honey_parcel_apply_deduct {#honey_parcel_apply_deduct}
@@ -43,5 +44,5 @@ function_count: 3
 
 **Callers (1):**
 
-- `includes/honey_parcel_inventory.php`:74 — `honey_parcel_log_sale($pdo, $parcelId, $userId, $variant, $size, $qty, $hasParcelCol);`
+- `includes/honey_parcel_inventory.php`:77 — `honey_parcel_log_sale($pdo, $parcelId, $userId, $variant, $size, $qty, $hasParcelCol);`
 

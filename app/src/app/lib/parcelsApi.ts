@@ -20,7 +20,7 @@ export interface OnlineParcel {
   courier: string;
   order_no: string | null;
   source_pipeline: string;
-  status: "packing" | "shipped" | "cancelled" | "returned";
+  status: "packing" | "shipped" | "on_hold" | "cancelled" | "returned";
   ship_date: string | null;
   deducted_at: string | null;
   created_at: string;

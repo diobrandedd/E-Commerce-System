@@ -1,5 +1,6 @@
 import { BookOpen } from "lucide-react";
-import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
+import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { GuideTourFooter, GuideWalkthroughSection } from "@/app/components/tour/GuideTourFooter";
 import type { Role } from "@/app/context/AuthContext";
 import {
   PT_TEA_BAGS_PER_POUCH,
@@ -28,6 +29,7 @@ interface ParagisProductionGuideModalProps {
   role: Role | undefined;
   canMutate?: boolean;
   onOpenExactTeaBagCount?: () => void;
+  onStartTour: () => void;
 }
 
 export function ParagisProductionGuideModal({
@@ -36,6 +38,7 @@ export function ParagisProductionGuideModal({
   role,
   canMutate = false,
   onOpenExactTeaBagCount,
+  onStartTour,
 }: ParagisProductionGuideModalProps) {
   const roleLabel = role ? ROLE_LABELS[role] : undefined;
   const yieldHint = deptStockInYieldHint("pt");
@@ -113,24 +116,27 @@ export function ParagisProductionGuideModal({
             </p>
           </GuideSection>
         )}
+
+        <GuideWalkthroughSection />
       </AppModalBody>
-      {canMutate && onOpenExactTeaBagCount && (
-        <AppModalFooter className="justify-between gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              onOpenExactTeaBagCount();
-            }}
-            className="text-xs font-medium text-[#8a6506] hover:underline"
-          >
-            Open exact tea bag count…
-          </button>
-          <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-border">
-            Close
-          </button>
-        </AppModalFooter>
-      )}
+      <GuideTourFooter
+        onStartTour={onStartTour}
+        onClose={onClose}
+        extraLeft={
+          canMutate && onOpenExactTeaBagCount ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenExactTeaBagCount();
+              }}
+              className="text-xs font-medium text-[#8a6506] hover:underline"
+            >
+              Open exact tea bag count…
+            </button>
+          ) : undefined
+        }
+      />
     </AppModal>
   );
 }

@@ -78,7 +78,7 @@ function online_parcels_ensure_schema(PDO $pdo): void
           `courier` VARCHAR(64) NOT NULL DEFAULT "",
           `order_no` VARCHAR(64) NULL DEFAULT NULL,
           `source_pipeline` ENUM("partner","vip","shopee_spx") NOT NULL,
-          `status` ENUM("packing","shipped","cancelled","returned") NOT NULL DEFAULT "packing",
+          `status` ENUM("packing","shipped","on_hold","cancelled","returned") NOT NULL DEFAULT "packing",
           `ship_date` DATE NULL DEFAULT NULL,
           `return_date` DATE NULL DEFAULT NULL,
           `shipped_by_user_id` INT UNSIGNED NULL DEFAULT NULL,
@@ -121,7 +121,7 @@ function online_parcels_ensure_schema(PDO $pdo): void
           `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
           `online_parcel_id` INT UNSIGNED NOT NULL,
           `tracking_number` VARCHAR(96) NOT NULL,
-          `previous_status` ENUM("packing","shipped","cancelled","returned") NOT NULL,
+          `previous_status` ENUM("packing","shipped","on_hold","cancelled","returned") NOT NULL,
           `inventory_reverted` TINYINT(1) NOT NULL DEFAULT 0,
           `cancel_source` VARCHAR(32) NOT NULL DEFAULT "scanner",
           `note` VARCHAR(255) NULL DEFAULT NULL,
@@ -500,7 +500,7 @@ function online_parcels_list(PDO $pdo, string $q, string $status, int $page, int
         $params[] = $like;
         $params[] = $like;
     }
-    if ($status !== '' && in_array($status, ['packing', 'shipped', 'cancelled', 'returned'], true)) {
+    if ($status !== '' && in_array($status, ['packing', 'shipped', 'on_hold', 'cancelled', 'returned'], true)) {
         $where[] = 'status = ?';
         $params[] = $status;
     }
@@ -751,6 +751,220 @@ function online_parcels_cancel(
         'previous_status' => isset($previousStatus) ? $previousStatus : (string) ($parcel['status'] ?? ''),
         'inventory_reverted' => $inventoryReverted ?? false,
         'event_id' => $eventId ?? null,
+    ];
+}
+
+/**
+ * Mark parcel on hold for re-waybill — no inventory revert.
+ *
+ * @return array{parcel: array<string,mixed>, already_on_hold: bool, previous_status: string, event_id: int|null}
+ */
+function online_parcels_hold(
+    PDO $pdo,
+    int $userId,
+    string $tracking,
+    ?string $note = null
+): array {
+    online_parcels_ensure_schema($pdo);
+    $tracking = online_parcels_normalize_tracking($tracking);
+    if ($tracking === '') {
+        throw new RuntimeException('Invalid tracking number.');
+    }
+
+    $parcel = online_parcels_get_by_tracking($pdo, $tracking);
+    if ($parcel === null) {
+        throw new RuntimeException('No online order parcel found for this tracking number.');
+    }
+
+    $note = $note !== null ? trim($note) : null;
+    if ($note === '') {
+        $note = null;
+    }
+    if ($note !== null && function_exists('mb_substr')) {
+        $note = mb_substr($note, 0, 255);
+    } elseif ($note !== null) {
+        $note = substr($note, 0, 255);
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $lock = $pdo->prepare(
+            'SELECT id, tracking_number, status, deducted_at FROM online_order_parcels WHERE id = ? FOR UPDATE'
+        );
+        $lock->execute([(int) $parcel['id']]);
+        $locked = $lock->fetch(PDO::FETCH_ASSOC);
+        if ($locked === false) {
+            throw new RuntimeException('Parcel not found.');
+        }
+
+        $previousStatus = (string) ($locked['status'] ?? '');
+        if ($previousStatus === 'on_hold') {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            $fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);
+
+            return [
+                'parcel' => $fresh ?? $parcel,
+                'already_on_hold' => true,
+                'previous_status' => 'on_hold',
+                'event_id' => null,
+            ];
+        }
+
+        if (!in_array($previousStatus, ['packing', 'shipped'], true)) {
+            throw new RuntimeException('Parcel cannot be placed on hold (status: ' . $previousStatus . ').');
+        }
+
+        $upd = $pdo->prepare('UPDATE online_order_parcels SET status = "on_hold" WHERE id = ?');
+        $upd->execute([(int) $locked['id']]);
+
+        $eventId = null;
+        try {
+            $ins = $pdo->prepare(
+                'INSERT INTO online_parcel_hold_events
+                    (online_parcel_id, tracking_number, previous_status, note, held_by_user_id)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            $ins->execute([
+                (int) $locked['id'],
+                (string) $locked['tracking_number'],
+                $previousStatus,
+                $note,
+                $userId > 0 ? $userId : null,
+            ]);
+            $eventId = (int) $pdo->lastInsertId();
+        } catch (Throwable) {
+            // Table may not exist before migration.
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    $fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);
+
+    return [
+        'parcel' => $fresh ?? $parcel,
+        'already_on_hold' => false,
+        'previous_status' => $previousStatus ?? '',
+        'event_id' => $eventId,
+    ];
+}
+
+/**
+ * Link a new waybill to an on-hold parcel (same sealed box).
+ *
+ * @return array{parcel: array<string,mixed>, history_id: int}
+ */
+function online_parcels_rewaybill(
+    PDO $pdo,
+    int $userId,
+    string $oldTracking,
+    string $newTracking
+): array {
+    online_parcels_ensure_schema($pdo);
+    $oldTracking = online_parcels_normalize_tracking($oldTracking);
+    $newTracking = online_parcels_normalize_tracking($newTracking);
+    if ($oldTracking === '' || $newTracking === '') {
+        throw new RuntimeException('Invalid tracking number.');
+    }
+    if ($oldTracking === $newTracking) {
+        throw new RuntimeException('New tracking must differ from the old tracking.');
+    }
+
+    $parcel = online_parcels_get_by_tracking($pdo, $oldTracking);
+    if ($parcel === null) {
+        throw new RuntimeException('No parcel found for old tracking number.');
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $lock = $pdo->prepare(
+            'SELECT id, status, tracking_number, csr_batch_id, csr_line_id FROM online_order_parcels WHERE id = ? FOR UPDATE'
+        );
+        $lock->execute([(int) $parcel['id']]);
+        $locked = $lock->fetch(PDO::FETCH_ASSOC);
+        if ($locked === false) {
+            throw new RuntimeException('Parcel not found.');
+        }
+        if ((string) ($locked['status'] ?? '') !== 'on_hold') {
+            throw new RuntimeException('Parcel must be on hold before re-waybill.');
+        }
+
+        $dup = $pdo->prepare('SELECT id, status, csr_line_id, csr_batch_id FROM online_order_parcels WHERE tracking_number = ? LIMIT 1 FOR UPDATE');
+        $dup->execute([$newTracking]);
+        $dupRow = $dup->fetch(PDO::FETCH_ASSOC);
+        $newLineId = null;
+        $newBatchId = null;
+
+        if ($dupRow !== false && (int) $dupRow['id'] !== (int) $locked['id']) {
+            $dupStatus = (string) ($dupRow['status'] ?? '');
+            if ($dupStatus !== 'packing') {
+                throw new RuntimeException('New tracking is already used by another parcel.');
+            }
+            $newLineId = $dupRow['csr_line_id'] !== null ? (int) $dupRow['csr_line_id'] : null;
+            $newBatchId = $dupRow['csr_batch_id'] !== null ? (int) $dupRow['csr_batch_id'] : null;
+            $pdo->prepare('DELETE FROM online_order_parcels WHERE id = ?')->execute([(int) $dupRow['id']]);
+        } else {
+            $lineSt = $pdo->prepare(
+                'SELECT id, batch_id FROM csr_online_order_lines WHERE tracking_number = ? ORDER BY id DESC LIMIT 1'
+            );
+            $lineSt->execute([$newTracking]);
+            $csrLine = $lineSt->fetch(PDO::FETCH_ASSOC);
+            if ($csrLine !== false) {
+                $newLineId = (int) $csrLine['id'];
+                $newBatchId = (int) $csrLine['batch_id'];
+            }
+        }
+
+        $historyId = 0;
+        try {
+            $hist = $pdo->prepare(
+                'INSERT INTO online_parcel_tracking_history
+                    (parcel_id, old_tracking, new_tracking, changed_by)
+                 VALUES (?, ?, ?, ?)'
+            );
+            $hist->execute([
+                (int) $locked['id'],
+                (string) $locked['tracking_number'],
+                $newTracking,
+                $userId > 0 ? $userId : null,
+            ]);
+            $historyId = (int) $pdo->lastInsertId();
+        } catch (Throwable) {
+            throw new RuntimeException('Tracking history table missing. Run migration phase 34.');
+        }
+
+        $upd = $pdo->prepare(
+            'UPDATE online_order_parcels
+             SET tracking_number = ?, status = "packing", csr_line_id = COALESCE(?, csr_line_id), csr_batch_id = COALESCE(?, csr_batch_id)
+             WHERE id = ?'
+        );
+        $upd->execute([
+            $newTracking,
+            $newLineId,
+            $newBatchId,
+            (int) $locked['id'],
+        ]);
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    $fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);
+
+    return [
+        'parcel' => $fresh ?? $parcel,
+        'history_id' => $historyId,
     ];
 }
 

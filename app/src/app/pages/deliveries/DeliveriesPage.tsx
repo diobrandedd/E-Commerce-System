@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateA
 import { Camera, CheckCircle2, Loader2, ScanLine } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { DeliveryDuplicateScanModal } from "@/app/components/fulfillment/DeliveryDuplicateScanModal";
+import { DeliveriesOpsPanel } from "@/app/components/fulfillment/DeliveriesOpsPanel";
 import { PageLayout } from "@/app/components/PageLayout";
 import {
   FulfillmentErrorBanner,
@@ -24,6 +25,7 @@ import { compressDeliveryPhoto } from "@/app/lib/compressDeliveryPhoto";
 
 type Step = "idle" | "preview" | "saving" | "done";
 type PhotoUploadState = "idle" | "compressing" | "uploading" | "ready" | "error";
+type DeliveryMode = "ship" | "hold" | "rewaybill";
 
 function showToast(setter: (v: string | null) => void, message: string, ms = 2800) {
   setter(message);
@@ -43,6 +45,7 @@ function applyBatchCountFromUpload(
 
 export function DeliveriesPage() {
   const today = new Date().toISOString().slice(0, 10);
+  const [mode, setMode] = useState<DeliveryMode>("ship");
   const [deliveryDate, setDeliveryDate] = useState(today);
   const [batchCount, setBatchCount] = useState(0);
   const [step, setStep] = useState<Step>("idle");
@@ -293,8 +296,48 @@ export function DeliveriesPage() {
   return (
     <PageLayout
       title="Deliveries"
-      subtitle="Pre-dispatch photos · scan label · ship deducts packaging stock"
+      subtitle={
+        mode === "ship"
+          ? "Pre-dispatch photos · scan label · ship deducts packing staging"
+          : mode === "hold"
+            ? "Sealed box — mark on hold for re-waybill (no inventory revert)"
+            : "Scan old label → scan new label → ship again on Ship tab"
+      }
     >
+      <div className="flex gap-2 mb-6 max-w-lg">
+        {(
+          [
+            ["ship", "Ship"],
+            ["hold", "On hold"],
+            ["rewaybill", "Re-waybill"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setMode(id)}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${
+              mode === id ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mode !== "ship" ? (
+        <DeliveriesOpsPanel
+          key={mode}
+          mode={mode}
+          onContinueToShip={() => {
+            setMode("ship");
+            setError(null);
+            setDoneMessage(null);
+            window.setTimeout(() => startScanner(), 80);
+          }}
+        />
+      ) : (
+      <>
       <FulfillmentToast message={toast} />
 
       <FulfillmentSectionEnter className="max-w-lg space-y-4">
@@ -517,6 +560,8 @@ export function DeliveriesPage() {
           startScanner();
         }}
       />
+      </>
+      )}
     </PageLayout>
   );
 }

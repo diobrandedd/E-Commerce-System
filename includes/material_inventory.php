@@ -34,7 +34,7 @@ function material_inventory_role_can_request_packaging(string $role): bool
 
 function material_inventory_role_can_stock_in_packaging(string $role): bool
 {
-    return $role === 'executive' || $role === 'hr';
+    return $role === 'executive' || $role === 'prod_manager';
 }
 
 function material_inventory_role_can_deduct_packaging(string $role): bool
@@ -778,6 +778,204 @@ function material_packaging_deduct_for_use(
         'on_hand' => $next,
         'entry_id' => $entryId,
     ];
+}
+
+/** Snap fulfillment roll consumption to 1/16 increments. */
+function material_fulfillment_snap_sixteenths(float $qty): float
+{
+    if ($qty <= 0) {
+        return 0.0;
+    }
+
+    return round(round($qty * 16.0) / 16.0, 4);
+}
+
+/**
+ * Deduct fulfillment packaging for a parcel ship (fractional rolls allowed).
+ *
+ * @return array{stock_id: int, on_hand: float, entry_id: int, qty_deducted: float}
+ */
+function material_packaging_deduct_fulfillment_line(
+    PDO $pdo,
+    int $stockId,
+    float $qty,
+    string $lineUnit,
+    int $userId,
+    string $reason,
+    int $parcelId
+): array {
+    if ($qty <= 0) {
+        throw new RuntimeException('Quantity must be greater than 0.');
+    }
+    $row = material_inventory_fetch_stock($pdo, $stockId, true);
+    if ($row === null) {
+        throw new RuntimeException('Stock not found.');
+    }
+    if ((string) $row['category'] !== 'packaging') {
+        throw new RuntimeException('Only packaging materials can be deducted.');
+    }
+    if (!(int) ($row['is_active'] ?? 1)) {
+        throw new RuntimeException('Stock item is inactive.');
+    }
+
+    $stockUnit = trim((string) ($row['unit'] ?? 'pcs'));
+    $deductQty = round($qty, 4);
+    if ($lineUnit === 'bubble_piece') {
+        $yield = (float) ($row['pool_yield_qty'] ?? 0);
+        if ($yield <= 0) {
+            throw new RuntimeException('Bubble wrap roll yield is not configured.');
+        }
+        $deductQty = material_fulfillment_snap_sixteenths($qty / $yield);
+    } elseif ($stockUnit === 'roll') {
+        $deductQty = material_fulfillment_snap_sixteenths($qty);
+    } else {
+        $deductQty = round($qty, 2);
+    }
+    if ($deductQty <= 0) {
+        throw new RuntimeException('Deduct quantity rounds to zero.');
+    }
+
+    $current = round((float) ($row['on_hand'] ?? 0), 4);
+    $next = round($current - $deductQty, 4);
+    if ($next < -0.0001) {
+        throw new RuntimeException(
+            'Insufficient fulfillment packaging on hand for ' . (string) $row['name'] . '.'
+        );
+    }
+
+    $batchLabel = substr('parcel #' . $parcelId . ': ' . $reason, 0, 120);
+    $ins = $pdo->prepare(
+        'INSERT INTO stock_entries (stock_id, dept_id, qty, batching_date, supplier_batch_no, entered_by)
+         VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    $ins->execute([
+        $stockId,
+        (int) $row['dept_id'],
+        -$deductQty,
+        date('Y-m-d H:i:s'),
+        $batchLabel,
+        $userId,
+    ]);
+    $entryId = (int) $pdo->lastInsertId();
+    $pdo->prepare('UPDATE stocks SET on_hand = ? WHERE id = ?')->execute([$next, $stockId]);
+
+    return [
+        'stock_id' => $stockId,
+        'on_hand' => $next,
+        'entry_id' => $entryId,
+        'qty_deducted' => $deductQty,
+    ];
+}
+
+function parcel_fulfillment_already_deducted(PDO $pdo, int $parcelId): bool
+{
+    try {
+        $st = $pdo->prepare('SELECT 1 FROM online_parcel_fulfillment_deduct_lines WHERE parcel_id = ? LIMIT 1');
+        $st->execute([$parcelId]);
+
+        return (bool) $st->fetchColumn();
+    } catch (Throwable) {
+        return false;
+    }
+}
+
+/**
+ * @return list<array{stock_id: int, qty: float, unit: string}>
+ */
+function parcel_fulfillment_apply_deduct(PDO $pdo, int $parcelId, int $userId, string $itemsRaw): array
+{
+    if (!parcel_pack_tables_ready($pdo)) {
+        return [];
+    }
+    if (parcel_fulfillment_already_deducted($pdo, $parcelId)) {
+        return [];
+    }
+
+    if (!function_exists('fulfillment_packing_consume_line')) {
+        require_once __DIR__ . '/fulfillment_packing.php';
+    }
+
+    $lines = parcel_pack_fulfillment_lines_for_items_raw($pdo, $itemsRaw);
+    $deducted = [];
+    foreach ($lines as $line) {
+        if (fulfillment_packing_tables_ready($pdo)) {
+            $result = fulfillment_packing_consume_line(
+                $pdo,
+                (int) $line['stock_id'],
+                (float) $line['qty'],
+                (string) $line['unit'],
+                (string) $line['stock_name'],
+                $parcelId
+            );
+            $qtyDeducted = (float) $result['qty_consumed'];
+        } else {
+            $legacy = material_packaging_deduct_fulfillment_line(
+                $pdo,
+                (int) $line['stock_id'],
+                (float) $line['qty'],
+                (string) $line['unit'],
+                $userId,
+                (string) $line['stock_name'],
+                $parcelId
+            );
+            $qtyDeducted = (float) $legacy['qty_deducted'];
+        }
+        $pdo->prepare(
+            'INSERT INTO online_parcel_fulfillment_deduct_lines (parcel_id, stock_id, qty, unit)
+             VALUES (?, ?, ?, ?)'
+        )->execute([
+            $parcelId,
+            (int) $line['stock_id'],
+            $qtyDeducted,
+            (string) $line['unit'],
+        ]);
+        $deducted[] = [
+            'stock_id' => (int) $line['stock_id'],
+            'qty' => $qtyDeducted,
+            'unit' => (string) $line['unit'],
+        ];
+    }
+
+    return $deducted;
+}
+
+function parcel_fulfillment_revert_deduct(PDO $pdo, int $parcelId): void
+{
+    if ($parcelId < 1) {
+        return;
+    }
+    if (!function_exists('fulfillment_packing_tables_ready')) {
+        require_once __DIR__ . '/fulfillment_packing.php';
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT stock_id, qty FROM online_parcel_fulfillment_deduct_lines WHERE parcel_id = ?'
+        );
+        $st->execute([$parcelId]);
+        $lines = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable) {
+        return;
+    }
+
+    foreach ($lines as $line) {
+        $stockId = (int) ($line['stock_id'] ?? 0);
+        $qty = (float) ($line['qty'] ?? 0);
+        if ($stockId < 1 || $qty <= 0) {
+            continue;
+        }
+        if (fulfillment_packing_tables_ready($pdo)) {
+            $pdo->prepare(
+                'UPDATE fulfillment_packing_balances
+                 SET consumed_qty = GREATEST(0, consumed_qty - ?)
+                 WHERE stock_id = ?'
+            )->execute([$qty, $stockId]);
+        } else {
+            $pdo->prepare('UPDATE stocks SET on_hand = on_hand + ? WHERE id = ?')->execute([$qty, $stockId]);
+        }
+    }
+    if ($lines !== []) {
+        $pdo->prepare('DELETE FROM online_parcel_fulfillment_deduct_lines WHERE parcel_id = ?')->execute([$parcelId]);
+    }
 }
 
 /** @return list<array<string, mixed>> */

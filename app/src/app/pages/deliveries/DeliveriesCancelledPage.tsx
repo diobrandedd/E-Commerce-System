@@ -10,6 +10,8 @@ import {
   type DeliveryCancelLogRow,
 } from "@/app/lib/deliveriesApi";
 import { ApiError } from "@/app/lib/api";
+import { AppErrorBanner, AppSuccessNotice } from "@/app/components/layout/appFeedbackMotion";
+import { Button } from "@/app/components/ui/button";
 
 function ParcelStatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -191,8 +193,8 @@ export function DeliveriesCancelledPage() {
         </div>
       </div>
 
-      {notice ? <p className="text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mb-3">{notice}</p> : null}
-      {error ? <p className="text-sm text-destructive mb-3">{error}</p> : null}
+      <AppSuccessNotice message={notice} />
+      <AppErrorBanner message={error} />
 
       <div className="flex flex-wrap gap-2 mb-4">
         <input

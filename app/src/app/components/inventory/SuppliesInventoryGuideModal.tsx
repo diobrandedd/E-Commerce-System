@@ -1,6 +1,6 @@
 import { BookOpen } from "lucide-react";
-import { Link } from "react-router";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { GuideTourFooter, GuideWalkthroughSection } from "@/app/components/tour/GuideTourFooter";
 import type { Role } from "@/app/context/AuthContext";
 
 const ROLE_LABELS: Partial<Record<Role, string>> = {
@@ -84,9 +84,10 @@ interface SuppliesInventoryGuideModalProps {
   open: boolean;
   onClose: () => void;
   role: Role | undefined;
+  onStartTour: () => void;
 }
 
-export function SuppliesInventoryGuideModal({ open, onClose, role }: SuppliesInventoryGuideModalProps) {
+export function SuppliesInventoryGuideModal({ open, onClose, role, onStartTour }: SuppliesInventoryGuideModalProps) {
   const roleLabel = role ? ROLE_LABELS[role] : undefined;
 
   return (
@@ -138,7 +139,10 @@ export function SuppliesInventoryGuideModal({ open, onClose, role }: SuppliesInv
             <p>Sign in with an inventory role to see your workflow steps.</p>
           </GuideSection>
         )}
+
+        <GuideWalkthroughSection />
       </AppModalBody>
+      <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />
     </AppModal>
   );
 }

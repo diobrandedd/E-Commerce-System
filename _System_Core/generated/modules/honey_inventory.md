@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-06-16T10:40:52+02:00
+generated: 2026-06-17T08:18:58+02:00
 type: module
 function_count: 39
 ---
@@ -77,7 +77,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:846 — `$variant = honey_normalize_variant((string) $fields['variant']);`
 - `includes/honey_inventory.php`:877 — `$variant = honey_normalize_variant((string) $fields['variant']);`
 - `includes/honey_inventory.php`:1061 — `$after = honey_normalize_variant($newValue);`
-- `includes/honey_parcel_inventory.php`:166 — `$variant = honey_normalize_variant($variant);`
+- `includes/honey_parcel_inventory.php`:178 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:142 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:159 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:210 — `$variant = honey_normalize_variant($variant);`
@@ -92,7 +92,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:652 — `[$curCol, $initCol] = honey_packaging_size_columns($size);`
 - `includes/honey_inventory.php`:889 — `[$curCol, $initCol] = honey_packaging_size_columns((string) $size);`
 - `includes/honey_inventory.php`:902 — `[$curCol, $initCol] = honey_packaging_size_columns($size);`
-- `includes/honey_parcel_inventory.php`:122 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/honey_parcel_inventory.php`:132 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_pos.php`:143 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_pos.php`:163 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/rts_inventory_sync.php`:153 — `[$curCol] = honey_packaging_size_columns($size);`

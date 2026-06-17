@@ -4,6 +4,8 @@ import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/co
 import { PageLayout } from "@/app/components/PageLayout";
 import { MaterialCatalogModal } from "@/app/components/inventory/MaterialCatalogModal";
 import { SuppliesInventoryGuideModal } from "@/app/components/inventory/SuppliesInventoryGuideModal";
+import { runSuppliesInventoryTour } from "@/app/components/tour/guides/suppliesInventoryTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { SupplyIssueRequestModal } from "@/app/components/inventory/SupplyIssueRequestModal";
 import { SupplyMaterialDetailModal } from "@/app/components/inventory/SupplyMaterialDetailModal";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
@@ -133,7 +135,7 @@ export function SuppliesMaterialsPage() {
       }
     >
       <div className="flex flex-col h-[calc(100dvh-8rem)] min-h-[18rem] min-w-0 gap-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 shrink-0">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 shrink-0" data-tour="supplies-stats">
           <div className="rounded-xl border bg-card px-4 py-3">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Catalog items</p>
             <p className="text-xl font-semibold mt-1">{stats.count}</p>
@@ -148,7 +150,7 @@ export function SuppliesMaterialsPage() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+        <div className="flex flex-col sm:flex-row gap-2 shrink-0" data-tour="supplies-filters">
           <div className="relative flex-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -178,7 +180,7 @@ export function SuppliesMaterialsPage() {
           </div>
         </div>
 
-        <div className="bg-card rounded-xl border overflow-hidden flex flex-col min-h-0 flex-1">
+        <div className="bg-card rounded-xl border overflow-hidden flex flex-col min-h-0 flex-1" data-tour="supplies-catalog">
           <div className="hidden sm:grid sm:grid-cols-[1fr_120px_120px_160px_28px] gap-2 px-4 py-3 border-b bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium shrink-0">
             <span>Item</span>
             <span>Unit cost</span>
@@ -287,7 +289,15 @@ export function SuppliesMaterialsPage() {
         </div>
       </div>
 
-      <SuppliesInventoryGuideModal open={guideOpen} onClose={() => setGuideOpen(false)} role={user?.role} />
+      <SuppliesInventoryGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        role={user?.role}
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runSuppliesInventoryTour(user?.role));
+        }}
+      />
 
       {showCreate && (
         <MaterialCatalogModal

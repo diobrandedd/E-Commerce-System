@@ -31,7 +31,7 @@ function lineCostEstimate(line: ParcelPackTierLine, qty: number): number {
 }
 
 function isPlaceholderTier(tier: ParcelPackTier): boolean {
-  return !tier.is_active || Boolean(tier.match_rule?.honey_250_350_solo);
+  return !tier.is_active;
 }
 
 type LineDraft = { qtyTyp: string; qtyMin: string; qtyMax: string };
@@ -227,8 +227,10 @@ function PreviewResult({ preview }: { preview: ParcelCostPreview }) {
       <p className="text-base font-bold text-foreground tabular-nums">
         {costBand(preview.cost_min, preview.cost_typical, preview.cost_max)}
       </p>
-      {preview.tier_keys && preview.tier_keys.length > 0 && (
-        <p className="text-xs text-muted-foreground">Tiers: {preview.tier_keys.join(" + ")}</p>
+      {(preview.tier_key ?? preview.tier_keys?.[0]) && (
+        <p className="text-xs text-muted-foreground">
+          Recipe: {preview.tier_key ?? preview.tier_keys?.join(", ")}
+        </p>
       )}
       {preview.tiers.map(t => (
         <div key={t.tier_key} className="text-xs">

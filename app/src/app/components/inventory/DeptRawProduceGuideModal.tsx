@@ -1,5 +1,6 @@
 import { BookOpen } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { GuideTourFooter, GuideWalkthroughSection } from "@/app/components/tour/GuideTourFooter";
 import type { Role } from "@/app/context/AuthContext";
 import {
   BRC_GRAMS_PER_POUCH,
@@ -53,6 +54,7 @@ interface DeptRawProduceGuideModalProps {
   open: boolean;
   onClose: () => void;
   role: Role | undefined;
+  onStartTour: () => void;
 }
 
 export function DeptRawProduceGuideModal({
@@ -60,6 +62,7 @@ export function DeptRawProduceGuideModal({
   open,
   onClose,
   role,
+  onStartTour,
 }: DeptRawProduceGuideModalProps) {
   const meta = GUIDE_META[productKey];
   const roleLabel = role ? ROLE_LABELS[role] : undefined;
@@ -148,7 +151,10 @@ export function DeptRawProduceGuideModal({
             The <strong className="text-foreground">Produce</strong> modal shows a preview of raw and packaging lines that will deduct before you confirm.
           </p>
         </GuideSection>
+
+        <GuideWalkthroughSection />
       </AppModalBody>
+      <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />
     </AppModal>
   );
 }

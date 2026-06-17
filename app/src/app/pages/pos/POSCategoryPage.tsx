@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { useAuth } from "@/app/context/AuthContext";
 import { POSHeader } from "@/app/components/pos/POSHeader";
+import { POSGuideModal } from "@/app/components/pos/POSGuideModal";
 import { POSPageTransition } from "@/app/components/pos/posMotion";
+import { runPosCategoryTour } from "@/app/components/tour/guides/posTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 
 const CATEGORIES = [
   { key: "honey", label: "Honey", active: true, to: "/pos/honey" },
@@ -14,6 +18,7 @@ const CATEGORIES = [
 export function POSCategoryPage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const handleExit = async () => {
     await logout();
@@ -22,11 +27,11 @@ export function POSCategoryPage() {
 
   return (
     <POSPageTransition className="min-h-screen bg-background flex flex-col" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-      <POSHeader title="Pyx POS" subtitle="Select product" onExit={handleExit} />
+      <POSHeader title="Pyx POS" subtitle="Select product" onExit={handleExit} onGuide={() => setGuideOpen(true)} />
 
       <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6">
         <p className="text-sm text-muted-foreground mb-4 text-center">Tap a product category</p>
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 max-w-md w-full mx-auto">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 max-w-md w-full mx-auto" data-tour="pos-categories">
           {CATEGORIES.map((cat, i) => (
             <motion.button
               key={cat.key}
@@ -53,6 +58,16 @@ export function POSCategoryPage() {
           ))}
         </div>
       </main>
+
+      <POSGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        context="category"
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runPosCategoryTour());
+        }}
+      />
     </POSPageTransition>
   );
 }

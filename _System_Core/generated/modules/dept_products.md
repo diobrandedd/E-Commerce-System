@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-06-16T10:40:51+02:00
+generated: 2026-06-17T08:18:56+02:00
 type: module
 function_count: 21
 ---
@@ -149,7 +149,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `api/v1/honey.php`:613 — `if (!dept_product_key_valid($productKey)) {`
 - `api/v1/honey.php`:783 — `if (!dept_product_key_valid($productKey)) {`
 - `includes/dept_pos.php`:44 — `if (!dept_product_key_valid($productKey) || $qty <= 0) {`
-- `includes/honey_parcel_inventory.php`:32 — `if ($key === '' || !dept_product_key_valid($key)) {`
+- `includes/honey_parcel_inventory.php`:34 — `if ($key === '' || !dept_product_key_valid($key)) {`
 
 ## dept_product_resolve_label {#dept_product_resolve_label}
 

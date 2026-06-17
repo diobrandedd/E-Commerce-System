@@ -1,54 +1,42 @@
 ---
 type: fix
-tags: [fix, packaging, inventory, roles, hr, prod_manager, executive]
+tags: [fix, packaging, inventory, roles, hr, prod_manager, executive, staging]
 ---
 
-# Fix: Packaging Materials — role split (HR stock-in / PM deduct / exec all)
+# Fix: Packaging Materials — HR price / PM stock-in / packing staging
 
-## Operational model (do not invert)
+## Operational model (2026-06-17)
 
-| Role | Job on Packaging Materials | API / helper |
-|------|---------------------------|--------------|
-| **HR** | **Stock in lot** when deliveries arrive — total ₱ paid + qty received | `stock_in_lot` · `material_inventory_role_can_stock_in_packaging()` |
-| **Production manager** | **Deduct for use** when packaging goes to production — qty + reason | `packaging_deduct` · `material_packaging_deduct_for_use()` · `material_inventory_role_can_deduct_packaging()` |
-| **Executive** | **All** of the above + **set on-hand**, **pool yield**, **add catalog**, extended **activity log** (100 rows) | `set_on_hand`, `set_pool_yield`, `catalog_create` · `material_inventory_role_can_set_packaging_on_hand()` |
+| Role | Warehouse packaging (`stocks.on_hand`) | For-packing staging | On-hold parcels |
+|------|----------------------------------------|---------------------|-----------------|
+| **HR** | **Update price from invoice** only — no qty stock-in | — | — |
+| **prod_manager** | **Stock in lot** + **deduct for use** | **Issue** materials, view counters | Re-waybill + ship (Deliveries) |
+| **csr_tl** | No access | No access | **View only** (Online Parcels `on_hold`) |
+| **Executive** | All + set on-hand, pool yield, catalog | All | All |
 
-**HR does not** deduct or set on-hand directly. **Production manager does not** stock in. **Neither** accesses Product Costing (executive only).
+**Ship deduct:** fulfillment packaging consumes **staging** (`fulfillment_packing_balances.consumed_qty`), not warehouse `on_hand`. PM must **issue** to packing before ship.
 
-## Per-unit vs pool
+## API / helpers
 
-| Badge | `production_deduct` | On-hand unit | Who deducts |
-|-------|---------------------|--------------|-------------|
-| **Per-unit** | 1 | pcs, pouch, bottle | PM via **Deduct for use** (+ may still auto-deduct on dept produce for per-unit — see spec) |
-| **Pool** | 0 | **whole rolls** | PM deducts **1 roll** when opened; never fractional rolls |
+| Action | Role | Helper |
+|--------|------|--------|
+| `stock_in_lot` (packaging) | PM, exec | `material_inventory_role_can_stock_in_packaging()` |
+| `packaging_price_lot` | HR, exec | `material_inventory_role_can_edit_packaging_price()` |
+| `packing_issue_create` | PM, exec | `material_inventory_role_can_issue_packing()` |
+| `hold_parcel` / `rewaybill` | PM, exec | Deliveries |
 
-Pool costing uses `pool_yield_qty` (executive edits yield on detail modal).
+## SPA
 
-## SPA pattern
-
-1. **List** — `PackagingMaterialsPage.tsx`: stats (no mixed-unit totals), search, filters, row → detail modal.
-2. **Detail** — `PackagingMaterialDetailModal.tsx`: actions from `packaging_detail.permissions` (not hardcoded props alone).
-3. **Modals** — `PackagingStockInLotModal`, `PackagingDeductModal`, `PackagingOnHandSetModal`.
-4. **Guide** — `PackagingInventoryGuideModal` via header **Guide** button ([[fixes/page-guide-button-modal]]). Role-specific copy; **no `/costing` links** for HR or prod manager.
-
-## Backend checklist (new packaging actions)
-
-1. Add role helper in `includes/material_inventory.php`.
-2. Enforce in `api/v1/materials.php` with `api_require_role()` or helper gate.
-3. Return `permissions` object from `packaging_detail` so SPA stays in sync.
-4. Stock entries: `lot:` stock-in, `use:` deduct, `count_correction:` executive set on-hand.
-5. Run `impact.php` + `generate_all.php`.
+- **For packing:** `/fulfillment/packing-materials` — `PackingMaterialsStagingPage.tsx`
+- **HR:** `PackagingPriceLotModal` on packaging detail (not stock-in)
+- **PM:** stock-in + staging issue; Deliveries tabs Ship / On hold / Re-waybill
+- **CSR TL:** Online Parcels filter `on_hold` (read-only)
 
 ## Files
 
-| Layer | Path |
-|-------|------|
-| Roles / deduct | `includes/material_inventory.php` |
-| API | `api/v1/materials.php` |
-| SPA page | `app/src/app/pages/inventory/PackagingMaterialsPage.tsx` |
-| Detail + guide | `PackagingMaterialDetailModal.tsx`, `PackagingInventoryGuideModal.tsx` |
-| Client | `app/src/app/lib/materials.ts` |
+- `includes/fulfillment_packing.php`
+- `includes/material_inventory.php` — `parcel_fulfillment_apply_deduct` → staging
+- `api/v1/fulfillment_packing.php`, `api/v1/materials.php`, `api/v1/deliveries.php`
+- `sql/migration_phase34_fulfillment_packing_staging.sql`
 
-## Docs
-
-[[005_SPA_UX_Patterns#Role-based inventory permissions]] · [[010_Product_Theory#Who uses it]] · [[003_Fragile_Edges#Inventory arrangement (material on-hand)]]
+Supersedes HR stock-in row in prior version of this doc.

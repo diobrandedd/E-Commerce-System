@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/Inventory Arrangement change]] |
-| **Active Plan** | — (ad-hoc costing session shipped 2026-06-11) |
-| **Status** | `shipped` — packaging pool yield bootstrap (phase 27) |
+| **Active Spec** | [[specs/2026-06-17_fulfillment-packing-staging]] |
+| **Active Plan** | — |
+| **Status** | `shipped` — packing staging + on-hold re-waybill (phase 34) |
 
 ## 🚀 Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags → Pouch); run phase 22–28 migrations on prod if pending
@@ -20,7 +20,7 @@
 - [x] **BRC v2:** supplier ₱/bag (phase 18); **1 kg BOM** corrected phase 23 (2026-06-11)
 - [x] **Jar Cacao BOM:** 220 g/jar, formula 0.22 — phase 22 (2026-06-11)
 - [x] **Costing UI + custom formula lines** — phase 24 (2026-06-11)
-- [ ] **Run** phase 22–28 migrations on prod if not done (`migration_phase28_honey_bottle_dedup.sql` after phase 27 if bottle duplicates)
+- [ ] **Run** phase 33 on prod + `php tools/seed_fulfillment_pack_tiers.php`; stock-in fulfillment SKUs before ship E2E
 - [ ] Manual E2E: Paragis — stock in bags → Use raw bags → Pouch → verify WIP + finished + packaging deduct
 - [ ] Manual E2E: PT (~20.83 pouches/bag) + BRC (10 pouches/bag) + Jar Cacao (~4.55 jars/bag) → costing → custom labor line → parcel → POS
 - [ ] Manual E2E: RTS SPA — create case, append lines, sync inventory, void/claim, dashboard counts

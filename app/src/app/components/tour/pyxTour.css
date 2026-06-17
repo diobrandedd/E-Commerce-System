@@ -1,0 +1,263 @@
+/* Pyx Tracker theme overrides for driver.js product tours */
+.pyx-tour-popover {
+  font-family: "DM Sans", sans-serif !important;
+  border-radius: 0.75rem !important;
+  border: 1px solid var(--border, #e8dcc8) !important;
+  box-shadow: 0 16px 40px rgba(26, 21, 16, 0.12) !important;
+  max-width: min(20rem, calc(100vw - 2rem)) !important;
+  transform-origin: center center;
+}
+
+.pyx-tour-popover .driver-popover-title {
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: var(--foreground, #1a1510) !important;
+}
+
+.pyx-tour-popover .driver-popover-description {
+  font-size: 0.75rem !important;
+  line-height: 1.5 !important;
+  color: var(--muted-foreground, #6b5c4a) !important;
+}
+
+.pyx-tour-popover .driver-popover-progress-text {
+  font-size: 0.65rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  color: var(--muted-foreground, #6b5c4a) !important;
+}
+
+.pyx-tour-popover .driver-popover-next-btn,
+.pyx-tour-popover .driver-popover-prev-btn,
+.pyx-tour-popover .driver-popover-close-btn {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  border-radius: 0.5rem !important;
+  padding: 0.35rem 0.75rem !important;
+  text-shadow: none !important;
+  transition:
+    transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.16s ease,
+    box-shadow 0.16s ease,
+    color 0.16s ease !important;
+}
+
+.pyx-tour-popover .driver-popover-next-btn {
+  background: #c8900a !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.pyx-tour-popover .driver-popover-next-btn:hover {
+  box-shadow: 0 4px 14px rgba(200, 144, 10, 0.38) !important;
+}
+
+.pyx-tour-popover .driver-popover-next-btn:active {
+  transform: scale(0.96) !important;
+}
+
+.pyx-tour-popover .driver-popover-prev-btn {
+  background: transparent !important;
+  color: var(--muted-foreground, #6b5c4a) !important;
+  border: 1px solid var(--border, #e8dcc8) !important;
+}
+
+.pyx-tour-popover .driver-popover-prev-btn:hover {
+  background: rgba(232, 220, 200, 0.35) !important;
+}
+
+.pyx-tour-popover .driver-popover-prev-btn:active {
+  transform: scale(0.97) !important;
+}
+
+.pyx-tour-popover .driver-popover-close-btn {
+  color: var(--muted-foreground, #6b5c4a) !important;
+}
+
+.pyx-tour-popover .driver-popover-close-btn:hover {
+  color: var(--foreground, #1a1510) !important;
+  transform: scale(1.08) !important;
+}
+
+/* Highlight ring + gentle breathing glow on the active target */
+.driver-active-element {
+  outline: 2px solid #c8900a !important;
+  outline-offset: 3px !important;
+  border-radius: 0.5rem;
+  animation: pyx-tour-spotlight-pulse 1.8s ease-in-out infinite;
+}
+
+.driver-active-element.pyx-tour-target-land {
+  animation:
+    pyx-tour-target-land 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    pyx-tour-spotlight-pulse 1.8s ease-in-out 0.42s infinite;
+}
+
+/* Popover entrance — first open and each step change */
+@keyframes pyx-tour-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.driver-fade .pyx-tour-popover {
+  animation: pyx-tour-popover-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+}
+
+.pyx-tour-popover.pyx-tour-popover-step-enter {
+  animation: pyx-tour-popover-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both !important;
+}
+
+/* Title/description stagger on step enter */
+@keyframes pyx-tour-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pyx-tour-popover.pyx-tour-popover-step-enter .driver-popover-title {
+  animation: pyx-tour-text-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+}
+
+.pyx-tour-popover.pyx-tour-popover-step-enter .driver-popover-description {
+  animation: pyx-tour-text-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+/* Progress counter tick */
+@keyframes pyx-tour-progress-pop {
+  from {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.pyx-tour-popover .driver-popover-progress-text.pyx-tour-progress-tick {
+  animation: pyx-tour-progress-pop 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Arrow nudge toward the highlighted target */
+@keyframes pyx-tour-arrow-nudge-down {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+@keyframes pyx-tour-arrow-nudge-up {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes pyx-tour-arrow-nudge-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes pyx-tour-arrow-nudge-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-3px);
+  }
+}
+
+.pyx-tour-popover .driver-popover-arrow-side-top {
+  animation: pyx-tour-arrow-nudge-down 1.4s ease-in-out infinite;
+}
+
+.pyx-tour-popover .driver-popover-arrow-side-bottom {
+  animation: pyx-tour-arrow-nudge-up 1.4s ease-in-out infinite;
+}
+
+.pyx-tour-popover .driver-popover-arrow-side-left {
+  animation: pyx-tour-arrow-nudge-right 1.4s ease-in-out infinite;
+}
+
+.pyx-tour-popover .driver-popover-arrow-side-right {
+  animation: pyx-tour-arrow-nudge-left 1.4s ease-in-out infinite;
+}
+
+@keyframes pyx-tour-spotlight-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(200, 144, 10, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(200, 144, 10, 0.1);
+  }
+}
+
+@keyframes pyx-tour-target-land {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.012);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Softer overlay fade-in on tour start */
+.driver-fade .driver-overlay {
+  animation: pyx-tour-overlay-in 0.28s ease-out both !important;
+}
+
+@keyframes pyx-tour-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .driver-active-element,
+  .driver-active-element.pyx-tour-target-land,
+  .pyx-tour-popover,
+  .pyx-tour-popover .driver-popover-arrow,
+  .pyx-tour-popover .driver-popover-progress-text.pyx-tour-progress-tick,
+  .pyx-tour-popover.pyx-tour-popover-step-enter .driver-popover-title,
+  .pyx-tour-popover.pyx-tour-popover-step-enter .driver-popover-description,
+  .driver-fade .driver-overlay {
+    animation: none !important;
+  }
+
+  .pyx-tour-popover .driver-popover-next-btn:active,
+  .pyx-tour-popover .driver-popover-prev-btn:active,
+  .pyx-tour-popover .driver-popover-close-btn:hover {
+    transform: none !important;
+  }
+}

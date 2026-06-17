@@ -6,7 +6,7 @@
 
 1. **Always call `useReducedMotion()`** from `motion/react` when adding Framer Motion animations — disable motion when user prefers reduced motion.
 2. **Never invent a fourth modal style** for a domain that already has a shared primitive (see table below).
-3. **Feedback after user actions** — successful mutations should show toast, burst, or inline banner; errors use animated red banner (`FulfillmentErrorBanner` / `OrderRemarksToast`).
+3. **Feedback after user actions** — successful mutations use `AppSuccessNotice`, toast, or `AppTaskCompletePanel`; errors use `AppErrorBanner` (see [[#Feedback animations & hover (mandatory)]]).
 4. **Hover on interactive UI** — clickable cards, table rows, and buttons get visible highlight + drop shadow on hover (see [[#Feedback animations & hover (mandatory)]]).
 5. **Exec/inventory/CSR pages** → wrap in `PageLayout`. **POS** → use `posMotion` kit only.
 6. **Page guides** → header **Guide** button opens a scrollable `AppModal` — never an inline collapsible panel on the page body. See [[#Page guide button (mandatory)]].
@@ -59,7 +59,7 @@ Admin-style layout (like J&T): scrolling the page content must **not** move the 
 
 ## Page guide button (mandatory)
 
-**Canonical reference:** [[fixes/page-guide-button-modal]] · live in `CostingGuideModal.tsx`, `PackagingInventoryGuideModal.tsx`, `SuppliesInventoryGuideModal.tsx`, `InventoryRequestsGuideModal.tsx`, `ParagisProductionGuideModal.tsx`, `DeptRawProduceGuideModal.tsx`.
+**Canonical reference:** [[fixes/page-guide-button-modal]] · [[fixes/page-interactive-tour]] · live in `CostingGuideModal.tsx`, `PackagingInventoryGuideModal.tsx`, `SuppliesInventoryGuideModal.tsx`, `InventoryRequestsGuideModal.tsx`, `ParagisProductionGuideModal.tsx`, `DeptRawProduceGuideModal.tsx`, `DeliveriesReviewGuideModal.tsx`.
 
 When a page needs user-facing help or role-specific workflow docs:
 
@@ -89,6 +89,42 @@ When a page needs user-facing help or role-specific workflow docs:
 | Requests | `InventoryRequestsGuideModal` |
 | Dried Paragis (raw) | `ParagisProductionGuideModal` |
 | Black Rice / Cacao (raw) | `DeptRawProduceGuideModal` (`brc` \| `jar_cacao`) |
+| Deliveries review | `DeliveriesReviewGuideModal` (+ interactive tour — see below) |
+| Staff management | `StaffManagementGuideModal` |
+| Supplier master | `SuppliersGuideModal` |
+| Online orders | `OnlineOrdersGuideModal` |
+| Online parcels | `OnlineParcelsGuideModal` |
+| POS (category + product) | `POSGuideModal` (`category` \| `product`) |
+
+### Interactive page tour (optional pilot)
+
+**Canonical reference:** [[fixes/page-interactive-tour]] · `runPageTour.ts` · `driver.js`.
+
+When a process benefits from click-by-click onboarding:
+
+1. **Guide modal footer** — primary **Start tour** button (`MousePointerClick` icon); closes modal, then starts tour after paint (`startPageTourAfterModalClose`).
+2. **Tour steps** — per-page `*Tour.ts` file; use `data-tour="…"` on stable targets (filters, table regions, column headers — not row-specific buttons when table may be empty).
+3. **Runner** — `runPageTour({ steps })` from `components/tour/runPageTour.ts`; Pyx-themed popover via `pyxTour.css`.
+4. **Role copy** — vary step descriptions in the tour builder when executive vs prod_manager workflows differ.
+5. **Do not** roll out to every guide until one pilot is validated — expand page-by-page.
+
+| Page | Tour module |
+|------|-------------|
+| Deliveries review | `deliveriesReviewTour.ts` |
+| Product Costing | `costingTour.ts` |
+| Packaging Materials | `packagingInventoryTour.ts` |
+| Supplies | `suppliesInventoryTour.ts` |
+| Requests | `inventoryRequestsTour.ts` |
+| Dried Paragis (raw) | `paragisProductionTour.ts` |
+| Black Rice / Cacao (raw) | `deptRawProduceTour.ts` |
+| Staff management | `staffManagementTour.ts` |
+| Supplier master | `supplierMasterTour.ts` |
+| Online orders | `onlineOrdersTour.ts` (batch/tools steps only when visible) |
+| Online parcels | `onlineParcelsTour.ts` (role-aware copy) |
+| POS category | `posTour.ts` → `runPosCategoryTour` |
+| POS product (honey + dept) | `posTour.ts` → `runPosProductTour` |
+
+Shared footer: `GuideTourFooter.tsx` + `GuideWalkthroughSection`.
 
 ### Guide content rules
 
@@ -372,10 +408,13 @@ Uploading **full phone resolution** on a final **Confirm** button causes multi-s
 
 **Who:** **`prod_manager`** and **`executive`** only — CSR does not see Deliveries in sidebar.
 
-**Routes:** `/deliveries` (scan label → take packing photo → ship) · `/deliveries/review` (batch review / edit requests / executive delete).
+**Routes:** `/deliveries` (Ship · On hold · Re-waybill tabs) · `/deliveries/review` · `/deliveries/cancelled` · `/fulfillment/packing-materials` (PM issue to staging).
 
 **Sidebar:** **Add deliveries** uses `end: true` — see [[#Sidebar navigation — sibling routes]].
-Deliveries now has three sibling routes under one group: `/deliveries`, `/deliveries/review`, `/deliveries/cancelled`.
+
+**For-packing staging (prod_manager):** `/fulfillment/packing-materials` — issue warehouse → staging; counters `consumed/issued`; ship deducts staging only.
+
+**Re-waybill / on hold (2026-06-17):** Deliveries tabs — **On hold** (sealed box, no inventory revert) → CSR new waybill → **Re-waybill** (old TN → new TN) → **Ship** on new TN (idempotent deduct). CSR TL views `on_hold` on Online Parcels only.
 
 **Standard flow:**
 
@@ -464,7 +503,38 @@ HR page shows **Packaging & supply requests** only (honey corrections section hi
 
 ## Feedback animations & hover (mandatory)
 
-**Applies to all new SPA features** (CSR, fulfillment, inventory, exec). When building UI, ship both **motion feedback** and **hover affordance** — not plain static blocks.
+**Canonical reference:** [[fixes/app-feedback-motion]] · **Agents:** `.cursor/rules/feedback-animations.mdc` (always apply).
+
+**Every new or edited SPA feature must include motion feedback** — buttons, modals, success/error states, and clickable rows. Do not ship static UI and wait for a follow-up animation pass.
+
+### App-wide motion kit (default)
+
+**File:** `app/src/app/components/layout/appFeedbackMotion.tsx`
+
+| Export | Use |
+|--------|-----|
+| `AppPressable` | Header/modal actions — hover lift + tap scale |
+| `AppSuccessNotice` | Inline green banner after save/complete |
+| `AppErrorBanner` | Bordered red panel for errors |
+| `AppErrorNotice` | Simple destructive text with motion |
+| `AppSectionEnter` | Page block fade/slide in |
+| `AppStepSwitch` | Wizard / tab step crossfade |
+| `AppTaskCompletePanel` | Process-complete green panel |
+| `appHeaderActionClass` | Guide + muted `PageLayout` actions |
+| `appHoverCard` / `appHoverRow` | Clickable cards and table rows |
+| `appHoverPressablePrimary` / `appHoverPressableOutline` | Tailwind tokens on custom buttons |
+
+**Primitives already animated:** `AppModal` (open/close spring + close button press), shadcn `Button` (hover shadow + tap scale).
+
+### Domain kits (when already in use)
+
+| Domain | File |
+|--------|------|
+| CSR / Online Orders / Parcels | `onlineFulfillmentMotion.tsx` (re-exports app hover + `AppPressable`) |
+| Order remarks carousels | `orderRemarksMotion.tsx` |
+| POS terminal | `posMotion.tsx` |
+| Product costing | `costingMotion.tsx` |
+| Page tours | `runPageTour.ts` + `pyxTour.css` |
 
 ### Motion kit — Online Orders + Online Parcels
 
@@ -506,11 +576,12 @@ Prefer **`FulfillmentPressable`** / **`FulfillmentTableRow`** / **`FulfillmentPi
 
 ### Checklist for new pages
 
-1. Success action → toast or success panel animation  
-2. Error → `FulfillmentErrorBanner` or domain equivalent  
-3. Step/section changes → enter or step switch animation  
-4. Every clickable row/card/button → hover highlight + shadow  
-5. `useReducedMotion()` — disable motion when true  
+1. Success action → `AppSuccessNotice`, toast, or `AppTaskCompletePanel`
+2. Error → `AppErrorBanner` or domain equivalent
+3. Step/section changes → `AppStepSwitch` or `AppSectionEnter`
+4. Every clickable row/card/button → hover highlight + shadow (`appHover*` or `AppPressable` / `Button`)
+5. Modals → `AppModal` (never skip enter/exit animation)
+6. `useReducedMotion()` — disable motion when true  
 
 ## Honey / inventory UX
 
@@ -539,9 +610,10 @@ Prefer **`FulfillmentPressable`** / **`FulfillmentTableRow`** / **`FulfillmentPi
 
 - **Landed list** — `products_list&parcel=1` adds `parcel_addon_typical`, `landed_typical`, `margin_typical` per reference parcel shape (1L honey, 1-2 dept units, etc.).
 - **Tier modal** — tabs **Try an order** (Item/s preview) | **Edit tier rules** (material qty min/typ/max). Exclude TBD / inactive tiers from preview dropdown.
-- **Tiers (backend)** — `parcel_pack_tiers` + `parcel_pack_tier_lines`. API: `parcel_tiers_list`, `parcel_tier_line_save`, `parcel_cost_preview`.
-- **Migrations** — ASCII-only seed labels; run phase31 if UI shows `???` — [[fixes/parcel-pack-ascii-labels-migration]].
-- **Phase 1** — costing only; ship deduct of fulfillment packaging is Phase 2 ([[specs/2026-06-05_online-parcel-pack-costing]]).
+- **Tiers (backend)** — `parcel_pack_tiers` + `parcel_pack_tier_lines`; **single recipe** per order (combo-first matcher in `parcel_pack_costing.php`). Seed: `php tools/seed_fulfillment_pack_tiers.php` after phase 33.
+- **Fulfillment SKUs** — bubble rolls (13/17/22 cm), cushion pieces (LAD, liter sizes), column rolls, pouches, foam, cardboard — filter **Fulfillment** on Packaging Materials page.
+- **Ship deduct** — `parcel_fulfillment_apply_deduct` on parcel ship; blocks if insufficient on-hand. **Spec:** [[specs/2026-06-17_fulfillment-packaging-recipes]].
+- **Migrations** — phase 33 fulfillment catalog; phase 31 ASCII labels if UI shows `???`.
 
 ### Add formula line modal
 

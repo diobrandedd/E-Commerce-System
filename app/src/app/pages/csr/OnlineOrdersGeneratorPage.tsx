@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Download, CheckCircle2 } from "lucide-react";
+import { BookOpen, Loader2, Download, CheckCircle2 } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
+import { OnlineOrdersGuideModal } from "@/app/components/csr/OnlineOrdersGuideModal";
+import { appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
+import { runOnlineOrdersTour } from "@/app/components/tour/guides/onlineOrdersTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
+import { useAuth } from "@/app/context/AuthContext";
 import { BatchStartModal } from "@/app/components/csr/onlineOrders/BatchStartModal";
 import { ToolsPicker } from "@/app/components/csr/onlineOrders/ToolsPicker";
 import { VipPrepTool } from "@/app/components/csr/onlineOrders/VipPrepTool";
@@ -30,6 +35,7 @@ import { triggerWaybillDownload } from "@/app/lib/waybillApi";
 type Step = "loading" | "start" | "tools" | "prep" | "stamp" | "stamp_result" | "post_run" | "done";
 
 export function OnlineOrdersGeneratorPage() {
+  const { user } = useAuth();
   const [step, setStep] = useState<Step>("loading");
   const [batch, setBatch] = useState<OnlineOrdersBatch | null>(null);
   const [selectedTool, setSelectedTool] = useState<OnlineOrdersPrepTool | null>(null);
@@ -39,6 +45,7 @@ export function OnlineOrdersGeneratorPage() {
   const [showStartModal, setShowStartModal] = useState(false);
   const [lastStampResult, setLastStampResult] = useState<PartnerStampResult | null>(null);
   const [stampResult, setStampResult] = useState<PartnerStampResult | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const refreshBatch = useCallback(async () => {
     const b = await onlineOrdersBatchGet();
@@ -168,6 +175,11 @@ export function OnlineOrdersGeneratorPage() {
     <PageLayout
       title="Online Orders"
       subtitle="Three prep tools download Excel only; pick PDF + Excel stamper separately from the tools page"
+      actions={
+        <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
+          <BookOpen size={13} /> Guide
+        </button>
+      }
     >
       <OrderRemarksToast message={toast} />
 
@@ -187,7 +199,7 @@ export function OnlineOrdersGeneratorPage() {
       {error && <FulfillmentErrorBanner message={error} />}
 
       {batch && step !== "loading" && step !== "start" && (
-        <FulfillmentSectionEnter index={0} className="mb-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+        <FulfillmentSectionEnter index={0} className="mb-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground" data-tour="online-orders-batch-bar">
           <span>
             Batch #{batch.id} · {batch.line_count} lines · {batch.runs.length} run(s)
           </span>
@@ -212,13 +224,15 @@ export function OnlineOrdersGeneratorPage() {
 
       {step === "tools" && batch && (
         <FulfillmentStepSwitch stepKey="tools">
-          <ToolsPicker
-            lineCount={batch.line_count}
-            onSelect={tool => {
-              setSelectedTool(tool);
-              setStep(tool === "stamper" ? "stamp" : "prep");
-            }}
-          />
+          <div data-tour="online-orders-tools">
+            <ToolsPicker
+              lineCount={batch.line_count}
+              onSelect={tool => {
+                setSelectedTool(tool);
+                setStep(tool === "stamper" ? "stamp" : "prep");
+              }}
+            />
+          </div>
         </FulfillmentStepSwitch>
       )}
 
@@ -349,6 +363,16 @@ export function OnlineOrdersGeneratorPage() {
           Start new batch
         </FulfillmentPressable>
       )}
+
+      <OnlineOrdersGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        role={user?.role}
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runOnlineOrdersTour(user?.role));
+        }}
+      />
     </PageLayout>
   );
 }

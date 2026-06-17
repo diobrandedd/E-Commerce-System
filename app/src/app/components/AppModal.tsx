@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { X } from "lucide-react";
 import { cn } from "@/app/components/ui/utils";
+import { appFeedbackEase } from "@/app/components/layout/appFeedbackMotion";
 
 /** Shared motion spring — same feel as CSR fulfillment modals. */
 export const appModalSpring = { type: "spring" as const, stiffness: 420, damping: 32 };
@@ -82,6 +83,8 @@ export function AppModalHeader({
   onClose: () => void;
   children?: ReactNode;
 }) {
+  const reduce = useReducedMotion();
+
   return (
     <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-4 border-b border-border flex-shrink-0">
       <div className="min-w-0">
@@ -92,14 +95,17 @@ export function AppModalHeader({
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
         {children}
-        <button
+        <motion.button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+          whileTap={reduce ? undefined : { scale: 0.9 }}
+          whileHover={reduce ? undefined : { scale: 1.06 }}
+          transition={appFeedbackEase}
+          className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors duration-200"
         >
           <X size={18} />
-        </button>
+        </motion.button>
       </div>
     </div>
   );

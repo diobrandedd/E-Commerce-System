@@ -3,7 +3,10 @@ import { useNavigate } from "react-router";
 import { AnimatePresence } from "motion/react";
 import { AlertCircle, Loader2, Minus, Plus, Trash2, X } from "lucide-react";
 import { POSHeader } from "@/app/components/pos/POSHeader";
+import { POSGuideModal } from "@/app/components/pos/POSGuideModal";
 import { POSReceiptView } from "@/app/components/pos/POSReceiptView";
+import { runPosProductTour } from "@/app/components/tour/guides/posTour";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import {
   ActionFeedbackButton,
   AnimatedQuantity,
@@ -47,6 +50,7 @@ export function POSHoneyPage() {
   const [receipt, setReceipt] = useState<HoneyCheckoutResult | null>(null);
   const [feedback, setFeedback] = useState<"success" | "error" | null>(null);
   const [cartPulse, setCartPulse] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -264,6 +268,7 @@ export function POSHoneyPage() {
             subtitle="Walk-in sales"
             onBack={() => navigate("/pos")}
             onExit={handleExit}
+            onGuide={() => setGuideOpen(true)}
           />
 
           {error && (
@@ -275,6 +280,7 @@ export function POSHoneyPage() {
 
           {/* Cart strip */}
           <section
+            data-tour="pos-cart"
             className={`bg-card border-b border-border px-4 py-3 transition-colors duration-300 ${cartPulse ? "bg-[#C8900A]/10" : ""}`}
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Cart</p>
@@ -320,7 +326,7 @@ export function POSHoneyPage() {
                 Loading…
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-xl w-full mx-auto">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-xl w-full mx-auto" data-tour="pos-product-grid">
                 {variants.map(v => (
                   <VariantCardMotion
                     key={v.variant}
@@ -348,6 +354,7 @@ export function POSHoneyPage() {
           {/* Fixed checkout — hidden while add modal is open */}
           {!activeVariant && (
             <div
+              data-tour="pos-checkout-bar"
               className="fixed bottom-0 left-0 right-0 z-40 p-4 pt-3 bg-background/95 border-t border-border backdrop-blur-sm"
               style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
             >
@@ -580,6 +587,16 @@ export function POSHoneyPage() {
 
           <FeedbackBurst kind="success" show={feedback === "success"} onDone={activeVariant ? onAddFeedbackDone : undefined} />
           <FeedbackBurst kind="error" show={feedback === "error"} />
+
+          <POSGuideModal
+            open={guideOpen}
+            onClose={() => setGuideOpen(false)}
+            context="product"
+            onStartTour={() => {
+              setGuideOpen(false);
+              startPageTourAfterModalClose(() => runPosProductTour());
+            }}
+          />
         </POSPageTransition>
       )}
     </AnimatePresence>
