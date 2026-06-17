@@ -43,10 +43,10 @@ function TypeLegend() {
       <div className="rounded-lg border bg-amber-50/50 px-3 py-2 sm:col-span-2">
         <p className="font-semibold text-foreground">
           <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-full bg-[#C8900A]/15 text-[#8a6507] mr-1.5">Fulfillment</span>
-          Parcel ship — bubble rolls, cushion pieces/column rolls, pouches, foam, cardboard
+          Parcel ship — bubble rolls, cushion rolls, LAD pieces, pouches, foam rolls, cardboard
         </p>
         <p className="mt-1">
-          Use the <strong className="text-foreground">Fulfillment</strong> filter. Stock in whole rolls (bubble, column cushions) or pieces (LAD, liter cushions, pouches). System deducts on parcel ship — fractional rolls snap to 1/16.
+          Use the <strong className="text-foreground">For packing</strong> filter. Stock in whole rolls (bubble, cushion, foam) or pieces (LAD, pouches). System deducts on parcel ship — fractional rolls snap to 1/16.
         </p>
       </div>
     </div>

@@ -34,7 +34,7 @@ function material_inventory_role_can_request_packaging(string $role): bool
 
 function material_inventory_role_can_stock_in_packaging(string $role): bool
 {
-    return $role === 'executive' || $role === 'prod_manager';
+    return in_array($role, ['executive', 'prod_manager', 'hr'], true);
 }
 
 function material_inventory_role_can_deduct_packaging(string $role): bool
@@ -575,7 +575,8 @@ function material_packaging_stock_in_lot(
     float $lotTotalPrice,
     float $lotQty,
     int $userId,
-    ?string $note = null
+    ?string $note = null,
+    ?float $poolYieldQty = null
 ): array {
     if ($lotTotalPrice < 0) {
         throw new RuntimeException('Total price must be 0 or greater.');
@@ -606,6 +607,10 @@ function material_packaging_stock_in_lot(
     if ($stockUnit === 'roll' && abs($lotQty - round($lotQty)) > 0.0001) {
         throw new RuntimeException('Roll quantity must be a whole number (e.g. 1 roll, 2 rolls).');
     }
+    $isPoolPackaging = ((int) ($row['production_deduct'] ?? 0) === 0) && $stockUnit === 'roll';
+    if ($poolYieldQty !== null && (!$isPoolPackaging || $poolYieldQty <= 0)) {
+        throw new RuntimeException('Pool yield must be greater than 0 for roll-based pool packaging.');
+    }
     $batchLabel = sprintf(
         'lot: ₱%s/%s%s',
         number_format($lotTotalPrice, 2, '.', ''),
@@ -632,6 +637,14 @@ function material_packaging_stock_in_lot(
     $entryId = (int) $pdo->lastInsertId();
 
     $pdo->prepare('UPDATE stocks SET on_hand = ? WHERE id = ?')->execute([$newOnHand, $stockId]);
+    if ($poolYieldQty !== null && $isPoolPackaging) {
+        $yieldUnit = trim((string) ($row['pool_yield_unit'] ?? ''));
+        if ($yieldUnit === '') {
+            $yieldUnit = 'pcs';
+        }
+        $pdo->prepare('UPDATE stocks SET pool_yield_qty = ?, pool_yield_unit = ? WHERE id = ?')
+            ->execute([round($poolYieldQty, 4), $yieldUnit, $stockId]);
+    }
 
     $derivedPrice = material_pool_unit_cost_from_lots($pdo, $stockId, $newOnHand);
     $newPrice = $derivedPrice ?? round($lotUnit, 6);
@@ -820,10 +833,10 @@ function material_packaging_deduct_fulfillment_line(
 
     $stockUnit = trim((string) ($row['unit'] ?? 'pcs'));
     $deductQty = round($qty, 4);
-    if ($lineUnit === 'bubble_piece') {
+    if (in_array($lineUnit, ['bubble_piece', 'foam_piece', 'column'], true)) {
         $yield = (float) ($row['pool_yield_qty'] ?? 0);
         if ($yield <= 0) {
-            throw new RuntimeException('Bubble wrap roll yield is not configured.');
+            throw new RuntimeException('Roll yield is not configured for ' . (string) $row['name'] . '.');
         }
         $deductQty = material_fulfillment_snap_sixteenths($qty / $yield);
     } elseif ($stockUnit === 'roll') {

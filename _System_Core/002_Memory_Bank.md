@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-17 — [[problems/records/2026-06-17_cushion-roll-main-divider-lad-piece-foam-roll|Cushion main/divider rolls + LAD piece + foam roll yields]]
+**Shipped:** phase 37 cushion/foam migration, `column` + `foam_piece` deduct/costing units, Excel-v2 tier reseed, and HR/executive stock-in yield updates. **Fix:** [[fixes/cushion-roll-main-divider-and-foam-roll-yield]].
+
 ### 2026-06-17 — [[problems/records/2026-06-17_fulfillment-packing-staging|Fulfillment packing staging + on-hold re-waybill]]
 **Shipped:** Warehouse → for-packing issue layer; ship consumes staging; HR price-only; PM stock-in/issue; Deliveries On hold + Re-waybill; CSR TL view on-hold parcels. **Spec:** [[specs/2026-06-17_fulfillment-packing-staging]] · **Fix:** [[fixes/packaging-inventory-roles]].
 

@@ -222,6 +222,7 @@ export function stockInPackagingLot(payload: {
   lot_total_price: number;
   lot_qty: number;
   note?: string;
+  pool_yield_qty?: number;
 }) {
   return apiPost<{
     stock_id: number;

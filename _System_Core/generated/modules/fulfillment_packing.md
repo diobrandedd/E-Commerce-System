@@ -1,7 +1,7 @@
 ---
 title: fulfillment_packing
 source: includes/fulfillment_packing.php
-generated: 2026-06-17T08:18:57+02:00
+generated: 2026-06-17T10:42:33+02:00
 type: module
 function_count: 13
 ---
@@ -35,8 +35,8 @@ function_count: 13
 - `includes/fulfillment_packing.php`:328 — `if (!fulfillment_packing_tables_ready($pdo)) {`
 - `includes/fulfillment_packing.php`:391 — `if (!fulfillment_packing_tables_ready($pdo)) {`
 - `includes/fulfillment_packing.php`:432 — `if (!fulfillment_packing_tables_ready($pdo)) {`
-- `includes/material_inventory.php`:901 — `if (fulfillment_packing_tables_ready($pdo)) {`
-- `includes/material_inventory.php`:966 — `if (fulfillment_packing_tables_ready($pdo)) {`
+- `includes/material_inventory.php`:914 — `if (fulfillment_packing_tables_ready($pdo)) {`
+- `includes/material_inventory.php`:979 — `if (fulfillment_packing_tables_ready($pdo)) {`
 
 ## material_inventory_role_can_issue_packing {#material_inventory_role_can_issue_packing}
 
@@ -49,7 +49,7 @@ function_count: 13
 **Callers (2):**
 
 - `api/v1/materials.php`:338 — `'can_edit_price' => material_inventory_role_can_edit_packaging_price($role),`
-- `api/v1/materials.php`:580 — `if (!material_inventory_role_can_edit_packaging_price($role)) {`
+- `api/v1/materials.php`:592 — `if (!material_inventory_role_can_edit_packaging_price($role)) {`
 
 ## material_inventory_role_can_view_packing_staging {#material_inventory_role_can_view_packing_staging}
 
@@ -92,7 +92,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/material_inventory.php`:902 — `$result = fulfillment_packing_consume_line(`
+- `includes/material_inventory.php`:915 — `$result = fulfillment_packing_consume_line(`
 
 ## fulfillment_packing_balances_list {#fulfillment_packing_balances_list}
 
@@ -116,5 +116,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:601 — `$result = material_packaging_record_invoice_price(`
+- `api/v1/materials.php`:613 — `$result = material_packaging_record_invoice_price(`
 

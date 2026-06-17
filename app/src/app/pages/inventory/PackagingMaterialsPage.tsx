@@ -32,9 +32,9 @@ function isFulfillmentPackagingRow(name: string): boolean {
   const n = name.toLowerCase();
   return n.startsWith("bubble wrap roll")
     || n.startsWith("cushion piece")
-    || n.startsWith("cushion column roll")
+    || n.startsWith("cushion roll")
     || n.startsWith("courier pouch")
-    || n.startsWith("insulation foam sheet")
+    || n.startsWith("insulation foam roll")
     || n.startsWith("cardboard box");
 }
 

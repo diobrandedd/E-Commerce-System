@@ -442,7 +442,7 @@ function parcel_pack_line_unit_cost(PDO $pdo, array $lineRow): float
         : round((float) ($lineRow['current_price'] ?? 0), 6);
 
     $lineUnit = (string) ($lineRow['unit'] ?? 'pcs');
-    if ($lineUnit === 'bubble_piece') {
+    if (in_array($lineUnit, ['bubble_piece', 'foam_piece', 'column'], true)) {
         $yield = (float) ($lineRow['pool_yield_qty'] ?? 0);
         if ($yield > 0) {
             return round($rollCost / $yield, 6);

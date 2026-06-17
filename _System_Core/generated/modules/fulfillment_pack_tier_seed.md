@@ -1,7 +1,7 @@
 ---
 title: fulfillment_pack_tier_seed
 source: includes/fulfillment_pack_tier_seed.php
-generated: 2026-06-17T08:18:57+02:00
+generated: 2026-06-17T10:42:33+02:00
 type: module
 function_count: 3
 ---
@@ -19,13 +19,13 @@ function_count: 3
 
 **Callers (1):**
 
-- `includes/fulfillment_pack_tier_seed.php`:427 — `$stockMap = fulfillment_pack_stock_ids_by_name($pdo);`
+- `includes/fulfillment_pack_tier_seed.php`:435 — `$stockMap = fulfillment_pack_stock_ids_by_name($pdo);`
 
 ## fulfillment_pack_tier_definitions {#fulfillment_pack_tier_definitions}
 
 **Callers (1):**
 
-- `includes/fulfillment_pack_tier_seed.php`:445 — `foreach (fulfillment_pack_tier_definitions() as $def) {`
+- `includes/fulfillment_pack_tier_seed.php`:453 — `foreach (fulfillment_pack_tier_definitions() as $def) {`
 
 ## fulfillment_pack_tier_seed {#fulfillment_pack_tier_seed}
 

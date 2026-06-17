@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { stockInPackagingLot, type MaterialStockRow } from "@/app/lib/materials";
 import { ApiError } from "@/app/lib/api";
+import { useAuth } from "@/app/context/AuthContext";
 
 interface PackagingStockInLotModalProps {
   stock: MaterialStockRow;
@@ -14,11 +15,17 @@ const peso = (n: number) =>
   `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export function PackagingStockInLotModal({ stock, onClose, onDone }: PackagingStockInLotModalProps) {
+  const { user } = useAuth();
+  const canEditYield = user?.role === "executive" || user?.role === "hr";
   const [totalPrice, setTotalPrice] = useState("");
   const [qty, setQty] = useState("");
   const [note, setNote] = useState("");
+  const [poolYieldQty, setPoolYieldQty] = useState(
+    stock.pool_yield_qty != null ? String(stock.pool_yield_qty) : "",
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const showYieldInput = canEditYield && stock.unit === "roll" && stock.is_pool_packaging;
 
   const unitPreview = useMemo(() => {
     const total = parseFloat(totalPrice);
@@ -42,6 +49,11 @@ export function PackagingStockInLotModal({ stock, onClose, onDone }: PackagingSt
       setError("Roll quantity must be a whole number (e.g. 1 or 2).");
       return;
     }
+    const yieldNum = parseFloat(poolYieldQty);
+    if (showYieldInput && poolYieldQty.trim() !== "" && (!Number.isFinite(yieldNum) || yieldNum <= 0)) {
+      setError("Enter a valid columns/pieces per roll (greater than 0).");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -50,6 +62,7 @@ export function PackagingStockInLotModal({ stock, onClose, onDone }: PackagingSt
         lot_total_price: totalNum,
         lot_qty: qtyNum,
         note: note.trim() || undefined,
+        pool_yield_qty: showYieldInput && poolYieldQty.trim() !== "" ? yieldNum : undefined,
       });
       onDone();
     } catch (e) {
@@ -98,6 +111,22 @@ export function PackagingStockInLotModal({ stock, onClose, onDone }: PackagingSt
             placeholder="e.g. 500"
           />
         </div>
+        {showYieldInput && (
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              {(stock.pool_yield_unit ?? "pieces").replace(/_/g, " ")} per roll (optional)
+            </label>
+            <input
+              type="number"
+              min="0.0001"
+              step="any"
+              value={poolYieldQty}
+              onChange={e => setPoolYieldQty(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+              placeholder={`e.g. ${stock.pool_yield_unit === "column" ? "100" : "120"}`}
+            />
+          </div>
+        )}
         {unitPreview !== null && (
           <p className="text-sm font-medium text-foreground">
             → {peso(unitPreview)} per {stock.unit}

@@ -512,6 +512,7 @@ function api_materials_stock_in_lot(): void
     $stockId = (int) ($input['stock_id'] ?? 0);
     $totalRaw = trim((string) ($input['lot_total_price'] ?? ''));
     $qtyRaw = trim((string) ($input['lot_qty'] ?? ''));
+    $yieldRaw = isset($input['pool_yield_qty']) ? trim((string) $input['pool_yield_qty']) : '';
     $note = isset($input['note']) ? trim((string) $input['note']) : null;
 
     if ($stockId < 1) {
@@ -522,6 +523,16 @@ function api_materials_stock_in_lot(): void
     }
     if (!is_numeric($qtyRaw) || (float) $qtyRaw <= 0) {
         api_fail('Quantity received must be greater than 0.', 422);
+    }
+    $poolYieldQty = null;
+    if ($yieldRaw !== '') {
+        if (!is_numeric($yieldRaw) || (float) $yieldRaw <= 0) {
+            api_fail('Pool yield must be greater than 0.', 422);
+        }
+        if (!in_array($role, ['executive', 'hr'], true)) {
+            api_fail('Forbidden.', 403);
+        }
+        $poolYieldQty = (float) $yieldRaw;
     }
 
     $pdo = ims_pdo();
@@ -548,7 +559,8 @@ function api_materials_stock_in_lot(): void
                 (float) $totalRaw,
                 (float) $qtyRaw,
                 (int) $user['id'],
-                $note
+                $note,
+                $poolYieldQty
             );
         } else {
             $result = material_supply_stock_in_lot(

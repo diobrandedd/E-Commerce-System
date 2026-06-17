@@ -15,9 +15,9 @@ function fulfillment_pack_stock_ids_by_name(PDO $pdo): array
          AND (
            name LIKE 'Bubble wrap roll%'
            OR name LIKE 'Cushion piece%'
-           OR name LIKE 'Cushion column roll%'
+           OR name LIKE 'Cushion roll%'
            OR name LIKE 'Courier pouch%'
-           OR name LIKE 'Insulation foam sheet%'
+           OR name LIKE 'Insulation foam roll%'
            OR name LIKE 'Cardboard box%'
          )"
     );
@@ -39,8 +39,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 5,
             'match_rule' => ['bulk_350ml_exact' => 18],
             'lines' => [
-                ['stock' => 'Cushion column roll - 35 GAL', 'qty' => 1, 'unit' => 'roll'],
-                ['stock' => 'Cushion column roll - 16 LAD', 'qty' => 1, 'unit' => 'roll'],
+                ['stock' => 'Cushion roll - main', 'qty' => 35, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 16, 'unit' => 'column'],
                 ['stock' => 'Cardboard box - whole', 'qty' => 1, 'unit' => 'pcs'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 3, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
@@ -51,8 +51,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 6,
             'match_rule' => ['bulk_350ml_exact' => 21],
             'lines' => [
-                ['stock' => 'Cushion column roll - 35 GAL', 'qty' => 1, 'unit' => 'roll'],
-                ['stock' => 'Cushion column roll - 16 LAD', 'qty' => 1, 'unit' => 'roll'],
+                ['stock' => 'Cushion roll - main', 'qty' => 35, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 16, 'unit' => 'column'],
                 ['stock' => 'Cardboard box - whole', 'qty' => 1, 'unit' => 'pcs'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 3, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
@@ -63,8 +63,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 7,
             'match_rule' => ['bulk_350ml_exact' => 24],
             'lines' => [
-                ['stock' => 'Cushion column roll - 35 GAL', 'qty' => 1, 'unit' => 'roll'],
-                ['stock' => 'Cushion column roll - 16 LAD', 'qty' => 1, 'unit' => 'roll'],
+                ['stock' => 'Cushion roll - main', 'qty' => 35, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 16, 'unit' => 'column'],
                 ['stock' => 'Cardboard box - whole', 'qty' => 1, 'unit' => 'pcs'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 3, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
@@ -75,8 +75,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 8,
             'match_rule' => ['bulk_350ml_exact' => 36],
             'lines' => [
-                ['stock' => 'Cushion column roll - 40 GAL', 'qty' => 1, 'unit' => 'roll'],
-                ['stock' => 'Cushion column roll - 60 LAD', 'qty' => 1, 'unit' => 'roll'],
+                ['stock' => 'Cushion roll - main', 'qty' => 40, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 38, 'unit' => 'column'],
                 ['stock' => 'Cardboard box - whole', 'qty' => 1, 'unit' => 'pcs'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 5, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 2, 'unit' => 'bubble_piece'],
@@ -87,8 +87,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 9,
             'match_rule' => ['bulk_250ml_exact' => 21],
             'lines' => [
-                ['stock' => 'Cushion column roll - 35 GAL', 'qty' => 1, 'unit' => 'roll'],
-                ['stock' => 'Cushion column roll - 16 LAD', 'qty' => 1, 'unit' => 'roll'],
+                ['stock' => 'Cushion roll - main', 'qty' => 35, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 16, 'unit' => 'column'],
                 ['stock' => 'Cardboard box - whole', 'qty' => 1, 'unit' => 'pcs'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 3, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
@@ -99,8 +99,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 10,
             'match_rule' => ['bulk_250ml_exact' => 24],
             'lines' => [
-                ['stock' => 'Cushion column roll - 35 GAL', 'qty' => 1, 'unit' => 'roll'],
-                ['stock' => 'Cushion column roll - 16 LAD', 'qty' => 1, 'unit' => 'roll'],
+                ['stock' => 'Cushion roll - main', 'qty' => 35, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 16, 'unit' => 'column'],
                 ['stock' => 'Cardboard box - whole', 'qty' => 1, 'unit' => 'pcs'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 3, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
@@ -111,8 +111,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 11,
             'match_rule' => ['bulk_250ml_exact' => 42],
             'lines' => [
-                ['stock' => 'Cushion column roll - 40 GAL', 'qty' => 1, 'unit' => 'roll'],
-                ['stock' => 'Cushion column roll - 60 LAD', 'qty' => 1, 'unit' => 'roll'],
+                ['stock' => 'Cushion roll - main', 'qty' => 40, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 60, 'unit' => 'column'],
                 ['stock' => 'Cardboard box - whole', 'qty' => 0.4375, 'unit' => 'pcs'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 5, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 2, 'unit' => 'bubble_piece'],
@@ -163,7 +163,7 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 33,
             'match_rule' => ['dept_brc_min' => 1, 'honey_1L_count' => 1, 'combo' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 1 liter', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 1, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 13 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
             ],
@@ -191,10 +191,11 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 36,
             'match_rule' => ['jar_units_min' => 1, 'honey_1L_count' => 1, 'combo' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 2 liters', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 2, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 4, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 13 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
-                ['stock' => 'Insulation foam sheet - 9x12', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Insulation foam roll - 9x12', 'qty' => 1, 'unit' => 'foam_piece'],
             ],
         ],
         [
@@ -204,7 +205,7 @@ function fulfillment_pack_tier_definitions(): array
             'lines' => [
                 ['stock' => 'Cushion piece - LAD', 'qty' => 1, 'unit' => 'pcs'],
                 ['stock' => 'Courier pouch - large', 'qty' => 1, 'unit' => 'pcs'],
-                ['stock' => 'Insulation foam sheet - 9x12', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Insulation foam roll - 9x12', 'qty' => 1, 'unit' => 'foam_piece'],
             ],
         ],
         [
@@ -214,7 +215,7 @@ function fulfillment_pack_tier_definitions(): array
             'lines' => [
                 ['stock' => 'Cushion piece - LAD', 'qty' => 1, 'unit' => 'pcs'],
                 ['stock' => 'Courier pouch - large', 'qty' => 1, 'unit' => 'pcs'],
-                ['stock' => 'Insulation foam sheet - 9x12', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Insulation foam roll - 9x12', 'qty' => 1, 'unit' => 'foam_piece'],
             ],
         ],
         [
@@ -222,10 +223,11 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 39,
             'match_rule' => ['honey_1L_count' => 3, 'jar_units_min' => 1, 'combo' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 2 liters', 'qty' => 2, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 4, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 8, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 13 cm', 'qty' => 2, 'unit' => 'bubble_piece'],
-                ['stock' => 'Insulation foam sheet - 9x12', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Insulation foam roll - 9x12', 'qty' => 1, 'unit' => 'foam_piece'],
             ],
         ],
         // --- Honey solo (60-89) ---
@@ -234,7 +236,7 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 60,
             'match_rule' => ['honey_1L_count' => 1, 'solo_honey' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 1 liter', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 1, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
             ],
         ],
@@ -243,7 +245,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 61,
             'match_rule' => ['honey_1L_count' => 2, 'solo_honey' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 2 liters', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 2, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 4, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 13 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
             ],
@@ -253,7 +256,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 62,
             'match_rule' => ['honey_1L_count' => 2, 'honey_250ml' => 1, 'solo_honey' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 2 liters', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 2, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 4, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 13 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
             ],
@@ -263,7 +267,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 63,
             'match_rule' => ['honey_1L_count' => 3, 'solo_honey' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 3 liters', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 3, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 8, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 13 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
             ],
@@ -273,7 +278,8 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 64,
             'match_rule' => ['honey_1L_count' => 3, 'honey_350ml' => 1, 'solo_honey' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 3 liters', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 3, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 8, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 13 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
             ],
@@ -310,7 +316,7 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 68,
             'match_rule' => ['honey_gallon_count' => 1, 'solo_honey' => true],
             'lines' => [
-                ['stock' => 'Cushion column roll - 25', 'qty' => 1, 'unit' => 'roll'],
+                ['stock' => 'Cushion roll - main', 'qty' => 25, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 13 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
             ],
@@ -320,7 +326,7 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 69,
             'match_rule' => ['honey_gallon_count' => 2, 'solo_honey' => true],
             'lines' => [
-                ['stock' => 'Cushion column roll - 25', 'qty' => 2, 'unit' => 'roll'],
+                ['stock' => 'Cushion roll - main', 'qty' => 50, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 22 cm', 'qty' => 2, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 13 cm', 'qty' => 2, 'unit' => 'bubble_piece'],
             ],
@@ -331,7 +337,7 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 100,
             'match_rule' => ['dept_pt_min' => 1, 'dept_pt_max' => 2, 'solo_dept_pt' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 1 liter', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 1, 'unit' => 'column'],
                 ['stock' => 'Courier pouch - medium', 'qty' => 1, 'unit' => 'pcs'],
             ],
         ],
@@ -349,7 +355,7 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 102,
             'match_rule' => ['dept_pt_min' => 10, 'dept_pt_max' => 12, 'solo_dept_pt' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 3 liters', 'qty' => 2, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 6, 'unit' => 'column'],
                 ['stock' => 'Bubble wrap roll - 17 cm', 'qty' => 1, 'unit' => 'bubble_piece'],
                 ['stock' => 'Bubble wrap roll - 13 cm', 'qty' => 2, 'unit' => 'bubble_piece'],
                 ['stock' => 'Courier pouch - x-large', 'qty' => 1, 'unit' => 'pcs'],
@@ -360,7 +366,7 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 110,
             'match_rule' => ['dept_brc_min' => 1, 'dept_brc_max' => 2, 'solo_dept_brc' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 1 liter', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 1, 'unit' => 'column'],
                 ['stock' => 'Courier pouch - medium', 'qty' => 1, 'unit' => 'pcs'],
             ],
         ],
@@ -379,9 +385,9 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 130,
             'match_rule' => ['jar_units' => 1, 'solo_jar' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 1 liter', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 1, 'unit' => 'column'],
                 ['stock' => 'Courier pouch - medium', 'qty' => 1, 'unit' => 'pcs'],
-                ['stock' => 'Insulation foam sheet - 9x12', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Insulation foam roll - 9x12', 'qty' => 1, 'unit' => 'foam_piece'],
             ],
         ],
         [
@@ -389,9 +395,9 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 131,
             'match_rule' => ['jar_units' => 2, 'solo_jar' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 1 liter', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 1, 'unit' => 'column'],
                 ['stock' => 'Courier pouch - medium', 'qty' => 1, 'unit' => 'pcs'],
-                ['stock' => 'Insulation foam sheet - 12.5x12', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Insulation foam roll - 12.5x12', 'qty' => 1, 'unit' => 'foam_piece'],
             ],
         ],
         [
@@ -399,9 +405,10 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 132,
             'match_rule' => ['jar_units_min' => 3, 'jar_units_max' => 4, 'solo_jar' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 2 liters', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 2, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 4, 'unit' => 'column'],
                 ['stock' => 'Courier pouch - large', 'qty' => 1, 'unit' => 'pcs'],
-                ['stock' => 'Insulation foam sheet - 12.5x12', 'qty' => 2, 'unit' => 'pcs'],
+                ['stock' => 'Insulation foam roll - 12.5x12', 'qty' => 2, 'unit' => 'foam_piece'],
             ],
         ],
         [
@@ -409,10 +416,11 @@ function fulfillment_pack_tier_definitions(): array
             'sort_order' => 133,
             'match_rule' => ['jar_units' => 5, 'solo_jar' => true],
             'lines' => [
-                ['stock' => 'Cushion piece - 3 liters', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Cushion roll - main', 'qty' => 3, 'unit' => 'column'],
+                ['stock' => 'Cushion roll - divider', 'qty' => 8, 'unit' => 'column'],
                 ['stock' => 'Courier pouch - x-large', 'qty' => 1, 'unit' => 'pcs'],
-                ['stock' => 'Insulation foam sheet - 12.5x12', 'qty' => 2, 'unit' => 'pcs'],
-                ['stock' => 'Insulation foam sheet - 9x12', 'qty' => 1, 'unit' => 'pcs'],
+                ['stock' => 'Insulation foam roll - 12.5x12', 'qty' => 2, 'unit' => 'foam_piece'],
+                ['stock' => 'Insulation foam roll - 9x12', 'qty' => 1, 'unit' => 'foam_piece'],
             ],
         ],
     ];

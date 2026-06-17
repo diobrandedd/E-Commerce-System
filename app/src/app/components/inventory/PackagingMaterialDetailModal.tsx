@@ -49,7 +49,7 @@ const defaultPermissions = (
   isHr: boolean,
   isPm: boolean,
 ): PackagingDetailPermissions => ({
-  can_stock_in: isExec || isPm,
+  can_stock_in: isExec || isPm || isHr,
   can_edit_price: isExec || isHr,
   can_deduct: isExec || isPm,
   can_set_on_hand: isExec,

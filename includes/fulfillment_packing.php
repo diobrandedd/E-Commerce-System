@@ -14,9 +14,9 @@ function fulfillment_packing_is_fulfillment_stock_name(string $name): bool
 
     return str_starts_with($n, 'bubble wrap roll')
         || str_starts_with($n, 'cushion piece')
-        || str_starts_with($n, 'cushion column roll')
+        || str_starts_with($n, 'cushion roll')
         || str_starts_with($n, 'courier pouch')
-        || str_starts_with($n, 'insulation foam sheet')
+        || str_starts_with($n, 'insulation foam roll')
         || str_starts_with($n, 'cardboard box');
 }
 
@@ -144,7 +144,7 @@ function fulfillment_packing_estimate_parcels(PDO $pdo, array $lines): array
             $stockUnit = trim((string) ($stockRow['unit'] ?? 'pcs'));
             $issuedQty = $qtyByStock[$sid];
             $consumable = $issuedQty;
-            if ($unit === 'bubble_piece' && $stockUnit === 'roll') {
+            if (in_array($unit, ['bubble_piece', 'foam_piece', 'column'], true) && $stockUnit === 'roll') {
                 $yield = (float) ($stockRow['pool_yield_qty'] ?? 0);
                 if ($yield > 0) {
                     $consumable = $issuedQty * $yield;
@@ -339,10 +339,10 @@ function fulfillment_packing_consume_line(
 
     $stockUnit = trim((string) ($row['unit'] ?? 'pcs'));
     $deductQty = round($qty, 4);
-    if ($lineUnit === 'bubble_piece') {
+    if (in_array($lineUnit, ['bubble_piece', 'foam_piece', 'column'], true)) {
         $yield = (float) ($row['pool_yield_qty'] ?? 0);
         if ($yield <= 0) {
-            throw new RuntimeException('Bubble wrap roll yield is not configured.');
+            throw new RuntimeException('Roll yield is not configured for ' . (string) $row['name'] . '.');
         }
         $deductQty = material_fulfillment_snap_sixteenths($qty / $yield);
     } elseif ($stockUnit === 'roll') {
@@ -401,9 +401,9 @@ function fulfillment_packing_balances_list(PDO $pdo): array
            AND (
              s.name LIKE 'Bubble wrap roll%'
              OR s.name LIKE 'Cushion piece%'
-             OR s.name LIKE 'Cushion column roll%'
+             OR s.name LIKE 'Cushion roll%'
              OR s.name LIKE 'Courier pouch%'
-             OR s.name LIKE 'Insulation foam sheet%'
+             OR s.name LIKE 'Insulation foam roll%'
              OR s.name LIKE 'Cardboard box%'
            )
          ORDER BY s.name ASC"
