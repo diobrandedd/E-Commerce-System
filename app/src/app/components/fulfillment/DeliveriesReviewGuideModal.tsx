@@ -64,7 +64,7 @@ export function DeliveriesReviewGuideModal({
                 <strong className="text-foreground">Edit</strong> to change tracking, replace the photo, or delete a bad
                 row — changes apply immediately.
               </li>
-              <li>For courier-cancelled parcels after pickup, use the <strong className="text-foreground">Cancelled</strong> page to restock inventory.</li>
+              <li>For courier-cancelled parcels, use the <strong className="text-foreground">Cancelled</strong> page — sealed box stays packed for re-waybill on Add deliveries.</li>
             </ol>
           ) : (
             <ol className="list-decimal pl-4 space-y-1.5">
@@ -74,7 +74,7 @@ export function DeliveriesReviewGuideModal({
                 <strong className="text-foreground">Edit</strong> submits a correction request — an executive approves it
                 under Inventory → Requests → Edit requests.
               </li>
-              <li>Scan and ship new parcels on Add deliveries; handle voided parcels on the Cancelled page.</li>
+              <li>Scan and ship new parcels on Add deliveries; mark courier cancels on the Cancelled page, then re-waybill.</li>
             </ol>
           )}
         </GuideSection>
@@ -88,7 +88,7 @@ export function DeliveriesReviewGuideModal({
               <strong className="text-foreground">shipped</strong> — left the warehouse; inventory already deducted
             </li>
             <li>
-              <strong className="text-foreground">cancelled</strong> — voided after pickup; restock on Cancelled page
+              <strong className="text-foreground">cancelled</strong> — courier void; sealed box re-waybilled on Add deliveries (inventory stays deducted)
             </li>
           </ul>
         </GuideSection>

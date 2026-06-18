@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-06-17T10:42:43+02:00
+generated: 2026-06-18T09:06:40+02:00
 type: module
 function_count: 13
 ---
@@ -25,10 +25,10 @@ function_count: 13
 
 ## rts_db_has_column {#rts_db_has_column}
 
-**Callers (22):**
+**Callers (29):**
 
-- `api/v1/deliveries.php`:329 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
-- `api/v1/deliveries.php`:367 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
+- `api/v1/deliveries.php`:327 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
+- `api/v1/deliveries.php`:365 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
 - `includes/deliveries_upload.php`:58 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `includes/delivery_edit_requests.php`:19 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `includes/delivery_edit_requests.php`:81 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
@@ -36,19 +36,23 @@ function_count: 13
 - `includes/delivery_edit_requests.php`:264 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
 - `includes/delivery_edit_requests.php`:363 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
 - `includes/delivery_edit_requests.php`:418 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
+- `includes/fulfillment_packing.php`:150 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
+- `includes/fulfillment_packing.php`:460 — `if (rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {`
+- `includes/fulfillment_packing.php`:489 — `if (rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'source_stock_id')) {`
+- `includes/fulfillment_packing.php`:568 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
+- `includes/fulfillment_packing.php`:613 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
+- `includes/fulfillment_packing.php`:671 — `if (!rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {`
+- `includes/fulfillment_packing.php`:809 — `$hasBubbleCols = rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'bubble_width_cm');`
 - `includes/honey_parcel_inventory.php`:56 — `$hasParcelCol = rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id');`
 - `includes/honey_parcel_inventory.php`:162 — `if (rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id')) {`
 - `includes/online_order_parcels.php`:268 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `includes/online_order_parcels.php`:359 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
-- `includes/online_order_parcels.php`:606 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
+- `includes/online_order_parcels.php`:616 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
 - `includes/rts_case_handlers.php`:371 — `if (rts_db_has_column($pdo, 'rts_cases', 'updated_at')) {`
 - `includes/rts_schema.php`:47 — `return rts_db_has_column($pdo, 'rts_cases', 'voided_at')`
 - `includes/rts_schema.php`:77 — `if (rts_db_has_column($pdo, 'rts_cases', $col)) {`
 - `includes/rts_schema.php`:83 — `if (rts_db_has_column($pdo, 'rts_cases', $col)) {`
-- `includes/rts_schema.php`:177 — `if (rts_db_has_column($pdo, 'rts_line_items', $col)) {`
-- `includes/rts_schema.php`:260 — `if (!array_key_exists($col, $row) || !rts_db_has_column($pdo, 'rts_cases', $col)) {`
-- `includes/rts_schema.php`:300 — `if (rts_db_has_column($pdo, 'rts_cases', 'updated_at')) {`
-- `includes/rts_schema.php`:305 — `if (!array_key_exists($col, $row) || !rts_db_has_column($pdo, 'rts_cases', $col)) {`
+- _… and 4 more (run impact.php for full list)_
 
 ## rts_cases_void_sql {#rts_cases_void_sql}
 

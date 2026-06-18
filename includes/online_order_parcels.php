@@ -582,7 +582,7 @@ function online_parcels_ship(
 
     $pdo->beginTransaction();
     try {
-        $lock = $pdo->prepare('SELECT id, status, items_raw FROM online_order_parcels WHERE id = ? FOR UPDATE');
+        $lock = $pdo->prepare('SELECT id, status, items_raw, deducted_at FROM online_order_parcels WHERE id = ? FOR UPDATE');
         $lock->execute([(int) $parcel['id']]);
         $locked = $lock->fetch(PDO::FETCH_ASSOC);
         if ($locked === false || (string) $locked['status'] === 'shipped') {
@@ -594,7 +594,17 @@ function online_parcels_ship(
             return ['parcel' => $fresh ?? $parcel, 'already_shipped' => true];
         }
 
-        honey_parcel_apply_deduct($pdo, (int) $parcel['id'], $userId, (string) $locked['items_raw']);
+        $parcelId = (int) $locked['id'];
+        $alreadyDeducted = ($locked['deducted_at'] ?? null) !== null
+            || parcel_fulfillment_already_deducted($pdo, $parcelId);
+        if (!$alreadyDeducted) {
+            $stHoney = $pdo->prepare('SELECT 1 FROM online_parcel_deduct_lines WHERE parcel_id = ? LIMIT 1');
+            $stHoney->execute([$parcelId]);
+            $alreadyDeducted = (bool) $stHoney->fetchColumn();
+        }
+        if (!$alreadyDeducted) {
+            honey_parcel_apply_deduct($pdo, $parcelId, $userId, (string) $locked['items_raw']);
+        }
 
         $upd = $pdo->prepare(
             'UPDATE online_order_parcels
@@ -701,18 +711,14 @@ function online_parcels_cancel(
             throw new RuntimeException('Parcel cannot be cancelled (status: ' . $previousStatus . ').');
         }
 
+        // Courier cancel — sealed box is reused via re-waybill; do not restore inventory.
         $inventoryReverted = false;
-        if ($previousStatus === 'shipped') {
-            honey_parcel_revert_deduct($pdo, (int) $locked['id']);
-            $inventoryReverted = true;
-        }
 
         $upd = $pdo->prepare(
             'UPDATE online_order_parcels
              SET status = "cancelled",
                  ship_date = NULL,
                  shipped_by_user_id = NULL,
-                 deducted_at = NULL,
                  return_date = NULL
              WHERE id = ?'
         );
@@ -857,7 +863,7 @@ function online_parcels_hold(
 }
 
 /**
- * Link a new waybill to an on-hold parcel (same sealed box).
+ * Link a new waybill to an on-hold or courier-cancelled parcel (same sealed box).
  *
  * @return array{parcel: array<string,mixed>, history_id: int}
  */
@@ -892,8 +898,8 @@ function online_parcels_rewaybill(
         if ($locked === false) {
             throw new RuntimeException('Parcel not found.');
         }
-        if ((string) ($locked['status'] ?? '') !== 'on_hold') {
-            throw new RuntimeException('Parcel must be on hold before re-waybill.');
+        if ((string) ($locked['status'] ?? '') !== 'on_hold' && (string) ($locked['status'] ?? '') !== 'cancelled') {
+            throw new RuntimeException('Parcel must be on hold or cancelled (courier cancel) before re-waybill.');
         }
 
         $dup = $pdo->prepare('SELECT id, status, csr_line_id, csr_batch_id FROM online_order_parcels WHERE tracking_number = ? LIMIT 1 FOR UPDATE');

@@ -203,9 +203,7 @@ function api_deliveries_cancel_parcel_scan(): void
         $result = online_parcels_cancel($pdo, (int) $user['id'], $tracking, $source, $note);
         $message = $result['already_cancelled']
             ? 'Parcel already cancelled.'
-            : (($result['inventory_reverted'] ?? false)
-                ? 'Cancelled parcel and restored shipped inventory.'
-                : 'Cancelled parcel from packing.');
+            : 'Courier cancelled — sealed box kept for re-waybill (inventory unchanged).';
         api_ok([
             'parcel' => $result['parcel'],
             'already_cancelled' => (bool) ($result['already_cancelled'] ?? false),

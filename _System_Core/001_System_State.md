@@ -6,13 +6,13 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-06-17_fulfillment-packing-staging]] |
+| **Active Spec** | [[specs/2026-06-18_costing-parcel-packaging-session]] (costing hub + parcel dept buckets) · [[specs/2026-06-17_fulfillment-packing-staging]] (staging) |
 | **Active Plan** | — |
-| **Status** | `shipped` — packing staging + on-hold re-waybill (phase 34) |
+| **Status** | `shipped` — costing parcel hub + dept buckets (2026-06-18) |
 
 ## 🚀 Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags → Pouch); run phase 22–28 migrations on prod if pending
-- **Latest shipped:** [[problems/records/2026-06-12_dept-raw-ux-session]] · [[fixes/dept-raw-material-guides]] · [[fixes/paragis-use-raw-bags]] · [[fixes/page-layout-centered-content]]
+- **Latest shipped:** [[specs/2026-06-18_costing-parcel-packaging-session]] · [[problems/records/2026-06-18_costing-dept-paragis-vs-cacao-brc]] · [[problems/records/2026-06-18_costing-hub-parcel-recipes-table]]
 - **Agent entry:** [[problems/records/2026-06-12_dept-raw-ux-session]] — checklist for next dept raw / PageLayout work
 
 ## 🛠️ Current Todo List

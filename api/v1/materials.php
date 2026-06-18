@@ -27,6 +27,7 @@ api_dispatch([
     'supply_detail' => 'api_materials_supply_detail',
     'set_on_hand' => 'api_materials_set_on_hand',
     'set_pool_yield' => 'api_materials_set_pool_yield',
+    'set_foam_cacao_cut_yields' => 'api_materials_set_foam_cacao_cut_yields',
     'packaging_deduct' => 'api_materials_packaging_deduct',
     'packaging_price_lot' => 'api_materials_packaging_price_lot',
 ]);
@@ -330,7 +331,8 @@ function api_materials_packaging_detail(): void
     $row = material_inventory_enrich_packaging_row($row);
     $logLimit = $role === 'executive' ? 100 : 25;
     $entries = material_packaging_recent_entries($pdo, $stockId, $logLimit);
-    api_ok([
+    $isGenericFoam = material_packaging_is_generic_foam_roll_name((string) $row['name']);
+    $payload = [
         'stock' => $row,
         'entries' => $entries,
         'permissions' => [
@@ -338,9 +340,55 @@ function api_materials_packaging_detail(): void
             'can_edit_price' => material_inventory_role_can_edit_packaging_price($role),
             'can_deduct' => material_inventory_role_can_deduct_packaging($role),
             'can_set_on_hand' => material_inventory_role_can_set_packaging_on_hand($role),
-            'can_set_pool_yield' => $role === 'executive',
+            'can_set_pool_yield' => $role === 'executive' && !$isGenericFoam,
+            'can_set_foam_cacao_cut_yields' => $role === 'executive' && $isGenericFoam,
             'can_view_extended_log' => $role === 'executive',
         ],
+    ];
+    if ($isGenericFoam) {
+        $payload['foam_cacao_cut_yields'] = material_packaging_foam_cacao_cut_yields($pdo);
+    }
+    api_ok($payload);
+}
+
+function api_materials_set_foam_cacao_cut_yields(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $stockId = (int) ($input['stock_id'] ?? 0);
+    $nineRaw = trim((string) ($input['cuts_9x12'] ?? ''));
+    $twelveRaw = trim((string) ($input['cuts_12_5x12'] ?? ''));
+    if ($stockId < 1) {
+        api_fail('stock_id required.', 422);
+    }
+    if (!is_numeric($nineRaw) || (float) $nineRaw <= 0 || !is_numeric($twelveRaw) || (float) $twelveRaw <= 0) {
+        api_fail('Both cut yields must be greater than zero.', 422);
+    }
+    $pdo = ims_pdo();
+    $row = material_inventory_fetch_stock($pdo, $stockId);
+    if ($row === null || !material_packaging_is_generic_foam_roll_name((string) $row['name'])) {
+        api_fail('Generic insulation foam roll not found.', 404);
+    }
+    $pdo->beginTransaction();
+    try {
+        $result = material_packaging_set_foam_cacao_cut_yields(
+            $pdo,
+            (float) $nineRaw,
+            (float) $twelveRaw,
+            (int) $user['id']
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok([
+        'result' => $result,
+        'foam_cacao_cut_yields' => material_packaging_foam_cacao_cut_yields($pdo),
     ]);
 }
 
@@ -402,6 +450,13 @@ function api_materials_set_pool_yield(): void
         api_fail('pool_yield_qty must be greater than zero.', 422);
     }
     $pdo = ims_pdo();
+    $stockRow = material_inventory_fetch_stock($pdo, $stockId);
+    if ($stockRow === null) {
+        api_fail('Stock not found.', 404);
+    }
+    if (material_packaging_is_generic_foam_roll_name((string) $stockRow['name'])) {
+        api_fail('Set Jar Cacao cut yields on the insulation foam roll instead.', 422);
+    }
     $pdo->beginTransaction();
     try {
         $result = material_packaging_set_pool_yield(

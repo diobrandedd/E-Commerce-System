@@ -117,13 +117,14 @@ export function VipPrepTool({
   return (
     <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
       <OrderRemarksToast message={toast} />
-      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
+      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground" data-tour="online-orders-tool-back">
         ← Back to tools
       </button>
       <p className="text-sm text-muted-foreground">
         Upload VIP courier Excel (J&T / SPX), resolve variants, then download the arranged iPYX sheet. When ready to
         stamp, go back to tools and open PDF + Excel stamper.
       </p>
+      <div data-tour="online-orders-vip-upload">
       <FileZone
         label="VIP courier Excel"
         hint="Drop J&T or SPX workbook (.xlsx)"
@@ -144,6 +145,7 @@ export function VipPrepTool({
           }
         }}
       />
+      </div>
       {busy && !parseResult && (
         <p className="text-sm text-muted-foreground flex items-center gap-2">
           <Loader2 size={16} className="animate-spin" /> Loading workbook…
@@ -151,6 +153,7 @@ export function VipPrepTool({
       )}
 
       {ambiguousRows.length > 0 && (
+        <div data-tour="online-orders-vip-resolve">
         <AmbiguousOrderCarousel
           rows={ambiguousRows}
           resolutions={resolutions}
@@ -171,6 +174,7 @@ export function VipPrepTool({
             window.setTimeout(() => setToast(null), 2800);
           }}
         />
+        </div>
       )}
 
       {canExport && !prepResult && (
@@ -178,6 +182,7 @@ export function VipPrepTool({
           type="button"
           disabled={busy}
           onClick={() => void runPrepare()}
+          data-tour="online-orders-vip-build"
           className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary"
         >
           {busy ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
@@ -186,7 +191,7 @@ export function VipPrepTool({
       )}
 
       {prepResult && (
-        <div className="rounded-xl border border-green-200 bg-green-50/80 p-5 space-y-4">
+        <div className="rounded-xl border border-green-200 bg-green-50/80 p-5 space-y-4" data-tour="online-orders-vip-done">
           <p className="text-sm text-green-800 flex items-center gap-2 font-medium">
             <CheckCircle2 size={18} />
             Arranged Excel ready ({prepResult.row_count} rows)

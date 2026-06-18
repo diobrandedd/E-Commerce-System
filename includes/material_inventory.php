@@ -564,6 +564,203 @@ function material_packaging_pool_unit_cost_from_lots(PDO $pdo, int $stockId, flo
     return material_pool_unit_cost_from_lots($pdo, $stockId, $poolOnHand);
 }
 
+function material_packaging_is_bubble_sized_stock_name(string $name): bool
+{
+    return (bool) preg_match('/^bubble wrap roll - \d+ cm$/i', trim($name));
+}
+
+function material_packaging_is_foam_sized_stock_name(string $name): bool
+{
+    return (bool) preg_match('/^insulation foam roll - /i', trim($name));
+}
+
+function material_packaging_generic_foam_roll_stock_name(): string
+{
+    return 'Insulation foam roll';
+}
+
+function material_packaging_is_generic_foam_roll_name(string $name): bool
+{
+    return strtolower(trim($name)) === strtolower(material_packaging_generic_foam_roll_stock_name());
+}
+
+/** Jar Cacao parcel recipes — sized cut yields (recipe-only SKUs, edited from generic foam row). */
+function material_packaging_foam_cacao_cut_stock_names(): array
+{
+    return [
+        '9x12' => 'Insulation foam roll - 9x12',
+        '12_5x12' => 'Insulation foam roll - 12.5x12',
+    ];
+}
+
+/**
+ * @return list<array{key: string, label: string, stock_name: string, stock_id: int|null, pool_yield_qty: float|null}>
+ */
+function material_packaging_foam_cacao_cut_yields(PDO $pdo): array
+{
+    $labels = [
+        '9x12' => '9" x 12"',
+        '12_5x12' => '12.5" x 12"',
+    ];
+    $out = [];
+    foreach (material_packaging_foam_cacao_cut_stock_names() as $key => $stockName) {
+        $st = $pdo->prepare(
+            'SELECT id, pool_yield_qty FROM stocks
+             WHERE supplier_id IS NULL AND is_active = 1 AND name = ?
+             LIMIT 1'
+        );
+        $st->execute([$stockName]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        $out[] = [
+            'key' => $key,
+            'label' => $labels[$key] ?? $key,
+            'stock_name' => $stockName,
+            'stock_id' => $row !== false ? (int) $row['id'] : null,
+            'pool_yield_qty' => $row !== false && $row['pool_yield_qty'] !== null
+                ? (float) $row['pool_yield_qty']
+                : null,
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * @return array{cuts: list<array{key: string, stock_id: int, pool_yield_qty: float}>}
+ */
+function material_packaging_set_foam_cacao_cut_yields(
+    PDO $pdo,
+    float $cuts9x12,
+    float $cuts12_5x12,
+    int $userId
+): array {
+    if ($cuts9x12 <= 0 || $cuts12_5x12 <= 0) {
+        throw new RuntimeException('Each cut yield must be greater than zero.');
+    }
+    $values = [
+        '9x12' => round($cuts9x12, 4),
+        '12_5x12' => round($cuts12_5x12, 4),
+    ];
+    $saved = [];
+    foreach (material_packaging_foam_cacao_cut_stock_names() as $key => $stockName) {
+        $st = $pdo->prepare(
+            'SELECT id FROM stocks WHERE supplier_id IS NULL AND is_active = 1 AND name = ? LIMIT 1'
+        );
+        $st->execute([$stockName]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row === false) {
+            throw new RuntimeException('Foam cut SKU not found: ' . $stockName);
+        }
+        $stockId = (int) $row['id'];
+        $yield = $values[$key] ?? 0.0;
+        material_packaging_set_pool_yield($pdo, $stockId, $yield, 'foam_piece', $userId);
+        $saved[] = [
+            'key' => $key,
+            'stock_id' => $stockId,
+            'pool_yield_qty' => $yield,
+        ];
+    }
+
+    return ['cuts' => $saved];
+}
+
+/** Fulfillment / parcel-ship packaging — not product manufacturing BOM. */
+function material_inventory_is_fulfillment_parcel_stock_name(string $name): bool
+{
+    $n = strtolower(trim($name));
+    if ($n === '') {
+        return false;
+    }
+    if (str_starts_with($n, 'parcel ')) {
+        return true;
+    }
+
+    return str_starts_with($n, 'bubble wrap roll')
+        || str_starts_with($n, 'cushion piece')
+        || str_starts_with($n, 'cushion roll')
+        || str_starts_with($n, 'courier pouch')
+        || str_starts_with($n, 'insulation foam roll')
+        || str_starts_with($n, 'cardboard box');
+}
+
+/**
+ * Stocks that may appear on product COGS formulas (not parcel packaging tier editor).
+ *
+ * @param array<string, mixed> $row joined stocks row with category, is_active, name
+ */
+function material_inventory_eligible_for_product_formula_row(array $row): bool
+{
+    if (!(int) ($row['is_active'] ?? 1)) {
+        return false;
+    }
+    $cat = (string) ($row['category'] ?? '');
+    if ($cat === 'costing_only' || $cat === 'supply') {
+        return false;
+    }
+    if (!in_array($cat, ['raw_material', 'packaging'], true)) {
+        return false;
+    }
+    if ($cat === 'packaging' && material_inventory_is_fulfillment_parcel_stock_name((string) ($row['name'] ?? ''))) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * WAC / current price for unsized warehouse bubble roll (shared across sized recipe lines).
+ */
+function material_packaging_generic_bubble_roll_unit_cost(PDO $pdo): ?float
+{
+    $st = $pdo->prepare(
+        'SELECT id, on_hand, current_price FROM stocks
+         WHERE supplier_id IS NULL AND is_active = 1
+           AND LOWER(TRIM(name)) = ?
+         LIMIT 1'
+    );
+    $st->execute(['bubble wrap roll']);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        return null;
+    }
+    $stockId = (int) $row['id'];
+    $onHand = (float) ($row['on_hand'] ?? 0);
+    $lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);
+    if ($lotUnit !== null && $lotUnit > 0) {
+        return round($lotUnit, 6);
+    }
+    $price = round((float) ($row['current_price'] ?? 0), 6);
+
+    return $price > 0 ? $price : null;
+}
+
+/**
+ * WAC / current price for unsized warehouse insulation foam roll (shared across sized recipe lines).
+ */
+function material_packaging_generic_foam_roll_unit_cost(PDO $pdo): ?float
+{
+    $st = $pdo->prepare(
+        'SELECT id, on_hand, current_price FROM stocks
+         WHERE supplier_id IS NULL AND is_active = 1
+           AND LOWER(TRIM(name)) = ?
+         LIMIT 1'
+    );
+    $st->execute(['insulation foam roll']);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        return null;
+    }
+    $stockId = (int) $row['id'];
+    $onHand = (float) ($row['on_hand'] ?? 0);
+    $lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);
+    if ($lotUnit !== null && $lotUnit > 0) {
+        return round($lotUnit, 6);
+    }
+    $price = round((float) ($row['current_price'] ?? 0), 6);
+
+    return $price > 0 ? $price : null;
+}
+
 /**
  * Stock in a packaging purchase lot: add qty to pool and update unit cost (WAC when pool > 0).
  *
@@ -590,6 +787,17 @@ function material_packaging_stock_in_lot(
     }
     if ((string) $row['category'] !== 'packaging') {
         throw new RuntimeException('Only packaging materials can receive stock-in lots.');
+    }
+    $stockName = trim((string) $row['name']);
+    if (preg_match('/^bubble wrap roll - \d+ cm$/i', $stockName)) {
+        throw new RuntimeException(
+            'Stock in unsized Bubble wrap roll only. Width (13 / 17 / 22 cm) is assigned when issuing to packing.'
+        );
+    }
+    if (preg_match('/^insulation foam roll - /i', $stockName)) {
+        throw new RuntimeException(
+            'Stock in unsized Insulation foam roll only. Cut size is applied automatically when shipping cacao parcels.'
+        );
     }
     if (!(int) ($row['is_active'] ?? 1)) {
         throw new RuntimeException('Stock item is inactive.');
@@ -911,6 +1119,7 @@ function parcel_fulfillment_apply_deduct(PDO $pdo, int $parcelId, int $userId, s
     $lines = parcel_pack_fulfillment_lines_for_items_raw($pdo, $itemsRaw);
     $deducted = [];
     foreach ($lines as $line) {
+        $logStockId = (int) $line['stock_id'];
         if (fulfillment_packing_tables_ready($pdo)) {
             $result = fulfillment_packing_consume_line(
                 $pdo,
@@ -921,6 +1130,7 @@ function parcel_fulfillment_apply_deduct(PDO $pdo, int $parcelId, int $userId, s
                 $parcelId
             );
             $qtyDeducted = (float) $result['qty_consumed'];
+            $logStockId = (int) $result['stock_id'];
         } else {
             $legacy = material_packaging_deduct_fulfillment_line(
                 $pdo,
@@ -938,12 +1148,12 @@ function parcel_fulfillment_apply_deduct(PDO $pdo, int $parcelId, int $userId, s
              VALUES (?, ?, ?, ?)'
         )->execute([
             $parcelId,
-            (int) $line['stock_id'],
+            $logStockId,
             $qtyDeducted,
             (string) $line['unit'],
         ]);
         $deducted[] = [
-            'stock_id' => (int) $line['stock_id'],
+            'stock_id' => $logStockId,
             'qty' => $qtyDeducted,
             'unit' => (string) $line['unit'],
         ];

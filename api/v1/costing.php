@@ -61,6 +61,7 @@ function api_costing_stocks_list(): void
     $categoryCol = $hasCategory ? 's.category,' : '';
 
     $sql = "SELECT s.id, s.name, s.unit, s.current_price, s.dept_id, s.supplier_id,
+                   s.is_active,
                    {$categoryCol}
                    s.supplier_name, s.supplier_code, s.created_at,
                    d.name AS dept_name,
@@ -74,9 +75,10 @@ function api_costing_stocks_list(): void
             FROM stocks s
             INNER JOIN departments d ON d.id = s.dept_id
             LEFT JOIN suppliers sup ON sup.id = s.supplier_id";
+    $sql .= ' WHERE s.is_active = 1 AND s.category IN (\'raw_material\', \'packaging\')';
     $params = [];
     if (!$canViewAll) {
-        $sql .= ' WHERE s.dept_id = ?';
+        $sql .= ' AND s.dept_id = ?';
         $params[] = $userDeptId;
     }
     $sql .= ' ORDER BY d.name ASC,
@@ -86,6 +88,9 @@ function api_costing_stocks_list(): void
     $st->execute($params);
     $rows = [];
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if (!material_inventory_eligible_for_product_formula_row($row)) {
+            continue;
+        }
         if (!empty($row['supplier_first_name']) || !empty($row['supplier_last_name'])) {
             $row['supplier_display_name'] = supplier_display_name(
                 (string) ($row['supplier_first_name'] ?? ''),
@@ -385,11 +390,18 @@ function api_costing_formula_mutate(string $action): void
                 );
                 $ins->execute([$productId, $label, $qty, $price]);
             } else {
-                $stStock = $pdo->prepare('SELECT id, name, current_price FROM stocks WHERE id = ? AND dept_id = ? LIMIT 1');
+                $stStock = $pdo->prepare(
+                    'SELECT id, name, category, is_active, current_price FROM stocks WHERE id = ? AND dept_id = ? LIMIT 1'
+                );
                 $stStock->execute([$stockId, $product['dept_id']]);
                 $stock = $stStock->fetch();
                 if (!$stock) {
                     throw new RuntimeException('Stock not found in same department.');
+                }
+                if (!material_inventory_eligible_for_product_formula_row($stock)) {
+                    throw new RuntimeException(
+                        'That SKU is for parcel fulfillment or inactive — use Packaging Materials for production BOM only.'
+                    );
                 }
                 $qty = api_costing_resolve_formula_qty($product, (string) $stock['name'], $qty);
                 $price = (float) $stock['current_price'];
@@ -414,11 +426,18 @@ function api_costing_formula_mutate(string $action): void
             if (!$stOwn->fetch()) {
                 throw new RuntimeException('Formula row not found.');
             }
-            $stStock = $pdo->prepare('SELECT id, name, current_price FROM stocks WHERE id = ? AND dept_id = ? LIMIT 1');
+            $stStock = $pdo->prepare(
+                'SELECT id, name, category, is_active, current_price FROM stocks WHERE id = ? AND dept_id = ? LIMIT 1'
+            );
             $stStock->execute([$stockId, $product['dept_id']]);
             $stock = $stStock->fetch();
             if (!$stock) {
                 throw new RuntimeException('Stock not found in same department.');
+            }
+            if (!material_inventory_eligible_for_product_formula_row($stock)) {
+                throw new RuntimeException(
+                    'That SKU is for parcel fulfillment or inactive — use Packaging Materials for production BOM only.'
+                );
             }
             $qty = api_costing_resolve_formula_qty($product, (string) $stock['name'], $qty);
             $price = (float) $stock['current_price'];

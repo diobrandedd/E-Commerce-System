@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { Camera, CheckCircle2, Loader2, ScanLine } from "lucide-react";
+import { BookOpen, Camera, CheckCircle2, Loader2, ScanLine } from "lucide-react";
+import { Link } from "react-router";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { DeliveryDuplicateScanModal } from "@/app/components/fulfillment/DeliveryDuplicateScanModal";
+import { DeliveriesAddGuideModal } from "@/app/components/fulfillment/DeliveriesAddGuideModal";
+import { runDeliveriesAddTour } from "@/app/components/fulfillment/deliveriesAddTour";
 import { DeliveriesOpsPanel } from "@/app/components/fulfillment/DeliveriesOpsPanel";
 import { PageLayout } from "@/app/components/PageLayout";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
+import { appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
 import {
   FulfillmentErrorBanner,
   FulfillmentPressable,
@@ -22,6 +27,7 @@ import {
 import type { OnlineParcel } from "@/app/lib/parcelsApi";
 import { ApiError } from "@/app/lib/api";
 import { compressDeliveryPhoto } from "@/app/lib/compressDeliveryPhoto";
+import { useAuth } from "@/app/context/AuthContext";
 
 type Step = "idle" | "preview" | "saving" | "done";
 type PhotoUploadState = "idle" | "compressing" | "uploading" | "ready" | "error";
@@ -44,6 +50,8 @@ function applyBatchCountFromUpload(
 }
 
 export function DeliveriesPage() {
+  const { user } = useAuth();
+  const isExecutive = user?.role === "executive";
   const today = new Date().toISOString().slice(0, 10);
   const [mode, setMode] = useState<DeliveryMode>("ship");
   const [deliveryDate, setDeliveryDate] = useState(today);
@@ -62,6 +70,7 @@ export function DeliveriesPage() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateRecordings, setDuplicateRecordings] = useState<DeliveryExistingRecording[]>([]);
+  const [guideOpen, setGuideOpen] = useState(false);
   const readerRef = useRef<HTMLDivElement>(null);
   const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -300,11 +309,38 @@ export function DeliveriesPage() {
         mode === "ship"
           ? "Pre-dispatch photos · scan label · ship deducts packing staging"
           : mode === "hold"
-            ? "Sealed box — mark on hold for re-waybill (no inventory revert)"
-            : "Scan old label → scan new label → ship again on Ship tab"
+            ? "Sealed box, wrong label — not the same as Cancelled"
+            : "Old QR → new waybill → photo → ship (all in this tab)"
+      }
+      actions={
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
+            <BookOpen size={13} /> Guide
+          </button>
+          <Link
+            to="/deliveries/review"
+            className="sm:hidden text-xs font-semibold rounded-lg border border-border px-2.5 py-1.5 text-muted-foreground"
+          >
+            Review
+          </Link>
+          <div className="hidden sm:flex items-center gap-3">
+            <Link
+              to="/deliveries/review"
+              className="text-xs font-semibold rounded-lg border border-border px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+            >
+              Review batches
+            </Link>
+            <Link
+              to="/deliveries/cancelled"
+              className="text-xs font-semibold rounded-lg border border-border px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+            >
+              Cancelled
+            </Link>
+          </div>
+        </div>
       }
     >
-      <div className="flex gap-2 mb-6 max-w-lg">
+      <div className="flex gap-2 mb-6 max-w-lg" data-tour="deliveries-add-tabs">
         {(
           [
             ["ship", "Ship"],
@@ -325,23 +361,8 @@ export function DeliveriesPage() {
         ))}
       </div>
 
-      {mode !== "ship" ? (
-        <DeliveriesOpsPanel
-          key={mode}
-          mode={mode}
-          onContinueToShip={() => {
-            setMode("ship");
-            setError(null);
-            setDoneMessage(null);
-            window.setTimeout(() => startScanner(), 80);
-          }}
-        />
-      ) : (
-      <>
-      <FulfillmentToast message={toast} />
-
-      <FulfillmentSectionEnter className="max-w-lg space-y-4">
-        <label className="block text-sm text-muted-foreground">
+      {(mode === "rewaybill" || mode === "ship") && (
+        <label className="block text-sm text-muted-foreground max-w-lg mb-4" data-tour="deliveries-add-date">
           Business date
           <input
             type="date"
@@ -350,23 +371,43 @@ export function DeliveriesPage() {
             onChange={(e) => setDeliveryDate(e.target.value)}
           />
         </label>
-        <p className="text-sm text-muted-foreground">
+      )}
+
+      {mode === "ship" && (
+        <p className="text-sm text-muted-foreground max-w-lg -mt-2 mb-4">
           {batchCount} parcel photo{batchCount === 1 ? "" : "s"} saved for this date.
         </p>
+      )}
 
+      {mode !== "ship" ? (
+        <div data-tour="deliveries-ops-panel">
+          <DeliveriesOpsPanel
+            key={mode}
+            mode={mode}
+            deliveryDate={deliveryDate}
+            onBatchCountChange={setBatchCount}
+          />
+        </div>
+      ) : (
+      <>
+      <FulfillmentToast message={toast} />
+
+      <FulfillmentSectionEnter className="max-w-lg space-y-4">
         <FulfillmentErrorBanner message={error} />
 
         <FulfillmentStepSwitch stepKey={step}>
           {step === "idle" && (
-            <FulfillmentPressable
-              variant="primary"
-              className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-bold"
-              onClick={startScanner}
-              disabled={busy}
-            >
-              <ScanLine className="h-5 w-5" />
-              Add deliveries
-            </FulfillmentPressable>
+            <div data-tour="deliveries-add-ship-scan">
+              <FulfillmentPressable
+                variant="primary"
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-bold"
+                onClick={startScanner}
+                disabled={busy}
+              >
+                <ScanLine className="h-5 w-5" />
+                Add deliveries
+              </FulfillmentPressable>
+            </div>
           )}
 
           {step === "preview" && parcel && (
@@ -562,6 +603,18 @@ export function DeliveriesPage() {
       />
       </>
       )}
+
+      <DeliveriesAddGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        isExecutive={isExecutive}
+        onStartTour={() => {
+          setGuideOpen(false);
+          setMode("ship");
+          setStep("idle");
+          startPageTourAfterModalClose(() => runDeliveriesAddTour({ isExecutive }));
+        }}
+      />
     </PageLayout>
   );
 }

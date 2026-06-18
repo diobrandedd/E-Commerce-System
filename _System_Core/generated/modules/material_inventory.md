@@ -1,9 +1,9 @@
 ---
 title: material_inventory
 source: includes/material_inventory.php
-generated: 2026-06-17T10:42:36+02:00
+generated: 2026-06-18T09:06:32+02:00
 type: module
-function_count: 53
+function_count: 64
 ---
 
 
@@ -24,7 +24,7 @@ function_count: 53
 
 **Callers (1):**
 
-- `api/v1/materials.php`:37 — `if (!material_inventory_role_can_view((string) $user['role'])) {`
+- `api/v1/materials.php`:38 — `if (!material_inventory_role_can_view((string) $user['role'])) {`
 
 ## material_inventory_role_can_catalog {#material_inventory_role_can_catalog}
 
@@ -48,27 +48,27 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:213 — `'can_submit_packaging' => material_inventory_role_can_request_packaging($role),`
+- `api/v1/materials.php`:214 — `'can_submit_packaging' => material_inventory_role_can_request_packaging($role),`
 
 ## material_inventory_role_can_stock_in_packaging {#material_inventory_role_can_stock_in_packaging}
 
 **Callers (2):**
 
-- `api/v1/materials.php`:337 — `'can_stock_in' => material_inventory_role_can_stock_in_packaging($role),`
-- `api/v1/materials.php`:547 — `if ($category === 'packaging' && !material_inventory_role_can_stock_in_packaging($role)) {`
+- `api/v1/materials.php`:339 — `'can_stock_in' => material_inventory_role_can_stock_in_packaging($role),`
+- `api/v1/materials.php`:602 — `if ($category === 'packaging' && !material_inventory_role_can_stock_in_packaging($role)) {`
 
 ## material_inventory_role_can_deduct_packaging {#material_inventory_role_can_deduct_packaging}
 
 **Callers (2):**
 
-- `api/v1/materials.php`:339 — `'can_deduct' => material_inventory_role_can_deduct_packaging($role),`
-- `api/v1/materials.php`:354 — `if (!material_inventory_role_can_deduct_packaging($role)) {`
+- `api/v1/materials.php`:341 — `'can_deduct' => material_inventory_role_can_deduct_packaging($role),`
+- `api/v1/materials.php`:402 — `if (!material_inventory_role_can_deduct_packaging($role)) {`
 
 ## material_inventory_role_can_set_packaging_on_hand {#material_inventory_role_can_set_packaging_on_hand}
 
 **Callers (2):**
 
-- `api/v1/materials.php`:340 — `'can_set_on_hand' => material_inventory_role_can_set_packaging_on_hand($role),`
+- `api/v1/materials.php`:342 — `'can_set_on_hand' => material_inventory_role_can_set_packaging_on_hand($role),`
 - `includes/material_inventory.php`:53 — `return material_inventory_role_can_set_packaging_on_hand($role);`
 
 ## material_inventory_role_can_set_packaging {#material_inventory_role_can_set_packaging}
@@ -87,8 +87,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/materials.php`:170 — `if (!material_inventory_role_can_request_supply($role)) {`
-- `api/v1/materials.php`:214 — `'can_submit_supply' => material_inventory_role_can_request_supply($role),`
+- `api/v1/materials.php`:171 — `if (!material_inventory_role_can_request_supply($role)) {`
+- `api/v1/materials.php`:215 — `'can_submit_supply' => material_inventory_role_can_request_supply($role),`
 
 ## material_inventory_role_can_issue_supply {#material_inventory_role_can_issue_supply}
 
@@ -101,13 +101,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:449 — `'permissions' => material_supply_detail_permissions($role),`
+- `api/v1/materials.php`:504 — `'permissions' => material_supply_detail_permissions($role),`
 
 ## material_inventory_role_can_create_supply_catalog {#material_inventory_role_can_create_supply_catalog}
 
 **Callers (2):**
 
-- `api/v1/materials.php`:75 — `if (!material_inventory_role_can_create_supply_catalog($role)) {`
+- `api/v1/materials.php`:76 — `if (!material_inventory_role_can_create_supply_catalog($role)) {`
 - `includes/material_inventory.php`:78 — `'can_create_catalog' => material_inventory_role_can_create_supply_catalog($role),`
 
 ## material_supply_canonical_dept_id {#material_supply_canonical_dept_id}
@@ -125,7 +125,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `api/v1/costing.php`:60 — `$hasCategory = material_inventory_has_columns($pdo);`
 - `includes/material_inventory.php`:184 — `if (!material_inventory_has_columns($pdo)) {`
 - `includes/material_inventory.php`:229 — `if (!material_inventory_has_columns($pdo)) {`
-- `includes/material_inventory.php`:1514 — `if (material_inventory_has_columns($pdo)) {`
+- `includes/material_inventory.php`:1724 — `if (material_inventory_has_columns($pdo)) {`
 
 ## material_inventory_has_pool_columns {#material_inventory_has_pool_columns}
 
@@ -139,42 +139,42 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `api/v1/materials.php`:330 — `$row = material_inventory_enrich_packaging_row($row);`
-- `api/v1/materials.php`:418 — `'stock' => $row !== null ? material_inventory_enrich_packaging_row($row) : null,`
+- `api/v1/materials.php`:331 — `$row = material_inventory_enrich_packaging_row($row);`
+- `api/v1/materials.php`:473 — `'stock' => $row !== null ? material_inventory_enrich_packaging_row($row) : null,`
 - `includes/material_inventory.php`:212 — `$row = material_inventory_enrich_packaging_row($row);`
 
 ## material_inventory_fetch_stock {#material_inventory_fetch_stock}
 
 **Tables:** `stocks`, `departments`
 
-**Callers (26):**
+**Callers (31):**
 
-- `api/v1/materials.php`:157 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
-- `api/v1/materials.php`:326 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
-- `api/v1/materials.php`:415 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
-- `api/v1/materials.php`:438 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
-- `api/v1/materials.php`:469 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
-- `api/v1/materials.php`:539 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
+- `api/v1/materials.php`:158 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
+- `api/v1/materials.php`:327 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
+- `api/v1/materials.php`:370 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
+- `api/v1/materials.php`:453 — `$stockRow = material_inventory_fetch_stock($pdo, $stockId);`
+- `api/v1/materials.php`:470 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
+- `api/v1/materials.php`:493 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
+- `api/v1/materials.php`:524 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
+- `api/v1/materials.php`:594 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
 - `includes/dept_production.php`:293 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/fulfillment_packing.php`:139 — `$stockRow = material_inventory_fetch_stock($pdo, $sid);`
-- `includes/fulfillment_packing.php`:212 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/fulfillment_packing.php`:335 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/fulfillment_packing.php`:503 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
+- `includes/fulfillment_packing.php`:187 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
+- `includes/fulfillment_packing.php`:263 — `$stockRow = material_inventory_fetch_stock($pdo, $sid);`
+- `includes/fulfillment_packing.php`:352 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
+- `includes/fulfillment_packing.php`:376 — `$stagingRow = material_inventory_fetch_stock($pdo, $stagingId, true);`
+- `includes/fulfillment_packing.php`:547 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
+- `includes/fulfillment_packing.php`:688 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
+- `includes/fulfillment_packing.php`:873 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
 - `includes/material_inventory.php`:270 — `$row = material_inventory_fetch_stock($pdo, $id);`
 - `includes/material_inventory.php`:285 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
 - `includes/material_inventory.php`:319 — `$updated = material_inventory_fetch_stock($pdo, $stockId);`
 - `includes/material_inventory.php`:344 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
 - `includes/material_inventory.php`:398 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
 - `includes/material_inventory.php`:467 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/material_inventory.php`:587 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/material_inventory.php`:687 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/material_inventory.php`:747 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/material_inventory.php`:823 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/material_inventory.php`:1060 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/material_inventory.php`:1145 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/material_inventory.php`:1206 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
-- `includes/material_inventory.php`:1259 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
-- _… and 1 more (run impact.php for full list)_
+- `includes/material_inventory.php`:784 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
+- `includes/material_inventory.php`:895 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
+- `includes/material_inventory.php`:955 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
+- _… and 6 more (run impact.php for full list)_
 
 ## material_inventory_list {#material_inventory_list}
 
@@ -182,7 +182,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:50 — `$items = material_inventory_list(`
+- `api/v1/materials.php`:51 — `$items = material_inventory_list(`
 
 ## material_inventory_create {#material_inventory_create}
 
@@ -190,7 +190,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:83 — `$row = material_inventory_create($pdo, (int) $user['id'], $name, $deptId, $category, $unit);`
+- `api/v1/materials.php`:84 — `$row = material_inventory_create($pdo, (int) $user['id'], $name, $deptId, $category, $unit);`
 
 ## material_inventory_update {#material_inventory_update}
 
@@ -198,7 +198,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:105 — `$row = material_inventory_update($pdo, $stockId, $name, $unit, $isActive);`
+- `api/v1/materials.php`:106 — `$row = material_inventory_update($pdo, $stockId, $name, $unit, $isActive);`
 
 ## material_inventory_adjust {#material_inventory_adjust}
 
@@ -206,8 +206,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/materials.php`:131 — `$result = material_inventory_adjust($pdo, $stockId, $action, $amount, (int) $user['id'], $reason);`
-- `includes/material_inventory.php`:1396 — `$result = material_inventory_adjust($pdo, $stockId, $action, $amount, $reviewerId, $reason);`
+- `api/v1/materials.php`:132 — `$result = material_inventory_adjust($pdo, $stockId, $action, $amount, (int) $user['id'], $reason);`
+- `includes/material_inventory.php`:1606 — `$result = material_inventory_adjust($pdo, $stockId, $action, $amount, $reviewerId, $reason);`
 
 ## material_packaging_set_values {#material_packaging_set_values}
 
@@ -221,9 +221,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `stocks`
 
-**Callers (1):**
+**Callers (2):**
 
-- `api/v1/materials.php`:407 — `$result = material_packaging_set_pool_yield(`
+- `api/v1/materials.php`:462 — `$result = material_packaging_set_pool_yield(`
+- `includes/material_inventory.php`:656 — `material_packaging_set_pool_yield($pdo, $stockId, $yield, 'foam_piece', $userId);`
 
 ## material_parse_lot_batch_label {#material_parse_lot_batch_label}
 
@@ -231,7 +232,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/material_inventory.php`:520 — `return material_parse_lot_batch_label($label);`
 - `includes/material_inventory.php`:539 — `$parsed = material_parse_lot_batch_label((string) $row['supplier_batch_no']);`
-- `includes/material_inventory.php`:1011 — `$parsed = material_parse_lot_batch_label($label);`
+- `includes/material_inventory.php`:1221 — `$parsed = material_parse_lot_batch_label($label);`
 
 ## material_packaging_parse_lot_batch_label {#material_packaging_parse_lot_batch_label}
 
@@ -245,16 +246,98 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/fulfillment_packing.php`:542 — `$derivedPrice = material_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
+- `includes/fulfillment_packing.php`:912 — `$derivedPrice = material_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
 - `includes/material_inventory.php`:564 — `return material_pool_unit_cost_from_lots($pdo, $stockId, $poolOnHand);`
-- `includes/material_inventory.php`:649 — `$derivedPrice = material_pool_unit_cost_from_lots($pdo, $stockId, $newOnHand);`
-- `includes/material_inventory.php`:1107 — `$derivedPrice = material_pool_unit_cost_from_lots($pdo, $stockId, $newOnHand);`
+- `includes/material_inventory.php`:857 — `$derivedPrice = material_pool_unit_cost_from_lots($pdo, $stockId, $newOnHand);`
+- `includes/material_inventory.php`:1317 — `$derivedPrice = material_pool_unit_cost_from_lots($pdo, $stockId, $newOnHand);`
 
 ## material_packaging_pool_unit_cost_from_lots {#material_packaging_pool_unit_cost_from_lots}
 
+**Callers (3):**
+
+- `includes/material_inventory.php`:728 — `$lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
+- `includes/material_inventory.php`:755 — `$lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
+- `includes/parcel_pack_costing.php`:450 — `$lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
+
+## material_packaging_is_bubble_sized_stock_name {#material_packaging_is_bubble_sized_stock_name}
+
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:439 — `$lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
+- `includes/parcel_pack_costing.php`:443 — `if ($lineUnit === 'bubble_piece' && material_packaging_is_bubble_sized_stock_name($stockName)) {`
+
+## material_packaging_is_foam_sized_stock_name {#material_packaging_is_foam_sized_stock_name}
+
+**Callers (1):**
+
+- `includes/parcel_pack_costing.php`:446 — `if ($lineUnit === 'foam_piece' && material_packaging_is_foam_sized_stock_name($stockName)) {`
+
+## material_packaging_generic_foam_roll_stock_name {#material_packaging_generic_foam_roll_stock_name}
+
+**Callers (1):**
+
+- `includes/material_inventory.php`:584 — `return strtolower(trim($name)) === strtolower(material_packaging_generic_foam_roll_stock_name());`
+
+## material_packaging_is_generic_foam_roll_name {#material_packaging_is_generic_foam_roll_name}
+
+**Callers (3):**
+
+- `api/v1/materials.php`:334 — `$isGenericFoam = material_packaging_is_generic_foam_roll_name((string) $row['name']);`
+- `api/v1/materials.php`:371 — `if ($row === null || !material_packaging_is_generic_foam_roll_name((string) $row['name'])) {`
+- `api/v1/materials.php`:457 — `if (material_packaging_is_generic_foam_roll_name((string) $stockRow['name'])) {`
+
+## material_packaging_foam_cacao_cut_stock_names {#material_packaging_foam_cacao_cut_stock_names}
+
+**Callers (2):**
+
+- `includes/material_inventory.php`:606 — `foreach (material_packaging_foam_cacao_cut_stock_names() as $key => $stockName) {`
+- `includes/material_inventory.php`:645 — `foreach (material_packaging_foam_cacao_cut_stock_names() as $key => $stockName) {`
+
+## material_packaging_foam_cacao_cut_yields {#material_packaging_foam_cacao_cut_yields}
+
+**Tables:** `stocks`
+
+**Callers (2):**
+
+- `api/v1/materials.php`:349 — `$payload['foam_cacao_cut_yields'] = material_packaging_foam_cacao_cut_yields($pdo);`
+- `api/v1/materials.php`:391 — `'foam_cacao_cut_yields' => material_packaging_foam_cacao_cut_yields($pdo),`
+
+## material_packaging_set_foam_cacao_cut_yields {#material_packaging_set_foam_cacao_cut_yields}
+
+**Tables:** `stocks`
+
+**Callers (1):**
+
+- `api/v1/materials.php`:376 — `$result = material_packaging_set_foam_cacao_cut_yields(`
+
+## material_inventory_is_fulfillment_parcel_stock_name {#material_inventory_is_fulfillment_parcel_stock_name}
+
+**Callers (1):**
+
+- `includes/material_inventory.php`:703 — `if ($cat === 'packaging' && material_inventory_is_fulfillment_parcel_stock_name((string) ($row['name'] ?? ''))) {`
+
+## material_inventory_eligible_for_product_formula_row {#material_inventory_eligible_for_product_formula_row}
+
+**Callers (3):**
+
+- `api/v1/costing.php`:91 — `if (!material_inventory_eligible_for_product_formula_row($row)) {`
+- `api/v1/costing.php`:401 — `if (!material_inventory_eligible_for_product_formula_row($stock)) {`
+- `api/v1/costing.php`:437 — `if (!material_inventory_eligible_for_product_formula_row($stock)) {`
+
+## material_packaging_generic_bubble_roll_unit_cost {#material_packaging_generic_bubble_roll_unit_cost}
+
+**Tables:** `stocks`
+
+**Callers (1):**
+
+- `includes/parcel_pack_costing.php`:444 — `$rollCost = material_packaging_generic_bubble_roll_unit_cost($pdo);`
+
+## material_packaging_generic_foam_roll_unit_cost {#material_packaging_generic_foam_roll_unit_cost}
+
+**Tables:** `stocks`
+
+**Callers (1):**
+
+- `includes/parcel_pack_costing.php`:447 — `$rollCost = material_packaging_generic_foam_roll_unit_cost($pdo);`
 
 ## material_packaging_stock_in_lot {#material_packaging_stock_in_lot}
 
@@ -262,7 +345,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:556 — `$result = material_packaging_stock_in_lot(`
+- `api/v1/materials.php`:611 — `$result = material_packaging_stock_in_lot(`
 
 ## material_packaging_set_on_hand {#material_packaging_set_on_hand}
 
@@ -270,8 +353,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/materials.php`:477 — `$result = material_packaging_set_on_hand(`
-- `includes/material_inventory.php`:1382 — `$result = material_packaging_set_on_hand($pdo, $stockId, $amount, $reviewerId, $reason);`
+- `api/v1/materials.php`:532 — `$result = material_packaging_set_on_hand(`
+- `includes/material_inventory.php`:1592 — `$result = material_packaging_set_on_hand($pdo, $stockId, $amount, $reviewerId, $reason);`
 
 ## material_packaging_deduct_for_use {#material_packaging_deduct_for_use}
 
@@ -279,16 +362,16 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:372 — `$result = material_packaging_deduct_for_use(`
+- `api/v1/materials.php`:420 — `$result = material_packaging_deduct_for_use(`
 
 ## material_fulfillment_snap_sixteenths {#material_fulfillment_snap_sixteenths}
 
 **Callers (4):**
 
-- `includes/fulfillment_packing.php`:347 — `$deductQty = material_fulfillment_snap_sixteenths($qty / $yield);`
-- `includes/fulfillment_packing.php`:349 — `$deductQty = material_fulfillment_snap_sixteenths($qty);`
-- `includes/material_inventory.php`:841 — `$deductQty = material_fulfillment_snap_sixteenths($qty / $yield);`
-- `includes/material_inventory.php`:843 — `$deductQty = material_fulfillment_snap_sixteenths($qty);`
+- `includes/fulfillment_packing.php`:563 — `$deductQty = material_fulfillment_snap_sixteenths($qty / $yield);`
+- `includes/fulfillment_packing.php`:565 — `$deductQty = material_fulfillment_snap_sixteenths($qty);`
+- `includes/material_inventory.php`:1049 — `$deductQty = material_fulfillment_snap_sixteenths($qty / $yield);`
+- `includes/material_inventory.php`:1051 — `$deductQty = material_fulfillment_snap_sixteenths($qty);`
 
 ## material_packaging_deduct_fulfillment_line {#material_packaging_deduct_fulfillment_line}
 
@@ -296,15 +379,16 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/material_inventory.php`:925 — `$legacy = material_packaging_deduct_fulfillment_line(`
+- `includes/material_inventory.php`:1135 — `$legacy = material_packaging_deduct_fulfillment_line(`
 
 ## parcel_fulfillment_already_deducted {#parcel_fulfillment_already_deducted}
 
 **Tables:** `online_parcel_fulfillment_deduct_lines`
 
-**Callers (1):**
+**Callers (2):**
 
-- `includes/material_inventory.php`:903 — `if (parcel_fulfillment_already_deducted($pdo, $parcelId)) {`
+- `includes/material_inventory.php`:1111 — `if (parcel_fulfillment_already_deducted($pdo, $parcelId)) {`
+- `includes/online_order_parcels.php`:599 — `|| parcel_fulfillment_already_deducted($pdo, $parcelId);`
 
 ## parcel_fulfillment_apply_deduct {#parcel_fulfillment_apply_deduct}
 
@@ -328,20 +412,20 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/material_inventory.php`:1032 — `return material_pool_recent_entries($pdo, $stockId, $limit);`
-- `includes/material_inventory.php`:1038 — `return material_pool_recent_entries($pdo, $stockId, $limit);`
+- `includes/material_inventory.php`:1242 — `return material_pool_recent_entries($pdo, $stockId, $limit);`
+- `includes/material_inventory.php`:1248 — `return material_pool_recent_entries($pdo, $stockId, $limit);`
 
 ## material_packaging_recent_entries {#material_packaging_recent_entries}
 
 **Callers (1):**
 
-- `api/v1/materials.php`:332 — `$entries = material_packaging_recent_entries($pdo, $stockId, $logLimit);`
+- `api/v1/materials.php`:333 — `$entries = material_packaging_recent_entries($pdo, $stockId, $logLimit);`
 
 ## material_supply_recent_entries {#material_supply_recent_entries}
 
 **Callers (1):**
 
-- `api/v1/materials.php`:445 — `$entries = material_supply_recent_entries($pdo, $stockId, $logLimit);`
+- `api/v1/materials.php`:500 — `$entries = material_supply_recent_entries($pdo, $stockId, $logLimit);`
 
 ## material_supply_stock_in_lot {#material_supply_stock_in_lot}
 
@@ -349,7 +433,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:566 — `$result = material_supply_stock_in_lot(`
+- `api/v1/materials.php`:621 — `$result = material_supply_stock_in_lot(`
 
 ## material_supply_set_on_hand {#material_supply_set_on_hand}
 
@@ -357,8 +441,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/materials.php`:485 — `$result = material_supply_set_on_hand(`
-- `includes/material_inventory.php`:1394 — `$result = material_supply_set_on_hand($pdo, $stockId, $amount, $reviewerId, $reason);`
+- `api/v1/materials.php`:540 — `$result = material_supply_set_on_hand(`
+- `includes/material_inventory.php`:1604 — `$result = material_supply_set_on_hand($pdo, $stockId, $amount, $reviewerId, $reason);`
 
 ## material_supply_apply_issue {#material_supply_apply_issue}
 
@@ -366,7 +450,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/material_inventory.php`:1385 — `$result = material_supply_apply_issue(`
+- `includes/material_inventory.php`:1595 — `$result = material_supply_apply_issue(`
 
 ## material_adjustment_submit {#material_adjustment_submit}
 
@@ -374,7 +458,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:183 — `$id = material_adjustment_submit(`
+- `api/v1/materials.php`:184 — `$id = material_adjustment_submit(`
 
 ## material_adjustment_list {#material_adjustment_list}
 
@@ -382,14 +466,14 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:208 — `$requests = material_adjustment_list($pdo, $requestedBy, $category ?: null, $requestAction ?: null);`
+- `api/v1/materials.php`:209 — `$requests = material_adjustment_list($pdo, $requestedBy, $category ?: null, $requestAction ?: null);`
 
 ## material_adjustment_summary {#material_adjustment_summary}
 
 **Callers (2):**
 
-- `includes/material_inventory.php`:1332 — `$row['summary'] = material_adjustment_summary($row);`
-- `includes/material_inventory.php`:1478 — `$row['summary'] = material_adjustment_summary($row);`
+- `includes/material_inventory.php`:1542 — `$row['summary'] = material_adjustment_summary($row);`
+- `includes/material_inventory.php`:1688 — `$row['summary'] = material_adjustment_summary($row);`
 
 ## material_adjustment_approve {#material_adjustment_approve}
 
@@ -397,7 +481,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:228 — `material_adjustment_approve($pdo, $id, (int) $user['id']);`
+- `api/v1/materials.php`:229 — `material_adjustment_approve($pdo, $id, (int) $user['id']);`
 
 ## material_adjustment_reject {#material_adjustment_reject}
 
@@ -405,7 +489,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:249 — `material_adjustment_reject($pdo, $id, (int) $user['id'], $note);`
+- `api/v1/materials.php`:250 — `material_adjustment_reject($pdo, $id, (int) $user['id'], $note);`
 
 ## material_adjustment_pending_count {#material_adjustment_pending_count}
 
@@ -414,7 +498,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/honey.php`:344 — `$count += material_adjustment_pending_count($pdo);`
-- `api/v1/materials.php`:265 — `api_ok(['count' => material_adjustment_pending_count(ims_pdo())]);`
+- `api/v1/materials.php`:266 — `api_ok(['count' => material_adjustment_pending_count(ims_pdo())]);`
 
 ## material_adjustment_mark_viewed {#material_adjustment_mark_viewed}
 
@@ -422,7 +506,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:275 — `material_adjustment_mark_viewed(ims_pdo(), $id);`
+- `api/v1/materials.php`:276 — `material_adjustment_mark_viewed(ims_pdo(), $id);`
 
 ## material_adjustment_unread_list {#material_adjustment_unread_list}
 
@@ -430,7 +514,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:285 — `$requests = material_adjustment_unread_list(ims_pdo(), $limit);`
+- `api/v1/materials.php`:286 — `$requests = material_adjustment_unread_list(ims_pdo(), $limit);`
 
 ## material_raw_snapshot {#material_raw_snapshot}
 
@@ -438,7 +522,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:293 — `api_ok(material_raw_snapshot(ims_pdo()));`
+- `api/v1/materials.php`:294 — `api_ok(material_raw_snapshot(ims_pdo()));`
 
 ## material_inventory_raw_stock_by_slug {#material_inventory_raw_stock_by_slug}
 
@@ -446,5 +530,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:301 — `$row = material_inventory_raw_stock_by_slug(ims_pdo(), $slug);`
+- `api/v1/materials.php`:302 — `$row = material_inventory_raw_stock_by_slug(ims_pdo(), $slug);`
 

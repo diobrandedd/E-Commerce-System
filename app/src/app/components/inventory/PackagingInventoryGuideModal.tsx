@@ -46,7 +46,7 @@ function TypeLegend() {
           Parcel ship — bubble rolls, cushion rolls, LAD pieces, pouches, foam rolls, cardboard
         </p>
         <p className="mt-1">
-          Use the <strong className="text-foreground">For packing</strong> filter. Stock in whole rolls (bubble, cushion, foam) or pieces (LAD, pouches). System deducts on parcel ship — fractional rolls snap to 1/16.
+          Use the <strong className="text-foreground">For packing</strong> filter. Stock in whole rolls — including unsized <strong className="text-foreground">Bubble wrap roll</strong> (width 13 / 17 / 22 cm is chosen when issuing to packing). Sized bubble SKUs are staging-only. Ship scan deducts staging — fractional rolls snap to 1/16.
         </p>
       </div>
     </div>

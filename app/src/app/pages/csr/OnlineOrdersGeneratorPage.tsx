@@ -3,7 +3,7 @@ import { BookOpen, Loader2, Download, CheckCircle2 } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { OnlineOrdersGuideModal } from "@/app/components/csr/OnlineOrdersGuideModal";
 import { appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
-import { runOnlineOrdersTour } from "@/app/components/tour/guides/onlineOrdersTour";
+import { runOnlineOrdersTour, type OnlineOrdersTourId } from "@/app/components/tour/guides/onlineOrdersTour";
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { useAuth } from "@/app/context/AuthContext";
 import { BatchStartModal } from "@/app/components/csr/onlineOrders/BatchStartModal";
@@ -170,6 +170,33 @@ export function OnlineOrdersGeneratorPage() {
     setBatch(b);
     setStep("post_run");
   };
+
+  const startGuideTour = useCallback(
+    (tourId: OnlineOrdersTourId) => {
+      setGuideOpen(false);
+
+      if (tourId !== "overview" && !batch) {
+        setToast("Start a batch first, then run the tool tour.");
+        window.setTimeout(() => setToast(null), 3500);
+        if (step === "start") setShowStartModal(true);
+        return;
+      }
+
+      if (tourId === "overview") {
+        if (batch) setStep("tools");
+        resetPrep();
+      } else if (tourId === "stamper") {
+        setSelectedTool("stamper");
+        setStep("stamp");
+      } else {
+        setSelectedTool(tourId);
+        setStep("prep");
+      }
+
+      startPageTourAfterModalClose(() => runOnlineOrdersTour(tourId, user?.role), tourId === "overview" ? 280 : 360);
+    },
+    [batch, step, user?.role],
+  );
 
   return (
     <PageLayout
@@ -368,10 +395,7 @@ export function OnlineOrdersGeneratorPage() {
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
         role={user?.role}
-        onStartTour={() => {
-          setGuideOpen(false);
-          startPageTourAfterModalClose(() => runOnlineOrdersTour(user?.role));
-        }}
+        onStartTour={startGuideTour}
       />
     </PageLayout>
   );

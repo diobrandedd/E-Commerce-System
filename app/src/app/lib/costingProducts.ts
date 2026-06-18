@@ -41,6 +41,20 @@ export function isDeptCatalogProduct(p: CostingProductLike): boolean {
   return key === "pt" || key === "brc" || key === "jar_cacao";
 }
 
+export function splitDeptCatalogProducts<T extends CostingProductLike>(deptProducts: T[]): {
+  paragis: T[];
+  cacaoBrc: T[];
+} {
+  const paragis: T[] = [];
+  const cacaoBrc: T[] = [];
+  for (const p of deptProducts) {
+    const key = p.dept_product_key ?? "";
+    if (key === "pt") paragis.push(p);
+    else if (key === "brc" || key === "jar_cacao") cacaoBrc.push(p);
+  }
+  return { paragis, cacaoBrc };
+}
+
 export function splitCostingProducts<T extends CostingProductLike>(products: T[]): {
   honey: T[];
   dept: T[];

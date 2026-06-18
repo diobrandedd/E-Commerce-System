@@ -116,7 +116,8 @@ export function CostingGuideModal({
               <strong className="text-foreground">Packaging</strong> — Packaging Materials lot stock-in → WAC ₱/pc (or pouch).
             </li>
             <li>
-              <strong className="text-foreground">Other materials</strong> — editable on Costing when adding formula lines (legacy stocks).
+            <strong className="text-foreground">Production packaging</strong> — bottles, stickers, seals, dept pouches/rolls
+            (from Packaging Materials, not parcel fulfillment like bubble wrap or LAD cushions).
             </li>
           </ul>
         </GuideSection>
@@ -181,12 +182,18 @@ export function CostingGuideModal({
             materials — bubble wrap, cushions, courier pouch, foam wrap. These are <em>not</em> duplicated in each product formula.
           </p>
           <p>
-            Costs are grouped into <strong className="text-foreground">tiers</strong> by parcel composition (e.g. 1×1L honey,
-            2×1L honey, 1–2 PT/BRC units). Bubble wrap uses min / typical / max qty because floor usage varies 2–4 wraps.
+            <strong className="text-foreground">Bubble wrap</strong> — stock in whole rolls on Packaging Materials (unsized SKU).
+            Costing divides that one roll WAC by pieces-per-roll (13 / 17 / 22 cm yields); you do not price sized bubble SKUs separately.
           </p>
           <p>
-            <strong className="text-foreground">Landed cost</strong> on the parcel tab = product manufacturing COGS + reference
-            parcel add-on for that family. Mixed parcels sum applicable tiers (honey + dept + cacao). 250/350 ml solo rules are TBD.
+            Costs are grouped into <strong className="text-foreground">tiers</strong> by parcel composition — solo honey (1L, 350ml,
+            250ml), solo Paragis Tea, solo BRC / Jar Cacao (same department), and combos such as PT + 1L honey or BRC + 350ml honey.
+            Bubble wrap uses min / typical / max qty because floor usage varies 2–4 wraps.
+          </p>
+          <p>
+            <strong className="text-foreground">Landed cost</strong> = product manufacturing COGS + reference parcel add-on.
+            Mixed parcels sum applicable tiers. Filter <strong className="text-foreground">Parcel packaging</strong> by Honey,
+            Paragis Tea, or BRC &amp; Cacao to see combo packaging lines from the ops spreadsheet.
           </p>
         </GuideSection>
 

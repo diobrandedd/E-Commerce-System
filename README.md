@@ -310,6 +310,24 @@ npm run dev          # http://localhost:5173 — proxies /rts/api to XAMPP
 npm run build:prod   # output → app/dist/ for Apache
 ```
 
+### Verify script (agent loop + local QA)
+
+After code changes, run the unified verify harness (used by `.cursor/agents/verifier` and hooks):
+
+```powershell
+powershell -File tools/verify.ps1              # scoped by git diff
+powershell -File tools/verify.ps1 -All         # all stages
+powershell -File tools/verify.ps1 -WithApi     # include API smoke (XAMPP up)
+```
+
+Stages: PHP syntax (`includes/`, `api/`), parcel tier tests, SPA build (when `app/` touched), memory bank regenerate (when PHP API touched), optional API smoke.
+
+Implementation prompt for approved plans:
+
+```text
+Implement <plan>. Sub-agent loop: verifier after each batch; fixer on FAIL; max 5 cycles.
+```
+
 ### 5. Config
 
 ```bash

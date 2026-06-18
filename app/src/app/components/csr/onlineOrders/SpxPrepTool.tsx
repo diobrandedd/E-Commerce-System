@@ -143,7 +143,7 @@ export function SpxPrepTool({
   return (
     <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
       <OrderRemarksToast message={toast} />
-      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
+      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground" data-tour="online-orders-tool-back">
         ← Back to tools
       </button>
 
@@ -152,7 +152,7 @@ export function SpxPrepTool({
           <p className="text-sm text-muted-foreground">
             Build the iPYX Excel from waybill PDFs, or from Shopee&apos;s packing list Excel plus PDFs for names.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" data-tour="online-orders-spx-mode">
             <button
               type="button"
               disabled={busy}
@@ -178,6 +178,7 @@ export function SpxPrepTool({
               Packing list Excel + PDF
             </button>
           </div>
+          <div data-tour="online-orders-spx-upload">
           {importMode === "packing_list" && (
             <FileZone
               label="Shopee packing list Excel"
@@ -199,6 +200,7 @@ export function SpxPrepTool({
             onFiles={setPdfFiles}
             disabled={busy}
           />
+          </div>
           <button
             type="button"
             disabled={
@@ -207,6 +209,7 @@ export function SpxPrepTool({
               (importMode === "packing_list" && !packingListFile)
             }
             onClick={() => void runExtract()}
+            data-tour="online-orders-spx-extract"
             className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
           >
             {busy ? <Loader2 size={16} className="animate-spin" /> : null}
@@ -216,6 +219,7 @@ export function SpxPrepTool({
       )}
 
       {phase === "resolve" && (
+        <div data-tour="online-orders-spx-resolve">
         <>
           {editFocusPage != null && (
             <p className="text-sm text-muted-foreground">
@@ -259,9 +263,11 @@ export function SpxPrepTool({
             </button>
           )}
         </>
+        </div>
       )}
 
       {phase === "review" && (
+        <div data-tour="online-orders-spx-review">
         <>
           <ShopeeItemsReviewPanel
             rows={rows}
@@ -282,6 +288,7 @@ export function SpxPrepTool({
               type="button"
               disabled={busy || !allResolved}
               onClick={() => void runPrepare()}
+              data-tour="online-orders-spx-build"
               className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
             >
               {busy ? <Loader2 size={16} className="animate-spin inline" /> : null}
@@ -289,6 +296,7 @@ export function SpxPrepTool({
             </button>
           </div>
         </>
+        </div>
       )}
 
       {phase === "ready" && prepResult && (

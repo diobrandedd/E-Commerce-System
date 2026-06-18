@@ -4,6 +4,34 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-18 — Parcel recipes: product COGS + landed total per recipe (products + packaging breakdown in modal/table)
+
+### 2026-06-18 — [[problems/records/2026-06-18_foam-cacao-cut-yields-ui|Foam cut yields editable on insulation foam roll (Jar Cacao)]]
+
+### 2026-06-18 — [[specs/2026-06-18_costing-parcel-packaging-session|MASTER: Costing + parcel packaging session knowledge]]
+**Canonical Obsidian doc** for this chat arc: Excel → tier_key map, dept buckets (Paragis vs BRC&Cacao), COGS vs fulfillment layers, all migrations 38–41, errors, design choices, file list, deploy checklist. **Read before any costing/parcel tier work.**
+
+### 2026-06-18 — [[problems/records/2026-06-18_costing-dept-paragis-vs-cacao-brc|Costing: Paragis vs BRC & Cacao dept buckets + combo recipes]]
+**Shipped:** UI buckets by `tier_key` not DB `family`; combo PT/BRC/Cacao+honey visible under correct dept filter. **Fix:** [[fixes/costing-dept-paragis-cacao-brc-buckets]] · **Spec:** [[specs/2026-06-18_costing-parcel-packaging-session]].
+
+### 2026-06-18 — [[problems/records/2026-06-18_costing-hub-parcel-recipes-table|Costing hub: products + parcel recipes tables]]
+**Shipped:** Products table (dept filter, landed columns, detail modal with COGS / ref. packaging / order calc) + Parcel recipes table with tier breakdown. **Fix:** [[fixes/costing-hub-products-and-parcel-recipes]] · **Spec:** [[specs/2026-06-18_costing-parcel-packaging-session]].
+
+### 2026-06-18 — [[problems/records/2026-06-18_insulation-foam-generic-roll|Insulation foam: generic roll, cut on cacao ship]]
+**Shipped:** phase 41 generic `Insulation foam roll` warehouse SKU; ship scan auto-deducts roll fraction from staging using recipe cut size (9×12 / 12.5×12 yields). **Fix:** [[fixes/insulation-foam-generic-roll-ship-cut]].
+
+### 2026-06-18 — [[problems/records/2026-06-18_parcel-tier-bought-cushion-pieces|Parcel tiers: bought liter cushions vs roll columns]]
+**Shipped:** phase 40 reactivates `Cushion piece - 1/2/3 liter`; tier seed aligned to Excel "customize" column (honey 1L, dept PT/BRC, cacao jars). **Fix:** [[fixes/parcel-tier-bought-liter-cushion-pieces]] · `migration_phase40_custom_cushion_pieces.sql`.
+
+### 2026-06-18 — [[problems/records/2026-06-18_costing-sync-and-sku-cleanup|Costing sync from prices + legacy SKU cleanup]]
+**Shipped:** phase 39 deactivates legacy parcel/cushion SKUs; `sync_all_costing_from_prices.php` syncs supplier + packaging WAC → product baseline. **No unused tables** — all 55 referenced in code.
+
+### 2026-06-18 — [[problems/records/2026-06-18_bubble-wrap-staging-damage|Bubble wrap sizing at issue + staging damage]]
+**Shipped:** Generic warehouse `Bubble wrap roll`; TL/PM issue assigns 13/17/22 cm to sized staging; `damaged_qty` + damage report API; TL nav + roles; **parcel costing uses one generic roll WAC ÷ yield per width**. **Spec:** [[specs/2026-06-18_bubble-wrap-staging-damage]] · `migration_phase38_bubble_wrap_staging_damage.sql`.
+
+### 2026-06-18 — [[problems/records/2026-06-18_cancelled-parcel-rewaybill-semantics|Cancelled parcels reusable for re-waybill]]
+**Shipped:** Cancel no longer reverts inventory; re-waybill accepts `cancelled` + `on_hold`; ship skips deduct when already committed; Deliveries UI copy aligned. **Spec:** [[specs/2026-06-17_fulfillment-packing-staging]].
+
 ### 2026-06-17 — [[problems/records/2026-06-17_cushion-roll-main-divider-lad-piece-foam-roll|Cushion main/divider rolls + LAD piece + foam roll yields]]
 **Shipped:** phase 37 cushion/foam migration, `column` + `foam_piece` deduct/costing units, Excel-v2 tier reseed, and HR/executive stock-in yield updates. **Fix:** [[fixes/cushion-roll-main-divider-and-foam-roll-yield]].
 

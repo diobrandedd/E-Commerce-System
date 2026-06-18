@@ -72,7 +72,7 @@ export function SidebarNavToggleButton({
       onClick={onClick}
       whileTap={reduce ? undefined : sidebarNavTap}
       transition={{ duration: 0.1 }}
-      className={className}
+      className={cn("cursor-pointer", className)}
     >
       {children}
     </motion.button>

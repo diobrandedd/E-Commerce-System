@@ -1,6 +1,11 @@
 import { BookOpen } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
-import { GuideTourFooter, GuideWalkthroughSection } from "@/app/components/tour/GuideTourFooter";
+import {
+  GuideMultiTourFooter,
+  GuideWalkthroughSection,
+  type GuideTourOption,
+} from "@/app/components/tour/GuideTourFooter";
+import type { OnlineOrdersTourId } from "@/app/components/tour/guides/onlineOrdersTour";
 import type { Role } from "@/app/context/AuthContext";
 
 function GuideSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -18,6 +23,14 @@ const ROLE_LABELS: Partial<Record<Role, string>> = {
   csr_staff: "CSR Staff",
 };
 
+const TOUR_OPTIONS: GuideTourOption[] = [
+  { id: "overview", label: "Overview tour" },
+  { id: "vip", label: "VIP tour" },
+  { id: "spx", label: "SPX tour" },
+  { id: "excel", label: "Validate tour" },
+  { id: "stamper", label: "Stamper tour" },
+];
+
 function CsrWorkflow() {
   return (
     <ol className="list-decimal pl-4 space-y-1.5">
@@ -26,12 +39,11 @@ function CsrWorkflow() {
         to abandon work.
       </li>
       <li>
-        <strong className="text-foreground">Prep tools</strong> — VIP arranger, SPX merge, or Excel validate download
-        arranged iPYX sheets only (no stamping yet).
+        <strong className="text-foreground">Pick one prep tool</strong> — VIP, SPX, or Validate (Excel download only).
       </li>
       <li>
-        <strong className="text-foreground">PDF + Excel stamper</strong> — when prep Excel is ready, stamp waybill PDFs
-        into the batch.
+        <strong className="text-foreground">PDF + Excel stamper</strong> — separate step when prep Excel + waybill PDFs
+        are ready.
       </li>
       <li>
         <strong className="text-foreground">Done — download master Excel</strong> — finalizes batch, promotes parcels to
@@ -50,7 +62,7 @@ export function OnlineOrdersGuideModal({
   open: boolean;
   onClose: () => void;
   role: Role | undefined;
-  onStartTour: () => void;
+  onStartTour: (tourId: OnlineOrdersTourId) => void;
 }) {
   const roleLabel = role ? ROLE_LABELS[role] : undefined;
   const isExec = role === "executive";
@@ -80,7 +92,7 @@ export function OnlineOrdersGuideModal({
       <AppModalBody className="flex flex-col min-h-0 overflow-y-auto overscroll-contain gap-5 py-4">
         <GuideSection title="What this page is for">
           <p>
-            CSR batch workflow for partner orders: prep Excel from VIP/SPX/uploads, stamp waybills, then finalize into
+            CSR batch workflow for partner orders: four tools on the picker — three prep Excel, one stamper. Finish with
             master Excel and online parcels in <strong className="text-foreground">packing</strong> status.
           </p>
         </GuideSection>
@@ -94,17 +106,58 @@ export function OnlineOrdersGuideModal({
             <CsrWorkflow />
           )}
         </GuideSection>
-        <GuideSection title="Tool picker">
-          <ul className="list-disc pl-4 space-y-1">
-            <li><strong className="text-foreground">VIP Excel arranger</strong> — courier sheet → remark resolution → iPYX download</li>
-            <li><strong className="text-foreground">SPX name merge</strong> — packing list / PDF → iPYX download</li>
-            <li><strong className="text-foreground">Validate Excel</strong> — check an existing partner workbook</li>
-            <li><strong className="text-foreground">PDF + Excel stamper</strong> — merge labels into batch (separate step)</li>
-          </ul>
+
+        <GuideSection title="VIP Excel arranger">
+          <ol className="list-decimal pl-4 space-y-1.5">
+            <li>Upload J&T / VIP courier Excel (.xlsx).</li>
+            <li>Resolve ambiguous remark cards (variant picks) if shown.</li>
+            <li>
+              <strong className="text-foreground">Build arranged Excel</strong> — downloads remarks export + iPYX sheet.
+            </li>
+            <li>Back to tools → open stamper when PDFs are ready.</li>
+          </ol>
         </GuideSection>
-        <GuideWalkthroughSection />
+
+        <GuideSection title="SPX name merge">
+          <ol className="list-decimal pl-4 space-y-1.5">
+            <li>Choose <strong className="text-foreground">PDF only</strong> or packing list + PDF mode.</li>
+            <li>Upload PDFs (and packing list if needed) → Extract / Import.</li>
+            <li>Confirm variant on each line → Review all items.</li>
+            <li>
+              <strong className="text-foreground">Build iPYX Excel</strong> → download → back to tools for stamper.
+            </li>
+          </ol>
+        </GuideSection>
+
+        <GuideSection title="Validate existing Excel">
+          <ol className="list-decimal pl-4 space-y-1.5">
+            <li>Upload partner iPYX workbook(s).</li>
+            <li>
+              <strong className="text-foreground">Validate Excel</strong> — checks columns and row count.
+            </li>
+            <li>Download copy if needed → Back to tools → stamper.</li>
+          </ol>
+        </GuideSection>
+
+        <GuideSection title="PDF + Excel stamper">
+          <ol className="list-decimal pl-4 space-y-1.5">
+            <li>Set order type: Partner, VIP, or Shopee SPX (match how Excel was built).</li>
+            <li>Upload prepared Excel → Load Excel → optional download to verify.</li>
+            <li>Upload matching waybill PDFs.</li>
+            <li>
+              <strong className="text-foreground">Stamp &amp; save to batch</strong> — repeat for more PDF sets, then
+              finish batch.
+            </li>
+          </ol>
+        </GuideSection>
+
+        <GuideWalkthroughSection multiTool />
       </AppModalBody>
-      <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />
+      <GuideMultiTourFooter
+        tours={TOUR_OPTIONS}
+        onStartTour={id => onStartTour(id as OnlineOrdersTourId)}
+        onClose={onClose}
+      />
     </AppModal>
   );
 }

@@ -17,6 +17,23 @@ export interface ParcelPackTierLine {
   cost_max?: number;
 }
 
+export interface ParcelTierProductCogsLine {
+  product_id: number | null;
+  label: string;
+  qty: number;
+  unit_cogs: number | null;
+  line_cogs: number | null;
+  note?: string | null;
+}
+
+export interface ParcelTierProductCogs {
+  lines: ParcelTierProductCogsLine[];
+  products_total: number;
+  packaging_typical: number;
+  landed_typical: number;
+  honey_variant_ref?: string;
+}
+
 export interface ParcelPackTier {
   id: number;
   family: "honey" | "dept_pt_brc" | "jar_cacao";
@@ -29,6 +46,7 @@ export interface ParcelPackTier {
   cost_min: number;
   cost_max: number;
   lines: ParcelPackTierLine[];
+  product_cogs?: ParcelTierProductCogs;
 }
 
 export interface ParcelCostPreview {
@@ -40,11 +58,13 @@ export interface ParcelCostPreview {
   cost_typical: number;
   cost_min: number;
   cost_max: number;
+  product_cogs?: ParcelTierProductCogs | null;
   warnings: string[];
   parsed_errors?: string[];
 }
 
 export interface ParcelProductAddon {
+  tier_key: string;
   scenario: string;
   cost_typical: number;
   cost_min: number;
@@ -85,6 +105,6 @@ export async function deleteParcelTierLine(tierId: number, lineId: number): Prom
 
 export const PARCEL_FAMILY_LABELS: Record<ParcelPackTier["family"], string> = {
   honey: "Honey parcels",
-  dept_pt_brc: "Paragis Tea & Black Rice Coffee",
-  jar_cacao: "Jar Cacao",
+  dept_pt_brc: "Paragis Tea & BRC (legacy family tag)",
+  jar_cacao: "Jar Cacao (legacy family tag)",
 };

@@ -7,12 +7,16 @@ import { PackagingStockInLotModal } from "@/app/components/inventory/PackagingSt
 import { PackagingPriceLotModal } from "@/app/components/inventory/PackagingPriceLotModal";
 import {
   fetchPackagingDetail,
+  isGenericInsulationFoamRoll,
+  setPackagingFoamCacaoCutYields,
   setPackagingPoolYield,
+  type FoamCacaoCutYield,
   type MaterialStockRow,
   type PackagingDetailPermissions,
   type PackagingStockEntry,
 } from "@/app/lib/materials";
 import { ApiError } from "@/app/lib/api";
+import { Button } from "@/app/components/ui/button";
 
 interface PackagingMaterialDetailModalProps {
   stock: MaterialStockRow;
@@ -54,6 +58,7 @@ const defaultPermissions = (
   can_deduct: isExec || isPm,
   can_set_on_hand: isExec,
   can_set_pool_yield: isExec,
+  can_set_foam_cacao_cut_yields: false,
   can_view_extended_log: isExec,
 });
 
@@ -78,6 +83,10 @@ export function PackagingMaterialDetailModal({
   const [showSetOnHand, setShowSetOnHand] = useState(false);
   const [yieldQty, setYieldQty] = useState("");
   const [yieldSaving, setYieldSaving] = useState(false);
+  const [foamCutYields, setFoamCutYields] = useState<FoamCacaoCutYield[]>([]);
+  const [foamCuts9x12, setFoamCuts9x12] = useState("");
+  const [foamCuts12_5x12, setFoamCuts12_5x12] = useState("");
+  const [foamCutsSaving, setFoamCutsSaving] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -91,6 +100,17 @@ export function PackagingMaterialDetailModal({
       }
       if (data.stock.is_pool_packaging && data.stock.pool_yield_qty != null) {
         setYieldQty(String(data.stock.pool_yield_qty));
+      }
+      if (data.foam_cacao_cut_yields) {
+        setFoamCutYields(data.foam_cacao_cut_yields);
+        const nine = data.foam_cacao_cut_yields.find(c => c.key === "9x12");
+        const twelve = data.foam_cacao_cut_yields.find(c => c.key === "12_5x12");
+        if (nine?.pool_yield_qty != null) setFoamCuts9x12(String(nine.pool_yield_qty));
+        if (twelve?.pool_yield_qty != null) setFoamCuts12_5x12(String(twelve.pool_yield_qty));
+      } else {
+        setFoamCutYields([]);
+        setFoamCuts9x12("");
+        setFoamCuts12_5x12("");
       }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load details.");
@@ -106,7 +126,16 @@ export function PackagingMaterialDetailModal({
   const unitCost = Number(row.current_price ?? 0);
   const poolValue = onHand * unitCost;
   const isPool = Boolean(row.is_pool_packaging);
+  const isGenericFoam = isGenericInsulationFoamRoll(row.name);
   const poolRemaining = row.pool_estimated_remaining;
+  const foamCut9Label = foamCutYields.find(c => c.key === "9x12")?.label ?? '9" x 12"';
+  const foamCut12Label = foamCutYields.find(c => c.key === "12_5x12")?.label ?? '12.5" x 12"';
+
+  const foamPieceCostHint = (cutsRaw: string) => {
+    const cuts = parseFloat(cutsRaw);
+    if (!Number.isFinite(cuts) || cuts <= 0 || unitCost <= 0) return null;
+    return `≈ ${peso(unitCost / cuts)} per cut`;
+  };
 
   const saveYield = async () => {
     const n = parseFloat(yieldQty);
@@ -131,6 +160,31 @@ export function PackagingMaterialDetailModal({
     }
   };
 
+  const saveFoamCuts = async () => {
+    const nine = parseFloat(foamCuts9x12);
+    const twelve = parseFloat(foamCuts12_5x12);
+    if (!Number.isFinite(nine) || nine <= 0 || !Number.isFinite(twelve) || twelve <= 0) {
+      setError("Both cut yields must be greater than zero.");
+      return;
+    }
+    setFoamCutsSaving(true);
+    setError(null);
+    try {
+      const res = await setPackagingFoamCacaoCutYields({
+        stock_id: row.id,
+        cuts_9x12: nine,
+        cuts_12_5x12: twelve,
+      });
+      setFoamCutYields(res.foam_cacao_cut_yields);
+      await refresh();
+      onChanged();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not save cut yields.");
+    } finally {
+      setFoamCutsSaving(false);
+    }
+  };
+
   const handleChildDone = () => {
     setShowStockIn(false);
     setShowPriceLot(false);
@@ -151,7 +205,81 @@ export function PackagingMaterialDetailModal({
         <AppModalBody className="flex flex-col min-h-0 overflow-hidden gap-5">
           {error && <p className="text-sm text-red-600 shrink-0">{error}</p>}
 
-          {isPool && (
+          {isPool && isGenericFoam && (
+            <div className="rounded-xl border border-dashed bg-secondary/20 px-3 py-3 shrink-0 space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Jar Cacao cut yields
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                  Pieces per warehouse roll for each cut size. Parcel costing and cacao ship deduct use these —
+                  not the full roll price per jar.
+                </p>
+              </div>
+              {permissions.can_set_foam_cacao_cut_yields ? (
+                <div className="space-y-3">
+                  <label className="block text-xs">
+                    <span className="text-muted-foreground block mb-1">{foamCut9Label} cuts per roll</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={foamCuts9x12}
+                      onChange={e => setFoamCuts9x12(e.target.value)}
+                      className="w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background"
+                      placeholder="e.g. 50"
+                    />
+                    {foamPieceCostHint(foamCuts9x12) && (
+                      <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                        {foamPieceCostHint(foamCuts9x12)}
+                      </span>
+                    )}
+                  </label>
+                  <label className="block text-xs">
+                    <span className="text-muted-foreground block mb-1">{foamCut12Label} cuts per roll</span>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={foamCuts12_5x12}
+                      onChange={e => setFoamCuts12_5x12(e.target.value)}
+                      className="w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background"
+                      placeholder="e.g. 40"
+                    />
+                    {foamPieceCostHint(foamCuts12_5x12) && (
+                      <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                        {foamPieceCostHint(foamCuts12_5x12)}
+                      </span>
+                    )}
+                  </label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={foamCutsSaving}
+                    onClick={() => void saveFoamCuts()}
+                    className="w-full sm:w-auto"
+                  >
+                    {foamCutsSaving ? "Saving…" : "Save cut yields"}
+                  </Button>
+                </div>
+              ) : (
+                <ul className="text-sm space-y-1">
+                  {foamCutYields.map(cut => (
+                    <li key={cut.key}>
+                      <span className="text-muted-foreground">{cut.label}:</span>{" "}
+                      {cut.pool_yield_qty != null ? (
+                        <span className="font-medium">~{cut.pool_yield_qty.toLocaleString()} cuts/roll</span>
+                      ) : (
+                        <span className="text-amber-700">Not set</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {isPool && !isGenericFoam && (
             <div className="rounded-xl border border-dashed bg-secondary/20 px-3 py-3 shrink-0 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Pool (cost estimate)</p>

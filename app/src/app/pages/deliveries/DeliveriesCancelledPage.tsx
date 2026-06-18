@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { Loader2, ScanLine } from "lucide-react";
+import { BookOpen, Loader2, ScanLine } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { DeliveriesCancelledGuideModal } from "@/app/components/fulfillment/DeliveriesCancelledGuideModal";
+import { runDeliveriesCancelledTour } from "@/app/components/fulfillment/deliveriesCancelledTour";
 import { PageLayout } from "@/app/components/PageLayout";
+import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import {
   deliveriesCancelLogList,
   deliveriesCancelParcelScan,
@@ -10,8 +13,8 @@ import {
   type DeliveryCancelLogRow,
 } from "@/app/lib/deliveriesApi";
 import { ApiError } from "@/app/lib/api";
-import { AppErrorBanner, AppSuccessNotice } from "@/app/components/layout/appFeedbackMotion";
-import { Button } from "@/app/components/ui/button";
+import { AppErrorBanner, AppSuccessNotice, appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
+import { useAuth } from "@/app/context/AuthContext";
 
 function ParcelStatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -28,6 +31,8 @@ function ParcelStatusBadge({ status }: { status: string }) {
 }
 
 export function DeliveriesCancelledPage() {
+  const { user } = useAuth();
+  const isExecutive = user?.role === "executive";
   const [q, setQ] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -40,6 +45,7 @@ export function DeliveriesCancelledPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [trackingInput, setTrackingInput] = useState("");
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const readerRef = useRef<HTMLDivElement | null>(null);
   const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
 
@@ -82,8 +88,8 @@ export function DeliveriesCancelledPage() {
         const status = lookup.parcel.status;
         const prompt =
           status === "shipped"
-            ? `Cancel parcel ${tracking}? This will restore deducted inventory.`
-            : `Cancel parcel ${tracking} from ${status}?`;
+            ? `Mark ${tracking} as courier cancelled? The sealed box can be re-waybilled — inventory will not be restored.`
+            : `Mark ${tracking} as courier cancelled? Box can be re-waybilled later.`;
         if (!window.confirm(prompt)) return;
 
         const result = await deliveriesCancelParcelScan(tracking);
@@ -133,9 +139,12 @@ export function DeliveriesCancelledPage() {
   return (
     <PageLayout
       title="Deliveries cancelled"
-      subtitle="Scan courier-cancelled parcels and restore inventory"
+      subtitle="Courier-cancelled orders — sealed boxes stay packed; re-waybill on Add deliveries"
       actions={
         <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
+            <BookOpen size={13} /> Guide
+          </button>
           <Link to="/deliveries/review" className="sm:hidden text-xs font-semibold rounded-lg border border-border px-2.5 py-1.5 text-muted-foreground">
             Review
           </Link>
@@ -150,7 +159,7 @@ export function DeliveriesCancelledPage() {
         </div>
       }
     >
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3 mb-6">
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 mb-6" data-tour="deliveries-cancel-scanner">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-foreground">Cancel parcel scanner</h2>
           <button
@@ -167,7 +176,7 @@ export function DeliveriesCancelledPage() {
           </button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Use this after courier scanning feedback. Cancelling a shipped parcel returns deducted inventory automatically.
+          Use after courier cancel feedback. Inventory stays deducted — re-waybill the sealed box on Add deliveries.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -196,7 +205,7 @@ export function DeliveriesCancelledPage() {
       <AppSuccessNotice message={notice} />
       <AppErrorBanner message={error} />
 
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4" data-tour="deliveries-cancel-filters">
         <input
           className="rounded-lg border border-border px-3 py-2 text-sm"
           placeholder="Search tracking, name, items…"
@@ -211,14 +220,14 @@ export function DeliveriesCancelledPage() {
       </div>
 
       {busy ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mb-2" /> : null}
-      <div className="overflow-x-auto rounded-xl border border-border">
+      <div className="overflow-x-auto rounded-xl border border-border" data-tour="deliveries-cancel-table">
         <table className="w-full text-sm">
           <thead className="bg-muted/40">
             <tr>
               <th className="px-3 py-2 text-left">When</th>
               <th className="px-3 py-2 text-left">Tracking</th>
               <th className="px-3 py-2 text-left">Prev status</th>
-              <th className="px-3 py-2 text-left">Inventory</th>
+              <th className="px-3 py-2 text-left">Box</th>
               <th className="px-3 py-2 text-left">Cancelled by</th>
               <th className="px-3 py-2 text-left">Order</th>
             </tr>
@@ -235,11 +244,7 @@ export function DeliveriesCancelledPage() {
                   <ParcelStatusBadge status={r.previous_status} />
                 </td>
                 <td className="px-3 py-2">
-                  {r.inventory_reverted ? (
-                    <span className="text-xs font-semibold text-green-700">Restored</span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">No revert needed</span>
-                  )}
+                  <span className="text-xs text-muted-foreground">Sealed — re-waybill</span>
                 </td>
                 <td className="px-3 py-2">
                   {r.cancelled_by_name || r.cancelled_by_username ? (
@@ -267,7 +272,7 @@ export function DeliveriesCancelledPage() {
       <p className="text-xs text-muted-foreground mt-2">
         {cancelTotal} cancelled order{cancelTotal === 1 ? "" : "s"} · page {cancelPage}
       </p>
-      <div className="flex gap-2 mt-2">
+      <div className="flex gap-2 mt-2" data-tour="deliveries-cancel-pagination">
         <button
           type="button"
           disabled={cancelPage <= 1}
@@ -307,6 +312,16 @@ export function DeliveriesCancelledPage() {
           <div id="deliveries-cancel-qr-reader" ref={readerRef} />
         </AppModalBody>
       </AppModal>
+
+      <DeliveriesCancelledGuideModal
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        isExecutive={isExecutive}
+        onStartTour={() => {
+          setGuideOpen(false);
+          startPageTourAfterModalClose(() => runDeliveriesCancelledTour({ isExecutive }));
+        }}
+      />
     </PageLayout>
   );
 }

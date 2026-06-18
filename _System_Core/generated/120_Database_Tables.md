@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-06-17T10:42:28+02:00
+generated: 2026-06-18T09:06:23+02:00
 type: memory-bank
-table_count: 54
+table_count: 55
 ---
 
 
@@ -173,6 +173,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_change_password]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
@@ -218,8 +219,11 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_formula_deduct_lines]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_packaging_deduct]] |
 | `includes/fulfillment_pack_tier_seed.php` | [[modules/fulfillment_pack_tier_seed#fulfillment_pack_stock_ids_by_name]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_bubble_sized_stock_id]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_foam_generic_stock_id]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issue_create]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_balances_list]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#material_packaging_record_invoice_price]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_bottling_deduct_packaging_stocks]] |
@@ -231,6 +235,10 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_adjust]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_values]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_pool_yield]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_foam_cacao_cut_yields]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_foam_cacao_cut_yields]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_generic_bubble_roll_unit_cost]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_generic_foam_roll_unit_cost]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_on_hand]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_for_use]] |
@@ -244,6 +252,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_tier_lines]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_product_unit_cogs]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_tier_product_cogs_lines]] |
 
 ## `stock_entries`
 
@@ -314,6 +324,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_product_map]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_product_unit_cogs]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_tier_product_cogs_lines]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
 
 ## `product_formula`
@@ -327,6 +339,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_formula_mutate]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_product_unit_cogs]] |
+| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_tier_product_cogs_lines]] |
 
 ## `stock_deductions`
 
@@ -454,6 +468,7 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_apply_deduct]] |
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
 
 ## `material_adjustment_requests`
 
@@ -527,6 +542,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issue_create]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_consume_line]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_balances_list]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_report_damage]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#parcel_fulfillment_revert_deduct]] |
 
 ## `fulfillment_packing_issues`
@@ -554,6 +570,13 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_hold]] |
+
+## `fulfillment_packing_damage_events`
+
+| File | Function |
+|------|----------|
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_report_damage]] |
+| `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
 
 ## `pos_sales`
 

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-17T10:42:28+02:00
+generated: 2026-06-18T09:06:23+02:00
 type: memory-bank
 ---
 
@@ -30,7 +30,7 @@ type: memory-bank
 | [[modules/dept_products]] | 21 |
 | [[modules/forwarding]] | 15 |
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
-| [[modules/fulfillment_packing]] | 13 |
+| [[modules/fulfillment_packing]] | 28 |
 | [[modules/honey_inventory]] | 39 |
 | [[modules/honey_parcel_inventory]] | 3 |
 | [[modules/honey_parcel_item_parser]] | 12 |
@@ -40,11 +40,11 @@ type: memory-bank
 | [[modules/honey_volume]] | 8 |
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/labels]] | 3 |
-| [[modules/material_inventory]] | 53 |
+| [[modules/material_inventory]] | 64 |
 | [[modules/online_order_parcels]] | 19 |
 | [[modules/online_orders_generator]] | 34 |
 | [[modules/order_remarks]] | 17 |
-| [[modules/parcel_pack_costing]] | 32 |
+| [[modules/parcel_pack_costing]] | 37 |
 | [[modules/pdf_to_excel]] | 15 |
 | [[modules/pos_discount_requests]] | 7 |
 | [[modules/qr_decode]] | 13 |

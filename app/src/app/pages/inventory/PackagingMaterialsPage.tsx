@@ -78,6 +78,8 @@ export function PackagingMaterialsPage() {
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter(row => {
+      if (/^bubble wrap roll - \d+ cm$/i.test(row.name.trim())) return false;
+      if (/^insulation foam roll - /i.test(row.name.trim())) return false;
       if (filter === "fulfillment" && !isFulfillmentPackagingRow(row.name)) return false;
       if (filter === "per_unit" && row.is_pool_packaging) return false;
       if (filter === "pool" && !row.is_pool_packaging) return false;

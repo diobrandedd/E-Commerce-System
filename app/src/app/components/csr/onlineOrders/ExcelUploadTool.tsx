@@ -54,12 +54,13 @@ export function ExcelUploadTool({
 
   return (
     <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
-      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
+      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground" data-tour="online-orders-tool-back">
         ← Back to tools
       </button>
       <p className="text-sm text-muted-foreground">
         Upload partner iPYX Excel (.xlsx). We validate columns and row count — go back to tools and open PDF + Excel stamper to stamp.
       </p>
+      <div data-tour="online-orders-excel-upload">
       <FileZone
         label="iPYX order sheets"
         hint="Partner column layout — one or more workbooks"
@@ -72,10 +73,12 @@ export function ExcelUploadTool({
         }}
         disabled={busy}
       />
+      </div>
       <button
         type="button"
         disabled={busy || excelFiles.length === 0}
         onClick={() => void register()}
+        data-tour="online-orders-excel-validate"
         className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
       >
         {busy ? <Loader2 size={16} className="animate-spin inline" /> : null}
@@ -83,7 +86,7 @@ export function ExcelUploadTool({
       </button>
 
       {preview && (
-        <div className="rounded-lg border border-green-200 bg-green-50/80 p-4 space-y-3">
+        <div className="rounded-lg border border-green-200 bg-green-50/80 p-4 space-y-3" data-tour="online-orders-excel-result">
           <p className="text-sm text-green-800 flex items-center gap-2">
             <CheckCircle2 size={18} />
             {preview.row_count} row{preview.row_count === 1 ? "" : "s"} validated

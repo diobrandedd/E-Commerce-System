@@ -1,20 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, History, Pencil, AlertCircle, RefreshCcw, Trash2, BookOpen } from "lucide-react";
+import { Plus, AlertCircle, RefreshCcw, BookOpen } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_FORMULA_LITERS_BY_SIZE, HONEY_LITERS_PER_US_GALLON } from "@/app/lib/honeyPricing";
-import { splitCostingProducts, groupHoneyByVariant } from "@/app/lib/costingProducts";
+import { splitCostingProducts, splitDeptCatalogProducts } from "@/app/lib/costingProducts";
 import {
   deptDefaultFormulaStockName,
   deptSuggestedFormulaQty,
 } from "@/app/lib/deptProducts";
-import { CostBadge, peso } from "@/app/lib/costingDisplay";
+import { peso } from "@/app/lib/costingDisplay";
 import { CostingHoneyVariantGroups } from "@/app/components/costing/CostingHoneyVariantGroups";
 import { CostingGuideModal } from "@/app/components/costing/CostingGuideModal";
 import { runCostingTour } from "@/app/components/tour/guides/costingTour";
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
-import { ParcelPackLandedIntro, ParcelPackTiersModal } from "@/app/components/costing/ParcelPackTiersModal";
+import { ParcelPackTiersModal } from "@/app/components/costing/ParcelPackTiersModal";
+import { CostingParcelRecipesPanel } from "@/app/components/costing/CostingParcelRecipesPanel";
+import { CostingProductDetailModal, type CostingProductSummary } from "@/app/components/costing/CostingProductDetailModal";
 import { CostingProductMetrics, CostingRowColumnHeaders } from "@/app/components/costing/CostingProductMetrics";
 import {
   CostingParcelProductMetrics,
@@ -22,7 +24,7 @@ import {
   costingParcelRowGridClass,
 } from "@/app/components/costing/CostingParcelMetrics";
 import { costingRowGridClass } from "@/app/components/costing/costingRowLayout";
-import { CostingDetailLoading, CostingDetailReveal } from "@/app/components/costing/costingMotion";
+import { appHoverRow } from "@/app/components/layout/appFeedbackMotion";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { cn } from "@/app/components/ui/utils";
 
@@ -63,10 +65,19 @@ interface ProductRow {
   parcel_addon_typical?: number | null;
   landed_typical?: number | null;
   margin_typical?: number | null;
-  parcel_addon?: { scenario: string; cost_typical: number } | null;
+  parcel_addon?: { scenario: string; cost_typical: number; tier_key?: string } | null;
 }
 
-type CostingViewMode = "product" | "parcel";
+type CostingHubMode = "products" | "packaging";
+type DeptFilter = "all" | "honey" | "paragis" | "cacao_brc" | "other";
+
+const DEPT_FILTER_CHIPS: { id: DeptFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "honey", label: "Honey" },
+  { id: "paragis", label: "Paragis Tea" },
+  { id: "cacao_brc", label: "BRC & Cacao" },
+  { id: "other", label: "Other" },
+];
 
 interface FormulaRow {
   id: number;
@@ -118,13 +129,6 @@ interface ProductDetail {
   show_pricing: boolean;
 }
 
-const fmtDate = (s: string | null | undefined) => {
-  if (!s) return "—";
-  const d = new Date(s.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return s;
-  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-};
-
 export function CostingPage() {
   const { user } = useAuth();
   const isExec = user?.role === "executive";
@@ -133,12 +137,12 @@ export function CostingPage() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [detailsById, setDetailsById] = useState<Record<number, ProductDetail | "loading">>({});
   const [guideOpen, setGuideOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<CostingViewMode>("product");
+  const [hubMode, setHubMode] = useState<CostingHubMode>("products");
+  const [deptFilter, setDeptFilter] = useState<DeptFilter>("all");
   const [parcelReady, setParcelReady] = useState(false);
   const [parcelTiersModalOpen, setParcelTiersModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null);
   const [creatingProduct, setCreatingProduct] = useState(false);
   const [createDefaults, setCreateDefaults] = useState<{ variant: string; size: string } | null>(null);
   const [addFormulaProductId, setAddFormulaProductId] = useState<number | null>(null);
@@ -150,10 +154,9 @@ export function CostingPage() {
   const refresh = useCallback(async () => {
     setError(null);
     try {
-      const includeParcel = viewMode === "parcel";
       const [stocksRes, productsRes] = await Promise.all([
         apiGet<{ stocks: StockRow[] }>("costing.php", "stocks_list"),
-        apiGet<{ products: ProductRow[]; parcel_ready?: boolean }>("costing.php", "products_list", includeParcel ? { parcel: "1" } : undefined),
+        apiGet<{ products: ProductRow[]; parcel_ready?: boolean }>("costing.php", "products_list", { parcel: "1" }),
       ]);
       setStocks(stocksRes.stocks);
       setProducts(productsRes.products);
@@ -161,7 +164,7 @@ export function CostingPage() {
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load costing data.");
     }
-  }, [viewMode]);
+  }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -170,30 +173,9 @@ export function CostingPage() {
     setTimeout(() => setNotice(null), 3000);
   };
 
-  const fetchDetail = async (productId: number) => {
-    setDetailsById(prev => ({ ...prev, [productId]: "loading" }));
-    try {
-      const detail = await apiGet<ProductDetail>("costing.php", "product_view", { product_id: productId });
-      setDetailsById(prev => ({ ...prev, [productId]: detail }));
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not load product detail.");
-      setDetailsById(prev => {
-        const next = { ...prev };
-        delete next[productId];
-        return next;
-      });
-    }
-  };
-
-  const toggleProduct = async (productId: number) => {
-    if (expandedId === productId) {
-      setExpandedId(null);
-      return;
-    }
-    setExpandedId(productId);
-    if (!detailsById[productId] || detailsById[productId] === "loading") {
-      await fetchDetail(productId);
-    }
+  const openProduct = (productId: number) => {
+    const p = products.find(x => x.id === productId);
+    if (p) setSelectedProduct(p);
   };
 
   const handleProductCreated = async () => {
@@ -202,30 +184,22 @@ export function CostingPage() {
     await refresh();
   };
 
-  const handleFormulaChanged = async (productId: number, detail: ProductDetail, message: string) => {
-    setDetailsById(prev => ({ ...prev, [productId]: detail }));
+  const handleFormulaChanged = async (productId: number, _detail: ProductDetail, message: string) => {
     flash(message);
     await refresh();
+    if (selectedProduct?.id === productId) {
+      const updated = products.find(p => p.id === productId);
+      if (updated) setSelectedProduct(updated);
+    }
   };
 
   const handleSellingPriceSaved = async (productId: number, sellingPrice: number) => {
     setEditingSellingPrice(null);
     flash("Selling price updated.");
     await refresh();
-    if (expandedId === productId) {
-      await fetchDetail(productId);
+    if (selectedProduct?.id === productId) {
+      setSelectedProduct(prev => (prev ? { ...prev, selling_price: String(sellingPrice) } : null));
     }
-    setDetailsById(prev => {
-      const cur = prev[productId];
-      if (!cur || cur === "loading") return prev;
-      return {
-        ...prev,
-        [productId]: {
-          ...cur,
-          product: { ...cur.product, selling_price: sellingPrice },
-        },
-      };
-    });
   };
 
   const stocksForDept = useMemo(() => {
@@ -241,52 +215,70 @@ export function CostingPage() {
     [products],
   );
 
-  const honeyVariantCount = useMemo(
-    () => groupHoneyByVariant(honeyProducts).filter(g => g.products.length > 0).length,
-    [honeyProducts],
+  const { paragis: paragisProducts, cacaoBrc: cacaoBrcProducts } = useMemo(
+    () => splitDeptCatalogProducts(deptProducts),
+    [deptProducts],
   );
 
   const productsSubtitle = useMemo(() => {
+    if (hubMode === "packaging") {
+      return "Packaging cost per shipped parcel — click a recipe for material breakdown.";
+    }
     if (honeyProducts.length === 0 && deptProducts.length === 0 && otherProducts.length === 0) {
       return "No products yet.";
     }
-    if (viewMode === "parcel" && parcelReady) {
-      return "Typical landed cost per SKU — manufacturing plus reference parcel packaging. Open tier rules to edit materials or try a real order.";
-    }
-    const parts: string[] = [];
-    if (honeyProducts.length > 0) {
-      parts.push(
-        `${honeyProducts.length} honey SKU${honeyProducts.length === 1 ? "" : "s"} in ${honeyVariantCount} variant${honeyVariantCount === 1 ? "" : "s"}`,
-      );
-    }
-    if (deptProducts.length > 0) {
-      parts.push(`${deptProducts.length} dept product${deptProducts.length === 1 ? "" : "s"}`);
-    }
-    if (otherProducts.length > 0) {
-      parts.push(`${otherProducts.length} other`);
-    }
-    return `${parts.join(" · ")} — expand a size to inspect formula and history.`;
-  }, [honeyProducts.length, honeyVariantCount, deptProducts.length, otherProducts.length, viewMode, parcelReady]);
+    return "Click a row for COGS formula, reference packaging, and order calculator.";
+  }, [hubMode, honeyProducts.length, deptProducts.length, otherProducts.length]);
 
-  const renderProductDetail = (p: ProductRow) => {
-    const detail = detailsById[p.id];
-    if (detail === "loading" || !detail) {
-      return <CostingDetailLoading />;
-    }
+  const showHoney = deptFilter === "all" || deptFilter === "honey";
+  const showParagis = deptFilter === "all" || deptFilter === "paragis";
+  const showCacaoBrc = deptFilter === "all" || deptFilter === "cacao_brc";
+  const showOther = deptFilter === "all" || deptFilter === "other";
+  const parcelTableMode = parcelReady;
+
+  const renderDeptProductRow = (p: ProductRow) => {
+    const current = parseFloat(p.current_cost);
+    const baseline = parseFloat(p.baseline_cost);
+    const selling = parseFloat(p.selling_price);
+    const parcelAddon = p.parcel_addon_typical ?? null;
+    const landed = p.landed_typical ?? null;
     return (
-      <ProductDetailView
-        detail={detail}
-        stocksInDept={stocksForDept[p.dept_id] ?? []}
-        onAddRow={() => setAddFormulaProductId(p.id)}
-        onUpdated={(d, msg) => handleFormulaChanged(p.id, d, msg)}
-        onEditSellingPrice={() =>
-          setEditingSellingPrice({
-            id: p.id,
-            name: p.name,
-            selling_price: String(detail.product.selling_price),
-          })
-        }
-      />
+      <button
+        key={p.id}
+        type="button"
+        onClick={() => openProduct(p.id)}
+        className={cn(
+          "w-full px-4 py-2.5 text-left border-t border-border transition-colors duration-200",
+          appHoverRow,
+        )}
+      >
+        <div className={parcelTableMode ? costingParcelRowGridClass : costingRowGridClass}>
+          <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className="font-semibold text-foreground text-sm">{p.name}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{p.dept_name}</span>
+            {p.formula_count > 0 && (
+              <span className="text-[10px] text-muted-foreground">{p.formula_count} lines</span>
+            )}
+          </div>
+          {parcelTableMode ? (
+            <CostingParcelProductMetrics
+              cogs={current}
+              parcelAddon={parcelAddon}
+              landed={landed}
+              selling={selling}
+              baseline={baseline}
+              isExec={isExec}
+            />
+          ) : (
+            <CostingProductMetrics
+              current={current}
+              selling={selling}
+              baseline={baseline}
+              isExec={isExec}
+            />
+          )}
+        </div>
+      </button>
     );
   };
 
@@ -296,7 +288,7 @@ export function CostingPage() {
   };
 
   return (
-    <PageLayout contentWidth="wide" title="Product Costing" subtitle={viewMode === "product" ? "Formula builder and live cost tracking" : "Landed cost per product (manufacturing + packaging)"} actions={
+    <PageLayout contentWidth="wide" title="Product Costing" subtitle="Manufacturing COGS, parcel packaging, and landed cost" actions={
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -320,202 +312,211 @@ export function CostingPage() {
           <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{notice}</div>
         )}
 
-        <div className="flex rounded-lg border border-border p-0.5 bg-secondary/30 max-w-md" data-tour="costing-view-toggle">
-          {(["product", "parcel"] as const).map(m => (
+        <div className="flex rounded-lg border border-border p-0.5 bg-secondary/30 max-w-lg" data-tour="costing-view-toggle">
+          {(["products", "packaging"] as const).map(m => (
             <button
               key={m}
               type="button"
-              onClick={() => setViewMode(m)}
+              onClick={() => setHubMode(m)}
               className={cn(
-                "flex-1 text-xs font-semibold px-3 py-2 rounded-md transition-colors",
-                viewMode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                "flex-1 text-xs font-semibold px-3 py-2 rounded-md transition-colors cursor-pointer",
+                hubMode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {m === "product" ? "Product COGS" : "Parcel packaging"}
+              {m === "products" ? "Products" : "Parcel packaging"}
             </button>
           ))}
         </div>
 
-        {viewMode === "parcel" && parcelReady && (
-          <ParcelPackLandedIntro onOpenTiers={() => setParcelTiersModalOpen(true)} />
-        )}
-
-        {/* Products — header fixed, list scrolls inside viewport */}
+        {hubMode === "packaging" ? (
+          <CostingParcelRecipesPanel />
+        ) : (
         <div className="flex flex-col min-h-0 min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3 shrink-0" data-tour="costing-products-header">
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-foreground">
-                {viewMode === "parcel" ? "Landed cost by product" : "Products"}
-              </h3>
+              <h3 className="text-sm font-semibold text-foreground">Products by department</h3>
               <p className="text-xs text-muted-foreground">{productsSubtitle}</p>
             </div>
-            {viewMode === "product" && (
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setParcelTiersModalOpen(true)}
+                className="flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg border border-border hover:bg-secondary/40"
+              >
+                Edit tier rules
+              </button>
               <button
                 onClick={() => openCreateProduct()}
-                className="flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg text-white shrink-0"
+                className="flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg text-white"
                 style={{ background: "#C8900A" }}
               >
                 <Plus size={15} /> New Product
               </button>
-            )}
-            {viewMode === "parcel" && parcelReady && (
-              <button
-                type="button"
-                onClick={() => setParcelTiersModalOpen(true)}
-                className="flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg border border-border hover:bg-secondary/40 shrink-0"
-              >
-                Tier rules
-              </button>
-            )}
+            </div>
           </div>
 
-          <div className="mt-3 min-h-0 max-h-[calc(100dvh-9rem)] overflow-y-auto overscroll-contain pr-1 space-y-3" data-tour="costing-products-list">
+          <div className="flex flex-wrap gap-2 mt-3">
+            {DEPT_FILTER_CHIPS.map(chip => (
+              <button
+                key={chip.id}
+                type="button"
+                onClick={() => setDeptFilter(chip.id)}
+                className={cn(
+                  "text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
+                  deptFilter === chip.id
+                    ? "bg-[#C8900A] text-white border-[#C8900A]"
+                    : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40",
+                )}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 min-h-0 max-h-[calc(100dvh-12rem)] overflow-y-auto overscroll-contain pr-1 space-y-3" data-tour="costing-products-list">
+            {showHoney && (
             <CostingHoneyVariantGroups
               honeyProducts={honeyProducts}
               isExec={isExec}
-              expandedId={expandedId}
-              onToggleProduct={toggleProduct}
-              renderDetail={renderProductDetail}
+              expandedId={null}
+              onToggleProduct={() => {}}
+              onProductClick={openProduct}
+              renderDetail={() => null}
               onRequestCreate={(variant, size) => openCreateProduct({ variant, size })}
-              parcelMode={viewMode === "parcel" && parcelReady}
+              parcelMode={parcelTableMode}
             />
+            )}
 
-            {deptProducts.length > 0 && (
+            {showParagis && paragisProducts.length > 0 && (
               <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0, 0, 0, 0.05)" }}>
                 <div className="px-4 py-3 border-b border-border bg-[#C8900A]/[0.04]">
-                  <h4 className="text-sm font-semibold text-foreground">Dept products (PT / BRC / Cacao)</h4>
+                  <h4 className="text-sm font-semibold text-foreground">Paragis Tea</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Solo PT parcels and combos with 1L / 350ml / 250ml honey — see Parcel packaging.
+                  </p>
                 </div>
-                {viewMode === "parcel" && parcelReady ? (
+                {parcelTableMode ? (
                   <CostingParcelRowColumnHeaders isExec={isExec} labelCol="Product" />
                 ) : (
                   <CostingRowColumnHeaders isExec={isExec} labelCol="Product" />
                 )}
-                {deptProducts.map(p => {
-                  const isExpanded = expandedId === p.id;
-                  const current = parseFloat(p.current_cost);
-                  const baseline = parseFloat(p.baseline_cost);
-                  const selling = parseFloat(p.selling_price);
-                  const parcelAddon = p.parcel_addon_typical ?? null;
-                  const landed = p.landed_typical ?? null;
-                  return (
-                    <div
-                      key={p.id}
-                      className={cn(
-                        "border-t border-border transition-colors duration-200",
-                        isExpanded && "bg-[#C8900A]/[0.04]",
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => toggleProduct(p.id)}
-                        aria-expanded={isExpanded}
-                        className={cn(
-                          "w-full px-4 py-2.5 text-left transition-colors duration-200",
-                          isExpanded
-                            ? "bg-[#C8900A]/[0.06] hover:bg-[#C8900A]/[0.08]"
-                            : "hover:bg-secondary/30",
-                        )}
-                      >
-                        <div className={viewMode === "parcel" && parcelReady ? costingParcelRowGridClass : costingRowGridClass}>
-                          <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                            <span className="font-semibold text-foreground text-sm">{p.name}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{p.dept_name}</span>
-                            {p.formula_count > 0 && (
-                              <span className="text-[10px] text-muted-foreground">{p.formula_count} lines</span>
-                            )}
-                          </div>
-                          {viewMode === "parcel" && parcelReady ? (
-                            <CostingParcelProductMetrics
-                              cogs={current}
-                              parcelAddon={parcelAddon}
-                              landed={landed}
-                              selling={selling}
-                              baseline={baseline}
-                              isExec={isExec}
-                              chevron={{ expanded: isExpanded }}
-                            />
-                          ) : (
-                            <CostingProductMetrics
-                              current={current}
-                              selling={selling}
-                              baseline={baseline}
-                              isExec={isExec}
-                              chevron={{ expanded: isExpanded }}
-                            />
-                          )}
-                        </div>
-                      </button>
-                      <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">
-                        {renderProductDetail(p)}
-                      </CostingDetailReveal>
-                    </div>
-                  );
-                })}
+                {paragisProducts.map(renderDeptProductRow)}
               </div>
             )}
 
-            {otherProducts.length > 0 && (
+            {showCacaoBrc && cacaoBrcProducts.length > 0 && (
+              <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0, 0, 0, 0.05)" }}>
+                <div className="px-4 py-3 border-b border-border bg-[#C8900A]/[0.04]">
+                  <h4 className="text-sm font-semibold text-foreground">Black Rice Coffee &amp; Jar Cacao</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Same department (cacao_brc). Solo jars/pouches and combos with 1L / 350ml / 250ml honey.
+                  </p>
+                </div>
+                {parcelTableMode ? (
+                  <CostingParcelRowColumnHeaders isExec={isExec} labelCol="Product" />
+                ) : (
+                  <CostingRowColumnHeaders isExec={isExec} labelCol="Product" />
+                )}
+                {cacaoBrcProducts.map(renderDeptProductRow)}
+              </div>
+            )}
+
+            {showOther && otherProducts.length > 0 && (
               <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0, 0, 0, 0.05)" }}>
                 <div className="px-4 py-3 border-b border-border">
                   <h4 className="text-sm font-semibold text-foreground">Other products</h4>
                 </div>
                 <CostingRowColumnHeaders isExec={isExec} labelCol="Product" />
                 {otherProducts.map(p => {
-                  const isExpanded = expandedId === p.id;
                   const current = parseFloat(p.current_cost);
                   const baseline = parseFloat(p.baseline_cost);
                   const selling = parseFloat(p.selling_price);
+                  const parcelAddon = p.parcel_addon_typical ?? null;
+                  const landed = p.landed_typical ?? null;
                   return (
-                    <div
+                    <button
                       key={p.id}
+                      type="button"
+                      onClick={() => openProduct(p.id)}
                       className={cn(
-                        "border-t border-border transition-colors duration-200",
-                        isExpanded && "bg-[#C8900A]/[0.04]",
+                        "w-full px-4 py-2.5 text-left border-t border-border transition-colors duration-200",
+                        appHoverRow,
                       )}
                     >
-                      <button
-                        type="button"
-                        onClick={() => toggleProduct(p.id)}
-                        aria-expanded={isExpanded}
-                        className={cn(
-                          "w-full px-4 py-2.5 text-left transition-colors duration-200",
-                          isExpanded
-                            ? "bg-[#C8900A]/[0.06] hover:bg-[#C8900A]/[0.08]"
-                            : "hover:bg-secondary/30",
-                        )}
-                      >
-                        <div className={costingRowGridClass}>
-                          <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                            <span className="font-semibold text-foreground text-sm">{p.name}</span>
-                            {p.size && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">{p.size}</span>
-                            )}
-                            {p.variant && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">{p.variant}</span>
-                            )}
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{p.dept_name}</span>
-                            <span className="text-[10px] text-muted-foreground">{p.formula_count} lines</span>
-                          </div>
+                      <div className={parcelTableMode ? costingParcelRowGridClass : costingRowGridClass}>
+                        <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                          <span className="font-semibold text-foreground text-sm">{p.name}</span>
+                          {p.size && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">{p.size}</span>
+                          )}
+                          {p.variant && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">{p.variant}</span>
+                          )}
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{p.dept_name}</span>
+                          <span className="text-[10px] text-muted-foreground">{p.formula_count} lines</span>
+                        </div>
+                        {parcelTableMode ? (
+                          <CostingParcelProductMetrics
+                            cogs={current}
+                            parcelAddon={parcelAddon}
+                            landed={landed}
+                            selling={selling}
+                            baseline={baseline}
+                            isExec={isExec}
+                          />
+                        ) : (
                           <CostingProductMetrics
                             current={current}
                             selling={selling}
                             baseline={baseline}
                             isExec={isExec}
-                            chevron={{ expanded: isExpanded }}
                           />
-                        </div>
-                      </button>
-                      <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">
-                        {renderProductDetail(p)}
-                      </CostingDetailReveal>
-                    </div>
+                        )}
+                      </div>
+                    </button>
                   );
                 })}
               </div>
             )}
           </div>
         </div>
+        )}
       </div>
+
+      {selectedProduct && (
+        <CostingProductDetailModal
+          key={`${selectedProduct.id}-${selectedProduct.formula_count}-${selectedProduct.current_cost}`}
+          product={selectedProduct as CostingProductSummary}
+          parcelReady={parcelReady}
+          onClose={() => setSelectedProduct(null)}
+          onAddFormula={() => {
+            setAddFormulaProductId(selectedProduct.id);
+          }}
+          onEditSellingPrice={
+            isExec
+              ? () =>
+                  setEditingSellingPrice({
+                    id: selectedProduct.id,
+                    name: selectedProduct.name,
+                    selling_price: selectedProduct.selling_price,
+                  })
+              : undefined
+          }
+          onUpdated={(detail, msg) => {
+            void handleFormulaChanged(selectedProduct.id, detail, msg);
+            setSelectedProduct(prev =>
+              prev
+                ? {
+                    ...prev,
+                    current_cost: String(detail.product.current_cost),
+                    baseline_cost: String(detail.product.baseline_cost),
+                    selling_price: String(detail.product.selling_price),
+                  }
+                : null,
+            );
+          }}
+        />
+      )}
 
       {/* Modals */}
       <CostingGuideModal
@@ -564,182 +565,6 @@ export function CostingPage() {
         />
       )}
     </PageLayout>
-  );
-}
-
-function ProductDetailView({
-  detail,
-  stocksInDept,
-  onAddRow,
-  onUpdated,
-  onEditSellingPrice,
-}: {
-  detail: ProductDetail;
-  stocksInDept: StockRow[];
-  onAddRow: () => void;
-  onUpdated: (detail: ProductDetail, msg: string) => void;
-  onEditSellingPrice?: () => void;
-}) {
-  const { product, formula_rows, cost_history, stock_history, show_pricing } = detail;
-  const [busyRow, setBusyRow] = useState<number | null>(null);
-  const margin = product.selling_price - product.current_cost;
-  const marginPct =
-    product.selling_price > 0 ? ((margin / product.selling_price) * 100).toFixed(1) : "0.0";
-
-  const deleteRow = async (formulaId: number) => {
-    if (!confirm("Delete this formula line?")) return;
-    setBusyRow(formulaId);
-    try {
-      const result = await apiPost<ProductDetail>("costing.php", "formula_delete", {
-        product_id: product.id,
-        formula_id: formulaId,
-      });
-      onUpdated(result, "Formula row deleted.");
-    } catch (e) {
-      alert(e instanceof ApiError ? e.message : "Delete failed.");
-    } finally {
-      setBusyRow(null);
-    }
-  };
-
-  return (
-    <div>
-      {show_pricing && (
-        <div className="px-4 py-3 border-b border-border bg-secondary/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Selling price</p>
-              <p className="text-lg font-bold text-foreground">{peso(product.selling_price)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Production cost</p>
-              <p className="text-lg font-bold text-foreground">{peso(product.current_cost)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Margin</p>
-              <p className={`text-lg font-bold ${margin > 0 ? "text-green-600" : "text-red-500"}`}>
-                {peso(margin)} <span className="text-sm font-normal">({marginPct}%)</span>
-              </p>
-            </div>
-          </div>
-          {onEditSellingPrice && (
-            <button
-              type="button"
-              onClick={onEditSellingPrice}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:border-[#C8900A] hover:text-[#C8900A] transition-colors self-start sm:self-center"
-            >
-              <Pencil size={12} /> Edit selling price
-            </button>
-          )}
-        </div>
-      )}
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs sm:text-sm min-w-[36rem]">
-          <thead>
-            <tr className="border-b border-border bg-secondary/40">
-              {["Stock", "Qty", "Base ₱", "Curr ₱", "Line ₱", "Δ", ""].map(h => (
-                <th key={h || "act"} className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-3 py-2 first:pl-4 whitespace-nowrap">{h || "Act"}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {formula_rows.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-5 text-center text-sm text-muted-foreground">No formula lines yet. Add one to start costing.</td></tr>
-            )}
-            {formula_rows.map(f => (
-              <tr key={f.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
-                <td className="px-4 py-2 font-medium text-foreground max-w-[9rem] truncate" title={f.stock_name}>
-                  {f.stock_name}
-                  {f.is_custom && (
-                    <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded-full bg-secondary text-muted-foreground">custom</span>
-                  )}
-                  {f.is_pool_packaging && (
-                    <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded-full bg-secondary text-muted-foreground">pool</span>
-                  )}
-                </td>
-                <td className="px-3 py-2 text-muted-foreground whitespace-nowrap tabular-nums">
-                  {f.is_custom
-                    ? `${f.qty_per_unit} × ${peso(f.current_price)}`
-                    : f.is_pool_packaging && f.pool_yield_qty
-                      ? `${f.qty_per_unit} ${f.pool_yield_unit ?? f.unit} ÷ ${f.pool_yield_qty.toLocaleString()}`
-                      : `${f.qty_per_unit} ${f.unit}`}
-                </td>
-                <td className="px-3 py-2 text-muted-foreground whitespace-nowrap tabular-nums">{peso(f.price_at_creation)}</td>
-                <td className="px-3 py-2 font-medium text-foreground whitespace-nowrap tabular-nums">{peso(f.current_price)}</td>
-                <td className="px-3 py-2 font-semibold text-foreground whitespace-nowrap tabular-nums">{peso(f.current_line_cost)}</td>
-                <td className="px-3 py-2 whitespace-nowrap"><CostBadge current={f.current_line_cost} baseline={f.baseline_line_cost} /></td>
-                <td className="px-3 py-2 whitespace-nowrap">
-                  <button
-                    onClick={() => deleteRow(f.id)}
-                    disabled={busyRow === f.id}
-                    className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg border border-border text-red-600 hover:bg-red-50 disabled:opacity-50"
-                  >
-                    <Trash2 size={11} /> Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr className="border-t-2 border-border bg-secondary/30">
-              <td className="px-4 py-2 font-bold text-foreground" colSpan={4}>Total per unit</td>
-              <td className="px-3 py-2 font-bold text-foreground tabular-nums">{peso(product.current_cost)}</td>
-              <td className="px-3 py-2"><CostBadge current={product.current_cost} baseline={product.baseline_cost} /></td>
-              <td className="px-3 py-2"></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      <div className="px-4 py-2.5 border-t border-border flex flex-wrap justify-between items-center gap-2">
-        <p className="text-xs text-muted-foreground">Baseline: {peso(product.baseline_cost)} · Current: {peso(product.current_cost)}</p>
-        <button onClick={onAddRow} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white" style={{ background: "#C8900A" }}>
-          <Plus size={12} /> Add formula line
-        </button>
-      </div>
-
-      {show_pricing && (cost_history.length > 0 || stock_history.length > 0) && (
-        <div className="border-t border-border grid grid-cols-1 md:grid-cols-2">
-          <div className="p-5">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1"><History size={12} /> Cost history</h4>
-            {cost_history.length === 0
-              ? <p className="text-xs text-muted-foreground">No recalculations yet.</p>
-              : (
-                <ul className="space-y-1.5 text-xs">
-                  {cost_history.map((h, i) => (
-                    <li key={i} className="flex items-center justify-between gap-2 text-muted-foreground">
-                      <span>{fmtDate(h.recalculated_at)}</span>
-                      <span>
-                        <span className="line-through">{peso(h.old_cost)}</span>{" → "}
-                        <span className="font-semibold text-foreground">{peso(h.new_cost)}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-          </div>
-          <div className="p-5 border-l border-border">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-1"><History size={12} /> Stock price history</h4>
-            {stock_history.length === 0
-              ? <p className="text-xs text-muted-foreground">No stock price changes for this product yet.</p>
-              : (
-                <ul className="space-y-1.5 text-xs">
-                  {stock_history.map((h, i) => (
-                    <li key={i} className="flex items-center justify-between gap-2 text-muted-foreground">
-                      <span>{h.stock_name} · {fmtDate(h.changed_at)}</span>
-                      <span>
-                        <span className="line-through">{peso(h.old_price)}</span>{" → "}
-                        <span className="font-semibold text-foreground">{peso(h.new_price)}</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 

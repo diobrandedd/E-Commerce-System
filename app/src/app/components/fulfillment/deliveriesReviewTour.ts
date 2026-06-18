@@ -76,8 +76,8 @@ function buildSteps({ isExecutive }: DeliveriesReviewTourContext): DriveStep[] {
       popover: {
         title: "Related pages",
         description: isExecutive
-          ? "Use Cancelled page when couriers void parcels after pickup — restock inventory there. Add deliveries is where production scans and ships new parcels."
-          : "Use Cancelled page for voided parcels after pickup. Add deliveries is where you scan and ship. My requests tracks your pending edit approvals.",
+          ? "Use Cancelled when couriers void orders — inventory stays packed; re-waybill on Add deliveries. Add deliveries is where production scans and ships new parcels."
+          : "Use Cancelled for courier voids, then re-waybill on Add deliveries. Add deliveries is where you scan and ship. My requests tracks your pending edit approvals.",
         side: "over",
         align: "center",
       },

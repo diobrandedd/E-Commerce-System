@@ -182,12 +182,14 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: ClipboardList, label: "Beginning Inventory", to: "/beginning-inventory" },
         { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
         { icon: ShoppingCart, label: "My AR Credits", to: "/ar" },
+        forPackingItem,
       ];
     case "csr_tl":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         onlineOrdersItem,
         onlineParcelsItem,
+        forPackingItem,
         rtsNavFull,
       ];
     case "staff":
@@ -267,7 +269,7 @@ function SidebarNestedChildren({
           const key = groupKey(parentKey, child.label);
           const subExpanded = expandedGroups.has(key);
           const isRawHoney = child.label === "Raw Honey";
-          const toggleClass = `w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors duration-150 ${
+          const toggleClass = `w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors duration-150 cursor-pointer ${
             isRawHoney
               ? "text-white/80 hover:text-white hover:bg-white/8 font-medium"
               : "text-white/50 hover:text-white hover:bg-white/8"
@@ -320,7 +322,7 @@ function SidebarNestedChildren({
             end={child.end}
             onClick={onClose}
             className={({ isActive }) =>
-              `block px-3 py-2 rounded-lg text-xs transition-all duration-150 ${
+              `block px-3 py-2 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
                 isActive ? "bg-[#C8900A] text-white font-semibold" : "text-white/50 hover:text-white hover:bg-white/8"
               }`
             }
@@ -467,7 +469,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 <div key={label}>
                   <SidebarNavToggleButton
                     onClick={() => toggleGroup(label)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8 transition-colors duration-150"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/8 transition-colors duration-150 cursor-pointer"
                   >
                     <Icon size={17} />
                     <span className="flex-1 text-left">{label}</span>
@@ -495,7 +497,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 to={to}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
+                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 cursor-pointer ${
                     isActive ? "bg-[#C8900A] text-white font-semibold" : "text-white/60 hover:text-white hover:bg-white/8"
                   }`
                 }

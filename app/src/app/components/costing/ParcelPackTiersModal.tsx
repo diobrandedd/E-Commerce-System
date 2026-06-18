@@ -5,13 +5,17 @@ import { ApiError } from "@/app/lib/api";
 import { peso } from "@/app/lib/costingDisplay";
 import {
   fetchParcelTiers,
-  PARCEL_FAMILY_LABELS,
   previewParcelCost,
   saveParcelTierLine,
   type ParcelCostPreview,
   type ParcelPackTier,
   type ParcelPackTierLine,
 } from "@/app/lib/parcelPackCosting";
+import {
+  parcelRecipeDeptBucket,
+  PARCEL_RECIPE_DEPT_LABELS,
+  type ParcelRecipeDeptBucket,
+} from "@/app/lib/parcelRecipeBuckets";
 import { cn } from "@/app/components/ui/utils";
 
 const inputCls =
@@ -289,10 +293,17 @@ function ParcelPackTiersModalContent({
 
   const previewableTiers = useMemo(() => tiers.filter(t => !isPlaceholderTier(t)), [tiers]);
 
-  const tiersByFamily = useMemo(() => {
-    const map: Record<string, ParcelPackTier[]> = { honey: [], dept_pt_brc: [], jar_cacao: [] };
+  const tiersByDept = useMemo(() => {
+    const map: Record<ParcelRecipeDeptBucket, ParcelPackTier[]> = {
+      honey: [],
+      paragis: [],
+      cacao_brc: [],
+    };
     for (const t of tiers) {
-      (map[t.family] ??= []).push(t);
+      map[parcelRecipeDeptBucket(t)].push(t);
+    }
+    for (const bucket of Object.keys(map) as ParcelRecipeDeptBucket[]) {
+      map[bucket].sort((a, b) => a.sort_order - b.sort_order || a.label.localeCompare(b.label));
     }
     return map;
   }, [tiers]);
@@ -422,14 +433,14 @@ function ParcelPackTiersModalContent({
           <p className="text-xs text-muted-foreground">
             Adjust how much of each packaging material is used per parcel size. Prices come from Packaging Materials stock-in.
           </p>
-          {(["honey", "dept_pt_brc", "jar_cacao"] as const).map(family => {
-            const familyTiers = tiersByFamily[family] ?? [];
-            if (familyTiers.length === 0) return null;
+          {(["honey", "paragis", "cacao_brc"] as const).map(bucket => {
+            const bucketTiers = tiersByDept[bucket] ?? [];
+            if (bucketTiers.length === 0) return null;
             return (
-              <section key={family} className="space-y-2">
-                <h3 className="text-xs font-semibold text-foreground">{PARCEL_FAMILY_LABELS[family]}</h3>
+              <section key={bucket} className="space-y-2">
+                <h3 className="text-xs font-semibold text-foreground">{PARCEL_RECIPE_DEPT_LABELS[bucket]}</h3>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {familyTiers.map(tier => (
+                  {bucketTiers.map(tier => (
                     <TierCard key={tier.id} tier={tier} onTierUpdated={handleTierUpdated} onError={setLoadError} />
                   ))}
                 </div>

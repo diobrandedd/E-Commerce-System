@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "@/app/components/ui/utils";
 import {
   AppPressable,
@@ -114,12 +114,13 @@ export function FulfillmentPickerCard({
   onClick,
   children,
   className,
+  ...rest
 }: {
   index: number;
   onClick: () => void;
   children: ReactNode;
   className?: string;
-}) {
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
   const reduce = useReducedMotion();
 
   return (
@@ -136,6 +137,7 @@ export function FulfillmentPickerCard({
         fulfillmentHoverCard,
         className,
       )}
+      {...rest}
     >
       {children}
     </motion.button>

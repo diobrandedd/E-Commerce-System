@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-17T10:42:28+02:00
+generated: 2026-06-18T09:06:21+02:00
 type: memory-bank
 ---
 
@@ -55,7 +55,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `stocks_list` | `api_costing_stocks_list()` | `ims_pdo()`, `material_inventory_has_columns()`, `supplier_display_name()` |
+| `stocks_list` | `api_costing_stocks_list()` | `ims_pdo()`, `material_inventory_has_columns()`, `material_inventory_eligible_for_product_formula_row()`, `supplier_display_name()` |
 | `products_list` | `api_costing_products_list()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_reference_addon_for_product()` |
 | `product_view` | `api_costing_product_view()` | `ims_pdo()` |
 | `stock_update_price` | `api_costing_stock_update_price()` | `ims_pdo()` |
@@ -127,6 +127,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `packing_issue_create` | `api_fulfillment_packing_issue_create()` | `ims_pdo()`, `fulfillment_packing_issue_create()` |
 | `packing_issues_list` | `api_fulfillment_packing_issues_list()` | `ims_pdo()`, `fulfillment_packing_issues_list()` |
 | `packing_issue_estimate` | `api_fulfillment_packing_issue_estimate()` | `ims_pdo()`, `fulfillment_packing_estimate_parcels()` |
+| `packing_damage_report` | `api_fulfillment_packing_damage_report()` | `ims_pdo()`, `fulfillment_packing_report_damage()` |
+| `packing_damage_list` | `api_fulfillment_packing_damage_list()` | `ims_pdo()`, `fulfillment_packing_damage_list()` |
 
 ### `honey.php`
 
@@ -203,10 +205,11 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `raw_detail` | `api_materials_raw_detail()` | `material_inventory_raw_stock_by_slug()`, `ims_pdo()` |
 | `departments` | `api_materials_departments()` | `ims_pdo()` |
 | `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_role_can_stock_in_packaging()`, `material_packaging_stock_in_lot()`, `material_supply_stock_in_lot()` |
-| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()`, `material_packaging_recent_entries()`, `material_inventory_role_can_stock_in_packaging()`, `material_inventory_role_can_edit_packaging_price()`, `material_inventory_role_can_deduct_packaging()`, `material_inventory_role_can_set_packaging_on_hand()` |
+| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()`, `material_packaging_recent_entries()`, `material_packaging_is_generic_foam_roll_name()`, `material_inventory_role_can_stock_in_packaging()`, `material_inventory_role_can_edit_packaging_price()`, `material_inventory_role_can_deduct_packaging()`, … |
 | `supply_detail` | `api_materials_supply_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_supply_recent_entries()`, `material_supply_detail_permissions()` |
 | `set_on_hand` | `api_materials_set_on_hand()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_set_on_hand()`, `material_supply_set_on_hand()` |
-| `set_pool_yield` | `api_materials_set_pool_yield()` | `ims_pdo()`, `material_packaging_set_pool_yield()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()` |
+| `set_pool_yield` | `api_materials_set_pool_yield()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_pool_yield()`, `material_inventory_enrich_packaging_row()` |
+| `set_foam_cacao_cut_yields` | `api_materials_set_foam_cacao_cut_yields()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_foam_cacao_cut_yields()`, `material_packaging_foam_cacao_cut_yields()` |
 | `packaging_deduct` | `api_materials_packaging_deduct()` | `material_inventory_role_can_deduct_packaging()`, `ims_pdo()`, `material_packaging_deduct_for_use()` |
 | `packaging_price_lot` | `api_materials_packaging_price_lot()` | `material_inventory_role_can_edit_packaging_price()`, `ims_pdo()`, `material_packaging_record_invoice_price()` |
 

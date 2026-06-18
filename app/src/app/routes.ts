@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router";
 import { Root } from "./Root";
 import { RequireAuth } from "./components/RequireAuth";
+import { AppShell } from "./components/PageLayout";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { InventoryPage } from "./pages/InventoryPage";
@@ -62,6 +63,9 @@ export const router = createBrowserRouter(
       children: [
         { index: true, Component: LoginPage },
 
+        {
+          element: createElement(RequireAuth, {}, createElement(AppShell)),
+          children: [
         { path: "dashboard", element: guarded(DashboardPage) },
         { path: "inventory", element: guarded(InventoryPage) },
         { path: "stock-input", element: guarded(InventoryPage) },
@@ -134,7 +138,11 @@ export const router = createBrowserRouter(
         },
         {
           path: "fulfillment/packing-materials",
-          element: guarded(PackingMaterialsStagingPage, { roles: ["executive", "prod_manager"] }),
+          element: guarded(PackingMaterialsStagingPage, {
+            roles: ["executive", "prod_manager", "team_leader", "csr_tl"],
+          }),
+        },
+          ],
         },
 
         {

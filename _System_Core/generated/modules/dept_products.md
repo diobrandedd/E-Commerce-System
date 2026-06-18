@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-06-17T10:42:32+02:00
+generated: 2026-06-18T09:06:27+02:00
 type: module
 function_count: 21
 ---
@@ -115,7 +115,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## dept_product_by_key {#dept_product_by_key}
 
-**Callers (24):**
+**Callers (25):**
 
 - `api/v1/honey.php`:575 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:12 — `$def = dept_product_by_key($productKey);`
@@ -141,6 +141,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_products.php`:232 — `return dept_product_by_key('brc');`
 - `includes/dept_products.php`:235 — `return dept_product_by_key('jar_cacao');`
 - `includes/dept_products.php`:280 — `$def = dept_product_by_key($productKey);`
+- `includes/parcel_pack_costing.php`:892 — `'label' => (dept_product_by_key($key)['label'] ?? $key),`
 
 ## dept_product_key_valid {#dept_product_key_valid}
 

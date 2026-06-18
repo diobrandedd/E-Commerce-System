@@ -9,13 +9,13 @@ Scanner cancellation is handled as a first-class deliveries action, not a direct
 1. Add `cancel_parcel_scan` in `api/v1/deliveries.php` with the same auth + CSRF gates as `ship_parcel`.
 2. Use shared parcel domain function (`online_parcels_cancel`) to enforce transitions:
    - allowed: `packing`, `shipped`
-   - `shipped` must call `honey_parcel_revert_deduct()` before status change
-3. Write one audit row per cancellation in `delivery_cancel_events` (previous status, reverted flag, source, user, timestamp).
+   - **do not** revert inventory — sealed box is re-waybilled later
+3. Write one audit row per cancellation in `delivery_cancel_events` (previous status, source, user, timestamp). `inventory_reverted` stays `0` for new events.
 4. Expose read API `cancel_log_list` and render a review table in Deliveries Review.
 
 ## Why
 
-Directly setting `online_order_parcels.status='cancelled'` without shipped-deduct reversal leaves inventory wrong and removes operational traceability.
+Courier-cancelled parcels are still sealed and packed for re-waybill. Reverting inventory on cancel was wrong ops semantics and blocked the re-ship path.
 
 ## Files
 

@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-06-17T10:42:28+02:00
+generated: 2026-06-18T09:06:23+02:00
 type: memory-bank
-edge_count: 206
+edge_count: 207
 ---
 
 
@@ -123,6 +123,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_production.php` | `includes/material_inventory.php` |
 | `includes/fulfillment_packing.php` | `includes/material_inventory.php` |
 | `includes/fulfillment_packing.php` | `includes/parcel_pack_costing.php` |
+| `includes/fulfillment_packing.php` | `includes/rts_schema.php` |
 | `includes/honey_inventory.php` | `includes/catalog_bootstrap.php` |
 | `includes/honey_inventory.php` | `includes/db.php` |
 | `includes/honey_inventory.php` | `includes/dept_production.php` |

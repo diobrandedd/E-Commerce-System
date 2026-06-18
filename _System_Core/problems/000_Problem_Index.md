@@ -37,7 +37,10 @@ flowchart LR
 - [[fixes/paragis-use-raw-bags]] — PT production: bags opened → derived WIP (not tea-bag count)
 - [[fixes/dept-raw-material-guides]] — Raw dept pages: Paragis / BRC / Cacao guide modals
 - [[fixes/online-parcel-pack-costing]] — Tier-based parcel packaging COGS (separate from product_formula)
-- [[fixes/parcel-pack-landed-view-modal]] — Costing parcel tab: landed list primary, tiers in modal
+- [[fixes/costing-hub-products-and-parcel-recipes]] — Costing hub Products + Parcel recipes tables
+- [[fixes/costing-dept-paragis-cacao-brc-buckets]] — Paragis vs BRC&Cacao UI buckets; combo tier visibility
+- [[fixes/parcel-tier-bought-liter-cushion-pieces]] — Bought 1L/2L/3L cushion pieces per Excel customize column
+- [[fixes/insulation-foam-generic-roll-ship-cut]] — Generic foam roll; cut size at ship from recipe
 - [[fixes/parcel-pack-ascii-labels-migration]] — Fix `???` tier labels after Windows SQL import
 - [[fixes/raw-dept-mobile-first-actions-and-lists]] — Raw materials page is phone-first: compact header actions + mobile activity cards
 - [[fixes/inventory-mobile-action-modal-and-cards]] — Packaging/Supplies mobile consistency: actions modal + stacked card rows
@@ -45,6 +48,13 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-06-18_costing-dept-paragis-vs-cacao-brc]] — Paragis vs BRC&Cacao dept buckets; combo recipes in UI
+- [[records/2026-06-18_costing-hub-parcel-recipes-table]] — Costing hub products + parcel recipes tables
+- [[records/2026-06-18_insulation-foam-generic-roll]] — generic insulation foam roll + ship-time cut
+- [[records/2026-06-18_parcel-tier-bought-cushion-pieces]] — bought liter cushions vs roll columns
+- [[records/2026-06-18_costing-sync-and-sku-cleanup]] — phase 39 legacy SKU cleanup + price sync tool
+- [[records/2026-06-18_bubble-wrap-staging-damage]] — generic bubble roll + staging damage
+- [[records/2026-06-18_cancelled-parcel-rewaybill-semantics]] — cancelled parcels reusable for re-waybill
 - [[records/2026-06-16_inventory-mobile-consistency]] — packaging/supplies mobile header + row consistency
 - [[records/2026-06-16_deliveries-cancel-scan-log]] — deliveries cancel scanner + inventory restore + log table
 - [[records/2026-06-16_raw-dept-mobile-layout]] — raw materials page phone layout and action overflow fix

@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-17T10:42:47+02:00
+generated: 2026-06-18T09:06:43+02:00
 type: spa
 ---
 
@@ -112,12 +112,16 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 
 - `app/src/app/components/AppModal.tsx`
 - `app/src/app/components/costing/CostingGuideModal.tsx`
+- `app/src/app/components/costing/CostingParcelRecipeDetailModal.tsx`
+- `app/src/app/components/costing/CostingProductDetailModal.tsx`
 - `app/src/app/components/costing/ParcelPackTiersModal.tsx`
 - `app/src/app/components/csr/OnlineOrdersGuideModal.tsx`
 - `app/src/app/components/csr/onlineOrders/BatchStartModal.tsx`
 - `app/src/app/components/csr/onlineOrders/DuplicateTrackingModal.tsx`
 - `app/src/app/components/dept/DeptStockInModal.tsx`
 - `app/src/app/components/exec/StaffManagementGuideModal.tsx`
+- `app/src/app/components/fulfillment/DeliveriesAddGuideModal.tsx`
+- `app/src/app/components/fulfillment/DeliveriesCancelledGuideModal.tsx`
 - `app/src/app/components/fulfillment/DeliveriesReviewGuideModal.tsx`
 - `app/src/app/components/fulfillment/DeliveryDuplicateScanModal.tsx`
 - `app/src/app/components/fulfillment/DeliveryReviewEditModal.tsx`

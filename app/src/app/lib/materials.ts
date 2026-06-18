@@ -133,7 +133,20 @@ export interface PackagingDetailPermissions {
   can_deduct: boolean;
   can_set_on_hand: boolean;
   can_set_pool_yield: boolean;
+  can_set_foam_cacao_cut_yields?: boolean;
   can_view_extended_log: boolean;
+}
+
+export interface FoamCacaoCutYield {
+  key: string;
+  label: string;
+  stock_name: string;
+  stock_id: number | null;
+  pool_yield_qty: number | null;
+}
+
+export function isGenericInsulationFoamRoll(name: string): boolean {
+  return name.trim().toLowerCase() === "insulation foam roll";
 }
 
 export function fetchPackagingDetail(stockId: number) {
@@ -141,6 +154,7 @@ export function fetchPackagingDetail(stockId: number) {
     stock: MaterialStockRow;
     entries: PackagingStockEntry[];
     permissions?: PackagingDetailPermissions;
+    foam_cacao_cut_yields?: FoamCacaoCutYield[];
   }>(
     "materials.php",
     "packaging_detail",
@@ -170,6 +184,17 @@ export function setPackagingPoolYield(payload: {
     "set_pool_yield",
     payload
   );
+}
+
+export function setPackagingFoamCacaoCutYields(payload: {
+  stock_id: number;
+  cuts_9x12: number;
+  cuts_12_5x12: number;
+}) {
+  return apiPost<{
+    result: { cuts: Array<{ key: string; stock_id: number; pool_yield_qty: number }> };
+    foam_cacao_cut_yields: FoamCacaoCutYield[];
+  }>("materials.php", "set_foam_cacao_cut_yields", payload);
 }
 
 export function setPackagingOnHand(payload: {

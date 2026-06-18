@@ -18,6 +18,8 @@ Two-bucket model for **fulfillment packaging** (bubble, cushion, pouches, foam, 
 
 **On-hold + re-waybill:** sealed box, wrong label → no inventory revert → new waybill over old → PM re-waybill in Deliveries → ship on new TN (idempotent deduct).
 
+**Courier cancelled:** order dead at courier, box still sealed → scan on Deliveries → Cancelled (no inventory revert) → same re-waybill + ship path as on-hold.
+
 **Opened returns:** RTS module (out of scope).
 
 ## Roles
@@ -45,8 +47,14 @@ Finished goods (honey) still deduct via `honey_parcel_apply_deduct` unchanged.
 
 1. PM **Mark on hold** — status `on_hold`, no revert, preserve `deducted_at`
 2. CSR prints replacement waybill (Online Orders)
-3. PM **Re-waybill** — old TN → new TN, same `parcel_id`, history row
+3. PM **Re-waybill** — old TN → new TN, same `parcel_id`, history row (allowed from `on_hold` or `cancelled`)
 4. **Ship** on new TN — skip deduct if already done
+
+## Courier-cancelled flow
+
+1. PM scans parcel on **Deliveries → Cancelled** — status `cancelled`, clear ship metadata, **no** `honey_parcel_revert_deduct`
+2. CSR prints replacement waybill if needed
+3. Same re-waybill + ship steps as on-hold
 
 ## API
 

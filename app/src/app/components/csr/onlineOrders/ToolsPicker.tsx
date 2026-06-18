@@ -53,7 +53,12 @@ export function ToolsPicker({
         {TOOLS.map((t, i) => {
           const Icon = t.icon;
           return (
-            <FulfillmentPickerCard key={t.id} index={i} onClick={() => onSelect(t.id)}>
+            <FulfillmentPickerCard
+              key={t.id}
+              index={i}
+              onClick={() => onSelect(t.id)}
+              data-tour={`online-orders-tool-${t.id}`}
+            >
               <Icon size={28} className="text-primary mb-3" />
               <p className="font-semibold text-foreground">{t.title}</p>
               <p className="text-xs text-muted-foreground mt-2">{t.description}</p>

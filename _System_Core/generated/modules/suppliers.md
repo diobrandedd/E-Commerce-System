@@ -1,7 +1,7 @@
 ---
 title: suppliers
 source: includes/suppliers.php
-generated: 2026-06-17T10:42:46+02:00
+generated: 2026-06-18T09:06:42+02:00
 type: module
 function_count: 12
 ---
@@ -22,7 +22,7 @@ function_count: 12
 
 **Callers (12):**
 
-- `api/v1/costing.php`:90 — `$row['supplier_display_name'] = supplier_display_name(`
+- `api/v1/costing.php`:95 — `$row['supplier_display_name'] = supplier_display_name(`
 - `api/v1/honey.php`:839 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
 - `api/v1/honey.php`:901 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
 - `includes/dept_inventory.php`:188 — `$supplierName = supplier_display_name(`

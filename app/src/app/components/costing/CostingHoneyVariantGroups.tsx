@@ -40,6 +40,7 @@ function HoneySizeRow<T extends CostingProductLike>({
   isExpanded,
   isExec,
   onToggle,
+  onProductClick,
   detailPanel,
   parcelMode,
 }: {
@@ -47,6 +48,7 @@ function HoneySizeRow<T extends CostingProductLike>({
   isExpanded: boolean;
   isExec: boolean;
   onToggle: () => void;
+  onProductClick?: () => void;
   detailPanel: ReactNode;
   parcelMode?: boolean;
 }) {
@@ -61,20 +63,22 @@ function HoneySizeRow<T extends CostingProductLike>({
   const landed =
     "landed_typical" in product && product.landed_typical != null ? Number(product.landed_typical) : null;
 
+  const handleClick = onProductClick ?? onToggle;
+
   return (
     <div
       className={cn(
         "border-t border-border first:border-t-0 transition-colors duration-200",
-        isExpanded && "bg-[#C8900A]/[0.04]",
+        isExpanded && !onProductClick && "bg-[#C8900A]/[0.04]",
       )}
     >
       <button
         type="button"
-        onClick={onToggle}
-        aria-expanded={isExpanded}
+        onClick={handleClick}
+        aria-expanded={onProductClick ? undefined : isExpanded}
         className={cn(
           "w-full px-4 py-2.5 text-left transition-colors duration-200",
-          isExpanded
+          !onProductClick && isExpanded
             ? "bg-[#C8900A]/[0.06] hover:bg-[#C8900A]/[0.08]"
             : "hover:bg-secondary/30",
         )}
@@ -107,7 +111,7 @@ function HoneySizeRow<T extends CostingProductLike>({
               selling={selling}
               baseline={baseline}
               isExec={isExec}
-              chevron={{ expanded: isExpanded }}
+              chevron={onProductClick ? undefined : { expanded: isExpanded }}
             />
           ) : (
             <CostingProductMetrics
@@ -115,14 +119,16 @@ function HoneySizeRow<T extends CostingProductLike>({
               selling={selling}
               baseline={baseline}
               isExec={isExec}
-              chevron={{ expanded: isExpanded }}
+              chevron={onProductClick ? undefined : { expanded: isExpanded }}
             />
           )}
         </div>
       </button>
-      <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">
-        {detailPanel}
-      </CostingDetailReveal>
+      {!onProductClick && (
+        <CostingDetailReveal open={isExpanded} className="border-t border-border bg-secondary/10">
+          {detailPanel}
+        </CostingDetailReveal>
+      )}
     </div>
   );
 }
@@ -132,6 +138,7 @@ function VariantSection<T extends CostingProductLike>({
   isExec,
   expandedId,
   onToggleProduct,
+  onProductClick,
   renderDetail,
   onRequestCreate,
   defaultOpen,
@@ -141,6 +148,7 @@ function VariantSection<T extends CostingProductLike>({
   isExec: boolean;
   expandedId: number | null;
   onToggleProduct: (id: number) => void;
+  onProductClick?: (id: number) => void;
   renderDetail: (product: T) => ReactNode;
   onRequestCreate?: (variant: HoneyPricingVariant, size: string) => void;
   defaultOpen: boolean;
@@ -245,6 +253,7 @@ function VariantSection<T extends CostingProductLike>({
                 isExpanded={isExpanded}
                 isExec={isExec}
                 onToggle={() => onToggleProduct(product.id)}
+                onProductClick={onProductClick ? () => onProductClick(product.id) : undefined}
                 detailPanel={isExpanded ? renderDetail(product) : null}
                 parcelMode={parcelMode}
               />
@@ -260,6 +269,7 @@ export function CostingHoneyVariantGroups<T extends CostingProductLike>({
   isExec,
   expandedId,
   onToggleProduct,
+  onProductClick,
   renderDetail,
   onRequestCreate,
   parcelMode,
@@ -268,6 +278,7 @@ export function CostingHoneyVariantGroups<T extends CostingProductLike>({
   isExec: boolean;
   expandedId: number | null;
   onToggleProduct: (id: number) => void;
+  onProductClick?: (id: number) => void;
   renderDetail: (product: T) => ReactNode;
   onRequestCreate?: (variant: HoneyPricingVariant, size: string) => void;
   parcelMode?: boolean;
@@ -291,6 +302,7 @@ export function CostingHoneyVariantGroups<T extends CostingProductLike>({
             isExec={isExec}
             expandedId={expandedId}
             onToggleProduct={onToggleProduct}
+            onProductClick={onProductClick}
             renderDetail={renderDetail}
             onRequestCreate={onRequestCreate}
             defaultOpen={idx === 0}

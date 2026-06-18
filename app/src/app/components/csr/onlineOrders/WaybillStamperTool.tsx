@@ -111,7 +111,7 @@ export function WaybillStamperTool({
 
   return (
     <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
-      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground">
+      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground" data-tour="online-orders-tool-back">
         ← Back to tools
       </button>
       <p className="text-sm text-muted-foreground">
@@ -119,7 +119,7 @@ export function WaybillStamperTool({
         this batch.
       </p>
 
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-2 items-center" data-tour="online-orders-stamper-pipeline">
         <span className="text-xs text-muted-foreground">Order type:</span>
         {PIPELINE_OPTIONS.map(opt => (
           <button
@@ -138,6 +138,7 @@ export function WaybillStamperTool({
         ))}
       </div>
 
+      <div data-tour="online-orders-stamper-excel-upload">
       <FileZone
         label="Prepared iPYX Excel"
         hint="From VIP arranger, SPX merge, or your own sheet"
@@ -150,10 +151,12 @@ export function WaybillStamperTool({
         }}
         disabled={busy}
       />
+      </div>
       <button
         type="button"
         disabled={busy || excelFiles.length === 0}
         onClick={() => void registerExcel()}
+        data-tour="online-orders-stamper-excel-load"
         className="text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
       >
         {busy && !prep ? <Loader2 size={16} className="animate-spin inline" /> : null}
@@ -175,6 +178,7 @@ export function WaybillStamperTool({
         </div>
       )}
 
+      <div data-tour="online-orders-stamper-pdf-upload">
       <FileZone
         label="PDF waybills"
         hint="Courier label PDFs matching the Excel"
@@ -184,7 +188,9 @@ export function WaybillStamperTool({
         onFiles={setPdfFiles}
         disabled={busy}
       />
+      </div>
 
+      <div data-tour="online-orders-stamper-run">
       <FulfillmentPressable
         variant="primary"
         disabled={busy || !prep || pdfFiles.length === 0}
@@ -194,6 +200,7 @@ export function WaybillStamperTool({
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Package size={16} />}
         {busy ? "Stamping…" : "Stamp & save to batch"}
       </FulfillmentPressable>
+      </div>
 
       <FulfillmentErrorBanner message={registerError} />
       <FulfillmentErrorBanner message={error} />
