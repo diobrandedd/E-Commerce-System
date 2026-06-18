@@ -6,8 +6,11 @@ import {
   BRC_GRAMS_PER_POUCH,
   JAR_CACAO_GRAMS_PER_JAR,
   JAR_CACAO_TABLETS_PER_JAR,
+  HONEY_COMB_GRAMS_PER_JAR,
   brcPouchesPerBag,
   deptStockInYieldHint,
+  honeyCombBagsPerJar,
+  honeyCombJarsPerBag,
   jarCacaoJarsPerBag,
   type DeptProductKey,
 } from "@/app/lib/deptProducts";
@@ -28,7 +31,7 @@ function GuideSection({ title, children }: { title: string; children: React.Reac
 }
 
 const GUIDE_META: Record<
-  "brc" | "jar_cacao",
+  "brc" | "jar_cacao" | "honey_comb",
   { title: string; labelledBy: string; rawLabel: string; finishedLabel: string; produceVerb: string; sellUnit: string }
 > = {
   brc: {
@@ -47,10 +50,18 @@ const GUIDE_META: Record<
     produceVerb: "Produce",
     sellUnit: "jar",
   },
+  honey_comb: {
+    title: "Honey Comb production guide",
+    labelledBy: "honey-comb-production-guide-title",
+    rawLabel: "Honey comb — raw",
+    finishedLabel: "finished jars",
+    produceVerb: "Produce",
+    sellUnit: "jar",
+  },
 };
 
 interface DeptRawProduceGuideModalProps {
-  productKey: Extract<DeptProductKey, "brc" | "jar_cacao">;
+  productKey: Extract<DeptProductKey, "brc" | "jar_cacao" | "honey_comb">;
   open: boolean;
   onClose: () => void;
   role: Role | undefined;
@@ -99,12 +110,19 @@ export function DeptRawProduceGuideModal({
               <strong className="text-foreground">Finished pouches</strong> — retail packs ready to sell ({BRC_GRAMS_PER_POUCH} g each).
               There is no WIP step — production goes straight from raw to finished.
             </p>
-          ) : (
+          ) : productKey === "jar_cacao" ? (
             <p>
               <strong className="text-foreground">Raw bags</strong> — sealed 1 kg supplier bags of cacao.
               {" "}
               <strong className="text-foreground">Finished jars</strong> — retail jars ready to sell ({JAR_CACAO_GRAMS_PER_JAR} g cacao, {JAR_CACAO_TABLETS_PER_JAR} tablets inside each).
               There is no WIP step — production goes straight from raw to finished.
+            </p>
+          ) : (
+            <p>
+              <strong className="text-foreground">Raw bags</strong> — sealed 1 kg supplier bags of honey comb.
+              {" "}
+              <strong className="text-foreground">Finished jars</strong> — retail jars with cap + sticker ({HONEY_COMB_GRAMS_PER_JAR} g comb per jar).
+              Production deducts jar packaging and sticker from Product Costing formula lines.
             </p>
           )}
         </GuideSection>
@@ -137,6 +155,13 @@ export function DeptRawProduceGuideModal({
               Example: opening <strong className="text-foreground">1 bag</strong> worth of production uses{" "}
               <strong className="text-foreground">0.22 bag</strong> of raw per jar — about{" "}
               <strong className="text-foreground">{jarCacaoJarsPerBag().toFixed(2)} jars</strong> per full bag at yield.
+            </p>
+          )}
+          {productKey === "honey_comb" && (
+            <p>
+              Example: opening <strong className="text-foreground">1 bag</strong> worth of production uses{" "}
+              <strong className="text-foreground">{honeyCombBagsPerJar().toFixed(2)} bag</strong> of raw per jar — about{" "}
+              <strong className="text-foreground">{honeyCombJarsPerBag().toFixed(2)} jars</strong> per full bag at yield.
             </p>
           )}
         </GuideSection>

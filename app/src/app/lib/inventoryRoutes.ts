@@ -35,6 +35,14 @@ export const RAW_MATERIAL_ROUTES: Record<string, RawMaterialRoute> = {
     finishedProductPath: "/inventory/products/cacao-tablets",
     finishedTitle: "Cacao Tablets",
   },
+  "honey-comb": {
+    slug: "honey-comb",
+    productKey: "honey_comb",
+    title: "Honey Comb (raw)",
+    subtitle: "Raw comb bags — stock in and produce finished jars",
+    finishedProductPath: "/inventory/products/honey-comb",
+    finishedTitle: "Honey Comb",
+  },
 };
 
 export interface ProductInventoryRoute {
@@ -67,6 +75,13 @@ export const PRODUCT_INVENTORY_ROUTES: Record<string, ProductInventoryRoute> = {
     title: "Cacao Tablets",
     subtitle: "Finished sellable jars on hand",
     rawMaterialsPath: "/inventory/raw-materials/cacao",
+  },
+  "honey-comb": {
+    deptKey: "honey",
+    productKey: "honey_comb",
+    title: "Honey Comb",
+    subtitle: "Finished sellable jars on hand",
+    rawMaterialsPath: "/inventory/raw-materials/honey-comb",
   },
 };
 

@@ -9,6 +9,7 @@ const CARDS = [
   { slug: "paragis", label: "Dried Paragis", path: "/inventory/raw-materials/paragis", key: "paragis" as const },
   { slug: "black-rice", label: "Black Rice", path: "/inventory/raw-materials/black-rice", key: "black_rice" as const },
   { slug: "cacao", label: "Cacao Beans", path: "/inventory/raw-materials/cacao", key: "cacao" as const },
+  { slug: "honey-comb", label: "Honey Comb (raw)", path: "/inventory/raw-materials/honey-comb", key: "honey_comb" as const },
 ];
 
 function summaryFor(card: (typeof CARDS)[number], snap: RawSnapshot | null): string {

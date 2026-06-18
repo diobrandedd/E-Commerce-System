@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-18T09:06:23+02:00
+generated: 2026-06-18T10:52:25+02:00
 type: memory-bank
 ---
 
@@ -26,8 +26,8 @@ type: memory-bank
 | [[modules/dept_inventory]] | 16 |
 | [[modules/dept_pos]] | 2 |
 | [[modules/dept_pricing]] | 8 |
-| [[modules/dept_production]] | 24 |
-| [[modules/dept_products]] | 21 |
+| [[modules/dept_production]] | 25 |
+| [[modules/dept_products]] | 23 |
 | [[modules/forwarding]] | 15 |
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 28 |

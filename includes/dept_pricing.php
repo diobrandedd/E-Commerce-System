@@ -58,7 +58,7 @@ function dept_pricing_list_supplier_prices(PDO $pdo, ?int $supplierId = null, ?s
                    s.first_name, s.last_name, s.category
             FROM supplier_dept_prices sdp
             INNER JOIN suppliers s ON s.id = sdp.supplier_id
-            WHERE s.category IN ("paragis", "black_rice", "cacao")';
+            WHERE s.category IN ("paragis", "black_rice", "cacao", "honey_comb")';
     $params = [];
     if ($supplierId !== null && $supplierId > 0) {
         $sql .= ' AND sdp.supplier_id = ?';

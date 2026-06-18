@@ -1,7 +1,7 @@
 ---
 title: suppliers
 source: includes/suppliers.php
-generated: 2026-06-18T09:06:42+02:00
+generated: 2026-06-18T10:52:45+02:00
 type: module
 function_count: 12
 ---
@@ -23,9 +23,9 @@ function_count: 12
 **Callers (12):**
 
 - `api/v1/costing.php`:95 — `$row['supplier_display_name'] = supplier_display_name(`
-- `api/v1/honey.php`:839 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
-- `api/v1/honey.php`:901 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
-- `includes/dept_inventory.php`:188 — `$supplierName = supplier_display_name(`
+- `api/v1/honey.php`:862 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
+- `api/v1/honey.php`:924 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
+- `includes/dept_inventory.php`:190 — `$supplierName = supplier_display_name(`
 - `includes/dept_pricing.php`:156 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:136 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:632 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
@@ -33,21 +33,21 @@ function_count: 12
 - `includes/honey_inventory.php`:808 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:1075 — `? supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name'])`
 - `includes/honey_pricing.php`:133 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
-- `includes/suppliers.php`:73 — `'display_name' => supplier_display_name((string) $row['first_name'], (string) $row['last_name']),`
+- `includes/suppliers.php`:74 — `'display_name' => supplier_display_name((string) $row['first_name'], (string) $row['last_name']),`
 
 ## supplier_normalize_category {#supplier_normalize_category}
 
 **Callers (3):**
 
-- `includes/suppliers.php`:100 — `$params[] = supplier_normalize_category($category);`
-- `includes/suppliers.php`:157 — `$category = supplier_normalize_category((string) ($fields['category'] ?? ''));`
-- `includes/suppliers.php`:192 — `$category = supplier_normalize_category((string) ($fields['category'] ?? $row['category']));`
+- `includes/suppliers.php`:101 — `$params[] = supplier_normalize_category($category);`
+- `includes/suppliers.php`:158 — `$category = supplier_normalize_category((string) ($fields['category'] ?? ''));`
+- `includes/suppliers.php`:193 — `$category = supplier_normalize_category((string) ($fields['category'] ?? $row['category']));`
 
 ## supplier_category_label {#supplier_category_label}
 
 **Callers (1):**
 
-- `includes/suppliers.php`:77 — `'category_label' => supplier_category_label((string) $row['category']),`
+- `includes/suppliers.php`:78 — `'category_label' => supplier_category_label((string) $row['category']),`
 
 ## supplier_fetch {#supplier_fetch}
 
@@ -62,11 +62,11 @@ function_count: 12
 - `includes/honey_inventory.php`:1073 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_pricing.php`:128 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_pricing.php`:249 — `$supplier = supplier_fetch($pdo, $supplierId);`
-- `includes/suppliers.php`:174 — `$row = supplier_fetch($pdo, (int) $pdo->lastInsertId());`
-- `includes/suppliers.php`:181 — `$row = supplier_fetch($pdo, $id);`
-- `includes/suppliers.php`:208 — `return supplier_serialize(supplier_fetch($pdo, $id), true);`
-- `includes/suppliers.php`:214 — `$row = supplier_fetch($pdo, $id);`
-- `includes/suppliers.php`:225 — `$row = supplier_fetch($pdo, $supplierId);`
+- `includes/suppliers.php`:175 — `$row = supplier_fetch($pdo, (int) $pdo->lastInsertId());`
+- `includes/suppliers.php`:182 — `$row = supplier_fetch($pdo, $id);`
+- `includes/suppliers.php`:209 — `return supplier_serialize(supplier_fetch($pdo, $id), true);`
+- `includes/suppliers.php`:215 — `$row = supplier_fetch($pdo, $id);`
+- `includes/suppliers.php`:226 — `$row = supplier_fetch($pdo, $supplierId);`
 
 ## supplier_fetch_by_honey_code {#supplier_fetch_by_honey_code}
 
@@ -82,10 +82,10 @@ function_count: 12
 
 - `api/v1/suppliers.php`:56 — `api_ok(['supplier' => supplier_serialize($row, true)]);`
 - `api/v1/suppliers.php`:71 — `api_ok(['supplier' => supplier_serialize($row, true), 'supplier_code' => $code]);`
-- `includes/suppliers.php`:116 — `return array_map(fn ($r) => supplier_serialize($r, $includePayment), $st->fetchAll());`
-- `includes/suppliers.php`:176 — `return supplier_serialize($row, true);`
-- `includes/suppliers.php`:208 — `return supplier_serialize(supplier_fetch($pdo, $id), true);`
-- `includes/suppliers.php`:219 — `return supplier_serialize($row, true);`
+- `includes/suppliers.php`:117 — `return array_map(fn ($r) => supplier_serialize($r, $includePayment), $st->fetchAll());`
+- `includes/suppliers.php`:177 — `return supplier_serialize($row, true);`
+- `includes/suppliers.php`:209 — `return supplier_serialize(supplier_fetch($pdo, $id), true);`
+- `includes/suppliers.php`:220 — `return supplier_serialize($row, true);`
 
 ## supplier_list {#supplier_list}
 
@@ -99,8 +99,8 @@ function_count: 12
 
 **Callers (2):**
 
-- `includes/suppliers.php`:166 — `$idFile = supplier_store_valid_id_upload($file);`
-- `includes/suppliers.php`:200 — `$idFile = supplier_store_valid_id_upload($file);`
+- `includes/suppliers.php`:167 — `$idFile = supplier_store_valid_id_upload($file);`
+- `includes/suppliers.php`:201 — `$idFile = supplier_store_valid_id_upload($file);`
 
 ## supplier_create {#supplier_create}
 

@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-18 — [[problems/records/2026-06-18_honey-comb-production-packaging|Honey Comb: manufacturing BOM + supplier category ENUM]]
+**Shipped:** Full dept product `honey_comb`; phase 43 adds `honey_comb` to `suppliers.category` ENUM. **Spec:** [[specs/2026-06-18_honey-comb-production-packaging]].
+
 ### 2026-06-18 — Parcel recipes: product COGS + landed total per recipe (products + packaging breakdown in modal/table)
 
 ### 2026-06-18 — [[problems/records/2026-06-18_foam-cacao-cut-yields-ui|Foam cut yields editable on insulation foam roll (Jar Cacao)]]

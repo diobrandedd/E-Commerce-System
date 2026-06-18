@@ -1,7 +1,7 @@
 ---
 title: material_inventory
 source: includes/material_inventory.php
-generated: 2026-06-18T09:06:32+02:00
+generated: 2026-06-18T10:52:35+02:00
 type: module
 function_count: 64
 ---
@@ -157,7 +157,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `api/v1/materials.php`:493 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
 - `api/v1/materials.php`:524 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
 - `api/v1/materials.php`:594 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
-- `includes/dept_production.php`:293 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
+- `includes/dept_production.php`:318 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
 - `includes/fulfillment_packing.php`:187 — `$row = material_inventory_fetch_stock($pdo, $stockId);`
 - `includes/fulfillment_packing.php`:263 — `$stockRow = material_inventory_fetch_stock($pdo, $sid);`
 - `includes/fulfillment_packing.php`:352 — `$row = material_inventory_fetch_stock($pdo, $stockId, true);`
@@ -257,19 +257,19 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/material_inventory.php`:728 — `$lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
 - `includes/material_inventory.php`:755 — `$lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
-- `includes/parcel_pack_costing.php`:450 — `$lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
+- `includes/parcel_pack_costing.php`:452 — `$lotUnit = material_packaging_pool_unit_cost_from_lots($pdo, $stockId, $onHand);`
 
 ## material_packaging_is_bubble_sized_stock_name {#material_packaging_is_bubble_sized_stock_name}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:443 — `if ($lineUnit === 'bubble_piece' && material_packaging_is_bubble_sized_stock_name($stockName)) {`
+- `includes/parcel_pack_costing.php`:445 — `if ($lineUnit === 'bubble_piece' && material_packaging_is_bubble_sized_stock_name($stockName)) {`
 
 ## material_packaging_is_foam_sized_stock_name {#material_packaging_is_foam_sized_stock_name}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:446 — `if ($lineUnit === 'foam_piece' && material_packaging_is_foam_sized_stock_name($stockName)) {`
+- `includes/parcel_pack_costing.php`:448 — `if ($lineUnit === 'foam_piece' && material_packaging_is_foam_sized_stock_name($stockName)) {`
 
 ## material_packaging_generic_foam_roll_stock_name {#material_packaging_generic_foam_roll_stock_name}
 
@@ -329,7 +329,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:444 — `$rollCost = material_packaging_generic_bubble_roll_unit_cost($pdo);`
+- `includes/parcel_pack_costing.php`:446 — `$rollCost = material_packaging_generic_bubble_roll_unit_cost($pdo);`
 
 ## material_packaging_generic_foam_roll_unit_cost {#material_packaging_generic_foam_roll_unit_cost}
 
@@ -337,7 +337,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:447 — `$rollCost = material_packaging_generic_foam_roll_unit_cost($pdo);`
+- `includes/parcel_pack_costing.php`:449 — `$rollCost = material_packaging_generic_foam_roll_unit_cost($pdo);`
 
 ## material_packaging_stock_in_lot {#material_packaging_stock_in_lot}
 
@@ -497,7 +497,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/honey.php`:344 — `$count += material_adjustment_pending_count($pdo);`
+- `api/v1/honey.php`:345 — `$count += material_adjustment_pending_count($pdo);`
 - `api/v1/materials.php`:266 — `api_ok(['count' => material_adjustment_pending_count(ims_pdo())]);`
 
 ## material_adjustment_mark_viewed {#material_adjustment_mark_viewed}

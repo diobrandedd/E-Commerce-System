@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 /**
- * Canonical catalog for single-stage dept products (PT, BRC, Jar Cacao).
+ * Canonical catalog for single-stage dept products (PT, BRC, Jar Cacao, Honey Comb).
  */
 
-const DEPT_PRODUCT_KEYS = ['pt', 'brc', 'jar_cacao'];
+const DEPT_PRODUCT_KEYS = ['pt', 'brc', 'jar_cacao', 'honey_comb'];
 
 /** Supplier raw unit: 1 kg leaf per bag. */
 const PT_GRAMS_PER_BAG = 1000;
@@ -36,6 +36,14 @@ const JAR_CACAO_RAW_STOCK_NAME = 'Jar Cacao — raw';
 const JAR_CACAO_PACKAGING_STOCK_NAME = 'Jar Cacao jar packaging';
 const JAR_CACAO_STICKER_STOCK_NAME = 'Jar Cacao sticker';
 const JAR_CACAO_FOIL_STOCK_NAME = 'Jar Cacao foil';
+
+/** Supplier raw unit: 1 kg per bag; sellable jar = 500 g comb (default yield — adjust in spec if ops differs). */
+const HONEY_COMB_GRAMS_PER_BAG = 1000;
+const HONEY_COMB_GRAMS_PER_JAR = 500;
+
+const HONEY_COMB_RAW_STOCK_NAME = 'Honey comb — raw';
+const HONEY_COMB_JAR_STOCK_NAME = 'Honey comb jar packaging';
+const HONEY_COMB_STICKER_STOCK_NAME = 'Honey comb sticker';
 
 const PT_YARN_STOCK_NAME = 'Paragis Tea Bag Yarn';
 const PT_PAPER_ROLL_STOCK_NAME = 'PT tea bag paper roll';
@@ -75,6 +83,16 @@ function dept_jar_cacao_bags_per_jar(): float
     return JAR_CACAO_GRAMS_PER_JAR / JAR_CACAO_GRAMS_PER_BAG;
 }
 
+function dept_honey_comb_jars_per_bag(): float
+{
+    return HONEY_COMB_GRAMS_PER_BAG / HONEY_COMB_GRAMS_PER_JAR;
+}
+
+function dept_honey_comb_bags_per_jar(): float
+{
+    return HONEY_COMB_GRAMS_PER_JAR / HONEY_COMB_GRAMS_PER_BAG;
+}
+
 function dept_product_uses_supplier_pricing(string $key): bool
 {
     $def = dept_product_by_key($key);
@@ -88,6 +106,7 @@ function dept_product_sell_units_per_bag(string $key): float
         'pt' => dept_pt_pouches_per_bag(),
         'brc' => dept_brc_pouches_per_bag(),
         'jar_cacao' => dept_jar_cacao_jars_per_bag(),
+        'honey_comb' => dept_honey_comb_jars_per_bag(),
         default => throw new RuntimeException('No bag→sell-unit conversion for product: ' . $key),
     };
 }
@@ -104,6 +123,7 @@ function dept_product_bags_per_sell_unit(string $key): float
         'pt' => dept_pt_bags_per_pouch(),
         'brc' => dept_brc_bags_per_pouch(),
         'jar_cacao' => dept_jar_cacao_bags_per_jar(),
+        'honey_comb' => dept_honey_comb_bags_per_jar(),
         default => throw new RuntimeException('No sell-unit BOM fraction for product: ' . $key),
     };
 }
@@ -168,6 +188,20 @@ function dept_product_catalog(): array
             'packaging_stock_name' => JAR_CACAO_PACKAGING_STOCK_NAME,
             'patterns' => ['jar_cacao', 'jar cacao', 'jar_cacao_with_honey', 'jar cacao with honey', 'cacao', 'tablea'],
         ],
+        [
+            'key' => 'honey_comb',
+            'label' => 'Honey Comb',
+            'code' => '',
+            'dept' => 'honey',
+            'unit' => 'pcs',
+            'stock_in_unit' => 'bag',
+            'inventory_unit' => 'pcs',
+            'uses_supplier_pricing' => true,
+            'stock_name' => null,
+            'leaf_stock_name' => HONEY_COMB_RAW_STOCK_NAME,
+            'packaging_stock_name' => HONEY_COMB_JAR_STOCK_NAME,
+            'patterns' => ['honey_comb', 'jar_honey_comb', 'honey comb', 'honeycomb'],
+        ],
     ];
 }
 
@@ -221,6 +255,9 @@ function dept_product_resolve_label(string $label): ?array
 /** @return array<string, mixed>|null */
 function dept_product_resolve_segment(string $segment): ?array
 {
+    if (preg_match('/honey\s*comb|honeycomb/i', $segment)) {
+        return dept_product_by_key('honey_comb');
+    }
     if (preg_match('/honey/i', $segment)) {
         return null;
     }
@@ -270,6 +307,7 @@ function dept_pricing_supplier_category_for_product(string $productKey): ?string
         'pt' => 'paragis',
         'brc' => 'black_rice',
         'jar_cacao' => 'cacao',
+        'honey_comb' => 'honey_comb',
         default => null,
     };
 }
@@ -297,6 +335,9 @@ function dept_product_formula_qty_for_stock(string $productKey, string $stockNam
         return (float) PT_TEA_BAGS_PER_POUCH;
     }
     if ($productKey === 'jar_cacao' && $stockName === JAR_CACAO_FOIL_STOCK_NAME) {
+        return 1.0;
+    }
+    if ($productKey === 'honey_comb' && $stockName === HONEY_COMB_STICKER_STOCK_NAME) {
         return 1.0;
     }
     $legacy = $def['stock_name'] ?? null;

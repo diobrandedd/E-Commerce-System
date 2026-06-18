@@ -158,6 +158,7 @@ export const router = createBrowserRouter(
             { path: "paragis", Component: POSDeptPage },
             { path: "brc", Component: POSDeptPage },
             { path: "cacao", Component: POSDeptPage },
+            { path: "honey-comb", Component: POSDeptPage },
           ],
         },
       ],

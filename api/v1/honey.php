@@ -42,6 +42,7 @@ api_dispatch([
     'dept_pt_pouch' => 'api_honey_dept_pt_pouch',
     'dept_brc_produce' => 'api_honey_dept_brc_produce',
     'dept_jar_produce' => 'api_honey_dept_jar_produce',
+    'dept_comb_produce' => 'api_honey_dept_comb_produce',
     'dept_wip_waste' => 'api_honey_dept_wip_waste',
     'dept_production_preview' => 'api_honey_dept_production_preview',
     'dept_add_row' => 'api_honey_dept_add_row',
@@ -741,6 +742,28 @@ function api_honey_dept_jar_produce(): void
     $pdo->beginTransaction();
     try {
         $result = dept_jar_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_comb_produce(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_mutate();
+    $qty = (float) ($input['qty'] ?? 0);
+    $note = trim((string) ($input['note'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_honey_comb_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {

@@ -210,7 +210,7 @@ export function CostingPage() {
     return map;
   }, [stocks]);
 
-  const { honey: honeyProducts, dept: deptProducts, other: otherProducts } = useMemo(
+  const { honey: honeyProducts, honeyComb: honeyCombProducts, dept: deptProducts, other: otherProducts } = useMemo(
     () => splitCostingProducts(products),
     [products],
   );
@@ -224,11 +224,11 @@ export function CostingPage() {
     if (hubMode === "packaging") {
       return "Packaging cost per shipped parcel — click a recipe for material breakdown.";
     }
-    if (honeyProducts.length === 0 && deptProducts.length === 0 && otherProducts.length === 0) {
+    if (honeyProducts.length === 0 && honeyCombProducts.length === 0 && deptProducts.length === 0 && otherProducts.length === 0) {
       return "No products yet.";
     }
     return "Click a row for COGS formula, reference packaging, and order calculator.";
-  }, [hubMode, honeyProducts.length, deptProducts.length, otherProducts.length]);
+  }, [hubMode, honeyProducts.length, honeyCombProducts.length, deptProducts.length, otherProducts.length]);
 
   const showHoney = deptFilter === "all" || deptFilter === "honey";
   const showParagis = deptFilter === "all" || deptFilter === "paragis";
@@ -385,6 +385,23 @@ export function CostingPage() {
               onRequestCreate={(variant, size) => openCreateProduct({ variant, size })}
               parcelMode={parcelTableMode}
             />
+            )}
+
+            {showHoney && honeyCombProducts.length > 0 && (
+              <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0, 0, 0, 0.05)" }}>
+                <div className="px-4 py-3 border-b border-border bg-[#C8900A]/[0.04]">
+                  <h4 className="text-sm font-semibold text-foreground">Honey Comb</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Production packaging (jar w/ cap + sticker) in formula; ship materials in Parcel packaging (Excel row 13).
+                  </p>
+                </div>
+                {parcelTableMode ? (
+                  <CostingParcelRowColumnHeaders isExec={isExec} labelCol="Product" />
+                ) : (
+                  <CostingRowColumnHeaders isExec={isExec} labelCol="Product" />
+                )}
+                {honeyCombProducts.map(renderDeptProductRow)}
+              </div>
             )}
 
             {showParagis && paragisProducts.length > 0 && (

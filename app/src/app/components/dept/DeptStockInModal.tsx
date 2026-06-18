@@ -13,7 +13,7 @@ import { apiPost, ApiError } from "@/app/lib/api";
 import { listSuppliers, type Supplier, type SupplierCategory } from "@/app/lib/suppliers";
 
 function supplierCategoryForProductKey(productKey: string): SupplierCategory | null {
-  if (productKey === "pt" || productKey === "brc" || productKey === "jar_cacao") {
+  if (productKey === "pt" || productKey === "brc" || productKey === "jar_cacao" || productKey === "honey_comb") {
     return deptSupplierCategoryForProduct(productKey as DeptSupplierProductKey);
   }
   return null;
@@ -50,7 +50,7 @@ export function DeptStockInModal({
   const usesSupplier = deptProductUsesSupplierPricing(productKey) || selected?.uses_supplier_pricing;
   const sellUnitsPerBag =
     selected?.sell_units_per_bag ?? selected?.pouches_per_bag ??
-    (productKey === "pt" || productKey === "brc" || productKey === "jar_cacao"
+    (productKey === "pt" || productKey === "brc" || productKey === "jar_cacao" || productKey === "honey_comb"
       ? deptSellUnitsPerBag(productKey)
       : 1);
   const inventoryUnitLabel = selected?.inventory_unit ?? (usesSupplier ? "unit" : "pcs");
@@ -90,7 +90,7 @@ export function DeptStockInModal({
   }, [selected, usesSupplier]);
 
   const yieldHint =
-    productKey === "pt" || productKey === "brc" || productKey === "jar_cacao"
+    productKey === "pt" || productKey === "brc" || productKey === "jar_cacao" || productKey === "honey_comb"
       ? deptStockInYieldHint(productKey)
       : null;
 

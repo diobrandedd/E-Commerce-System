@@ -8,12 +8,20 @@ export function HoneyProductInventoryPage() {
       title="Honey"
       subtitle="Finished bottled products — batch inventory by variant and size"
       actions={
-        <Link
-          to="/inventory/raw-materials/honey/packaging"
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary"
-        >
-          Batch rows & sales →
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            to="/inventory/products/honey-comb"
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary"
+          >
+            Honey Comb jars →
+          </Link>
+          <Link
+            to="/inventory/raw-materials/honey/packaging"
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary"
+          >
+            Batch rows & sales →
+          </Link>
+        </div>
       }
     >
       <HoneyBottledInventoryPanel />

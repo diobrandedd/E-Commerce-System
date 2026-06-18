@@ -1,7 +1,7 @@
 ---
 title: parcel_pack_costing
 source: includes/parcel_pack_costing.php
-generated: 2026-06-18T09:06:37+02:00
+generated: 2026-06-18T10:52:39+02:00
 type: module
 function_count: 37
 ---
@@ -35,17 +35,17 @@ function_count: 37
 - `includes/fulfillment_pack_tier_seed.php`:428 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/fulfillment_packing.php`:220 — `if ($lines === [] || !parcel_pack_tables_ready($pdo)) {`
 - `includes/material_inventory.php`:1108 — `if (!parcel_pack_tables_ready($pdo)) {`
-- `includes/parcel_pack_costing.php`:307 — `if (!parcel_pack_tables_ready($pdo)) {`
-- `includes/parcel_pack_costing.php`:374 — `if (!parcel_pack_tables_ready($pdo)) {`
-- `includes/parcel_pack_costing.php`:592 — `if (!parcel_pack_tables_ready($pdo)) {`
-- `includes/parcel_pack_costing.php`:1027 — `if (!parcel_pack_tables_ready($pdo)) {`
+- `includes/parcel_pack_costing.php`:309 — `if (!parcel_pack_tables_ready($pdo)) {`
+- `includes/parcel_pack_costing.php`:376 — `if (!parcel_pack_tables_ready($pdo)) {`
+- `includes/parcel_pack_costing.php`:594 — `if (!parcel_pack_tables_ready($pdo)) {`
+- `includes/parcel_pack_costing.php`:993 — `if (!parcel_pack_tables_ready($pdo)) {`
 
 ## parcel_pack_order_shape_from_parsed {#parcel_pack_order_shape_from_parsed}
 
 **Callers (2):**
 
-- `includes/parcel_pack_costing.php`:378 — `$shape = parcel_pack_order_shape_from_parsed($parsed);`
-- `includes/parcel_pack_costing.php`:636 — `$shape = parcel_pack_order_shape_from_parsed($parsed);`
+- `includes/parcel_pack_costing.php`:380 — `$shape = parcel_pack_order_shape_from_parsed($parsed);`
+- `includes/parcel_pack_costing.php`:638 — `$shape = parcel_pack_order_shape_from_parsed($parsed);`
 
 ## parcel_pack_shape_float_eq {#parcel_pack_shape_float_eq}
 
@@ -57,55 +57,55 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (6):**
 
-- `includes/parcel_pack_costing.php`:141 — `return parcel_pack_shape_has_honey($shape)`
-- `includes/parcel_pack_costing.php`:153 — `&& !parcel_pack_shape_has_honey($shape)`
-- `includes/parcel_pack_costing.php`:163 — `&& !parcel_pack_shape_has_honey($shape)`
-- `includes/parcel_pack_costing.php`:174 — `&& !parcel_pack_shape_has_honey($shape)`
-- `includes/parcel_pack_costing.php`:182 — `if (parcel_pack_shape_has_honey($shape)) {`
-- `includes/parcel_pack_costing.php`:223 — `&& !parcel_pack_shape_has_honey($shape)`
+- `includes/parcel_pack_costing.php`:143 — `return parcel_pack_shape_has_honey($shape)`
+- `includes/parcel_pack_costing.php`:155 — `&& !parcel_pack_shape_has_honey($shape)`
+- `includes/parcel_pack_costing.php`:165 — `&& !parcel_pack_shape_has_honey($shape)`
+- `includes/parcel_pack_costing.php`:176 — `&& !parcel_pack_shape_has_honey($shape)`
+- `includes/parcel_pack_costing.php`:184 — `if (parcel_pack_shape_has_honey($shape)) {`
+- `includes/parcel_pack_costing.php`:225 — `&& !parcel_pack_shape_has_honey($shape)`
 
 ## parcel_pack_shape_is_bulk_only {#parcel_pack_shape_is_bulk_only}
 
 **Callers (2):**
 
-- `includes/parcel_pack_costing.php`:207 — `return parcel_pack_shape_is_bulk_only($shape, '350');`
-- `includes/parcel_pack_costing.php`:215 — `return parcel_pack_shape_is_bulk_only($shape, '250');`
+- `includes/parcel_pack_costing.php`:209 — `return parcel_pack_shape_is_bulk_only($shape, '350');`
+- `includes/parcel_pack_costing.php`:217 — `return parcel_pack_shape_is_bulk_only($shape, '250');`
 
 ## parcel_pack_shape_is_solo_honey {#parcel_pack_shape_is_solo_honey}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:233 — `if (!empty($rule['solo_honey']) && !parcel_pack_shape_is_solo_honey($shape)) {`
+- `includes/parcel_pack_costing.php`:235 — `if (!empty($rule['solo_honey']) && !parcel_pack_shape_is_solo_honey($shape)) {`
 
 ## parcel_pack_shape_is_solo_dept_pt {#parcel_pack_shape_is_solo_dept_pt}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:236 — `if (!empty($rule['solo_dept_pt']) && !parcel_pack_shape_is_solo_dept_pt($shape)) {`
+- `includes/parcel_pack_costing.php`:238 — `if (!empty($rule['solo_dept_pt']) && !parcel_pack_shape_is_solo_dept_pt($shape)) {`
 
 ## parcel_pack_shape_is_solo_dept_brc {#parcel_pack_shape_is_solo_dept_brc}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:239 — `if (!empty($rule['solo_dept_brc']) && !parcel_pack_shape_is_solo_dept_brc($shape)) {`
+- `includes/parcel_pack_costing.php`:241 — `if (!empty($rule['solo_dept_brc']) && !parcel_pack_shape_is_solo_dept_brc($shape)) {`
 
 ## parcel_pack_shape_is_solo_jar {#parcel_pack_shape_is_solo_jar}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:242 — `if (!empty($rule['solo_jar']) && !parcel_pack_shape_is_solo_jar($shape)) {`
+- `includes/parcel_pack_costing.php`:244 — `if (!empty($rule['solo_jar']) && !parcel_pack_shape_is_solo_jar($shape)) {`
 
 ## parcel_pack_shape_is_combo {#parcel_pack_shape_is_combo}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:229 — `if (!parcel_pack_shape_is_combo($shape)) {`
+- `includes/parcel_pack_costing.php`:231 — `if (!parcel_pack_shape_is_combo($shape)) {`
 
 ## parcel_pack_tier_matches {#parcel_pack_tier_matches}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:322 — `if (parcel_pack_tier_matches($rule, $shape)) {`
+- `includes/parcel_pack_costing.php`:324 — `if (parcel_pack_tier_matches($rule, $shape)) {`
 
 ## parcel_pack_resolve_tier_key_from_shape {#parcel_pack_resolve_tier_key_from_shape}
 
@@ -113,8 +113,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/parcel_pack_costing.php`:364 — `$key = parcel_pack_resolve_tier_key_from_shape($pdo, $shape);`
-- `includes/parcel_pack_costing.php`:637 — `$tierKey = parcel_pack_resolve_tier_key_from_shape($pdo, $shape);`
+- `includes/parcel_pack_costing.php`:366 — `$key = parcel_pack_resolve_tier_key_from_shape($pdo, $shape);`
+- `includes/parcel_pack_costing.php`:639 — `$tierKey = parcel_pack_resolve_tier_key_from_shape($pdo, $shape);`
 
 ## parcel_pack_pick_honey_tier_key {#parcel_pack_pick_honey_tier_key}
 
@@ -144,7 +144,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:380 — `return parcel_pack_resolve_tier_keys_from_shape_db($pdo, $shape);`
+- `includes/parcel_pack_costing.php`:382 — `return parcel_pack_resolve_tier_keys_from_shape_db($pdo, $shape);`
 
 ## parcel_pack_resolve_tier_keys_from_items_raw {#parcel_pack_resolve_tier_keys_from_items_raw}
 
@@ -159,9 +159,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (4):**
 
 - `includes/fulfillment_packing.php`:250 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, true);`
-- `includes/parcel_pack_costing.php`:529 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, $activeOnly);`
-- `includes/parcel_pack_costing.php`:556 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, false);`
-- `includes/parcel_pack_costing.php`:651 — `$tierRow = parcel_pack_fetch_tier_by_key($pdo, $tierKey, false);`
+- `includes/parcel_pack_costing.php`:531 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, $activeOnly);`
+- `includes/parcel_pack_costing.php`:558 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, false);`
+- `includes/parcel_pack_costing.php`:653 — `$tierRow = parcel_pack_fetch_tier_by_key($pdo, $tierKey, false);`
 
 ## parcel_pack_fetch_tier_lines {#parcel_pack_fetch_tier_lines}
 
@@ -170,20 +170,20 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (3):**
 
 - `includes/fulfillment_packing.php`:254 — `$tierLines = parcel_pack_fetch_tier_lines($pdo, (int) $tier['id']);`
-- `includes/parcel_pack_costing.php`:511 — `$lines = parcel_pack_fetch_tier_lines($pdo, $tierId);`
-- `includes/parcel_pack_costing.php`:770 — `$lines = parcel_pack_fetch_tier_lines($pdo, $tierId);`
+- `includes/parcel_pack_costing.php`:513 — `$lines = parcel_pack_fetch_tier_lines($pdo, $tierId);`
+- `includes/parcel_pack_costing.php`:772 — `$lines = parcel_pack_fetch_tier_lines($pdo, $tierId);`
 
 ## parcel_pack_line_unit_cost {#parcel_pack_line_unit_cost}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:424 — `'unit_cost' => parcel_pack_line_unit_cost($pdo, $row),`
+- `includes/parcel_pack_costing.php`:426 — `'unit_cost' => parcel_pack_line_unit_cost($pdo, $row),`
 
 ## parcel_pack_sum_line_costs {#parcel_pack_sum_line_costs}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:512 — `$sum = parcel_pack_sum_line_costs($lines);`
+- `includes/parcel_pack_costing.php`:514 — `$sum = parcel_pack_sum_line_costs($lines);`
 
 ## parcel_pack_tier_cost_estimate {#parcel_pack_tier_cost_estimate}
 
@@ -193,22 +193,22 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/costing.php`:546 — `$estimate = parcel_pack_tier_cost_estimate($pdo, $tierId);`
 - `api/v1/costing.php`:574 — `$estimate = parcel_pack_tier_cost_estimate($pdo, $tierId);`
-- `includes/parcel_pack_costing.php`:534 — `return parcel_pack_tier_cost_estimate($pdo, (int) $tier['id']);`
-- `includes/parcel_pack_costing.php`:571 — `$est = parcel_pack_tier_cost_estimate($pdo, (int) $tier['id']);`
-- `includes/parcel_pack_costing.php`:604 — `$estimate = parcel_pack_tier_cost_estimate($pdo, $tierId);`
+- `includes/parcel_pack_costing.php`:536 — `return parcel_pack_tier_cost_estimate($pdo, (int) $tier['id']);`
+- `includes/parcel_pack_costing.php`:573 — `$est = parcel_pack_tier_cost_estimate($pdo, (int) $tier['id']);`
+- `includes/parcel_pack_costing.php`:606 — `$estimate = parcel_pack_tier_cost_estimate($pdo, $tierId);`
 
 ## parcel_pack_tier_cost_estimate_by_key {#parcel_pack_tier_cost_estimate_by_key}
 
 **Callers (2):**
 
-- `includes/parcel_pack_costing.php`:646 — `$est = parcel_pack_tier_cost_estimate_by_key($pdo, $tierKey);`
-- `includes/parcel_pack_costing.php`:1056 — `$est = parcel_pack_tier_cost_estimate_by_key($pdo, $tierKey);`
+- `includes/parcel_pack_costing.php`:648 — `$est = parcel_pack_tier_cost_estimate_by_key($pdo, $tierKey);`
+- `includes/parcel_pack_costing.php`:1025 — `$est = parcel_pack_tier_cost_estimate_by_key($pdo, $tierKey);`
 
 ## parcel_pack_tier_is_placeholder {#parcel_pack_tier_is_placeholder}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:560 — `if (parcel_pack_tier_is_placeholder($tier)) {`
+- `includes/parcel_pack_costing.php`:562 — `if (parcel_pack_tier_is_placeholder($tier)) {`
 
 ## parcel_pack_preview_tier_by_key {#parcel_pack_preview_tier_by_key}
 
@@ -229,7 +229,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/costing.php`:599 — `api_ok(parcel_pack_preview_from_items_raw($pdo, $itemsRaw));`
-- `includes/parcel_pack_costing.php`:695 — `$preview = parcel_pack_preview_from_items_raw($pdo, $itemsRaw);`
+- `includes/parcel_pack_costing.php`:697 — `$preview = parcel_pack_preview_from_items_raw($pdo, $itemsRaw);`
 
 ## parcel_pack_fulfillment_lines_for_items_raw {#parcel_pack_fulfillment_lines_for_items_raw}
 
@@ -255,16 +255,15 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## parcel_pack_formula_current_unit_sql {#parcel_pack_formula_current_unit_sql}
 
-**Callers (2):**
+**Callers (1):**
 
-- `includes/parcel_pack_costing.php`:837 — `$unitSql = parcel_pack_formula_current_unit_sql();`
-- `includes/parcel_pack_costing.php`:952 — `COALESCE(SUM(f.qty_per_unit * (" . parcel_pack_formula_current_unit_sql() . ")), 0) AS unit_cogs`
+- `includes/parcel_pack_costing.php`:839 — `$unitSql = parcel_pack_formula_current_unit_sql();`
 
 ## parcel_pack_representative_shape_from_match_rule {#parcel_pack_representative_shape_from_match_rule}
 
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:880 — `$shape = parcel_pack_representative_shape_from_match_rule($matchRule);`
+- `includes/parcel_pack_costing.php`:882 — `$shape = parcel_pack_representative_shape_from_match_rule($matchRule);`
 
 ## parcel_pack_fetch_product_unit_cogs {#parcel_pack_fetch_product_unit_cogs}
 
@@ -272,24 +271,22 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/parcel_pack_costing.php`:888 — `$product = parcel_pack_fetch_product_unit_cogs($pdo, $key, null);`
-- `includes/parcel_pack_costing.php`:916 — `$product = parcel_pack_fetch_product_unit_cogs($pdo, null, $size, $honeyVariant);`
+- `includes/parcel_pack_costing.php`:890 — `$product = parcel_pack_fetch_product_unit_cogs($pdo, $key, null);`
+- `includes/parcel_pack_costing.php`:918 — `$product = parcel_pack_fetch_product_unit_cogs($pdo, null, $size, $honeyVariant);`
 
 ## parcel_pack_tier_product_cogs_lines {#parcel_pack_tier_product_cogs_lines}
 
-**Tables:** `products`, `product_formula`, `stocks`
-
 **Callers (1):**
 
-- `includes/parcel_pack_costing.php`:1001 — `$lines = parcel_pack_tier_product_cogs_lines($pdo, $matchRule);`
+- `includes/parcel_pack_costing.php`:967 — `$lines = parcel_pack_tier_product_cogs_lines($pdo, $matchRule);`
 
 ## parcel_pack_tier_landed_summary {#parcel_pack_tier_landed_summary}
 
 **Callers (3):**
 
-- `includes/parcel_pack_costing.php`:576 — `$landed = parcel_pack_tier_landed_summary($pdo, is_array($rule) ? $rule : [], $est);`
-- `includes/parcel_pack_costing.php`:621 — `'product_cogs' => parcel_pack_tier_landed_summary(`
-- `includes/parcel_pack_costing.php`:656 — `$productCogs = parcel_pack_tier_landed_summary($pdo, is_array($rule) ? $rule : [], $est);`
+- `includes/parcel_pack_costing.php`:578 — `$landed = parcel_pack_tier_landed_summary($pdo, is_array($rule) ? $rule : [], $est);`
+- `includes/parcel_pack_costing.php`:623 — `'product_cogs' => parcel_pack_tier_landed_summary(`
+- `includes/parcel_pack_costing.php`:658 — `$productCogs = parcel_pack_tier_landed_summary($pdo, is_array($rule) ? $rule : [], $est);`
 
 ## parcel_pack_reference_addon_for_product {#parcel_pack_reference_addon_for_product}
 

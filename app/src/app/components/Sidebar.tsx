@@ -56,6 +56,7 @@ const RAW_MATERIALS_CHILDREN: NavChild[] = [
 
 const PRODUCTS_CHILDREN: NavChild[] = [
   { label: "Honey", to: "/inventory/products/honey" },
+  { label: "Honey Comb", to: "/inventory/products/honey-comb" },
   { label: "Paragis Tea", to: "/inventory/products/paragis-tea" },
   { label: "Black Rice Coffee", to: "/inventory/products/black-rice-coffee" },
   { label: "Cacao Tablets", to: "/inventory/products/cacao-tablets" },

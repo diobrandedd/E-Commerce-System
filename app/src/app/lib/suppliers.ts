@@ -1,6 +1,6 @@
 import { apiGet, apiPost, apiPostForm, getCsrfToken } from "@/app/lib/api";
 
-export type SupplierCategory = "honey" | "paragis" | "black_rice" | "cacao";
+export type SupplierCategory = "honey" | "paragis" | "black_rice" | "cacao" | "honey_comb";
 
 export interface Supplier {
   id: number;
@@ -24,6 +24,7 @@ export const SUPPLIER_CATEGORIES: { value: SupplierCategory; label: string }[] =
   { value: "paragis", label: "Paragis" },
   { value: "black_rice", label: "Black Rice" },
   { value: "cacao", label: "Cacao" },
+  { value: "honey_comb", label: "Honey Comb" },
 ];
 
 /** Mirror PHP honey_supplier_code: initials of every word + MMDDYY */

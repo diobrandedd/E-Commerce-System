@@ -1,6 +1,6 @@
 ---
 title: SPA Routes
-generated: 2026-06-18T09:06:43+02:00
+generated: 2026-06-18T10:52:46+02:00
 type: spa
 ---
 
@@ -39,3 +39,4 @@ Basename: `/rts/app/dist` (prod) · dev at `localhost:5173`
 | `/paragis` | `POSDeptPage` | public or POS nested |
 | `/brc` | `POSDeptPage` | public or POS nested |
 | `/cacao` | `POSDeptPage` | public or POS nested |
+| `/honey-comb` | `POSDeptPage` | public or POS nested |

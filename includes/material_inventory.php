@@ -1726,6 +1726,7 @@ function material_raw_snapshot(PDO $pdo): array
             'paragis' => PT_LEAF_STOCK_NAME,
             'black_rice' => BRC_RAW_STOCK_NAME,
             'cacao' => JAR_CACAO_RAW_STOCK_NAME,
+            'honey_comb' => HONEY_COMB_RAW_STOCK_NAME,
         ];
         foreach ($names as $key => $stockName) {
             $st = $pdo->prepare(
@@ -1763,6 +1764,7 @@ function material_inventory_raw_stock_by_slug(PDO $pdo, string $slug): ?array
         'paragis' => PT_LEAF_STOCK_NAME,
         'black-rice' => BRC_RAW_STOCK_NAME,
         'cacao' => JAR_CACAO_RAW_STOCK_NAME,
+        'honey-comb' => HONEY_COMB_RAW_STOCK_NAME,
     ];
     $name = $map[$slug] ?? null;
     if ($name === null) {

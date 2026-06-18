@@ -36,6 +36,10 @@ export function variantLabel(variant: string): string {
   return variant.charAt(0).toUpperCase() + variant.slice(1);
 }
 
+export function isHoneyCombProduct(p: CostingProductLike): boolean {
+  return (p.dept_product_key ?? "") === "honey_comb";
+}
+
 export function isDeptCatalogProduct(p: CostingProductLike): boolean {
   const key = p.dept_product_key ?? "";
   return key === "pt" || key === "brc" || key === "jar_cacao";
@@ -57,18 +61,21 @@ export function splitDeptCatalogProducts<T extends CostingProductLike>(deptProdu
 
 export function splitCostingProducts<T extends CostingProductLike>(products: T[]): {
   honey: T[];
+  honeyComb: T[];
   dept: T[];
   other: T[];
 } {
   const honey: T[] = [];
+  const honeyComb: T[] = [];
   const dept: T[] = [];
   const other: T[] = [];
   for (const p of products) {
-    if (isHoneySku(p)) honey.push(p);
+    if (isHoneyCombProduct(p)) honeyComb.push(p);
+    else if (isHoneySku(p)) honey.push(p);
     else if (isDeptCatalogProduct(p)) dept.push(p);
     else other.push(p);
   }
-  return { honey, dept, other };
+  return { honey, honeyComb, dept, other };
 }
 
 export type HoneyVariantGroup<T extends CostingProductLike> = {

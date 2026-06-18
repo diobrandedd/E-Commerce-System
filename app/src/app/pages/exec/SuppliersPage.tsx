@@ -77,7 +77,7 @@ export function SuppliersPage() {
   };
 
   const supplierHasInlinePricing = (s: Supplier) =>
-    s.category === "honey" || s.category === "paragis" || s.category === "black_rice" || s.category === "cacao";
+    s.category === "honey" || s.category === "paragis" || s.category === "black_rice" || s.category === "cacao" || s.category === "honey_comb";
 
   return (
     <PageLayout
@@ -138,6 +138,7 @@ export function SuppliersPage() {
                   const isParagis = s.category === "paragis";
                   const isBlackRice = s.category === "black_rice";
                   const isCacao = s.category === "cacao";
+                  const isHoneyComb = s.category === "honey_comb";
                   const hasPricing = supplierHasInlinePricing(s);
                   const isExpanded = hasPricing && expandedPricingId === s.id;
                   return (
@@ -244,6 +245,17 @@ export function SuppliersPage() {
                               supplierId={s.id}
                               supplierName={s.display_name}
                               productKey="jar_cacao"
+                            />
+                          </td>
+                        </tr>
+                      )}
+                      {isExpanded && isHoneyComb && (
+                        <tr className="border-b border-border bg-secondary/20">
+                          <td colSpan={7} className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                            <SupplierDeptPricesInline
+                              supplierId={s.id}
+                              supplierName={s.display_name}
+                              productKey="honey_comb"
                             />
                           </td>
                         </tr>

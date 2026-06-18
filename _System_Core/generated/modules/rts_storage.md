@@ -1,7 +1,7 @@
 ---
 title: rts_storage
 source: includes/rts_storage.php
-generated: 2026-06-18T09:06:41+02:00
+generated: 2026-06-18T10:52:43+02:00
 type: module
 function_count: 12
 ---
@@ -54,7 +54,7 @@ function_count: 12
 - `includes/rts_storage.php`:232 — `$matches = glob(rts_storage_dir($bucket) . '/*/' . $safe);`
 - `includes/sp_sort_service.php`:26 — `return rts_storage_dir(RTS_STORAGE_BUCKET_SP_SORT);`
 - `includes/sp_sort_service.php`:33 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_SP_SORT) . '/tmp';`
-- `includes/suppliers.php`:141 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_SUPPLIER_IDS);`
+- `includes/suppliers.php`:142 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_SUPPLIER_IDS);`
 
 ## rts_storage_deliveries_month_key {#rts_storage_deliveries_month_key}
 
@@ -101,7 +101,7 @@ function_count: 12
 - `includes/online_order_parcels.php`:321 — `$url = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
 - `includes/rts_case_handlers.php`:132 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn),`
 - `includes/rts_case_handlers.php`:666 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $name),`
-- `includes/suppliers.php`:79 — `'valid_id_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_SUPPLIER_IDS, (string) $row['valid_id_filename'], '/rts/'),`
+- `includes/suppliers.php`:80 — `'valid_id_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_SUPPLIER_IDS, (string) $row['valid_id_filename'], '/rts/'),`
 
 ## rts_storage_csr_tool_root {#rts_storage_csr_tool_root}
 

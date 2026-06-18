@@ -184,6 +184,31 @@ function dept_production_fallback_deduct_lines(string $productKey, string $actio
             ],
         ];
     }
+    if ($productKey === 'honey_comb' && $action === 'produce') {
+        return [
+            [
+                'stock_id' => 0,
+                'stock_name' => HONEY_COMB_RAW_STOCK_NAME,
+                'kind' => 'raw_bag',
+                'unit' => 'bag',
+                'qty' => round($qty * dept_honey_comb_bags_per_jar(), 6),
+            ],
+            [
+                'stock_id' => 0,
+                'stock_name' => HONEY_COMB_JAR_STOCK_NAME,
+                'kind' => 'packaging',
+                'unit' => 'pcs',
+                'qty' => $qty,
+            ],
+            [
+                'stock_id' => 0,
+                'stock_name' => HONEY_COMB_STICKER_STOCK_NAME,
+                'kind' => 'packaging',
+                'unit' => 'pcs',
+                'qty' => $qty,
+            ],
+        ];
+    }
 
     throw new RuntimeException('No production BOM fallback for this product and action.');
 }
@@ -728,6 +753,7 @@ function dept_raw_detail_enriched(PDO $pdo, string $slug): ?array
         'pt' => null,
         'brc' => 'produce_brc',
         'jar_cacao' => 'produce_jar',
+        'honey_comb' => 'produce_comb',
         default => null,
     };
 
@@ -760,6 +786,36 @@ function dept_jar_produce(PDO $pdo, int $userId, float $jars, ?string $note = nu
         'sell_units_added' => $jars,
         'finished_on_hand' => $finished !== null ? (float) $finished['current_qty'] : $jars,
         'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'jar_cacao'),
+        'deduct_lines' => $applied,
+    ];
+}
+
+/** @return array<string, mixed> */
+function dept_honey_comb_produce(PDO $pdo, int $userId, float $jars, ?string $note = null): array
+{
+    if ($jars <= 0) {
+        throw new RuntimeException('Quantity must be > 0.');
+    }
+    $label = $note !== null && trim($note) !== '' ? 'produce: ' . trim($note) : 'produce';
+    $deductPlan = dept_production_formula_deduct_lines($pdo, 'honey_comb', 'produce', $jars);
+    $applied = dept_production_apply_deduct_lines($pdo, $userId, 'honey_comb', $deductPlan, $label);
+    $row = dept_inventory_ensure_row($pdo, $userId, 'honey_comb');
+    $rowId = (int) $row['id'];
+    $def = dept_product_by_key('honey_comb');
+    $pdo->prepare(
+        'UPDATE dept_inventory_rows
+         SET current_qty = current_qty + ?, initial_qty = initial_qty + ?,
+             product_label = ?, source_note = COALESCE(?, source_note), last_stock_in_at = NOW()
+         WHERE id = ?'
+    )->execute([$jars, $jars, $def['label'] ?? 'Honey Comb', $note, $rowId]);
+    $entryId = dept_production_log_entry($pdo, 'honey_comb', 'produce_comb', $jars, $userId, $note, $applied);
+    $finished = dept_inventory_fetch_row($pdo, 'honey_comb');
+
+    return [
+        'entry_id' => $entryId,
+        'sell_units_added' => $jars,
+        'finished_on_hand' => $finished !== null ? (float) $finished['current_qty'] : $jars,
+        'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'honey_comb'),
         'deduct_lines' => $applied,
     ];
 }

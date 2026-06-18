@@ -132,6 +132,8 @@ function dept_raw_material_slug_to_product_key(string $slug): ?string
         'black-rice' => 'brc',
         'black_rice' => 'brc',
         'cacao' => 'jar_cacao',
+        'honey-comb' => 'honey_comb',
+        'honey_comb' => 'honey_comb',
     ];
 
     return $map[trim($slug)] ?? null;
@@ -228,6 +230,7 @@ function dept_raw_material_snapshot(PDO $pdo, string $slug): ?array
             'pt' => 'Dried Paragis',
             'brc' => 'Black Rice',
             'jar_cacao' => 'Cacao Beans',
+            'honey_comb' => 'Honey Comb (raw)',
             default => (string) $def['label'],
         },
         'stock_name' => $stockName,
@@ -578,9 +581,14 @@ function dept_inventory_catalog_snapshot(PDO $pdo, ?string $deptKey = null, ?str
                 'pt' => PT_GRAMS_PER_BAG,
                 'brc' => BRC_GRAMS_PER_BAG,
                 'jar_cacao' => JAR_CACAO_GRAMS_PER_BAG,
+                'honey_comb' => HONEY_COMB_GRAMS_PER_BAG,
                 default => null,
             },
-            'grams_per_sell_unit' => $def['key'] === 'jar_cacao' ? JAR_CACAO_GRAMS_PER_JAR : null,
+            'grams_per_sell_unit' => match ($def['key']) {
+                'jar_cacao' => JAR_CACAO_GRAMS_PER_JAR,
+                'honey_comb' => HONEY_COMB_GRAMS_PER_JAR,
+                default => null,
+            },
             'tablets_per_jar' => $def['key'] === 'jar_cacao' ? JAR_CACAO_TABLETS_PER_JAR : null,
             'pouches_per_bag' => ($def['uses_supplier_pricing'] ?? false)
                 ? dept_product_sell_units_per_bag((string) $def['key'])

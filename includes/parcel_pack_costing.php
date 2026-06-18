@@ -76,6 +76,8 @@ function parcel_pack_order_shape_from_parsed(array $parsed): array
             $deptBrc += $qty;
         } elseif ($key === 'jar_cacao') {
             $jarUnits += $qty;
+        } elseif ($key === 'honey_comb') {
+            $honeyComb += $qty;
         } elseif ($key === '' && preg_match('/honey\s*comb|honeycomb/i', $label)) {
             $honeyComb += $qty;
         }
@@ -940,47 +942,11 @@ function parcel_pack_tier_product_cogs_lines(PDO $pdo, array $matchRule): array
     $addDept('pt', (float) ($shape['dept_pt'] ?? 0));
     $addDept('brc', (float) ($shape['dept_brc'] ?? 0));
     $addDept('jar_cacao', (float) ($shape['jar_units'] ?? 0));
+    $addDept('honey_comb', (float) ($shape['honey_comb_count'] ?? 0));
     $addHoney('liter', (float) ($shape['honey_1L_count'] ?? 0), '1L');
     $addHoney('350ml', (float) ($shape['honey_350ml'] ?? 0), '350ml');
     $addHoney('250ml', (float) ($shape['honey_250ml'] ?? 0), '250ml');
     $addHoney('gallon', (float) ($shape['honey_gallon_count'] ?? 0), 'Gallon');
-
-    if (($shape['honey_comb_count'] ?? 0) > 0) {
-        $qty = (float) $shape['honey_comb_count'];
-        $st = $pdo->prepare(
-            "SELECT p.id, p.name,
-                    COALESCE(SUM(f.qty_per_unit * (" . parcel_pack_formula_current_unit_sql() . ")), 0) AS unit_cogs
-             FROM products p
-             LEFT JOIN product_formula f ON f.product_id = p.id
-             LEFT JOIN stocks s ON s.id = f.stock_id
-             WHERE LOWER(p.name) LIKE '%honey%comb%'
-             GROUP BY p.id
-             ORDER BY p.id ASC
-             LIMIT 1"
-        );
-        $st->execute();
-        $comb = $st->fetch(PDO::FETCH_ASSOC);
-        if ($comb !== false) {
-            $unit = round((float) ($comb['unit_cogs'] ?? 0), 4);
-            $lines[] = [
-                'product_id' => (int) $comb['id'],
-                'label' => (string) $comb['name'],
-                'qty' => $qty,
-                'unit_cogs' => $unit,
-                'line_cogs' => round($qty * $unit, 4),
-                'note' => null,
-            ];
-        } else {
-            $lines[] = [
-                'product_id' => null,
-                'label' => 'Honey comb',
-                'qty' => $qty,
-                'unit_cogs' => null,
-                'line_cogs' => null,
-                'note' => 'No costing product found',
-            ];
-        }
-    }
 
     return $lines;
 }
@@ -1038,6 +1004,9 @@ function parcel_pack_reference_addon_for_product(PDO $pdo, ?string $deptProductK
     } elseif ($deptProductKey === 'jar_cacao') {
         $tierKey = 'cacao_1_jar';
         $scenario = 'Cacao solo 1 jar parcel';
+    } elseif ($deptProductKey === 'honey_comb') {
+        $tierKey = 'honey_comb_solo';
+        $scenario = 'Honey comb solo parcel (Excel row 13)';
     } elseif ($deptProductKey === null || $deptProductKey === '') {
         $honeyTierMap = [
             '250ml' => ['honey_250ml_solo', 'solo 250ml honey parcel'],

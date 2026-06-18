@@ -184,7 +184,7 @@ function honey_parcel_detect_other_product(string $segment): ?array
         return ['label' => 'Pito-Pito', 'product_key' => null];
     }
     if (preg_match('/honey\s*comb|honeycomb/i', $segment)) {
-        return ['label' => 'Honey Comb', 'product_key' => null];
+        return ['label' => 'Honey Comb', 'product_key' => 'honey_comb'];
     }
 
     return null;

@@ -18,6 +18,7 @@ import { RAW_MATERIAL_ROUTES, type RawMaterialRoute } from "@/app/lib/inventoryR
 import {
   deptBrcProduce,
   deptJarProduce,
+  deptCombProduce,
   deptPtMakeTeaBags,
   deptPtUseRawBags,
   deptPtPouch,
@@ -87,7 +88,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const canMutate = canMutateHoneyInventory(user?.role);
   const productKey = route.productKey;
   const isParagis = productKey === "pt";
-  const isSingleStageProduce = productKey === "brc" || productKey === "jar_cacao";
+  const isSingleStageProduce = productKey === "brc" || productKey === "jar_cacao" || productKey === "honey_comb";
   const showGuide = isParagis || isSingleStageProduce;
   const [data, setData] = useState<DeptRawSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -466,9 +467,11 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           productKey={productKey}
           action={productKey === "brc" ? "produce" : "produce"}
           onClose={() => setShowProduce(false)}
-          onSubmit={(qty, note) =>
-            productKey === "brc" ? deptBrcProduce({ qty, note }) : deptJarProduce({ qty, note })
-          }
+          onSubmit={(qty, note) => {
+            if (productKey === "brc") return deptBrcProduce({ qty, note });
+            if (productKey === "honey_comb") return deptCombProduce({ qty, note });
+            return deptJarProduce({ qty, note });
+          }}
           onDone={() => { setShowProduce(false); void refresh(); }}
         />
       )}

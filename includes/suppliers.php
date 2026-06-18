@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/rts_storage.php';
 
-const SUPPLIER_CATEGORIES = ['honey', 'paragis', 'black_rice', 'cacao'];
+const SUPPLIER_CATEGORIES = ['honey', 'paragis', 'black_rice', 'cacao', 'honey_comb'];
 
 function supplier_display_name(string $first, string $last): string
 {
@@ -29,6 +29,7 @@ function supplier_category_label(string $cat): string
         'paragis' => 'Paragis',
         'black_rice' => 'Black Rice',
         'cacao' => 'Cacao',
+        'honey_comb' => 'Honey Comb',
         default => $cat,
     };
 }

@@ -25,7 +25,7 @@ function formatDate(raw: string | null | undefined) {
 
 function yieldDetail(row: DeptInventoryRow): string | null {
   const key = row.product_key;
-  if (key === "pt" || key === "brc" || key === "jar_cacao") {
+  if (key === "pt" || key === "brc" || key === "jar_cacao" || key === "honey_comb") {
     return deptStockInYieldHint(key as DeptSupplierProductKey);
   }
   return null;

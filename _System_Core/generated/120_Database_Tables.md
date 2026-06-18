@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-18T09:06:23+02:00
+generated: 2026-06-18T10:52:25+02:00
 type: memory-bank
 table_count: 55
 ---
@@ -253,7 +253,6 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_tier_lines]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_product_unit_cogs]] |
-| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_tier_product_cogs_lines]] |
 
 ## `stock_entries`
 
@@ -325,7 +324,6 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_product_map]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_product_unit_cogs]] |
-| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_tier_product_cogs_lines]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
 
 ## `product_formula`
@@ -340,7 +338,6 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/costing.php` | [[modules/costing#api_costing_formula_mutate]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_product_unit_cogs]] |
-| `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_tier_product_cogs_lines]] |
 
 ## `stock_deductions`
 
@@ -700,6 +697,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_production.php` | [[modules/dept_production#dept_pt_pouch]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_brc_produce_pouches]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_jar_produce]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_honey_comb_produce]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |

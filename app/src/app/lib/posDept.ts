@@ -29,12 +29,14 @@ export const POS_DEPT_ROUTE_KEYS: Record<string, string> = {
   paragis: "pt",
   brc: "brc",
   cacao: "jar_cacao",
+  "honey-comb": "honey_comb",
 };
 
 export const POS_DEPT_LABELS: Record<string, string> = {
   pt: "Paragis Tea",
   brc: "Black Rice Coffee",
   jar_cacao: "Jar Cacao",
+  honey_comb: "Honey Comb",
 };
 
 export function peso(v: number): string {

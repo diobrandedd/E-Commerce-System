@@ -13,6 +13,7 @@ const CATEGORIES = [
   { key: "paragis", label: "Paragis Tea", active: true, to: "/pos/paragis" },
   { key: "brc", label: "Black Rice Coffee", active: true, to: "/pos/brc" },
   { key: "cacao", label: "Jar Cacao", active: true, to: "/pos/cacao" },
+  { key: "honey-comb", label: "Honey Comb", active: true, to: "/pos/honey-comb" },
 ] as const;
 
 export function POSCategoryPage() {

@@ -1,4 +1,4 @@
-export const DEPT_PRODUCT_KEYS = ["pt", "brc", "jar_cacao"] as const;
+export const DEPT_PRODUCT_KEYS = ["pt", "brc", "jar_cacao", "honey_comb"] as const;
 
 export type DeptProductKey = (typeof DEPT_PRODUCT_KEYS)[number];
 
@@ -25,6 +25,14 @@ export const JAR_CACAO_TABLETS_PER_JAR = 24;
 
 export const JAR_CACAO_RAW_STOCK_NAME = "Jar Cacao — raw";
 export const JAR_CACAO_PACKAGING_STOCK_NAME = "Jar Cacao jar packaging";
+
+/** Supplier bag = 1 kg; sellable jar = 500 g comb (default yield). */
+export const HONEY_COMB_GRAMS_PER_BAG = 1000;
+export const HONEY_COMB_GRAMS_PER_JAR = 500;
+
+export const HONEY_COMB_RAW_STOCK_NAME = "Honey comb — raw";
+export const HONEY_COMB_JAR_STOCK_NAME = "Honey comb jar packaging";
+export const HONEY_COMB_STICKER_STOCK_NAME = "Honey comb sticker";
 
 export function ptTeaBagsPerBag(): number {
   return PT_GRAMS_PER_BAG / PT_GRAMS_PER_TEA_BAG;
@@ -54,9 +62,18 @@ export function jarCacaoBagsPerJar(): number {
   return JAR_CACAO_GRAMS_PER_JAR / JAR_CACAO_GRAMS_PER_BAG;
 }
 
+export function honeyCombJarsPerBag(): number {
+  return HONEY_COMB_GRAMS_PER_BAG / HONEY_COMB_GRAMS_PER_JAR;
+}
+
+export function honeyCombBagsPerJar(): number {
+  return HONEY_COMB_GRAMS_PER_JAR / HONEY_COMB_GRAMS_PER_BAG;
+}
+
 export function deptSellUnitsPerBag(key: DeptProductKey): number {
   if (key === "pt") return ptPouchesPerBag();
   if (key === "brc") return brcPouchesPerBag();
+  if (key === "honey_comb") return honeyCombJarsPerBag();
   return jarCacaoJarsPerBag();
 }
 
@@ -68,6 +85,7 @@ export function deptPouchesPerBag(key: DeptProductKey): number {
 export function deptBagsPerSellUnit(key: DeptProductKey): number {
   if (key === "pt") return ptBagsPerPouch();
   if (key === "brc") return brcBagsPerPouch();
+  if (key === "honey_comb") return honeyCombBagsPerJar();
   return jarCacaoBagsPerJar();
 }
 
@@ -113,11 +131,22 @@ export const DEPT_PRODUCT_CATALOG: DeptProductDef[] = [
     inventoryUnit: "pcs",
     usesSupplierPricing: true,
   },
+  {
+    key: "honey_comb",
+    label: "Honey Comb",
+    code: "",
+    dept: "honey",
+    unit: "pcs",
+    stockInUnit: "bag",
+    inventoryUnit: "pcs",
+    usesSupplierPricing: true,
+  },
 ];
 
 export const DEPT_LABELS: Record<string, string> = {
   paragis: "Paragis",
   cacao_brc: "Cacao / BRC",
+  honey: "Honey",
 };
 
 export function deptProductByKey(key: string): DeptProductDef | undefined {
@@ -134,13 +163,14 @@ export function deptProductUsesSupplierPricing(key: string): boolean {
   return deptProductByKey(key)?.usesSupplierPricing ?? false;
 }
 
-export type DeptSupplierProductKey = "pt" | "brc" | "jar_cacao";
+export type DeptSupplierProductKey = "pt" | "brc" | "jar_cacao" | "honey_comb";
 
 export function deptSupplierCategoryForProduct(
   key: DeptSupplierProductKey,
-): "paragis" | "black_rice" | "cacao" {
+): "paragis" | "black_rice" | "cacao" | "honey_comb" {
   if (key === "pt") return "paragis";
   if (key === "brc") return "black_rice";
+  if (key === "honey_comb") return "honey_comb";
   return "cacao";
 }
 
@@ -165,6 +195,10 @@ export function deptSuggestedFormulaQty(
     if (stockName === JAR_CACAO_RAW_STOCK_NAME) return formatDeptFormulaQty(jarCacaoBagsPerJar());
     if (stockName === JAR_CACAO_PACKAGING_STOCK_NAME) return "1";
   }
+  if (productKey === "honey_comb") {
+    if (stockName === HONEY_COMB_RAW_STOCK_NAME) return formatDeptFormulaQty(honeyCombBagsPerJar());
+    if (stockName === HONEY_COMB_JAR_STOCK_NAME || stockName === HONEY_COMB_STICKER_STOCK_NAME) return "1";
+  }
   return null;
 }
 
@@ -172,6 +206,7 @@ export function deptDefaultFormulaStockName(productKey: string | null | undefine
   if (productKey === "pt") return PT_LEAF_STOCK_NAME;
   if (productKey === "brc") return BRC_RAW_STOCK_NAME;
   if (productKey === "jar_cacao") return JAR_CACAO_RAW_STOCK_NAME;
+  if (productKey === "honey_comb") return HONEY_COMB_RAW_STOCK_NAME;
   return null;
 }
 
@@ -181,6 +216,9 @@ export function deptStockInYieldHint(key: DeptSupplierProductKey): string {
   }
   if (key === "brc") {
     return `1 bag (1 kg) → ${brcPouchesPerBag().toLocaleString()} sellable pouches (${BRC_GRAMS_PER_POUCH} g per pouch).`;
+  }
+  if (key === "honey_comb") {
+    return `1 bag (1 kg) → ~${honeyCombJarsPerBag().toFixed(2)} sellable jar(s) (${HONEY_COMB_GRAMS_PER_JAR} g comb per jar).`;
   }
   return `1 bag (1 kg) → ~${jarCacaoJarsPerBag().toFixed(2)} sellable jar(s) (${JAR_CACAO_GRAMS_PER_JAR} g per jar, ${JAR_CACAO_TABLETS_PER_JAR} tablets per jar).`;
 }

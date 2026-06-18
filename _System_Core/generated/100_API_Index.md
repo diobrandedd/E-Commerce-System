@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-18T09:06:21+02:00
+generated: 2026-06-18T10:52:25+02:00
 type: memory-bank
 ---
 
@@ -170,6 +170,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `dept_pt_pouch` | `api_honey_dept_pt_pouch()` | `ims_pdo()`, `dept_pt_pouch()` |
 | `dept_brc_produce` | `api_honey_dept_brc_produce()` | `ims_pdo()`, `dept_brc_produce_pouches()` |
 | `dept_jar_produce` | `api_honey_dept_jar_produce()` | `ims_pdo()`, `dept_jar_produce()` |
+| `dept_comb_produce` | `api_honey_dept_comb_produce()` | `ims_pdo()`, `dept_honey_comb_produce()` |
 | `dept_wip_waste` | `api_honey_dept_wip_waste()` | `ims_pdo()`, `dept_wip_waste_tea_bags()` |
 | `dept_production_preview` | `api_honey_dept_production_preview()` | `dept_product_key_valid()`, `dept_production_preview_lines()`, `ims_pdo()` |
 | `dept_add_row` | `api_honey_dept_add_row()` | — |
