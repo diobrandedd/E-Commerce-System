@@ -4,6 +4,15 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-19 — [[problems/records/2026-06-19_waybill-stamp-text-only|Waybill stamp text-only (no border)]]
+**Shipped:** Removed white/red box + border from PDF item stamp — black/red text only (`waybill-stamper/processor.py`). **Fix:** [[fixes/waybill-stamp-text-only-no-border]] · Python only, re-stamp to apply.
+
+### 2026-06-19 — [[problems/records/2026-06-19_vip-spx-parser-pitfalls|VIP/SPX parser + CSR builder session ⭐]]
+**Obsidian hub — read before parser/stamper edits.** Combo honey+dept export drop, false `L` from `1 L HONEY`, **LLA**, **250ml**, J&T `3L HONEY(ALL DARK)1 PC 350ML(DARK)`, collapsible scrollable ItemLineBuilder cards. **Fix:** [[fixes/vip-spx-order-remarks-parser-guards]] · **Causes:** [[causes/vip-spx-size-letter-false-variant]] · [[causes/vip-spx-combo-export-drops-honey]] · [[causes/vip-spx-3l-variant-list-incomplete]] · [[causes/vip-spx-jnt-concatenated-350ml]] · **Parent:** [[records/2026-06-19_vip-spx-order-interpretation]] · **Spec:** [[specs/2026-06-19_vip-spx-order-interpretation]].
+
+### 2026-06-19 — [[problems/records/2026-06-19_vip-spx-order-interpretation|VIP/SPX order interpretation + CSR item builder (initial ship)]]
+**Shipped:** J&T/SPX column auto-detect (tracking + Item in Parcel), multi-item parse, ItemLineBuilder on VIP/SPX carousels, per-color stock on 2L/3L cards. **Hotfix:** SPX Sheet1 detect + openpyxl warning JSON parse. **Spec:** [[specs/2026-06-19_vip-spx-order-interpretation]].
+
 ### 2026-06-18 — [[problems/records/2026-06-18_honey-comb-production-packaging|Honey Comb: manufacturing BOM + supplier category ENUM]]
 **Shipped:** Full dept product `honey_comb`; phase 43 adds `honey_comb` to `suppliers.category` ENUM. **Spec:** [[specs/2026-06-18_honey-comb-production-packaging]].
 

@@ -340,11 +340,8 @@ def parse_excel(excel_paths: list, log_fn) -> dict:
 
 # ─── PDF STAMPING ────────────────────────────────────────────────────────────
 
-# Colors — stamp pages use black; summary page uses green/red accents
+# Colors — stamp pages use black text; no-match uses red text (no box/border)
 BLACK         = (0, 0, 0)
-WHITE         = (1, 1, 1)
-RED_FILL      = (1.00, 0.93, 0.93)
-RED_BORDER    = (0.55, 0.05, 0.05)
 RED_TEXT      = (0.45, 0.02, 0.02)
 
 
@@ -440,10 +437,8 @@ def stamp_page(page: fitz.Page, items: str, matched: bool, tn: str | None):
     rect, font, font_small = _stamp_layout(page, tn, line)
 
     if matched:
-        page.draw_rect(rect, color=BLACK, fill=WHITE, width=1.2)
         _draw_stamp_text(page, rect, line, font, font_small, BLACK)
     else:
-        page.draw_rect(rect, color=RED_BORDER, fill=RED_FILL, width=1.2)
         _draw_stamp_text(page, rect, line, font, font_small, RED_TEXT)
 
 

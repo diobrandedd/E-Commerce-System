@@ -1,9 +1,9 @@
 ---
 title: honey_parcel_item_parser
 source: includes/honey_parcel_item_parser.php
-generated: 2026-06-18T10:52:33+02:00
+generated: 2026-06-19T07:05:38+02:00
 type: module
-function_count: 12
+function_count: 16
 ---
 
 
@@ -16,6 +16,24 @@ function_count: 12
 ## Includes
 
 - `includes/dept_products.php`
+
+## honey_parcel_split_jnt_concatenated_bulk_ml {#honey_parcel_split_jnt_concatenated_bulk_ml}
+
+**Callers (1):**
+
+- `includes/honey_parcel_item_parser.php`:52 — `$jntParts = honey_parcel_split_jnt_concatenated_bulk_ml($part);`
+
+## honey_parcel_split_segments {#honey_parcel_split_segments}
+
+**Callers (1):**
+
+- `includes/honey_parcel_item_parser.php`:99 — `$segments = honey_parcel_split_segments($raw);`
+
+## honey_parcel_promo_bottle_count {#honey_parcel_promo_bottle_count}
+
+**Callers (1):**
+
+- `includes/honey_parcel_item_parser.php`:268 — `$promo = honey_parcel_promo_bottle_count($segment);`
 
 ## honey_parcel_parse_items_string {#honey_parcel_parse_items_string}
 
@@ -31,67 +49,77 @@ function_count: 12
 
 **Callers (1):**
 
-- `includes/honey_parcel_item_parser.php`:43 — `$part = honey_parcel_parse_segment($segment);`
+- `includes/honey_parcel_item_parser.php`:109 — `$part = honey_parcel_parse_segment($segment);`
 
 ## honey_parcel_extract_qty {#honey_parcel_extract_qty}
 
 **Callers (1):**
 
-- `includes/honey_parcel_item_parser.php`:75 — `$qty = honey_parcel_extract_qty($segment);`
+- `includes/honey_parcel_item_parser.php`:141 — `$qty = honey_parcel_extract_qty($segment);`
 
 ## honey_parcel_detect_other_product {#honey_parcel_detect_other_product}
 
 **Callers (1):**
 
-- `includes/honey_parcel_item_parser.php`:93 — `$other = honey_parcel_detect_other_product($segment);`
+- `includes/honey_parcel_item_parser.php`:199 — `$other = honey_parcel_detect_other_product($segment);`
 
 ## honey_parcel_detect_product {#honey_parcel_detect_product}
 
 **Callers (1):**
 
-- `includes/honey_parcel_item_parser.php`:111 — `$product = honey_parcel_detect_product($segment);`
+- `includes/honey_parcel_item_parser.php`:217 — `$product = honey_parcel_detect_product($segment);`
+
+## honey_parcel_extract_bulk_ml_code {#honey_parcel_extract_bulk_ml_code}
+
+**Callers (4):**
+
+- `includes/honey_parcel_item_parser.php`:146 — `$code = honey_parcel_extract_bulk_ml_code($segment, '250');`
+- `includes/honey_parcel_item_parser.php`:173 — `$code = honey_parcel_extract_bulk_ml_code($segment, '350');`
+- `includes/honey_parcel_item_parser.php`:349 — `/** @deprecated Use honey_parcel_extract_bulk_ml_code($segment, '350') */`
+- `includes/honey_parcel_item_parser.php`:352 — `return honey_parcel_extract_bulk_ml_code($segment, '350');`
 
 ## honey_parcel_extract_350_code {#honey_parcel_extract_350_code}
 
-**Callers (1):**
+**Callers (0):**
 
-- `includes/honey_parcel_item_parser.php`:80 — `$code = honey_parcel_extract_350_code($segment);`
+_No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_parcel_resolve_main_code {#honey_parcel_resolve_main_code}
 
 **Callers (1):**
 
-- `includes/honey_parcel_item_parser.php`:133 — `$code = honey_parcel_resolve_main_code($segment, $product);`
+- `includes/honey_parcel_item_parser.php`:239 — `$code = honey_parcel_resolve_main_code($segment, $product);`
 
 ## honey_parcel_code_to_letters {#honey_parcel_code_to_letters}
 
 **Callers (1):**
 
-- `includes/honey_parcel_item_parser.php`:147 — `$letters = honey_parcel_code_to_letters($code, $product);`
+- `includes/honey_parcel_item_parser.php`:253 — `$letters = honey_parcel_code_to_letters($code, $product);`
 
 ## honey_parcel_detect_word_variant {#honey_parcel_detect_word_variant}
 
 **Callers (2):**
 
-- `includes/honey_parcel_item_parser.php`:121 — `$variant = honey_parcel_detect_word_variant($segment);`
-- `includes/honey_parcel_item_parser.php`:135 — `$variant = honey_parcel_detect_word_variant($segment);`
+- `includes/honey_parcel_item_parser.php`:227 — `$variant = honey_parcel_detect_word_variant($segment);`
+- `includes/honey_parcel_item_parser.php`:241 — `$variant = honey_parcel_detect_word_variant($segment);`
 
 ## honey_parcel_letter_to_variant {#honey_parcel_letter_to_variant}
 
-**Callers (2):**
+**Callers (3):**
 
-- `includes/honey_parcel_item_parser.php`:84 — `$variant = honey_parcel_letter_to_variant($code);`
-- `includes/honey_parcel_item_parser.php`:151 — `'variant' => honey_parcel_letter_to_variant($letter),`
+- `includes/honey_parcel_item_parser.php`:155 — `$variant = honey_parcel_letter_to_variant($letter);`
+- `includes/honey_parcel_item_parser.php`:182 — `$variant = honey_parcel_letter_to_variant($letter);`
+- `includes/honey_parcel_item_parser.php`:257 — `'variant' => honey_parcel_letter_to_variant($letter),`
 
 ## honey_parcel_merge_deltas {#honey_parcel_merge_deltas}
 
 **Callers (1):**
 
-- `includes/honey_parcel_item_parser.php`:60 — `'deltas' => honey_parcel_merge_deltas($deltas),`
+- `includes/honey_parcel_item_parser.php`:126 — `'deltas' => honey_parcel_merge_deltas($deltas),`
 
 ## honey_parcel_merge_other_items {#honey_parcel_merge_other_items}
 
 **Callers (1):**
 
-- `includes/honey_parcel_item_parser.php`:61 — `'other_items' => honey_parcel_merge_other_items($otherItems),`
+- `includes/honey_parcel_item_parser.php`:127 — `'other_items' => honey_parcel_merge_other_items($otherItems),`
 

@@ -1,4 +1,19 @@
-export type HoneyProduct = "1L" | "2L" | "3L" | "350ml" | "other";
+import {
+  interpretRawText,
+  composePackerLine,
+  builderLineIsValid,
+  isHoneyBuilderProduct,
+  stripHoneySizeTokens,
+  type BuilderLine,
+} from "@/app/lib/itemLineBuilder";
+
+export type HoneyProduct = "1L" | "2L" | "3L" | "250ml" | "350ml" | "gallon" | "other";
+
+export interface StockBreakdownEntry {
+  letter: string;
+  variant: string;
+  qty: number;
+}
 
 export interface ParsedRemark {
   product: HoneyProduct;
@@ -7,6 +22,9 @@ export interface ParsedRemark {
   clean: string;
   needsEdit: boolean;
   variantRaw: string;
+  /** Structured lines from interpretRawText */
+  builderLines?: BuilderLine[];
+  needsBuilder?: boolean;
 }
 
 export interface PresetOption {
@@ -14,6 +32,8 @@ export interface PresetOption {
   label: string;
   /** Bottled packaging stock for this preset (CSR variant picker). */
   stockLeft?: number | null;
+  /** Per-bottle stock for 2L/3L/350ml LAD combos */
+  stockBreakdown?: StockBreakdownEntry[];
 }
 
 export interface RowResolution {
@@ -31,9 +51,9 @@ export interface CardSteps {
 }
 
 const HONEY_CODE_RE =
-  /3L-HONEY|2L-HONEY|1L HONEY|3 L Honey|2 L.Honey|1 L HONEY|350ml|350ML|B2T1/i;
+  /3L-HONEY|2L-HONEY|1L HONEY|3 L Honey|2 L.Honey|1 L HONEY|250ml|250ML|350ml|350ML|B2T1|B1T2|G HONEY|gallon/i;
 
-const VALID_3L = new Set(["LAD", "LLL", "AAA", "DDD", "LAA", "LLD", "ADD", "AAD"]);
+const VALID_3L = new Set(["LAD", "LLL", "AAA", "DDD", "LLA", "LAA", "LLD", "ADD", "AAD"]);
 const VALID_2L = new Set(["LA", "LD", "AD", "LL", "AA", "DD"]);
 const VALID_1L = new Set(["L", "A", "D"]);
 
@@ -43,14 +63,16 @@ export function extractQty(raw: string): string {
 }
 
 export function hasFree350Promo(raw: string): boolean {
-  return /FREE\s*1\s*350\s*mL|Set\s*B/i.test(raw);
+  return /FREE\s*1\s*350\s*mL|Set\s*B|1pc\.?\s*350\s*ml|350\s*ml\.?\s*Honey/i.test(raw);
 }
 
 export function extract350Variant(raw: string): string | null {
   const m = raw.match(/350\s*ml\s*\(\s*([LAD]+)\s*\)/i);
-  if (m) return m[1].toUpperCase();
+  if (m && /^[LAD]+$/i.test(m[1]!)) return m[1]!.toUpperCase();
+  const mWord = raw.match(/350\s*ml\s*\(\s*(Light|Amber|Dark)\s*\)/i);
+  if (mWord) return mWord[1]![0]!.toUpperCase();
   const m2 = raw.match(/350\s*ml\.?\s*Honey\s*\(\s*([LAD]+)\s*\)/i);
-  if (m2) return m2[1].toUpperCase();
+  if (m2) return m2[1]!.toUpperCase();
   return null;
 }
 
@@ -112,7 +134,11 @@ export function parseRemarks(raw: string): ParsedRemark {
   if (/3L-HONEY|3 L Honey|3L HONEY/i.test(r)) product = "3L";
   else if (/2L-HONEY|2 L.Honey|2L HONEY|2\s*L\s*Honey/i.test(r)) product = "2L";
   else if (/1L HONEY|1 L HONEY/i.test(r)) product = "1L";
-  else if (/350ml|350ML|B2T1/i.test(r)) product = "350ml";
+  else if (/250ml|250\s*ml/i.test(r)) product = "250ml";
+  else if (/350ml|350ML|B2T1|B1T2/i.test(r)) product = "350ml";
+  else if (/G HONEY|gallon/i.test(r)) product = "gallon";
+
+  const interpreted = interpretRawText(r);
 
   if (!/textarea_input|radio_input/i.test(r)) {
     const scanText = r;
@@ -124,9 +150,11 @@ export function parseRemarks(raw: string): ParsedRemark {
       product,
       variants,
       address: "",
-      clean: r,
+      clean: interpreted.packerLine || r,
       needsEdit: false,
       variantRaw: "",
+      builderLines: interpreted.lines,
+      needsBuilder: interpreted.needsBuilder,
     };
   }
 
@@ -149,16 +177,18 @@ export function parseRemarks(raw: string): ParsedRemark {
     product,
     variants,
     address,
-    clean,
+    clean: interpreted.packerLine || clean || r,
     needsEdit: true,
     variantRaw,
+    builderLines: interpreted.lines,
+    needsBuilder: interpreted.needsBuilder || interpreted.needsMainPick || interpreted.needs350Pick,
   };
 }
 
 export function detectVariants(text: string, product: HoneyProduct): string[] {
   if (!text) return [];
 
-  const t = text.toLowerCase();
+  const t = stripHoneySizeTokens(text).toLowerCase();
   const hasLight = /\blight\b|(?:^|[\s,&])l(?:\s|$|[,&])/.test(t);
   const hasAmber = /\bamber\b|(?:^|[\s,&])a(?:\s|$|[,&])/.test(t);
   const hasDark = /\bdark\b|(?:^|[\s,&])d(?:\s|$|[,&])/.test(t);
@@ -189,9 +219,10 @@ export function detectVariants(text: string, product: HoneyProduct): string[] {
   if (product === "3L") {
     if (/2\s*dark.*1\s*amber|2d.*1a/i.test(t)) return ["A", "D", "D"];
     if (/2\s*amber.*1\s*dark|2a.*1d/i.test(t)) return ["A", "A", "D"];
-    if (hasLight && hasAmber && !hasDark) return ["L", "L", "A"];
-    if (hasLight && hasDark && !hasAmber) return ["L", "D", "D"];
-    if (hasAmber && hasDark && !hasLight) return ["A", "A", "D"];
+    if (/2\s*light.*1\s*amber|2\s*lights.*1\s*amber/i.test(t)) return ["L", "L", "A"];
+    if (/1\s*light.*2\s*amber|1\s*light.*2\s*ambers/i.test(t)) return ["L", "A", "A"];
+    if (/2\s*light.*1\s*dark|2\s*lights.*1\s*dark/i.test(t)) return ["L", "L", "D"];
+    if (hasLight && hasAmber && hasDark) return ["L", "A", "D"];
     if (hasLight) return ["L", "L", "L"];
     if (hasAmber) return ["A", "A", "A"];
     if (hasDark) return ["D", "D", "D"];
@@ -238,7 +269,15 @@ export function resolveMainVariant(raw: string, parsed: ParsedRemark): string | 
 }
 
 export function needsMainVariantPick(raw: string, parsed: ParsedRemark): boolean {
-  if (parsed.product !== "1L" && parsed.product !== "2L" && parsed.product !== "3L") {
+  if (
+    parsed.needsBuilder &&
+    parsed.builderLines?.some(
+      l => isHoneyBuilderProduct(l.product) && l.product !== "other" && !builderLineIsValid(l),
+    )
+  ) {
+    return true;
+  }
+  if (parsed.product !== "1L" && parsed.product !== "2L" && parsed.product !== "3L" && parsed.product !== "gallon") {
     return false;
   }
   return resolveMainVariant(raw, parsed) === null;
@@ -250,6 +289,7 @@ export function needsFree350Pick(raw: string, _parsed: ParsedRemark): boolean {
 }
 
 export function isAmbiguousRemark(raw: string, parsed: ParsedRemark): boolean {
+  if (parsed.needsBuilder) return true;
   return needsMainVariantPick(raw, parsed) || needsFree350Pick(raw, parsed);
 }
 
@@ -271,6 +311,15 @@ export function getCardSteps(raw: string, parsed: ParsedRemark, resolution?: Row
 }
 
 export function isRowFullyResolved(raw: string, parsed: ParsedRemark, resolution?: RowResolution): boolean {
+  if (resolution?.finalRemark) return true;
+  if (parsed.needsBuilder) {
+    const invalidHoney = parsed.builderLines?.some(
+      l => isHoneyBuilderProduct(l.product) && l.product !== "other" && !builderLineIsValid(l),
+    );
+    if (invalidHoney) return false;
+    const multiItem = (parsed.builderLines?.length ?? 0) > 1;
+    if (multiItem && !resolution?.finalRemark) return false;
+  }
   if (!isAmbiguousRemark(raw, parsed)) return true;
   const main = resolution?.mainVariant ?? resolveMainVariant(raw, parsed);
   if (needsMainVariantPick(raw, parsed) && !main) return false;
@@ -337,7 +386,7 @@ export function buildCleanRemarks(
 }
 
 export function build3LPresets(_raw: string): PresetOption[] {
-  return ["LAD", "LLL", "AAA", "DDD", "LAA", "LLD", "ADD", "AAD"].map(label => ({
+  return ["LAD", "LLL", "AAA", "DDD", "LLA", "LAA", "LLD", "ADD", "AAD"].map(label => ({
     label,
     value: label,
   }));
@@ -362,6 +411,7 @@ export function buildMainPresets(product: HoneyProduct, _raw: string): PresetOpt
   if (product === "3L") return build3LPresets(_raw);
   if (product === "2L") return build2LPresets(_raw);
   if (product === "1L") return build1LPresets(_raw);
+  if (product === "gallon") return build1LPresets(_raw);
   return [];
 }
 
@@ -379,15 +429,29 @@ export function finalRemarkForRow(
   if (resolution && (resolution.mainVariant || resolution.free350Variant)) {
     return buildResolutionFinalRemark(raw, parsed, resolution);
   }
+
+  const builderLines = parsed.builderLines ?? [];
+  const allBuilderValid = builderLines.every(
+    l => !isHoneyBuilderProduct(l.product) || l.product === "other" || builderLineIsValid(l),
+  );
+  if (builderLines.length > 1 && allBuilderValid) {
+    return composePackerLine(builderLines);
+  }
+
   if (!isAmbiguousRemark(raw, parsed)) {
     const main = resolveMainVariant(raw, parsed);
     if (main && hasFree350Promo(raw) && needsFree350Pick(raw, parsed)) {
       return parsed.clean || raw;
     }
-    if (main) return buildFinalRemark(raw, parsed, main, extract350Variant(raw) ?? undefined);
+    if (main && builderLines.length <= 1) {
+      return buildFinalRemark(raw, parsed, main, extract350Variant(raw) ?? undefined);
+    }
+    if (allBuilderValid && builderLines.length > 0) {
+      return composePackerLine(builderLines);
+    }
     return parsed.clean || raw;
   }
-  return parsed.clean || raw;
+  return raw;
 }
 
 export type RowCategory = "auto" | "ambiguous" | "passthrough" | "skipped";
@@ -408,7 +472,9 @@ export function productLabel(product: HoneyProduct): string {
     "3L": "3 Liter",
     "2L": "2 Liter",
     "1L": "1 Liter",
+    "250ml": "250 mL",
     "350ml": "350 mL",
+    gallon: "Gallon",
     other: "Other",
   };
   return map[product] ?? product;

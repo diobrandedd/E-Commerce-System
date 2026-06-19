@@ -109,15 +109,18 @@ export function VariantPresetButton({
   onClick,
   label,
   stockLeft,
+  stockBreakdown,
 }: {
   active: boolean;
   disabled?: boolean;
   onClick: () => void;
   label: string;
   stockLeft?: number | null;
+  stockBreakdown?: { letter: string; variant: string; qty: number }[];
 }) {
   const reduce = useReducedMotion();
   const hasStock = stockLeft != null;
+  const hasBreakdown = (stockBreakdown?.length ?? 0) > 1;
 
   return (
     <motion.button
@@ -130,7 +133,7 @@ export function VariantPresetButton({
       transition={remarksSpring}
       className={cn(
         "flex-shrink-0 snap-start min-w-[4.5rem] px-3 py-3 rounded-xl border-2 text-center",
-        hasStock && "min-w-[5.25rem]",
+        (hasStock || hasBreakdown) && "min-w-[5.25rem]",
         active
           ? "border-[#C8900A] bg-[#C8900A]/15 shadow-sm"
           : "border-border bg-card hover:border-[#C8900A]/60 hover:bg-[#C8900A]/5",
@@ -140,18 +143,39 @@ export function VariantPresetButton({
       <motion.span
         className={cn(
           "block font-bold text-[#C8900A]",
-          hasStock ? "text-sm leading-tight" : "text-lg",
+          hasStock || hasBreakdown ? "text-sm leading-tight" : "text-lg",
         )}
         animate={active && !reduce ? { scale: [1, 1.12, 1] } : { scale: 1 }}
         transition={{ duration: 0.35 }}
       >
         {label}
       </motion.span>
-      {hasStock && (
-        <span className="block text-[10px] text-foreground/75 mt-0.5 tabular-nums leading-tight">
-          {Math.max(0, Math.floor(stockLeft)).toLocaleString()} left
+      {hasBreakdown ? (
+        <span className="block text-[9px] text-foreground/75 mt-0.5 tabular-nums leading-tight">
+          {(() => {
+            const allSame = stockBreakdown!.every(e => e.letter === stockBreakdown![0]!.letter);
+            if (allSame && stockBreakdown!.length > 1) {
+              const e = stockBreakdown![0]!;
+              return (
+                <span>
+                  {e.letter} ×{stockBreakdown!.length} · {Math.max(0, Math.floor(e.qty)).toLocaleString()}
+                </span>
+              );
+            }
+            const minQty = Math.min(...stockBreakdown!.map(x => x.qty));
+            return stockBreakdown!.map((e, i) => (
+              <span key={`${e.letter}-${i}`} className={cn(e.qty === minQty && "font-semibold text-amber-800")}>
+                {e.letter} {Math.max(0, Math.floor(e.qty)).toLocaleString()}
+                {i < stockBreakdown!.length - 1 ? " · " : ""}
+              </span>
+            ));
+          })()}
         </span>
-      )}
+      ) : hasStock ? (
+        <span className="block text-[10px] text-foreground/75 mt-0.5 tabular-nums leading-tight">
+          {Math.max(0, Math.floor(stockLeft!)).toLocaleString()} left
+        </span>
+      ) : null}
     </motion.button>
   );
 }

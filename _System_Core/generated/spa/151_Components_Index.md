@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-18T10:52:46+02:00
+generated: 2026-06-19T07:05:51+02:00
 type: spa
 ---
 
@@ -30,6 +30,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/costing/costingMotion.tsx`
 - `app/src/app/components/csr/AmbiguousOrderCarousel.tsx`
 - `app/src/app/components/csr/onlineFulfillmentMotion.tsx`
+- `app/src/app/components/csr/onlineOrders/ItemLineBuilder.tsx`
 - `app/src/app/components/csr/onlineOrders/ItemResolverCarousel.tsx`
 - `app/src/app/components/csr/orderRemarksMotion.tsx`
 - `app/src/app/components/layout/appFeedbackMotion.tsx`

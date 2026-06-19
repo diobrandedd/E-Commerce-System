@@ -22,9 +22,13 @@ import {
 } from "@/app/lib/honeyItemVariant";
 import { enrichShopeePresets } from "@/app/lib/honeyPackagingStock";
 import { useHoneyPackagingStock } from "@/app/hooks/useHoneyPackagingStock";
-import { cn } from "@/app/components/ui/utils";
+import { ItemLineBuilder } from "@/app/components/csr/onlineOrders/ItemLineBuilder";
+import { interpretRawText } from "@/app/lib/itemLineBuilder";
 
 const HONEY_ITEM_PRESETS = [
+  { value: "Light 250ml", label: "Light 250ml" },
+  { value: "Amber 250ml", label: "Amber 250ml" },
+  { value: "Dark 250ml", label: "Dark 250ml" },
   { value: "Light 350ml", label: "Light 350ml" },
   { value: "Amber 350ml", label: "Amber 350ml" },
   { value: "Dark 350ml", label: "Dark 350ml" },
@@ -129,6 +133,7 @@ export function ItemResolverCarousel({
     const size = honeySizeFromItemLine(extracted);
     if (!size) return HONEY_ITEM_PRESETS;
     return HONEY_ITEM_PRESETS.filter(p => {
+      if (size === "250ml") return p.label.includes("250ml");
       if (size === "350ml") return p.label.includes("350ml");
       if (size === "1L") return p.label.includes("1L");
       if (size === "2L") return p.label.includes("2L") || p.label.includes("Gallon");
@@ -235,70 +240,39 @@ export function ItemResolverCarousel({
                     }
                     transition={remarksSpring}
                     className={cn(
-                      "flex-shrink-0 snap-start w-[min(100%,300px)] sm:w-[300px] bg-card rounded-xl border p-4",
+                      "flex-shrink-0 snap-start w-[min(100%,300px)] sm:w-[300px] bg-card rounded-xl border p-4 flex flex-col max-h-[min(88vh,620px)] overflow-hidden",
                       ready ? "border-green-300" : "border-amber-300",
                       active && !ready && "ring-2 ring-primary/30",
                     )}
                   >
-                    <p className="text-[10px] text-muted-foreground uppercase">Page {row.page}</p>
-                    <p className="font-semibold text-sm truncate">{row.name || "—"}</p>
-                    <p className="text-xs text-muted-foreground font-mono truncate">{row.tracking}</p>
-                    <p className="text-xs text-muted-foreground">{row.courier}</p>
+                    <div className="flex-shrink-0">
+                      <p className="text-[10px] text-muted-foreground uppercase">Page {row.page}</p>
+                      <p className="font-semibold text-sm truncate">{row.name || "—"}</p>
+                      <p className="text-xs text-muted-foreground font-mono truncate">{row.tracking}</p>
+                      <p className="text-xs text-muted-foreground">{row.courier}</p>
+                    </div>
+
+                    <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-thin space-y-2 mt-2 pr-0.5">
                     {pdfItems && (
-                      <p className="text-xs mt-1 text-amber-800 bg-amber-50 rounded px-2 py-1">
-                        Items: <span className="font-medium">{pdfItems}</span>
-                      </p>
-                    )}
-
-                    {ready && !reviewEdit && res?.items && (
-                      <OrderRemarksDoneBadge show>
-                        <p className="text-[10px] mt-2 p-2 rounded-lg bg-green-50 text-green-800 border border-green-200 break-words">
-                          {res.items}
-                        </p>
-                      </OrderRemarksDoneBadge>
-                    )}
-
-                    {ready && !reviewEdit && (
-                      <button
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => handleEdit(row.page)}
-                        className="mt-2 w-full text-xs font-medium py-1.5 rounded-lg border border-border flex items-center justify-center gap-1 hover:bg-muted/40"
-                      >
-                        <Pencil size={12} /> Edit item
-                      </button>
+                      <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-2 max-h-28 overflow-y-auto">
+                        <p className="text-[10px] font-semibold text-amber-900 uppercase mb-0.5">Original items</p>
+                        <p className="text-xs text-amber-900 whitespace-pre-wrap break-words font-medium">{pdfItems}</p>
+                      </div>
                     )}
 
                     {showEditor && (
-                      <div className="mt-3 space-y-2">
+                      <div className="space-y-2">
                         {reviewEdit ? (
-                          <>
-                            <label className="text-xs font-medium text-foreground block">
-                              Type the item line for packers
-                            </label>
-                            <input
-                              type="text"
-                              value={custom}
-                              onChange={e => setCustom(e.target.value)}
-                              placeholder="e.g. 1 Liter Honey AMBER"
-                              className="w-full text-sm border border-border rounded-lg px-3 py-2"
-                              disabled={disabled}
-                              autoFocus
-                            />
-                            <button
-                              type="button"
-                              disabled={disabled || !custom.trim()}
-                              onClick={() => {
-                                const line = custom.trim();
-                                if (!line) return;
-                                onResolve(row.page, { items: line, confirmed: true });
-                                setCustom("");
-                              }}
-                              className="w-full text-xs font-semibold py-2.5 rounded-lg text-primary-foreground bg-primary disabled:opacity-50"
-                            >
-                              Save item line
-                            </button>
-                          </>
+                          <ItemLineBuilder
+                            initialLines={interpretRawText(pdfItems || custom).lines}
+                            packagingStock={packagingStock}
+                            disabled={disabled}
+                            onSave={line => {
+                              onResolve(row.page, { items: line, confirmed: true });
+                              setCustom("");
+                            }}
+                            onCancel={() => onClearResolution(row.page)}
+                          />
                         ) : isConfirming ? (
                           <OrderRemarksStepReveal show>
                             <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
@@ -335,37 +309,49 @@ export function ItemResolverCarousel({
                               disabled={disabled}
                               title={variantPickTitle(row.items)}
                             />
-                            <input
-                              type="text"
-                              value={custom}
-                              onChange={e => setCustom(e.target.value)}
-                              placeholder="Or type exact item line…"
-                              className="w-full text-xs border rounded-lg px-2 py-1.5"
+                            <ItemLineBuilder
+                              initialLines={interpretRawText(pdfItems).lines}
+                              packagingStock={packagingStock}
                               disabled={disabled}
+                              onSave={line => startConfirm(row.page, line)}
                             />
-                            <button
-                              type="button"
-                              disabled={disabled || !custom.trim()}
-                              onClick={() => startConfirm(row.page, custom.trim())}
-                              className="w-full text-xs font-semibold py-2 rounded-lg text-white bg-primary disabled:opacity-50"
-                            >
-                              Review custom line
-                            </button>
                           </>
                         )}
                       </div>
                     )}
+                    </div>
 
-                    {!showEditor && !active && (
-                      <button
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => setActivePage(row.page)}
-                        className="mt-2 w-full text-xs font-medium py-1.5 rounded-lg border border-amber-300 text-amber-900 bg-amber-50"
-                      >
-                        Resolve this row
-                      </button>
-                    )}
+                    <div className="flex-shrink-0 pt-2 space-y-2">
+                      {ready && !reviewEdit && res?.items && (
+                        <OrderRemarksDoneBadge show>
+                          <p className="text-[10px] p-2 rounded-lg bg-green-50 text-green-800 border border-green-200 break-words">
+                            {res.items}
+                          </p>
+                        </OrderRemarksDoneBadge>
+                      )}
+
+                      {ready && !reviewEdit && (
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => handleEdit(row.page)}
+                          className="w-full text-xs font-medium py-1.5 rounded-lg border border-border flex items-center justify-center gap-1 hover:bg-muted/40"
+                        >
+                          <Pencil size={12} /> Edit item
+                        </button>
+                      )}
+
+                      {!showEditor && !active && (
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => setActivePage(row.page)}
+                          className="w-full text-xs font-medium py-1.5 rounded-lg border border-amber-300 text-amber-900 bg-amber-50"
+                        >
+                          Resolve this row
+                        </button>
+                      )}
+                    </div>
                   </motion.div>
                 </OrderRemarksCarouselCard>
               );

@@ -46,12 +46,14 @@ function order_remarks_profiles(): array
             'id' => 'jnt',
             'label' => 'J&T Express',
             'branding' => ['j&t', 'jnt', 'j and t', 'jet express'],
-            'header_markers' => ['Receiver(*)', 'Receiver(*'],
-            'receiver_header_aliases' => ['Receiver(*)'],
-            'phone_header_aliases' => ['Receiver Telephone (*)', 'Receiver Telephone'],
+            'header_markers' => ['Receiver(*)', 'Receiver(*', 'Waybill Number', 'Receiver'],
+            'receiver_header_aliases' => ['Receiver(*)', 'Receiver'],
+            'phone_header_aliases' => ['Receiver Telephone (*)', 'Receiver Telephone', 'Receiver Cellphone'],
+            'tracking_header_aliases' => ['Waybill Number', 'Waybill No', 'Tracking Number', 'Tracking No', 'Tracking'],
+            'item_header_aliases' => ['Item Name', 'Item/s', 'Items', 'Item'],
             'address_header_aliases' => ['Receiver Address (*)', 'Receiver Address'],
-            'province_header_aliases' => ['Receiver Province (*)', 'Receiver Province'],
-            'city_header_aliases' => ['Receiver City (*)', 'Receiver City'],
+            'province_header_aliases' => ['Receiver Province (*)', 'Receiver Province', 'Province'],
+            'city_header_aliases' => ['Receiver City (*)', 'Receiver City', 'City'],
             'region_header_aliases' => ['Receiver Region (*)', 'Receiver Region'],
             'remarks_header_aliases' => ['Remarks', 'Remark'],
             'skip_receiver_values' => [
@@ -72,14 +74,18 @@ function order_remarks_profiles(): array
             'id' => 'spx',
             'label' => 'SPX / Shopee Express',
             'branding' => ['spx', 'shopee express', 'shopee logistics'],
-            'header_markers' => [],
+            'header_markers' => ['Tracking No.', 'Item in Parcel', 'Recipient Name'],
             'receiver_header_aliases' => [
+                'Recipient Name',
                 'Receiver Name',
                 'Receiver',
                 'Consignee',
                 'Recipient',
                 'Name',
             ],
+            'phone_header_aliases' => ['Recipient Phone Number', 'Receiver Phone', 'Phone'],
+            'tracking_header_aliases' => ['Tracking No.', 'Tracking No', 'Tracking Number', 'Tracking', 'Waybill'],
+            'item_header_aliases' => ['Item in Parcel', 'Item List', 'Item/s', 'Items', 'Product Info'],
             'remarks_header_aliases' => ['Remarks', 'Remark', 'Notes', 'Note', 'Buyer Message'],
             'address_header_aliases' => ['Address', 'Delivery Address', 'Street'],
             'city_header_aliases' => ['City', 'Town', 'Municipality'],
@@ -253,7 +259,15 @@ function order_remarks_run_python(string $mode, string $workbookPath, ?string $p
             throw new RuntimeException('Python produced no output. Is openpyxl installed? (pip install openpyxl)');
         }
 
-        $data = json_decode($out, true);
+        $jsonText = trim($out);
+        if ($jsonText !== '' && $jsonText[0] !== '{') {
+            $start = strpos($out, '{');
+            if ($start !== false) {
+                $jsonText = substr($out, $start);
+            }
+        }
+
+        $data = json_decode($jsonText, true);
         if (!is_array($data)) {
             throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));
         }

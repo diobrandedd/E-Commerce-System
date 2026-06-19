@@ -1,7 +1,7 @@
 ---
 title: suppliers
 source: includes/suppliers.php
-generated: 2026-06-18T10:52:45+02:00
+generated: 2026-06-19T07:05:50+02:00
 type: module
 function_count: 12
 ---

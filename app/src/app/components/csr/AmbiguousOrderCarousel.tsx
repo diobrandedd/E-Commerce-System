@@ -27,6 +27,7 @@ import type { OrderRow } from "@/app/lib/orderRemarksApi";
 import { enrichVipPresets } from "@/app/lib/honeyPackagingStock";
 import type { PackagingStockSnapshot } from "@/app/lib/honeyPackagingStock";
 import { useHoneyPackagingStock } from "@/app/hooks/useHoneyPackagingStock";
+import { ItemLineBuilder } from "@/app/components/csr/onlineOrders/ItemLineBuilder";
 import { cn } from "@/app/components/ui/utils";
 
 interface AmbiguousOrderCarouselProps {
@@ -44,6 +45,7 @@ function mainStepTitle(product: ParsedRemark["product"]): string {
   if (product === "3L") return "3 Liter bottles";
   if (product === "2L") return "2 Liter bottles";
   if (product === "1L") return "1 Liter bottle";
+  if (product === "gallon") return "Gallon";
   return "Pick variant";
 }
 
@@ -70,6 +72,13 @@ function OrderCard({
   const subtitle = cardSubtitle(raw, parsed, steps);
   const display = getOrderCardDisplay(order, parsed);
   const reduceMotion = useReducedMotion();
+  const [showBuilder, setShowBuilder] = useState(false);
+  const builderOpen = showBuilder || (parsed.needsBuilder && !done);
+
+  const handleBuilderSave = (packerLine: string) => {
+    onResolve({ finalRemark: packerLine });
+    setShowBuilder(false);
+  };
 
   const handleMainSelect = (mainVariant: string) => {
     if (needsFree350Pick(raw, parsed)) {
@@ -96,11 +105,12 @@ function OrderCard({
       }
       transition={remarksSpring}
       className={cn(
-        "flex-shrink-0 snap-start w-[min(100%,300px)] sm:w-[300px] bg-card rounded-xl border p-4 flex flex-col",
+        "flex-shrink-0 snap-start bg-card rounded-xl border p-4 flex flex-col max-h-[min(88vh,620px)] overflow-hidden",
+        builderOpen ? "w-[min(100%,340px)] sm:w-[340px]" : "w-[min(100%,300px)] sm:w-[300px]",
         done ? "border-green-300" : "border-amber-300",
       )}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="flex-shrink-0 flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0 flex-1">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
             Row {display.rowNum}
@@ -140,51 +150,86 @@ function OrderCard({
         )}
       </div>
 
-      {display.address && (
-        <p className="text-[10px] text-muted-foreground mb-2 line-clamp-2" title={display.address}>
-          <span className="font-medium text-foreground/80">Address: </span>
-          {display.address}
-        </p>
-      )}
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-thin space-y-2 pr-0.5">
+        {display.address && (
+          <p className="text-[10px] text-muted-foreground line-clamp-2" title={display.address}>
+            <span className="font-medium text-foreground/80">Address: </span>
+            {display.address}
+          </p>
+        )}
 
-      <p className="text-[10px] text-muted-foreground line-clamp-2 mb-2">{raw}</p>
+        <div className="rounded-lg border border-border/80 bg-muted/30 p-2 max-h-28 overflow-y-auto">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Remarks</p>
+          <p className="text-[11px] text-foreground whitespace-pre-wrap break-words">{raw}</p>
+        </div>
 
-      <OrderRemarksStepReveal show={steps.showMain}>
-        <VariantCardStrip
-          title={mainStepTitle(parsed.product)}
-          presets={enrichVipPresets(buildMainPresets(parsed.product, raw), parsed.product, "main", packagingStock)}
-          selected={resolution?.mainVariant}
-          onSelect={handleMainSelect}
-          disabled={disabled}
-        />
-      </OrderRemarksStepReveal>
+        {!showBuilder && !done && !parsed.needsBuilder && (
+          <>
+            <OrderRemarksStepReveal show={steps.showMain}>
+              <VariantCardStrip
+                title={mainStepTitle(parsed.product)}
+                presets={enrichVipPresets(buildMainPresets(parsed.product, raw), parsed.product, "main", packagingStock)}
+                selected={resolution?.mainVariant}
+                onSelect={handleMainSelect}
+                disabled={disabled}
+              />
+            </OrderRemarksStepReveal>
 
-      <OrderRemarksStepReveal show={steps.showFree350}>
-        <VariantCardStrip
-          title="Free 350ml bottle"
-          presets={enrichVipPresets(buildFree350Presets(), parsed.product, "free350", packagingStock)}
-          selected={resolution?.free350Variant}
-          onSelect={handleFree350Select}
-          disabled={disabled}
-        />
-      </OrderRemarksStepReveal>
+            <OrderRemarksStepReveal show={steps.showFree350}>
+              <VariantCardStrip
+                title="Free 350ml bottle"
+                presets={enrichVipPresets(buildFree350Presets(), parsed.product, "free350", packagingStock)}
+                selected={resolution?.free350Variant}
+                onSelect={handleFree350Select}
+                disabled={disabled}
+              />
+            </OrderRemarksStepReveal>
+          </>
+        )}
 
-      <OrderRemarksDoneBadge show={Boolean(done && resolution?.finalRemark)}>
-        <p className="text-[10px] mt-2 p-2 rounded-lg bg-green-50 text-green-800 border border-green-200 break-words">
-          {resolution?.finalRemark}
-        </p>
-      </OrderRemarksDoneBadge>
+        {(showBuilder || parsed.needsBuilder) && !done && (
+          <ItemLineBuilder
+            initialLines={parsed.builderLines}
+            packagingStock={packagingStock}
+            disabled={disabled}
+            onSave={handleBuilderSave}
+            onCancel={() => setShowBuilder(false)}
+          />
+        )}
+      </div>
 
-      {done && onClearResolution && (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={onClearResolution}
-          className="mt-2 w-full text-xs font-medium py-1.5 rounded-lg border border-border flex items-center justify-center gap-1 hover:bg-muted/40"
-        >
-          <Pencil size={12} /> Edit choice
-        </button>
-      )}
+      <div className="flex-shrink-0 pt-2 space-y-2">
+        {!done && !showBuilder && !parsed.needsBuilder && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => setShowBuilder(true)}
+            className="w-full text-xs font-medium py-1.5 rounded-lg border border-border flex items-center justify-center gap-1 hover:bg-muted/40"
+          >
+            <Pencil size={12} /> Edit items
+          </button>
+        )}
+
+        <OrderRemarksDoneBadge show={Boolean(done && resolution?.finalRemark)}>
+          <p className="text-[10px] p-2 rounded-lg bg-green-50 text-green-800 border border-green-200 break-words">
+            {resolution?.finalRemark}
+          </p>
+        </OrderRemarksDoneBadge>
+
+        {done && onClearResolution && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => {
+              onClearResolution();
+              setShowBuilder(false);
+            }}
+            className="w-full text-xs font-medium py-1.5 rounded-lg border border-border flex items-center justify-center gap-1 hover:bg-muted/40"
+          >
+            <Pencil size={12} /> Edit choice
+          </button>
+        )}
+      </div>
     </motion.div>
   );
 }

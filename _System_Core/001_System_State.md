@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-06-18_costing-parcel-packaging-session]] (costing hub + parcel dept buckets) · [[specs/2026-06-17_fulfillment-packing-staging]] (staging) |
+| **Active Spec** | [[specs/2026-06-19_vip-spx-order-interpretation]] (VIP/SPX parse + CSR builder) · [[specs/2026-06-18_costing-parcel-packaging-session]] |
 | **Active Plan** | — |
-| **Status** | `shipped` — costing parcel hub + dept buckets (2026-06-18) |
+| **Status** | `shipped` — VIP/SPX order interpretation + CSR item builder (2026-06-19) |
 
 ## 🚀 Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags → Pouch); run phase 22–28 migrations on prod if pending

@@ -21,6 +21,8 @@ export interface OrderRow {
   receiver: string;
   phone: string;
   remarks: string;
+  itemText?: string;
+  tracking?: string;
   address?: string;
   city?: string;
   province?: string;

@@ -45,10 +45,14 @@ flowchart LR
 - [[fixes/raw-dept-mobile-first-actions-and-lists]] — Raw materials page is phone-first: compact header actions + mobile activity cards
 - [[fixes/inventory-mobile-action-modal-and-cards]] — Packaging/Supplies mobile consistency: actions modal + stacked card rows
 - [[fixes/deliveries-cancel-scan-revert-and-log]] — Cancel scanner path with shipped-inventory revert + cancellation audit table
+- [[fixes/vip-spx-order-remarks-parser-guards]] — VIP/SPX: strip size before L/A/D, combo export, 3L LLA, 250ml, J&T concatenated 350ml
+- [[fixes/waybill-stamp-text-only-no-border]] — PDF item stamp: text only, no box
 
 ## Records (newest first)
 
-- [[records/2026-06-18_costing-dept-paragis-vs-cacao-brc]] — Paragis vs BRC&Cacao dept buckets; combo recipes in UI
+- [[records/2026-06-19_waybill-stamp-text-only]] — stamp text-only, no border box
+- [[records/2026-06-19_vip-spx-parser-pitfalls]] — **⭐** VIP/SPX parser + builder session hub
+- [[records/2026-06-19_vip-spx-order-interpretation]] — VIP/SPX column detect + ItemLineBuilder initial ship
 - [[records/2026-06-18_costing-hub-parcel-recipes-table]] — Costing hub products + parcel recipes tables
 - [[records/2026-06-18_insulation-foam-generic-roll]] — generic insulation foam roll + ship-time cut
 - [[records/2026-06-18_parcel-tier-bought-cushion-pieces]] — bought liter cushions vs roll columns

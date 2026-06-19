@@ -111,6 +111,24 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 - **Normalization chain:** `online_orders_normalize_tracking()` applies OCR fix — keeps duplicate-tracking checks and Excel parse aligned with stamper.
 - **Standalone stamper:** Same `processor.py` rules apply to legacy `api/v1/waybill.php?action=process` and Online Orders Partner step.
 
+## VIP / SPX order remarks parser (CSR)
+
+**Read:** [[fixes/vip-spx-order-remarks-parser-guards]] · [[records/2026-06-19_vip-spx-parser-pitfalls]]
+
+- **Size vs variant:** `1 L HONEY` is bottle size — **not** Light (`L`). Use `stripHoneySizeTokens()` before L/A/D detection ([[causes/vip-spx-size-letter-false-variant]]).
+- **Honey + dept combos:** `1 x 1 L HONEY: 1 JAR CACAO` must export **both** lines. Do not filter incomplete honey from `composePackerLine`; block export until ItemLineBuilder save on multi-item rows ([[causes/vip-spx-combo-export-drops-honey]]).
+- **3L codes:** Keep `VALID_3L` in TS **and** `HONEY_PARCEL_VALID_3L` in PHP in sync — includes **LLA** (2 light + 1 amber), not only LAA ([[causes/vip-spx-3l-variant-list-incomplete]]).
+- **250ml / 350ml:** Both are sellable bulk sizes; detect 250 before 350; same L/A/D/LAD rules.
+- **J&T concatenated Item Name:** `3L HONEY(ALL DARK)1 PC 350ML(DARK)` has **no separator** before trailing 350ml — split on `\d+ PC 350ML` after main honey block ([[causes/vip-spx-jnt-concatenated-350ml]]).
+- **Parser parity:** `itemLineBuilder.ts` + `orderRemarksParse.ts` + `honey_parcel_item_parser.php` must stay aligned (semicolon/`+`/`:` split, promo counts, dept `product_key`).
+- **Set B / free 350ml:** Main 3L variant pick is separate from free 350ml pick — `hasFree350Promo()` + `needsFree350Pick()`.
+
+## Waybill item stamp (PDF)
+
+- **Text only (2026-06-19):** `stamp_page()` in `waybill-stamper/processor.py` — **no** `draw_rect` box/border; matched = black text, no-match = red text. Bottom-right placement unchanged; SPX QR reserve unchanged.
+- **Fix:** [[fixes/waybill-stamp-text-only-no-border]]
+- **OCR O→0** on Flash `P…` IDs still applies via `norm_tn()` — see partner stamp record below.
+
 ## CSR carousel “Show completed” trap
 
 `AmbiguousOrderCarousel` and `ItemResolverCarousel` require **parent-controlled** `showCompleted` + `onShowCompletedChange`. Wiring `showCompleted={false}` and `onShowCompletedChange={() => {}}` makes the checkbox appear but do nothing (VIP bug 2026-06-04).

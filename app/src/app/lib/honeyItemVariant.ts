@@ -3,7 +3,7 @@
  * without Light / Amber / Dark. Packers need an exact variant before stamp & master Excel.
  */
 
-export type HoneySizeHint = "350ml" | "1L" | "2L" | "3L" | "gallon" | null;
+export type HoneySizeHint = "250ml" | "350ml" | "1L" | "2L" | "3L" | "gallon" | null;
 
 /** API rows may send items as string, number, or null — always normalize before .trim(). */
 export function honeyItemLineText(value: unknown): string {
@@ -15,6 +15,7 @@ export function honeyItemLineText(value: unknown): string {
 export function honeySizeFromItemLine(items: unknown): HoneySizeHint {
   const s = honeyItemLineText(items);
   if (!s) return null;
+  if (/250\s*ml/i.test(s)) return "250ml";
   if (
     /\bLAD\b/i.test(s) &&
     /350\s*ml/i.test(s) &&
@@ -34,9 +35,10 @@ export function honeySizeFromItemLine(items: unknown): HoneySizeHint {
 export function honeyItemNeedsVariantResolution(items: unknown): boolean {
   const raw = honeyItemLineText(items);
   if (!raw) return false;
-  if (!/honey|350\s*ml|B2T1/i.test(raw)) return false;
+  if (!/honey|250\s*ml|350\s*ml|B2T1/i.test(raw)) return false;
 
   if (/\d+\s+Gallon\s+Honey\s+(LIGHT|AMBER|DARK)\b/i.test(raw)) return false;
+  if (/\d+\s*[×x]\s*250\s*ml\s*\(\s*[LAD]\s*\)/i.test(raw)) return false;
   if (/\d+\s*[×x]\s*350\s*ml\s*\(\s*LAD\s*\)/i.test(raw)) return false;
   if (/\d+\s*[×x]\s*350\s*ml\s*\(\s*[LAD]\s*\)/i.test(raw)) return false;
   if (/1LITER[-\s]*(Light|Amber|Dark)/i.test(raw)) return false;
@@ -51,6 +53,7 @@ export function honeyItemNeedsVariantResolution(items: unknown): boolean {
     return true;
   }
   if (/\bLAD\b/i.test(raw)) return false;
+  if (/250\s*ml\s*\(\s*[LAD]\s*\)/i.test(raw)) return false;
   if (/350\s*ml\s*\(\s*[LAD]\s*\)/i.test(raw)) return false;
   if (/\bLiter\s+Honey\s+(LIGHT|AMBER|DARK)\b/i.test(raw)) return false;
 

@@ -94,7 +94,7 @@ export function VipPrepTool({
 
       const payload = parseResult.orders.map((o, i) => {
         const final = remarks[i] ?? o.remarks;
-        const tn = o.phone?.trim() || `VIP-${o.idx}`;
+        const tn = o.tracking?.trim() || o.phone?.trim() || `VIP-${o.idx}`;
         return {
           order_no: null,
           name: o.receiver,

@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-06-18T10:52:26+02:00
+generated: 2026-06-19T07:05:31+02:00
 type: module
 function_count: 14
 ---
@@ -37,13 +37,13 @@ function_count: 14
 - `includes/online_orders_generator.php`:845 — `ims_session_start();`
 - `includes/online_orders_generator.php`:969 — `ims_session_start();`
 - `includes/online_orders_generator.php`:985 — `ims_session_start();`
-- `includes/order_remarks.php`:276 — `ims_session_start();`
-- `includes/order_remarks.php`:315 — `ims_session_start();`
-- `includes/order_remarks.php`:331 — `ims_session_start();`
-- `includes/order_remarks.php`:376 — `ims_session_start();`
-- `includes/order_remarks.php`:400 — `ims_session_start();`
-- `includes/order_remarks.php`:433 — `ims_session_start();`
-- `includes/order_remarks.php`:461 — `ims_session_start();`
+- `includes/order_remarks.php`:290 — `ims_session_start();`
+- `includes/order_remarks.php`:329 — `ims_session_start();`
+- `includes/order_remarks.php`:345 — `ims_session_start();`
+- `includes/order_remarks.php`:390 — `ims_session_start();`
+- `includes/order_remarks.php`:414 — `ims_session_start();`
+- `includes/order_remarks.php`:447 — `ims_session_start();`
+- `includes/order_remarks.php`:475 — `ims_session_start();`
 - `includes/pdf_to_excel.php`:33 — `ims_session_start();`
 - `includes/pdf_to_excel.php`:67 — `ims_session_start();`
 - _… and 18 more (run impact.php for full list)_

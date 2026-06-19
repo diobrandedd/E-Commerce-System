@@ -6,9 +6,12 @@ from __future__ import annotations
 import json
 import re
 import sys
+import warnings
 from typing import Any
 
 import openpyxl
+
+warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
 PLANNING_TABS = {"sheet1", "sheet2", "sheet3", "sheet4"}
 
@@ -60,7 +63,7 @@ def _norm_header(text: str) -> str:
 
 
 def _find_col_by_aliases(header_cells: list[str], aliases: list[str]) -> int | None:
-    """Match header cell by normalized label (ignores (*) suffix)."""
+    """Match header cell by normalized label (exact, then contains)."""
     norms = [_norm_header(c) for c in header_cells]
     for alias in aliases:
         an = _norm_header(alias)
@@ -68,6 +71,13 @@ def _find_col_by_aliases(header_cells: list[str], aliases: list[str]) -> int | N
             continue
         for idx, val in enumerate(norms):
             if val and val == an:
+                return idx
+    for alias in aliases:
+        an = _norm_header(alias)
+        if not an:
+            continue
+        for idx, val in enumerate(norms):
+            if val and (an in val or val in an):
                 return idx
     return None
 
@@ -99,9 +109,17 @@ def resolve_columns(
     rem_col = _find_col_by_aliases(
         header_cells, profile.get("remarks_header_aliases", [])
     )
+    item_col = _find_col_by_aliases(
+        header_cells, profile.get("item_header_aliases", [])
+    )
+    track_col = _find_col_by_aliases(
+        header_cells, profile.get("tracking_header_aliases", [])
+    )
 
     if recv_col is None:
         recv_col = int(defaults.get("receiver", 0))
+    if rem_col is None and item_col is not None:
+        rem_col = item_col
     if rem_col is None:
         rem_col = int(defaults.get("remarks", 12))
     if phone_col is None and defaults.get("phone") is not None:
@@ -116,6 +134,10 @@ def resolve_columns(
         region_col = int(defaults["region"])
 
     cols: dict[str, int] = {"receiver": recv_col, "phone": phone_col, "remarks": rem_col}
+    if item_col is not None:
+        cols["item"] = item_col
+    if track_col is not None:
+        cols["tracking"] = track_col
     if addr_col is not None:
         cols["address"] = addr_col
     if city_col is not None:
@@ -146,7 +168,8 @@ def find_header_row(
 
         recv_col = _find_col_by_aliases(cells, profile.get("receiver_header_aliases", []))
         rem_col = _find_col_by_aliases(cells, profile.get("remarks_header_aliases", []))
-        if recv_col is not None and rem_col is not None:
+        item_col = _find_col_by_aliases(cells, profile.get("item_header_aliases", []))
+        if recv_col is not None and (rem_col is not None or item_col is not None):
             return row, resolve_columns(cells, profile)
 
     return None, None
@@ -182,8 +205,13 @@ def detect_layout(wb: openpyxl.Workbook, profiles: list[dict[str, Any]], overrid
     for sheet_name in sheet_order(wb):
         if normalize(sheet_name) in PLANNING_TABS:
             ws_probe = wb[sheet_name]
-            _, hr_probe, _ = find_header_row(ws_probe, profiles[-1])
-            if hr_probe is None:
+            found_header = False
+            for probe_profile in profiles:
+                hr_probe, _cols_probe = find_header_row(ws_probe, probe_profile)
+                if hr_probe is not None:
+                    found_header = True
+                    break
+            if not found_header:
                 continue
 
         ws = wb[sheet_name]
@@ -231,14 +259,31 @@ def read_orders(
         recv = cell_str(ws.cell(row=row_num, column=cols["receiver"] + 1).value)
         if not recv or recv in skip:
             continue
-        phone = cell_str(ws.cell(row=row_num, column=cols["phone"] + 1).value)
-        remarks = cell_str(ws.cell(row=row_num, column=cols["remarks"] + 1).value)
+        phone_col_idx = cols.get("phone")
+        phone = (
+            cell_str(ws.cell(row=row_num, column=phone_col_idx + 1).value)
+            if phone_col_idx is not None
+            else ""
+        )
+        remarks_raw = cell_str(ws.cell(row=row_num, column=cols["remarks"] + 1).value)
+        item_raw = ""
+        if "item" in cols and cols["item"] != cols["remarks"]:
+            item_raw = cell_str(ws.cell(row=row_num, column=cols["item"] + 1).value)
+        item_text = remarks_raw if remarks_raw else item_raw
+        if remarks_raw and item_raw and len(item_raw) > len(remarks_raw):
+            if not re.search(r"textarea_input|radio_input", remarks_raw, re.I):
+                item_text = item_raw
+        tracking = ""
+        if "tracking" in cols:
+            tracking = cell_str(ws.cell(row=row_num, column=cols["tracking"] + 1).value)
         entry: dict[str, Any] = {
             "idx": len(orders),
             "rowNum": row_num,
             "receiver": recv,
             "phone": phone,
-            "remarks": remarks,
+            "remarks": item_text,
+            "itemText": item_text,
+            "tracking": tracking,
         }
         if "address" in cols:
             entry["address"] = cell_str(

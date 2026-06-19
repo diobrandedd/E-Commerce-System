@@ -12,7 +12,7 @@ require_once __DIR__ . '/dept_products.php';
  * Non-honey dept catalog products are noted in other_items (with product_key when known).
  */
 
-const HONEY_PARCEL_VALID_3L = ['LAD', 'LLL', 'AAA', 'DDD', 'LAA', 'LLD', 'ADD', 'AAD'];
+const HONEY_PARCEL_VALID_3L = ['LAD', 'LLL', 'AAA', 'DDD', 'LLA', 'LAA', 'LLD', 'ADD', 'AAD'];
 const HONEY_PARCEL_VALID_2L = ['LA', 'LD', 'AD', 'LL', 'AA', 'DD'];
 const HONEY_PARCEL_VALID_1L = ['L', 'A', 'D'];
 
@@ -23,6 +23,72 @@ const HONEY_PARCEL_VALID_1L = ['L', 'A', 'D'];
  *   errors: list<string>
  * }
  */
+function honey_parcel_split_jnt_concatenated_bulk_ml(string $part): array
+{
+    if (!preg_match('/^(.*?)(\d+\s*PC\s*(?:250|350)\s*ML.*)$/i', $part, $m)) {
+        return [$part];
+    }
+    $head = trim($m[1]);
+    $tail = trim($m[2]);
+    if ($head === '' || $tail === '') {
+        return [$part];
+    }
+    if (!preg_match('/\bhoney|3\s*L|2\s*L|1\s*L|3L|2L|1L/i', $head)) {
+        return [$part];
+    }
+
+    return [$head, $tail];
+}
+
+function honey_parcel_split_segments(string $raw): array
+{
+    $parts = preg_split('/\s*[;+]\s*/', $raw) ?: [$raw];
+    $expanded = [];
+    foreach ($parts as $part) {
+        $part = trim($part);
+        if ($part === '') {
+            continue;
+        }
+        $jntParts = honey_parcel_split_jnt_concatenated_bulk_ml($part);
+        foreach ($jntParts as $jntPart) {
+            if (preg_match('/,\s*(?:\d+\s*x\s*|\d+\s*(?:JAR|PARAGIS|BLACK|HONEY|250|350|G\s|GALLON|PC|L[\s-]?HONEY))/i', $jntPart)) {
+                $sub = preg_split('/\s*,\s*(?=\d+\s*x\s*|\d+\s*(?:JAR|PARAGIS|BLACK|HONEY|250|350|G\s|GALLON|PC|L[\s-]?HONEY))/i', $jntPart) ?: [$jntPart];
+                foreach ($sub as $s) {
+                    $s = trim($s);
+                    if ($s !== '') {
+                        $expanded[] = $s;
+                    }
+                }
+            } else {
+                $expanded[] = $jntPart;
+            }
+        }
+    }
+
+    return $expanded;
+}
+
+function honey_parcel_promo_bottle_count(string $segment): ?int
+{
+    if (preg_match('/B2T1|BUY\s*2\s*TAKE\s*1/i', $segment)) {
+        return 3;
+    }
+    if (preg_match('/B1T2|BUY\s*1\s*TAKE\s*2/i', $segment)) {
+        return 3;
+    }
+    if (preg_match('/(?:^|\s)(\d+)\s*[x×]\s*250/i', $segment, $m)) {
+        return max(1, (int) $m[1]);
+    }
+    if (preg_match('/(?:^|\s)(\d+)\s*PC\s*350\s*ml/i', $segment, $m)) {
+        return max(1, (int) $m[1]);
+    }
+    if (preg_match('/(?:^|\s)(\d+)\s*PC\s*250\s*ml/i', $segment, $m)) {
+        return max(1, (int) $m[1]);
+    }
+
+    return null;
+}
+
 function honey_parcel_parse_items_string(string $raw): array
 {
     $raw = trim($raw);
@@ -30,7 +96,7 @@ function honey_parcel_parse_items_string(string $raw): array
         return ['deltas' => [], 'other_items' => [], 'errors' => ['Item/s is empty.']];
     }
 
-    $segments = preg_split('/\s*[;+]\s*/', $raw) ?: [$raw];
+    $segments = honey_parcel_split_segments($raw);
     $deltas = [];
     $otherItems = [];
     $errors = [];
@@ -76,22 +142,62 @@ function honey_parcel_parse_segment(string $segment): array
     $errors = [];
     $emptyOther = ['deltas' => [], 'other_items' => [], 'errors' => []];
 
-    if (preg_match('/350\s*ml|B2T1/i', $segment)) {
-        $code = honey_parcel_extract_350_code($segment);
+    if (preg_match('/250\s*ml/i', $segment)) {
+        $code = honey_parcel_extract_bulk_ml_code($segment, '250');
+        if ($code === null) {
+            return ['deltas' => [], 'other_items' => [], 'errors' => ['250ml line needs variant (L/A/D): ' . $segment]];
+        }
+        $code = strtoupper($code);
+        $letters = str_split($code);
+        $perBottle = count($letters) > 1 ? 1.0 : $qty;
+        $deltas = [];
+        foreach ($letters as $letter) {
+            $variant = honey_parcel_letter_to_variant($letter);
+            if ($variant === 'other') {
+                continue;
+            }
+            $deltas[] = ['variant' => $variant, 'size' => '250ml', 'qty' => $perBottle];
+        }
+        if ($deltas === []) {
+            return ['deltas' => [], 'other_items' => [], 'errors' => ['250ml line needs variant (L/A/D): ' . $segment]];
+        }
+
+        return [
+            'deltas' => $deltas,
+            'other_items' => [],
+            'errors' => [],
+        ];
+    }
+
+    if (preg_match('/350\s*ml|B2T1|B1T2/i', $segment)) {
+        $code = honey_parcel_extract_bulk_ml_code($segment, '350');
         if ($code === null) {
             return ['deltas' => [], 'other_items' => [], 'errors' => ['350ml line needs variant (L/A/D): ' . $segment]];
         }
-        $variant = honey_parcel_letter_to_variant($code);
+        $code = strtoupper($code);
+        $letters = str_split($code);
+        $perBottle = count($letters) > 1 ? 1.0 : $qty;
+        $deltas = [];
+        foreach ($letters as $letter) {
+            $variant = honey_parcel_letter_to_variant($letter);
+            if ($variant === 'other') {
+                continue;
+            }
+            $deltas[] = ['variant' => $variant, 'size' => '350ml', 'qty' => $perBottle];
+        }
+        if ($deltas === []) {
+            return ['deltas' => [], 'other_items' => [], 'errors' => ['350ml line needs variant (L/A/D): ' . $segment]];
+        }
 
         return [
-            'deltas' => [['variant' => $variant, 'size' => '350ml', 'qty' => $qty]],
+            'deltas' => $deltas,
             'other_items' => [],
             'errors' => [],
         ];
     }
 
     $other = honey_parcel_detect_other_product($segment);
-    if ($other !== null && !preg_match('/honey/i', $segment)) {
+    if ($other !== null && !preg_match('/honey|\d\s*L|250\s*ml|350\s*ml|gallon|g\s*honey/i', $segment)) {
         $item = [
             'label' => $other['label'],
             'qty' => $qty,
@@ -159,7 +265,11 @@ function honey_parcel_parse_segment(string $segment): array
 
 function honey_parcel_extract_qty(string $segment): float
 {
-    if (preg_match('/^(\d+)\s*x\s*/i', $segment, $m)) {
+    $promo = honey_parcel_promo_bottle_count($segment);
+    if ($promo !== null && preg_match('/250\s*ml|350\s*ml|B2T1|B1T2/i', $segment)) {
+        return (float) $promo;
+    }
+    if (preg_match('/^(\d+)\s*[x×]\s*/i', $segment, $m)) {
         return max(1.0, (float) $m[1]);
     }
     if (preg_match('/^(\d+)\s+/i', $segment, $m)) {
@@ -208,19 +318,38 @@ function honey_parcel_detect_product(string $segment): ?string
     return null;
 }
 
-function honey_parcel_extract_350_code(string $segment): ?string
+function honey_parcel_extract_bulk_ml_code(string $segment, string $ml): ?string
 {
-    if (preg_match('/350\s*ml\s*\(\s*([LAD]+)\s*\)/i', $segment, $m)) {
+    $ml = $ml === '250' ? '250' : '350';
+    if (preg_match('/' . $ml . '\s*ml\s*\(\s*([LAD]+)\s*\)/i', $segment, $m)) {
+        $code = strtoupper($m[1]);
+        if (preg_match('/^[LAD]+$/', $code)) {
+            return $code;
+        }
+    }
+    if (preg_match('/' . $ml . '\s*ml\s*\(\s*(Light|Amber|Dark)\s*\)/i', $segment, $m)) {
+        return strtoupper($m[1][0]);
+    }
+    if (preg_match('/' . $ml . '\s*ml\.?\s*Honey\s*\(\s*([LAD]+)\s*\)/i', $segment, $m)) {
         return strtoupper($m[1]);
     }
-    if (preg_match('/350\s*ml\.?\s*Honey\s*\(\s*([LAD]+)\s*\)/i', $segment, $m)) {
+    if (preg_match('/' . $ml . '\s*ML\s*[:\s/]*([LAD]{3})/i', $segment, $m)) {
         return strtoupper($m[1]);
+    }
+    if (preg_match('/\bLAD\b/i', $segment) && preg_match('/' . $ml . '/i', $segment)) {
+        return 'LAD';
     }
     if (preg_match('/\(\s*([LAD])\s*\)/i', $segment, $m)) {
         return strtoupper($m[1]);
     }
 
     return null;
+}
+
+/** @deprecated Use honey_parcel_extract_bulk_ml_code($segment, '350') */
+function honey_parcel_extract_350_code(string $segment): ?string
+{
+    return honey_parcel_extract_bulk_ml_code($segment, '350');
 }
 
 function honey_parcel_resolve_main_code(string $segment, string $product): ?string
