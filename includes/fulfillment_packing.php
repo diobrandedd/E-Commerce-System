@@ -90,6 +90,97 @@ function fulfillment_packing_staging_remaining(float $issued, float $consumed, f
     return round(max(0, $issued - $consumed - $damaged), 4);
 }
 
+/** @param array<string, mixed> $row */
+function fulfillment_packing_bubble_piece_yield_from_row(array $row): ?float
+{
+    if (!fulfillment_packing_is_bubble_sized_name((string) ($row['name'] ?? ''))) {
+        return null;
+    }
+    $yield = (float) ($row['pool_yield_qty'] ?? 0);
+
+    return $yield > 0 ? $yield : null;
+}
+
+function fulfillment_packing_staging_piece_qty(float $rollQty, float $yield): float
+{
+    return round($rollQty * $yield, 2);
+}
+
+function fulfillment_packing_pieces_to_staging_rolls(float $pieces, float $yield): float
+{
+    if ($yield <= 0) {
+        throw new RuntimeException('Bubble cut yield is not configured.');
+    }
+
+    return material_fulfillment_snap_sixteenths($pieces / $yield);
+}
+
+/**
+ * Staging balance row for API/UI — sized bubble is shown in cut pieces (pc), stored internally as rolls.
+ *
+ * @param array<string, mixed> $row
+ * @return array<string, mixed>
+ */
+function fulfillment_packing_staging_balance_display_row(
+    array $row,
+    float $issued,
+    float $consumed,
+    float $damaged
+): array {
+    $name = (string) ($row['name'] ?? '');
+    $yield = fulfillment_packing_bubble_piece_yield_from_row($row);
+    $remainingRoll = fulfillment_packing_staging_remaining($issued, $consumed, $damaged);
+    $isBubbleSized = fulfillment_packing_is_bubble_sized_name($name);
+
+    $out = [
+        'stock_id' => (int) ($row['stock_id'] ?? 0),
+        'name' => $name,
+        'warehouse_on_hand' => round((float) ($row['warehouse_on_hand'] ?? 0), 4),
+        'is_bubble_sized' => $isBubbleSized,
+        'pool_yield_qty' => $yield,
+    ];
+
+    if ($yield !== null) {
+        $out['unit'] = 'pc';
+        $out['issued_qty'] = fulfillment_packing_staging_piece_qty($issued, $yield);
+        $out['consumed_qty'] = fulfillment_packing_staging_piece_qty($consumed, $yield);
+        $out['damaged_qty'] = fulfillment_packing_staging_piece_qty($damaged, $yield);
+        $out['remaining_qty'] = fulfillment_packing_staging_piece_qty($remainingRoll, $yield);
+        $out['issued_roll_qty'] = $issued;
+        $out['remaining_roll_qty'] = $remainingRoll;
+    } else {
+        $out['unit'] = (string) ($row['unit'] ?? 'pcs');
+        $out['issued_qty'] = $issued;
+        $out['consumed_qty'] = $consumed;
+        $out['damaged_qty'] = $damaged;
+        $out['remaining_qty'] = $remainingRoll;
+    }
+
+    return $out;
+}
+
+/**
+ * @param array<string, mixed> $stockRow
+ * @return array{qty: float, unit: string, roll_qty: float|null}
+ */
+function fulfillment_packing_issue_line_display(array $stockRow, float $rollQty, string $unit): array
+{
+    $yield = fulfillment_packing_bubble_piece_yield_from_row($stockRow);
+    if ($yield !== null && $unit === 'roll') {
+        return [
+            'qty' => fulfillment_packing_staging_piece_qty($rollQty, $yield),
+            'unit' => 'pc',
+            'roll_qty' => $rollQty,
+        ];
+    }
+
+    return [
+        'qty' => $rollQty,
+        'unit' => $unit,
+        'roll_qty' => null,
+    ];
+}
+
 function fulfillment_packing_is_fulfillment_stock_name(string $name): bool
 {
     $n = strtolower(trim($name));
@@ -123,7 +214,7 @@ function fulfillment_packing_tables_ready(PDO $pdo): bool
 
 function material_inventory_role_can_issue_packing(string $role): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'tl', 'csr_tl'], true);
+    return in_array($role, ['executive', 'prod_manager', 'tl', 'team_leader', 'csr_tl'], true);
 }
 
 function material_inventory_role_can_edit_packaging_price(string $role): bool
@@ -500,11 +591,17 @@ function fulfillment_packing_issue_create(
                     'INSERT INTO fulfillment_packing_issue_lines (issue_id, stock_id, qty, unit) VALUES (?, ?, ?, ?)'
                 )->execute([$issueId, $stagingId, $qty, (string) $line['unit']]);
             }
+            $stagingRow = material_inventory_fetch_stock($pdo, $stagingId, true);
+            $lineUnit = (string) $line['unit'];
+            $display = $stagingRow !== null
+                ? fulfillment_packing_issue_line_display($stagingRow, $qty, $lineUnit)
+                : ['qty' => $qty, 'unit' => $lineUnit, 'roll_qty' => null];
             $outLines[] = [
                 'stock_id' => $stagingId,
                 'stock_name' => (string) $line['stock_name'],
-                'qty' => $qty,
-                'unit' => (string) $line['unit'],
+                'qty' => $display['qty'],
+                'unit' => $display['unit'],
+                'roll_qty' => $display['roll_qty'],
                 'bubble_width_cm' => $widthCm,
             ];
         }
@@ -612,11 +709,12 @@ function fulfillment_packing_balances_list(PDO $pdo): array
     }
     $hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');
     $damagedCol = $hasDamaged ? 'COALESCE(b.damaged_qty, 0) AS damaged_qty' : '0 AS damaged_qty';
+    $poolCol = material_inventory_has_pool_columns($pdo) ? ', s.pool_yield_qty, s.pool_yield_unit' : '';
     $st = $pdo->query(
         "SELECT s.id AS stock_id, s.name, s.unit, s.on_hand AS warehouse_on_hand,
                 COALESCE(b.issued_qty, 0) AS issued_qty,
                 COALESCE(b.consumed_qty, 0) AS consumed_qty,
-                {$damagedCol}
+                {$damagedCol}{$poolCol}
          FROM stocks s
          LEFT JOIN fulfillment_packing_balances b ON b.stock_id = s.id
          WHERE s.supplier_id IS NULL AND s.is_active = 1 AND s.category = 'packaging'
@@ -637,17 +735,7 @@ function fulfillment_packing_balances_list(PDO $pdo): array
         $issued = round((float) ($row['issued_qty'] ?? 0), 4);
         $consumed = round((float) ($row['consumed_qty'] ?? 0), 4);
         $damaged = round((float) ($row['damaged_qty'] ?? 0), 4);
-        $rows[] = [
-            'stock_id' => (int) $row['stock_id'],
-            'name' => (string) $row['name'],
-            'unit' => (string) $row['unit'],
-            'warehouse_on_hand' => round((float) ($row['warehouse_on_hand'] ?? 0), 4),
-            'issued_qty' => $issued,
-            'consumed_qty' => $consumed,
-            'damaged_qty' => $damaged,
-            'remaining_qty' => fulfillment_packing_staging_remaining($issued, $consumed, $damaged),
-            'is_bubble_sized' => fulfillment_packing_is_bubble_sized_name((string) $row['name']),
-        ];
+        $rows[] = fulfillment_packing_staging_balance_display_row($row, $issued, $consumed, $damaged);
     }
 
     return $rows;
@@ -656,14 +744,15 @@ function fulfillment_packing_balances_list(PDO $pdo): array
 /**
  * Report damaged / unusable staging qty (reduces remaining; does not return to warehouse).
  *
- * @return array{stock_id: int, qty: float, damaged_qty: float, remaining_qty: float, event_id: int}
+ * @return array{stock_id: int, qty: float, unit: string, damaged_qty: float, remaining_qty: float, event_id: int}
  */
 function fulfillment_packing_report_damage(
     PDO $pdo,
     int $userId,
     int $stockId,
     float $qty,
-    string $note
+    string $note,
+    ?string $qtyUnit = null
 ): array {
     if (!fulfillment_packing_tables_ready($pdo)) {
         throw new RuntimeException('Packing staging is not available. Run migration phase 34.');
@@ -671,7 +760,6 @@ function fulfillment_packing_report_damage(
     if (!rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {
         throw new RuntimeException('Damage reporting requires migration phase 38.');
     }
-    $qty = round($qty, 4);
     if ($qty <= 0) {
         throw new RuntimeException('Damage quantity must be greater than 0.');
     }
@@ -694,6 +782,30 @@ function fulfillment_packing_report_damage(
         throw new RuntimeException('Damage can only be reported on sized packing staging SKUs.');
     }
 
+    $yield = fulfillment_packing_bubble_piece_yield_from_row($row);
+    $inputUnit = $qtyUnit !== null ? strtolower(trim($qtyUnit)) : null;
+    if ($yield !== null) {
+        $inputUnit = $inputUnit ?? 'pc';
+        if ($inputUnit === 'pc') {
+            $rollQty = fulfillment_packing_pieces_to_staging_rolls($qty, $yield);
+            $reportedQty = round($qty, 2);
+            $displayUnit = 'pc';
+        } elseif ($inputUnit === 'roll') {
+            $rollQty = material_fulfillment_snap_sixteenths($qty);
+            $reportedQty = $rollQty;
+            $displayUnit = 'roll';
+        } else {
+            throw new RuntimeException('qty_unit must be pc or roll for sized bubble wrap.');
+        }
+    } else {
+        $rollQty = round($qty, 4);
+        $reportedQty = $rollQty;
+        $displayUnit = trim((string) ($row['unit'] ?? 'pcs'));
+        if ($displayUnit === '') {
+            $displayUnit = 'pcs';
+        }
+    }
+
     $pdo->beginTransaction();
     try {
         $st = $pdo->prepare(
@@ -709,20 +821,24 @@ function fulfillment_packing_report_damage(
         $consumed = round((float) ($bal['consumed_qty'] ?? 0), 4);
         $damaged = round((float) ($bal['damaged_qty'] ?? 0), 4);
         $remaining = fulfillment_packing_staging_remaining($issued, $consumed, $damaged);
-        if ($qty > $remaining + 0.0001) {
+        if ($rollQty > $remaining + 0.0001) {
+            $remainingDisplay = $yield !== null && ($inputUnit ?? 'pc') === 'pc'
+                ? fulfillment_packing_staging_piece_qty($remaining, $yield) . ' pc'
+                : $remaining . ' remaining';
             throw new RuntimeException(
-                'Cannot report ' . $qty . ' damaged — only ' . $remaining . ' remaining on staging.'
+                'Cannot report ' . $reportedQty . ' ' . $displayUnit
+                . ' damaged — only ' . $remainingDisplay . ' on staging.'
             );
         }
 
         $pdo->prepare(
             'UPDATE fulfillment_packing_balances SET damaged_qty = damaged_qty + ? WHERE stock_id = ?'
-        )->execute([$qty, $stockId]);
+        )->execute([$rollQty, $stockId]);
 
         $pdo->prepare(
             'INSERT INTO fulfillment_packing_damage_events (stock_id, qty, note, reported_by)
              VALUES (?, ?, ?, ?)'
-        )->execute([$stockId, $qty, $note, $userId > 0 ? $userId : null]);
+        )->execute([$stockId, $rollQty, $note, $userId > 0 ? $userId : null]);
         $eventId = (int) $pdo->lastInsertId();
 
         $pdo->commit();
@@ -733,13 +849,26 @@ function fulfillment_packing_report_damage(
         throw $e;
     }
 
-    $newDamaged = round($damaged + $qty, 4);
+    $newDamaged = round($damaged + $rollQty, 4);
+    $remainingRoll = fulfillment_packing_staging_remaining($issued, $consumed, $newDamaged);
+
+    if ($yield !== null && ($inputUnit ?? 'pc') === 'pc') {
+        return [
+            'stock_id' => $stockId,
+            'qty' => $reportedQty,
+            'unit' => 'pc',
+            'damaged_qty' => fulfillment_packing_staging_piece_qty($newDamaged, $yield),
+            'remaining_qty' => fulfillment_packing_staging_piece_qty($remainingRoll, $yield),
+            'event_id' => $eventId,
+        ];
+    }
 
     return [
         'stock_id' => $stockId,
-        'qty' => $qty,
+        'qty' => $reportedQty,
+        'unit' => $displayUnit,
         'damaged_qty' => $newDamaged,
-        'remaining_qty' => fulfillment_packing_staging_remaining($issued, $consumed, $newDamaged),
+        'remaining_qty' => $remainingRoll,
         'event_id' => $eventId,
     ];
 }
@@ -760,8 +889,8 @@ function fulfillment_packing_damage_list(PDO $pdo, int $page, int $perPage): arr
     $offset = ($page - 1) * $perPage;
     $total = (int) $pdo->query('SELECT COUNT(*) FROM fulfillment_packing_damage_events')->fetchColumn();
     $st = $pdo->prepare(
-        'SELECT e.id, e.stock_id, e.qty, e.note, e.created_at, s.name AS stock_name,
-                u.name AS reported_by_name
+        'SELECT e.id, e.stock_id, e.qty, e.note, e.created_at, s.name AS stock_name, s.unit AS stock_unit,
+                s.pool_yield_qty, u.name AS reported_by_name
          FROM fulfillment_packing_damage_events e
          INNER JOIN stocks s ON s.id = e.stock_id
          LEFT JOIN users u ON u.id = e.reported_by
@@ -771,11 +900,29 @@ function fulfillment_packing_damage_list(PDO $pdo, int $page, int $perPage): arr
     $st->execute();
     $rows = [];
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+        $rollQty = round((float) $row['qty'], 4);
+        $yield = fulfillment_packing_bubble_piece_yield_from_row([
+            'name' => (string) $row['stock_name'],
+            'pool_yield_qty' => $row['pool_yield_qty'],
+        ]);
+        $display = $yield !== null
+            ? [
+                'qty' => fulfillment_packing_staging_piece_qty($rollQty, $yield),
+                'unit' => 'pc',
+                'roll_qty' => $rollQty,
+            ]
+            : [
+                'qty' => $rollQty,
+                'unit' => (string) ($row['stock_unit'] ?? 'pcs'),
+                'roll_qty' => null,
+            ];
         $rows[] = [
             'id' => (int) $row['id'],
             'stock_id' => (int) $row['stock_id'],
             'stock_name' => (string) $row['stock_name'],
-            'qty' => round((float) $row['qty'], 4),
+            'qty' => $display['qty'],
+            'unit' => $display['unit'],
+            'roll_qty' => $display['roll_qty'],
             'note' => (string) $row['note'],
             'created_at' => (string) $row['created_at'],
             'reported_by_name' => $row['reported_by_name'],
@@ -808,12 +955,13 @@ function fulfillment_packing_issues_list(PDO $pdo, int $page, int $perPage): arr
     $issues = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
     $hasBubbleCols = rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'bubble_width_cm');
     $lineSql = $hasBubbleCols
-        ? 'SELECT l.stock_id, l.qty, l.unit, l.bubble_width_cm, s.name AS stock_name
+        ? 'SELECT l.stock_id, l.qty, l.unit, l.bubble_width_cm, s.name AS stock_name,
+                  s.pool_yield_qty, s.unit AS stock_unit
            FROM fulfillment_packing_issue_lines l
            INNER JOIN stocks s ON s.id = l.stock_id
            WHERE l.issue_id = ?
            ORDER BY l.id ASC'
-        : 'SELECT l.stock_id, l.qty, l.unit, s.name AS stock_name
+        : 'SELECT l.stock_id, l.qty, l.unit, s.name AS stock_name, s.pool_yield_qty, s.unit AS stock_unit
            FROM fulfillment_packing_issue_lines l
            INNER JOIN stocks s ON s.id = l.stock_id
            WHERE l.issue_id = ?
@@ -833,11 +981,18 @@ function fulfillment_packing_issues_list(PDO $pdo, int $page, int $perPage): arr
             'created_at' => (string) $issue['created_at'],
             'issued_by_name' => $issue['issued_by_name'],
             'lines' => array_map(static function (array $l) use ($hasBubbleCols): array {
+                $rollQty = round((float) $l['qty'], 4);
+                $unit = (string) $l['unit'];
+                $display = fulfillment_packing_issue_line_display([
+                    'name' => (string) $l['stock_name'],
+                    'pool_yield_qty' => $l['pool_yield_qty'] ?? null,
+                ], $rollQty, $unit);
                 $out = [
                     'stock_id' => (int) $l['stock_id'],
                     'stock_name' => (string) $l['stock_name'],
-                    'qty' => round((float) $l['qty'], 4),
-                    'unit' => (string) $l['unit'],
+                    'qty' => $display['qty'],
+                    'unit' => $display['unit'],
+                    'roll_qty' => $display['roll_qty'],
                 ];
                 if ($hasBubbleCols && isset($l['bubble_width_cm']) && $l['bubble_width_cm'] !== null) {
                     $out['bubble_width_cm'] = (int) $l['bubble_width_cm'];

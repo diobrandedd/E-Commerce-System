@@ -103,14 +103,9 @@ function api_fulfillment_packing_issue_create(): void
     }
 
     $pdo = ims_pdo();
-    $pdo->beginTransaction();
     try {
         $result = fulfillment_packing_issue_create($pdo, (int) $user['id'], $normalized, $note);
-        $pdo->commit();
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
         api_fail($e->getMessage(), 400);
     }
     api_ok($result);
@@ -130,9 +125,11 @@ function api_fulfillment_packing_damage_report(): void
         api_fail('stock_id required.', 422);
     }
 
+    $qtyUnit = isset($input['qty_unit']) ? trim((string) $input['qty_unit']) : null;
+
     $pdo = ims_pdo();
     try {
-        $result = fulfillment_packing_report_damage($pdo, (int) $user['id'], $stockId, $qty, $note);
+        $result = fulfillment_packing_report_damage($pdo, (int) $user['id'], $stockId, $qty, $note, $qtyUnit);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

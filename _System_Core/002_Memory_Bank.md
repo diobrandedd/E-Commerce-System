@@ -4,6 +4,27 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-19 — Online Orders practice tour (E2E click-through)
+**Shipped:** Single end-to-end practice tour on Online Orders — no batch required, fixture UI per tool, click highlighted control to advance. Quick overview spotlight tour retained. Shared `PracticeTap` + `tourClickToContinue` onAdvance.
+
+### 2026-06-19 — [[problems/records/2026-06-19_pos-dept-checkout-discount|Dept POS checkout + discount + compact cart]]
+**Fixed:** Checkout modal never opened (`POSModal` missing `open`). Dept products now support 10%/20% executive discount approval like Honey; cart UI compact and centered.
+
+### 2026-06-19 — POS dept categories "product not found in catalog"
+**Fixed:** `POSDeptPage` used `useParams().deptKey` but routes were static (`/pos/paragis`) with no param — product key was always empty. Routes now use `:deptKey`; mapping via `posDeptProductKeyFromRoute()`.
+
+### 2026-06-19 — Packing activity log (For packing)
+**Shipped:** Staging, take-outs, and damage on one For packing page (3 tab buttons). Legacy `/log` redirects with `?view=`. Default staging table shows all SKUs.
+
+### 2026-06-19 — [[problems/records/2026-06-19_bubble-staging-piece-display|Bubble staging: piece display + damage in pc]]
+**Shipped:** Sized bubble (`13/17/22 cm`) For packing table shows **pc** (via `pool_yield_qty`); damage report accepts pieces; issue modal shows roll→pc hint. Internal ledger stays fractional rolls.
+
+### 2026-06-19 — [[problems/records/2026-06-19_role-aware-dashboard|Role-aware dashboard + executive-only financials]]
+**Shipped:** Dashboard branches by role; executive view is compact (`max-w-4xl`): fulfillment KPIs, conditional edit-request banner, display-stock headline, financial alerts (no donut charts / stat row on exec home). PM/HR keep full packaging section.
+
+### 2026-06-19 — Waybill stamp: SPX center border (COD zone)
+**Shipped:** Restored stamp border; SPX/Shopee stamps centered on buyer/seller band. **Fix:** [[fixes/waybill-stamp-spx-center-border]] · `waybill-stamper/processor.py`
+
 ### 2026-06-19 — [[problems/records/2026-06-19_waybill-stamp-text-only|Waybill stamp text-only (no border)]]
 **Shipped:** Removed white/red box + border from PDF item stamp — black/red text only (`waybill-stamper/processor.py`). **Fix:** [[fixes/waybill-stamp-text-only-no-border]] · Python only, re-stamp to apply.
 

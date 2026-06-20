@@ -3,15 +3,15 @@ import { MousePointerClick } from "lucide-react";
 import { AppModalFooter } from "@/app/components/AppModal";
 import { AppPressable } from "@/app/components/layout/appFeedbackMotion";
 
-export function GuideWalkthroughSection({ multiTool }: { multiTool?: boolean }) {
+export function GuideWalkthroughSection({ practiceMode }: { practiceMode?: boolean; multiTool?: boolean }) {
   return (
     <section className="space-y-2">
       <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Interactive walkthrough</h3>
       <div className="text-xs text-muted-foreground space-y-2 leading-relaxed">
-        {multiTool ? (
+        {practiceMode ? (
           <p>
-            Pick a tour below: <strong className="text-foreground">Overview</strong> maps all four tools on the picker;
-            each tool tour opens that screen and walks through upload → action buttons step by step.
+            Tap <strong className="text-foreground">Start practice tour</strong> for a hands-on walkthrough — click each
+            highlighted control to advance. Nothing is saved (no batch, uploads, or stamping).
           </p>
         ) : (
           <p>
@@ -64,22 +64,42 @@ export function GuideTourFooter({
   onStartTour,
   onClose,
   extraLeft,
+  onStartPracticeTour,
+  practiceLabel = "Start practice tour",
 }: {
   onStartTour: () => void;
   onClose: () => void;
   extraLeft?: ReactNode;
+  onStartPracticeTour?: () => void;
+  practiceLabel?: string;
 }) {
   return (
     <AppModalFooter className="justify-between gap-2 flex-wrap">
       <div className="flex flex-wrap items-center gap-2">
-        <AppPressable
-          variant="primary"
-          onClick={onStartTour}
-          className="inline-flex items-center gap-1.5 px-3 py-2 text-xs"
-        >
-          <MousePointerClick size={14} />
-          Start tour
-        </AppPressable>
+        {onStartPracticeTour ? (
+          <AppPressable
+            variant="primary"
+            onClick={onStartPracticeTour}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs"
+          >
+            <MousePointerClick size={14} />
+            {practiceLabel}
+          </AppPressable>
+        ) : (
+          <AppPressable
+            variant="primary"
+            onClick={onStartTour}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs"
+          >
+            <MousePointerClick size={14} />
+            Start tour
+          </AppPressable>
+        )}
+        {onStartPracticeTour && (
+          <AppPressable variant="outline" onClick={onStartTour} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs">
+            Quick overview
+          </AppPressable>
+        )}
         {extraLeft}
       </div>
       <AppPressable variant="outline" onClick={onClose} className="px-3 py-2 text-xs">

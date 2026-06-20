@@ -1,9 +1,9 @@
 ---
 title: pos_discount_requests
 source: includes/pos_discount_requests.php
-generated: 2026-06-19T07:05:46+02:00
+generated: 2026-06-20T10:05:29+02:00
 type: module
-function_count: 7
+function_count: 10
 ---
 
 
@@ -16,12 +16,32 @@ function_count: 7
 ## Includes
 
 - `includes/honey_pos.php`
+- `includes/dept_pos.php`
+
+## pos_discount_cart_is_dept {#pos_discount_cart_is_dept}
+
+**Callers (2):**
+
+- `includes/pos_discount_requests.php`:137 — `return pos_discount_cart_is_dept($items)`
+- `includes/pos_discount_requests.php`:234 — `if (pos_discount_cart_is_dept($items)) {`
+
+## pos_discount_quote_dept {#pos_discount_quote_dept}
+
+**Callers (1):**
+
+- `includes/pos_discount_requests.php`:138 — `? pos_discount_quote_dept($pdo, $items, $discountPercent)`
+
+## pos_discount_quote_honey {#pos_discount_quote_honey}
+
+**Callers (1):**
+
+- `includes/pos_discount_requests.php`:139 — `: pos_discount_quote_honey($pdo, $items, $discountPercent);`
 
 ## pos_discount_quote {#pos_discount_quote}
 
 **Callers (1):**
 
-- `includes/pos_discount_requests.php`:97 — `$quote = pos_discount_quote($pdo, $items, $discountPercent);`
+- `includes/pos_discount_requests.php`:162 — `$quote = pos_discount_quote($pdo, $items, $discountPercent);`
 
 ## pos_discount_request_create {#pos_discount_request_create}
 
@@ -61,7 +81,7 @@ function_count: 7
 
 **Callers (1):**
 
-- `includes/pos_discount_requests.php`:230 — `$payload['receipt'] = pos_discount_receipt_payload($pdo, (int) $row['pos_sale_id']);`
+- `includes/pos_discount_requests.php`:308 — `$payload['receipt'] = pos_discount_receipt_payload($pdo, (int) $row['pos_sale_id']);`
 
 ## pos_discount_request_list {#pos_discount_request_list}
 

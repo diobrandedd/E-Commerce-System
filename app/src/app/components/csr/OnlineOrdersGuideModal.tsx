@@ -1,11 +1,6 @@
 import { BookOpen } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
-import {
-  GuideMultiTourFooter,
-  GuideWalkthroughSection,
-  type GuideTourOption,
-} from "@/app/components/tour/GuideTourFooter";
-import type { OnlineOrdersTourId } from "@/app/components/tour/guides/onlineOrdersTour";
+import { GuideTourFooter, GuideWalkthroughSection } from "@/app/components/tour/GuideTourFooter";
 import type { Role } from "@/app/context/AuthContext";
 
 function GuideSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -22,14 +17,6 @@ const ROLE_LABELS: Partial<Record<Role, string>> = {
   csr_tl: "CSR Team Leader",
   csr_staff: "CSR Staff",
 };
-
-const TOUR_OPTIONS: GuideTourOption[] = [
-  { id: "overview", label: "Overview tour" },
-  { id: "vip", label: "VIP tour" },
-  { id: "spx", label: "SPX tour" },
-  { id: "excel", label: "Validate tour" },
-  { id: "stamper", label: "Stamper tour" },
-];
 
 function CsrWorkflow() {
   return (
@@ -58,11 +45,13 @@ export function OnlineOrdersGuideModal({
   onClose,
   role,
   onStartTour,
+  onStartPracticeTour,
 }: {
   open: boolean;
   onClose: () => void;
   role: Role | undefined;
-  onStartTour: (tourId: OnlineOrdersTourId) => void;
+  onStartTour: () => void;
+  onStartPracticeTour: () => void;
 }) {
   const roleLabel = role ? ROLE_LABELS[role] : undefined;
   const isExec = role === "executive";
@@ -151,11 +140,11 @@ export function OnlineOrdersGuideModal({
           </ol>
         </GuideSection>
 
-        <GuideWalkthroughSection multiTool />
+        <GuideWalkthroughSection practiceMode />
       </AppModalBody>
-      <GuideMultiTourFooter
-        tours={TOUR_OPTIONS}
-        onStartTour={id => onStartTour(id as OnlineOrdersTourId)}
+      <GuideTourFooter
+        onStartTour={onStartTour}
+        onStartPracticeTour={onStartPracticeTour}
         onClose={onClose}
       />
     </AppModal>

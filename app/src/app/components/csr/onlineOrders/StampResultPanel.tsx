@@ -1,5 +1,6 @@
 import { AlertCircle, CheckCircle2, Download } from "lucide-react";
 import { AnimatedStat, FulfillmentPanelEnter, FulfillmentPressable } from "@/app/components/csr/onlineFulfillmentMotion";
+import { OnlineOrdersBackToToolsButton } from "@/app/components/csr/onlineOrders/OnlineOrdersNavButtons";
 import { triggerWaybillDownload } from "@/app/lib/waybillApi";
 import type { PartnerStampResult } from "@/app/lib/onlineOrdersTypes";
 
@@ -58,9 +59,7 @@ export function StampResultPanel({
           Download the stamped PDF for printing before you continue. Nothing else happens until you pick an option below.
         </p>
         <div className="flex flex-wrap gap-3">
-          <FulfillmentPressable variant="outline" disabled={busy} onClick={onProcessAnother}>
-            Back to tools
-          </FulfillmentPressable>
+          <OnlineOrdersBackToToolsButton disabled={busy} onClick={onProcessAnother} />
           <FulfillmentPressable variant="primary" disabled={busy} onClick={onFinishBatch}>
             Done — master Excel for packers
           </FulfillmentPressable>

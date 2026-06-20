@@ -12,6 +12,12 @@ import { shopeeFinalItemsForRow, shopeeRowIsReadyForExport } from "@/app/lib/hon
 import type { PdfToExcelRow } from "@/app/lib/pdfToExcelApi";
 import { triggerWaybillStashDownload } from "@/app/lib/waybillApi";
 import { apiPostForm, getCsrfToken, ApiError } from "@/app/lib/api";
+import { PracticeTap } from "@/app/components/tour/PracticeTap";
+import {
+  practiceStageAtLeast,
+  type OnlineOrdersPracticeStage,
+} from "@/app/components/csr/onlineOrders/onlineOrdersPractice";
+import { OnlineOrdersBackToToolsButton } from "@/app/components/csr/onlineOrders/OnlineOrdersNavButtons";
 
 async function stashWaybillFile(file: File, kind: "pdf" | "excel"): Promise<string> {
   const form = new FormData();
@@ -30,9 +36,13 @@ type Phase = "extract" | "resolve" | "review" | "ready";
 export function SpxPrepTool({
   onDone,
   onBack,
+  practiceMode = false,
+  practiceStage = "spx-mode",
 }: {
   onDone: () => void;
   onBack: () => void;
+  practiceMode?: boolean;
+  practiceStage?: OnlineOrdersPracticeStage;
 }) {
   const [phase, setPhase] = useState<Phase>("extract");
   const [importMode, setImportMode] = useState<ImportMode>("pdf_only");
@@ -140,12 +150,58 @@ export function SpxPrepTool({
     setPhase("resolve");
   };
 
+  if (practiceMode) {
+    return (
+      <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
+        <OnlineOrdersBackToToolsButton onClick={onBack} />
+        <p className="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Practice mode — no files uploaded
+        </p>
+        {practiceStageAtLeast(practiceStage, "spx-mode") && (
+          <div className="flex flex-wrap gap-2" data-tour="online-orders-spx-mode">
+            <button type="button" className="text-xs font-medium px-3 py-1.5 rounded-lg border border-primary bg-primary/10 text-primary">
+              PDF only
+            </button>
+            <button type="button" className="text-xs font-medium px-3 py-1.5 rounded-lg border border-border text-muted-foreground">
+              Packing list Excel + PDF
+            </button>
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "spx-upload") && (
+          <div data-tour="online-orders-spx-upload">
+            <PracticeTap label="Practice: upload Shopee waybill PDFs" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "spx-extract") && (
+          <div data-tour="online-orders-spx-extract">
+            <PracticeTap label="Practice: extract from PDF" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "spx-resolve") && (
+          <div data-tour="online-orders-spx-resolve" className="rounded-xl border bg-card p-4 space-y-2">
+            <p className="text-sm font-medium">Confirm variant — page 1 of 3</p>
+            <PracticeTap label="Practice: confirm line variant" className="py-3" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "spx-review") && (
+          <div data-tour="online-orders-spx-review" className="rounded-xl border bg-card p-4 space-y-2">
+            <p className="text-sm font-medium">Review all items (3 lines)</p>
+            <p className="text-xs text-muted-foreground">Verify names, items, and tracking before build.</p>
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "spx-build") && (
+          <div data-tour="online-orders-spx-build">
+            <PracticeTap label="Practice: build iPYX Excel" />
+          </div>
+        )}
+      </FulfillmentSectionEnter>
+    );
+  }
+
   return (
     <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
       <OrderRemarksToast message={toast} />
-      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground" data-tour="online-orders-tool-back">
-        ← Back to tools
-      </button>
+      <OnlineOrdersBackToToolsButton onClick={onBack} />
 
       {phase === "extract" && (
         <>
@@ -317,9 +373,7 @@ export function SpxPrepTool({
             >
               <Download size={16} /> Download prepared Excel
             </FulfillmentPressable>
-            <FulfillmentPressable variant="primary" className="inline-flex items-center gap-2 px-4 py-2.5" onClick={onDone}>
-              Back to tools
-            </FulfillmentPressable>
+            <OnlineOrdersBackToToolsButton onClick={onDone} />
             <button
               type="button"
               disabled={busy}

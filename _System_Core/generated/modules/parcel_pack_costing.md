@@ -1,7 +1,7 @@
 ---
 title: parcel_pack_costing
 source: includes/parcel_pack_costing.php
-generated: 2026-06-19T07:05:44+02:00
+generated: 2026-06-20T10:05:28+02:00
 type: module
 function_count: 37
 ---
@@ -33,7 +33,7 @@ function_count: 37
 - `api/v1/costing.php`:564 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `api/v1/costing.php`:586 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/fulfillment_pack_tier_seed.php`:428 — `if (!parcel_pack_tables_ready($pdo)) {`
-- `includes/fulfillment_packing.php`:220 — `if ($lines === [] || !parcel_pack_tables_ready($pdo)) {`
+- `includes/fulfillment_packing.php`:311 — `if ($lines === [] || !parcel_pack_tables_ready($pdo)) {`
 - `includes/material_inventory.php`:1108 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/parcel_pack_costing.php`:309 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/parcel_pack_costing.php`:376 — `if (!parcel_pack_tables_ready($pdo)) {`
@@ -158,7 +158,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/fulfillment_packing.php`:250 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, true);`
+- `includes/fulfillment_packing.php`:341 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, true);`
 - `includes/parcel_pack_costing.php`:531 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, $activeOnly);`
 - `includes/parcel_pack_costing.php`:558 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, false);`
 - `includes/parcel_pack_costing.php`:653 — `$tierRow = parcel_pack_fetch_tier_by_key($pdo, $tierKey, false);`
@@ -169,7 +169,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/fulfillment_packing.php`:254 — `$tierLines = parcel_pack_fetch_tier_lines($pdo, (int) $tier['id']);`
+- `includes/fulfillment_packing.php`:345 — `$tierLines = parcel_pack_fetch_tier_lines($pdo, (int) $tier['id']);`
 - `includes/parcel_pack_costing.php`:513 — `$lines = parcel_pack_fetch_tier_lines($pdo, $tierId);`
 - `includes/parcel_pack_costing.php`:772 — `$lines = parcel_pack_fetch_tier_lines($pdo, $tierId);`
 

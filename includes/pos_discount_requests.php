@@ -3,6 +3,50 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/honey_pos.php';
+require_once __DIR__ . '/dept_pos.php';
+
+/** @param list<array<string,mixed>> $items */
+function pos_discount_cart_is_dept(array $items): bool
+{
+    if ($items === []) {
+        return false;
+    }
+    $first = $items[0];
+    $productKey = trim((string) ($first['product_key'] ?? ''));
+
+    return $productKey !== '' && dept_product_key_valid($productKey);
+}
+
+/**
+ * @param list<array{product_key: string, product_id?: int, qty: float|int|string}> $items
+ * @return array{
+ *   items:list<array<string,mixed>>,
+ *   subtotal:float,
+ *   discount_percent:int,
+ *   discount_amount:float,
+ *   total:float
+ * }
+ */
+function pos_discount_quote_dept(PDO $pdo, array $items, int $discountPercent): array
+{
+    if (!in_array($discountPercent, [10, 20], true)) {
+        throw new RuntimeException('Discount must be 10% or 20%.');
+    }
+
+    $discountFactor = 1 - ($discountPercent / 100);
+    $clean = dept_pos_build_cart_lines($pdo, $items, $discountFactor);
+    $subtotal = round(array_sum(array_column($clean, 'line_subtotal')), 2);
+    $total = round(array_sum(array_column($clean, 'line_total')), 2);
+    $discountAmount = round($subtotal - $total, 2);
+
+    return [
+        'items' => $clean,
+        'subtotal' => $subtotal,
+        'discount_percent' => $discountPercent,
+        'discount_amount' => $discountAmount,
+        'total' => $total,
+    ];
+}
 
 /**
  * @param list<array{product_id:int, qty:float|int|string, variant?:string, size?:string}> $items
@@ -14,7 +58,7 @@ require_once __DIR__ . '/honey_pos.php';
  *   total:float
  * }
  */
-function pos_discount_quote(PDO $pdo, array $items, int $discountPercent): array
+function pos_discount_quote_honey(PDO $pdo, array $items, int $discountPercent): array
 {
     if (!in_array($discountPercent, [10, 20], true)) {
         throw new RuntimeException('Discount must be 10% or 20%.');
@@ -75,7 +119,28 @@ function pos_discount_quote(PDO $pdo, array $items, int $discountPercent): array
 }
 
 /**
- * @param list<array{product_id:int, qty:float|int|string, variant?:string, size?:string}> $items
+ * @param list<array<string,mixed>> $items
+ * @return array{
+ *   items:list<array<string,mixed>>,
+ *   subtotal:float,
+ *   discount_percent:int,
+ *   discount_amount:float,
+ *   total:float
+ * }
+ */
+function pos_discount_quote(PDO $pdo, array $items, int $discountPercent): array
+{
+    if ($items === []) {
+        throw new RuntimeException('Cart is empty.');
+    }
+
+    return pos_discount_cart_is_dept($items)
+        ? pos_discount_quote_dept($pdo, $items, $discountPercent)
+        : pos_discount_quote_honey($pdo, $items, $discountPercent);
+}
+
+/**
+ * @param list<array<string,mixed>> $items
  * @return array<string,mixed>
  */
 function pos_discount_request_create(
@@ -161,17 +226,30 @@ function pos_discount_request_approve(PDO $pdo, int $requestId, int $reviewerId)
         );
         $upd->execute([$reviewerId, $requestId]);
 
-        $result = honey_pos_checkout(
-            $pdo,
-            (int) $row['sold_by_pin_id'],
-            $items,
-            (string) $row['buyer_name'],
-            (string) ($row['buyer_credentials'] ?? ''),
-            [
-                'discount_percent' => (int) $row['discount_percent'],
-                'discount_request_id' => $requestId,
-            ]
-        );
+        $checkoutOpts = [
+            'discount_percent' => (int) $row['discount_percent'],
+            'discount_request_id' => $requestId,
+        ];
+
+        if (pos_discount_cart_is_dept($items)) {
+            $result = dept_pos_checkout(
+                $pdo,
+                (int) $row['sold_by_pin_id'],
+                $items,
+                (string) $row['buyer_name'],
+                (string) ($row['buyer_credentials'] ?? ''),
+                $checkoutOpts
+            );
+        } else {
+            $result = honey_pos_checkout(
+                $pdo,
+                (int) $row['sold_by_pin_id'],
+                $items,
+                (string) $row['buyer_name'],
+                (string) ($row['buyer_credentials'] ?? ''),
+                $checkoutOpts
+            );
+        }
 
         $pdo->commit();
     } catch (Throwable $e) {

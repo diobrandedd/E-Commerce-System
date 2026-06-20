@@ -24,7 +24,7 @@ interface NavLinkChild {
 
 interface NavGroupChild {
   label: string;
-  children: NavLinkChild[];
+  children: NavChild[];
 }
 
 type NavChild = NavLinkChild | NavGroupChild;
@@ -195,6 +195,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
       ];
     case "staff":
       return [
+        { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         { icon: PlusCircle, label: "Stock Input", to: "/stock-input" },
         { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
         { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
@@ -202,6 +203,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
       ];
     case "csr_staff":
       return [
+        { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         onlineOrdersItem,
         onlineParcelsItem,
         rtsNavFull,
@@ -522,7 +524,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </div>
             <div className="min-w-0">
               <p className="text-white text-sm font-medium truncate">{user.name}</p>
-              <p className="text-white/40 text-xs truncate">{user.email}</p>
             </div>
           </div>
           <button

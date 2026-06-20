@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-06-19T07:05:31+02:00
+generated: 2026-06-20T10:05:14+02:00
 type: module
 function_count: 14
 ---

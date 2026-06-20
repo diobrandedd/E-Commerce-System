@@ -24,13 +24,23 @@ import {
   type ParseOrderRemarksResult,
 } from "@/app/lib/orderRemarksApi";
 import { ApiError } from "@/app/lib/api";
+import { PracticeTap } from "@/app/components/tour/PracticeTap";
+import {
+  practiceStageAtLeast,
+  type OnlineOrdersPracticeStage,
+} from "@/app/components/csr/onlineOrders/onlineOrdersPractice";
+import { OnlineOrdersBackToToolsButton } from "@/app/components/csr/onlineOrders/OnlineOrdersNavButtons";
 
 export function VipPrepTool({
   onDone,
   onBack,
+  practiceMode = false,
+  practiceStage = "vip-upload",
 }: {
   onDone: () => void;
   onBack: () => void;
+  practiceMode?: boolean;
+  practiceStage?: OnlineOrdersPracticeStage;
 }) {
   const [courierExcelFile, setCourierExcelFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -114,12 +124,44 @@ export function VipPrepTool({
     }
   };
 
+  if (practiceMode) {
+    return (
+      <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
+        <OnlineOrdersBackToToolsButton onClick={onBack} />
+        <p className="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Practice mode — no files uploaded
+        </p>
+        {practiceStageAtLeast(practiceStage, "vip-upload") && (
+          <div data-tour="online-orders-vip-upload">
+            <PracticeTap label="Practice: upload VIP courier Excel" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "vip-resolve") && (
+          <div data-tour="online-orders-vip-resolve" className="rounded-xl border bg-card p-4 space-y-2">
+            <p className="text-sm font-medium">Ambiguous order — pick variant</p>
+            <p className="text-xs text-muted-foreground">Sample: &quot;1 pc honey light 250ml&quot; → select Light · 250ml</p>
+            <PracticeTap label="Practice: confirm variant pick" className="py-3" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "vip-build") && (
+          <div data-tour="online-orders-vip-build">
+            <PracticeTap label="Practice: build arranged Excel" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "vip-done") && (
+          <div className="rounded-xl border border-green-200 bg-green-50/80 p-5 space-y-3" data-tour="online-orders-vip-done">
+            <p className="text-sm text-green-800 font-medium">Arranged Excel ready (12 rows — sample)</p>
+            <PracticeTap label="Practice: back to tools" />
+          </div>
+        )}
+      </FulfillmentSectionEnter>
+    );
+  }
+
   return (
     <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
       <OrderRemarksToast message={toast} />
-      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground" data-tour="online-orders-tool-back">
-        ← Back to tools
-      </button>
+      <OnlineOrdersBackToToolsButton onClick={onBack} />
       <p className="text-sm text-muted-foreground">
         Upload VIP courier Excel (J&T / SPX), resolve variants, then download the arranged iPYX sheet. When ready to
         stamp, go back to tools and open PDF + Excel stamper.
@@ -207,9 +249,7 @@ export function VipPrepTool({
             >
               <Download size={16} /> Download iPYX Excel
             </FulfillmentPressable>
-            <FulfillmentPressable variant="primary" className="px-4 py-2.5" onClick={onDone}>
-              Back to tools
-            </FulfillmentPressable>
+            <OnlineOrdersBackToToolsButton onClick={onDone} />
           </div>
         </div>
       )}

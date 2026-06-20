@@ -135,13 +135,15 @@ export function POSHoneyPage() {
     });
     setCartPulse(true);
     setTimeout(() => setCartPulse(false), 500);
+    closeModal();
     setFeedback("success");
   };
 
-  const onAddFeedbackDone = () => {
-    setFeedback(null);
-    closeModal();
-  };
+  useEffect(() => {
+    if (!feedback) return;
+    const t = window.setTimeout(() => setFeedback(null), 750);
+    return () => window.clearTimeout(t);
+  }, [feedback]);
 
   const removeLine = (key: string) => setCart(prev => prev.filter(l => l.key !== key));
 
@@ -166,7 +168,6 @@ export function POSHoneyPage() {
       setShowCheckout(false);
       setFeedback("success");
       setTimeout(() => {
-        setFeedback(null);
         setReceipt(result);
         setCart([]);
         setBuyerName("");
@@ -278,43 +279,44 @@ export function POSHoneyPage() {
             </div>
           )}
 
-          {/* Cart strip */}
+          {/* Compact centered cart */}
           <section
             data-tour="pos-cart"
-            className={`bg-card border-b border-border px-4 py-3 transition-colors duration-300 ${cartPulse ? "bg-[#C8900A]/10" : ""}`}
+            className={`border-b border-border px-4 py-2 transition-colors duration-300 ${cartPulse ? "bg-[#C8900A]/10" : "bg-card"}`}
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Cart</p>
-            {cart.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No items yet — tap a variant below.</p>
-            ) : (
-              <div className="space-y-2 max-h-36 overflow-y-auto">
-                <AnimatePresence initial={false}>
-                  {cart.map(line => (
-                    <CartLineMotion key={line.key}>
-                      <div className="flex items-center gap-2 text-sm bg-secondary/40 rounded-lg px-3 py-2">
-                        <div className="flex-1 min-w-0">
-                          <span className="font-medium capitalize">{variantLabel(line.variant)}</span>
-                          <span className="text-muted-foreground"> · {line.sizeLabel} ×{line.qty}</span>
+            <div className="max-w-xs mx-auto text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Cart</p>
+              {cart.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No items yet — tap a variant below</p>
+              ) : (
+                <div className="space-y-1 max-h-28 overflow-y-auto">
+                  <AnimatePresence initial={false}>
+                    {cart.map(line => (
+                      <CartLineMotion key={line.key}>
+                        <div className="flex items-center justify-center gap-2 text-xs bg-secondary/40 rounded-lg px-2 py-1.5">
+                          <span className="font-medium capitalize">
+                            {variantLabel(line.variant)} · {line.sizeLabel} ×{line.qty}
+                          </span>
+                          <span className="font-semibold text-[#C8900A]">{peso(line.unitPrice * line.qty)}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeLine(line.key)}
+                            className="text-red-400 hover:text-red-600 p-0.5 transition-colors active:scale-90"
+                            aria-label="Remove"
+                          >
+                            <Trash2 size={12} />
+                          </button>
                         </div>
-                        <span className="font-semibold text-[#C8900A]">{peso(line.unitPrice * line.qty)}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeLine(line.key)}
-                          className="text-red-400 hover:text-red-600 p-1"
-                          aria-label="Remove"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </CartLineMotion>
-                  ))}
-                </AnimatePresence>
-                <div className="flex justify-between pt-1 text-sm font-bold">
-                  <span>Subtotal</span>
-                  <span style={{ color: "#C8900A" }}>{peso(subtotal)}</span>
+                      </CartLineMotion>
+                    ))}
+                  </AnimatePresence>
+                  <div className="flex justify-center gap-2 pt-0.5 text-xs font-bold">
+                    <span>Subtotal</span>
+                    <span style={{ color: "#C8900A" }}>{peso(subtotal)}</span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </section>
 
           {/* Variant cards */}
@@ -326,12 +328,15 @@ export function POSHoneyPage() {
                 Loading…
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-xl w-full mx-auto" data-tour="pos-product-grid">
+              <div
+                className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-5 w-full max-w-[18rem] sm:max-w-md md:max-w-2xl lg:max-w-3xl mx-auto"
+                data-tour="pos-product-grid"
+              >
                 {variants.map(v => (
                   <VariantCardMotion
                     key={v.variant}
                     onClick={() => openVariant(v)}
-                    className="group relative rounded-xl overflow-hidden border border-border aspect-[3/4] max-h-[9.5rem] sm:max-h-[11rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8900A] focus-visible:ring-offset-2"
+                    className="group relative rounded-xl overflow-hidden border border-border aspect-[3/4] max-h-[9.5rem] sm:max-h-[11rem] md:max-h-none text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C8900A] focus-visible:ring-offset-2"
                   >
                     <img
                       src={v.image}
@@ -339,9 +344,9 @@ export function POSHoneyPage() {
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-150 group-hover:scale-[1.03]"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-2.5 text-white">
-                      <p className="text-sm sm:text-base font-bold leading-tight">{variantLabel(v.variant)}</p>
-                      <p className="text-[10px] sm:text-xs text-white/80 mt-0.5">
+                    <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-2.5 md:p-3 text-white">
+                      <p className="text-sm sm:text-base md:text-lg font-bold leading-tight">{variantLabel(v.variant)}</p>
+                      <p className="text-[10px] sm:text-xs md:text-sm text-white/80 mt-0.5">
                         {Math.round(v.total_on_hand)} on hand
                       </p>
                     </div>
@@ -353,11 +358,12 @@ export function POSHoneyPage() {
 
           {/* Fixed checkout — hidden while add modal is open */}
           {!activeVariant && (
-            <div
-              data-tour="pos-checkout-bar"
-              className="fixed bottom-0 left-0 right-0 z-40 p-4 pt-3 bg-background/95 border-t border-border backdrop-blur-sm"
-              style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-            >
+          <div
+            data-tour="pos-checkout-bar"
+            className="fixed bottom-0 left-0 right-0 z-40 p-4 pt-3 bg-background/95 border-t border-border backdrop-blur-sm"
+            style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+          >
+            <div className="max-w-sm mx-auto">
               <button
                 type="button"
                 disabled={cart.length === 0}
@@ -368,6 +374,7 @@ export function POSHoneyPage() {
                 Checkout{itemCount > 0 ? ` (${itemCount} item${itemCount === 1 ? "" : "s"})` : ""}
               </button>
             </div>
+          </div>
           )}
 
           {/* Add modal */}
@@ -585,7 +592,7 @@ export function POSHoneyPage() {
             )}
           </POSModal>
 
-          <FeedbackBurst kind="success" show={feedback === "success"} onDone={activeVariant ? onAddFeedbackDone : undefined} />
+          <FeedbackBurst kind="success" show={feedback === "success"} />
           <FeedbackBurst kind="error" show={feedback === "error"} />
 
           <POSGuideModal

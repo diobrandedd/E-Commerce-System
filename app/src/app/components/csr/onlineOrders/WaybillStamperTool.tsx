@@ -8,6 +8,12 @@ import type { OnlineOrdersPipeline, OnlineOrdersPrepResult, PartnerStampResult }
 import { triggerWaybillStashDownload, waybillUploadTooLarge } from "@/app/lib/waybillApi";
 import { useDuplicateTrackingHandler } from "@/app/lib/useDuplicateTrackingHandler";
 import { apiPostForm, getCsrfToken, ApiError } from "@/app/lib/api";
+import { PracticeTap } from "@/app/components/tour/PracticeTap";
+import {
+  practiceStageAtLeast,
+  type OnlineOrdersPracticeStage,
+} from "@/app/components/csr/onlineOrders/onlineOrdersPractice";
+import { OnlineOrdersBackToToolsButton } from "@/app/components/csr/onlineOrders/OnlineOrdersNavButtons";
 
 const PIPELINE_OPTIONS: { id: OnlineOrdersPipeline; label: string }[] = [
   { id: "partner", label: "Partner" },
@@ -30,10 +36,14 @@ export function WaybillStamperTool({
   batchId,
   onStampSuccess,
   onBack,
+  practiceMode = false,
+  practiceStage = "stamper-pipeline",
 }: {
   batchId: number;
   onStampSuccess: (result: PartnerStampResult) => void;
   onBack: () => void;
+  practiceMode?: boolean;
+  practiceStage?: OnlineOrdersPracticeStage;
 }) {
   const [excelFiles, setExcelFiles] = useState<File[]>([]);
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
@@ -109,11 +119,48 @@ export function WaybillStamperTool({
     }
   }, [batchId, pdfFiles, excelFiles, prep, pipeline, onStampSuccess, clearErrors, handleApiError, setError]);
 
+  if (practiceMode) {
+    return (
+      <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
+        <OnlineOrdersBackToToolsButton onClick={onBack} />
+        <p className="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Practice mode — nothing stamped (batch #{batchId || 0})
+        </p>
+        {practiceStageAtLeast(practiceStage, "stamper-pipeline") && (
+          <div className="flex flex-wrap gap-2 items-center" data-tour="online-orders-stamper-pipeline">
+            <span className="text-xs text-muted-foreground">Order type:</span>
+            <button type="button" className="text-xs font-medium px-3 py-1.5 rounded-lg border border-border text-muted-foreground">Partner</button>
+            <button type="button" className="text-xs font-medium px-3 py-1.5 rounded-lg border border-primary bg-primary/10 text-primary">VIP</button>
+            <button type="button" className="text-xs font-medium px-3 py-1.5 rounded-lg border border-border text-muted-foreground">Shopee SPX</button>
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "stamper-excel") && (
+          <div data-tour="online-orders-stamper-excel-upload">
+            <PracticeTap label="Practice: upload prepared iPYX Excel" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "stamper-load") && (
+          <div data-tour="online-orders-stamper-excel-load">
+            <PracticeTap label="Practice: load Excel (18 rows — sample)" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "stamper-pdf") && (
+          <div data-tour="online-orders-stamper-pdf-upload">
+            <PracticeTap label="Practice: upload waybill PDFs" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "stamper-run") && (
+          <div data-tour="online-orders-stamper-run">
+            <PracticeTap label="Practice: stamp & save to batch" />
+          </div>
+        )}
+      </FulfillmentSectionEnter>
+    );
+  }
+
   return (
     <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
-      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground" data-tour="online-orders-tool-back">
-        ← Back to tools
-      </button>
+      <OnlineOrdersBackToToolsButton onClick={onBack} />
       <p className="text-sm text-muted-foreground">
         Upload a prepared iPYX Excel plus matching waybill PDFs. Download the sheet to double-check, then stamp into
         this batch.

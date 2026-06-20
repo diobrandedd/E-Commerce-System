@@ -4,6 +4,8 @@
 
 Guide modal = reference docs. **Start tour** = dimmed overlay + spotlight on real UI + arrow tooltip (driver.js).
 
+**Practice tour** (complex pages only): **Start practice tour** = click-to-advance hands-on walkthrough with fixture UI — no API calls, uploads, or mutations. Uses `tourClickToContinue` + optional `onAdvance` in `tourStepHelpers.ts`. Shared `PracticeTap` button component.
+
 ## Files
 
 | File | Role |
@@ -11,7 +13,7 @@ Guide modal = reference docs. **Start tour** = dimmed overlay + spotlight on rea
 | `app/src/app/components/tour/runPageTour.ts` | Shared runner + modal-close delay |
 | `app/src/app/components/tour/pyxTour.css` | Honey-gold popover theme |
 | `app/src/app/components/fulfillment/deliveriesReviewTour.ts` | Pilot step definitions |
-| `app/src/app/components/tour/guides/*.ts` | Per-page tour step definitions |
+| `app/src/app/components/tour/guides/onlineOrdersPracticeTour.ts` | Online Orders E2E practice + overview tours |
 | `app/src/app/components/tour/GuideTourFooter.tsx` | Shared Start tour / Close footer |
 | `app/src/app/components/fulfillment/DeliveriesReviewGuideModal.tsx` | Guide + Start tour footer |
 

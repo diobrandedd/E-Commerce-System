@@ -26,18 +26,27 @@ export function tourSpotlight(element: string, popover: PopoverContent): DriveSt
 export function tourClickToContinue(
   element: string,
   popover: PopoverContent & { skipLabel?: string },
+  options?: { onAdvance?: () => void },
 ): DriveStep {
   let cleanup: (() => void) | undefined;
 
   const baseDescription = popover.description ?? "";
-  const handsOnHint = "Click the highlighted control to continue, or tap Skip.";
+  const handsOnHint = "Click the highlighted control, or tap Continue to move on.";
+
+  const advanceAndNext = (driver: { moveNext: () => void }) => {
+    options?.onAdvance?.();
+    window.setTimeout(() => driver.moveNext(), 280);
+  };
 
   return {
     element,
     popover: {
       ...popover,
-      nextBtnText: popover.skipLabel ?? "Skip",
+      nextBtnText: popover.skipLabel ?? "Continue",
       description: baseDescription ? `${baseDescription} ${handsOnHint}` : handsOnHint,
+      onNextClick: (_el, _step, { driver }) => {
+        advanceAndNext(driver);
+      },
     },
     onHighlighted: (_el, _step, { driver }) => {
       const target = document.querySelector<HTMLElement>(element);
@@ -45,7 +54,7 @@ export function tourClickToContinue(
       const onClick = (e: Event) => {
         if (target !== e.currentTarget && !target.contains(e.target as Node)) return;
         cleanup?.();
-        window.setTimeout(() => driver.moveNext(), 160);
+        advanceAndNext(driver);
       };
       target.addEventListener("click", onClick, { capture: true });
       cleanup = () => target.removeEventListener("click", onClick, { capture: true });

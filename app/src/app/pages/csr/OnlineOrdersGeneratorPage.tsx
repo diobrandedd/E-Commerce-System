@@ -3,7 +3,14 @@ import { BookOpen, Loader2, Download, CheckCircle2 } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { OnlineOrdersGuideModal } from "@/app/components/csr/OnlineOrdersGuideModal";
 import { appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
-import { runOnlineOrdersTour, type OnlineOrdersTourId } from "@/app/components/tour/guides/onlineOrdersTour";
+import {
+  PRACTICE_BATCH,
+  type OnlineOrdersPracticeStage,
+} from "@/app/components/csr/onlineOrders/onlineOrdersPractice";
+import {
+  runOnlineOrdersOverviewTour,
+  runOnlineOrdersPracticeTour,
+} from "@/app/components/tour/guides/onlineOrdersPracticeTour";
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { useAuth } from "@/app/context/AuthContext";
 import { BatchStartModal } from "@/app/components/csr/onlineOrders/BatchStartModal";
@@ -13,6 +20,10 @@ import { SpxPrepTool } from "@/app/components/csr/onlineOrders/SpxPrepTool";
 import { ExcelUploadTool } from "@/app/components/csr/onlineOrders/ExcelUploadTool";
 import { WaybillStamperTool } from "@/app/components/csr/onlineOrders/WaybillStamperTool";
 import { StampResultPanel } from "@/app/components/csr/onlineOrders/StampResultPanel";
+import {
+  OnlineOrdersBackToToolsButton,
+} from "@/app/components/csr/onlineOrders/OnlineOrdersNavButtons";
+import { OnlineOrdersBatchBar } from "@/app/components/csr/onlineOrders/OnlineOrdersBatchBar";
 import { OrderRemarksToast } from "@/app/components/csr/orderRemarksMotion";
 import {
   FulfillmentErrorBanner,
@@ -46,6 +57,10 @@ export function OnlineOrdersGeneratorPage() {
   const [lastStampResult, setLastStampResult] = useState<PartnerStampResult | null>(null);
   const [stampResult, setStampResult] = useState<PartnerStampResult | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [tourPracticeActive, setTourPracticeActive] = useState(false);
+  const [practiceStage, setPracticeStage] = useState<OnlineOrdersPracticeStage>("tools");
+
+  const displayBatch = tourPracticeActive ? PRACTICE_BATCH : batch;
 
   const refreshBatch = useCallback(async () => {
     const b = await onlineOrdersBatchGet();
@@ -171,37 +186,69 @@ export function OnlineOrdersGeneratorPage() {
     setStep("post_run");
   };
 
-  const startGuideTour = useCallback(
-    (tourId: OnlineOrdersTourId) => {
-      setGuideOpen(false);
-
-      if (tourId !== "overview" && !batch) {
-        setToast("Start a batch first, then run the tool tour.");
-        window.setTimeout(() => setToast(null), 3500);
-        if (step === "start") setShowStartModal(true);
-        return;
-      }
-
-      if (tourId === "overview") {
-        if (batch) setStep("tools");
-        resetPrep();
-      } else if (tourId === "stamper") {
-        setSelectedTool("stamper");
-        setStep("stamp");
+  const endPractice = useCallback(async () => {
+    setTourPracticeActive(false);
+    setPracticeStage("tools");
+    resetPrep();
+    try {
+      const b = await refreshBatch();
+      if (b?.status === "active") {
+        setStep("tools");
+      } else if (b?.status === "processed") {
+        setStep("done");
       } else {
-        setSelectedTool(tourId);
-        setStep("prep");
+        setShowStartModal(true);
+        setStep("start");
       }
+    } catch {
+      setShowStartModal(true);
+      setStep("start");
+    }
+  }, [refreshBatch]);
 
-      startPageTourAfterModalClose(() => runOnlineOrdersTour(tourId, user?.role), tourId === "overview" ? 280 : 360);
-    },
-    [batch, step, user?.role],
-  );
+  const startPracticeTour = useCallback(() => {
+    setGuideOpen(false);
+    setTourPracticeActive(true);
+    setPracticeStage("tools");
+    resetPrep();
+    setStep("tools");
+    setShowStartModal(false);
+    startPageTourAfterModalClose(() => {
+      runOnlineOrdersPracticeTour({
+        role: user?.role,
+        setStage: setPracticeStage,
+        openTool: tool => {
+          setSelectedTool(tool);
+          setStep(tool === "stamper" ? "stamp" : "prep");
+        },
+        backToTools: () => {
+          resetPrep();
+          setStep("tools");
+        },
+        onComplete: () => void endPractice(),
+      });
+    }, 400);
+  }, [user?.role, endPractice]);
+
+  const startOverviewTour = useCallback(() => {
+    setGuideOpen(false);
+    const hadRealBatch = batch !== null;
+    if (!hadRealBatch) {
+      setTourPracticeActive(true);
+      setStep("tools");
+      resetPrep();
+    }
+    startPageTourAfterModalClose(() => {
+      runOnlineOrdersOverviewTour(user?.role, () => {
+        if (!hadRealBatch) void endPractice();
+      });
+    }, 280);
+  }, [batch, user?.role, endPractice]);
 
   return (
     <PageLayout
       title="Online Orders"
-      subtitle="Three prep tools download Excel only; pick PDF + Excel stamper separately from the tools page"
+      subtitle="Prep Excel with one tool, then stamp waybills into the batch"
       actions={
         <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
           <BookOpen size={13} /> Guide
@@ -211,7 +258,7 @@ export function OnlineOrdersGeneratorPage() {
       <OrderRemarksToast message={toast} />
 
       <BatchStartModal
-        open={showStartModal && step === "start"}
+        open={showStartModal && step === "start" && !tourPracticeActive}
         onConfirm={() => void startBatch()}
         onCancel={() => setShowStartModal(false)}
         busy={busy}
@@ -225,17 +272,19 @@ export function OnlineOrdersGeneratorPage() {
 
       {error && <FulfillmentErrorBanner message={error} />}
 
-      {batch && step !== "loading" && step !== "start" && (
-        <FulfillmentSectionEnter index={0} className="mb-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground" data-tour="online-orders-batch-bar">
-          <span>
-            Batch #{batch.id} · {batch.line_count} lines · {batch.runs.length} run(s)
-          </span>
-          {batch.status === "active" && (
-            <button type="button" onClick={() => void cancelBatch()} className="text-red-600 hover:underline">
-              Cancel batch
-            </button>
-          )}
-        </FulfillmentSectionEnter>
+      {tourPracticeActive && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+          <strong>Practice mode</strong> — nothing is saved. Click highlighted controls in the tour, or close the tour to exit.
+        </div>
+      )}
+
+      {displayBatch && step !== "loading" && step !== "start" && (
+        <OnlineOrdersBatchBar
+          batch={displayBatch}
+          practiceMode={tourPracticeActive}
+          busy={busy}
+          onCancel={() => void cancelBatch()}
+        />
       )}
 
       {step === "stamp_result" && stampResult && (
@@ -249,23 +298,23 @@ export function OnlineOrdersGeneratorPage() {
         </FulfillmentStepSwitch>
       )}
 
-      {step === "tools" && batch && (
+      {step === "tools" && displayBatch && (
         <FulfillmentStepSwitch stepKey="tools">
-          <div data-tour="online-orders-tools">
-            <ToolsPicker
-              lineCount={batch.line_count}
-              onSelect={tool => {
-                setSelectedTool(tool);
-                setStep(tool === "stamper" ? "stamp" : "prep");
-              }}
-            />
-          </div>
+          <ToolsPicker
+            lineCount={displayBatch.line_count}
+            onSelect={tool => {
+              setSelectedTool(tool);
+              setStep(tool === "stamper" ? "stamp" : "prep");
+            }}
+          />
         </FulfillmentStepSwitch>
       )}
 
       {step === "prep" && selectedTool === "vip" && (
         <FulfillmentStepSwitch stepKey="prep-vip">
           <VipPrepTool
+            practiceMode={tourPracticeActive}
+            practiceStage={practiceStage}
             onDone={handlePrepDone}
             onBack={() => {
               resetPrep();
@@ -278,6 +327,8 @@ export function OnlineOrdersGeneratorPage() {
       {step === "prep" && selectedTool === "spx" && (
         <FulfillmentStepSwitch stepKey="prep-spx">
           <SpxPrepTool
+            practiceMode={tourPracticeActive}
+            practiceStage={practiceStage}
             onDone={handlePrepDone}
             onBack={() => {
               resetPrep();
@@ -290,6 +341,8 @@ export function OnlineOrdersGeneratorPage() {
       {step === "prep" && selectedTool === "excel" && (
         <FulfillmentStepSwitch stepKey="prep-excel">
           <ExcelUploadTool
+            practiceMode={tourPracticeActive}
+            practiceStage={practiceStage}
             onDone={handlePrepDone}
             onBack={() => {
               resetPrep();
@@ -299,10 +352,12 @@ export function OnlineOrdersGeneratorPage() {
         </FulfillmentStepSwitch>
       )}
 
-      {step === "stamp" && batch && selectedTool === "stamper" && (
+      {step === "stamp" && displayBatch && selectedTool === "stamper" && (
         <FulfillmentStepSwitch stepKey="stamp">
           <WaybillStamperTool
-            batchId={batch.id}
+            batchId={displayBatch.id}
+            practiceMode={tourPracticeActive}
+            practiceStage={practiceStage}
             onStampSuccess={r => void handleStampSuccess(r)}
             onBack={() => {
               resetPrep();
@@ -334,9 +389,7 @@ export function OnlineOrdersGeneratorPage() {
               </button>
             )}
             <div className="flex flex-wrap gap-3">
-              <FulfillmentPressable variant="outline" className="px-4 py-2.5" onClick={() => setStep("tools")}>
-                Back to tools
-              </FulfillmentPressable>
+              <OnlineOrdersBackToToolsButton onClick={() => setStep("tools")} />
               <FulfillmentPressable
                 variant="primary"
                 disabled={busy || batch.line_count < 1}
@@ -395,7 +448,8 @@ export function OnlineOrdersGeneratorPage() {
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
         role={user?.role}
-        onStartTour={startGuideTour}
+        onStartTour={startOverviewTour}
+        onStartPracticeTour={startPracticeTour}
       />
     </PageLayout>
   );

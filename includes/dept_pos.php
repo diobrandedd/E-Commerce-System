@@ -23,24 +23,30 @@ function dept_pos_catalog(PDO $pdo, ?string $deptKey = null): array
 }
 
 /**
- * @param list<array{product_key: string, qty: float}> $items
- * @return array<string, mixed>
+ * @param list<array{product_key: string, product_id?: int, qty: float}> $items
+ * @param float $discountFactor 1.0 for full price, 0.9 for 10% off, etc.
+ * @return list<array<string, mixed>>
  */
-function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerName, string $buyerCreds): array
+function dept_pos_build_cart_lines(PDO $pdo, array $items, float $discountFactor = 1.0): array
 {
-    if ($posPinId < 1) {
-        throw new RuntimeException('POS session is invalid.');
-    }
     if ($items === []) {
         throw new RuntimeException('Cart is empty.');
     }
+    if ($discountFactor <= 0 || $discountFactor > 1.0001) {
+        throw new RuntimeException('Invalid discount factor.');
+    }
+
+    $snapshot = dept_inventory_catalog_snapshot($pdo);
+    $onHandByKey = [];
+    foreach ($snapshot as $s) {
+        $onHandByKey[$s['key']] = (float) $s['current_qty'];
+    }
 
     $cleanLines = [];
-    $total = 0.0;
-
     foreach ($items as $entry) {
         $productKey = trim((string) ($entry['product_key'] ?? ''));
         $qty = (float) ($entry['qty'] ?? 0);
+        $expectedProductId = isset($entry['product_id']) ? (int) $entry['product_id'] : 0;
         if (!dept_product_key_valid($productKey) || $qty <= 0) {
             throw new RuntimeException('Invalid cart line.');
         }
@@ -58,14 +64,12 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
             throw new RuntimeException(($def['label'] ?? $productKey) . ' is not sellable yet (set selling price).');
         }
 
-        $snapshot = dept_inventory_catalog_snapshot($pdo);
-        $onHand = 0.0;
-        foreach ($snapshot as $s) {
-            if ($s['key'] === $productKey) {
-                $onHand = (float) $s['current_qty'];
-                break;
-            }
+        $productId = (int) $prod['id'];
+        if ($expectedProductId > 0 && $expectedProductId !== $productId) {
+            throw new RuntimeException('Product not found or mismatch.');
         }
+
+        $onHand = $onHandByKey[$productKey] ?? 0.0;
         if ($qty > $onHand + 0.0001) {
             $def = dept_product_by_key($productKey);
             throw new RuntimeException(
@@ -73,38 +77,68 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
             );
         }
 
-        $unit = round((float) $prod['selling_price'], 2);
-        $lineTotal = round($unit * $qty, 2);
-        $total += $lineTotal;
+        $listUnit = round((float) $prod['selling_price'], 2);
+        $chargedUnit = round($listUnit * $discountFactor, 2);
+        $lineSubtotal = round($listUnit * $qty, 2);
+        $lineTotal = round($chargedUnit * $qty, 2);
         $cleanLines[] = [
-            'product_id' => (int) $prod['id'],
+            'product_id' => $productId,
             'product_key' => $productKey,
             'qty' => $qty,
-            'unit_price' => $unit,
+            'list_unit_price' => $listUnit,
+            'unit_price' => $chargedUnit,
+            'line_subtotal' => $lineSubtotal,
             'line_total' => $lineTotal,
             'name' => (string) $prod['name'],
         ];
     }
+
+    return $cleanLines;
+}
+
+/**
+ * @param list<array{product_key: string, product_id?: int, qty: float}> $items
+ * @param array{discount_percent?: int|float|string|null, discount_request_id?: int|null} $opts
+ * @return array<string, mixed>
+ */
+function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerName, string $buyerCreds, array $opts = []): array
+{
+    if ($posPinId < 1) {
+        throw new RuntimeException('POS session is invalid.');
+    }
+
+    $discountPercent = isset($opts['discount_percent']) ? (int) $opts['discount_percent'] : 0;
+    if (!in_array($discountPercent, [0, 10, 20], true)) {
+        throw new RuntimeException('Invalid discount percent.');
+    }
+    $discountFactor = $discountPercent > 0 ? (1 - ($discountPercent / 100)) : 1.0;
+    $discountRequestId = isset($opts['discount_request_id']) ? (int) $opts['discount_request_id'] : null;
+
+    $cleanLines = dept_pos_build_cart_lines($pdo, $items, $discountFactor);
+    $subtotal = round(array_sum(array_column($cleanLines, 'line_subtotal')), 2);
+    $total = round(array_sum(array_column($cleanLines, 'line_total')), 2);
+    $discountAmount = round($subtotal - $total, 2);
 
     $ownsTransaction = !$pdo->inTransaction();
     if ($ownsTransaction) {
         $pdo->beginTransaction();
     }
     try {
-        $total = round($total, 2);
         $receiptNo = sprintf('RCP-%s', strtoupper(bin2hex(random_bytes(4))));
 
         $insSale = $pdo->prepare(
             'INSERT INTO pos_sales (
                 receipt_no, buyer_name, buyer_credentials, subtotal_amount,
                 discount_percent, discount_amount, total_amount, sold_by_pin_id, sale_date
-             ) VALUES (?, ?, ?, ?, NULL, 0, ?, ?, NOW())'
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
         );
         $insSale->execute([
             $receiptNo,
             $buyerName !== '' ? $buyerName : 'Walk-in',
             $buyerCreds === '' ? null : $buyerCreds,
-            $total,
+            $subtotal,
+            $discountPercent > 0 ? $discountPercent : null,
+            $discountAmount,
             $total,
             $posPinId,
         ]);
@@ -112,7 +146,7 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
 
         $insLine = $pdo->prepare(
             'INSERT INTO pos_receipt_items (sale_id, product_id, qty, unit_price, list_unit_price, line_total, discount_percent)
-             VALUES (?, ?, ?, ?, ?, ?, NULL)'
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
 
         foreach ($cleanLines as $line) {
@@ -122,9 +156,19 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
                 $line['product_id'],
                 $line['qty'],
                 $line['unit_price'],
-                $line['unit_price'],
+                $line['list_unit_price'],
                 $line['line_total'],
+                $discountPercent > 0 ? $discountPercent : null,
             ]);
+        }
+
+        if ($discountRequestId !== null && $discountRequestId > 0) {
+            $updReq = $pdo->prepare(
+                'UPDATE pos_discount_requests
+                 SET status = "approved", pos_sale_id = ?, reviewed_at = COALESCE(reviewed_at, NOW())
+                 WHERE id = ?'
+            );
+            $updReq->execute([$saleId, $discountRequestId]);
         }
 
         if ($ownsTransaction) {
@@ -140,8 +184,20 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
     return [
         'sale_id' => $saleId,
         'receipt_no' => $receiptNo,
+        'subtotal' => $subtotal,
+        'discount_percent' => $discountPercent > 0 ? $discountPercent : null,
+        'discount_amount' => $discountAmount,
         'total' => $total,
-        'items' => $cleanLines,
+        'items' => array_map(static fn ($l) => [
+            'product_id' => $l['product_id'],
+            'product_key' => $l['product_key'],
+            'qty' => $l['qty'],
+            'list_unit_price' => $l['list_unit_price'],
+            'unit_price' => $l['unit_price'],
+            'line_subtotal' => $l['line_subtotal'],
+            'line_total' => $l['line_total'],
+            'name' => $l['name'],
+        ], $cleanLines),
         'buyer_name' => $buyerName !== '' ? $buyerName : 'Walk-in',
     ];
 }

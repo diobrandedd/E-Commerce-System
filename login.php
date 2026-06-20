@@ -48,6 +48,9 @@ $pageTitle = 'Pyx Tracker Management System — Sign in';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/sys_img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/sys_img/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/sys_img/apple-touch-icon.png">
   <style>
     :root { --bg:#fffdf6; --panel:#fff; --border:#e8dcc5; --text:#3f2f1e; --muted:#7e6a4b; --accent:#d99200; --danger:#c65a4a; }
     * { box-sizing: border-box; }

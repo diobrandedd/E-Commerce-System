@@ -14,7 +14,90 @@ api_dispatch([
     'index' => 'api_dashboard_index',
     'summary' => 'api_dashboard_index',
     'inventory_snapshot' => 'api_dashboard_inventory_snapshot',
+    'shipped_summary' => 'api_dashboard_shipped_summary',
 ]);
+
+function api_dashboard_view_for_role(string $role): string
+{
+    if (in_array($role, ['csr_tl', 'csr_staff'], true)) {
+        return 'csr';
+    }
+    if ($role === 'staff') {
+        return 'staff';
+    }
+
+    return 'inventory';
+}
+
+function api_dashboard_csr_metrics(PDO $pdo): array
+{
+    $metrics = [
+        'parcels_by_status' => [
+            'packing' => 0,
+            'shipped' => 0,
+            'on_hold' => 0,
+            'cancelled' => 0,
+            'returned' => 0,
+        ],
+        'parcels_shipped_today' => 0,
+        'parcels_packing' => 0,
+        'rts_pool_count' => 0,
+        'recent_parcels' => [],
+    ];
+
+    try {
+        $st = $pdo->query(
+            'SELECT status, COUNT(*) AS cnt FROM online_order_parcels GROUP BY status'
+        );
+        if ($st) {
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $status = (string) ($row['status'] ?? '');
+                if (array_key_exists($status, $metrics['parcels_by_status'])) {
+                    $metrics['parcels_by_status'][$status] = (int) $row['cnt'];
+                }
+            }
+        }
+        $metrics['parcels_packing'] = $metrics['parcels_by_status']['packing'];
+    } catch (Throwable) {
+        // Table may be missing on older installs.
+    }
+
+    try {
+        $st = $pdo->query(
+            'SELECT COUNT(*) FROM online_order_parcels
+             WHERE status = "shipped" AND ship_date IS NOT NULL AND DATE(ship_date) = CURDATE()'
+        );
+        $metrics['parcels_shipped_today'] = $st ? (int) $st->fetchColumn() : 0;
+    } catch (Throwable) {
+        $metrics['parcels_shipped_today'] = 0;
+    }
+
+    try {
+        $st = $pdo->query(
+            'SELECT COALESCE(SUM(li.quantity), 0)
+             FROM rts_line_items li
+             INNER JOIN rts_cases c ON c.id = li.case_id
+             WHERE c.voided_at IS NULL'
+        );
+        $metrics['rts_pool_count'] = $st ? (int) $st->fetchColumn() : 0;
+    } catch (Throwable) {
+        $metrics['rts_pool_count'] = 0;
+    }
+
+    try {
+        $st = $pdo->query(
+            'SELECT id, tracking_number, recipient_name, courier, status, ship_date, created_at
+             FROM online_order_parcels
+             ORDER BY id DESC
+             LIMIT 6'
+        );
+        $metrics['recent_parcels'] = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+    } catch (Throwable) {
+        $metrics['recent_parcels'] = [];
+    }
+
+    return $metrics;
+}
 
 function api_dashboard_index(): void
 {
@@ -26,9 +109,13 @@ function api_dashboard_index(): void
     $deptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
     $isExec = $role === 'executive';
     $isProdMgr = $role === 'prod_manager';
-    $isCrossDept = $isExec || $isProdMgr;
+    $isHr = $role === 'hr';
+    $isCrossDept = $isExec || $isProdMgr || $isHr;
+    $view = api_dashboard_view_for_role($role);
 
     $payload = [
+        'view' => $view,
+        'can_view_financials' => $isExec,
         'role' => $role,
         'name' => (string) $user['name'],
         'dept_id' => $deptId > 0 ? $deptId : null,
@@ -37,13 +124,28 @@ function api_dashboard_index(): void
         'pending_edit_requests_count' => 0,
         'recent_stock_changes' => [],
         'recent_cost_changes' => [],
+        'csr' => null,
     ];
 
-    // ---- Stats -----------------------------------------------------------------
+    if ($view === 'csr') {
+        $payload['csr'] = api_dashboard_csr_metrics($pdo);
+        api_ok($payload);
+
+        return;
+    }
+
+    if ($view === 'staff') {
+        api_dashboard_populate_edit_requests($pdo, $user, $isExec, $payload);
+        api_ok($payload);
+
+        return;
+    }
+
+    // ---- Inventory view stats (exec, prod_manager, hr, team_leader) ----------
 
     $stats = [];
-    $stocksWhere = $isCrossDept ? '' : ' WHERE dept_id = :dept';
     $stocksParams = $isCrossDept ? [] : ['dept' => $deptId];
+    $stocksWhere = $isCrossDept ? '' : ' WHERE dept_id = :dept';
     $st = $pdo->prepare("SELECT COUNT(*) FROM stocks{$stocksWhere}");
     $st->execute($stocksParams);
     $stats['stocks'] = (int) $st->fetchColumn();
@@ -54,7 +156,7 @@ function api_dashboard_index(): void
     $stats['products'] = (int) $st->fetchColumn();
 
     if ($isCrossDept) {
-        $st = $pdo->query("SELECT COUNT(*) FROM users WHERE is_active = 1");
+        $st = $pdo->query('SELECT COUNT(*) FROM users WHERE is_active = 1');
         $stats['active_users'] = $st ? (int) $st->fetchColumn() : 0;
     } else {
         $st = $pdo->prepare('SELECT COUNT(*) FROM users WHERE is_active = 1 AND dept_id = ?');
@@ -73,8 +175,20 @@ function api_dashboard_index(): void
 
     $payload['stats'] = $stats;
 
-    // ---- Edit requests ---------------------------------------------------------
+    api_dashboard_populate_edit_requests($pdo, $user, $isExec, $payload);
 
+    if ($isExec) {
+        api_dashboard_populate_financials($pdo, $payload);
+    }
+
+    api_ok($payload);
+}
+
+/**
+ * @param array<string, mixed> $payload
+ */
+function api_dashboard_populate_edit_requests(PDO $pdo, array $user, bool $isExec, array &$payload): void
+{
     if ($isExec) {
         $st = $pdo->query("SELECT COUNT(*) FROM edit_requests WHERE status = 'pending'");
         $payload['pending_edit_requests_count'] = $st ? (int) $st->fetchColumn() : 0;
@@ -90,24 +204,30 @@ function api_dashboard_index(): void
              LIMIT 8"
         );
         $payload['pending_edit_requests'] = $st ? $st->fetchAll() : [];
-    } else {
-        $st = $pdo->prepare(
-            "SELECT id, table_name, record_id, field_name, old_value, new_value, reason, status,
-                    rejection_note, created_at, reviewed_at
-             FROM edit_requests
-             WHERE requested_by = ?
-             ORDER BY created_at DESC
-             LIMIT 6"
-        );
-        $st->execute([(int) $user['id']]);
-        $payload['pending_edit_requests'] = $st->fetchAll();
-        $st = $pdo->prepare("SELECT COUNT(*) FROM edit_requests WHERE requested_by = ? AND status = 'pending'");
-        $st->execute([(int) $user['id']]);
-        $payload['pending_edit_requests_count'] = (int) $st->fetchColumn();
+
+        return;
     }
 
-    // ---- Recent stock price changes -------------------------------------------
+    $st = $pdo->prepare(
+        "SELECT id, table_name, record_id, field_name, old_value, new_value, reason, status,
+                rejection_note, created_at, reviewed_at
+         FROM edit_requests
+         WHERE requested_by = ?
+         ORDER BY created_at DESC
+         LIMIT 6"
+    );
+    $st->execute([(int) $user['id']]);
+    $payload['pending_edit_requests'] = $st->fetchAll();
+    $st = $pdo->prepare("SELECT COUNT(*) FROM edit_requests WHERE requested_by = ? AND status = 'pending'");
+    $st->execute([(int) $user['id']]);
+    $payload['pending_edit_requests_count'] = (int) $st->fetchColumn();
+}
 
+/**
+ * @param array<string, mixed> $payload
+ */
+function api_dashboard_populate_financials(PDO $pdo, array &$payload): void
+{
     try {
         $st = $pdo->query(
             "SELECT sph.id, sph.old_price, sph.new_price, sph.changed_at,
@@ -124,8 +244,6 @@ function api_dashboard_index(): void
         $payload['recent_stock_changes'] = [];
     }
 
-    // ---- Recent cost recalculations -------------------------------------------
-
     try {
         $st = $pdo->query(
             "SELECT pch.id, pch.old_cost, pch.new_cost, pch.recalculated_at,
@@ -140,8 +258,6 @@ function api_dashboard_index(): void
     } catch (Throwable) {
         $payload['recent_cost_changes'] = [];
     }
-
-    api_ok($payload);
 }
 
 function api_dashboard_inventory_snapshot(): void
@@ -164,4 +280,77 @@ function api_dashboard_inventory_snapshot(): void
     }
 
     api_ok($snapshot);
+}
+
+function api_dashboard_shipped_count_in_range(PDO $pdo, array $range): int
+{
+    $st = $pdo->prepare(
+        'SELECT COUNT(*) FROM online_order_parcels
+         WHERE status = "shipped" AND ship_date IS NOT NULL
+         AND ship_date >= ? AND ship_date <= ?'
+    );
+    $st->execute([$range['from'], $range['to']]);
+
+    return (int) $st->fetchColumn();
+}
+
+function api_dashboard_rts_opened_in_range(PDO $pdo, array $range): int
+{
+    $st = $pdo->prepare(
+        'SELECT COUNT(*) FROM rts_cases
+         WHERE voided_at IS NULL AND date_opened >= ? AND date_opened <= ?'
+    );
+    $st->execute([$range['from'], $range['to']]);
+
+    return (int) $st->fetchColumn();
+}
+
+function api_dashboard_shipped_summary(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    if ((string) $user['role'] !== 'executive') {
+        api_fail('Not available for this role.', 403);
+    }
+
+    $period = isset($_GET['period']) ? (string) $_GET['period'] : 'day';
+    if (!in_array($period, ['day', 'week', 'month'], true)) {
+        api_fail('Invalid period. Use day, week, or month.', 422);
+    }
+
+    try {
+        $range = dashboard_inventory_resolve_range($period, null, null);
+    } catch (InvalidArgumentException $e) {
+        api_fail($e->getMessage(), 422);
+    }
+
+    if ($range === null) {
+        api_fail('Invalid period range.', 422);
+    }
+
+    $pdo = ims_pdo();
+    $payload = [
+        'filter' => $range,
+        'shipped' => 0,
+        'packing' => 0,
+        'rts_opened' => 0,
+        'cancelled_or_hold' => 0,
+    ];
+
+    try {
+        $payload['shipped'] = api_dashboard_shipped_count_in_range($pdo, $range);
+        $payload['rts_opened'] = api_dashboard_rts_opened_in_range($pdo, $range);
+
+        $st = $pdo->query('SELECT COUNT(*) FROM online_order_parcels WHERE status = "packing"');
+        $payload['packing'] = $st ? (int) $st->fetchColumn() : 0;
+
+        $st = $pdo->query(
+            'SELECT COUNT(*) FROM online_order_parcels WHERE status IN ("cancelled", "on_hold")'
+        );
+        $payload['cancelled_or_hold'] = $st ? (int) $st->fetchColumn() : 0;
+    } catch (Throwable) {
+        // Tables may be missing on older installs.
+    }
+
+    api_ok($payload);
 }

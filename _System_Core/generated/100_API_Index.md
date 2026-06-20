@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-19T07:05:30+02:00
+generated: 2026-06-20T10:05:13+02:00
 type: memory-bank
 ---
 
@@ -80,6 +80,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `index` | `api_dashboard_index()` | `ims_pdo()` |
 | `summary` | `api_dashboard_index()` | `ims_pdo()` |
 | `inventory_snapshot` | `api_dashboard_inventory_snapshot()` | `dashboard_inventory_snapshot()`, `ims_pdo()` |
+| `shipped_summary` | `api_dashboard_shipped_summary()` | `dashboard_inventory_resolve_range()`, `ims_pdo()` |
 
 ### `deliveries.php`
 

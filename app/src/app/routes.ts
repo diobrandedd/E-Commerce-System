@@ -38,6 +38,7 @@ import { DeliveriesReviewPage } from "./pages/deliveries/DeliveriesReviewPage";
 import { DeliveriesCancelledPage } from "./pages/deliveries/DeliveriesCancelledPage";
 import { OnlineParcelsPage } from "./pages/fulfillment/OnlineParcelsPage";
 import { PackingMaterialsStagingPage } from "./pages/fulfillment/PackingMaterialsStagingPage";
+import { PackingMaterialsLogPage } from "./pages/fulfillment/PackingMaterialsLogPage";
 import type { Role } from "./context/AuthContext";
 
 // Wrap a page component in RequireAuth.  Using createElement to keep this
@@ -137,6 +138,12 @@ export const router = createBrowserRouter(
           }),
         },
         {
+          path: "fulfillment/packing-materials/log",
+          element: guarded(PackingMaterialsLogPage, {
+            roles: ["executive", "prod_manager", "team_leader", "csr_tl"],
+          }),
+        },
+        {
           path: "fulfillment/packing-materials",
           element: guarded(PackingMaterialsStagingPage, {
             roles: ["executive", "prod_manager", "team_leader", "csr_tl"],
@@ -155,10 +162,7 @@ export const router = createBrowserRouter(
           children: [
             { index: true, Component: POSCategoryPage },
             { path: "honey", Component: POSHoneyPage },
-            { path: "paragis", Component: POSDeptPage },
-            { path: "brc", Component: POSDeptPage },
-            { path: "cacao", Component: POSDeptPage },
-            { path: "honey-comb", Component: POSDeptPage },
+            { path: ":deptKey", Component: POSDeptPage },
           ],
         },
       ],

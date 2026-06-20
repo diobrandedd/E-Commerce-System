@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-06-19T07:05:38+02:00
+generated: 2026-06-20T10:05:22+02:00
 type: module
 function_count: 10
 ---
@@ -48,7 +48,7 @@ function_count: 10
 
 - `includes/honey_pos.php`:107 — `$products = honey_pos_product_map($pdo);`
 - `includes/honey_pos.php`:290 — `$productMap = honey_pos_product_map($pdo);`
-- `includes/pos_discount_requests.php`:26 — `$productMap = honey_pos_product_map($pdo);`
+- `includes/pos_discount_requests.php`:70 — `$productMap = honey_pos_product_map($pdo);`
 
 ## honey_pos_honey_catalog {#honey_pos_honey_catalog}
 
@@ -97,5 +97,5 @@ function_count: 10
 **Callers (2):**
 
 - `api/v1/pos.php`:211 — `$result = honey_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds);`
-- `includes/pos_discount_requests.php`:164 — `$result = honey_pos_checkout(`
+- `includes/pos_discount_requests.php`:244 — `$result = honey_pos_checkout(`
 

@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Loader2, Package, Plus } from "lucide-react";
+import { useSearchParams } from "react-router";
+import { AlertTriangle, ClipboardList, Loader2, Package, Plus } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import {
   AppErrorBanner,
+  AppSectionEnter,
   AppSuccessNotice,
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
+import {
+  PackingDamageLogPanel,
+  PackingTakeOutsPanel,
+} from "@/app/components/fulfillment/PackingMaterialsLogPanels";
 import { listMaterials, type MaterialStockRow } from "@/app/lib/materials";
 import {
   BUBBLE_WIDTHS_CM,
@@ -18,9 +24,8 @@ import {
   packingDamageReport,
   packingIssueCreate,
   packingIssueEstimate,
-  packingIssuesList,
+  formatStagingQty,
   type PackingBalanceRow,
-  type PackingIssueRow,
 } from "@/app/lib/fulfillmentPackingApi";
 import { ApiError } from "@/app/lib/api";
 import { cn } from "@/app/components/ui/utils";
@@ -57,10 +62,12 @@ interface IssueLineDraft {
 
 function PackingIssueModal({
   catalog,
+  bubbleYields,
   onClose,
   onDone,
 }: {
   catalog: MaterialStockRow[];
+  bubbleYields: Record<number, number>;
   onClose: () => void;
   onDone: () => void;
 }) {
@@ -138,6 +145,8 @@ function PackingIssueModal({
         {lines.map((line, idx) => {
           const row = catalog.find((c) => c.id === line.stock_id);
           const showWidth = row ? isBubbleGenericName(row.name) : false;
+          const width = showWidth ? parseInt(line.bubble_width_cm, 10) : null;
+          const yieldPerRoll = width != null ? bubbleYields[width] : undefined;
           return (
             <div key={idx} className="flex flex-wrap gap-2 items-end">
               <div className="flex-1 min-w-[12rem]">
@@ -179,7 +188,7 @@ function PackingIssueModal({
                 </div>
               )}
               <div className="w-28">
-                <label className="text-xs text-muted-foreground">Qty</label>
+                <label className="text-xs text-muted-foreground">{showWidth ? "Rolls" : "Qty"}</label>
                 <input
                   type="number"
                   min={0}
@@ -192,6 +201,11 @@ function PackingIssueModal({
                     setLines(next);
                   }}
                 />
+                {showWidth && yieldPerRoll != null && line.qty && parseFloat(line.qty) > 0 && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    ≈ {formatStagingQty(parseFloat(line.qty) * yieldPerRoll)} pc at {width} cm
+                  </p>
+                )}
               </div>
             </div>
           );
@@ -260,8 +274,11 @@ function DamageReportModal({
         stock_id: row.stock_id,
         qty: parsed,
         note: note.trim(),
+        qty_unit: row.is_bubble_sized ? "pc" : undefined,
       });
-      onDone(`Reported ${result.qty} ${row.unit} damaged — ${result.remaining_qty} remaining.`);
+      onDone(
+        `Reported ${formatStagingQty(result.qty)} ${result.unit} damaged — ${formatStagingQty(result.remaining_qty)} remaining.`,
+      );
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Damage report failed.");
     } finally {
@@ -273,20 +290,24 @@ function DamageReportModal({
     <AppModal open onClose={onClose}>
       <AppModalHeader
         title="Report damage"
-        subtitle={`${row.name} · ${row.remaining_qty} ${row.unit} remaining on staging`}
+        subtitle={`${row.name} · ${formatStagingQty(row.remaining_qty)} ${row.unit} remaining on staging`}
         onClose={onClose}
       />
       <AppModalBody className="space-y-3">
         {error && <AppErrorBanner message={error} />}
         <p className="text-xs text-muted-foreground">
-          Damaged qty stays off staging and is not returned to warehouse. Leftover usable stock carries over for tomorrow.
+          {row.is_bubble_sized
+            ? "Enter damaged cut pieces (pc). Staging tracks pieces for sized bubble; warehouse issue is still in rolls."
+            : "Damaged qty stays off staging and is not returned to warehouse. Leftover usable stock carries over for tomorrow."}
         </p>
         <div>
-          <label className="text-xs text-muted-foreground">Damaged quantity</label>
+          <label className="text-xs text-muted-foreground">
+            Damaged quantity{row.is_bubble_sized ? " (pc)" : ""}
+          </label>
           <input
             type="number"
             min={0}
-            step="any"
+            step={row.is_bubble_sized ? 1 : "any"}
             max={row.remaining_qty}
             className="mt-1 w-full rounded-lg border border-border px-3 py-2 bg-card text-sm"
             value={qty}
@@ -315,28 +336,50 @@ function DamageReportModal({
   );
 }
 
+type PackingView = "staging" | "takeouts" | "damage";
+
+function parsePackingView(raw: string | null): PackingView {
+  if (raw === "takeouts" || raw === "damage") return raw;
+  return "staging";
+}
+
 export function PackingMaterialsStagingPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = parsePackingView(searchParams.get("view"));
   const [rows, setRows] = useState<PackingBalanceRow[]>([]);
-  const [issues, setIssues] = useState<PackingIssueRow[]>([]);
   const [catalog, setCatalog] = useState<MaterialStockRow[]>([]);
+  const [bubbleYields, setBubbleYields] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
   const [issueOpen, setIssueOpen] = useState(false);
   const [damageRow, setDamageRow] = useState<PackingBalanceRow | null>(null);
+  const [showAllSkus, setShowAllSkus] = useState(true);
+  const [logRefreshKey, setLogRefreshKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const setView = (next: PackingView) => {
+    if (next === "staging") {
+      setSearchParams({});
+    } else {
+      setSearchParams({ view: next });
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [bal, iss, mats] = await Promise.all([
-        packingBalancesList(),
-        packingIssuesList({ page: 1, per_page: 8 }),
-        listMaterials("packaging"),
-      ]);
+      const [bal, mats] = await Promise.all([packingBalancesList(), listMaterials("packaging")]);
       setRows(bal.rows);
-      setIssues(iss.rows);
-      setCatalog(mats.filter((m) => isIssueCatalogRow(m.name)));
+      setCatalog(mats.items.filter((m) => isIssueCatalogRow(m.name)));
+      const yields: Record<number, number> = {};
+      for (const m of mats.items) {
+        const match = m.name.match(/^Bubble wrap roll - (\d+) cm$/i);
+        if (match && m.pool_yield_qty != null) {
+          yields[parseInt(match[1], 10)] = Number(m.pool_yield_qty);
+        }
+      }
+      setBubbleYields(yields);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Load failed.");
     } finally {
@@ -349,32 +392,82 @@ export function PackingMaterialsStagingPage() {
   }, [load]);
 
   const withStaging = rows.filter((r) => r.issued_qty > 0 || r.remaining_qty > 0);
+  const displayRows = useMemo(
+    () => (showAllSkus ? rows : withStaging),
+    [rows, showAllSkus, withStaging],
+  );
 
   return (
     <PageLayout
       title="For packing"
-      subtitle="Issue fulfillment materials to packing · ship scan consumes staging · report damage on unusable rolls"
+      subtitle="Issue fulfillment materials to packing · ship scan consumes staging · sized bubble tracked in cut pieces (pc)"
     >
       {error && <AppErrorBanner message={error} className="mb-4" />}
       {success && <AppSuccessNotice message={success} className="mb-4" />}
 
-      <div className="flex flex-wrap gap-3 mb-6">
-        <Button type="button" onClick={() => setIssueOpen(true)} disabled={catalog.length === 0}>
+      <div className="flex flex-wrap gap-2 mb-6">
+        <Button
+          type="button"
+          variant={view === "staging" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setView("staging")}
+        >
           <Package className="h-4 w-4" />
-          Issue materials
+          Staging
         </Button>
-        <p className="text-sm text-muted-foreground self-center">
-          {withStaging.length} SKU{withStaging.length === 1 ? "" : "s"} in staging
-        </p>
+        <Button
+          type="button"
+          variant={view === "takeouts" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setView("takeouts")}
+        >
+          <ClipboardList className="h-4 w-4" />
+          Take-outs
+        </Button>
+        <Button
+          type="button"
+          variant={view === "damage" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setView("damage")}
+        >
+          <AlertTriangle className="h-4 w-4" />
+          Damage
+        </Button>
       </div>
 
-      {loading ? (
+      {view === "staging" && (
+        <div className="flex flex-wrap gap-3 mb-6 items-center">
+          <Button type="button" onClick={() => setIssueOpen(true)} disabled={catalog.length === 0}>
+            <Package className="h-4 w-4" />
+            Issue materials
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            {withStaging.length} SKU{withStaging.length === 1 ? "" : "s"} in staging
+          </p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-xs font-semibold ml-auto sm:ml-0"
+            onClick={() => setShowAllSkus((v) => !v)}
+          >
+            {showAllSkus ? "Show in staging only" : "Show all SKUs"}
+          </Button>
+        </div>
+      )}
+
+      {view === "staging" && loading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      ) : (
-        <>
-          <div className="rounded-2xl border border-border overflow-hidden mb-8">
+      ) : view === "staging" ? (
+        <AppSectionEnter>
+          <div className="rounded-2xl border border-border overflow-hidden">
+            {displayRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground p-6">
+                {showAllSkus ? "No packaging SKUs found." : "Nothing in staging — issue materials to start."}
+              </p>
+            ) : (
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
                 <tr>
@@ -388,28 +481,45 @@ export function PackingMaterialsStagingPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {displayRows.map((r) => (
                   <tr key={r.stock_id} className={cn("border-t border-border", appHoverRow)}>
                     <td className="px-4 py-3">
                       <div className="font-medium">{r.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Warehouse: {r.warehouse_on_hand} {r.unit}
-                      </div>
+                      {r.is_bubble_sized && r.pool_yield_qty ? (
+                        <div className="text-xs text-muted-foreground">
+                          ~{formatStagingQty(r.pool_yield_qty)} pc per roll cut
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground">
+                          Warehouse: {r.warehouse_on_hand} {r.unit}
+                        </div>
+                      )}
                     </td>
-                    <td className="px-4 py-3">{r.issued_qty}</td>
-                    <td className="px-4 py-3">{r.consumed_qty}</td>
-                    <td className="px-4 py-3">{r.damaged_qty ?? 0}</td>
+                    <td className="px-4 py-3">
+                      {formatStagingQty(r.issued_qty)}
+                      <span className="text-xs text-muted-foreground ml-1">{r.unit}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {formatStagingQty(r.consumed_qty)}
+                      <span className="text-xs text-muted-foreground ml-1">{r.unit}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {formatStagingQty(r.damaged_qty ?? 0)}
+                      <span className="text-xs text-muted-foreground ml-1">{r.unit}</span>
+                    </td>
                     <td
                       className={cn(
                         "px-4 py-3 font-semibold",
                         r.remaining_qty <= 0 && r.issued_qty > 0 && "text-red-600",
                       )}
                     >
-                      {r.remaining_qty}
+                      {formatStagingQty(r.remaining_qty)}
+                      <span className="text-xs font-normal text-muted-foreground ml-1">{r.unit}</span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="text-xs mb-1 text-muted-foreground">
-                        {r.consumed_qty + (r.damaged_qty ?? 0)}/{r.issued_qty || "—"}
+                        {formatStagingQty(r.consumed_qty + (r.damaged_qty ?? 0))}/
+                        {r.issued_qty > 0 ? formatStagingQty(r.issued_qty) : "—"} {r.unit}
                       </div>
                       <ProgressBar
                         consumed={r.consumed_qty}
@@ -435,50 +545,24 @@ export function PackingMaterialsStagingPage() {
                 ))}
               </tbody>
             </table>
+            )}
           </div>
-
-          <h2 className="text-sm font-bold mb-3">Recent take-outs</h2>
-          {issues.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No issues yet.</p>
-          ) : (
-            <ul className="space-y-3">
-              {issues.map((issue) => (
-                <li key={issue.id} className="rounded-xl border border-border p-4 text-sm">
-                  <div className="flex flex-wrap justify-between gap-2 mb-2">
-                    <span className="font-semibold">#{issue.id}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {issue.issued_by_name ?? "—"} · {new Date(issue.created_at).toLocaleString()}
-                    </span>
-                  </div>
-                  {issue.est_parcels_typical != null && (
-                    <p className="text-xs text-amber-800 mb-2">
-                      ~{issue.est_parcels_typical} parcels
-                      {issue.est_parcels_label ? ` (${issue.est_parcels_label})` : ""}
-                    </p>
-                  )}
-                  <ul className="text-xs text-muted-foreground space-y-0.5">
-                    {issue.lines.map((l, i) => (
-                      <li key={i}>
-                        {l.stock_name}: {l.qty} {l.unit}
-                        {l.bubble_width_cm ? ` (${l.bubble_width_cm} cm)` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                  {issue.note && <p className="text-xs mt-2 italic">{issue.note}</p>}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+        </AppSectionEnter>
+      ) : view === "takeouts" ? (
+        <PackingTakeOutsPanel refreshKey={logRefreshKey} />
+      ) : (
+        <PackingDamageLogPanel refreshKey={logRefreshKey} />
       )}
 
       {issueOpen && (
         <PackingIssueModal
           catalog={catalog}
+          bubbleYields={bubbleYields}
           onClose={() => setIssueOpen(false)}
           onDone={() => {
             setIssueOpen(false);
             setSuccess("Materials issued to packing.");
+            setLogRefreshKey((k) => k + 1);
             void load();
           }}
         />
@@ -491,6 +575,7 @@ export function PackingMaterialsStagingPage() {
           onDone={(message) => {
             setDamageRow(null);
             setSuccess(message);
+            setLogRefreshKey((k) => k + 1);
             void load();
           }}
         />

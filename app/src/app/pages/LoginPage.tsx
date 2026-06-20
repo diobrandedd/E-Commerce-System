@@ -8,10 +8,11 @@ import { ApiError } from "@/app/lib/api";
 const DEFAULT_ROUTE_BY_ROLE: Record<Role, string> = {
   executive: "/dashboard",
   prod_manager: "/dashboard",
+  hr: "/dashboard",
   team_leader: "/dashboard",
-  staff: "/stock-input",
-  csr_staff: "/rts/record",
-  csr_tl: "/rts",
+  staff: "/dashboard",
+  csr_staff: "/dashboard",
+  csr_tl: "/dashboard",
   pos: "/pos",
 };
 

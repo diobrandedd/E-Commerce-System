@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-19T07:05:30+02:00
+generated: 2026-06-20T10:05:13+02:00
 type: memory-bank
 table_count: 55
 ---
@@ -16,6 +16,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 
 | File | Function |
 |------|----------|
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_csr_metrics]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_rts_opened_in_range]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_pool]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_recent]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_inventory_list]] |
@@ -35,6 +37,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 
 | File | Function |
 |------|----------|
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_csr_metrics]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_pool]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_recent]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_inventory_list]] |
@@ -132,7 +135,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/ar.php` | [[modules/ar#api_ar_list]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
-| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_edit_requests]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_financials]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_list]] |
 | `api/v1/materials.php` | [[modules/materials#api_materials_departments]] |
 | `api/v1/pos.php` | [[modules/pos#api_pos_products]] |
@@ -162,6 +166,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/ar.php` | [[modules/ar#api_ar_list]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_edit_requests]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_financials]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_list]] |
 | `api/v1/honey.php` | [[modules/honey#api_honey_correction_list]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
@@ -205,6 +211,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/costing.php` | [[modules/costing#api_costing_stock_update_price]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_formula_mutate]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_financials]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_for_dept]] |
@@ -292,7 +299,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 
 | File | Function |
 |------|----------|
-| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_edit_requests]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_list]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_submit]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_approve]] |
@@ -315,11 +322,12 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/costing.php` | [[modules/costing#api_costing_product_create]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_product_update_selling_price]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_financials]] |
 | `api/v1/pos.php` | [[modules/pos#api_pos_products]] |
 | `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_catalog_snapshot]] |
-| `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_checkout]] |
+| `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_build_cart_lines]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_product_map]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
@@ -357,7 +365,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_apply_price_change]] |
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_build_product_detail]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
-| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_financials]] |
 
 ## `product_cost_history`
 
@@ -365,7 +373,7 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_apply_price_change]] |
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_build_product_detail]] |
-| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_financials]] |
 
 ## `inventory_edit_log`
 
@@ -392,6 +400,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_create]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_approve]] |
@@ -444,6 +453,9 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_csr_metrics]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_shipped_count_in_range]] |
+| `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_shipped_summary]] |
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
 | `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_revert_parcel_to_packing_if_shipped]] |

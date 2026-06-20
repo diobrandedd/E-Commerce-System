@@ -340,30 +340,38 @@ def parse_excel(excel_paths: list, log_fn) -> dict:
 
 # ─── PDF STAMPING ────────────────────────────────────────────────────────────
 
-# Colors — stamp pages use black text; no-match uses red text (no box/border)
+# Colors — stamp box on label; matched = black border/white fill, no-match = red
 BLACK         = (0, 0, 0)
+WHITE         = (1, 1, 1)
+RED_FILL      = (1.00, 0.93, 0.93)
+RED_BORDER    = (0.55, 0.05, 0.05)
 RED_TEXT      = (0.45, 0.02, 0.02)
+
+
+def _is_shopee_express_label(tn: str | None) -> bool:
+    tn_up = (tn or '').upper()
+    if tn_up.startswith('SPEPH') or tn_up.startswith('SPX'):
+        return True
+    if tn:
+        return detect_platform(tn) == 'Shopee Express'
+    return False
 
 
 def _stamp_layout(
     page: fitz.Page,
     tn: str | None,
     line: str | None = None,
-) -> tuple[fitz.Rect, int, int]:
+) -> tuple[fitz.Rect, int, int, int]:
     """
-    Item stamp on the bottom-right; bottom-left kept clear for SPX/Shopee QR only.
-    Returns (rect, font_size, font_size_small).
+    Item stamp at the bottom-right of every label.
+    SPX/Shopee: leave bottom-left clear for carrier QR (~42% width).
+    Returns (rect, font_size, font_size_small, text_align).
     """
     pw = page.rect.width
     ph = page.rect.height
     margin = 4
 
-    tn_up = (tn or '').upper()
-    # Only SPEPH/SPX use the narrow layout (QR bottom-left). Flash/Lazada P… IDs use full width.
-    is_shopee = tn_up.startswith('SPEPH') or tn_up.startswith('SPX')
-    if not is_shopee and tn:
-        is_shopee = detect_platform(tn) == 'Shopee Express'
-
+    is_shopee = _is_shopee_express_label(tn)
     left_reserve = pw * (0.42 if is_shopee else 0.22)
     long_line = bool(line and len(line) > 45)
     box_h = 20 if is_shopee else 24
@@ -375,7 +383,7 @@ def _stamp_layout(
 
     x0 = max(left_reserve + margin, left_reserve)
     rect = fitz.Rect(x0, ph - box_h - margin, pw - margin, ph - margin)
-    return rect, font, font_small
+    return rect, font, font_small, fitz.TEXT_ALIGN_LEFT
 
 
 def _draw_stamp_text(
@@ -385,6 +393,7 @@ def _draw_stamp_text(
     font: int,
     font_small: int,
     color: tuple,
+    align: int = fitz.TEXT_ALIGN_LEFT,
 ) -> None:
     """Fit stamp text; shrink font and grow box upward if the line is long."""
     inner = fitz.Rect(rect.x0 + 4, rect.y0 + 2, rect.x1 - 4, rect.y1 - 2)
@@ -398,17 +407,15 @@ def _draw_stamp_text(
                 fontsize=fs,
                 color=color,
                 fontname="hebo",
-                align=fitz.TEXT_ALIGN_LEFT,
+                align=align,
             )
             if rc >= 0:
                 return
-        # Grow box upward for wrapped lines (up to ~2 extra lines)
         grow = 12
         if inner.y0 - grow < rect.y0 - 24:
             break
         inner = fitz.Rect(inner.x0, inner.y0 - grow, inner.x1, inner.y1)
 
-    # Last resort: truncate so something is always visible
     label = 'ITEMS: ' if line.upper().startswith('ITEMS:') else ''
     body = line[len(label):] if label else line
     max_body = max(12, int((inner.width / 4.5)))
@@ -419,14 +426,14 @@ def _draw_stamp_text(
         fontsize=min_fs,
         color=color,
         fontname="hebo",
-        align=fitz.TEXT_ALIGN_LEFT,
+        align=align,
     )
 
 
 def stamp_page(page: fitz.Page, items: str, matched: bool, tn: str | None):
     """
-    Item stamp at the bottom-right (e.g. ITEMS: 1 x 1L HONEY w/SF).
-    Bottom-left stays clear for carrier QR codes on SPX/Shopee labels only.
+    Bordered item stamp at the bottom-right (e.g. ITEMS: 1 x 1L HONEY w/SF).
+    Bottom-left stays clear for SPX/Shopee QR codes.
     """
     if matched:
         line = f"ITEMS: {items}"
@@ -434,12 +441,14 @@ def stamp_page(page: fitz.Page, items: str, matched: bool, tn: str | None):
         tn_str = tn or "UNKNOWN"
         line = f"NO MATCH: {tn_str}"
 
-    rect, font, font_small = _stamp_layout(page, tn, line)
+    rect, font, font_small, align = _stamp_layout(page, tn, line)
 
     if matched:
-        _draw_stamp_text(page, rect, line, font, font_small, BLACK)
+        page.draw_rect(rect, color=BLACK, fill=WHITE, width=1.2)
+        _draw_stamp_text(page, rect, line, font, font_small, BLACK, align)
     else:
-        _draw_stamp_text(page, rect, line, font, font_small, RED_TEXT)
+        page.draw_rect(rect, color=RED_BORDER, fill=RED_FILL, width=1.2)
+        _draw_stamp_text(page, rect, line, font, font_small, RED_TEXT, align)
 
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────

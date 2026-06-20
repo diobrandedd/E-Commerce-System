@@ -1,9 +1,9 @@
 ---
 title: fulfillment_packing
 source: includes/fulfillment_packing.php
-generated: 2026-06-19T07:05:36+02:00
+generated: 2026-06-20T10:05:19+02:00
 type: module
-function_count: 28
+function_count: 33
 ---
 
 
@@ -30,31 +30,32 @@ function_count: 28
 **Callers (3):**
 
 - `includes/fulfillment_packing.php`:37 — `if (!in_array($widthCm, fulfillment_packing_bubble_widths_cm(), true)) {`
-- `includes/fulfillment_packing.php`:194 — `if (!in_array($width, fulfillment_packing_bubble_widths_cm(), true)) {`
-- `includes/fulfillment_packing.php`:372 — `if (!in_array($width, fulfillment_packing_bubble_widths_cm(), true)) {`
+- `includes/fulfillment_packing.php`:285 — `if (!in_array($width, fulfillment_packing_bubble_widths_cm(), true)) {`
+- `includes/fulfillment_packing.php`:463 — `if (!in_array($width, fulfillment_packing_bubble_widths_cm(), true)) {`
 
 ## fulfillment_packing_is_bubble_generic_name {#fulfillment_packing_is_bubble_generic_name}
 
 **Callers (3):**
 
-- `includes/fulfillment_packing.php`:192 — `if (fulfillment_packing_is_bubble_generic_name($name)) {`
-- `includes/fulfillment_packing.php`:370 — `if (fulfillment_packing_is_bubble_generic_name($name)) {`
-- `includes/fulfillment_packing.php`:693 — `|| fulfillment_packing_is_bubble_generic_name((string) $row['name'])) {`
+- `includes/fulfillment_packing.php`:283 — `if (fulfillment_packing_is_bubble_generic_name($name)) {`
+- `includes/fulfillment_packing.php`:461 — `if (fulfillment_packing_is_bubble_generic_name($name)) {`
+- `includes/fulfillment_packing.php`:781 — `|| fulfillment_packing_is_bubble_generic_name((string) $row['name'])) {`
 
 ## fulfillment_packing_is_bubble_sized_name {#fulfillment_packing_is_bubble_sized_name}
 
-**Callers (3):**
+**Callers (4):**
 
-- `includes/fulfillment_packing.php`:198 — `} elseif (fulfillment_packing_is_bubble_sized_name($name)) {`
-- `includes/fulfillment_packing.php`:358 — `if (fulfillment_packing_is_bubble_sized_name($name)) {`
-- `includes/fulfillment_packing.php`:649 — `'is_bubble_sized' => fulfillment_packing_is_bubble_sized_name((string) $row['name']),`
+- `includes/fulfillment_packing.php`:96 — `if (!fulfillment_packing_is_bubble_sized_name((string) ($row['name'] ?? ''))) {`
+- `includes/fulfillment_packing.php`:133 — `$isBubbleSized = fulfillment_packing_is_bubble_sized_name($name);`
+- `includes/fulfillment_packing.php`:289 — `} elseif (fulfillment_packing_is_bubble_sized_name($name)) {`
+- `includes/fulfillment_packing.php`:449 — `if (fulfillment_packing_is_bubble_sized_name($name)) {`
 
 ## fulfillment_packing_bubble_sized_stock_name {#fulfillment_packing_bubble_sized_stock_name}
 
 **Callers (2):**
 
 - `includes/fulfillment_packing.php`:40 — `$name = fulfillment_packing_bubble_sized_stock_name($widthCm);`
-- `includes/fulfillment_packing.php`:391 — `'stock_name' => fulfillment_packing_bubble_sized_stock_name($width),`
+- `includes/fulfillment_packing.php`:482 — `'stock_name' => fulfillment_packing_bubble_sized_stock_name($width),`
 
 ## fulfillment_packing_bubble_sized_stock_id {#fulfillment_packing_bubble_sized_stock_id}
 
@@ -62,8 +63,8 @@ function_count: 28
 
 **Callers (2):**
 
-- `includes/fulfillment_packing.php`:197 — `$stockId = fulfillment_packing_bubble_sized_stock_id($pdo, $width);`
-- `includes/fulfillment_packing.php`:375 — `$stagingId = fulfillment_packing_bubble_sized_stock_id($pdo, $width);`
+- `includes/fulfillment_packing.php`:288 — `$stockId = fulfillment_packing_bubble_sized_stock_id($pdo, $width);`
+- `includes/fulfillment_packing.php`:466 — `$stagingId = fulfillment_packing_bubble_sized_stock_id($pdo, $width);`
 
 ## fulfillment_packing_foam_generic_stock_name {#fulfillment_packing_foam_generic_stock_name}
 
@@ -82,10 +83,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/fulfillment_packing.php`:200 — `} elseif (fulfillment_packing_is_foam_sized_name($name)) {`
-- `includes/fulfillment_packing.php`:271 — `if ($unit === 'foam_piece' && fulfillment_packing_is_foam_sized_name($stockName)) {`
-- `includes/fulfillment_packing.php`:364 — `if (fulfillment_packing_is_foam_sized_name($name)) {`
-- `includes/fulfillment_packing.php`:555 — `if ($lineUnit === 'foam_piece' && fulfillment_packing_is_foam_sized_name((string) $row['name'])) {`
+- `includes/fulfillment_packing.php`:291 — `} elseif (fulfillment_packing_is_foam_sized_name($name)) {`
+- `includes/fulfillment_packing.php`:362 — `if ($unit === 'foam_piece' && fulfillment_packing_is_foam_sized_name($stockName)) {`
+- `includes/fulfillment_packing.php`:455 — `if (fulfillment_packing_is_foam_sized_name($name)) {`
+- `includes/fulfillment_packing.php`:652 — `if ($lineUnit === 'foam_piece' && fulfillment_packing_is_foam_sized_name((string) $row['name'])) {`
 
 ## fulfillment_packing_foam_generic_stock_id {#fulfillment_packing_foam_generic_stock_id}
 
@@ -93,8 +94,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/fulfillment_packing.php`:273 — `$lookupId = fulfillment_packing_foam_generic_stock_id($pdo);`
-- `includes/fulfillment_packing.php`:556 — `$stagingStockId = fulfillment_packing_foam_generic_stock_id($pdo);`
+- `includes/fulfillment_packing.php`:364 — `$lookupId = fulfillment_packing_foam_generic_stock_id($pdo);`
+- `includes/fulfillment_packing.php`:653 — `$stagingStockId = fulfillment_packing_foam_generic_stock_id($pdo);`
 
 ## material_inventory_role_is_tl {#material_inventory_role_is_tl}
 
@@ -106,18 +107,60 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (5):**
 
-- `includes/fulfillment_packing.php`:168 — `'remaining_qty' => fulfillment_packing_staging_remaining($issued, $consumed, $damaged),`
-- `includes/fulfillment_packing.php`:578 — `$remaining = fulfillment_packing_staging_remaining($issued, $consumed, $damaged);`
-- `includes/fulfillment_packing.php`:648 — `'remaining_qty' => fulfillment_packing_staging_remaining($issued, $consumed, $damaged),`
-- `includes/fulfillment_packing.php`:711 — `$remaining = fulfillment_packing_staging_remaining($issued, $consumed, $damaged);`
-- `includes/fulfillment_packing.php`:742 — `'remaining_qty' => fulfillment_packing_staging_remaining($issued, $consumed, $newDamaged),`
+- `includes/fulfillment_packing.php`:132 — `$remainingRoll = fulfillment_packing_staging_remaining($issued, $consumed, $damaged);`
+- `includes/fulfillment_packing.php`:259 — `'remaining_qty' => fulfillment_packing_staging_remaining($issued, $consumed, $damaged),`
+- `includes/fulfillment_packing.php`:675 — `$remaining = fulfillment_packing_staging_remaining($issued, $consumed, $damaged);`
+- `includes/fulfillment_packing.php`:823 — `$remaining = fulfillment_packing_staging_remaining($issued, $consumed, $damaged);`
+- `includes/fulfillment_packing.php`:853 — `$remainingRoll = fulfillment_packing_staging_remaining($issued, $consumed, $newDamaged);`
+
+## fulfillment_packing_bubble_piece_yield_from_row {#fulfillment_packing_bubble_piece_yield_from_row}
+
+**Callers (4):**
+
+- `includes/fulfillment_packing.php`:131 — `$yield = fulfillment_packing_bubble_piece_yield_from_row($row);`
+- `includes/fulfillment_packing.php`:168 — `$yield = fulfillment_packing_bubble_piece_yield_from_row($stockRow);`
+- `includes/fulfillment_packing.php`:785 — `$yield = fulfillment_packing_bubble_piece_yield_from_row($row);`
+- `includes/fulfillment_packing.php`:904 — `$yield = fulfillment_packing_bubble_piece_yield_from_row([`
+
+## fulfillment_packing_staging_piece_qty {#fulfillment_packing_staging_piece_qty}
+
+**Callers (9):**
+
+- `includes/fulfillment_packing.php`:145 — `$out['issued_qty'] = fulfillment_packing_staging_piece_qty($issued, $yield);`
+- `includes/fulfillment_packing.php`:146 — `$out['consumed_qty'] = fulfillment_packing_staging_piece_qty($consumed, $yield);`
+- `includes/fulfillment_packing.php`:147 — `$out['damaged_qty'] = fulfillment_packing_staging_piece_qty($damaged, $yield);`
+- `includes/fulfillment_packing.php`:148 — `$out['remaining_qty'] = fulfillment_packing_staging_piece_qty($remainingRoll, $yield);`
+- `includes/fulfillment_packing.php`:171 — `'qty' => fulfillment_packing_staging_piece_qty($rollQty, $yield),`
+- `includes/fulfillment_packing.php`:826 — `? fulfillment_packing_staging_piece_qty($remaining, $yield) . ' pc'`
+- `includes/fulfillment_packing.php`:860 — `'damaged_qty' => fulfillment_packing_staging_piece_qty($newDamaged, $yield),`
+- `includes/fulfillment_packing.php`:861 — `'remaining_qty' => fulfillment_packing_staging_piece_qty($remainingRoll, $yield),`
+- `includes/fulfillment_packing.php`:910 — `'qty' => fulfillment_packing_staging_piece_qty($rollQty, $yield),`
+
+## fulfillment_packing_pieces_to_staging_rolls {#fulfillment_packing_pieces_to_staging_rolls}
+
+**Callers (1):**
+
+- `includes/fulfillment_packing.php`:790 — `$rollQty = fulfillment_packing_pieces_to_staging_rolls($qty, $yield);`
+
+## fulfillment_packing_staging_balance_display_row {#fulfillment_packing_staging_balance_display_row}
+
+**Callers (1):**
+
+- `includes/fulfillment_packing.php`:738 — `$rows[] = fulfillment_packing_staging_balance_display_row($row, $issued, $consumed, $damaged);`
+
+## fulfillment_packing_issue_line_display {#fulfillment_packing_issue_line_display}
+
+**Callers (2):**
+
+- `includes/fulfillment_packing.php`:597 — `? fulfillment_packing_issue_line_display($stagingRow, $qty, $lineUnit)`
+- `includes/fulfillment_packing.php`:986 — `$display = fulfillment_packing_issue_line_display([`
 
 ## fulfillment_packing_is_fulfillment_stock_name {#fulfillment_packing_is_fulfillment_stock_name}
 
 **Callers (2):**
 
-- `includes/fulfillment_packing.php`:399 — `if (!fulfillment_packing_is_fulfillment_stock_name($name)) {`
-- `includes/fulfillment_packing.php`:692 — `if (!fulfillment_packing_is_fulfillment_stock_name((string) $row['name'])`
+- `includes/fulfillment_packing.php`:490 — `if (!fulfillment_packing_is_fulfillment_stock_name($name)) {`
+- `includes/fulfillment_packing.php`:780 — `if (!fulfillment_packing_is_fulfillment_stock_name((string) $row['name'])`
 
 ## fulfillment_packing_tables_ready {#fulfillment_packing_tables_ready}
 
@@ -125,13 +168,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (9):**
 
-- `includes/fulfillment_packing.php`:147 — `if (!fulfillment_packing_tables_ready($pdo)) {`
-- `includes/fulfillment_packing.php`:338 — `if (!fulfillment_packing_tables_ready($pdo)) {`
-- `includes/fulfillment_packing.php`:540 — `if (!fulfillment_packing_tables_ready($pdo)) {`
-- `includes/fulfillment_packing.php`:610 — `if (!fulfillment_packing_tables_ready($pdo)) {`
-- `includes/fulfillment_packing.php`:668 — `if (!fulfillment_packing_tables_ready($pdo)) {`
-- `includes/fulfillment_packing.php`:750 — `if (!fulfillment_packing_tables_ready($pdo)) {`
-- `includes/fulfillment_packing.php`:791 — `if (!fulfillment_packing_tables_ready($pdo)) {`
+- `includes/fulfillment_packing.php`:238 — `if (!fulfillment_packing_tables_ready($pdo)) {`
+- `includes/fulfillment_packing.php`:429 — `if (!fulfillment_packing_tables_ready($pdo)) {`
+- `includes/fulfillment_packing.php`:637 — `if (!fulfillment_packing_tables_ready($pdo)) {`
+- `includes/fulfillment_packing.php`:707 — `if (!fulfillment_packing_tables_ready($pdo)) {`
+- `includes/fulfillment_packing.php`:757 — `if (!fulfillment_packing_tables_ready($pdo)) {`
+- `includes/fulfillment_packing.php`:879 — `if (!fulfillment_packing_tables_ready($pdo)) {`
+- `includes/fulfillment_packing.php`:938 — `if (!fulfillment_packing_tables_ready($pdo)) {`
 - `includes/material_inventory.php`:1123 — `if (fulfillment_packing_tables_ready($pdo)) {`
 - `includes/material_inventory.php`:1189 — `if (fulfillment_packing_tables_ready($pdo)) {`
 
@@ -140,7 +183,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/fulfillment_packing.php`:12 — `if (!material_inventory_role_can_issue_packing($role)) {`
-- `includes/fulfillment_packing.php`:136 — `return material_inventory_role_can_issue_packing($role);`
+- `includes/fulfillment_packing.php`:227 — `return material_inventory_role_can_issue_packing($role);`
 
 ## material_inventory_role_can_edit_packaging_price {#material_inventory_role_can_edit_packaging_price}
 
@@ -173,14 +216,14 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/fulfillment_packing.php`:219 — `$lines = fulfillment_packing_estimate_lines($pdo, $lines);`
+- `includes/fulfillment_packing.php`:310 — `$lines = fulfillment_packing_estimate_lines($pdo, $lines);`
 
 ## fulfillment_packing_estimate_parcels {#fulfillment_packing_estimate_parcels}
 
 **Callers (2):**
 
 - `api/v1/fulfillment_packing.php`:77 — `api_ok(['estimate' => fulfillment_packing_estimate_parcels($pdo, $normalized)]);`
-- `includes/fulfillment_packing.php`:420 — `$estimate = fulfillment_packing_estimate_parcels($pdo, $lines);`
+- `includes/fulfillment_packing.php`:511 — `$estimate = fulfillment_packing_estimate_parcels($pdo, $lines);`
 
 ## fulfillment_packing_issue_create {#fulfillment_packing_issue_create}
 
@@ -188,7 +231,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/fulfillment_packing.php`:108 — `$result = fulfillment_packing_issue_create($pdo, (int) $user['id'], $normalized, $note);`
+- `api/v1/fulfillment_packing.php`:107 — `$result = fulfillment_packing_issue_create($pdo, (int) $user['id'], $normalized, $note);`
 
 ## fulfillment_packing_consume_line {#fulfillment_packing_consume_line}
 
@@ -212,7 +255,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/fulfillment_packing.php`:135 — `$result = fulfillment_packing_report_damage($pdo, (int) $user['id'], $stockId, $qty, $note);`
+- `api/v1/fulfillment_packing.php`:132 — `$result = fulfillment_packing_report_damage($pdo, (int) $user['id'], $stockId, $qty, $note, $qtyUnit);`
 
 ## fulfillment_packing_damage_list {#fulfillment_packing_damage_list}
 
@@ -220,7 +263,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/fulfillment_packing.php`:149 — `$result = fulfillment_packing_damage_list($pdo, $page, $perPage);`
+- `api/v1/fulfillment_packing.php`:146 — `$result = fulfillment_packing_damage_list($pdo, $page, $perPage);`
 
 ## fulfillment_packing_issues_list {#fulfillment_packing_issues_list}
 

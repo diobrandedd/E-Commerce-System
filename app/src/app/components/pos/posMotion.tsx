@@ -165,16 +165,25 @@ export function FeedbackBurst({
 }) {
   const reduce = useReducedMotion();
   const isSuccess = kind === "success";
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!show || !onDone) return;
-    const t = window.setTimeout(onDone, reduce ? 400 : 700);
+    if (!show) {
+      setVisible(false);
+      return;
+    }
+    setVisible(true);
+    const duration = reduce ? 400 : 700;
+    const t = window.setTimeout(() => {
+      setVisible(false);
+      onDone?.();
+    }, duration);
     return () => window.clearTimeout(t);
   }, [show, onDone, reduce]);
 
   return (
     <AnimatePresence>
-      {show && (
+      {visible && (
         <motion.div
           className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
           initial={{ opacity: 0 }}

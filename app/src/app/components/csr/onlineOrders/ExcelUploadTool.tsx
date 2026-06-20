@@ -6,6 +6,12 @@ import { triggerWaybillStashDownload } from "@/app/lib/waybillApi";
 import { onlineOrdersToolExcelRegister } from "@/app/lib/onlineOrdersApi";
 import type { OnlineOrdersPrepResult } from "@/app/lib/onlineOrdersTypes";
 import { apiPostForm, getCsrfToken, ApiError } from "@/app/lib/api";
+import { PracticeTap } from "@/app/components/tour/PracticeTap";
+import {
+  practiceStageAtLeast,
+  type OnlineOrdersPracticeStage,
+} from "@/app/components/csr/onlineOrders/onlineOrdersPractice";
+import { OnlineOrdersBackToToolsButton } from "@/app/components/csr/onlineOrders/OnlineOrdersNavButtons";
 
 async function stashExcel(file: File): Promise<string> {
   const form = new FormData();
@@ -21,9 +27,13 @@ async function stashExcel(file: File): Promise<string> {
 export function ExcelUploadTool({
   onDone,
   onBack,
+  practiceMode = false,
+  practiceStage = "excel-upload",
 }: {
   onDone: () => void;
   onBack: () => void;
+  practiceMode?: boolean;
+  practiceStage?: OnlineOrdersPracticeStage;
 }) {
   const [excelFiles, setExcelFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
@@ -52,11 +62,36 @@ export function ExcelUploadTool({
     }
   };
 
+  if (practiceMode) {
+    return (
+      <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
+        <OnlineOrdersBackToToolsButton onClick={onBack} />
+        <p className="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Practice mode — no files uploaded
+        </p>
+        {practiceStageAtLeast(practiceStage, "excel-upload") && (
+          <div data-tour="online-orders-excel-upload">
+            <PracticeTap label="Practice: upload iPYX Excel" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "excel-validate") && (
+          <div data-tour="online-orders-excel-validate">
+            <PracticeTap label="Practice: validate Excel" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "excel-result") && (
+          <div className="rounded-lg border border-green-200 bg-green-50/80 p-4 space-y-3" data-tour="online-orders-excel-result">
+            <p className="text-sm text-green-800 font-medium">24 rows validated (sample)</p>
+            <PracticeTap label="Practice: back to tools" />
+          </div>
+        )}
+      </FulfillmentSectionEnter>
+    );
+  }
+
   return (
     <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
-      <button type="button" onClick={onBack} className="text-sm text-muted-foreground hover:text-foreground" data-tour="online-orders-tool-back">
-        ← Back to tools
-      </button>
+      <OnlineOrdersBackToToolsButton onClick={onBack} />
       <p className="text-sm text-muted-foreground">
         Upload partner iPYX Excel (.xlsx). We validate columns and row count — go back to tools and open PDF + Excel stamper to stamp.
       </p>
@@ -99,9 +134,7 @@ export function ExcelUploadTool({
             >
               <Download size={16} /> Download Excel
             </FulfillmentPressable>
-            <FulfillmentPressable variant="primary" className="px-4 py-2.5" onClick={onDone}>
-              Back to tools
-            </FulfillmentPressable>
+            <OnlineOrdersBackToToolsButton onClick={onDone} />
           </div>
         </div>
       )}

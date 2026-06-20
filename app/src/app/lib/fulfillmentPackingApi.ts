@@ -13,6 +13,9 @@ export interface PackingBalanceRow {
   damaged_qty: number;
   remaining_qty: number;
   is_bubble_sized?: boolean;
+  pool_yield_qty?: number | null;
+  issued_roll_qty?: number;
+  remaining_roll_qty?: number;
 }
 
 export interface PackingIssueLine {
@@ -20,6 +23,7 @@ export interface PackingIssueLine {
   stock_name: string;
   qty: number;
   unit: string;
+  roll_qty?: number | null;
   bubble_width_cm?: number;
 }
 
@@ -38,6 +42,8 @@ export interface PackingDamageRow {
   stock_id: number;
   stock_name: string;
   qty: number;
+  unit: string;
+  roll_qty?: number | null;
   note: string;
   created_at: string;
   reported_by_name: string | null;
@@ -102,14 +108,24 @@ export async function packingDamageReport(payload: {
   stock_id: number;
   qty: number;
   note: string;
+  qty_unit?: "pc" | "roll";
 }): Promise<{
   stock_id: number;
   qty: number;
+  unit: string;
   damaged_qty: number;
   remaining_qty: number;
   event_id: number;
 }> {
   return apiPost("fulfillment_packing.php", "packing_damage_report", payload);
+}
+
+export function formatStagingQty(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  if (Number.isInteger(n) || Math.abs(n - Math.round(n)) < 0.01) {
+    return Math.round(n).toLocaleString();
+  }
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
 export async function packingDamageList(params?: { page?: number; per_page?: number }): Promise<{
