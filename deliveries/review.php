@@ -2,12 +2,9 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/includes/db.php';
-require_once dirname(__DIR__) . '/includes/auth.php';
-require_once dirname(__DIR__) . '/includes/deliveries_review_nav.php';
-require_once dirname(__DIR__) . '/includes/admin_nav.php';
-require_once dirname(__DIR__) . '/includes/rts_storage.php';
+require_once dirname(__DIR__) . '/includes/forwarding.php';
 
+<<<<<<< HEAD
 rts_require_roles([RTS_ROLE_ADMIN], '../login.php');
 
 $pageTitle = 'Deliveries — admin review';
@@ -897,3 +894,7 @@ $iconPen = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewB
   </script>
 </body>
 </html>
+=======
+header('Location: ../app/dist/deliveries/review', true, 302);
+exit;
+>>>>>>> v3.6.5

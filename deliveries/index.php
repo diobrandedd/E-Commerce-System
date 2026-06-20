@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__) . '/includes/db.php';
-require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/forwarding.php';
 
+<<<<<<< HEAD
 rts_session_start();
 $user = rts_auth_user();
 
@@ -774,3 +774,7 @@ $isLoggedIn = $user !== null;
   </script>
 </body>
 </html>
+=======
+header('Location: ../app/dist/deliveries', true, 302);
+exit;
+>>>>>>> v3.6.5

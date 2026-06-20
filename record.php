@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+$qs = isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] !== ''
+    ? '?' . $_SERVER['QUERY_STRING']
+    : '';
+header('Location: app/dist/rts/record' . $qs, true, 302);
+exit;
+
 require_once __DIR__ . '/includes/auth.php';
 rts_require_roles([RTS_ROLE_ADMIN], 'login.php');
 
@@ -24,6 +30,7 @@ $pageTitle = 'Record RTS';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
+<<<<<<< HEAD
   <script>
   (function () {
     var NGROK_HOST = 'basket-grouped-viscous.ngrok-free.dev';
@@ -31,6 +38,9 @@ $pageTitle = 'Record RTS';
     location.replace('https://' + NGROK_HOST + location.pathname + location.search + location.hash);
   })();
   </script>
+=======
+  <?= rts_forwarding_head_script() ?>
+>>>>>>> v3.6.5
   <style>
     :root {
       --bg: #fffdf6;
@@ -667,6 +677,7 @@ $pageTitle = 'Record RTS';
         <button type="button" class="btn btn-primary" id="btnSaveScanNext" disabled>Scan next parcel</button>
       </div>
       <div class="toolbar hidden" id="rtsEditActions" style="justify-content:space-between;margin-top:0.75rem;">
+<<<<<<< HEAD
         <button type="button" class="btn btn-ghost btn-danger" id="btnDeleteRecord">Delete entry</button>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-left:auto;">
           <button type="button" class="btn btn-ghost" id="btnModalCancelEdit">Cancel</button>
@@ -685,6 +696,10 @@ $pageTitle = 'Record RTS';
       <div class="delete-confirm-actions">
         <button type="button" class="btn-cancel-confirm" id="deleteConfirmCancel">Cancel</button>
         <button type="button" class="btn-danger-confirm" id="deleteConfirmYes">Yes, delete permanently</button>
+=======
+        <button type="button" class="btn btn-ghost" id="btnModalCancelEdit">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btnSave" disabled>Save changes</button>
+>>>>>>> v3.6.5
       </div>
     </div>
   </div>
@@ -2080,6 +2095,7 @@ $pageTitle = 'Record RTS';
     return true;
   }
 
+<<<<<<< HEAD
   function closeDeleteConfirm() {
     const bd = $('deleteConfirmBackdrop');
     if (!bd) return;
@@ -2160,6 +2176,8 @@ $pageTitle = 'Record RTS';
     });
   }
 
+=======
+>>>>>>> v3.6.5
   $('btnSave').addEventListener('click', () => { void saveRts(); });
   $('btnSaveDone').addEventListener('click', () => {
     void saveRts(() => closeScanPanel());
@@ -2257,11 +2275,14 @@ $pageTitle = 'Record RTS';
       scanLock = false;
       return;
     }
+<<<<<<< HEAD
     const delBd = $('deleteConfirmBackdrop');
     if (delBd && !delBd.classList.contains('hidden')) {
       closeDeleteConfirm();
       return;
     }
+=======
+>>>>>>> v3.6.5
     if ($('modalBackdrop') && !$('modalBackdrop').classList.contains('hidden') && !isEditMode) {
       hideModalNew();
       scanLock = false;

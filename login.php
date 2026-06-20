@@ -4,7 +4,17 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/auth_check.php';
 
+if (ims_pos_authenticated()) {
+    header('Location: ' . ims_redirect_dashboard_by_role(IMS_ROLE_POS), true, 302);
+    exit;
+}
+$imsUser = ims_current_user();
+if ($imsUser !== null) {
+    header('Location: ' . ims_redirect_dashboard_by_role((string) $imsUser['role']), true, 302);
+    exit;
+}
 if (rts_auth_user() !== null) {
     header('Location: ' . rts_login_redirect_by_role((string) rts_auth_user()['role']), true, 302);
     exit;
@@ -14,10 +24,17 @@ $error = '';
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $user = trim((string) ($_POST['username'] ?? ''));
     $pass = (string) ($_POST['password'] ?? '');
+
     if (rts_auth_login($user, $pass, '')) {
         $auth = rts_auth_user();
         $role = $auth !== null ? (string) $auth['role'] : '';
         header('Location: ' . rts_login_redirect_by_role($role), true, 302);
+        exit;
+    }
+    if (ims_login_user($user, $pass)) {
+        $auth = ims_current_user();
+        $role = $auth !== null ? (string) $auth['role'] : '';
+        header('Location: ' . ims_redirect_dashboard_by_role($role), true, 302);
         exit;
     }
     $error = 'Invalid username/password, or account is not active.';
@@ -31,6 +48,9 @@ $pageTitle = 'Pyx Tracker Management System — Sign in';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/sys_img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/sys_img/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/sys_img/apple-touch-icon.png">
   <style>
     :root { --bg:#fffdf6; --panel:#fff; --border:#e8dcc5; --text:#3f2f1e; --muted:#7e6a4b; --accent:#d99200; --danger:#c65a4a; }
     * { box-sizing: border-box; }
@@ -88,7 +108,11 @@ $pageTitle = 'Pyx Tracker Management System — Sign in';
 
     <div class="delivery-cta">
       <p>Deliveries</p>
+<<<<<<< HEAD
       <a href="deliveries/index.php" id="deliveryBulkLink">Go to deliveries</a>
+=======
+      <a href="app/dist/deliveries" id="deliveryBulkLink">Go to deliveries</a>
+>>>>>>> v3.6.5
       <small>Sign in above, or open deliveries if you are already signed in.</small>
     </div>
   </div>

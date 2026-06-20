@@ -1,0 +1,30 @@
+---
+description: SPA UI design system — colors, layout, modals, motion, feedback
+globs: app/src/**/*.ts,app/src/**/*.tsx
+alwaysApply: false
+---
+
+# SPA UI & UX consistency
+
+Before adding or changing React UI:
+
+1. Read `_System_Core/004_SPA_Design_System.md` (colors, PageLayout, tokens)
+2. Read `_System_Core/005_SPA_UX_Patterns.md` (modals, toasts, motion rules, **page guides**, **inventory role permissions**)
+3. Check `_System_Core/generated/spa/151_Components_Index.md` for existing patterns on similar pages
+4. **Inventory pages:** follow `.cursor/rules/inventory-roles-and-guides.mdc` — Guide = header button + modal; permissions from API; no costing links for non-executive
+
+## Must follow
+
+- **Colors:** use Tailwind semantic tokens (`bg-background`, `bg-primary`, `text-muted-foreground`) — not random hex in new code
+- **Exec/inventory/CSR pages:** wrap in `PageLayout` unless POS full-screen
+- **Fixed sidebar:** `PageLayout` shell is `h-dvh overflow-hidden` — only `<main>` scrolls; sidebar stays fixed (see [[fixes/page-layout-fixed-sidebar]]). Never `min-h-screen` on the layout shell
+- **Centered content:** `PageLayout` centers header + body in `max-w-6xl mx-auto` by default (`contentWidth` prop for wide/full). Do not add redundant `max-w-*` on page roots — see [[fixes/page-layout-centered-content]]
+- **Scrollbars:** all `overflow-y-auto` / `overflow-auto` get Pyx slim thumb (fade on hover/scroll); sidebar uses `pyx-scroll-dark`; opt out with `no-pyx-scroll` only when necessary ([[fixes/pyx-scrollbars]])
+- **Modals:** always use `AppModal` (+ Header/Body/Footer) from `components/AppModal.tsx`; see `.cursor/rules/app-modal.mdc`. `FulfillmentModal` is an alias. POS uses `POSModal`. Never new inline `fixed inset-0` dialogs.
+- **Motion:** import from `motion/react`; always use `useReducedMotion()` and disable animation when true
+- **Feedback animations (mandatory):** `.cursor/rules/feedback-animations.mdc` — `appFeedbackMotion.tsx` for notices, pressables, hovers; CSR/POS use domain kits below; never ship static banners or inert buttons
+- **Hover affordance:** `appHoverCard` / `appHoverRow`, `AppPressable`, `Button`, or CSR `FulfillmentTableRow` / `FulfillmentPickerCard`
+- **API calls:** use `app/src/app/lib/api.ts` helpers; see `_System_Core/generated/140_Frontend_API_Clients.md`
+- **Page guides:** muted border **Guide** in `PageLayout` actions → `*GuideModal` (closed by default); never inline accordion on page body — see `CostingGuideModal`, `PackagingInventoryGuideModal`
+
+Auto maps: `_System_Core/generated/spa/` (routes, theme, motion exports)

@@ -93,7 +93,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     $department = '';
                 }
 
-                $hash = password_hash($employeeId, PASSWORD_DEFAULT);
+                $hash = password_hash($employeeId, PASSWORD_BCRYPT);
                 $ins = $pdo->prepare(
                     'INSERT INTO app_users (username, full_name, employee_id, password_hash, role, department, status, created_by_user_id)
                      VALUES (?,?,?,?,?,?,?,?)'
@@ -174,7 +174,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 if (!rts_employee_id_valid($employeeId)) {
                     throw new RuntimeException('Cannot reset password: invalid ID #.');
                 }
-                $hash = password_hash($employeeId, PASSWORD_DEFAULT);
+                $hash = password_hash($employeeId, PASSWORD_BCRYPT);
                 $pdo->prepare('UPDATE app_users SET password_hash = ? WHERE id = ?')->execute([$hash, $userId]);
                 $notice = 'Password reset to ID # for selected user.';
             }
@@ -259,6 +259,7 @@ $pageTitle = 'Executive settings';
       <a href="deliveries/index.php">Deliveries upload</a>
       <a href="record.php">Record RTS</a>
       <a href="records.php">Records</a>
+      <a href="settings.php">Settings</a>
       <a href="logout.php">Sign out</a>
     </nav>
   </aside>
@@ -349,6 +350,12 @@ $pageTitle = 'Executive settings';
               <td><span class="pill"><?= htmlspecialchars($statusLabels[(string) ($u['status'] ?? '')] ?? (string) ($u['status'] ?? ''), ENT_QUOTES, 'UTF-8') ?></span></td>
               <td><?= htmlspecialchars((string) ($u['employee_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
               <td>
+                <form method="post" action="executive.php" style="margin:0 0 0.35rem;">
+                  <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+                  <input type="hidden" name="action" value="reset_password">
+                  <input type="hidden" name="user_id" value="<?= (int) ($u['id'] ?? 0) ?>">
+                  <button class="btn" type="submit">Reset to default (ID #)</button>
+                </form>
                 <details>
                   <summary class="btn" style="display:inline-block;">Manage</summary>
                   <form method="post" action="executive.php" style="margin-top:0.45rem;">
@@ -383,12 +390,6 @@ $pageTitle = 'Executive settings';
                     <div style="margin-top:0.5rem; display:flex; gap:0.35rem; flex-wrap:wrap;">
                       <button class="btn primary" type="submit">Save</button>
                     </div>
-                  </form>
-                  <form method="post" action="executive.php" style="margin-top:0.35rem;">
-                    <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
-                    <input type="hidden" name="action" value="reset_password">
-                    <input type="hidden" name="user_id" value="<?= (int) ($u['id'] ?? 0) ?>">
-                    <button class="btn" type="submit">Reset password to ID #</button>
                   </form>
                 </details>
               </td>

@@ -1,0 +1,15 @@
+---
+description: React SPA API client conventions — keep frontend in sync with api/v1
+globs: app/src/**/*.ts,app/src/**/*.tsx
+alwaysApply: false
+---
+
+# SPA API clients
+
+- API base: `/rts/api/v1` (see `app/src/app/lib/api.ts`)
+- All responses: `{ ok, data, error }` — use shared `apiGet` / `apiPost` helpers
+- Mutating requests: send `X-CSRF-Token` from auth `me` response
+- Backend action renames: update the TS client **and** regenerate `_System_Core/generated/140_Frontend_API_Clients.md`
+- Route guards: mirror backend roles (`RequireAuth`, normalized CSR roles)
+
+Cross-reference backend actions in `_System_Core/generated/100_API_Index.md` before changing query params or action names.

@@ -12,7 +12,7 @@ require_once dirname(__DIR__) . '/includes/rts_storage.php';
 $bucket = isset($_GET['b']) ? trim((string) $_GET['b']) : '';
 $filename = isset($_GET['f']) ? trim((string) $_GET['f']) : '';
 
-$allowed = [RTS_STORAGE_BUCKET_RTS, RTS_STORAGE_BUCKET_DELIVERIES];
+$allowed = [RTS_STORAGE_BUCKET_RTS, RTS_STORAGE_BUCKET_DELIVERIES, RTS_STORAGE_BUCKET_SUPPLIER_IDS];
 if (!in_array($bucket, $allowed, true) || $filename === '') {
     http_response_code(404);
     exit;

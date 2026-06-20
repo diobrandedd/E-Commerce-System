@@ -1,0 +1,65 @@
+{
+  "collapse-filter": true,
+  "search": "",
+  "showTags": false,
+  "showAttachments": true,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "Database",
+      "color": {
+        "a": 1,
+        "rgb": 14701138
+      }
+    },
+    {
+      "query": "UI",
+      "color": {
+        "a": 1,
+        "rgb": 14725458
+      }
+    },
+    {
+      "query": "API",
+      "color": {
+        "a": 1,
+        "rgb": 65310
+      }
+    },
+    {
+      "query": "cause",
+      "color": {
+        "a": 1,
+        "rgb": 5431473
+      }
+    },
+    {
+      "query": "Fixes",
+      "color": {
+        "a": 1,
+        "rgb": 1966335
+      }
+    },
+    {
+      "query": "memory",
+      "color": {
+        "a": 1,
+        "rgb": 15081173
+      }
+    }
+  ],
+  "collapse-display": true,
+  "showArrow": false,
+  "textFadeMultiplier": 1.7,
+  "nodeSizeMultiplier": 0.6359375,
+  "lineSizeMultiplier": 0.814583333333333,
+  "collapse-forces": false,
+  "centerStrength": 0.4375,
+  "repelStrength": 8.95833333333333,
+  "linkStrength": 0.458333333333333,
+  "linkDistance": 241,
+  "scale": 0.13873223932666054,
+  "close": true
+}

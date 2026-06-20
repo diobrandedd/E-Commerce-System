@@ -1,0 +1,41 @@
+---
+description: Before code edits, list applicable .cursor/rules and confirm they were read
+alwaysApply: true
+---
+
+# Rules preflight (before code edits)
+
+When you are about to **change files** (not for read-only Q&A, reviews, or planning-only replies), start with a short **Rules preflight** block before the first edit tool call.
+
+## Required block format
+
+```markdown
+**Rules preflight**
+- Always-on: ponytail, memory-bank-always, ai-directed-engineering, feedback-animations, rules-preflight, verify-fix-loop
+- Task rules: <list rule filenames that apply, or "none beyond always-on">
+- Read: <one line — e.g. "opened spa-ui-design + 004/005 for PackagingMaterialsPage.tsx">
+```
+
+Keep it to 3–6 lines. Do not paste full rule contents.
+
+## How to pick task rules
+
+| If the change touches… | Also read |
+|------------------------|-----------|
+| `app/src/**` (UI) | `spa-ui-design.mdc`, `feedback-animations.mdc`; modals → `app-modal.mdc` |
+| SPA calling `api/v1` | `spa-api-client.mdc` |
+| `includes/**` or `api/**` (PHP) | `php-api-includes.mdc` |
+| Packaging / supplies / inventory UX or `materials.php` | `inventory-roles-and-guides.mdc` |
+| Non-trivial feature (not a one-file typo) | `ai-directed-engineering.mdc` + `_System_Core/001_System_State.md` and linked spec/plan |
+
+**Always-on** (no need to re-open every turn, but list them): `ponytail`, `memory-bank-always.mdc`, `ai-directed-engineering.mdc`, `feedback-animations.mdc`, `verify-fix-loop.mdc`.
+
+## When to skip
+
+- User asked a question only (no file edits).
+- Plan mode / user explicitly asked for a plan, not implementation.
+- User said "don't change code."
+
+## After edits
+
+Follow `memory-bank-always.mdc` for regenerate, problem records, and `002_Memory_Bank.md` when shared logic changed.

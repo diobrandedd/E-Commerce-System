@@ -1,0 +1,219 @@
+{
+  "main": {
+    "id": "a2f057e4ecabb74f",
+    "type": "split",
+    "children": [
+      {
+        "id": "8d9865b457ab68c8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1176b8ead49b7f1b",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "cd5e86f9b71300f3",
+    "type": "split",
+    "children": [
+      {
+        "id": "2b3e6e39d5d30f15",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "298fc017027cb613",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "2e766e908d036b42",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "a7cf34bafab78d45",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "right": {
+    "id": "0b6c2ca760104de3",
+    "type": "split",
+    "children": [
+      {
+        "id": "8b1597286a70c766",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9f6ca1c327f41d33",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "1f8f752f7b03337a",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "4b04263ef8fd09b0",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "e5589e2b8b92067a",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "dc38f97bb4cf315e",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "1176b8ead49b7f1b",
+  "lastOpenFiles": [
+    "specs/waybill stamper and online orders remake.md",
+    "specs/Inventory Connection to Everything.md",
+    "specs/Inventory Arrangement change.md",
+    "specs/Example template spec.md",
+    "specs/2026-06-19_vip-spx-order-interpretation.md",
+    "specs/2026-06-18_honey-comb-production-packaging.md",
+    "specs/2026-06-18_costing-parcel-packaging-session.md",
+    "specs/2026-06-04_Online-Orders-Generator.md",
+    "specs/2026-06-18_bubble-wrap-staging-damage.md",
+    "specs/2026-06-17_fulfillment-packing-staging.md",
+    "specs/2026-06-17_fulfillment-packaging-recipes.md",
+    "specs/2026-06-12_supplies-hr-lot-inventory.md",
+    "specs/2026-06-12_paragis-production-wip.md",
+    "specs/2026-06-05_RTS-SPA-Migration.md",
+    "specs/2026-06-05_paragis-tea-bom-math.md",
+    "specs/2026-06-05_packaging-production-deduct.md",
+    "specs/2026-06-05_online-parcel-pack-costing.md",
+    "specs/2026-06-05_jar-cacao-bom-math.md",
+    "specs/2026-06-05_dept-products-pt-brc-cacao.md",
+    "specs/2026-06-05_brc-bom-math.md",
+    "specs",
+    "problems/records/2026-06-19_waybill-stamp-text-only.md",
+    "problems/records/2026-06-19_vip-spx-parser-pitfalls.md",
+    "problems/records/2026-06-19_vip-spx-order-interpretation.md",
+    "problems/records/2026-06-19_role-aware-dashboard.md",
+    "problems/records/2026-06-19_pos-dept-checkout-discount.md",
+    "problems/records/2026-06-19_bubble-staging-piece-display.md",
+    "problems/records",
+    "problems/fixes",
+    "problems/causes",
+    "problems",
+    "generated/spa",
+    "generated/modules",
+    "generated",
+    "Untitled.base",
+    "plans/archive"
+  ]
+}

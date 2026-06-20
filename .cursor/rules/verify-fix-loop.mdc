@@ -1,0 +1,41 @@
+---
+description: After implementation batches, delegate verifier sub-agent; on FAIL delegate fixer; max 5 cycles
+alwaysApply: true
+---
+
+# Verify-fix loop (sub-agents)
+
+When you **implement or fix code** (not read-only Q&A or plan-only replies), run the **sub-agent loop** after each edit batch.
+
+## Orchestration (parent agent)
+
+1. **Implement** the approved plan or user request.
+2. **Delegate to `verifier` sub-agent** (or `shell` Task: run `powershell -NoProfile -ExecutionPolicy Bypass -File tools/verify.ps1` with `-WithApi` when XAMPP is up).
+   - Do **not** self-run verify inline unless sub-agents are unavailable.
+3. If verifier reports **FAIL** → delegate to **`fixer` sub-agent** with the full failure output → go to step 2.
+4. **Max 5 verify cycles.** On cycle 5 still failing, stop with a blocker summary (do not loop forever).
+5. On **PASS**:
+   - Optional: `bugbot` on `uncommitted changes` if user wants review or diff is large.
+   - If `includes/`, `api/`, or DB schema touched: `php tools/memory_bank/generate_all.php`, problem record, `002_Memory_Bank.md` per `memory-bank-always.mdc`.
+
+## Packaging changes
+
+When touching `fulfillment_pack_tier_seed.php`, `parcel_pack_costing.php`, cushion/foam SKUs, or packaging SPA:
+- Delegate **`packaging-tester`** before or with verifier.
+
+## Human gates (never automate)
+
+- Spec/plan approval for non-trivial features (`ai-directed-engineering.mdc`)
+- SQL migrations on production
+- Real parcel ship E2E with live staging stock
+
+## Standard feature prompt
+
+```text
+Implement <plan>. Sub-agent loop: verifier after each batch; fixer on FAIL; max 5 cycles. PASS → bugbot + memory bank if shared logic changed.
+```
+
+## Pair with
+
+- `rules-preflight.mdc` before first edit
+- `tools/verify.ps1` as single verify entry point

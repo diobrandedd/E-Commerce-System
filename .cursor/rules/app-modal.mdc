@@ -1,0 +1,38 @@
+---
+description: All SPA center modals must use AppModal — never inline fixed overlays
+globs: app/src/**/*.tsx,app/src/**/*.ts
+alwaysApply: false
+---
+
+# AppModal — mandatory modal shell
+
+When creating or editing a **center dialog** in the SPA:
+
+1. Use `AppModal` from `app/src/app/components/AppModal.tsx`
+2. Structure with `AppModalHeader`, `AppModalBody`, and `AppModalFooter` (footer optional for single-button forms)
+3. Read `_System_Core/005_SPA_UX_Patterns.md` § Modal patterns for the canonical recipe
+
+## Required props
+
+- `open` + `onClose` — backdrop click closes via motion button
+- `labelledBy` + `titleId` on header — accessibility
+- `panelClassName` — width only (`max-w-md w-full`, etc.); do not override backdrop/panel base styles
+
+## Do not
+
+- Add new `fixed inset-0` dialog overlays in pages or components
+- Duplicate backdrop (`bg-black/40`) or card shell classes — use exported `appModalBackdropClass` / `appModalPanelClass` if needed outside the component
+- Invent a new modal animation — `AppModal` already uses `useReducedMotion()` + `appModalSpring`
+
+## Allowed alternatives
+
+| Case | Use |
+|------|-----|
+| POS tiles / checkout | `POSModal` in `posMotion.tsx` |
+| CSR alias (backward compat) | `FulfillmentModal` (= re-export of `AppModal`) |
+| Radix confirm | `AlertDialog` from `ui/alert-dialog.tsx` |
+| Side drawer / sheet | `BatchTraceabilityDrawer`, `Sheet`, `Drawer` |
+
+## New feature modals
+
+Extract a named component (e.g. `DeliveryReviewEditModal.tsx`) that composes `AppModal` — do not leave modal JSX inline in page files unless trivial one-off (&lt;10 lines).

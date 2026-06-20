@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/db.php';
-require_once dirname(__DIR__) . '/includes/courier_detect.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
+<<<<<<< HEAD
 require_once dirname(__DIR__) . '/includes/rts_attachments.php';
 require_once dirname(__DIR__) . '/includes/rts_shop_couriers.php';
 require_once dirname(__DIR__) . '/includes/rts_claim_status.php';
@@ -12,6 +12,9 @@ require_once dirname(__DIR__) . '/includes/rts_products.php';
 require_once dirname(__DIR__) . '/includes/rts_schema.php';
 require_once dirname(__DIR__) . '/includes/rts_storage.php';
 require_once dirname(__DIR__) . '/includes/rts_attachments.php';
+=======
+require_once dirname(__DIR__) . '/includes/rts_case_handlers.php';
+>>>>>>> v3.6.5
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -23,24 +26,31 @@ if (!rts_can_access_rts_admin($authUser)) {
     exit;
 }
 
-$allowedCouriers = ['spx', 'jnt', 'flash', 'unknown'];
-$allowedShops = ['shopee', 'lazada', 'tiktok', 'vip'];
+function rts_case_json_error(RtsCaseException $e): void
+{
+    http_response_code($e->httpStatus);
+    $out = ['ok' => false, 'error' => $e->errorCode, 'message' => $e->getMessage()];
+    if ($e->payload !== null) {
+        $out = array_merge($out, $e->payload);
+    }
+    echo json_encode($out, JSON_UNESCAPED_UNICODE);
+}
+
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 if ($method === 'GET') {
     $tracking = isset($_GET['tracking']) ? trim((string) $_GET['tracking']) : '';
-    if ($tracking === '') {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Missing tracking']);
-        exit;
-    }
     try {
         $pdo = rts_pdo();
-    } catch (Throwable $e) {
+        $result = rts_case_handler_get_by_tracking($pdo, $tracking);
+        echo json_encode(['ok' => true] + $result, JSON_UNESCAPED_UNICODE);
+    } catch (RtsCaseException $e) {
+        rts_case_json_error($e);
+    } catch (Throwable) {
         http_response_code(500);
-        echo json_encode(['ok' => false, 'error' => 'Database connection failed']);
-        exit;
+        echo json_encode(['ok' => false, 'error' => 'Lookup failed']);
     }
+<<<<<<< HEAD
     try {
         $case = rts_cases_fetch_by_tracking($pdo, $tracking);
     } catch (Throwable $e) {
@@ -82,6 +92,8 @@ if ($method === 'GET') {
         'case' => $case,
         'lines' => $lineRows,
     ]);
+=======
+>>>>>>> v3.6.5
     exit;
 }
 
@@ -104,71 +116,27 @@ $tracking = isset($data['tracking_number']) ? trim((string) $data['tracking_numb
 
 try {
     $pdo = rts_pdo();
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Database connection failed']);
-    exit;
-}
-
-if ($action === 'update_claim') {
-    $caseId = isset($data['case_id']) ? (int) $data['case_id'] : 0;
-    if ($caseId < 1) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Invalid case_id']);
-        exit;
-    }
-    $claimStatus = isset($data['claim_status']) ? trim((string) $data['claim_status']) : '';
-    if (!rts_claim_status_valid($claimStatus)) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Invalid claim status']);
-        exit;
-    }
-    $claimNote = isset($data['claim_status_note']) ? trim((string) $data['claim_status_note']) : '';
-    if (strlen($claimNote) > 512) {
-        $claimNote = substr($claimNote, 0, 512);
-    }
-    try {
-        $st = $pdo->prepare('SELECT id FROM rts_cases WHERE id = ? LIMIT 1');
-        $st->execute([$caseId]);
-        if (!$st->fetch()) {
-            http_response_code(404);
-            echo json_encode(['ok' => false, 'error' => 'Case not found']);
-            exit;
-        }
-        $upd = $pdo->prepare(
-            'UPDATE rts_cases SET claim_status = ?, claim_status_note = ? WHERE id = ?'
+    if ($action === 'update_claim') {
+        $result = rts_case_handler_update_claim(
+            $pdo,
+            (int) ($data['case_id'] ?? 0),
+            trim((string) ($data['claim_status'] ?? '')),
+            trim((string) ($data['claim_status_note'] ?? ''))
         );
-        $upd->execute([$claimStatus, $claimNote, $caseId]);
-    } catch (Throwable $e) {
-        http_response_code(500);
-        echo json_encode(['ok' => false, 'error' => 'Could not save claim status. Run sql/migration_rts_claim_status.sql']);
+        echo json_encode(['ok' => true] + $result, JSON_UNESCAPED_UNICODE);
         exit;
     }
-    echo json_encode([
-        'ok' => true,
-        'claim_status' => $claimStatus,
-        'claim_status_label' => rts_claim_status_label($claimStatus),
-        'claim_status_note' => $claimNote,
-    ]);
-    exit;
-}
-
-if ($action === 'void') {
-    $caseId = isset($data['case_id']) ? (int) $data['case_id'] : 0;
-    if ($caseId < 1) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Invalid case_id']);
+    if ($action === 'void') {
+        rts_case_handler_void($pdo, (int) ($data['case_id'] ?? 0), (int) $authUser['id']);
+        echo json_encode(['ok' => true, 'message' => 'Record voided']);
         exit;
     }
-    $st = $pdo->prepare(
-        'UPDATE rts_cases SET voided_at = NOW(), voided_by_user_id = ? WHERE id = ? AND voided_at IS NULL'
-    );
-    $st->execute([(int) $authUser['id'], $caseId]);
-    if ($st->rowCount() === 0) {
-        http_response_code(404);
-        echo json_encode(['ok' => false, 'error' => 'Case not found or already voided']);
+    if ($action === 'update_record') {
+        $result = rts_case_handler_update($pdo, (int) ($data['case_id'] ?? 0), $data);
+        echo json_encode(['ok' => true] + $result);
         exit;
     }
+<<<<<<< HEAD
     echo json_encode(['ok' => true, 'message' => 'Record voided']);
     exit;
 }
@@ -235,14 +203,19 @@ if ($action === 'update_record') {
     if ($caseId < 1) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => 'Invalid case_id']);
+=======
+    if ($action === 'create') {
+        $result = rts_case_handler_create($pdo, $data);
+        echo json_encode(['ok' => true] + $result);
+>>>>>>> v3.6.5
         exit;
     }
-    $tracking = isset($data['tracking_number']) ? trim((string) $data['tracking_number']) : '';
-    if ($tracking === '') {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Missing tracking_number']);
+    if ($action === 'append_lines') {
+        $result = rts_case_handler_append_lines($pdo, $tracking, $data);
+        echo json_encode(['ok' => true] + $result);
         exit;
     }
+<<<<<<< HEAD
 
     $linesIn = isset($data['lines']) && is_array($data['lines']) ? $data['lines'] : [];
     $err = rts_validate_lines_v2($linesIn);
@@ -417,10 +390,17 @@ if ($action === 'update_record') {
 }
 
 if ($tracking === '') {
+=======
+>>>>>>> v3.6.5
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Missing tracking_number']);
-    exit;
+    echo json_encode(['ok' => false, 'error' => 'Unknown action']);
+} catch (RtsCaseException $e) {
+    rts_case_json_error($e);
+} catch (Throwable) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'Server error']);
 }
+<<<<<<< HEAD
 
 // Validation and normalization now handled by includes/rts_products.php
 
@@ -629,3 +609,5 @@ if ($action === 'append_lines') {
 
 http_response_code(400);
 echo json_encode(['ok' => false, 'error' => 'Unknown action']);
+=======
+>>>>>>> v3.6.5

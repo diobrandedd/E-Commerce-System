@@ -48,9 +48,19 @@ try {
 }
 
 if ($action === 'void') {
-    $st = $pdo->prepare('UPDATE delivery_batch_items SET voided_at = NOW() WHERE id = ? AND voided_at IS NULL');
-    $st->execute([$itemId]);
-    echo json_encode(['ok' => true, 'message' => 'Row voided']);
+    require_once dirname(__DIR__) . '/includes/delivery_edit_requests.php';
+    try {
+        $deleted = deliveries_delete_item_by_id($pdo, $itemId);
+        if (!$deleted) {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'error' => 'Item not found']);
+            exit;
+        }
+        echo json_encode(['ok' => true, 'message' => 'Row deleted']);
+    } catch (RuntimeException $e) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
     exit;
 }
 

@@ -19,8 +19,24 @@ set_exception_handler(static function (Throwable $e): void {
     exit;
 });
 
+/**
+ * Always return JSON on uncaught errors (avoids HTML fatal pages that look like "HTTP 200" failures in the app).
+ */
+set_exception_handler(static function (Throwable $e): void {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode([
+        'ok' => false,
+        'error' => 'Server error: ' . $e->getMessage(),
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+});
+
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/deliveries_upload.php';
 require_once dirname(__DIR__) . '/includes/qr_decode.php';
 require_once dirname(__DIR__) . '/includes/rts_storage.php';
 require_once dirname(__DIR__) . '/includes/delivery_duplicates.php';
@@ -54,7 +70,15 @@ if (!isset($_FILES['photos']) || !is_array($_FILES['photos'])) {
     } else {
         $msg .= ' Send a photo with the request (empty body).';
     }
+    $contentLen = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+    $msg = 'No photos received.';
+    if ($contentLen > 0) {
+        $msg .= ' The upload may exceed server limits (post_max_size=' . $postMax . ', upload_max_filesize=' . $uploadMax . '). Try a smaller photo or raise PHP limits.';
+    } else {
+        $msg .= ' Send a photo with the request (empty body).';
+    }
     http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => $msg]);
     echo json_encode(['ok' => false, 'error' => $msg]);
     exit;
 }
@@ -115,12 +139,37 @@ try {
 }
 
 $submitterId = rts_delivery_submitter_user_id($pdo);
+$submitterId = rts_delivery_submitter_user_id($pdo);
 if ($submitterId < 1) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'No system user available for delivery batches']);
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'No system user available for delivery batches']);
     exit;
 }
 
+$hintList = null;
+if ($hints !== null) {
+    $hintList = [];
+    foreach ($hints as $h) {
+        $hintList[] = trim((string) $h);
+    }
+}
+
+try {
+    $result = deliveries_upload_photos(
+        $pdo,
+        $deliveryDate,
+        ['name' => $names, 'tmp_name' => $tmps, 'error' => $errs, 'size' => $sizes],
+        $hintList,
+        $submitterId
+    );
+    $legacyItems = [];
+    foreach ($result['items'] as $it) {
+        $legacyItems[] = [
+            'photo_filename' => $it['photo_filename'],
+            'item_status' => $it['item_status'],
+            'tracking_number' => $it['tracking_number'],
 $outItems = [];
 $savedFiles = [];
 
@@ -236,20 +285,16 @@ try {
     $batchItemCount = (int) $stCount->fetchColumn();
     echo json_encode([
         'ok' => true,
+        'batch_id' => $result['batch_id'],
+        'delivery_date' => $result['delivery_date'],
+        'batch_item_count' => $result['batch_item_count'],
+        'items' => $legacyItems,
         'batch_id' => $batchId,
         'delivery_date' => $deliveryDate,
         'batch_item_count' => $batchItemCount,
         'items' => $outItems,
     ], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    foreach ($savedFiles as $path) {
-        if (is_string($path) && $path !== '' && is_file($path)) {
-            @unlink($path);
-        }
-    }
     http_response_code(400);
     echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
 }

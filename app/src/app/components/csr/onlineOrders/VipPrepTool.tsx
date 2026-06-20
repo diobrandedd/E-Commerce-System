@@ -1,0 +1,260 @@
+import { useMemo, useState } from "react";
+import { CheckCircle2, Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import { AmbiguousOrderCarousel } from "@/app/components/csr/AmbiguousOrderCarousel";
+import { FileZone } from "@/app/components/csr/FileZone";
+import { FulfillmentErrorBanner, FulfillmentSectionEnter } from "@/app/components/csr/onlineFulfillmentMotion";
+import { OrderRemarksToast } from "@/app/components/csr/orderRemarksMotion";
+import {
+  categorizeRow,
+  finalRemarkForRow,
+  isRowFullyResolved,
+  parseRemarks,
+  type RowResolution,
+} from "@/app/lib/orderRemarksParse";
+import { onlineOrdersToolVipPrepare } from "@/app/lib/onlineOrdersApi";
+import type { OnlineOrdersPrepResult } from "@/app/lib/onlineOrdersTypes";
+import { triggerWaybillStashDownload } from "@/app/lib/waybillApi";
+import { FulfillmentPressable } from "@/app/components/csr/onlineFulfillmentMotion";
+import {
+  exportOrderRemarks,
+  parseOrderRemarks,
+  stashOrderRemarksFile,
+  triggerOrderRemarksDownload,
+  orderRemarksUploadTooLarge,
+  type ParseOrderRemarksResult,
+} from "@/app/lib/orderRemarksApi";
+import { ApiError } from "@/app/lib/api";
+import { PracticeTap } from "@/app/components/tour/PracticeTap";
+import {
+  practiceStageAtLeast,
+  type OnlineOrdersPracticeStage,
+} from "@/app/components/csr/onlineOrders/onlineOrdersPractice";
+import { OnlineOrdersBackToToolsButton } from "@/app/components/csr/onlineOrders/OnlineOrdersNavButtons";
+
+export function VipPrepTool({
+  onDone,
+  onBack,
+  practiceMode = false,
+  practiceStage = "vip-upload",
+}: {
+  onDone: () => void;
+  onBack: () => void;
+  practiceMode?: boolean;
+  practiceStage?: OnlineOrdersPracticeStage;
+}) {
+  const [courierExcelFile, setCourierExcelFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [parseResult, setParseResult] = useState<ParseOrderRemarksResult | null>(null);
+  const [resolutions, setResolutions] = useState<Record<number, RowResolution>>({});
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [remarksToken, setRemarksToken] = useState<string | null>(null);
+  const [prepResult, setPrepResult] = useState<OnlineOrdersPrepResult | null>(null);
+
+  const rows = useMemo(() => {
+    if (!parseResult) return [];
+    return parseResult.orders.map(order => {
+      const parsed = parseRemarks(order.remarks);
+      return { order, parsed, category: categorizeRow(order.remarks, parsed) };
+    });
+  }, [parseResult]);
+
+  const ambiguousRows = useMemo(() => rows.filter(r => r.category === "ambiguous"), [rows]);
+  const canExport =
+    parseResult !== null &&
+    (ambiguousRows.length === 0 ||
+      ambiguousRows.every(r => isRowFullyResolved(r.order.remarks, r.parsed, resolutions[r.order.idx])));
+
+  const uploadRemarks = async (file: File) => {
+    setBusy(true);
+    setError(null);
+    const sizeErr = orderRemarksUploadTooLarge(file);
+    if (sizeErr) {
+      setError(sizeErr);
+      setBusy(false);
+      return;
+    }
+    try {
+      const token = await stashOrderRemarksFile(file);
+      setRemarksToken(token);
+      const result = await parseOrderRemarks(token);
+      setParseResult(result);
+      setResolutions({});
+      setShowCompleted(false);
+      setToast("Workbook loaded — resolve any ambiguous orders");
+      window.setTimeout(() => setToast(null), 2800);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not parse workbook.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runPrepare = async () => {
+    if (!remarksToken || !parseResult) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const remarks = parseResult.orders.map(o =>
+        finalRemarkForRow(o.remarks, parseRemarks(o.remarks), resolutions[o.idx]),
+      );
+      const exp = await exportOrderRemarks(remarksToken, remarks);
+      triggerOrderRemarksDownload(exp.download_token, exp.download_filename);
+
+      const payload = parseResult.orders.map((o, i) => {
+        const final = remarks[i] ?? o.remarks;
+        const tn = o.tracking?.trim() || o.phone?.trim() || `VIP-${o.idx}`;
+        return {
+          order_no: null,
+          name: o.receiver,
+          items: final,
+          courier: parseResult.layout.profileLabel,
+          tracking_number: tn,
+        };
+      });
+      const prep = await onlineOrdersToolVipPrepare(payload);
+      setPrepResult(prep);
+      setToast(`${prep.row_count} rows ready — download your arranged Excel`);
+      window.setTimeout(() => setToast(null), 3200);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not prepare VIP Excel.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (practiceMode) {
+    return (
+      <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
+        <OnlineOrdersBackToToolsButton onClick={onBack} />
+        <p className="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Practice mode — no files uploaded
+        </p>
+        {practiceStageAtLeast(practiceStage, "vip-upload") && (
+          <div data-tour="online-orders-vip-upload">
+            <PracticeTap label="Practice: upload VIP courier Excel" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "vip-resolve") && (
+          <div data-tour="online-orders-vip-resolve" className="rounded-xl border bg-card p-4 space-y-2">
+            <p className="text-sm font-medium">Ambiguous order — pick variant</p>
+            <p className="text-xs text-muted-foreground">Sample: &quot;1 pc honey light 250ml&quot; → select Light · 250ml</p>
+            <PracticeTap label="Practice: confirm variant pick" className="py-3" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "vip-build") && (
+          <div data-tour="online-orders-vip-build">
+            <PracticeTap label="Practice: build arranged Excel" />
+          </div>
+        )}
+        {practiceStageAtLeast(practiceStage, "vip-done") && (
+          <div className="rounded-xl border border-green-200 bg-green-50/80 p-5 space-y-3" data-tour="online-orders-vip-done">
+            <p className="text-sm text-green-800 font-medium">Arranged Excel ready (12 rows — sample)</p>
+            <PracticeTap label="Practice: back to tools" />
+          </div>
+        )}
+      </FulfillmentSectionEnter>
+    );
+  }
+
+  return (
+    <FulfillmentSectionEnter className="space-y-4 max-w-4xl">
+      <OrderRemarksToast message={toast} />
+      <OnlineOrdersBackToToolsButton onClick={onBack} />
+      <p className="text-sm text-muted-foreground">
+        Upload VIP courier Excel (J&T / SPX), resolve variants, then download the arranged iPYX sheet. When ready to
+        stamp, go back to tools and open PDF + Excel stamper.
+      </p>
+      <div data-tour="online-orders-vip-upload">
+      <FileZone
+        label="VIP courier Excel"
+        hint="Drop J&T or SPX workbook (.xlsx)"
+        accept=".xlsx,.xls"
+        icon={FileSpreadsheet}
+        files={courierExcelFile ? [courierExcelFile] : []}
+        disabled={busy}
+        multiple={false}
+        onFiles={fs => {
+          const f = fs[0] ?? null;
+          setCourierExcelFile(f);
+          if (f) {
+            void uploadRemarks(f);
+          } else {
+            setParseResult(null);
+            setRemarksToken(null);
+            setResolutions({});
+          }
+        }}
+      />
+      </div>
+      {busy && !parseResult && (
+        <p className="text-sm text-muted-foreground flex items-center gap-2">
+          <Loader2 size={16} className="animate-spin" /> Loading workbook…
+        </p>
+      )}
+
+      {ambiguousRows.length > 0 && (
+        <div data-tour="online-orders-vip-resolve">
+        <AmbiguousOrderCarousel
+          rows={ambiguousRows}
+          resolutions={resolutions}
+          showCompleted={showCompleted}
+          onShowCompletedChange={setShowCompleted}
+          onResolve={(idx, resolution) => setResolutions(prev => ({ ...prev, [idx]: resolution }))}
+          onClearResolution={idx => {
+            setResolutions(prev => {
+              const next = { ...prev };
+              delete next[idx];
+              return next;
+            });
+            setShowCompleted(false);
+          }}
+          disabled={busy}
+          onCardCompleted={remaining => {
+            setToast(remaining > 0 ? `${remaining} remaining` : "All orders resolved");
+            window.setTimeout(() => setToast(null), 2800);
+          }}
+        />
+        </div>
+      )}
+
+      {canExport && !prepResult && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void runPrepare()}
+          data-tour="online-orders-vip-build"
+          className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary"
+        >
+          {busy ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+          Build arranged Excel
+        </button>
+      )}
+
+      {prepResult && (
+        <div className="rounded-xl border border-green-200 bg-green-50/80 p-5 space-y-4" data-tour="online-orders-vip-done">
+          <p className="text-sm text-green-800 flex items-center gap-2 font-medium">
+            <CheckCircle2 size={18} />
+            Arranged Excel ready ({prepResult.row_count} rows)
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Download the remarks export and iPYX sheet. Go back to tools, then open PDF + Excel stamper when waybills are ready.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <FulfillmentPressable
+              variant="outline"
+              className="inline-flex items-center gap-2 px-4 py-2.5"
+              onClick={() => triggerWaybillStashDownload(prepResult.excel_token)}
+            >
+              <Download size={16} /> Download iPYX Excel
+            </FulfillmentPressable>
+            <OnlineOrdersBackToToolsButton onClick={onDone} />
+          </div>
+        </div>
+      )}
+
+      <FulfillmentErrorBanner message={error} />
+    </FulfillmentSectionEnter>
+  );
+}

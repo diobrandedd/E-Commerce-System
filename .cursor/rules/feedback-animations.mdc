@@ -1,0 +1,43 @@
+---
+description: Mandatory feedback animations on all SPA UI — hover, press, modals, task completion
+alwaysApply: true
+---
+
+# Feedback animations (mandatory)
+
+**Every new or edited SPA feature must ship motion feedback** — do not wait for the user to ask.
+
+Read `_System_Core/005_SPA_UX_Patterns.md` § **Feedback animations & hover (mandatory)**.
+
+## Shared kit — `appFeedbackMotion.tsx`
+
+Import from `@/app/components/layout/appFeedbackMotion`:
+
+| Export | When |
+|--------|------|
+| `AppPressable` | Custom header/modal buttons (hover lift + tap scale) |
+| `AppSuccessNotice` | After save/submit/complete — animated green banner |
+| `AppErrorBanner` | Load/validation failures — animated red panel |
+| `AppSectionEnter` / `AppStepSwitch` | Page sections or wizard steps |
+| `AppTaskCompletePanel` | Multi-line success / process done state |
+| `appHeaderActionClass` | Guide + muted header actions |
+| `appHoverCard` / `appHoverRow` | Clickable cards and table rows |
+
+**Modals:** use `AppModal` (open/close spring already built-in). **shadcn `Button`:** has tap scale + hover shadow — use for form CTAs.
+
+**CSR fulfillment:** may still use `onlineFulfillmentMotion.tsx` aliases; new exec/inventory/deliveries code prefers `appFeedbackMotion`.
+
+## Checklist before finishing UI work
+
+1. **Buttons** — `Button`, `AppPressable`, or `appHeaderActionClass`; never flat unstyled `<button>` without hover/tap
+2. **Modals** — `AppModal` only; close control has press feedback
+3. **Success** — `AppSuccessNotice`, toast, or `AppTaskCompletePanel` after mutations
+4. **Errors** — `AppErrorBanner` or `AppErrorNotice` with enter/exit
+5. **Clickable rows/cards** — `appHoverRow` / `appHoverCard` or motion row components
+6. **`useReducedMotion()`** — disable decorative motion when user prefers reduced motion
+
+## Do not ship
+
+- Static green/red `<p>` flash messages without `AnimatePresence`
+- Primary actions with no hover or press feedback
+- New modals without `AppModal` enter/exit animation

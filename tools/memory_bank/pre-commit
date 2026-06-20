@@ -1,0 +1,23 @@
+#!/bin/sh
+# Git pre-commit hook: regenerate Obsidian memory bank if generators changed.
+# Install: powershell -File tools/memory_bank/install-pre-commit.ps1
+
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+PHP="php"
+if [ -x "c:/xampp/php/php.exe" ]; then
+  PHP="c:/xampp/php/php.exe"
+elif [ -x "/c/xampp/php/php.exe" ]; then
+  PHP="/c/xampp/php/php.exe"
+fi
+
+"$PHP" tools/memory_bank/generate_all.php
+
+if ! git diff --quiet -- _System_Core/generated; then
+  git add _System_Core/generated
+  echo "memory-bank: staged updated _System_Core/generated/"
+fi
+
+exit 0

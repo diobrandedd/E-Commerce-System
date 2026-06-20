@@ -1,0 +1,219 @@
+{
+  "main": {
+    "id": "52ef541d427c7ff8",
+    "type": "split",
+    "children": [
+      {
+        "id": "442b8a99a22301b5",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "36bf0aa71eed035d",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "9873b2cdbbf09b9b",
+    "type": "split",
+    "children": [
+      {
+        "id": "96e81ae3380eaf40",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "b602b6a05c277d42",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "6c8bfa6af241fe2e",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          },
+          {
+            "id": "8020acfaf00bf88f",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": true
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          }
+        ],
+        "currentTab": 2
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200
+  },
+  "right": {
+    "id": "8988026add23112c",
+    "type": "split",
+    "children": [
+      {
+        "id": "780ca6814071cf5d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f75ffc6b0c55c5fa",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "6a077ed51253c9e6",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "90bc1807560389eb",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "20279bd3910a7f56",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "1fb5a5de32eddd6f",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "6a077ed51253c9e6",
+  "lastOpenFiles": [
+    "Untitled.canvas",
+    "Untitled.md",
+    "Untitled.base",
+    "Untitled",
+    "2026-06-04.md",
+    "_System_Core/generated/130_Module_Index.md",
+    "app/node_modules/fast-equals/README.md",
+    "tools/memory_bank/generate.bat",
+    "tools/memory_bank/install-pre-commit.ps1",
+    "tools/memory_bank/pre-commit",
+    "_System_Core/generated/modules/waybill_stamper.md",
+    "_System_Core/generated/modules/suppliers.md",
+    "_System_Core/generated/modules/sp_sort_service.md",
+    "_System_Core/generated/modules/rts_storage.md",
+    "_System_Core/generated/modules/rts_shop_couriers.md",
+    "_System_Core/generated/modules/rts_schema.md",
+    "_System_Core/generated/modules/rts_products.md",
+    "_System_Core/generated/modules/rts_inventory_sync.md",
+    "_System_Core/generated/modules/rts_claim_status.md",
+    "_System_Core/generated/modules/rts_attachments.md",
+    "_System_Core/generated/modules/qr_decode.md",
+    "_System_Core/generated/modules/pos_discount_requests.md",
+    "_System_Core/generated/modules/pdf_to_excel.md",
+    "_System_Core/generated/modules/order_remarks.md",
+    "_System_Core/generated/modules/labels.md",
+    "_System_Core/generated/modules/ims_exec_sidebar.md",
+    "_System_Core/generated/modules/honey_volume.md",
+    "_System_Core/generated/modules/honey_sales_report.md",
+    "_System_Core/generated/modules/honey_pricing.md",
+    "_System_Core/generated/modules/honey_pos.md",
+    "_System_Core/generated/modules/honey_inventory.md",
+    "_System_Core/generated/modules",
+    "_System_Core/generated",
+    "tools/memory_bank/impact.php",
+    "tools/memory_bank/generate_all.php",
+    "tools/memory_bank/Generator.php"
+  ]
+}

@@ -1,0 +1,53 @@
+---
+description: Inventory role permissions (packaging, supplies, costing) and page guide modal pattern — read before changing inventory UX or materials API
+globs: app/src/**/inventory/**/*.tsx,app/src/**/inventory/**/*.ts,app/src/**/Packaging*.tsx,app/src/**/Supplies*.tsx,includes/material_inventory.php,api/v1/materials.php,api/v1/costing.php
+alwaysApply: false
+---
+
+# Inventory roles & page guides
+
+## Read first
+
+- `_System_Core/problems/fixes/packaging-inventory-roles.md`
+- `_System_Core/problems/fixes/inventory-role-permissions.md`
+- `_System_Core/problems/fixes/page-guide-button-modal.md`
+- `_System_Core/005_SPA_UX_Patterns.md` — §Page guide button, §Role-based inventory permissions, §Packaging and materials inventory pages
+
+## Supplies roles (canonical)
+
+| Role | Actions |
+|------|---------|
+| **HR** | Add item, stock in lot, **issue request** (approval required) |
+| **Production manager** | View only |
+| **Executive** | All HR actions + set on-hand; approve/deny on Requests |
+
+`supply_detail.permissions` from API. Guides: `SuppliesInventoryGuideModal`, `InventoryRequestsGuideModal`.
+
+## Packaging Materials roles (canonical)
+
+| Role | Actions |
+|------|---------|
+| **HR** | Stock in lot only |
+| **Production manager** | Deduct for use only |
+| **Executive** | All + set on-hand + pool yield + catalog + extended activity log |
+
+Enforce in `material_inventory.php` helpers + `materials.php` API. Return `permissions` from `packaging_detail`. Do not reintroduce HR count-fix requests on the packaging page.
+
+## Product Costing
+
+**Executive only** — `routes.ts`, `Sidebar.tsx`, `costing.php` (`api_require_role(['executive'])`). Never link HR or prod manager to `/costing` in guides or copy.
+
+## Page guides (mandatory pattern)
+
+- **Guide** button in `PageLayout` `actions` (muted border, `BookOpen` icon) — same classes as `CostingPage.tsx`
+- Opens `*GuideModal` (`AppModal`, default **closed**)
+- Role-specific content inside modal via `useAuth().role`
+- **Never** inline collapsible guide panels on the page body
+
+## New inventory features
+
+1. PHP role helper → API gate → `permissions` in detail response
+2. SPA buttons driven by permissions
+3. Update the page `*GuideModal` (`PackagingInventoryGuideModal`, `SuppliesInventoryGuideModal`, `InventoryRequestsGuideModal`, `ParagisProductionGuideModal`, `DeptRawProduceGuideModal`) for affected roles
+4. **Dept raw materials** (`RawDeptMaterialPage`): Paragis = Use raw bags → Pouch (not tea-bag counting); BRC/Jar = single Produce. Guides: [[fixes/dept-raw-material-guides]] · session rollup [[records/2026-06-12_dept-raw-ux-session]]
+5. Append `_System_Core/002_Memory_Bank.md` + fix note under `problems/fixes/` if pattern is reusable
