@@ -214,7 +214,7 @@ function fulfillment_packing_tables_ready(PDO $pdo): bool
 
 function material_inventory_role_can_issue_packing(string $role): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'tl', 'team_leader', 'csr_tl'], true);
+    return in_array($role, ['executive', 'prod_manager', 'tl', 'team_leader', 'staff', 'csr_tl'], true);
 }
 
 function material_inventory_role_can_edit_packaging_price(string $role): bool

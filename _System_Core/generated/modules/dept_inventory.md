@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-06-20T10:05:16+02:00
+generated: 2026-06-21T11:10:57+02:00
 type: module
 function_count: 16
 ---
@@ -51,7 +51,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `api/v1/honey.php`:537 — `$result = dept_inventory_stock_in(`
+- `api/v1/honey.php`:616 — `$result = dept_inventory_stock_in(`
 
 ## dept_inventory_stock_in_supplier_priced {#dept_inventory_stock_in_supplier_priced}
 
@@ -103,7 +103,7 @@ function_count: 16
 
 **Callers (2):**
 
-- `api/v1/honey.php`:587 — `$result = dept_raw_stock_in_bags(`
+- `api/v1/honey.php`:666 — `$result = dept_raw_stock_in_bags(`
 - `includes/dept_inventory.php`:125 — `return dept_raw_stock_in_bags($pdo, $userId, $productKey, $def, $qtyBags, $arrivalDate, $note, $supplierId);`
 
 ## dept_raw_deduct_bags_fifo {#dept_raw_deduct_bags_fifo}
@@ -120,7 +120,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `api/v1/honey.php`:622 — `$result = dept_raw_stock_out_bags(`
+- `api/v1/honey.php`:701 — `$result = dept_raw_stock_out_bags(`
 
 ## dept_inventory_produce_from_bags {#dept_inventory_produce_from_bags}
 
@@ -160,8 +160,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `api/v1/honey.php`:480 — `$catalog = dept_inventory_catalog_snapshot(`
-- `api/v1/honey.php`:519 — `api_ok(['products' => dept_inventory_catalog_snapshot($pdo, $deptKey !== '' ? $deptKey : null)]);`
+- `api/v1/honey.php`:559 — `$catalog = dept_inventory_catalog_snapshot(`
+- `api/v1/honey.php`:598 — `api_ok(['products' => dept_inventory_catalog_snapshot($pdo, $deptKey !== '' ? $deptKey : null)]);`
 - `includes/dept_pos.php`:12 — `foreach (dept_inventory_catalog_snapshot($pdo, $deptKey) as $item) {`
 - `includes/dept_pos.php`:39 — `$snapshot = dept_inventory_catalog_snapshot($pdo);`
 

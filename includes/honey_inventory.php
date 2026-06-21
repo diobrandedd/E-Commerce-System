@@ -24,7 +24,10 @@ const HONEY_SIZES = ['liter', '250ml', '350ml', 'gallon'];
 
 function honey_role_can_view(string $role): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'hr'], true);
+    // `staff` is read-only and additionally scoped to their own department
+    // (enforced in honey.php api_honey_require_view); pricing stays hidden via
+    // honey_pricing_role_can_view_cost.
+    return in_array($role, ['executive', 'prod_manager', 'hr', 'staff'], true);
 }
 
 function honey_role_can_mutate(string $role): bool

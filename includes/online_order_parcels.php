@@ -42,8 +42,13 @@ function online_parcels_user_can_access(?array $user): bool
         return true;
     }
 
-    // IMS CSR team leader / staff — same dept gate as waybill stamper + online orders.
-    if (in_array($role, ['tl', 'staff'], true)) {
+    // Operations staff (non-CSR) get parcel visibility as part of the staff role.
+    if ($role === 'staff') {
+        return true;
+    }
+
+    // IMS CSR team leader — same dept gate as waybill stamper + online orders.
+    if ($role === 'tl') {
         return online_parcels_user_is_csr_dept($user);
     }
 
@@ -57,7 +62,9 @@ function online_parcels_user_can_ship(?array $user): bool
     }
     $role = (string) ($user['role'] ?? '');
 
-    return in_array($role, ['executive', 'prod_manager'], true);
+    // Staff record + ship deliveries; executive-only actions (void/delete/resolve)
+    // are still gated separately in deliveries.php.
+    return in_array($role, ['executive', 'prod_manager', 'staff'], true);
 }
 
 function online_parcels_ensure_schema(PDO $pdo): void

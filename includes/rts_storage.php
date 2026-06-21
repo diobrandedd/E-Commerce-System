@@ -191,8 +191,6 @@ function rts_storage_public_url(string $bucket, string $filename, string $relati
     }
 
     return $prefix . $encoded;
-<<<<<<< HEAD
-=======
 }
 
 /**
@@ -216,7 +214,6 @@ function rts_storage_csr_tool_root(string $bucket, string $legacyFolder, array $
     }
 
     return $root;
->>>>>>> v3.6.5
 }
 
 function rts_storage_resolve_file(string $bucket, string $filename): ?string

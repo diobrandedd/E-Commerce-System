@@ -257,6 +257,7 @@ function parcel_pack_tier_matches(array $rule, array $shape): bool
     $ranges = [
         ['dept_pt_min', 'dept_pt_max', 'dept_pt'],
         ['dept_brc_min', 'dept_brc_max', 'dept_brc'],
+        ['dept_units_min', 'dept_units_max', 'dept_units'],
         ['jar_units_min', 'jar_units_max', 'jar_units'],
     ];
     foreach ($ranges as [$minKey, $maxKey, $shapeKey]) {

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-20T10:05:13+02:00
+generated: 2026-06-21T11:10:55+02:00
 type: memory-bank
 ---
 
@@ -14,7 +14,7 @@ type: memory-bank
 | [[modules/admin_nav]] | 1 |
 | [[modules/admin_sidebar]] | 3 |
 | [[modules/admin_sidebar_styles]] | 0 |
-| [[modules/auth]] | 21 |
+| [[modules/auth]] | 22 |
 | [[modules/auth_check]] | 14 |
 | [[modules/catalog_bootstrap]] | 8 |
 | [[modules/courier_detect]] | 1 |
@@ -22,6 +22,7 @@ type: memory-bank
 | [[modules/db]] | 3 |
 | [[modules/deliveries_review_nav]] | 2 |
 | [[modules/deliveries_upload]] | 3 |
+| [[modules/delivery_duplicates]] | 1 |
 | [[modules/delivery_edit_requests]] | 15 |
 | [[modules/dept_inventory]] | 16 |
 | [[modules/dept_pos]] | 3 |
@@ -60,4 +61,4 @@ type: memory-bank
 | [[modules/shopee_spx_product_info]] | 12 |
 | [[modules/sp_sort_service]] | 26 |
 | [[modules/suppliers]] | 12 |
-| [[modules/waybill_stamper]] | 18 |
+| [[modules/waybill_stamper]] | 19 |

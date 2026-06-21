@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-06-20T10:05:23+02:00
+generated: 2026-06-21T11:11:04+02:00
 type: module
 function_count: 8
 ---
@@ -43,7 +43,7 @@ function_count: 8
 
 **Callers (1):**
 
-- `includes/honey_inventory.php`:287 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
+- `includes/honey_inventory.php`:290 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
 
 ## honey_lines_total_ml {#honey_lines_total_ml}
 
@@ -61,11 +61,11 @@ function_count: 8
 
 **Callers (1):**
 
-- `includes/honey_inventory.php`:288 — `$usedGallons = honey_lines_to_gallons($lines);`
+- `includes/honey_inventory.php`:291 — `$usedGallons = honey_lines_to_gallons($lines);`
 
 ## honey_parse_bottle_lines_from_input {#honey_parse_bottle_lines_from_input}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:169 — `$lines = honey_parse_bottle_lines_from_input($input);`
+- `api/v1/honey.php`:248 — `$lines = honey_parse_bottle_lines_from_input($input);`
 

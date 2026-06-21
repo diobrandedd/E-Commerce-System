@@ -1,7 +1,7 @@
 ---
 title: fulfillment_packing
 source: includes/fulfillment_packing.php
-generated: 2026-06-20T10:05:19+02:00
+generated: 2026-06-21T11:11:00+02:00
 type: module
 function_count: 33
 ---
@@ -180,17 +180,18 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## material_inventory_role_can_issue_packing {#material_inventory_role_can_issue_packing}
 
-**Callers (2):**
+**Callers (3):**
 
 - `api/v1/fulfillment_packing.php`:12 — `if (!material_inventory_role_can_issue_packing($role)) {`
+- `api/v1/materials.php`:53 — `if ($category !== 'packaging' || !material_inventory_role_can_issue_packing($role)) {`
 - `includes/fulfillment_packing.php`:227 — `return material_inventory_role_can_issue_packing($role);`
 
 ## material_inventory_role_can_edit_packaging_price {#material_inventory_role_can_edit_packaging_price}
 
 **Callers (2):**
 
-- `api/v1/materials.php`:340 — `'can_edit_price' => material_inventory_role_can_edit_packaging_price($role),`
-- `api/v1/materials.php`:647 — `if (!material_inventory_role_can_edit_packaging_price($role)) {`
+- `api/v1/materials.php`:353 — `'can_edit_price' => material_inventory_role_can_edit_packaging_price($role),`
+- `api/v1/materials.php`:660 — `if (!material_inventory_role_can_edit_packaging_price($role)) {`
 
 ## material_inventory_role_can_view_packing_staging {#material_inventory_role_can_view_packing_staging}
 
@@ -279,5 +280,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:668 — `$result = material_packaging_record_invoice_price(`
+- `api/v1/materials.php`:681 — `$result = material_packaging_record_invoice_price(`
 

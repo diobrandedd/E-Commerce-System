@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-06-20T10:05:15+02:00
+generated: 2026-06-21T11:10:56+02:00
 type: module
 function_count: 3
 ---
@@ -26,16 +26,18 @@ function_count: 3
 
 ## rts_pdo {#rts_pdo}
 
-**Callers (23):**
+**Callers (25):**
 
 - `api/case.php`:34 — `$pdo = rts_pdo();`
 - `api/case.php`:64 — `$pdo = rts_pdo();`
 - `api/delivery_batch_detail.php`:32 — `$pdo = rts_pdo();`
 - `api/delivery_bulk.php`:91 — `$pdo = rts_pdo();`
+- `api/delivery_check_tracking.php`:24 — `$pdo = rts_pdo();`
 - `api/delivery_match_tracking.php`:37 — `$pdo = rts_pdo();`
-- `api/delivery_resolve.php`:42 — `$pdo = rts_pdo();`
+- `api/delivery_resolve.php`:43 — `$pdo = rts_pdo();`
 - `includes/auth.php`:180 — `$pdo = rts_pdo();`
 - `includes/auth.php`:251 — `$pdo = rts_pdo();`
+- `includes/auth.php`:311 — `$pdo = rts_pdo();`
 - `includes/db.php`:42 — `return rts_pdo();`
 - `sp_sort/api/complete.php`:10 — `$pdo = rts_pdo();`
 - `sp_sort/api/export.php`:8 — `$pdo = rts_pdo();`
@@ -54,7 +56,7 @@ function_count: 3
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (178):**
+**Callers (179):**
 
 - `api/v1/_bootstrap.php`:176 — `$pdo = ims_pdo();`
 - `api/v1/ar.php`:26 — `$pdo = ims_pdo();`
@@ -81,5 +83,5 @@ function_count: 3
 - `api/v1/deliveries.php`:168 — `$pdo = ims_pdo();`
 - `api/v1/deliveries.php`:201 — `$pdo = ims_pdo();`
 - `api/v1/deliveries.php`:231 — `$pdo = ims_pdo();`
-- _… and 153 more (run impact.php for full list)_
+- _… and 154 more (run impact.php for full list)_
 

@@ -1,9 +1,9 @@
 ---
 title: auth
 source: includes/auth.php
-generated: 2026-06-20T10:05:14+02:00
+generated: 2026-06-21T11:10:55+02:00
 type: module
-function_count: 21
+function_count: 22
 ---
 
 
@@ -86,8 +86,8 @@ function_count: 21
 - `includes/admin_nav.php`:23 — `if ($u !== null && rts_role_is_executive((string) ($u['role'] ?? ''))) {`
 - `includes/auth.php`:119 — `return rts_role_is_executive($role) || $role === RTS_ROLE_PRODUCTION_MANAGER;`
 - `includes/auth.php`:279 — `if ($requiredRole === RTS_ROLE_EXECUTIVE && !rts_role_is_executive($role)) {`
-- `includes/auth.php`:327 — `if (in_array(RTS_ROLE_EXECUTIVE, $roles, true) && rts_role_is_executive($u['role'])) {`
-- `includes/auth.php`:339 — `return $u !== null && rts_role_is_executive((string) $u['role']);`
+- `includes/auth.php`:350 — `if (in_array(RTS_ROLE_EXECUTIVE, $roles, true) && rts_role_is_executive($u['role'])) {`
+- `includes/auth.php`:362 — `return $u !== null && rts_role_is_executive((string) $u['role']);`
 
 ## rts_role_can_access_rts_admin {#rts_role_can_access_rts_admin}
 
@@ -95,7 +95,7 @@ function_count: 21
 
 - `includes/auth.php`:127 — `return rts_role_can_access_rts_admin((string) ($user['role'] ?? ''));`
 - `includes/auth.php`:276 — `if ($requiredRole === RTS_ROLE_ADMIN && !rts_role_can_access_rts_admin($role)) {`
-- `includes/auth.php`:324 — `if (in_array(RTS_ROLE_ADMIN, $roles, true) && rts_role_can_access_rts_admin($u['role'])) {`
+- `includes/auth.php`:347 — `if (in_array(RTS_ROLE_ADMIN, $roles, true) && rts_role_can_access_rts_admin($u['role'])) {`
 
 ## rts_can_access_rts_admin {#rts_can_access_rts_admin}
 
@@ -104,7 +104,7 @@ function_count: 21
 - `api/case.php`:13 — `if (!rts_can_access_rts_admin($authUser)) {`
 - `api/delivery_batch_detail.php`:12 — `if (!rts_can_access_rts_admin($u)) {`
 - `api/delivery_match_tracking.php`:17 — `if (!rts_can_access_rts_admin($u)) {`
-- `api/delivery_resolve.php`:18 — `if (!rts_can_access_rts_admin($u)) {`
+- `api/delivery_resolve.php`:19 — `if (!rts_can_access_rts_admin($u)) {`
 - `api/scan_qr_image.php`:17 — `if (!rts_can_access_rts_admin($authUser)) {`
 - `api/upload_documentation.php`:11 — `if (!rts_can_access_rts_admin($authUser)) {`
 
@@ -141,12 +141,12 @@ function_count: 21
 - `api/delivery_batch_detail.php`:10 — `rts_session_start();`
 - `api/delivery_bulk.php`:35 — `rts_session_start();`
 - `api/delivery_match_tracking.php`:15 — `rts_session_start();`
-- `api/delivery_resolve.php`:16 — `rts_session_start();`
+- `api/delivery_resolve.php`:17 — `rts_session_start();`
 - `api/scan_qr_image.php`:15 — `rts_session_start();`
 - `api/upload_documentation.php`:9 — `rts_session_start();`
 - `includes/auth.php`:221 — `rts_session_start();`
 - `includes/auth.php`:289 — `rts_session_start();`
-- `includes/auth.php`:304 — `rts_session_start();`
+- `includes/auth.php`:327 — `rts_session_start();`
 - `executive.php`:9 — `rts_session_start();`
 
 ## rts_auth_user {#rts_auth_user}
@@ -157,13 +157,13 @@ function_count: 21
 - `api/delivery_batch_detail.php`:11 — `$u = rts_auth_user();`
 - `api/delivery_bulk.php`:36 — `$authUser = rts_auth_user();`
 - `api/delivery_match_tracking.php`:16 — `$u = rts_auth_user();`
-- `api/delivery_resolve.php`:17 — `$u = rts_auth_user();`
+- `api/delivery_resolve.php`:18 — `$u = rts_auth_user();`
 - `api/scan_qr_image.php`:16 — `$authUser = rts_auth_user();`
 - `api/upload_documentation.php`:10 — `$authUser = rts_auth_user();`
 - `includes/admin_nav.php`:22 — `$u = rts_auth_user();`
 - `includes/auth.php`:166 — `$auth = rts_auth_user();`
-- `includes/auth.php`:319 — `$u = rts_auth_user();`
-- `includes/auth.php`:338 — `$u = rts_auth_user();`
+- `includes/auth.php`:342 — `$u = rts_auth_user();`
+- `includes/auth.php`:361 — `$u = rts_auth_user();`
 - `sp_sort/bootstrap.php`:26 — `$u = rts_auth_user();`
 - `executive.php`:10 — `$auth = rts_auth_user();`
 - `index.php`:16 — `if (rts_auth_user() !== null) {`
@@ -181,6 +181,14 @@ function_count: 21
 **Callers (1):**
 
 - `login.php`:28 — `if (rts_auth_login($user, $pass, '')) {`
+
+## rts_auth_verify_user_password {#rts_auth_verify_user_password}
+
+**Tables:** `app_users`
+
+**Callers (1):**
+
+- `api/delivery_resolve.php`:72 — `if (!rts_auth_verify_user_password((int) $u['id'], $password)) {`
 
 ## rts_auth_logout {#rts_auth_logout}
 

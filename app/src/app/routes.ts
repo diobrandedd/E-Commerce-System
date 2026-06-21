@@ -39,6 +39,7 @@ import { DeliveriesCancelledPage } from "./pages/deliveries/DeliveriesCancelledP
 import { OnlineParcelsPage } from "./pages/fulfillment/OnlineParcelsPage";
 import { PackingMaterialsStagingPage } from "./pages/fulfillment/PackingMaterialsStagingPage";
 import { PackingMaterialsLogPage } from "./pages/fulfillment/PackingMaterialsLogPage";
+import { AccountSettingsPage } from "./pages/AccountSettingsPage";
 import type { Role } from "./context/AuthContext";
 
 // Wrap a page component in RequireAuth.  Using createElement to keep this
@@ -50,6 +51,12 @@ const guarded = (
 
 const invRoles: Role[] = ["executive", "prod_manager", "hr"];
 const invGuard = (Component: React.ComponentType) => guarded(Component, { roles: invRoles });
+
+// Raw materials + finished products are also readable by staff (scoped to their
+// own department, read-only, no pricing — enforced server-side in materials.php /
+// honey.php). Packaging + Supplies stay invRoles-only.
+const invViewRoles: Role[] = ["executive", "prod_manager", "hr", "staff"];
+const invViewGuard = (Component: React.ComponentType) => guarded(Component, { roles: invViewRoles });
 
 // In production we ship under Apache at /rts/app/dist/ so React Router
 // needs a basename matching that path.  During `vite dev` we run at
@@ -76,17 +83,17 @@ export const router = createBrowserRouter(
         { path: "inventory/requests", element: guarded(InventoryRequestsPage, { roles: invRoles }) },
         { path: "inventory/raw-materials", element: invGuard(RawMaterialsHubPage) },
         { path: "inventory/raw-materials/honey", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
-        { path: "inventory/raw-materials/honey/warehouse", element: invGuard(HoneyWarehousePage) },
-        { path: "inventory/raw-materials/honey/production", element: invGuard(HoneyProductionPage) },
-        { path: "inventory/raw-materials/honey/packaging", element: invGuard(HoneyPackagingPage) },
-        { path: "inventory/raw-materials/:slug", element: invGuard(RawMaterialDetailPage) },
+        { path: "inventory/raw-materials/honey/warehouse", element: invViewGuard(HoneyWarehousePage) },
+        { path: "inventory/raw-materials/honey/production", element: invViewGuard(HoneyProductionPage) },
+        { path: "inventory/raw-materials/honey/packaging", element: invViewGuard(HoneyPackagingPage) },
+        { path: "inventory/raw-materials/:slug", element: invViewGuard(RawMaterialDetailPage) },
         { path: "inventory/packaging-materials", element: invGuard(PackagingMaterialsPage) },
         { path: "inventory/supplies", element: invGuard(SuppliesMaterialsPage) },
-        { path: "inventory/products/honey", element: invGuard(HoneyProductInventoryPage) },
+        { path: "inventory/products/honey", element: invViewGuard(HoneyProductInventoryPage) },
         { path: "inventory/products/honey/warehouse", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
         { path: "inventory/products/honey/production", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/production", replace: true }) },
         { path: "inventory/products/honey/packaging", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/packaging", replace: true }) },
-        { path: "inventory/products/:productSlug", element: invGuard(ProductInventoryEntry) },
+        { path: "inventory/products/:productSlug", element: invViewGuard(ProductInventoryEntry) },
         { path: "inventory/honey/warehouse", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
         { path: "inventory/honey/production", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/production", replace: true }) },
         { path: "inventory/honey/packaging", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/packaging", replace: true }) },
@@ -122,31 +129,32 @@ export const router = createBrowserRouter(
           path: "waybill-stamper",
           element: createElement(Navigate, { to: "/waybill/online-orders", replace: true }),
         },
-        { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
+        { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
         { path: "rts/record", element: guarded(RTSRecordPage, { roles: ["executive", "prod_manager", "csr_tl", "csr_staff"] }) },
-        { path: "rts/records", element: guarded(RTSRecordsPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
-        { path: "rts/dashboard", element: guarded(RTSDashboardPage, { roles: ["executive", "prod_manager", "hr", "csr_tl", "csr_staff"] }) },
+        { path: "rts/records", element: guarded(RTSRecordsPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
+        { path: "rts/dashboard", element: guarded(RTSDashboardPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
         { path: "settings", element: guarded(SettingsPage, { roles: ["executive"] }) },
+        { path: "account", element: guarded(AccountSettingsPage) },
 
-        { path: "deliveries", element: guarded(DeliveriesPage, { roles: ["executive", "prod_manager"] }) },
-        { path: "deliveries/review", element: guarded(DeliveriesReviewPage, { roles: ["executive", "prod_manager"] }) },
-        { path: "deliveries/cancelled", element: guarded(DeliveriesCancelledPage, { roles: ["executive", "prod_manager"] }) },
+        { path: "deliveries", element: guarded(DeliveriesPage, { roles: ["executive", "prod_manager", "staff"] }) },
+        { path: "deliveries/review", element: guarded(DeliveriesReviewPage, { roles: ["executive", "prod_manager", "staff"] }) },
+        { path: "deliveries/cancelled", element: guarded(DeliveriesCancelledPage, { roles: ["executive", "prod_manager", "staff"] }) },
         {
           path: "fulfillment/online-parcels",
           element: guarded(OnlineParcelsPage, {
-            roles: ["executive", "prod_manager", "csr_tl", "csr_staff"],
+            roles: ["executive", "prod_manager", "staff", "csr_tl", "csr_staff"],
           }),
         },
         {
           path: "fulfillment/packing-materials/log",
           element: guarded(PackingMaterialsLogPage, {
-            roles: ["executive", "prod_manager", "team_leader", "csr_tl"],
+            roles: ["executive", "prod_manager", "team_leader", "staff", "csr_tl"],
           }),
         },
         {
           path: "fulfillment/packing-materials",
           element: guarded(PackingMaterialsStagingPage, {
-            roles: ["executive", "prod_manager", "team_leader", "csr_tl"],
+            roles: ["executive", "prod_manager", "team_leader", "staff", "csr_tl"],
           }),
         },
           ],

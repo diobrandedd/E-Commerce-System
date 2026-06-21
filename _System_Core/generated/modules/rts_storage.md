@@ -1,7 +1,7 @@
 ---
 title: rts_storage
 source: includes/rts_storage.php
-generated: 2026-06-20T10:05:32+02:00
+generated: 2026-06-21T11:11:13+02:00
 type: module
 function_count: 12
 ---
@@ -89,7 +89,7 @@ function_count: 12
 
 - `includes/rts_case_handlers.php`:588 — `'doc_url_base' => rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''),`
 - `includes/rts_storage.php`:188 — `$prefix = rts_storage_public_prefix($bucket, $relativeToApp);`
-- `record.php`:762 — `const RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;`
+- `record.php`:786 — `const RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;`
 - `records.php`:834 — `var RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;`
 
 ## rts_storage_public_url {#rts_storage_public_url}
@@ -98,7 +98,7 @@ function_count: 12
 
 - `api/delivery_match_tracking.php`:76 — `$fileUrl = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
 - `api/upload_documentation.php`:126 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $name),`
-- `includes/online_order_parcels.php`:321 — `$url = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
+- `includes/online_order_parcels.php`:328 — `$url = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
 - `includes/rts_case_handlers.php`:132 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn),`
 - `includes/rts_case_handlers.php`:666 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $name),`
 - `includes/suppliers.php`:80 — `'valid_id_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_SUPPLIER_IDS, (string) $row['valid_id_filename'], '/rts/'),`
@@ -114,7 +114,8 @@ function_count: 12
 
 ## rts_storage_resolve_file {#rts_storage_resolve_file}
 
-**Callers (1):**
+**Callers (2):**
 
+- `api/delivery_resolve.php`:99 — `$path = rts_storage_resolve_file(RTS_STORAGE_BUCKET_DELIVERIES, $photo);`
 - `api/storage_media.php`:21 — `$path = rts_storage_resolve_file($bucket, $filename);`
 

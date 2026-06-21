@@ -1,9 +1,9 @@
 ---
 title: waybill_stamper
 source: includes/waybill_stamper.php
-generated: 2026-06-20T10:05:34+02:00
+generated: 2026-06-21T11:11:15+02:00
 type: module
-function_count: 18
+function_count: 19
 ---
 
 
@@ -21,15 +21,15 @@ function_count: 18
 
 **Callers (3):**
 
-- `includes/waybill_stamper.php`:193 — `$uploadDir = $uploadDir ?? waybill_stamper_storage_root() . '/uploads';`
-- `includes/waybill_stamper.php`:262 — `$stashDir = waybill_stamper_storage_root() . '/stash';`
-- `includes/waybill_stamper.php`:364 — `$root = waybill_stamper_storage_root();`
+- `includes/waybill_stamper.php`:202 — `$uploadDir = $uploadDir ?? waybill_stamper_storage_root() . '/uploads';`
+- `includes/waybill_stamper.php`:271 — `$stashDir = waybill_stamper_storage_root() . '/stash';`
+- `includes/waybill_stamper.php`:373 — `$root = waybill_stamper_storage_root();`
 
 ## waybill_stamper_processor_script {#waybill_stamper_processor_script}
 
 **Callers (1):**
 
-- `includes/waybill_stamper.php`:359 — `$script = waybill_stamper_processor_script();`
+- `includes/waybill_stamper.php`:368 — `$script = waybill_stamper_processor_script();`
 
 ## waybill_stamper_require_access {#waybill_stamper_require_access}
 
@@ -37,12 +37,18 @@ function_count: 18
 
 - `includes/order_remarks.php`:28 — `return waybill_stamper_require_access();`
 - `includes/pdf_to_excel.php`:28 — `return waybill_stamper_require_access();`
-- `includes/waybill_stamper.php`:480 — `waybill_stamper_require_access();`
-- `includes/waybill_stamper.php`:531 — `waybill_stamper_require_access();`
+- `includes/waybill_stamper.php`:489 — `waybill_stamper_require_access();`
+- `includes/waybill_stamper.php`:540 — `waybill_stamper_require_access();`
 
-## waybill_stamper_user_can_access {#waybill_stamper_user_can_access}
+## waybill_stamper_user_is_csr_dept {#waybill_stamper_user_is_csr_dept}
 
 **Tables:** `departments`
+
+**Callers (1):**
+
+- `includes/waybill_stamper.php`:66 — `return waybill_stamper_user_is_csr_dept($user);`
+
+## waybill_stamper_user_can_access {#waybill_stamper_user_can_access}
 
 **Callers (7):**
 
@@ -58,7 +64,7 @@ function_count: 18
 
 **Callers (1):**
 
-- `includes/waybill_stamper.php`:96 — `$postMax = waybill_stamper_parse_ini_size((string) ini_get('post_max_size'));`
+- `includes/waybill_stamper.php`:105 — `$postMax = waybill_stamper_parse_ini_size((string) ini_get('post_max_size'));`
 
 ## waybill_stamper_upload_preflight {#waybill_stamper_upload_preflight}
 
@@ -83,8 +89,8 @@ function_count: 18
 - `includes/order_remarks.php`:272 — `throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
 - `includes/pdf_to_excel.php`:223 — `$hint = waybill_stamper_utf8(trim($output));`
 - `includes/pdf_to_excel.php`:303 — `$logExcerpt = waybill_stamper_utf8($output);`
-- `includes/waybill_stamper.php`:413 — `$hint = waybill_stamper_utf8($hint);`
-- `includes/waybill_stamper.php`:434 — `$logExcerpt = waybill_stamper_utf8($log);`
+- `includes/waybill_stamper.php`:422 — `$hint = waybill_stamper_utf8($hint);`
+- `includes/waybill_stamper.php`:443 — `$logExcerpt = waybill_stamper_utf8($log);`
 
 ## waybill_stamper_resolve_python {#waybill_stamper_resolve_python}
 
@@ -92,7 +98,7 @@ function_count: 18
 
 - `includes/order_remarks.php`:170 — `$python = waybill_stamper_resolve_python();`
 - `includes/pdf_to_excel.php`:198 — `$python = waybill_stamper_resolve_python();`
-- `includes/waybill_stamper.php`:376 — `$python = waybill_stamper_resolve_python();`
+- `includes/waybill_stamper.php`:385 — `$python = waybill_stamper_resolve_python();`
 
 ## waybill_stamper_collect_uploads {#waybill_stamper_collect_uploads}
 
@@ -102,15 +108,15 @@ function_count: 18
 - `api/v1/waybill.php`:114 — `$excels = waybill_stamper_collect_uploads($excelField, ['xlsx', 'xls'], 'xls_');`
 - `includes/order_remarks.php`:317 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'xlsx_', $stashDir);`
 - `includes/pdf_to_excel.php`:60 — `$saved = waybill_stamper_collect_uploads($field, ['pdf'], 'pdf_', $stashDir);`
-- `includes/waybill_stamper.php`:263 — `$saved = waybill_stamper_collect_uploads($field, $allowed, $prefix, $stashDir);`
+- `includes/waybill_stamper.php`:272 — `$saved = waybill_stamper_collect_uploads($field, $allowed, $prefix, $stashDir);`
 
 ## waybill_stamper_stash_prune {#waybill_stamper_stash_prune}
 
 **Callers (3):**
 
-- `includes/waybill_stamper.php`:252 — `waybill_stamper_stash_prune();`
-- `includes/waybill_stamper.php`:289 — `waybill_stamper_stash_prune();`
-- `includes/waybill_stamper.php`:533 — `waybill_stamper_stash_prune();`
+- `includes/waybill_stamper.php`:261 — `waybill_stamper_stash_prune();`
+- `includes/waybill_stamper.php`:298 — `waybill_stamper_stash_prune();`
+- `includes/waybill_stamper.php`:542 — `waybill_stamper_stash_prune();`
 
 ## waybill_stamper_stash_upload {#waybill_stamper_stash_upload}
 
@@ -150,7 +156,7 @@ function_count: 18
 
 **Callers (1):**
 
-- `includes/waybill_stamper.php`:432 — `$token = waybill_stamper_register_download($outputFile, $downloadFilename);`
+- `includes/waybill_stamper.php`:441 — `$token = waybill_stamper_register_download($outputFile, $downloadFilename);`
 
 ## waybill_stamper_serve_download {#waybill_stamper_serve_download}
 

@@ -1,7 +1,7 @@
 ---
 title: dept_production
 source: includes/dept_production.php
-generated: 2026-06-20T10:05:17+02:00
+generated: 2026-06-21T11:10:58+02:00
 type: module
 function_count: 25
 ---
@@ -98,8 +98,8 @@ function_count: 25
 **Callers (3):**
 
 - `includes/dept_production.php`:375 — `$res = dept_packaging_deduct($pdo, $stockId, (float) $line['qty'], $userId, $label);`
-- `includes/honey_inventory.php`:418 — `$res = dept_packaging_deduct($pdo, $stockId, $qty, $userId, 'bottling: ' . substr($label, 0, 100));`
-- `includes/honey_inventory.php`:433 — `$res = dept_packaging_deduct($pdo, $stickerId, $totalBottles, $userId, 'bottling: ' . substr($label, 0, 100));`
+- `includes/honey_inventory.php`:421 — `$res = dept_packaging_deduct($pdo, $stockId, $qty, $userId, 'bottling: ' . substr($label, 0, 100));`
+- `includes/honey_inventory.php`:436 — `$res = dept_packaging_deduct($pdo, $stickerId, $totalBottles, $userId, 'bottling: ' . substr($label, 0, 100));`
 
 ## dept_production_apply_deduct_lines {#dept_production_apply_deduct_lines}
 
@@ -176,19 +176,19 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/honey.php`:813 — `$preview = dept_production_preview_lines(ims_pdo(), $productKey, $action, $qty);`
+- `api/v1/honey.php`:892 — `$preview = dept_production_preview_lines(ims_pdo(), $productKey, $action, $qty);`
 
 ## dept_pt_use_raw_bags {#dept_pt_use_raw_bags}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:656 — `$result = dept_pt_use_raw_bags($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+- `api/v1/honey.php`:735 — `$result = dept_pt_use_raw_bags($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
 
 ## dept_pt_make_tea_bags {#dept_pt_make_tea_bags}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:678 — `$result = dept_pt_make_tea_bags($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+- `api/v1/honey.php`:757 — `$result = dept_pt_make_tea_bags($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
 
 ## dept_pt_pouch {#dept_pt_pouch}
 
@@ -196,13 +196,13 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/honey.php`:700 — `$result = dept_pt_pouch($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+- `api/v1/honey.php`:779 — `$result = dept_pt_pouch($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
 
 ## dept_wip_waste_tea_bags {#dept_wip_waste_tea_bags}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:788 — `$result = dept_wip_waste_tea_bags($pdo, (int) $user['id'], $qty, $reason !== '' ? $reason : null);`
+- `api/v1/honey.php`:867 — `$result = dept_wip_waste_tea_bags($pdo, (int) $user['id'], $qty, $reason !== '' ? $reason : null);`
 
 ## dept_brc_produce_pouches {#dept_brc_produce_pouches}
 
@@ -210,13 +210,13 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/honey.php`:722 — `$result = dept_brc_produce_pouches($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+- `api/v1/honey.php`:801 — `$result = dept_brc_produce_pouches($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
 
 ## dept_raw_detail_enriched {#dept_raw_detail_enriched}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:562 — `$snapshot = dept_raw_detail_enriched(ims_pdo(), $slug);`
+- `api/v1/honey.php`:641 — `$snapshot = dept_raw_detail_enriched(ims_pdo(), $slug);`
 
 ## dept_jar_produce {#dept_jar_produce}
 
@@ -224,7 +224,7 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/honey.php`:744 — `$result = dept_jar_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+- `api/v1/honey.php`:823 — `$result = dept_jar_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
 
 ## dept_honey_comb_produce {#dept_honey_comb_produce}
 
@@ -232,5 +232,5 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/honey.php`:766 — `$result = dept_honey_comb_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+- `api/v1/honey.php`:845 — `$result = dept_honey_comb_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
 

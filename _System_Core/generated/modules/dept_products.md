@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-06-20T10:05:18+02:00
+generated: 2026-06-21T11:10:59+02:00
 type: module
 function_count: 23
 ---
@@ -130,7 +130,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (27):**
 
-- `api/v1/honey.php`:576 — `$def = dept_product_by_key($productKey);`
+- `api/v1/honey.php`:655 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:12 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:40 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:77 — `$def = dept_product_by_key($productKey);`
@@ -161,8 +161,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (5):**
 
-- `api/v1/honey.php`:614 — `if (!dept_product_key_valid($productKey)) {`
-- `api/v1/honey.php`:806 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:693 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:885 — `if (!dept_product_key_valid($productKey)) {`
 - `includes/dept_pos.php`:50 — `if (!dept_product_key_valid($productKey) || $qty <= 0) {`
 - `includes/honey_parcel_inventory.php`:34 — `if ($key === '' || !dept_product_key_valid($key)) {`
 - `includes/pos_discount_requests.php`:17 — `return $productKey !== '' && dept_product_key_valid($productKey);`

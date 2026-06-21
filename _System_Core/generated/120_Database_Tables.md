@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-20T10:05:13+02:00
+generated: 2026-06-21T11:10:55+02:00
 type: memory-bank
 table_count: 55
 ---
@@ -11,6 +11,54 @@ table_count: 55
 > AUTO-GENERATED from `sql/*.sql` + SQL regex scan of `includes/` and `api/`.
 
 Schema sources: `sql/full_schema.sql` and migration files
+
+## `app_users`
+
+| File | Function |
+|------|----------|
+| `includes/auth.php` | [[modules/auth#rts_app_users_has_status_column]] |
+| `includes/auth.php` | [[modules/auth#rts_delivery_submitter_user_id]] |
+| `includes/auth.php` | [[modules/auth#rts_auth_login]] |
+| `includes/auth.php` | [[modules/auth#rts_auth_verify_user_password]] |
+
+## `delivery_batch_items`
+
+| File | Function |
+|------|----------|
+| `api/delivery_batch_detail.php` | `(file-level)` |
+| `api/delivery_match_tracking.php` | `(file-level)` |
+| `api/delivery_resolve.php` | `(file-level)` |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_batch_for_date]] |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
+| `includes/deliveries_review_nav.php` | [[modules/deliveries_review_nav#rts_delivery_review_attention_count]] |
+| `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
+| `includes/delivery_duplicates.php` | [[modules/delivery_duplicates#rts_delivery_tracking_is_duplicate]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_find_existing_recordings]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_get_batch_item_row]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_delete_item_by_id]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_resolve_item_by_id]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_find_delivery_match_item_id]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_delivery_match]] |
+
+## `delivery_batches`
+
+| File | Function |
+|------|----------|
+| `api/delivery_batch_detail.php` | `(file-level)` |
+| `api/delivery_match_tracking.php` | `(file-level)` |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_batch_for_date]] |
+| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
+| `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_find_existing_recordings]] |
+| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_get_batch_item_row]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_find_delivery_match_item_id]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_delivery_match]] |
 
 ## `rts_cases`
 
@@ -48,52 +96,6 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/rts_schema.php` | [[modules/rts_schema#rts_line_items_fetch_for_case]] |
 | `includes/rts_schema.php` | [[modules/rts_schema#rts_line_items_ensure_v2_schema]] |
 | `includes/rts_schema.php` | [[modules/rts_schema#rts_line_items_insert_batch]] |
-
-## `app_users`
-
-| File | Function |
-|------|----------|
-| `includes/auth.php` | [[modules/auth#rts_app_users_has_status_column]] |
-| `includes/auth.php` | [[modules/auth#rts_delivery_submitter_user_id]] |
-| `includes/auth.php` | [[modules/auth#rts_auth_login]] |
-
-## `delivery_batches`
-
-| File | Function |
-|------|----------|
-| `api/delivery_batch_detail.php` | `(file-level)` |
-| `api/delivery_match_tracking.php` | `(file-level)` |
-| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_batch_for_date]] |
-| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
-| `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
-| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_find_existing_recordings]] |
-| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_get_batch_item_row]] |
-| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
-| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
-| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
-| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_find_delivery_match_item_id]] |
-| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_delivery_match]] |
-
-## `delivery_batch_items`
-
-| File | Function |
-|------|----------|
-| `api/delivery_batch_detail.php` | `(file-level)` |
-| `api/delivery_match_tracking.php` | `(file-level)` |
-| `api/delivery_resolve.php` | `(file-level)` |
-| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_batch_for_date]] |
-| `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
-| `includes/deliveries_review_nav.php` | [[modules/deliveries_review_nav#rts_delivery_review_attention_count]] |
-| `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
-| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_find_existing_recordings]] |
-| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_get_batch_item_row]] |
-| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_delete_item_by_id]] |
-| `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_resolve_item_by_id]] |
-| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
-| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
-| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
-| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_find_delivery_match_item_id]] |
-| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_delivery_match]] |
 
 ## `sp_sort_batches`
 
@@ -138,6 +140,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_edit_requests]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_financials]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_list]] |
+| `api/v1/honey.php` | [[modules/honey#honey_resolve_user_dept_key]] |
 | `api/v1/materials.php` | [[modules/materials#api_materials_departments]] |
 | `api/v1/pos.php` | [[modules/pos#api_pos_products]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_stock_movement]] |
@@ -157,7 +160,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_user_is_csr_dept]] |
-| `includes/waybill_stamper.php` | [[modules/waybill_stamper#waybill_stamper_user_can_access]] |
+| `includes/waybill_stamper.php` | [[modules/waybill_stamper#waybill_stamper_user_is_csr_dept]] |
 
 ## `users`
 

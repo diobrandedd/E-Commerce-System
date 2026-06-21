@@ -133,6 +133,14 @@ if ($touchPackaging -or $All) {
     Test-Stage 'Parcel pack tiers' {
         Push-Location $RepoRoot
         try {
+            # Phase-30 legacy tiers (dept_1_2_units) match every shape until re-seeded.
+            $seedOut = & $Php tools/seed_fulfillment_pack_tiers.php 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host ($seedOut -join "`n")
+            } else {
+                Write-Host "seed_fulfillment_pack_tiers skipped or failed (phase33 SKUs may be missing):"
+                Write-Host ($seedOut -join "`n")
+            }
             $out = & $Php tools/test_parcel_pack_match.php 2>&1
             $text = $out -join "`n"
             Write-Host $text

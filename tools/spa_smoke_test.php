@@ -110,9 +110,9 @@ if (($me['http'] ?? 0) === 200 && ($me['json']['ok'] ?? false)) {
     $csrf = '';
 }
 
-// Login — change these if your test user differs
-$testUser = getenv('PYX_TEST_USER') ?: 'Noli_F';
-$testPass = getenv('PYX_TEST_PASS') ?: '025027';
+// Login — bootstrap default matches legacy app_users hash (admin123); override via PYX_TEST_* env
+$testUser = getenv('PYX_TEST_USER') ?: 'admin';
+$testPass = getenv('PYX_TEST_PASS') ?: 'admin123';
 
 $login = api_call('auth.php', 'login', ['username' => $testUser, 'password' => $testPass], $cookieFile);
 if (($login['http'] ?? 0) === 200 && ($login['json']['ok'] ?? false) && !empty($login['json']['data']['user'])) {

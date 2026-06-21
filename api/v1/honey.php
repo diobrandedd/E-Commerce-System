@@ -58,11 +58,90 @@ api_dispatch([
 function api_honey_require_view(): array
 {
     $user = api_require_ims_user();
-    if (!honey_role_can_view((string) $user['role']) && !honey_role_can_mutate((string) $user['role'])) {
+    $role = (string) $user['role'];
+    if (!honey_role_can_view($role) && !honey_role_can_mutate($role)) {
         api_fail('Forbidden.', 403);
+    }
+    // Operations staff are read-only and limited to their own department's
+    // raw materials + finished products.
+    if ($role === 'staff') {
+        honey_assert_staff_dept_scope($user);
     }
 
     return $user;
+}
+
+/** Resolve the logged-in user's department key (e.g. honey, paragis, cacao_brc). */
+function honey_resolve_user_dept_key(array $user): ?string
+{
+    $deptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
+    if ($deptId < 1) {
+        return null;
+    }
+    try {
+        $st = ims_pdo()->prepare('SELECT name FROM departments WHERE id = ? LIMIT 1');
+        $st->execute([$deptId]);
+        $name = $st->fetchColumn();
+
+        return $name !== false ? strtolower((string) $name) : null;
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+/**
+ * Determine which department a honey.php view request targets, from the
+ * `dept`, `slug`, or `product_key` query parameter. Returns null when it
+ * cannot be inferred (paramless dept actions handled by the caller).
+ */
+function honey_request_target_dept_key(): ?string
+{
+    $dept = strtolower(trim((string) ($_GET['dept'] ?? '')));
+    if ($dept !== '') {
+        return $dept;
+    }
+    $slug = strtolower(trim((string) ($_GET['slug'] ?? '')));
+    if ($slug !== '') {
+        return match ($slug) {
+            'paragis' => 'paragis',
+            'black-rice', 'cacao', 'cacao-brc', 'black-rice-coffee', 'cacao-tablets' => 'cacao_brc',
+            'honey', 'honey-comb' => 'honey',
+            default => $slug,
+        };
+    }
+    $productKey = strtolower(trim((string) ($_GET['product_key'] ?? '')));
+    if ($productKey !== '') {
+        return match ($productKey) {
+            'pt' => 'paragis',
+            'brc', 'jar_cacao' => 'cacao_brc',
+            default => 'honey',
+        };
+    }
+
+    return null;
+}
+
+/** 403 unless a `staff` user's request stays within their own department. */
+function honey_assert_staff_dept_scope(array $user): void
+{
+    $userDept = honey_resolve_user_dept_key($user);
+    if ($userDept === null) {
+        api_fail('Your account has no department assigned.', 403);
+    }
+    // Honey-stage views carry no dept parameter — restrict them to honey staff.
+    $honeyOnly = ['warehouse_list', 'production_list', 'packaging_list', 'packaging_total_inventory', 'traceability'];
+    $action = (string) ($_GET['action'] ?? '');
+    if (in_array($action, $honeyOnly, true)) {
+        if ($userDept !== 'honey') {
+            api_fail('Out of scope for your department.', 403);
+        }
+
+        return;
+    }
+    $target = honey_request_target_dept_key();
+    if ($target !== null && $target !== $userDept) {
+        api_fail('Out of scope for your department.', 403);
+    }
 }
 
 function api_honey_require_mutate(): array

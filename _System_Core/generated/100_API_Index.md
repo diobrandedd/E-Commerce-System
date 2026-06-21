@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-20T10:05:13+02:00
+generated: 2026-06-21T11:10:55+02:00
 type: memory-bank
 ---
 
@@ -191,7 +191,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `catalog_list` | `api_materials_catalog_list()` | `ims_pdo()`, `material_inventory_list()` |
+| `catalog_list` | `api_materials_catalog_list()` | `material_inventory_role_can_view()`, `material_inventory_role_can_issue_packing()`, `ims_pdo()`, `material_inventory_list()` |
 | `catalog_create` | `api_materials_catalog_create()` | `material_inventory_role_can_create_supply_catalog()`, `ims_pdo()`, `material_inventory_create()` |
 | `catalog_update` | `api_materials_catalog_update()` | `ims_pdo()`, `material_inventory_update()` |
 | `on_hand_list` | `api_materials_on_hand_list()` | — |
@@ -448,6 +448,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 ### `delivery_bulk.php`
 - **Path:** `api/delivery_bulk.php`
+
+### `delivery_check_tracking.php`
+- **Path:** `api/delivery_check_tracking.php`
 
 ### `delivery_match_tracking.php`
 - **Path:** `api/delivery_match_tracking.php`

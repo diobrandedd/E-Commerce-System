@@ -1,7 +1,7 @@
 ---
 title: admin_nav
 source: includes/admin_nav.php
-generated: 2026-06-20T10:05:13+02:00
+generated: 2026-06-21T11:10:55+02:00
 type: module
 function_count: 1
 ---
@@ -25,8 +25,8 @@ function_count: 1
 - `includes/admin_sidebar.php`:35 — `<?php rts_admin_nav_links($active, $prefix, $deliveryNavBadge, $deliveriesHref); ?>`
 - `dashboard.php`:346 — `<?php rts_admin_nav_links('dashboard', '', $deliveryNavBadge); ?>`
 - `dashboard.php`:356 — `<?php rts_admin_nav_links('dashboard', '', $deliveryNavBadge); ?>`
-- `record.php`:431 — `<?php rts_admin_nav_links('record', '', $deliveryNavBadge); ?>`
-- `record.php`:441 — `<?php rts_admin_nav_links('record', '', $deliveryNavBadge); ?>`
+- `record.php`:455 — `<?php rts_admin_nav_links('record', '', $deliveryNavBadge); ?>`
+- `record.php`:465 — `<?php rts_admin_nav_links('record', '', $deliveryNavBadge); ?>`
 - `records.php`:551 — `<?php rts_admin_nav_links('records', '', $deliveryNavBadge); ?>`
 - `records.php`:561 — `<?php rts_admin_nav_links('records', '', $deliveryNavBadge); ?>`
 

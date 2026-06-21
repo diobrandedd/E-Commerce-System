@@ -30,17 +30,7 @@ $pageTitle = 'Record RTS';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
-<<<<<<< HEAD
-  <script>
-  (function () {
-    var NGROK_HOST = 'basket-grouped-viscous.ngrok-free.dev';
-    if (location.protocol === 'https:' && location.hostname === NGROK_HOST) return;
-    location.replace('https://' + NGROK_HOST + location.pathname + location.search + location.hash);
-  })();
-  </script>
-=======
   <?= rts_forwarding_head_script() ?>
->>>>>>> v3.6.5
   <style>
     :root {
       --bg: #fffdf6;
@@ -677,29 +667,8 @@ $pageTitle = 'Record RTS';
         <button type="button" class="btn btn-primary" id="btnSaveScanNext" disabled>Scan next parcel</button>
       </div>
       <div class="toolbar hidden" id="rtsEditActions" style="justify-content:space-between;margin-top:0.75rem;">
-<<<<<<< HEAD
-        <button type="button" class="btn btn-ghost btn-danger" id="btnDeleteRecord">Delete entry</button>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-left:auto;">
-          <button type="button" class="btn btn-ghost" id="btnModalCancelEdit">Cancel</button>
-          <button type="button" class="btn btn-primary" id="btnSave" disabled>Save changes</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="deleteConfirmBackdrop" class="delete-confirm-backdrop hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
-    <div class="delete-confirm-modal">
-      <h3 id="deleteConfirmTitle">Delete this RTS record?</h3>
-      <p id="deleteConfirmSummary" class="muted" style="margin:0 0 0.75rem;font-size:0.9rem;line-height:1.5;"></p>
-      <label for="deleteAdminPassword" style="display:block;font-size:0.8rem;color:var(--muted);">Admin password</label>
-      <input type="password" id="deleteAdminPassword" class="admin-pw-field" autocomplete="current-password" placeholder="Enter your password to confirm">
-      <div class="delete-confirm-actions">
-        <button type="button" class="btn-cancel-confirm" id="deleteConfirmCancel">Cancel</button>
-        <button type="button" class="btn-danger-confirm" id="deleteConfirmYes">Yes, delete permanently</button>
-=======
         <button type="button" class="btn btn-ghost" id="btnModalCancelEdit">Cancel</button>
         <button type="button" class="btn btn-primary" id="btnSave" disabled>Save changes</button>
->>>>>>> v3.6.5
       </div>
     </div>
   </div>
@@ -2095,89 +2064,7 @@ $pageTitle = 'Record RTS';
     return true;
   }
 
-<<<<<<< HEAD
-  function closeDeleteConfirm() {
-    const bd = $('deleteConfirmBackdrop');
-    if (!bd) return;
-    bd.classList.add('hidden');
-    bd.setAttribute('aria-hidden', 'true');
-    const yes = $('deleteConfirmYes');
-    if (yes) {
-      yes.disabled = false;
-      yes.textContent = 'Yes, delete permanently';
-    }
-    const pw = $('deleteAdminPassword');
-    if (pw) pw.value = '';
-  }
 
-  function openDeleteConfirm() {
-    if (!isEditMode || editCaseId < 1) return;
-    const bd = $('deleteConfirmBackdrop');
-    const sum = $('deleteConfirmSummary');
-    const trk = currentTracking || ($('dispTracking') ? $('dispTracking').value : '') || '';
-    if (sum) {
-      sum.innerHTML = 'Record #' + escHtml(String(editCaseId)) + '<br><br>Tracking: <strong>' + escHtml(trk || '—') + '</strong><br><br>' +
-        'This permanently removes the RTS case, all product lines, and documentation files. This cannot be undone.';
-    }
-    const pw = $('deleteAdminPassword');
-    if (pw) pw.value = '';
-    if (bd) {
-      bd.classList.remove('hidden');
-      bd.setAttribute('aria-hidden', 'false');
-    }
-    if (pw) pw.focus();
-  }
-
-  async function doDeleteRecord() {
-    if (!isEditMode || editCaseId < 1) return;
-    const pwEl = $('deleteAdminPassword');
-    const pw = pwEl ? (pwEl.value || '') : '';
-    if (!pw) {
-      toast('Enter your admin password to confirm deletion.', true);
-      if (pwEl) pwEl.focus();
-      return;
-    }
-    const yes = $('deleteConfirmYes');
-    if (yes) {
-      yes.disabled = true;
-      yes.textContent = 'Deleting…';
-    }
-    try {
-      const r = await fetch(api, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ action: 'delete', case_id: editCaseId, admin_password: pw })
-      });
-      const j = await r.json();
-      if (j.ok) {
-        closeDeleteConfirm();
-        toast('Record deleted.');
-        document.body.classList.add('page-exit');
-        setTimeout(() => { window.location.href = 'records.php'; }, 180);
-        return;
-      }
-      toast(j.error || 'Delete failed', true);
-      closeDeleteConfirm();
-    } catch (e) {
-      toast('Network error', true);
-      closeDeleteConfirm();
-    }
-  }
-
-  const btnDeleteRecord = $('btnDeleteRecord');
-  if (btnDeleteRecord) btnDeleteRecord.addEventListener('click', openDeleteConfirm);
-  $('deleteConfirmCancel').addEventListener('click', closeDeleteConfirm);
-  $('deleteConfirmYes').addEventListener('click', () => { void doDeleteRecord(); });
-  const deleteBd = $('deleteConfirmBackdrop');
-  if (deleteBd) {
-    deleteBd.addEventListener('click', (e) => {
-      if (e.target.id === 'deleteConfirmBackdrop') closeDeleteConfirm();
-    });
-  }
-
-=======
->>>>>>> v3.6.5
   $('btnSave').addEventListener('click', () => { void saveRts(); });
   $('btnSaveDone').addEventListener('click', () => {
     void saveRts(() => closeScanPanel());
@@ -2275,14 +2162,7 @@ $pageTitle = 'Record RTS';
       scanLock = false;
       return;
     }
-<<<<<<< HEAD
-    const delBd = $('deleteConfirmBackdrop');
-    if (delBd && !delBd.classList.contains('hidden')) {
-      closeDeleteConfirm();
-      return;
-    }
-=======
->>>>>>> v3.6.5
+
     if ($('modalBackdrop') && !$('modalBackdrop').classList.contains('hidden') && !isEditMode) {
       hideModalNew();
       scanLock = false;

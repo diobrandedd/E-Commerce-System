@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
   Truck, DollarSign, RotateCcw, ClipboardList,
-  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, PackageCheck,
+  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, PackageCheck, UserCog,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import {
@@ -135,6 +135,33 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
   const rtsNavFull = rtsNav([rtsInventory, rtsRecords, rtsDashboard, rtsRecord]);
   const rtsNavReadOnly = rtsNav([rtsInventory, rtsRecords, rtsDashboard]);
 
+  // Staff see raw materials + finished products for their own department only
+  // (read-only — server enforces dept scope + hides pricing).
+  const staffInventoryChildrenByDept: Record<string, NavChild[]> = {
+    honey: [
+      { label: "Raw Honey", children: HONEY_STAGE_CHILDREN },
+      { label: "Honey (products)", to: "/inventory/products/honey" },
+    ],
+    paragis: [
+      { label: "Dried Paragis", to: "/inventory/raw-materials/paragis" },
+      { label: "Paragis Tea (products)", to: "/inventory/products/paragis-tea" },
+    ],
+    cacao_brc: [
+      { label: "Black Rice", to: "/inventory/raw-materials/black-rice" },
+      { label: "Cacao Beans", to: "/inventory/raw-materials/cacao" },
+      { label: "Black Rice Coffee", to: "/inventory/products/black-rice-coffee" },
+      { label: "Cacao Tablets", to: "/inventory/products/cacao-tablets" },
+    ],
+  };
+  const staffInventoryNav: NavItem = {
+    icon: Package,
+    label: "Inventory",
+    to: "/inventory/raw-materials",
+    children: staffInventoryChildrenByDept[dept] ?? [
+      { label: "Raw Materials", to: "/inventory/raw-materials" },
+    ],
+  };
+
   switch (role) {
     case "executive":
       return [
@@ -198,6 +225,11 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         { icon: PlusCircle, label: "Stock Input", to: "/stock-input" },
         { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
+        staffInventoryNav,
+        deliveriesItem,
+        onlineParcelsItem,
+        forPackingItem,
+        rtsNavReadOnly,
         { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
       ];
@@ -526,6 +558,18 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <p className="text-white text-sm font-medium truncate">{user.name}</p>
             </div>
           </div>
+          <NavLink
+            to="/account"
+            onClick={onClose}
+            className={({ isActive }) =>
+              `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 cursor-pointer ${
+                isActive ? "bg-[#C8900A] text-white font-semibold" : "text-white/50 hover:text-white hover:bg-white/8"
+              }`
+            }
+          >
+            <UserCog size={17} />
+            <span className="flex-1">My Account</span>
+          </NavLink>
           <button
             onClick={handleLogout}
             disabled={signingOut}

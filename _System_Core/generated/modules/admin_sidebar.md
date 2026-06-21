@@ -1,7 +1,7 @@
 ---
 title: admin_sidebar
 source: includes/admin_sidebar.php
-generated: 2026-06-20T10:05:13+02:00
+generated: 2026-06-21T11:10:55+02:00
 type: module
 function_count: 3
 ---
@@ -43,9 +43,9 @@ function_count: 3
 - `dashboard.php`:604 — `setOpen(!panel.classList.contains('open'));`
 - `dashboard.php`:609 — `a.addEventListener('click', function () { setOpen(false); });`
 - `dashboard.php`:624 — `if (e.key === 'Escape') setOpen(false);`
-- `record.php`:2106 — `setOpen(!mPanel.classList.contains('open'));`
-- `record.php`:2109 — `a.addEventListener('click', () => setOpen(false));`
-- `record.php`:2112 — `if (e.key === 'Escape') setOpen(false);`
+- `record.php`:2136 — `setOpen(!mPanel.classList.contains('open'));`
+- `record.php`:2139 — `a.addEventListener('click', () => setOpen(false));`
+- `record.php`:2142 — `if (e.key === 'Escape') setOpen(false);`
 - `records.php`:846 — `setOpen(!panel.classList.contains('open'));`
 - `records.php`:852 — `setOpen(false);`
 - `records.php`:881 — `setOpen(false);`

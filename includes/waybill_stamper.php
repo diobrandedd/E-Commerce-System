@@ -36,27 +36,36 @@ function waybill_stamper_require_access(): array
 }
 
 /** @param array{role:string,dept_id:?int} $user */
+function waybill_stamper_user_is_csr_dept(array $user): bool
+{
+    $deptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
+    if ($deptId < 1) {
+        return false;
+    }
+    try {
+        $pdo = ims_pdo();
+        $st = $pdo->prepare('SELECT name FROM departments WHERE id = ? LIMIT 1');
+        $st->execute([$deptId]);
+        $name = (string) ($st->fetchColumn() ?: '');
+
+        return strtolower($name) === 'csr';
+    } catch (Throwable) {
+        return false;
+    }
+}
+
+/** @param array{role:string,dept_id:?int} $user */
 function waybill_stamper_user_can_access(array $user): bool
 {
     $role = (string) ($user['role'] ?? '');
     if ($role === 'executive' || $role === 'csr_tl' || $role === 'csr_staff') {
         return true;
     }
-    if ($role === 'tl') {
-        $deptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-        if ($deptId < 1) {
-            return false;
-        }
-        try {
-            $pdo = ims_pdo();
-            $st = $pdo->prepare('SELECT name FROM departments WHERE id = ? LIMIT 1');
-            $st->execute([$deptId]);
-            $name = (string) ($st->fetchColumn() ?: '');
-            return strtolower($name) === 'csr';
-        } catch (Throwable) {
-            return false;
-        }
+    // IMS session stores `tl` / `staff` — CSR users are gated by department, not SPA role names.
+    if (in_array($role, ['tl', 'staff'], true)) {
+        return waybill_stamper_user_is_csr_dept($user);
     }
+
     return false;
 }
 

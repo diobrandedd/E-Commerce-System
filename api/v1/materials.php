@@ -45,14 +45,27 @@ function api_materials_require_view(): array
 function api_materials_catalog_list(): void
 {
     api_method_allowed(['GET']);
-    api_materials_require_view();
     $category = trim((string) ($_GET['category'] ?? ''));
+    $user = api_require_ims_user();
+    $role = (string) $user['role'];
+    if (!material_inventory_role_can_view($role)) {
+        // For packing issuers (staff, TL, PM) need packaging catalog only — not full materials hub.
+        if ($category !== 'packaging' || !material_inventory_role_can_issue_packing($role)) {
+            api_fail('Forbidden.', 403);
+        }
+    }
     $pdo = ims_pdo();
     $items = material_inventory_list(
         $pdo,
         $category !== '' ? $category : null,
         !isset($_GET['include_inactive']) || (string) $_GET['include_inactive'] !== '1'
     );
+    if ($role === 'staff') {
+        foreach ($items as &$row) {
+            unset($row['current_price'], $row['supplier_id'], $row['supplier_name'], $row['supplier_code']);
+        }
+        unset($row);
+    }
     api_ok(['items' => $items]);
 }
 

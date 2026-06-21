@@ -1,7 +1,7 @@
 ---
 title: delivery_edit_requests
 source: includes/delivery_edit_requests.php
-generated: 2026-06-20T10:05:15+02:00
+generated: 2026-06-21T11:10:57+02:00
 type: module
 function_count: 15
 ---
@@ -81,7 +81,7 @@ function_count: 15
 
 **Callers (4):**
 
-- `api/delivery_resolve.php`:52 — `$deleted = deliveries_delete_item_by_id($pdo, $itemId);`
+- `api/delivery_resolve.php`:53 — `$deleted = deliveries_delete_item_by_id($pdo, $itemId);`
 - `api/v1/deliveries.php`:407 — `api_ok(['deleted' => deliveries_delete_item_by_id($pdo, $itemId)]);`
 - `includes/delivery_edit_requests.php`:251 — `return deliveries_delete_item_by_id($pdo, $itemId);`
 - `includes/delivery_edit_requests.php`:389 — `if (!deliveries_delete_item_by_id($pdo, $itemId)) {`
