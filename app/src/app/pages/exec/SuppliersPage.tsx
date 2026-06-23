@@ -1,5 +1,5 @@
-import { Fragment, useCallback, useEffect, useState } from "react";
-import { BookOpen, Plus, Search, Edit2, Loader2, Camera, Eye, ChevronDown, ChevronRight } from "lucide-react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, BookOpen, Plus, Search, Edit2, Loader2, Camera, Eye, ChevronDown, ChevronRight } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { SuppliersGuideModal } from "@/app/components/suppliers/SuppliersGuideModal";
@@ -20,6 +20,36 @@ import {
   type SupplierCategory,
 } from "@/app/lib/suppliers";
 import { ApiError } from "@/app/lib/api";
+import { cn } from "@/app/components/ui/utils";
+
+type SupplierSortKey = "name" | "category" | "contact" | "payment" | "address" | "status";
+type SortDir = "asc" | "desc";
+
+const SORT_COLUMNS: { key: SupplierSortKey; label: string }[] = [
+  { key: "name", label: "Name" },
+  { key: "category", label: "Category" },
+  { key: "contact", label: "Contact" },
+  { key: "payment", label: "Payment" },
+  { key: "address", label: "Address" },
+  { key: "status", label: "Status" },
+];
+
+function supplierSortValue(s: Supplier, key: SupplierSortKey): string {
+  switch (key) {
+    case "name":
+      return s.display_name;
+    case "category":
+      return s.category_label;
+    case "contact":
+      return s.contact_number ?? "";
+    case "payment":
+      return `${s.payment_account ?? ""} ${s.payment_account_number ?? ""}`.trim();
+    case "address":
+      return s.address ?? "";
+    case "status":
+      return s.is_active ? "active" : "inactive";
+  }
+}
 
 export function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -31,6 +61,8 @@ export function SuppliersPage() {
   const [pendingCount, setPendingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<SupplierSortKey>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -53,15 +85,40 @@ export function SuppliersPage() {
       .catch(() => {});
   }, []);
 
-  const filtered = suppliers.filter(s => {
-    const q = search.toLowerCase();
-    if (!q) return true;
-    return (
-      s.display_name.toLowerCase().includes(q) ||
-      s.category_label.toLowerCase().includes(q) ||
-      (s.contact_number ?? "").includes(q)
-    );
-  });
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    const list = q
+      ? suppliers.filter(s =>
+          s.display_name.toLowerCase().includes(q) ||
+          s.category_label.toLowerCase().includes(q) ||
+          (s.contact_number ?? "").includes(q),
+        )
+      : [...suppliers];
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    list.sort((a, b) => {
+      if (a.is_active !== b.is_active) {
+        return a.is_active ? -1 : 1;
+      }
+      const av = supplierSortValue(a, sortKey).toLocaleLowerCase();
+      const bv = supplierSortValue(b, sortKey).toLocaleLowerCase();
+      const cmp = av.localeCompare(bv, undefined, { numeric: true, sensitivity: "base" });
+      if (cmp !== 0) {
+        return cmp * dir;
+      }
+      return a.display_name.localeCompare(b.display_name, undefined, { sensitivity: "base" });
+    });
+    return list;
+  }, [suppliers, search, sortKey, sortDir]);
+
+  const toggleSort = (key: SupplierSortKey) => {
+    if (sortKey === key) {
+      setSortDir(prev => (prev === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(key);
+    setSortDir("asc");
+  };
 
   const toggleActive = async (s: Supplier) => {
     try {
@@ -124,16 +181,47 @@ export function SuppliersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/40">
-                  {["Name", "Category", "Contact", "Payment", "Address", "Status", ""].map(h => (
-                    <th key={h} className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-5 py-3 first:pl-6">{h}</th>
+                  {SORT_COLUMNS.map(col => (
+                    <th
+                      key={col.key}
+                      className={cn(
+                        "text-left text-xs font-semibold uppercase tracking-wide px-5 py-3",
+                        col.key === "name" && "pl-6",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(col.key)}
+                        className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md px-1 -mx-1 py-0.5 hover:bg-secondary/60"
+                      >
+                        {col.label}
+                        {sortKey === col.key ? (
+                          sortDir === "asc" ? (
+                            <ArrowUp size={13} className="text-[#C8900A]" aria-hidden />
+                          ) : (
+                            <ArrowDown size={13} className="text-[#C8900A]" aria-hidden />
+                          )
+                        ) : (
+                          <ArrowUpDown size={13} className="opacity-40" aria-hidden />
+                        )}
+                      </button>
+                    </th>
                   ))}
+                  <th className="px-5 py-3" aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
                 {loading && (
                   <tr><td colSpan={7} className="py-10 text-center text-muted-foreground"><Loader2 className="inline animate-spin" size={16} /></td></tr>
                 )}
-                {!loading && filtered.map((s, i) => {
+                {!loading && filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="py-10 text-center text-muted-foreground text-sm">
+                      No suppliers match your search.
+                    </td>
+                  </tr>
+                )}
+                {!loading && filtered.map(s => {
                   const isHoney = s.category === "honey";
                   const isParagis = s.category === "paragis";
                   const isBlackRice = s.category === "black_rice";
@@ -157,9 +245,14 @@ export function SuppliersPage() {
                           if (hasPricing) togglePricingExpand(s);
                           else setProfileId(s.id);
                         }}
-                        className={`border-b border-border hover:bg-secondary/30 cursor-pointer ${
-                          isExpanded ? "bg-amber-50/80" : i % 2 ? "bg-secondary/10" : ""
-                        }`}
+                        className={cn(
+                          "border-b border-border cursor-pointer transition-colors",
+                          !s.is_active
+                            ? "bg-red-50/80 hover:bg-red-100/70"
+                            : isExpanded
+                              ? "bg-amber-50/80 hover:bg-amber-50"
+                              : "hover:bg-secondary/30",
+                        )}
                       >
                         <td className="px-6 py-3.5 font-semibold">
                           <span className="inline-flex items-center gap-1.5">
