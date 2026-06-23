@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Plus, Search, Edit2, ToggleLeft, ToggleRight, KeyRound, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, BookOpen, Plus, Search, Edit2, ToggleLeft, ToggleRight, KeyRound, AlertCircle, Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { StaffManagementGuideModal } from "@/app/components/exec/StaffManagementGuideModal";
@@ -7,6 +7,18 @@ import { appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion"
 import { runStaffManagementTour } from "@/app/components/tour/guides/staffManagementTour";
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
+import { cn } from "@/app/components/ui/utils";
+
+type StaffSortKey = "name" | "role" | "department" | "employee_id" | "status";
+type SortDir = "asc" | "desc";
+
+const SORT_COLUMNS: { key: StaffSortKey; label: string }[] = [
+  { key: "name", label: "Name / username" },
+  { key: "role", label: "Role" },
+  { key: "department", label: "Department" },
+  { key: "employee_id", label: "Employee ID" },
+  { key: "status", label: "Status" },
+];
 
 interface StaffUser {
   id: number;
@@ -53,6 +65,21 @@ const DEPT_LABELS: Record<string, string> = {
   csr: "CSR",
 };
 
+function staffSortValue(u: StaffUser, key: StaffSortKey): string {
+  switch (key) {
+    case "name":
+      return `${u.name} ${u.username}`;
+    case "role":
+      return ROLE_LABELS[u.role] ?? u.role;
+    case "department":
+      return u.dept_name ? (DEPT_LABELS[u.dept_name] ?? u.dept_name) : "";
+    case "employee_id":
+      return u.employee_id;
+    case "status":
+      return u.is_active ? "active" : "inactive";
+  }
+}
+
 interface FormState {
   name: string;
   username: string;
@@ -83,6 +110,8 @@ export function StaffManagementPage() {
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<StaffSortKey>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const refresh = async () => {
     setLoading(true);
@@ -104,15 +133,40 @@ export function StaffManagementPage() {
   const departments = data?.departments ?? [];
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    if (!q) return users;
-    return users.filter(s =>
-      s.name.toLowerCase().includes(q) ||
-      s.username.toLowerCase().includes(q) ||
-      (s.dept_name ?? "").toLowerCase().includes(q) ||
-      s.employee_id.toLowerCase().includes(q)
-    );
-  }, [users, search]);
+    const q = search.toLowerCase().trim();
+    const list = q
+      ? users.filter(s =>
+          s.name.toLowerCase().includes(q) ||
+          s.username.toLowerCase().includes(q) ||
+          (s.dept_name ?? "").toLowerCase().includes(q) ||
+          s.employee_id.toLowerCase().includes(q),
+        )
+      : [...users];
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    list.sort((a, b) => {
+      if (a.is_active !== b.is_active) {
+        return a.is_active ? -1 : 1;
+      }
+      const av = staffSortValue(a, sortKey).toLocaleLowerCase();
+      const bv = staffSortValue(b, sortKey).toLocaleLowerCase();
+      const cmp = av.localeCompare(bv, undefined, { numeric: true, sensitivity: "base" });
+      if (cmp !== 0) {
+        return cmp * dir;
+      }
+      return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+    });
+    return list;
+  }, [users, search, sortKey, sortDir]);
+
+  const toggleSort = (key: StaffSortKey) => {
+    if (sortKey === key) {
+      setSortDir(prev => (prev === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(key);
+    setSortDir("asc");
+  };
 
   const totals = useMemo(() => ({
     total: users.length,
@@ -191,8 +245,8 @@ export function StaffManagementPage() {
           ))}
         </div>
 
-        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border gap-4" data-tour="staff-toolbar">
+        <div className="bg-card rounded-xl border border-border overflow-hidden flex flex-col min-h-0 max-h-[calc(100dvh-15rem)]" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border gap-4 shrink-0" data-tour="staff-toolbar">
             <div className="relative flex-1 max-w-xs">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -203,6 +257,7 @@ export function StaffManagementPage() {
               />
             </div>
             <button
+              type="button"
               onClick={() => setCreating(true)}
               className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg text-white transition-all"
               style={{ background: "#C8900A" }}
@@ -210,19 +265,42 @@ export function StaffManagementPage() {
               <Plus size={15} /> Add Staff
             </button>
           </div>
-          <div className="overflow-x-auto" data-tour="staff-table">
+          <div className="flex-1 min-h-0 overflow-auto overscroll-contain" data-tour="staff-table">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-secondary/40">
-                  {["Name / username", "Role", "Department", "Employee ID", "Status", "Actions"].map(h => (
+              <thead className="sticky top-0 z-10 bg-secondary/95 backdrop-blur-sm">
+                <tr className="border-b border-border">
+                  {SORT_COLUMNS.map(col => (
                     <th
-                      key={h}
-                      className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-5 py-3 first:pl-6"
-                      {...(h === "Actions" ? { "data-tour": "staff-actions-col" } : {})}
+                      key={col.key}
+                      className={cn(
+                        "text-left text-xs font-semibold uppercase tracking-wide px-5 py-3",
+                        col.key === "name" && "pl-6",
+                      )}
                     >
-                      {h}
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(col.key)}
+                        className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md px-1 -mx-1 py-0.5 hover:bg-secondary/60"
+                      >
+                        {col.label}
+                        {sortKey === col.key ? (
+                          sortDir === "asc" ? (
+                            <ArrowUp size={13} className="text-[#C8900A]" aria-hidden />
+                          ) : (
+                            <ArrowDown size={13} className="text-[#C8900A]" aria-hidden />
+                          )
+                        ) : (
+                          <ArrowUpDown size={13} className="opacity-40" aria-hidden />
+                        )}
+                      </button>
                     </th>
                   ))}
+                  <th
+                    className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-5 py-3"
+                    data-tour="staff-actions-col"
+                  >
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -232,8 +310,16 @@ export function StaffManagementPage() {
                 {!loading && filtered.length === 0 && (
                   <tr><td colSpan={6} className="px-6 py-8 text-center text-sm text-muted-foreground">No staff found.</td></tr>
                 )}
-                {filtered.map((s, i) => (
-                  <tr key={s.id} className={`border-b border-border last:border-0 hover:bg-secondary/30 transition-colors ${i % 2 ? "bg-secondary/10" : ""}`}>
+                {filtered.map(s => (
+                  <tr
+                    key={s.id}
+                    className={cn(
+                      "border-b border-border last:border-0 transition-colors",
+                      !s.is_active
+                        ? "bg-red-50/80 hover:bg-red-100/70"
+                        : "hover:bg-secondary/30",
+                    )}
+                  >
                     <td className="px-6 py-3.5">
                       <p className="font-medium text-foreground">{s.name}</p>
                       <p className="text-xs text-muted-foreground">{s.username}</p>

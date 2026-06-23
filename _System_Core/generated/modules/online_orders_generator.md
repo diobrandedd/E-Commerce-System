@@ -1,7 +1,7 @@
 ---
 title: online_orders_generator
 source: includes/online_orders_generator.php
-generated: 2026-06-23T05:53:19+02:00
+generated: 2026-06-23T07:45:06+02:00
 type: module
 function_count: 34
 ---
