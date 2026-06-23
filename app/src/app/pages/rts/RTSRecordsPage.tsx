@@ -4,6 +4,11 @@ import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import {
+  RtsCaseMediaGallery,
+  RtsCaseMediaTableCells,
+  RTS_MEDIA_TABLE_HEADERS,
+} from "@/app/components/rts/RtsCaseMediaUi";
+import {
   FulfillmentErrorBanner,
   FulfillmentToast,
   fulfillmentHoverRow,
@@ -229,6 +234,9 @@ export function RTSRecordsPage() {
     setDetailLoading(true);
     try {
       const data = await rtsGetCase(row.tracking_number);
+      if (data.case) {
+        setDetail({ ...row, ...data.case });
+      }
       if (catalog && data.lines.length) {
         setDetailLines(rtsFormatLines(data.lines as RtsLineItem[], catalog));
       } else if (data.lines.length) {
@@ -276,8 +284,7 @@ export function RTSRecordsPage() {
     }
   };
 
-  const docUrl = (file: string) =>
-    catalog ? `${catalog.doc_url_base}${encodeURIComponent(file)}` : file;
+  const docBase = catalog?.doc_url_base ?? "";
 
   return (
     <PageLayout
@@ -393,13 +400,14 @@ export function RTSRecordsPage() {
                 <th className="px-4 py-3 text-left">Lines</th>
                 <th className="px-4 py-3 text-left">Damaged</th>
                 <th className="px-4 py-3 text-left">Claim</th>
+                {RTS_MEDIA_TABLE_HEADERS}
                 <th className="px-4 py-3 w-8" aria-hidden />
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-muted-foreground">
+                  <td colSpan={11} className="py-10 text-center text-muted-foreground">
                     <Loader2 className="inline animate-spin" size={16} />
                   </td>
                 </tr>
@@ -420,6 +428,7 @@ export function RTSRecordsPage() {
                   <td className="px-4 py-3"><LineCountBadge count={Number(c.line_count ?? 0)} /></td>
                   <td className="px-4 py-3"><DamageBadge row={c} /></td>
                   <td className="px-4 py-3"><ClaimBadge row={c} catalog={catalog} /></td>
+                  <RtsCaseMediaTableCells row={c} docBase={docBase} />
                   <td className="px-4 py-3 text-muted-foreground">
                     <ChevronRight size={16} className="opacity-40 group-hover:opacity-100 group-hover:text-[#C8900A] transition-opacity" />
                   </td>
@@ -427,7 +436,7 @@ export function RTSRecordsPage() {
               ))}
               {!loading && !cases.length && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={11} className="px-4 py-12 text-center text-muted-foreground">
                     No records match filters.
                   </td>
                 </tr>
@@ -472,22 +481,7 @@ export function RTSRecordsPage() {
                 )}
               </div>
 
-              {detail.documentation_attachments && detail.documentation_attachments.length > 0 && (
-                <div className="mt-4">
-                  <p className={cn(labelClass, "mb-2")}>Documentation</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {detail.documentation_attachments.map((a, i) => (
-                      <div key={i} className="rounded-lg overflow-hidden border border-border">
-                        {a.kind === "video" ? (
-                          <video controls playsInline preload="metadata" src={docUrl(a.file)} className="max-w-full" />
-                        ) : (
-                          <img src={docUrl(a.file)} alt="" className="max-h-40 w-full object-cover" />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <RtsCaseMediaGallery row={detail} docBase={docBase} className="mt-4" />
 
               {canAdmin && !detail.voided_at && (
                 <div className="mt-4 space-y-2 border-t border-border pt-4">

@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
-import { FulfillmentErrorBanner, fulfillmentHoverRow } from "@/app/components/csr/onlineFulfillmentMotion";
-import { cn } from "@/app/components/ui/utils";
+import {
+  RtsCaseMediaTableCells,
+  RtsRegistryDetailModal,
+  RTS_MEDIA_TABLE_HEADERS,
+  rtsRegistryRowClassName,
+} from "@/app/components/rts/RtsCaseMediaUi";
+import { FulfillmentErrorBanner } from "@/app/components/csr/onlineFulfillmentMotion";
 import { ApiError } from "@/app/lib/api";
 import { rtsGetCatalog, rtsLineDisplay, rtsListLeaks, type RtsCaseRow, type RtsProductCatalog } from "@/app/lib/rtsApi";
 
@@ -18,6 +23,7 @@ export function RTSLeaksPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<RtsCaseRow | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,7 +52,7 @@ export function RTSLeaksPage() {
   return (
     <PageLayout
       title="Leaked / damaged"
-      subtitle="Damaged returns with product lines — synced to RTS sellable pool"
+      subtitle="Damaged returns with product lines — tap a row for details and media"
       actions={<Link to="/rts/record" className="text-xs text-[#C8900A] underline">Record RTS</Link>}
     >
       <FulfillmentErrorBanner message={error} />
@@ -69,40 +75,30 @@ export function RTSLeaksPage() {
           <table className="w-full text-sm">
             <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
               <tr>
-                <th className="text-left px-4 py-2">Tracking</th>
-                <th className="text-left px-4 py-2">Lines</th>
-                <th className="text-left px-4 py-2">Opened</th>
-                <th className="text-left px-4 py-2">Before shipment</th>
-                <th className="text-left px-4 py-2">RTS media</th>
+                <th className="text-left px-3 py-2">Tracking</th>
+                <th className="text-left px-3 py-2">Lines</th>
+                <th className="text-left px-3 py-2">Opened</th>
+                {RTS_MEDIA_TABLE_HEADERS}
+                <th className="w-8 px-2" aria-hidden />
               </tr>
             </thead>
             <tbody>
               {rows.map(row => (
-                <tr key={row.id} className={cn("border-t border-border", fulfillmentHoverRow)}>
-                  <td className="px-4 py-2 font-mono text-xs">
-                    <Link to={`/rts/record?edit=${encodeURIComponent(row.tracking_number)}`} className="text-[#C8900A] underline">
-                      {row.tracking_number}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2 text-xs max-w-xs">
+                <tr
+                  key={row.id}
+                  className={rtsRegistryRowClassName()}
+                  onClick={() => setSelected(row)}
+                >
+                  <td className="px-3 py-2 font-mono text-xs">{row.tracking_number}</td>
+                  <td className="px-3 py-2 text-xs max-w-[10rem] truncate">
                     {(row.lines ?? []).map((l, i) => (
-                      <div key={i}>{rtsLineDisplay(l, labels)}</div>
+                      <div key={i} className="truncate">{rtsLineDisplay(l, labels)}</div>
                     ))}
                   </td>
-                  <td className="px-4 py-2">{row.date_opened}</td>
-                  <td className="px-4 py-2">
-                    {row.before_shipment?.available && row.before_shipment.download_url ? (
-                      <a href={row.before_shipment.download_url} target="_blank" rel="noreferrer" className="text-[#C8900A] underline text-xs">Download</a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">N/A</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-xs">
-                    {(row.documentation_attachments ?? []).map((a, i) => (
-                      <a key={i} href={`${docBase}${a.file}`} target="_blank" rel="noreferrer" className="text-[#C8900A] underline mr-2">
-                        {a.kind}
-                      </a>
-                    ))}
+                  <td className="px-3 py-2">{row.date_opened}</td>
+                  <RtsCaseMediaTableCells row={row} docBase={docBase} />
+                  <td className="px-2 py-2 text-muted-foreground">
+                    <ChevronRight size={16} className="opacity-40" />
                   </td>
                 </tr>
               ))}
@@ -118,6 +114,13 @@ export function RTSLeaksPage() {
           <Button type="button" variant="outline" disabled={page * PER_PAGE >= total} onClick={() => setPage(p => p + 1)}>Next</Button>
         </div>
       )}
+
+      <RtsRegistryDetailModal
+        row={selected}
+        catalog={catalog}
+        variant="leak"
+        onClose={() => setSelected(null)}
+      />
     </PageLayout>
   );
 }

@@ -33,6 +33,16 @@ function api_rts_cases_role_can_record(string $role): bool
     return in_array($role, ['executive', 'prod_manager', 'csr_tl', 'csr_staff'], true);
 }
 
+/** IMS stores CSR users as tl/staff; SPA normalizes by department — match that for write gates. */
+function api_rts_cases_user_effective_role(array $user): string
+{
+    $deptId = isset($user['dept_id']) ? (int) $user['dept_id'] : null;
+    $dept = api_dept_lookup($deptId);
+    $deptKey = (string) ($dept['key'] ?? 'all');
+
+    return api_normalize_role((string) ($user['role'] ?? ''), $deptKey === 'all' ? null : $deptKey);
+}
+
 function api_rts_cases_role_can_admin(string $role): bool
 {
     return in_array($role, ['executive', 'prod_manager'], true);
@@ -84,7 +94,7 @@ function api_rts_cases_create(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_rts_cases_require_allowed();
-    if (!api_rts_cases_role_can_record((string) $user['role'])) {
+    if (!api_rts_cases_role_can_record(api_rts_cases_user_effective_role($user))) {
         api_fail('Forbidden.', 403);
     }
     try {
@@ -103,7 +113,7 @@ function api_rts_cases_append_lines(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_rts_cases_require_allowed();
-    if (!api_rts_cases_role_can_record((string) $user['role'])) {
+    if (!api_rts_cases_role_can_record(api_rts_cases_user_effective_role($user))) {
         api_fail('Forbidden.', 403);
     }
     $tracking = trim((string) ($input['tracking_number'] ?? ''));
@@ -123,7 +133,7 @@ function api_rts_cases_update(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_rts_cases_require_allowed();
-    if (!api_rts_cases_role_can_record((string) $user['role'])) {
+    if (!api_rts_cases_role_can_record(api_rts_cases_user_effective_role($user))) {
         api_fail('Forbidden.', 403);
     }
     try {
@@ -250,7 +260,7 @@ function api_rts_cases_documentation_upload(): void
 {
     api_method_allowed(['POST']);
     $user = api_rts_cases_require_allowed();
-    if (!api_rts_cases_role_can_record((string) $user['role'])) {
+    if (!api_rts_cases_role_can_record(api_rts_cases_user_effective_role($user))) {
         api_fail('Forbidden.', 403);
     }
     $csrf = (string) ($_POST['csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');

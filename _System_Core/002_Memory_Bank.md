@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-19 — [[problems/records/2026-06-19_rts-swapped-leak-disposition-rollout|RTS swapped/leak rollout + registry media UI]]
+**Shipped:** disposition migration + role fix + registry thumbs/modal (`RtsCaseMediaUi`). Run `migration_phase44` on prod.
+
 ### 2026-06-19 — [[problems/records/2026-06-19_rts-swapped-leak-disposition|RTS swapped/leak disposition + tracking prefill]]
 **Shipped:** `case_disposition` (standard/swapped/leak); swapped excludes sellable sync; tracking prefill from Online Orders/Deliveries; `/rts/swapped` and `/rts/leaks` registries; Record RTS wizard with parcel condition control. Run `sql/migration_phase44_rts_case_disposition.sql` on prod.
 
@@ -562,3 +565,6 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
   - Expanded `detect_courier()` mappings for clearer downstream labeling: `Flash / Marketplace`, `Flash Express`, `Lazada / J&T`.
 - **Why we did it:** OCR pages sometimes surfaced noisy `P...` strings before the real Lazada numeric TN, causing incorrect extraction and downstream no-item matches.
 - **Result:** PDF extraction now prefers correct TN candidates on mixed-carrier/OCR pages and reduces false matches from OCR artifacts.
+
+### 2026-06-19 — RTS doc upload no preview on mobile
+- **Record:** [[problems/records/2026-06-19_rts-doc-upload-no-preview]] (includes CSR role Forbidden fix on upload/save)

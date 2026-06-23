@@ -1,4 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { CheckCircle2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/app/components/ui/utils";
 
@@ -102,6 +103,39 @@ export function AppSuccessNotice({
       ) : null}
     </AnimatePresence>
   );
+}
+
+/** Brief bottom toast with check — auto-dismiss via `appShowConfirmToast`. */
+export function AppConfirmToast({ message }: { message: string | null }) {
+  const reduce = useReducedMotion();
+
+  return (
+    <AnimatePresence>
+      {message ? (
+        <motion.div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-green-700 px-4 py-2.5 text-sm font-medium text-white shadow-lg pointer-events-none"
+          initial={reduce ? false : { opacity: 0, y: 16, scale: 0.92 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={reduce ? undefined : { opacity: 0, y: 10, scale: 0.95 }}
+          transition={appFeedbackEase}
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
+          {message}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+export function appShowConfirmToast(
+  setter: (value: string | null) => void,
+  message: string,
+  ms = 2600,
+): void {
+  setter(message);
+  window.setTimeout(() => setter(null), ms);
 }
 
 export function AppErrorNotice({

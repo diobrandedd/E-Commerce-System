@@ -1,7 +1,7 @@
 ---
 title: rts_prefill
 source: includes/rts_prefill.php
-generated: 2026-06-23T09:41:16+02:00
+generated: 2026-06-23T11:18:03+02:00
 type: module
 function_count: 8
 ---
@@ -66,8 +66,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:94 — `$match = rts_prefill_delivery_lookup($pdo, (string) $caseRow['tracking_number']);`
-- `includes/rts_case_handlers.php`:328 — `$deliveryLookup = rts_prefill_delivery_lookup($pdo, $tracking);`
+- `includes/rts_case_handlers.php`:120 — `$match = rts_prefill_delivery_lookup($pdo, (string) $caseRow['tracking_number']);`
+- `includes/rts_case_handlers.php`:355 — `$deliveryLookup = rts_prefill_delivery_lookup($pdo, $tracking);`
 - `includes/rts_prefill.php`:280 — `$delivery = rts_prefill_delivery_lookup($pdo, $normalized);`
 
 ## rts_case_handler_tracking_prefill {#rts_case_handler_tracking_prefill}
@@ -76,5 +76,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:737 — `return rts_case_handler_tracking_prefill($pdo, $tracking);`
+- `includes/rts_case_handlers.php`:774 — `return rts_case_handler_tracking_prefill($pdo, $tracking);`
 

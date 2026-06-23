@@ -1,7 +1,7 @@
 ---
 title: rts_claim_status
 source: includes/rts_claim_status.php
-generated: 2026-06-23T09:41:16+02:00
+generated: 2026-06-23T11:18:03+02:00
 type: module
 function_count: 3
 ---
@@ -17,7 +17,7 @@ function_count: 3
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:545 — `'claim_status_label' => rts_claim_status_label($claimStatus),`
+- `includes/rts_case_handlers.php`:580 — `'claim_status_label' => rts_claim_status_label($claimStatus),`
 - `includes/rts_claim_status.php`:30 — `$out[] = ['value' => $code, 'label' => rts_claim_status_label($code)];`
 - `records.php`:751 — `<td class="td-claim-status"><?= htmlspecialchars(rts_claim_status_label($claimStatus), ENT_QUOTES, 'UTF-8') ?></td>`
 
@@ -25,13 +25,13 @@ function_count: 3
 
 **Callers (2):**
 
-- `includes/rts_case_handlers.php`:811 — `'claim_statuses' => rts_claim_status_options(),`
+- `includes/rts_case_handlers.php`:861 — `'claim_statuses' => rts_claim_status_options(),`
 - `records.php`:804 — `<?php foreach (rts_claim_status_options() as $opt): ?>`
 
 ## rts_claim_status_valid {#rts_claim_status_valid}
 
 **Callers (2):**
 
-- `includes/rts_case_handlers.php`:529 — `if (!rts_claim_status_valid($claimStatus)) {`
+- `includes/rts_case_handlers.php`:564 — `if (!rts_claim_status_valid($claimStatus)) {`
 - `records.php`:687 — `if (!rts_claim_status_valid($claimStatus)) {`
 

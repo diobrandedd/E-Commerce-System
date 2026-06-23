@@ -1,78 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
-import { FulfillmentErrorBanner, fulfillmentHoverRow } from "@/app/components/csr/onlineFulfillmentMotion";
-import { cn } from "@/app/components/ui/utils";
+import {
+  RtsCaseMediaTableCells,
+  RtsRegistryDetailModal,
+  RTS_MEDIA_TABLE_HEADERS,
+  rtsRegistryRowClassName,
+} from "@/app/components/rts/RtsCaseMediaUi";
+import { FulfillmentErrorBanner } from "@/app/components/csr/onlineFulfillmentMotion";
 import { ApiError } from "@/app/lib/api";
 import { rtsGetCatalog, rtsListSwapped, type RtsCaseRow, type RtsProductCatalog } from "@/app/lib/rtsApi";
 
 const PER_PAGE = 15;
-
-function RegistryTable({
-  rows,
-  catalog,
-  loading,
-}: {
-  rows: RtsCaseRow[];
-  catalog: RtsProductCatalog | null;
-  loading: boolean;
-}) {
-  const docBase = catalog?.doc_url_base ?? "";
-
-  if (loading) {
-    return <div className="py-12 text-center text-muted-foreground"><Loader2 className="inline animate-spin" /></div>;
-  }
-  if (!rows.length) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">No swapped parcels recorded yet.</p>;
-  }
-
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border">
-      <table className="w-full text-sm">
-        <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
-          <tr>
-            <th className="text-left px-4 py-2">Tracking</th>
-            <th className="text-left px-4 py-2">Shop</th>
-            <th className="text-left px-4 py-2">Courier</th>
-            <th className="text-left px-4 py-2">Opened</th>
-            <th className="text-left px-4 py-2">Before shipment</th>
-            <th className="text-left px-4 py-2">RTS media</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(row => (
-            <tr key={row.id} className={cn("border-t border-border", fulfillmentHoverRow)}>
-              <td className="px-4 py-2 font-mono text-xs">
-                <Link to={`/rts/records?q=${encodeURIComponent(row.tracking_number)}`} className="text-[#C8900A] underline">
-                  {row.tracking_number}
-                </Link>
-              </td>
-              <td className="px-4 py-2">{row.shop}</td>
-              <td className="px-4 py-2">{row.courier_final}</td>
-              <td className="px-4 py-2">{row.date_opened}</td>
-              <td className="px-4 py-2">
-                {row.before_shipment?.available && row.before_shipment.download_url ? (
-                  <a href={row.before_shipment.download_url} target="_blank" rel="noreferrer" className="text-[#C8900A] underline text-xs">Download</a>
-                ) : (
-                  <span className="text-xs text-muted-foreground">N/A</span>
-                )}
-              </td>
-              <td className="px-4 py-2 text-xs">
-                {(row.documentation_attachments ?? []).map((a, i) => (
-                  <a key={i} href={`${docBase}${a.file}`} target="_blank" rel="noreferrer" className="text-[#C8900A] underline mr-2">
-                    {a.kind}
-                  </a>
-                ))}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 export function RTSSwappedPage() {
   const [catalog, setCatalog] = useState<RtsProductCatalog | null>(null);
@@ -82,6 +23,7 @@ export function RTSSwappedPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<RtsCaseRow | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,10 +46,12 @@ export function RTSSwappedPage() {
     void load();
   }, [load]);
 
+  const docBase = catalog?.doc_url_base ?? "";
+
   return (
     <PageLayout
       title="Swapped parcels"
-      subtitle="Wrong or replaced contents — media registry only (not sellable RTS stock)"
+      subtitle="Wrong or replaced contents — tap a row for photos and video"
       actions={<Link to="/rts/record" className="text-xs text-[#C8900A] underline">Record RTS</Link>}
     >
       <FulfillmentErrorBanner message={error} />
@@ -120,7 +64,46 @@ export function RTSSwappedPage() {
         />
         <Button type="button" variant="outline" onClick={() => void load()}>Search</Button>
       </div>
-      <RegistryTable rows={rows} catalog={catalog} loading={loading} />
+
+      {loading ? (
+        <div className="py-12 text-center text-muted-foreground"><Loader2 className="inline animate-spin" /></div>
+      ) : !rows.length ? (
+        <p className="text-sm text-muted-foreground py-8 text-center">No swapped parcels recorded yet.</p>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="text-left px-3 py-2">Tracking</th>
+                <th className="text-left px-3 py-2">Shop</th>
+                <th className="text-left px-3 py-2">Courier</th>
+                <th className="text-left px-3 py-2">Opened</th>
+                {RTS_MEDIA_TABLE_HEADERS}
+                <th className="w-8 px-2" aria-hidden />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(row => (
+                <tr
+                  key={row.id}
+                  className={rtsRegistryRowClassName()}
+                  onClick={() => setSelected(row)}
+                >
+                  <td className="px-3 py-2 font-mono text-xs">{row.tracking_number}</td>
+                  <td className="px-3 py-2 capitalize">{row.shop}</td>
+                  <td className="px-3 py-2">{catalog?.couriers[row.courier_final] ?? row.courier_final}</td>
+                  <td className="px-3 py-2">{row.date_opened}</td>
+                  <RtsCaseMediaTableCells row={row} docBase={docBase} />
+                  <td className="px-2 py-2 text-muted-foreground">
+                    <ChevronRight size={16} className="opacity-40" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {total > PER_PAGE && (
         <div className="flex justify-center gap-2 mt-4">
           <Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
@@ -128,6 +111,13 @@ export function RTSSwappedPage() {
           <Button type="button" variant="outline" disabled={page * PER_PAGE >= total} onClick={() => setPage(p => p + 1)}>Next</Button>
         </div>
       )}
+
+      <RtsRegistryDetailModal
+        row={selected}
+        catalog={catalog}
+        variant="swapped"
+        onClose={() => setSelected(null)}
+      />
     </PageLayout>
   );
 }

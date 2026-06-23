@@ -21,6 +21,10 @@ Split damaged RTS returns into three dispositions on `rts_cases.case_disposition
 
 Run `sql/migration_phase44_rts_case_disposition.sql` on prod before deploy.
 
+## Registry UI (2026-06-19)
+
+Swapped / Leaks / Records tables: tappable rows, thumbnail columns (before shipment, RTS photo, RTS video), detail modal with full media. Shared component: `app/src/app/components/rts/RtsCaseMediaUi.tsx`. See [[problems/fixes/rts-registry-media-thumbnails]].
+
 ## Fragile edges
 
 - Swapped cases must not sync to `rts_inventory_rows` (filter in `rts_inventory_sync_run`).

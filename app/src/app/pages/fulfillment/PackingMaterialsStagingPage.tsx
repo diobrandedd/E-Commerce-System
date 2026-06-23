@@ -5,9 +5,10 @@ import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/co
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import {
+  AppConfirmToast,
   AppErrorBanner,
   AppSectionEnter,
-  AppSuccessNotice,
+  appShowConfirmToast,
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
 import {
@@ -355,7 +356,7 @@ export function PackingMaterialsStagingPage() {
   const [showAllSkus, setShowAllSkus] = useState(true);
   const [logRefreshKey, setLogRefreshKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   const setView = (next: PackingView) => {
     if (next === "staging") {
@@ -403,7 +404,7 @@ export function PackingMaterialsStagingPage() {
       subtitle="Issue fulfillment materials to packing · ship scan consumes staging · sized bubble tracked in cut pieces (pc)"
     >
       {error && <AppErrorBanner message={error} className="mb-4" />}
-      {success && <AppSuccessNotice message={success} className="mb-4" />}
+      <AppConfirmToast message={toast} />
 
       <div className="flex flex-wrap gap-2 mb-6">
         <Button
@@ -561,7 +562,7 @@ export function PackingMaterialsStagingPage() {
           onClose={() => setIssueOpen(false)}
           onDone={() => {
             setIssueOpen(false);
-            setSuccess("Materials issued to packing.");
+            appShowConfirmToast(setToast, "Materials issued to packing.");
             setLogRefreshKey((k) => k + 1);
             void load();
           }}
@@ -574,7 +575,7 @@ export function PackingMaterialsStagingPage() {
           onClose={() => setDamageRow(null)}
           onDone={(message) => {
             setDamageRow(null);
-            setSuccess(message);
+            appShowConfirmToast(setToast, message);
             setLogRefreshKey((k) => k + 1);
             void load();
           }}

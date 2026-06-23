@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { Loader2, QrCode } from "lucide-react";
-import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { Camera, Loader2, QrCode, ScanLine, Video, CheckCircle2 } from "lucide-react";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { AppSectionEnter } from "@/app/components/layout/appFeedbackMotion";
 import { RtsLineBuilder } from "@/app/components/rts/RtsLineBuilder";
 import { PageLayout } from "@/app/components/PageLayout";
@@ -12,6 +12,7 @@ import {
   FulfillmentToast,
 } from "@/app/components/csr/onlineFulfillmentMotion";
 import { ApiError } from "@/app/lib/api";
+import { compressDeliveryPhoto } from "@/app/lib/compressDeliveryPhoto";
 import {
   rtsAppendLines,
   rtsCreateCase,
@@ -75,6 +76,27 @@ function prefillBanner(prefill: RtsTrackingPrefill | null): { tone: string; text
   };
 }
 
+type DocAttachment = RtsAttachment & {
+  localId?: string;
+  previewUrl?: string;
+  uploadStatus?: "uploading" | "ready" | "error";
+  uploadError?: string;
+};
+
+function revokeDocPreviews(list: DocAttachment[]) {
+  for (const a of list) {
+    if (a.previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(a.previewUrl);
+    }
+  }
+}
+
+function readyAttachments(list: DocAttachment[]): RtsAttachment[] {
+  return list
+    .filter(a => a.uploadStatus === "ready" || a.uploadStatus === undefined)
+    .map(({ kind, file }) => ({ kind, file }));
+}
+
 export function RTSRecordPage() {
   const [searchParams] = useSearchParams();
   const editTracking = searchParams.get("edit")?.trim() ?? "";
@@ -83,10 +105,12 @@ export function RTSRecordPage() {
   const [catalog, setCatalog] = useState<RtsProductCatalog | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [prefillBusy, setPrefillBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [landingError, setLandingError] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  const [landingTracking, setLandingTracking] = useState("");
   const [tracking, setTracking] = useState("");
   const [shop, setShop] = useState("");
   const [courier, setCourier] = useState("");
@@ -94,14 +118,18 @@ export function RTSRecordPage() {
   const [dateDelivered, setDateDelivered] = useState(todayIso());
   const [dateOpened, setDateOpened] = useState(todayIso());
   const [disposition, setDisposition] = useState<RtsCaseDisposition>("standard");
-  const [attachments, setAttachments] = useState<RtsAttachment[]>([]);
+  const [attachments, setAttachments] = useState<DocAttachment[]>([]);
+  const [docUploadBusy, setDocUploadBusy] = useState(false);
   const [lines, setLines] = useState<RtsLineItem[]>([]);
   const [caseId, setCaseId] = useState(0);
   const [mode, setMode] = useState<"create" | "append" | "edit">("create");
   const [prefill, setPrefill] = useState<RtsTrackingPrefill | null>(null);
+  const [caseModalOpen, setCaseModalOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
   const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
-  const prefillSkipRef = useRef(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const editBootstrapped = useRef(false);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -109,10 +137,28 @@ export function RTSRecordPage() {
       const cat = await rtsGetCatalog();
       setCatalog(cat);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not load RTS catalog.");
+      setLandingError(e instanceof ApiError ? e.message : "Could not load RTS catalog.");
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const resetCaseFields = useCallback(() => {
+    setShop("");
+    setCourier("");
+    setVipSub("");
+    setDateDelivered(todayIso());
+    setDateOpened(todayIso());
+    setDisposition("standard");
+    setAttachments(prev => {
+      revokeDocPreviews(prev);
+      return [];
+    });
+    setLines([]);
+    setCaseId(0);
+    setMode("create");
+    setPrefill(null);
+    setModalError(null);
   }, []);
 
   const applyPrefill = useCallback((data: RtsTrackingPrefill) => {
@@ -121,11 +167,11 @@ export function RTSRecordPage() {
     if (data.suggested.courier_final) setCourier(data.suggested.courier_final);
     if (data.suggested.date_delivered) setDateDelivered(data.suggested.date_delivered);
     if (data.suggested.lines.length > 0) {
-      setLines(prev => (prev.length === 0 ? data.suggested.lines.map(l => ({ ...l, quantity: Number(l.quantity) })) : prev));
+      setLines(data.suggested.lines.map(l => ({ ...l, quantity: Number(l.quantity) })));
     }
   }, []);
 
-  const loadCase = useCallback(async (tn: string) => {
+  const loadCase = useCallback(async (tn: string, isEdit: boolean, docBase: string) => {
     const data = await rtsGetCase(tn);
     if (!data.exists || !data.case) {
       setMode("create");
@@ -139,44 +185,85 @@ export function RTSRecordPage() {
     setDateDelivered(c.date_delivered);
     setDateOpened(c.date_opened);
     setDisposition(dispositionFromCase(c));
-    setAttachments(c.documentation_attachments ?? []);
-    prefillSkipRef.current = true;
-    if (editTracking) {
+    setAttachments((c.documentation_attachments ?? []).map(a => ({
+      ...a,
+      previewUrl: a.kind === "image" && docBase ? `${docBase}${a.file}` : undefined,
+      uploadStatus: "ready" as const,
+    })));
+    if (isEdit) {
       setMode("edit");
       setLines(data.lines.map(l => ({ ...l, quantity: Number(l.quantity) })));
     } else {
       setMode("append");
       setLines([]);
+      setAttachments([]);
     }
     return true;
-  }, [editTracking]);
+  }, []);
 
-  const runPrefill = useCallback(async (tn: string) => {
-    const normalized = normalizeTracking(tn);
-    if (!normalized || mode === "edit") return;
-    setPrefillBusy(true);
-    try {
-      const data = await rtsTrackingPrefill(normalized);
-      applyPrefill(data);
-      if (data.existing_rts_case && !editTracking) {
-        await loadCase(normalized);
-      }
-    } catch {
-      setPrefill(null);
-    } finally {
-      setPrefillBusy(false);
+  const beginLookup = useCallback(async (rawTn: string, opts?: { isEdit?: boolean; skipReset?: boolean }) => {
+    const tn = normalizeTracking(rawTn);
+    if (!tn) {
+      setLandingError("Enter or scan a tracking number first.");
+      return;
     }
-  }, [applyPrefill, editTracking, loadCase, mode]);
+    if (!catalog) return;
+    const docBase = catalog.doc_url_base ?? "";
+    setLookupBusy(true);
+    setLandingError(null);
+    setModalError(null);
+    setLandingTracking(tn);
+    setTracking(tn);
+    if (!opts?.skipReset) {
+      resetCaseFields();
+    }
+    try {
+      const isEdit = Boolean(opts?.isEdit);
+      const probe = await rtsGetCase(tn);
+      if (probe.exists && probe.case && !isEdit) {
+        const disp = dispositionFromCase(probe.case);
+        if (disp === "swapped" || disp === "leak") {
+          const tab = disp === "swapped" ? "Swapped parcels" : "Leaks";
+          setLandingError(
+            `Tracking ${tn} is already recorded (${tab}). Open ${tab} or RTS Records — you cannot create a second case for the same TN.`,
+          );
+          return;
+        }
+        const loaded = await loadCase(tn, false, docBase);
+        if (loaded) {
+          setCaseModalOpen(true);
+        }
+        return;
+      }
+      if (isEdit) {
+        await loadCase(tn, true, docBase);
+      } else {
+        setMode("create");
+        const data = await rtsTrackingPrefill(tn);
+        applyPrefill(data);
+      }
+      setCaseModalOpen(true);
+    } catch (e) {
+      setLandingError(e instanceof ApiError ? e.message : "Lookup failed.");
+    } finally {
+      setLookupBusy(false);
+    }
+  }, [applyPrefill, catalog, loadCase, resetCaseFields]);
 
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
 
   useEffect(() => {
-    if (!editTracking) return;
-    setTracking(editTracking);
-    void loadCase(editTracking).catch(e => setError(e instanceof ApiError ? e.message : "Lookup failed."));
-  }, [editTracking, loadCase]);
+    return () => revokeDocPreviews(attachments);
+  }, [attachments]);
+
+  useEffect(() => {
+    if (!editTracking || !catalog || editBootstrapped.current) return;
+    editBootstrapped.current = true;
+    setLandingTracking(editTracking);
+    void beginLookup(editTracking, { isEdit: true, skipReset: true });
+  }, [editTracking, catalog, beginLookup]);
 
   useEffect(() => {
     if (!scannerOpen) return;
@@ -192,9 +279,7 @@ export function RTSRecordPage() {
         void scanner.clear();
         scannerRef.current = null;
         setScannerOpen(false);
-        const tn = normalizeTracking(decoded);
-        setTracking(tn);
-        void loadCase(tn).then(() => void runPrefill(tn)).catch(() => setMode("create"));
+        void beginLookup(decoded);
       }, () => {});
     };
     document.body.appendChild(script);
@@ -203,24 +288,97 @@ export function RTSRecordPage() {
       scannerRef.current = null;
       script.remove();
     };
-  }, [scannerOpen, loadCase, runPrefill]);
+  }, [scannerOpen, beginLookup]);
+
+  const closeCaseModal = () => {
+    setCaseModalOpen(false);
+    setModalError(null);
+    if (!editTracking) {
+      resetCaseFields();
+    }
+  };
 
   const allowedCouriers = shop && catalog ? catalog.shop_couriers[shop] ?? [] : [];
   const banner = prefillBanner(prefill);
   const showLines = disposition !== "swapped" && mode !== "append";
 
-  const onUpload = async (file: File) => {
+  const modalTitle =
+    mode === "edit" ? "Edit RTS case" : mode === "append" ? "Add products to case" : "Record RTS case";
+
+  const onUpload = async (file: File, kind: "image" | "video") => {
     if (!catalog || attachments.length >= catalog.attachments_max) return;
-    setBusy(true);
+
+    const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    let previewUrl = URL.createObjectURL(file);
+    setAttachments(prev => [
+      ...prev,
+      { kind, file: localId, localId, previewUrl, uploadStatus: "uploading" },
+    ]);
+    setDocUploadBusy(true);
+    setModalError(null);
+
     try {
-      const res = await rtsUploadDocumentation(file);
-      setAttachments(prev => [...prev, { kind: res.media_kind as "image" | "video", file: res.file_name }]);
+      let uploadFile = file;
+      if (kind === "image") {
+        uploadFile = await compressDeliveryPhoto(file);
+        if (uploadFile !== file) {
+          URL.revokeObjectURL(previewUrl);
+          previewUrl = URL.createObjectURL(uploadFile);
+          setAttachments(prev =>
+            prev.map(a =>
+              a.localId === localId ? { ...a, previewUrl } : a,
+            ),
+          );
+        }
+      }
+
+      const res = await rtsUploadDocumentation(uploadFile);
+      const mediaKind = res.media_kind as "image" | "video";
+      URL.revokeObjectURL(previewUrl);
+      setAttachments(prev =>
+        prev.map(a =>
+          a.localId === localId
+            ? {
+                kind: mediaKind,
+                file: res.file_name,
+                previewUrl: mediaKind === "image" ? res.file_url : res.file_url,
+                uploadStatus: "ready" as const,
+                localId: undefined,
+                uploadError: undefined,
+              }
+            : a,
+        ),
+      );
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Upload failed.");
+      const msg = e instanceof ApiError ? e.message : "Upload failed.";
+      setAttachments(prev =>
+        prev.map(a =>
+          a.localId === localId
+            ? { ...a, uploadStatus: "error" as const, uploadError: msg }
+            : a,
+        ),
+      );
     } finally {
-      setBusy(false);
+      setDocUploadBusy(false);
     }
   };
+
+  const onPhotoPicked = (file: File | null | undefined) => {
+    if (!file) return;
+    void onUpload(file, "image");
+  };
+
+  const onVideoPicked = (file: File | null | undefined) => {
+    if (!file) return;
+    void onUpload(file, "video");
+  };
+
+  const docBase = catalog?.doc_url_base ?? "";
+  const readyAtt = readyAttachments(attachments);
+  const photoCount = readyAtt.filter(a => a.kind === "image").length;
+  const videoCount = readyAtt.filter(a => a.kind === "video").length;
+  const atAttachmentLimit = catalog ? attachments.length >= catalog.attachments_max : false;
+  const uploadsInFlight = attachments.some(a => a.uploadStatus === "uploading");
 
   const buildPayload = () => ({
     tracking_number: tracking.trim(),
@@ -230,18 +388,26 @@ export function RTSRecordPage() {
     date_delivered: dateDelivered,
     date_opened: dateOpened,
     case_disposition: disposition,
-    documentation_attachments: attachments,
+    documentation_attachments: readyAtt,
     lines: disposition === "swapped" ? [] : lines,
     case_id: caseId,
   });
 
   const validate = () => {
     if (!tracking.trim()) return "Tracking required";
+    if (mode === "append") {
+      if (!lines.length) return "Add at least one product line";
+      return null;
+    }
     if (!shop || !courier) return "Shop and courier required";
-    if (!attachments.length) return "At least one documentation file required";
+    if (uploadsInFlight) return "Wait for photo/video uploads to finish";
+    if (attachments.some(a => a.uploadStatus === "error")) {
+      return "One or more uploads failed — tap Take photo / Record video to try again";
+    }
+    if (!readyAtt.length) return "At least one documentation file required";
     if (disposition === "swapped") {
-      const hasImage = attachments.some(a => a.kind === "image");
-      const hasVideo = attachments.some(a => a.kind === "video");
+      const hasImage = readyAtt.some(a => a.kind === "image");
+      const hasVideo = readyAtt.some(a => a.kind === "video");
       if (!hasImage) return "Swapped parcel requires at least one photo";
       if (!hasVideo) return "Swapped parcel requires at least one video";
       return null;
@@ -253,11 +419,11 @@ export function RTSRecordPage() {
   const save = async (andScanNext: boolean) => {
     const v = validate();
     if (v) {
-      setError(v);
+      setModalError(v);
       return;
     }
     setBusy(true);
-    setError(null);
+    setModalError(null);
     try {
       const payload = buildPayload();
       if (mode === "edit") {
@@ -270,39 +436,19 @@ export function RTSRecordPage() {
       setToast("RTS saved successfully");
       window.setTimeout(() => setToast(null), 2500);
       if (andScanNext) {
+        setCaseModalOpen(false);
+        setLandingTracking("");
         setTracking("");
-        setLines([]);
-        setAttachments([]);
-        setPrefill(null);
-        setDisposition("standard");
-        setMode("create");
-        setCaseId(0);
+        resetCaseFields();
       } else {
         navigate(disposition === "swapped" ? "/rts/swapped" : disposition === "leak" ? "/rts/leaks" : "/rts/records");
       }
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Save failed.";
-      setError(msg);
+      setModalError(msg);
     } finally {
       setBusy(false);
     }
-  };
-
-  const onTrackingBlur = () => {
-    const tn = tracking.trim();
-    if (!tn) return;
-    void loadCase(tn)
-      .then(() => {
-        if (prefillSkipRef.current) {
-          prefillSkipRef.current = false;
-          return;
-        }
-        return runPrefill(tn);
-      })
-      .catch(() => {
-        setMode("create");
-        void runPrefill(tn);
-      });
   };
 
   if (loading || !catalog) {
@@ -315,42 +461,90 @@ export function RTSRecordPage() {
 
   return (
     <PageLayout
-      title={mode === "edit" ? "Edit RTS case" : mode === "append" ? "Add products to RTS case" : "Record RTS"}
-      subtitle="Scan tracking to load parcel data, then confirm details and parcel condition"
+      title="Record RTS"
+      subtitle="Scan or enter tracking to start"
       actions={
         <Link to="/rts" className="text-xs text-[#C8900A] underline">RTS inventory</Link>
       }
     >
       <FulfillmentToast message={toast} />
-      <FulfillmentErrorBanner message={error} />
+      <FulfillmentErrorBanner message={landingError} />
 
-      <div className="space-y-4 max-w-3xl">
-        <AppSectionEnter>
-          <div className="flex gap-2">
-            <input
-              value={tracking}
-              onChange={e => setTracking(e.target.value)}
-              onBlur={onTrackingBlur}
-              placeholder="Tracking number"
-              className="flex-1 border rounded-lg px-3 py-2 text-sm font-mono"
-              disabled={mode === "edit"}
-            />
-            <Button type="button" variant="outline" onClick={() => setScannerOpen(true)} className="shrink-0">
+      <AppSectionEnter className="max-w-md mx-auto mt-4">
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#C8900A]/15 text-[#C8900A]">
+              <ScanLine className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Tracking number</p>
+              <p className="text-xs text-muted-foreground">Scan QR or type the waybill TN</p>
+            </div>
+          </div>
+
+          <input
+            value={landingTracking}
+            onChange={e => setLandingTracking(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter") void beginLookup(landingTracking);
+            }}
+            placeholder="Tracking number"
+            className="w-full border rounded-lg px-3 py-3 text-sm font-mono"
+            autoComplete="off"
+            disabled={lookupBusy || Boolean(editTracking)}
+          />
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              className="flex-1 bg-[#C8900A] hover:bg-[#C8900A]/90"
+              disabled={lookupBusy || !landingTracking.trim()}
+              onClick={() => void beginLookup(landingTracking)}
+            >
+              {lookupBusy ? <Loader2 size={16} className="animate-spin" /> : null}
+              Continue
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              disabled={lookupBusy}
+              onClick={() => setScannerOpen(true)}
+            >
               <QrCode size={16} /> Scan
             </Button>
           </div>
-          {prefillBusy && <p className="text-xs text-muted-foreground mt-1"><Loader2 size={12} className="inline animate-spin" /> Looking up parcel…</p>}
+        </div>
+      </AppSectionEnter>
+
+      <AppModal
+        open={caseModalOpen}
+        onClose={closeCaseModal}
+        panelClassName="max-w-lg w-full"
+        labelledBy="rts-case-title"
+      >
+        <AppModalHeader
+          title={modalTitle}
+          titleId="rts-case-title"
+          subtitle={<span className="font-mono">{tracking}</span>}
+          onClose={closeCaseModal}
+        />
+        <AppModalBody className="space-y-4">
+          {modalError && <FulfillmentErrorBanner message={modalError} />}
+          {lookupBusy && (
+            <p className="text-xs text-muted-foreground flex items-center gap-2">
+              <Loader2 size={14} className="animate-spin" /> Loading parcel data…
+            </p>
+          )}
           {banner && (
-            <p className={cn("text-xs mt-2 rounded-lg border px-3 py-2", banner.tone)}>{banner.text}</p>
+            <p className={cn("text-xs rounded-lg border px-3 py-2", banner.tone)}>{banner.text}</p>
           )}
           {prefill?.suggested.lines_parse_warnings?.length ? (
-            <ul className="text-xs text-amber-800 mt-1 list-disc pl-4">
+            <ul className="text-xs text-amber-800 list-disc pl-4">
               {prefill.suggested.lines_parse_warnings.map((w, i) => <li key={i}>{w}</li>)}
             </ul>
           ) : null}
-        </AppSectionEnter>
 
-        <AppSectionEnter index={1}>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs">
               Shop
@@ -367,7 +561,7 @@ export function RTSRecordPage() {
               </select>
             </label>
             {shop === "vip" && (
-              <label className="text-xs">
+              <label className="text-xs sm:col-span-2">
                 VIP source
                 <select value={vipSub} onChange={e => setVipSub(e.target.value)} className="w-full mt-1 border rounded-lg px-2 py-1.5 text-sm">
                   <option value="">—</option>
@@ -385,67 +579,186 @@ export function RTSRecordPage() {
               <input type="date" value={dateOpened} onChange={e => setDateOpened(e.target.value)} className="w-full mt-1 border rounded-lg px-2 py-1.5 text-sm" />
             </label>
           </div>
-        </AppSectionEnter>
 
-        {showLines && (
-          <AppSectionEnter index={2}>
+          {mode === "append" && (
+            <p className="text-xs rounded-lg border border-amber-200 bg-amber-50 text-amber-900 px-3 py-2">
+              This tracking number already has an RTS case — you are adding more product lines only.
+            </p>
+          )}
+
+          {showLines && (
             <RtsLineBuilder catalog={catalog} lines={lines} onChange={setLines} />
-          </AppSectionEnter>
-        )}
+          )}
 
-        <AppSectionEnter index={3}>
-          <div className="rounded-xl border border-border p-4 space-y-2">
-            <p className="text-sm font-semibold">RTS documentation</p>
-            <input type="file" accept="image/*,video/*" onChange={e => { const f = e.target.files?.[0]; if (f) void onUpload(f); e.target.value = ""; }} />
-            <ul className="text-xs text-muted-foreground">
-              {attachments.map((a, i) => (
-                <li key={i}>{a.kind}: {a.file}</li>
-              ))}
-            </ul>
-          </div>
-        </AppSectionEnter>
-
-        {mode !== "append" && (
-          <AppSectionEnter index={4}>
-            <p className="text-sm font-semibold mb-2">Parcel condition</p>
-            <div className="flex flex-wrap gap-2">
-              {catalog.dispositions.map(d => (
-                <Button
-                  key={d.id}
-                  type="button"
-                  variant={disposition === d.id ? "default" : "outline"}
-                  className={disposition === d.id ? "bg-[#C8900A] hover:bg-[#C8900A]/90" : ""}
-                  onClick={() => setDisposition(d.id)}
-                >
-                  {d.label}
-                </Button>
-              ))}
-            </div>
-            {(disposition === "swapped" || disposition === "leak") && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Before-shipment photo will be attached automatically when found in Deliveries; otherwise N/A on the log.
-                {prefill?.before_shipment.available && prefill.before_shipment.download_url ? (
-                  <> <a href={prefill.before_shipment.download_url} target="_blank" rel="noreferrer" className="text-[#C8900A] underline">Preview</a></>
-                ) : null}
+          {mode !== "append" && (
+          <div className="rounded-xl border border-border p-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold">RTS documentation</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {disposition === "swapped"
+                  ? "Take at least one photo and one video of the return."
+                  : "Photograph or record the opened return parcel."}
               </p>
-            )}
-            {disposition === "swapped" && (
-              <p className="text-xs text-amber-800 mt-1">Swapped parcels require at least one photo and one video. Product lines are not recorded.</p>
-            )}
-          </AppSectionEnter>
-        )}
+            </div>
 
-        <div className="flex flex-wrap gap-2 pt-2">
-          <Button type="button" disabled={busy} onClick={() => void save(false)} className="bg-[#C8900A] hover:bg-[#C8900A]/90">
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={e => {
+                onPhotoPicked(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              capture="environment"
+              className="hidden"
+              onChange={e => {
+                onVideoPicked(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto py-3 flex flex-col gap-1.5"
+                disabled={docUploadBusy || atAttachmentLimit}
+                onClick={() => photoInputRef.current?.click()}
+              >
+                {docUploadBusy ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+                <span className="text-xs font-semibold">Take photo</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto py-3 flex flex-col gap-1.5"
+                disabled={docUploadBusy || atAttachmentLimit}
+                onClick={() => videoInputRef.current?.click()}
+              >
+                {docUploadBusy ? <Loader2 size={18} className="animate-spin" /> : <Video size={18} />}
+                <span className="text-xs font-semibold">Record video</span>
+              </Button>
+            </div>
+
+            {(photoCount > 0 || videoCount > 0) && (
+              <div className="flex flex-wrap gap-2 text-xs">
+                {photoCount > 0 && (
+                  <span className="inline-flex items-center gap-1 text-green-800 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
+                    <CheckCircle2 size={12} /> {photoCount} photo{photoCount === 1 ? "" : "s"} saved
+                  </span>
+                )}
+                {videoCount > 0 && (
+                  <span className="inline-flex items-center gap-1 text-green-800 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
+                    <CheckCircle2 size={12} /> {videoCount} video{videoCount === 1 ? "" : "s"} saved
+                  </span>
+                )}
+              </div>
+            )}
+
+            {attachments.length > 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {attachments.map((a, i) => {
+                  const preview = a.previewUrl ?? (a.kind === "image" && docBase ? `${docBase}${a.file}` : undefined);
+                  const label = a.kind === "image" ? "Photo" : "Video";
+                  return (
+                    <div
+                      key={a.localId ?? `${a.file}-${i}`}
+                      className={cn(
+                        "relative rounded-lg border overflow-hidden bg-secondary/30",
+                        a.uploadStatus === "error" && "border-red-300",
+                      )}
+                    >
+                      {a.kind === "image" && preview && (
+                        <img src={preview} alt={label} className="w-full h-28 object-cover" />
+                      )}
+                      {a.kind === "video" && preview && (
+                        <video src={preview} className="w-full h-28 object-cover bg-black" controls playsInline />
+                      )}
+                      {a.kind === "video" && !preview && a.uploadStatus === "ready" && (
+                        <div className="h-28 flex items-center justify-center text-xs text-muted-foreground px-2 text-center">
+                          <Video size={20} className="mr-1 shrink-0" /> Video saved
+                        </div>
+                      )}
+                      {a.uploadStatus === "uploading" && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-xs gap-1">
+                          <Loader2 size={16} className="animate-spin" /> Uploading…
+                        </div>
+                      )}
+                      {a.uploadStatus === "ready" && (
+                        <div className="absolute top-1.5 right-1.5 rounded-full bg-green-600 text-white p-0.5">
+                          <CheckCircle2 size={14} />
+                        </div>
+                      )}
+                      {a.uploadStatus === "error" && (
+                        <div className="p-2 text-[10px] text-red-700 bg-red-50 border-t border-red-200">
+                          {a.uploadError ?? "Upload failed"}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          )}
+
+          {mode !== "append" && (
+            <div>
+              <p className="text-sm font-semibold mb-2">Parcel condition</p>
+              <div className="flex flex-wrap gap-2">
+                {catalog.dispositions.map(d => (
+                  <Button
+                    key={d.id}
+                    type="button"
+                    size="sm"
+                    variant={disposition === d.id ? "default" : "outline"}
+                    className={disposition === d.id ? "bg-[#C8900A] hover:bg-[#C8900A]/90" : ""}
+                    onClick={() => setDisposition(d.id)}
+                  >
+                    {d.label}
+                  </Button>
+                ))}
+              </div>
+              {(disposition === "swapped" || disposition === "leak") && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Before-shipment photo will be attached automatically when found in Deliveries; otherwise N/A on the log.
+                  {prefill?.before_shipment.available && prefill.before_shipment.download_url ? (
+                    <> <a href={prefill.before_shipment.download_url} target="_blank" rel="noreferrer" className="text-[#C8900A] underline">Preview</a></>
+                  ) : null}
+                </p>
+              )}
+              {disposition === "swapped" && (
+                <p className="text-xs text-amber-800 mt-1">Use Take photo and Record video above — both are required for swapped parcels.</p>
+              )}
+              {disposition === "leak" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Add product lines for everything sellable back to RTS stock. This version does not split damaged vs reusable qty — enter lines for what can go back to inventory.
+                </p>
+              )}
+            </div>
+          )}
+        </AppModalBody>
+        <AppModalFooter>
+          <Button type="button" variant="outline" disabled={busy || docUploadBusy} onClick={closeCaseModal}>
+            Cancel
+          </Button>
+          <Button type="button" disabled={busy || docUploadBusy} onClick={() => void save(false)} className="bg-[#C8900A] hover:bg-[#C8900A]/90">
             {busy ? <Loader2 size={14} className="animate-spin" /> : null} Save
           </Button>
           {mode === "create" && (
-            <Button type="button" variant="outline" disabled={busy} onClick={() => void save(true)}>
+            <Button type="button" variant="outline" disabled={busy || docUploadBusy} onClick={() => void save(true)}>
               Save & scan next
             </Button>
           )}
-        </div>
-      </div>
+        </AppModalFooter>
+      </AppModal>
 
       <AppModal open={scannerOpen} onClose={() => setScannerOpen(false)} panelClassName="max-w-md w-full" labelledBy="rts-scan-title">
         <AppModalHeader title="Scan tracking" titleId="rts-scan-title" onClose={() => setScannerOpen(false)} />
