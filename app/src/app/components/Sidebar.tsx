@@ -125,6 +125,9 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
   const rtsDashboard: NavLinkChild = { label: "RTS Dashboard", to: "/rts/dashboard" };
   const rtsRecord: NavLinkChild = { label: "Record RTS", to: "/rts/record" };
 
+  const rtsSwapped: NavLinkChild = { label: "Swapped parcels", to: "/rts/swapped" };
+  const rtsLeaks: NavLinkChild = { label: "Leaks", to: "/rts/leaks" };
+
   const rtsNav = (children: NavLinkChild[]): NavItem => ({
     icon: RotateCcw,
     label: "RTS",
@@ -132,8 +135,8 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     children,
   });
 
-  const rtsNavFull = rtsNav([rtsInventory, rtsRecords, rtsDashboard, rtsRecord]);
-  const rtsNavReadOnly = rtsNav([rtsInventory, rtsRecords, rtsDashboard]);
+  const rtsNavFull = rtsNav([rtsInventory, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard, rtsRecord]);
+  const rtsNavReadOnly = rtsNav([rtsInventory, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard]);
 
   // Staff see raw materials + finished products for their own department only
   // (read-only — server enforces dept scope + hides pricing).

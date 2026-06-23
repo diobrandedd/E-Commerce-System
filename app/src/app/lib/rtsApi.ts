@@ -17,6 +17,8 @@ export interface RtsAttachment {
   file: string;
 }
 
+export type RtsCaseDisposition = "standard" | "swapped" | "leak";
+
 export interface RtsCaseRow {
   id: number;
   tracking_number: string;
@@ -28,6 +30,7 @@ export interface RtsCaseRow {
   date_opened: string;
   documentation_photo?: string | null;
   documentation_attachments?: RtsAttachment[];
+  case_disposition?: RtsCaseDisposition;
   damaged_reason?: string | null;
   damaged_tag?: string | null;
   claim_status?: string | null;
@@ -35,6 +38,35 @@ export interface RtsCaseRow {
   voided_at?: string | null;
   created_at?: string;
   line_count?: number;
+  before_shipment?: RtsBeforeShipment;
+  lines?: RtsLineItem[];
+}
+
+export interface RtsBeforeShipment {
+  available: boolean;
+  item_id?: number | null;
+  delivery_date?: string | null;
+  photo_filename?: string | null;
+  download_url?: string | null;
+}
+
+export interface RtsTrackingPrefill {
+  tracking_normalized: string;
+  found: { parcel: boolean; delivery: boolean; csr_line: boolean };
+  suggested: {
+    shop: string | null;
+    courier_final: string | null;
+    date_delivered: string | null;
+    lines: RtsLineItem[];
+    lines_parse_warnings: string[];
+    recipient_name: string | null;
+    order_no: string | null;
+  };
+  before_shipment: { available: boolean; download_url: string | null };
+  field_sources: Record<string, string>;
+  manual_required: { shop: boolean; courier: boolean; lines: boolean };
+  existing_rts_case: boolean;
+  detected_courier: string;
 }
 
 export interface RtsProductCatalog {
@@ -50,6 +82,7 @@ export interface RtsProductCatalog {
   shops: string[];
   couriers: Record<string, string>;
   claim_statuses: { value: string; label: string }[];
+  dispositions: { id: RtsCaseDisposition; label: string }[];
   damaged_reasons: { id: string; label: string }[];
   doc_url_base: string;
   attachments_max: number;
@@ -74,6 +107,8 @@ export interface RtsDashboardData {
   total_cases: number;
   cases_last_30: number;
   cases_this_month: number;
+  swapped_last_30?: number;
+  leaks_last_30?: number;
   vip_count: number;
   vip_pct: number;
   by_shop: Record<string, number>;
@@ -106,6 +141,18 @@ export function rtsDeliveryMatch(tracking: string) {
     delivery_date: string | null;
     file_url: string | null;
   }>("rts_cases.php", "delivery_match", { tracking });
+}
+
+export function rtsTrackingPrefill(tracking: string) {
+  return apiGet<RtsTrackingPrefill>("rts_cases.php", "tracking_prefill", { tracking });
+}
+
+export function rtsListSwapped(params: Record<string, string | number | boolean | null | undefined>) {
+  return apiGet<RtsCasesListResult>("rts_cases.php", "list_swapped", params);
+}
+
+export function rtsListLeaks(params: Record<string, string | number | boolean | null | undefined>) {
+  return apiGet<RtsCasesListResult>("rts_cases.php", "list_leaks", params);
 }
 
 export function rtsUploadDocumentation(file: File) {

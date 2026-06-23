@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-19 — [[problems/records/2026-06-19_rts-swapped-leak-disposition|RTS swapped/leak disposition + tracking prefill]]
+**Shipped:** `case_disposition` (standard/swapped/leak); swapped excludes sellable sync; tracking prefill from Online Orders/Deliveries; `/rts/swapped` and `/rts/leaks` registries; Record RTS wizard with parcel condition control. Run `sql/migration_phase44_rts_case_disposition.sql` on prod.
+
 ### 2026-06-21 — [[problems/records/2026-06-21_spx-packing-list-zip-extension|SPX packing list — PHP zip extension]]
 **Fixed:** Shopee packing list upload failed with generic "Cannot open packing list" because XAMPP had `extension=zip` commented out (`ZipArchive` missing). Enabled zip in `php.ini`; clearer error in `shopee_spx_packing_list.php`. Apache restart required for web UI.
 

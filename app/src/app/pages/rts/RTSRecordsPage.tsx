@@ -93,6 +93,13 @@ function ClaimBadge({ row, catalog }: { row: RtsCaseRow; catalog: RtsProductCata
 }
 
 function DamageBadge({ row }: { row: RtsCaseRow }) {
+  const disp = row.case_disposition;
+  if (disp === "swapped") {
+    return <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-900">Swapped</span>;
+  }
+  if (disp === "leak") {
+    return <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-900">Leak</span>;
+  }
   if (!row.damaged_reason && !row.damaged_tag) {
     return <span className="text-xs text-muted-foreground">No</span>;
   }

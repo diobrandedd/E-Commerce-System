@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-06-23T07:45:11+02:00
+generated: 2026-06-23T09:41:16+02:00
 type: module
 function_count: 5
 ---
@@ -16,19 +16,20 @@ function_count: 5
 ## Includes
 
 - `includes/db.php`
+- `includes/rts_schema.php`
 - `includes/honey_inventory.php`
 
 ## rts_inv_product_label {#rts_inv_product_label}
 
 **Callers (1):**
 
-- `includes/rts_inventory_sync.php`:67 — `$label = rts_inv_product_label($productType, $li['combo_product'] ?? null);`
+- `includes/rts_inventory_sync.php`:72 — `$label = rts_inv_product_label($productType, $li['combo_product'] ?? null);`
 
 ## rts_inv_is_honey_line {#rts_inv_is_honey_line}
 
 **Callers (1):**
 
-- `includes/rts_inventory_sync.php`:65 — `$isHoney = rts_inv_is_honey_line($productType);`
+- `includes/rts_inventory_sync.php`:70 — `$isHoney = rts_inv_is_honey_line($productType);`
 
 ## rts_inventory_sync_run {#rts_inventory_sync_run}
 
@@ -36,7 +37,7 @@ function_count: 5
 
 **Callers (2):**
 
-- `api/v1/rts_cases.php`:60 — `rts_inventory_sync_run($pdo);`
+- `api/v1/rts_cases.php`:63 — `rts_inventory_sync_run($pdo);`
 - `api/v1/rts_sync.php`:28 — `$result = rts_inventory_sync_run(ims_pdo());`
 
 ## rts_inventory_sync_status {#rts_inventory_sync_status}

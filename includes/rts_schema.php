@@ -65,7 +65,9 @@ function rts_cases_select_columns(PDO $pdo): array
         'documentation_attachments',
         'damaged_reason',
         'damaged_tag',
+        'case_disposition',
         'delivery_match_item_id',
+        'before_shipment_photo_filename',
         'claim_status',
         'claim_status_note',
         'created_at',
@@ -251,7 +253,9 @@ function rts_cases_insert_row(PDO $pdo, array $row): int
         'documentation_attachments',
         'damaged_reason',
         'damaged_tag',
+        'case_disposition',
         'delivery_match_item_id',
+        'before_shipment_photo_filename',
     ];
     $cols = [];
     $placeholders = [];
@@ -290,7 +294,9 @@ function rts_cases_update_row(PDO $pdo, int $caseId, array $row): void
         'documentation_attachments',
         'damaged_reason',
         'damaged_tag',
+        'case_disposition',
         'delivery_match_item_id',
+        'before_shipment_photo_filename',
         'updated_at',
     ];
     $sets = [];

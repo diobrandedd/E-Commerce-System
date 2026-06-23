@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-06-23T07:45:06+02:00
+generated: 2026-06-23T09:41:10+02:00
 type: module
 function_count: 19
 ---
@@ -73,7 +73,7 @@ function_count: 19
 
 ## online_parcels_normalize_tracking {#online_parcels_normalize_tracking}
 
-**Callers (17):**
+**Callers (18):**
 
 - `api/v1/deliveries.php`:133 — `$tracking = online_parcels_normalize_tracking($raw);`
 - `api/v1/parcels.php`:89 — `$tracking = online_parcels_normalize_tracking($raw);`
@@ -92,12 +92,13 @@ function_count: 19
 - `includes/online_order_parcels.php`:782 — `$tracking = online_parcels_normalize_tracking($tracking);`
 - `includes/online_order_parcels.php`:884 — `$oldTracking = online_parcels_normalize_tracking($oldTracking);`
 - `includes/online_order_parcels.php`:885 — `$newTracking = online_parcels_normalize_tracking($newTracking);`
+- `includes/rts_prefill.php`:190 — `$normalized = online_parcels_normalize_tracking(trim($tracking));`
 
 ## online_parcels_get_by_tracking {#online_parcels_get_by_tracking}
 
 **Tables:** `online_order_parcels`
 
-**Callers (8):**
+**Callers (9):**
 
 - `api/v1/deliveries.php`:138 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `api/v1/parcels.php`:66 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
@@ -107,6 +108,7 @@ function_count: 19
 - `includes/online_order_parcels.php`:668 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `includes/online_order_parcels.php`:787 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `includes/online_order_parcels.php`:893 — `$parcel = online_parcels_get_by_tracking($pdo, $oldTracking);`
+- `includes/rts_prefill.php`:208 — `$parcel = online_parcels_get_by_tracking($pdo, $normalized);`
 
 ## online_parcels_get_by_id {#online_parcels_get_by_id}
 

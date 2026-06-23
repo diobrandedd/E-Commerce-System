@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/rts_schema.php';
 
 function rts_inv_product_label(string $productType, ?string $combo): string
 {
@@ -36,11 +37,15 @@ function rts_inventory_sync_run(PDO $pdo): array
     $lastId = (int) ($state['last_line_item_id'] ?? 0);
     $synced = 0;
 
+    $dispositionSql = rts_db_has_column($pdo, 'rts_cases', 'case_disposition')
+        ? " AND COALESCE(c.case_disposition, 'standard') IN ('standard', 'leak')"
+        : '';
+
     $st = $pdo->prepare(
         'SELECT li.id, li.product_type, li.honey_size, li.honey_variant, li.combo_product, li.quantity
          FROM rts_line_items li
          INNER JOIN rts_cases c ON c.id = li.case_id
-         WHERE c.voided_at IS NULL AND li.id > ?
+         WHERE c.voided_at IS NULL' . $dispositionSql . ' AND li.id > ?
          ORDER BY li.id ASC'
     );
     $st->execute([$lastId]);

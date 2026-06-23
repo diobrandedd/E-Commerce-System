@@ -9,6 +9,7 @@ require_once __DIR__ . '/rts_claim_status.php';
 require_once __DIR__ . '/rts_products.php';
 require_once __DIR__ . '/rts_schema.php';
 require_once __DIR__ . '/rts_storage.php';
+require_once __DIR__ . '/rts_prefill.php';
 
 class RtsCaseException extends RuntimeException
 {
@@ -32,6 +33,83 @@ function rts_case_allowed_couriers(): array
 function rts_case_allowed_shops(): array
 {
     return ['shopee', 'lazada', 'tiktok', 'vip'];
+}
+
+function rts_case_resolve_disposition(array $data): string
+{
+    if (isset($data['case_disposition'])) {
+        $d = trim((string) $data['case_disposition']);
+        if (in_array($d, rts_case_allowed_dispositions(), true)) {
+            return $d;
+        }
+        throw new RtsCaseException('Invalid case_disposition', 'invalid_disposition', 400);
+    }
+    $damagedReason = isset($data['damaged_reason']) ? trim((string) $data['damaged_reason']) : '';
+    if ($damagedReason === 'leak') {
+        return 'leak';
+    }
+    if (in_array($damagedReason, ['item_replaced', 'packaging_replaced'], true)) {
+        return 'swapped';
+    }
+
+    return 'standard';
+}
+
+function rts_case_disposition_to_damaged_reason(string $disposition): ?string
+{
+    return match ($disposition) {
+        'leak' => 'leak',
+        'swapped' => 'item_replaced',
+        default => null,
+    };
+}
+
+/**
+ * @return array{available: bool, item_id: ?int, delivery_date: ?string, photo_filename: ?string, download_url: ?string}
+ */
+function rts_case_enrich_before_shipment(PDO $pdo, array $caseRow): array
+{
+    $fn = isset($caseRow['before_shipment_photo_filename'])
+        ? trim((string) $caseRow['before_shipment_photo_filename'])
+        : '';
+    $itemId = isset($caseRow['delivery_match_item_id']) ? (int) $caseRow['delivery_match_item_id'] : 0;
+    $deliveryDate = null;
+
+    if ($fn === '' && $itemId > 0) {
+        $st = $pdo->prepare(
+            'SELECT i.photo_filename, b.delivery_date
+             FROM delivery_batch_items i
+             INNER JOIN delivery_batches b ON b.id = i.batch_id
+             WHERE i.id = ? LIMIT 1'
+        );
+        $st->execute([$itemId]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if (is_array($row)) {
+            $fn = trim((string) ($row['photo_filename'] ?? ''));
+            $deliveryDate = (string) ($row['delivery_date'] ?? '');
+        }
+    }
+
+    if ($fn === '' && isset($caseRow['tracking_number'])) {
+        $match = rts_prefill_delivery_lookup($pdo, (string) $caseRow['tracking_number']);
+        if ($match['match'] && trim((string) ($match['photo_filename'] ?? '')) !== '') {
+            $fn = (string) $match['photo_filename'];
+            $itemId = (int) ($match['item_id'] ?? 0);
+            $deliveryDate = (string) ($match['delivery_date'] ?? '');
+        }
+    }
+
+    if ($fn === '') {
+        return ['available' => false, 'item_id' => null, 'delivery_date' => null, 'photo_filename' => null, 'download_url' => null];
+    }
+
+    return [
+        'available' => true,
+        'item_id' => $itemId > 0 ? $itemId : null,
+        'delivery_date' => $deliveryDate !== '' && $deliveryDate !== '0' ? $deliveryDate : null,
+        'photo_filename' => $fn,
+        'download_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn),
+    ];
 }
 
 /**
@@ -61,6 +139,9 @@ function rts_case_handler_get_by_tracking(PDO $pdo, string $tracking): array
     );
     if (!isset($case['damaged_tag'])) {
         $case['damaged_tag'] = rts_damaged_tag(isset($case['damaged_reason']) ? (string) $case['damaged_reason'] : null);
+    }
+    if (!isset($case['case_disposition']) && rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {
+        $case['case_disposition'] = rts_case_resolve_disposition(['damaged_reason' => $case['damaged_reason'] ?? '']);
     }
     $lineRows = rts_line_items_fetch_for_case($pdo, $lid);
 
@@ -144,12 +225,17 @@ function rts_case_handler_parse_case_fields(PDO $pdo, array $data, bool $isCreat
         throw new RtsCaseException('Missing tracking_number', 'missing_tracking', 400);
     }
 
+    $disposition = rts_case_resolve_disposition($data);
     $linesIn = isset($data['lines']) && is_array($data['lines']) ? $data['lines'] : [];
-    $err = rts_validate_lines_v2($linesIn);
-    if ($err !== null) {
-        throw new RtsCaseException($err, 'invalid_lines', 400);
+    if ($disposition === 'swapped') {
+        $lines = [];
+    } else {
+        $err = rts_validate_lines_v2($linesIn);
+        if ($err !== null) {
+            throw new RtsCaseException($err, 'invalid_lines', 400);
+        }
+        $lines = array_map('rts_normalize_line', $linesIn);
     }
-    $lines = array_map('rts_normalize_line', $linesIn);
 
     $courierFinal = isset($data['courier_final']) ? (string) $data['courier_final'] : '';
     if ($courierFinal === '' || $courierFinal === 'unknown') {
@@ -206,22 +292,45 @@ function rts_case_handler_parse_case_fields(PDO $pdo, array $data, bool $isCreat
         );
     }
 
-    $damagedReason = isset($data['damaged_reason']) ? trim((string) $data['damaged_reason']) : '';
-    $allowedDamaged = ['leak', 'item_replaced', 'packaging_replaced'];
-    if ($damagedReason !== '' && !in_array($damagedReason, $allowedDamaged, true)) {
-        throw new RtsCaseException('Invalid damaged_reason', 'invalid_damaged', 400);
+    $hasImage = false;
+    $hasVideo = false;
+    foreach ($attachList as $att) {
+        if (($att['kind'] ?? '') === 'image') {
+            $hasImage = true;
+        }
+        if (($att['kind'] ?? '') === 'video') {
+            $hasVideo = true;
+        }
+    }
+    if ($disposition === 'swapped') {
+        if (!$hasImage) {
+            throw new RtsCaseException(
+                'Swapped parcel cases require at least one photo.',
+                'swapped_requires_photo',
+                400
+            );
+        }
+        if (!$hasVideo) {
+            throw new RtsCaseException(
+                'Swapped parcel cases require at least one video.',
+                'swapped_requires_video',
+                400
+            );
+        }
     }
 
+    $damagedReason = rts_case_disposition_to_damaged_reason($disposition);
+
     $deliveryMatchItemId = null;
-    if ($damagedReason !== '') {
+    $beforeShipmentPhoto = null;
+    if (in_array($disposition, ['swapped', 'leak'], true)) {
         $deliveryMatchItemId = rts_case_handler_find_delivery_match_item_id($pdo, $tracking);
-        if ($deliveryMatchItemId === null) {
-            throw new RtsCaseException(
-                'Marking as damaged requires a pre-delivery photo with the same tracking in Deliveries. None was found.',
-                'damaged_requires_delivery_photo',
-                400,
-                ['message' => 'Marking as damaged requires a pre-delivery photo with the same tracking in Deliveries. None was found.']
-            );
+        $deliveryLookup = rts_prefill_delivery_lookup($pdo, $tracking);
+        if ($deliveryLookup['match'] && trim((string) ($deliveryLookup['photo_filename'] ?? '')) !== '') {
+            $beforeShipmentPhoto = (string) $deliveryLookup['photo_filename'];
+            if ($deliveryMatchItemId === null && !empty($deliveryLookup['item_id'])) {
+                $deliveryMatchItemId = (int) $deliveryLookup['item_id'];
+            }
         }
     }
 
@@ -235,10 +344,12 @@ function rts_case_handler_parse_case_fields(PDO $pdo, array $data, bool $isCreat
         'date_opened' => $do,
         'documentation_photo' => rts_attachments_first_image($attachList),
         'documentation_attachments' => json_encode($attachList, JSON_UNESCAPED_UNICODE),
-        'damaged_reason' => $damagedReason === '' ? null : $damagedReason,
-        'damaged_tag' => rts_damaged_tag($damagedReason === '' ? null : $damagedReason),
+        'case_disposition' => $disposition,
+        'damaged_reason' => $damagedReason,
+        'damaged_tag' => rts_damaged_tag($damagedReason),
         'courier_detected' => rts_detect_courier($tracking),
         'delivery_match_item_id' => $deliveryMatchItemId,
+        'before_shipment_photo_filename' => $beforeShipmentPhoto,
     ];
 }
 
@@ -268,9 +379,11 @@ function rts_case_handler_create(PDO $pdo, array $data): array
             'date_opened' => $fields['date_opened'],
             'documentation_photo' => $fields['documentation_photo'],
             'documentation_attachments' => $fields['documentation_attachments'],
+            'case_disposition' => $fields['case_disposition'],
             'damaged_reason' => $fields['damaged_reason'],
             'damaged_tag' => $fields['damaged_tag'],
             'delivery_match_item_id' => $fields['delivery_match_item_id'],
+            'before_shipment_photo_filename' => $fields['before_shipment_photo_filename'],
         ]);
         rts_line_items_insert_batch($pdo, $caseId, $fields['lines']);
         $pdo->commit();
@@ -328,9 +441,11 @@ function rts_case_handler_update(PDO $pdo, int $caseId, array $data): array
             'date_opened' => $fields['date_opened'],
             'documentation_photo' => $fields['documentation_photo'],
             'documentation_attachments' => $fields['documentation_attachments'],
+            'case_disposition' => $fields['case_disposition'],
             'damaged_reason' => $fields['damaged_reason'],
             'damaged_tag' => $fields['damaged_tag'],
             'delivery_match_item_id' => $fields['delivery_match_item_id'],
+            'before_shipment_photo_filename' => $fields['before_shipment_photo_filename'],
         ]);
         $pdo->prepare('DELETE FROM rts_line_items WHERE case_id = ?')->execute([$caseId]);
         rts_line_items_insert_batch($pdo, $caseId, $fields['lines']);
@@ -364,6 +479,14 @@ function rts_case_handler_append_lines(PDO $pdo, string $tracking, array $data):
     $caseId = rts_cases_find_active_id_by_tracking($pdo, $tracking);
     if ($caseId === null) {
         throw new RtsCaseException('Case not found, voided, or invalid tracking number', 'not_found', 404);
+    }
+    if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {
+        $dispSt = $pdo->prepare('SELECT case_disposition FROM rts_cases WHERE id = ? LIMIT 1');
+        $dispSt->execute([$caseId]);
+        $disp = (string) ($dispSt->fetchColumn() ?: 'standard');
+        if ($disp === 'swapped') {
+            throw new RtsCaseException('Cannot append product lines to a swapped parcel case.', 'swapped_no_lines', 400);
+        }
     }
     $pdo->beginTransaction();
     try {
@@ -483,6 +606,9 @@ function rts_case_handler_list(PDO $pdo, array $filters): array
     } elseif (in_array($damage, ['leak', 'item_replaced', 'packaging_replaced'], true)) {
         $where[] = 'c.damaged_reason = ?';
         $params[] = $damage;
+    } elseif (rts_db_has_column($pdo, 'rts_cases', 'case_disposition') && in_array($damage, ['standard', 'swapped', 'leak'], true)) {
+        $where[] = 'c.case_disposition = ?';
+        $params[] = $damage;
     }
     if ($voidOnly) {
         $where[] = 'c.voided_at IS NOT NULL';
@@ -496,10 +622,13 @@ function rts_case_handler_list(PDO $pdo, array $filters): array
     $cntSt->execute($params);
     $total = (int) $cntSt->fetchColumn();
 
+    $hasDisposition = rts_db_has_column($pdo, 'rts_cases', 'case_disposition');
+    $dispositionCol = $hasDisposition ? ', c.case_disposition' : '';
+
     $sql = 'SELECT c.id, c.tracking_number, c.courier_detected, c.courier_final, c.shop, c.vip_subsource,
          c.date_delivered, c.date_opened, c.documentation_photo, c.documentation_attachments,
          c.damaged_reason, c.damaged_tag, c.claim_status, c.claim_status_note,
-         c.voided_at, c.created_at,
+         c.voided_at, c.created_at, c.delivery_match_item_id' . $dispositionCol . ',
          (SELECT COUNT(*) FROM rts_line_items li WHERE li.case_id = c.id) AS line_count
          FROM rts_cases c WHERE ' . $whereSql . ' ' . $orderSql . ' LIMIT ' . $perPage . ' OFFSET ' . $offset;
     $st = $pdo->prepare($sql);
@@ -512,6 +641,9 @@ function rts_case_handler_list(PDO $pdo, array $filters): array
             $attRaw !== null && $attRaw !== '' ? (string) $attRaw : null,
             isset($row['documentation_photo']) ? (string) $row['documentation_photo'] : null
         );
+        if (!isset($row['case_disposition'])) {
+            $row['case_disposition'] = rts_case_resolve_disposition(['damaged_reason' => $row['damaged_reason'] ?? '']);
+        }
     }
     unset($row);
 
@@ -524,6 +656,88 @@ function rts_case_handler_list(PDO $pdo, array $filters): array
         'per_page' => $perPage,
         'total_pages' => $totalPages,
     ];
+}
+
+/**
+ * @param array<string, mixed> $filters
+ * @return array{cases: list<array>, total: int, page: int, per_page: int, total_pages: int}
+ */
+function rts_case_handler_list_by_disposition(PDO $pdo, string $disposition, array $filters): array
+{
+    if (!rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {
+        return ['cases' => [], 'total' => 0, 'page' => 1, 'per_page' => 10, 'total_pages' => 1];
+    }
+    $filters['disposition'] = $disposition;
+    $q = trim((string) ($filters['q'] ?? ''));
+    $page = max(1, (int) ($filters['page'] ?? 1));
+    $perPage = max(1, min(50, (int) ($filters['per_page'] ?? 10)));
+    $offset = ($page - 1) * $perPage;
+
+    $where = ['c.case_disposition = ?', 'c.voided_at IS NULL'];
+    $params = [$disposition];
+    if ($q !== '') {
+        $where[] = 'c.tracking_number LIKE ?';
+        $params[] = '%' . $q . '%';
+    }
+    $whereSql = implode(' AND ', $where);
+
+    $cntSt = $pdo->prepare('SELECT COUNT(*) FROM rts_cases c WHERE ' . $whereSql);
+    $cntSt->execute($params);
+    $total = (int) $cntSt->fetchColumn();
+
+    $sql = 'SELECT c.id, c.tracking_number, c.shop, c.courier_final, c.date_opened, c.date_delivered,
+         c.documentation_photo, c.documentation_attachments, c.delivery_match_item_id,
+         c.before_shipment_photo_filename, c.case_disposition
+         FROM rts_cases c WHERE ' . $whereSql . ' ORDER BY c.date_opened DESC, c.id DESC
+         LIMIT ' . $perPage . ' OFFSET ' . $offset;
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+    $cases = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    foreach ($cases as &$row) {
+        $attRaw = $row['documentation_attachments'] ?? null;
+        unset($row['documentation_attachments']);
+        $row['documentation_attachments'] = rts_attachments_decode(
+            $attRaw !== null && $attRaw !== '' ? (string) $attRaw : null,
+            isset($row['documentation_photo']) ? (string) $row['documentation_photo'] : null
+        );
+        $row['before_shipment'] = rts_case_enrich_before_shipment($pdo, $row);
+        if ($disposition === 'leak') {
+            $row['lines'] = rts_line_items_fetch_for_case($pdo, (int) $row['id']);
+        }
+        unset($row['before_shipment_photo_filename']);
+    }
+    unset($row);
+
+    $totalPages = $total > 0 ? (int) ceil($total / $perPage) : 1;
+
+    return [
+        'cases' => $cases,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'total_pages' => $totalPages,
+    ];
+}
+
+function rts_case_handler_list_swapped(PDO $pdo, array $filters): array
+{
+    return rts_case_handler_list_by_disposition($pdo, 'swapped', $filters);
+}
+
+function rts_case_handler_list_leaks(PDO $pdo, array $filters): array
+{
+    return rts_case_handler_list_by_disposition($pdo, 'leak', $filters);
+}
+
+/** @return array<string, mixed> */
+function rts_case_handler_tracking_prefill_api(PDO $pdo, string $tracking): array
+{
+    try {
+        return rts_case_handler_tracking_prefill($pdo, $tracking);
+    } catch (RuntimeException $e) {
+        throw new RtsCaseException($e->getMessage(), 'missing_tracking', 400);
+    }
 }
 
 /** @return array<string, mixed> */
@@ -551,10 +765,25 @@ function rts_case_handler_dashboard(PDO $pdo): array
          GROUP BY d ORDER BY d ASC'
     )->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
+    $swappedLast30 = 0;
+    $leaksLast30 = 0;
+    if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {
+        $swappedLast30 = (int) $pdo->query(
+            "SELECT COUNT(*) FROM rts_cases WHERE case_disposition = 'swapped'
+             AND date_opened >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+        )->fetchColumn();
+        $leaksLast30 = (int) $pdo->query(
+            "SELECT COUNT(*) FROM rts_cases WHERE case_disposition = 'leak'
+             AND date_opened >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+        )->fetchColumn();
+    }
+
     return [
         'total_cases' => $totalCases,
         'cases_last_30' => $casesLast30,
         'cases_this_month' => $casesThisMonth,
+        'swapped_last_30' => $swappedLast30,
+        'leaks_last_30' => $leaksLast30,
         'vip_count' => $vipCount,
         'vip_pct' => $vipPct,
         'by_shop' => $byShop,
@@ -580,6 +809,11 @@ function rts_case_handler_product_catalog(): array
         'shops' => rts_case_allowed_shops(),
         'couriers' => ['jnt' => 'J&T', 'spx' => 'SPX', 'flash' => 'Flash'],
         'claim_statuses' => rts_claim_status_options(),
+        'dispositions' => [
+            ['id' => 'standard', 'label' => 'Standard return'],
+            ['id' => 'swapped', 'label' => 'Swapped parcel'],
+            ['id' => 'leak', 'label' => 'Leaked / damaged'],
+        ],
         'damaged_reasons' => [
             ['id' => 'leak', 'label' => 'Leak'],
             ['id' => 'item_replaced', 'label' => 'Item replaced'],

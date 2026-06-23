@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-06-23T07:44:53+02:00
+generated: 2026-06-23T09:40:58+02:00
 type: memory-bank
-edge_count: 208
+edge_count: 216
 ---
 
 
@@ -169,12 +169,20 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/rts_case_handlers.php` | `includes/courier_detect.php` |
 | `includes/rts_case_handlers.php` | `includes/rts_attachments.php` |
 | `includes/rts_case_handlers.php` | `includes/rts_claim_status.php` |
+| `includes/rts_case_handlers.php` | `includes/rts_prefill.php` |
 | `includes/rts_case_handlers.php` | `includes/rts_products.php` |
 | `includes/rts_case_handlers.php` | `includes/rts_schema.php` |
 | `includes/rts_case_handlers.php` | `includes/rts_shop_couriers.php` |
 | `includes/rts_case_handlers.php` | `includes/rts_storage.php` |
 | `includes/rts_inventory_sync.php` | `includes/db.php` |
 | `includes/rts_inventory_sync.php` | `includes/honey_inventory.php` |
+| `includes/rts_inventory_sync.php` | `includes/rts_schema.php` |
+| `includes/rts_prefill.php` | `includes/courier_detect.php` |
+| `includes/rts_prefill.php` | `includes/honey_parcel_item_parser.php` |
+| `includes/rts_prefill.php` | `includes/online_order_parcels.php` |
+| `includes/rts_prefill.php` | `includes/rts_products.php` |
+| `includes/rts_prefill.php` | `includes/rts_schema.php` |
+| `includes/rts_prefill.php` | `includes/rts_storage.php` |
 | `includes/rts_schema.php` | `includes/rts_products.php` |
 | `includes/rts_storage.php` | `includes/db.php` |
 | `includes/shopee_spx_packing_list.php` | `includes/online_orders_generator.php` |

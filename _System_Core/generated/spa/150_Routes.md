@@ -1,6 +1,6 @@
 ---
 title: SPA Routes
-generated: 2026-06-23T07:45:15+02:00
+generated: 2026-06-23T09:41:20+02:00
 type: spa
 ---
 
@@ -29,6 +29,8 @@ Basename: `/rts/app/dist` (prod) · dev at `localhost:5173`
 | `/rts` | `RTSPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff |
 | `/rts/record` | `RTSRecordPage` | executive,prod_manager,csr_tl,csr_staff |
 | `/rts/records` | `RTSRecordsPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff |
+| `/rts/swapped` | `RTSSwappedPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff |
+| `/rts/leaks` | `RTSLeaksPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff |
 | `/rts/dashboard` | `RTSDashboardPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff |
 | `/settings` | `SettingsPage` | executive |
 | `/account` | `AccountSettingsPage` | any authenticated |

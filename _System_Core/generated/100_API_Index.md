@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-23T07:44:53+02:00
+generated: 2026-06-23T09:40:58+02:00
 type: memory-bank
 ---
 
@@ -347,6 +347,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `case_void` | `api_rts_cases_void()` | `rts_case_handler_void()`, `ims_pdo()` |
 | `case_update_claim` | `api_rts_cases_update_claim()` | `rts_case_handler_update_claim()`, `ims_pdo()` |
 | `cases_list` | `api_rts_cases_list()` | `rts_case_handler_list()`, `ims_pdo()` |
+| `list_swapped` | `api_rts_cases_list_swapped()` | `rts_case_handler_list_swapped()`, `ims_pdo()` |
+| `list_leaks` | `api_rts_cases_list_leaks()` | `rts_case_handler_list_leaks()`, `ims_pdo()` |
+| `tracking_prefill` | `api_rts_cases_tracking_prefill()` | `rts_case_handler_tracking_prefill_api()`, `ims_pdo()` |
 | `dashboard` | `api_rts_cases_dashboard()` | `rts_case_handler_dashboard()`, `ims_pdo()` |
 | `product_catalog` | `api_rts_cases_product_catalog()` | `rts_case_handler_product_catalog()` |
 | `delivery_match` | `api_rts_cases_delivery_match()` | `rts_case_handler_delivery_match()`, `ims_pdo()` |

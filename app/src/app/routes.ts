@@ -12,6 +12,8 @@ import { RTSPage } from "./pages/RTSPage";
 import { RTSRecordPage } from "./pages/rts/RTSRecordPage";
 import { RTSRecordsPage } from "./pages/rts/RTSRecordsPage";
 import { RTSDashboardPage } from "./pages/rts/RTSDashboardPage";
+import { RTSLeaksPage } from "./pages/rts/RTSLeaksPage";
+import { RTSSwappedPage } from "./pages/rts/RTSSwappedPage";
 import { HoneyWarehousePage } from "./pages/honey/HoneyWarehousePage";
 import { HoneyProductionPage } from "./pages/honey/HoneyProductionPage";
 import { HoneyPackagingPage } from "./pages/honey/HoneyPackagingPage";
@@ -132,6 +134,8 @@ export const router = createBrowserRouter(
         { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
         { path: "rts/record", element: guarded(RTSRecordPage, { roles: ["executive", "prod_manager", "csr_tl", "csr_staff"] }) },
         { path: "rts/records", element: guarded(RTSRecordsPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
+        { path: "rts/swapped", element: guarded(RTSSwappedPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
+        { path: "rts/leaks", element: guarded(RTSLeaksPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
         { path: "rts/dashboard", element: guarded(RTSDashboardPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
         { path: "settings", element: guarded(SettingsPage, { roles: ["executive"] }) },
         { path: "account", element: guarded(AccountSettingsPage) },

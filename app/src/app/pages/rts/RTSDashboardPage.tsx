@@ -38,6 +38,10 @@ export function RTSDashboardPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Total cases" value={data.total_cases} />
             <StatCard label="Last 30 days" value={data.cases_last_30} />
+            <StatCard label="Swapped (30d)" value={data.swapped_last_30 ?? 0} />
+            <StatCard label="Leaks (30d)" value={data.leaks_last_30 ?? 0} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="This month" value={data.cases_this_month} />
             <StatCard label="VIP share" value={`${data.vip_pct}%`} sub={`${data.vip_count} VIP`} />
           </div>

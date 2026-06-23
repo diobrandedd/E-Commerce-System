@@ -1,7 +1,7 @@
 ---
 title: rts_products
 source: includes/rts_products.php
-generated: 2026-06-23T07:45:11+02:00
+generated: 2026-06-23T09:41:17+02:00
 type: module
 function_count: 14
 ---
@@ -27,15 +27,17 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## rts_honey_size_valid {#rts_honey_size_valid}
 
-**Callers (2):**
+**Callers (3):**
 
+- `includes/rts_prefill.php`:102 — `if (!rts_honey_size_valid($size)) {`
 - `includes/rts_products.php`:138 — `if (!rts_honey_size_valid($hs)) {`
 - `includes/rts_products.php`:165 — `if (!rts_honey_size_valid($chs)) {`
 
 ## rts_honey_variant_valid {#rts_honey_variant_valid}
 
-**Callers (2):**
+**Callers (3):**
 
+- `includes/rts_prefill.php`:93 — `if (!rts_honey_variant_valid($variant)) {`
 - `includes/rts_products.php`:141 — `if (!rts_honey_variant_valid($hv)) {`
 - `includes/rts_products.php`:168 — `if (!rts_honey_variant_valid($chv)) {`
 
@@ -85,8 +87,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/rts_case_handlers.php`:148 — `$err = rts_validate_lines_v2($linesIn);`
-- `includes/rts_case_handlers.php`:359 — `$err = rts_validate_lines_v2($linesIn);`
+- `includes/rts_case_handlers.php`:233 — `$err = rts_validate_lines_v2($linesIn);`
+- `includes/rts_case_handlers.php`:474 — `$err = rts_validate_lines_v2($linesIn);`
 
 ## rts_normalize_line {#rts_normalize_line}
 
@@ -106,8 +108,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/rts_schema.php`:163 — `if (rts_line_items_schema_v2($pdo)) {`
-- `includes/rts_schema.php`:195 — `if (rts_line_items_schema_v2($pdo, true)) {`
-- `includes/rts_schema.php`:234 — `return rts_line_items_schema_v2($pdo, true) ? null : 'Line items upgrade failed.';`
+- `includes/rts_schema.php`:165 — `if (rts_line_items_schema_v2($pdo)) {`
+- `includes/rts_schema.php`:197 — `if (rts_line_items_schema_v2($pdo, true)) {`
+- `includes/rts_schema.php`:236 — `return rts_line_items_schema_v2($pdo, true) ? null : 'Line items upgrade failed.';`
 - `dashboard.php`:57 — `if (rts_line_items_schema_v2($pdo)) {`
 

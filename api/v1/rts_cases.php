@@ -14,6 +14,9 @@ api_dispatch([
     'case_void' => 'api_rts_cases_void',
     'case_update_claim' => 'api_rts_cases_update_claim',
     'cases_list' => 'api_rts_cases_list',
+    'list_swapped' => 'api_rts_cases_list_swapped',
+    'list_leaks' => 'api_rts_cases_list_leaks',
+    'tracking_prefill' => 'api_rts_cases_tracking_prefill',
     'dashboard' => 'api_rts_cases_dashboard',
     'product_catalog' => 'api_rts_cases_product_catalog',
     'delivery_match' => 'api_rts_cases_delivery_match',
@@ -178,6 +181,40 @@ function api_rts_cases_list(): void
     api_rts_cases_require_allowed();
     try {
         api_ok(rts_case_handler_list(ims_pdo(), $_GET));
+    } catch (RtsCaseException $e) {
+        api_rts_cases_fail_exception($e);
+    }
+}
+
+function api_rts_cases_list_swapped(): void
+{
+    api_method_allowed(['GET']);
+    api_rts_cases_require_allowed();
+    try {
+        api_ok(rts_case_handler_list_swapped(ims_pdo(), $_GET));
+    } catch (RtsCaseException $e) {
+        api_rts_cases_fail_exception($e);
+    }
+}
+
+function api_rts_cases_list_leaks(): void
+{
+    api_method_allowed(['GET']);
+    api_rts_cases_require_allowed();
+    try {
+        api_ok(rts_case_handler_list_leaks(ims_pdo(), $_GET));
+    } catch (RtsCaseException $e) {
+        api_rts_cases_fail_exception($e);
+    }
+}
+
+function api_rts_cases_tracking_prefill(): void
+{
+    api_method_allowed(['GET']);
+    api_rts_cases_require_allowed();
+    $tracking = trim((string) ($_GET['tracking'] ?? ''));
+    try {
+        api_ok(rts_case_handler_tracking_prefill_api(ims_pdo(), $tracking));
     } catch (RtsCaseException $e) {
         api_rts_cases_fail_exception($e);
     }

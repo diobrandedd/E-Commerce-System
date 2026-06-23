@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-23T07:44:53+02:00
+generated: 2026-06-23T09:40:58+02:00
 type: memory-bank
 table_count: 55
 ---
@@ -40,8 +40,10 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_enrich_before_shipment]] |
 | `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_find_delivery_match_item_id]] |
 | `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_delivery_match]] |
+| `includes/rts_prefill.php` | [[modules/rts_prefill#rts_prefill_delivery_lookup]] |
 
 ## `delivery_batches`
 
@@ -57,8 +59,10 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_find_packing_photo]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_enrich_packing_photos_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_enrich_before_shipment]] |
 | `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_find_delivery_match_item_id]] |
 | `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_delivery_match]] |
+| `includes/rts_prefill.php` | [[modules/rts_prefill#rts_prefill_delivery_lookup]] |
 
 ## `rts_cases`
 
@@ -74,6 +78,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_void]] |
 | `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_update_claim]] |
 | `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_list]] |
+| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_list_by_disposition]] |
 | `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_dashboard]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
 | `includes/rts_schema.php` | [[modules/rts_schema#rts_cases_fetch_by_tracking]] |
@@ -422,6 +427,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_assert_active_batch]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_existing_tracking_map]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_finalize]] |
+| `includes/rts_prefill.php` | [[modules/rts_prefill#rts_case_handler_tracking_prefill]] |
 
 ## `csr_online_batch_runs`
 
@@ -443,6 +449,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_existing_tracking_map]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_lines_append]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_merge_master_workbook]] |
+| `includes/rts_prefill.php` | [[modules/rts_prefill#rts_case_handler_tracking_prefill]] |
 
 ## `supplier_dept_prices`
 
