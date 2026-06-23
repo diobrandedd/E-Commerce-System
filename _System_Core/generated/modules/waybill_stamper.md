@@ -1,7 +1,7 @@
 ---
 title: waybill_stamper
 source: includes/waybill_stamper.php
-generated: 2026-06-21T11:11:15+02:00
+generated: 2026-06-23T03:41:50+02:00
 type: module
 function_count: 19
 ---
@@ -133,8 +133,8 @@ function_count: 19
 - `includes/online_orders_generator.php`:573 — `$paths = waybill_stamper_resolve_stash_tokens($tokens, 'excel');`
 - `includes/online_orders_generator.php`:719 — `$pdfs = waybill_stamper_resolve_stash_tokens($pdfTokens, 'pdf');`
 - `includes/online_orders_generator.php`:720 — `$excels = waybill_stamper_resolve_stash_tokens($excelTokenList, 'excel');`
-- `includes/shopee_spx_packing_list.php`:199 — `$excels = waybill_stamper_resolve_stash_tokens([$excelToken], 'excel');`
-- `includes/shopee_spx_packing_list.php`:203 — `$pdfs = waybill_stamper_resolve_stash_tokens(array_values($pdfTokens), 'pdf');`
+- `includes/shopee_spx_packing_list.php`:207 — `$excels = waybill_stamper_resolve_stash_tokens([$excelToken], 'excel');`
+- `includes/shopee_spx_packing_list.php`:211 — `$pdfs = waybill_stamper_resolve_stash_tokens(array_values($pdfTokens), 'pdf');`
 
 ## waybill_stamper_release_stash_tokens {#waybill_stamper_release_stash_tokens}
 

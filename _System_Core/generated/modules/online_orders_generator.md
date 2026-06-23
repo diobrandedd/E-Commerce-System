@@ -1,7 +1,7 @@
 ---
 title: online_orders_generator
 source: includes/online_orders_generator.php
-generated: 2026-06-21T11:11:07+02:00
+generated: 2026-06-23T03:41:42+02:00
 type: module
 function_count: 34
 ---
@@ -153,8 +153,8 @@ function_count: 34
 - `includes/online_orders_generator.php`:383 — `$key = online_orders_normalize_tracking((string) $row['tracking_number']);`
 - `includes/online_orders_generator.php`:420 — `$key = online_orders_normalize_tracking($rawTn);`
 - `includes/online_orders_generator.php`:494 — `$tn = online_orders_normalize_tracking($rawTn);`
-- `includes/shopee_spx_packing_list.php`:152 — `$key = online_orders_normalize_tracking($tn);`
-- `includes/shopee_spx_packing_list.php`:174 — `$key = online_orders_normalize_tracking((string) ($row['tracking'] ?? ''));`
+- `includes/shopee_spx_packing_list.php`:160 — `$key = online_orders_normalize_tracking($tn);`
+- `includes/shopee_spx_packing_list.php`:182 — `$key = online_orders_normalize_tracking((string) ($row['tracking'] ?? ''));`
 
 ## online_orders_ocr_confusables_for_match {#online_orders_ocr_confusables_for_match}
 

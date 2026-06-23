@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-21 — [[problems/records/2026-06-21_spx-packing-list-zip-extension|SPX packing list — PHP zip extension]]
+**Fixed:** Shopee packing list upload failed with generic "Cannot open packing list" because XAMPP had `extension=zip` commented out (`ZipArchive` missing). Enabled zip in `php.ini`; clearer error in `shopee_spx_packing_list.php`. Apache restart required for web UI.
+
 ### 2026-06-21 — [[problems/records/2026-06-21_staff-role-and-account-settings|Staff role expansion + self-service password page]]
 **Shipped:** Non-CSR `staff` additively gains record/view deliveries, online parcels, RTS records, packing-material issue (logged), and read-only own-department raw + finished products (`honey.php` dept-scoped, pricing hidden). New all-users `/account` page changes own password via `auth.php?action=change_password`; sidebar **My Account** for every role. CSR roles untouched; no new DB role. Backend gates use IMS session role (`staff`), not normalized names. **Follow-up:** For packing Forbidden fixed (`materials.php` packaging catalog for issuers); verify parcel tiers fixed (seed + `dept_units` matcher); CSR staff Online Orders Forbidden fixed (`waybill_stamper_user_can_access` accepts IMS `staff` in CSR dept).
 

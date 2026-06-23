@@ -1,7 +1,7 @@
 ---
 title: shopee_spx_product_info
 source: includes/shopee_spx_product_info.php
-generated: 2026-06-21T11:11:13+02:00
+generated: 2026-06-23T03:41:48+02:00
 type: module
 function_count: 12
 ---
@@ -76,7 +76,7 @@ function_count: 12
 
 **Callers (1):**
 
-- `includes/shopee_spx_packing_list.php`:97 — `$built = shopee_spx_build_items_from_product_info($productInfo);`
+- `includes/shopee_spx_packing_list.php`:105 — `$built = shopee_spx_build_items_from_product_info($productInfo);`
 
 ## shopee_spx_build_items_from_single_product_info {#shopee_spx_build_items_from_single_product_info}
 

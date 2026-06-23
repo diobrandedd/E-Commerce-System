@@ -28,7 +28,15 @@ function shopee_spx_packing_list_parse_paths(array $excelPaths): array
         try {
             $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
         } catch (Throwable $e) {
-            throw new RuntimeException('Cannot open packing list: ' . basename($path));
+            $detail = trim($e->getMessage());
+            $hint = !class_exists('ZipArchive', false)
+                ? ' PHP zip extension is disabled — enable extension=zip in php.ini and restart Apache.'
+                : '';
+            $msg = 'Cannot open packing list: ' . basename($path);
+            if ($detail !== '') {
+                $msg .= ' (' . $detail . ')';
+            }
+            throw new RuntimeException($msg . $hint);
         }
 
         $sheet = $spreadsheet->getSheet(0);

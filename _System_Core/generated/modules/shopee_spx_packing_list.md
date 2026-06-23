@@ -1,7 +1,7 @@
 ---
 title: shopee_spx_packing_list
 source: includes/shopee_spx_packing_list.php
-generated: 2026-06-21T11:11:13+02:00
+generated: 2026-06-23T03:41:48+02:00
 type: module
 function_count: 4
 ---
@@ -24,19 +24,19 @@ function_count: 4
 
 **Callers (1):**
 
-- `includes/shopee_spx_packing_list.php`:200 — `$rows = shopee_spx_packing_list_parse_paths($excels);`
+- `includes/shopee_spx_packing_list.php`:208 — `$rows = shopee_spx_packing_list_parse_paths($excels);`
 
 ## shopee_spx_pdf_rows_by_tracking {#shopee_spx_pdf_rows_by_tracking}
 
 **Callers (1):**
 
-- `includes/shopee_spx_packing_list.php`:204 — `$pdfMap = shopee_spx_pdf_rows_by_tracking($pdfs);`
+- `includes/shopee_spx_packing_list.php`:212 — `$pdfMap = shopee_spx_pdf_rows_by_tracking($pdfs);`
 
 ## shopee_spx_merge_pdf_names {#shopee_spx_merge_pdf_names}
 
 **Callers (1):**
 
-- `includes/shopee_spx_packing_list.php`:205 — `$rows = shopee_spx_merge_pdf_names($rows, $pdfMap);`
+- `includes/shopee_spx_packing_list.php`:213 — `$rows = shopee_spx_merge_pdf_names($rows, $pdfMap);`
 
 ## online_orders_spx_import_packing_list {#online_orders_spx_import_packing_list}
 

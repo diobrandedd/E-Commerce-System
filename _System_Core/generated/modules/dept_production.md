@@ -1,7 +1,7 @@
 ---
 title: dept_production
 source: includes/dept_production.php
-generated: 2026-06-21T11:10:58+02:00
+generated: 2026-06-23T03:41:31+02:00
 type: module
 function_count: 25
 ---
