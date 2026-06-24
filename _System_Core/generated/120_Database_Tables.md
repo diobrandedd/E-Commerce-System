@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-24T03:45:55+02:00
+generated: 2026-06-24T05:30:55+02:00
 type: memory-bank
 table_count: 56
 ---
@@ -446,6 +446,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_promote_from_batch]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_update_items]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_rewaybill]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_batch_get]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_existing_tracking_map]] |
@@ -476,6 +477,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_tracking]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_id]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_list]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_update_items]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_hold]] |
@@ -489,6 +491,7 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_apply_deduct]] |
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_update_items]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
 
 ## `material_adjustment_requests`

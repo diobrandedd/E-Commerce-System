@@ -1,7 +1,7 @@
 ---
 title: waybill_stamper
 source: includes/waybill_stamper.php
-generated: 2026-06-24T03:46:19+02:00
+generated: 2026-06-24T05:31:19+02:00
 type: module
 function_count: 19
 ---

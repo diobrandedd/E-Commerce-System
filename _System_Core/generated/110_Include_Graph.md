@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-06-24T03:45:55+02:00
+generated: 2026-06-24T05:30:55+02:00
 type: memory-bank
-edge_count: 222
+edge_count: 224
 ---
 
 
@@ -50,6 +50,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/parcels.php` | `api/v1/_bootstrap.php` |
 | `api/v1/parcels.php` | `includes/honey_parcel_item_parser.php` |
 | `api/v1/parcels.php` | `includes/online_order_parcels.php` |
+| `api/v1/parcels.php` | `includes/online_orders_generator.php` |
 | `api/v1/pdf_to_excel.php` | `api/v1/_bootstrap.php` |
 | `api/v1/pdf_to_excel.php` | `includes/pdf_to_excel.php` |
 | `api/v1/pos.php` | `api/v1/_bootstrap.php` |
@@ -150,6 +151,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/material_inventory.php` | `includes/fulfillment_packing.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_inventory.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_item_parser.php` |
+| `includes/online_order_parcels.php` | `includes/online_orders_generator.php` |
 | `includes/online_order_parcels.php` | `includes/qr_decode.php` |
 | `includes/online_order_parcels.php` | `includes/rts_schema.php` |
 | `includes/online_order_parcels.php` | `includes/rts_storage.php` |

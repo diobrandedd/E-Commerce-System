@@ -1,7 +1,7 @@
 ---
 title: rts_storage
 source: includes/rts_storage.php
-generated: 2026-06-24T03:46:16+02:00
+generated: 2026-06-24T05:31:16+02:00
 type: module
 function_count: 12
 ---
@@ -98,7 +98,7 @@ function_count: 12
 
 - `api/delivery_match_tracking.php`:76 — `$fileUrl = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
 - `api/upload_documentation.php`:126 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $name),`
-- `includes/online_order_parcels.php`:328 — `$url = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
+- `includes/online_order_parcels.php`:347 — `$url = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
 - `includes/rts_case_handlers.php`:137 — `'download_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn),`
 - `includes/rts_case_handlers.php`:240 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn),`
 - `includes/rts_case_handlers.php`:1012 — `'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $name),`

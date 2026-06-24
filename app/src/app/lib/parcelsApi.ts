@@ -52,3 +52,7 @@ export async function parcelsParsePreview(items: string): Promise<{
 }> {
   return apiPost("parcels.php", "parse_preview", { items });
 }
+
+export async function parcelsUpdateItems(parcelId: number, items: string): Promise<{ parcel: OnlineParcel }> {
+  return apiPost("parcels.php", "update_items", { parcel_id: parcelId, items });
+}

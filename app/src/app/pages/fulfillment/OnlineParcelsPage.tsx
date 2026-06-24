@@ -214,7 +214,11 @@ export function OnlineParcelsPage() {
 
         <div className="px-1 pb-1">
           <h3 className="text-sm font-semibold text-foreground">Parcels</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Click a row to view full parcel details</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Click a row for details
+            {(user?.role === "executive" || user?.role === "csr_tl" || user?.role === "csr_staff") &&
+              " — packing parcels can be edited when contents are wrong"}
+          </p>
         </div>
 
         <div className="bg-card rounded-xl border overflow-x-auto" data-tour="online-parcels-table">
@@ -281,7 +285,15 @@ export function OnlineParcelsPage() {
         )}
       </FulfillmentSectionEnter>
 
-      <OnlineParcelDetailModal parcel={selected} onClose={() => setSelected(null)} />
+      <OnlineParcelDetailModal
+        parcel={selected}
+        role={user?.role}
+        onClose={() => setSelected(null)}
+        onUpdated={updated => {
+          setSelected(updated);
+          setRows(prev => prev.map(r => (r.id === updated.id ? updated : r)));
+        }}
+      />
 
       <OnlineParcelsGuideModal
         open={guideOpen}

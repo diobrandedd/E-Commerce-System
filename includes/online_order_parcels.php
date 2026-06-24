@@ -67,6 +67,25 @@ function online_parcels_user_can_ship(?array $user): bool
     return in_array($role, ['executive', 'prod_manager', 'staff'], true);
 }
 
+function online_parcels_user_can_edit_items(?array $user): bool
+{
+    if ($user === null) {
+        return false;
+    }
+    $role = (string) ($user['role'] ?? '');
+    if ($role === 'executive') {
+        return true;
+    }
+    if (in_array($role, ['csr_tl', 'csr_staff'], true)) {
+        return true;
+    }
+    if (in_array($role, ['tl', 'staff'], true) && online_parcels_user_is_csr_dept($user)) {
+        return true;
+    }
+
+    return false;
+}
+
 function online_parcels_ensure_schema(PDO $pdo): void
 {
     static $done = false;
@@ -530,6 +549,84 @@ function online_parcels_list(PDO $pdo, string $q, string $status, int $page, int
     }
 
     return ['rows' => online_parcels_enrich_packing_photos_batch($pdo, $rows), 'total' => $total];
+}
+
+/**
+ * Update parcel item line while still in packing (before inventory deduct / ship).
+ *
+ * @return array<string, mixed>
+ */
+function online_parcels_update_items(PDO $pdo, int $parcelId, string $itemsRaw, int $userId): array
+{
+    online_parcels_ensure_schema($pdo);
+    if ($parcelId < 1) {
+        throw new RuntimeException('Invalid parcel.');
+    }
+
+    require_once __DIR__ . '/online_orders_generator.php';
+    $itemsRaw = online_orders_normalize_items_display(trim($itemsRaw));
+    if ($itemsRaw === '') {
+        throw new RuntimeException('Items text is required.');
+    }
+
+    $parsed = honey_parcel_parse_items_string($itemsRaw);
+    if ($parsed['errors'] !== []) {
+        throw new RuntimeException(implode(' ', $parsed['errors']));
+    }
+    if ($parsed['deltas'] === [] && ($parsed['other_items'] ?? []) === []) {
+        throw new RuntimeException('No recognizable items in this line.');
+    }
+
+    $json = json_encode(
+        ['deltas' => $parsed['deltas'], 'other_items' => $parsed['other_items'] ?? []],
+        JSON_UNESCAPED_UNICODE
+    );
+
+    $pdo->beginTransaction();
+    try {
+        $lock = $pdo->prepare(
+            'SELECT id, status, csr_line_id, deducted_at FROM online_order_parcels WHERE id = ? FOR UPDATE'
+        );
+        $lock->execute([$parcelId]);
+        $locked = $lock->fetch(PDO::FETCH_ASSOC);
+        if ($locked === false) {
+            throw new RuntimeException('Parcel not found.');
+        }
+        if ((string) $locked['status'] !== 'packing') {
+            throw new RuntimeException('Only packing parcels can be edited.');
+        }
+        if (($locked['deducted_at'] ?? null) !== null) {
+            throw new RuntimeException('Inventory was already deducted for this parcel.');
+        }
+        $stHoney = $pdo->prepare('SELECT 1 FROM online_parcel_deduct_lines WHERE parcel_id = ? LIMIT 1');
+        $stHoney->execute([$parcelId]);
+        if ($stHoney->fetchColumn()) {
+            throw new RuntimeException('Inventory was already deducted for this parcel.');
+        }
+
+        $pdo->prepare(
+            'UPDATE online_order_parcels SET items_raw = ?, items_parsed_json = ? WHERE id = ?'
+        )->execute([$itemsRaw, $json, $parcelId]);
+
+        $csrLineId = isset($locked['csr_line_id']) ? (int) $locked['csr_line_id'] : 0;
+        if ($csrLineId > 0) {
+            $pdo->prepare('UPDATE csr_online_order_lines SET items = ? WHERE id = ?')->execute([$itemsRaw, $csrLineId]);
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    $fresh = online_parcels_get_by_id($pdo, $parcelId);
+    if ($fresh === null) {
+        throw new RuntimeException('Parcel not found after update.');
+    }
+
+    return $fresh;
 }
 
 /**

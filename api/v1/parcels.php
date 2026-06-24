@@ -31,6 +31,7 @@ api_dispatch([
     'get' => 'api_parcels_get',
     'lookup' => 'api_parcels_lookup',
     'parse_preview' => 'api_parcels_parse_preview',
+    'update_items' => 'api_parcels_update_items',
 ]);
 
 function api_parcels_list(): void
@@ -102,7 +103,7 @@ function api_parcels_parse_preview(): void
     api_method_allowed(['POST']);
     $user = api_parcels_assert_access();
     api_parcels_require_csrf();
-    if (!in_array((string) ($user['role'] ?? ''), ['executive', 'prod_manager'], true)) {
+    if (!online_parcels_user_can_edit_items($user)) {
         api_fail('Forbidden.', 403);
     }
 
@@ -112,7 +113,36 @@ function api_parcels_parse_preview(): void
         api_fail('items required.', 400);
     }
 
+    require_once __DIR__ . '/../../includes/online_orders_generator.php';
     require_once __DIR__ . '/../../includes/honey_parcel_item_parser.php';
+    $items = online_orders_normalize_items_display($items);
     $parsed = honey_parcel_parse_items_string($items);
     api_ok($parsed);
+}
+
+function api_parcels_update_items(): void
+{
+    api_method_allowed(['POST']);
+    $user = api_parcels_assert_access();
+    api_parcels_require_csrf();
+    if (!online_parcels_user_can_edit_items($user)) {
+        api_fail('Forbidden.', 403);
+    }
+
+    $input = api_input();
+    $parcelId = (int) ($input['parcel_id'] ?? $input['id'] ?? 0);
+    $items = trim((string) ($input['items'] ?? ''));
+    if ($parcelId < 1) {
+        api_fail('parcel_id required.', 400);
+    }
+
+    try {
+        $parcel = online_parcels_update_items(ims_pdo(), $parcelId, $items, (int) $user['id']);
+    } catch (RuntimeException $e) {
+        api_fail($e->getMessage(), 400);
+    } catch (Throwable $e) {
+        api_fail('Could not update parcel contents.', 500);
+    }
+
+    api_ok(['parcel' => $parcel]);
 }
