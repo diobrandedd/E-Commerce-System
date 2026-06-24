@@ -62,9 +62,9 @@ function api_honey_require_view(): array
     if (!honey_role_can_view($role) && !honey_role_can_mutate($role)) {
         api_fail('Forbidden.', 403);
     }
-    // Operations staff are read-only and limited to their own department's
-    // raw materials + finished products.
-    if ($role === 'staff') {
+    // Operations staff and dept team leaders are read-only and limited to their own
+    // department's raw materials + finished products.
+    if (in_array($role, ['staff', 'tl'], true)) {
         honey_assert_staff_dept_scope($user);
     }
 
@@ -121,7 +121,7 @@ function honey_request_target_dept_key(): ?string
     return null;
 }
 
-/** 403 unless a `staff` user's request stays within their own department. */
+/** 403 unless a dept-scoped ops user (staff / tl) stays within their department. */
 function honey_assert_staff_dept_scope(array $user): void
 {
     $userDept = honey_resolve_user_dept_key($user);

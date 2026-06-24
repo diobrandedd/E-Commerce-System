@@ -1,6 +1,6 @@
 ---
 title: SPA Routes
-generated: 2026-06-23T11:18:07+02:00
+generated: 2026-06-24T03:45:21+02:00
 type: spa
 ---
 
@@ -26,12 +26,13 @@ Basename: `/rts/app/dist` (prod) · dev at `localhost:5173`
 | `/suppliers` | `SuppliersPage` | executive |
 | `/costing` | `CostingPage` | executive |
 | `/ar` | `ARCreditsPage` | any authenticated |
-| `/rts` | `RTSPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff |
+| `/rts` | `RTSPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff,team_leader |
 | `/rts/record` | `RTSRecordPage` | executive,prod_manager,csr_tl,csr_staff |
-| `/rts/records` | `RTSRecordsPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff |
-| `/rts/swapped` | `RTSSwappedPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff |
-| `/rts/leaks` | `RTSLeaksPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff |
-| `/rts/dashboard` | `RTSDashboardPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff |
+| `/rts/records` | `RTSRecordsPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff,team_leader |
+| `/rts/swapped` | `RTSSwappedPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff,team_leader |
+| `/rts/leaks` | `RTSLeaksPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff,team_leader |
+| `/rts/damaged` | `RTSDamagedInventoryPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff,team_leader |
+| `/rts/dashboard` | `RTSDashboardPage` | executive,prod_manager,hr,staff,csr_tl,csr_staff,team_leader |
 | `/settings` | `SettingsPage` | executive |
 | `/account` | `AccountSettingsPage` | any authenticated |
 | `/deliveries` | `DeliveriesPage` | executive,prod_manager,staff |

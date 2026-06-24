@@ -121,6 +121,7 @@ export function RTSRecordPage() {
   const [attachments, setAttachments] = useState<DocAttachment[]>([]);
   const [docUploadBusy, setDocUploadBusy] = useState(false);
   const [lines, setLines] = useState<RtsLineItem[]>([]);
+  const [damagedLines, setDamagedLines] = useState<RtsLineItem[]>([]);
   const [caseId, setCaseId] = useState(0);
   const [mode, setMode] = useState<"create" | "append" | "edit">("create");
   const [prefill, setPrefill] = useState<RtsTrackingPrefill | null>(null);
@@ -155,6 +156,7 @@ export function RTSRecordPage() {
       return [];
     });
     setLines([]);
+    setDamagedLines([]);
     setCaseId(0);
     setMode("create");
     setPrefill(null);
@@ -192,7 +194,10 @@ export function RTSRecordPage() {
     })));
     if (isEdit) {
       setMode("edit");
-      setLines(data.lines.map(l => ({ ...l, quantity: Number(l.quantity) })));
+      const reusable = data.lines.filter(l => l.line_role !== "damaged");
+      const damaged = data.lines.filter(l => l.line_role === "damaged");
+      setLines(reusable.map(l => ({ ...l, quantity: Number(l.quantity) })));
+      setDamagedLines(damaged.map(l => ({ ...l, quantity: Number(l.quantity) })));
     } else {
       setMode("append");
       setLines([]);
@@ -390,6 +395,7 @@ export function RTSRecordPage() {
     case_disposition: disposition,
     documentation_attachments: readyAtt,
     lines: disposition === "swapped" ? [] : lines,
+    damaged_lines: disposition === "leak" ? damagedLines : undefined,
     case_id: caseId,
   });
 
@@ -410,6 +416,12 @@ export function RTSRecordPage() {
       const hasVideo = readyAtt.some(a => a.kind === "video");
       if (!hasImage) return "Swapped parcel requires at least one photo";
       if (!hasVideo) return "Swapped parcel requires at least one video";
+      return null;
+    }
+    if (disposition === "leak") {
+      if (!lines.length && !damagedLines.length) {
+        return "Add at least one damaged or reusable product line";
+      }
       return null;
     }
     if (!lines.length) return "At least one product line required";
@@ -586,7 +598,26 @@ export function RTSRecordPage() {
             </p>
           )}
 
-          {showLines && (
+          {showLines && disposition === "leak" && (
+            <div className="space-y-3">
+              <RtsLineBuilder
+                catalog={catalog}
+                lines={damagedLines}
+                onChange={setDamagedLines}
+                title="Damaged / leaked"
+                description="What was damaged or leaked — goes to the damaged RTS pool (not sellable)."
+              />
+              <RtsLineBuilder
+                catalog={catalog}
+                lines={lines}
+                onChange={setLines}
+                title="Reusable (RTS sellable)"
+                description="What can go back to sellable RTS inventory after inspection."
+              />
+            </div>
+          )}
+
+          {showLines && disposition !== "leak" && (
             <RtsLineBuilder catalog={catalog} lines={lines} onChange={setLines} />
           )}
 
@@ -739,7 +770,7 @@ export function RTSRecordPage() {
               )}
               {disposition === "leak" && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Add product lines for everything sellable back to RTS stock. This version does not split damaged vs reusable qty — enter lines for what can go back to inventory.
+                  Record damaged/leaked items and reusable sellable items separately — each syncs to its own RTS pool.
                 </p>
               )}
             </div>

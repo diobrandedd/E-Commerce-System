@@ -27,7 +27,7 @@ function honey_role_can_view(string $role): bool
     // `staff` is read-only and additionally scoped to their own department
     // (enforced in honey.php api_honey_require_view); pricing stays hidden via
     // honey_pricing_role_can_view_cost.
-    return in_array($role, ['executive', 'prod_manager', 'hr', 'staff'], true);
+    return in_array($role, ['executive', 'prod_manager', 'hr', 'staff', 'tl'], true);
 }
 
 function honey_role_can_mutate(string $role): bool

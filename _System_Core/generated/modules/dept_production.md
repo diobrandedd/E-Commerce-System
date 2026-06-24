@@ -1,7 +1,7 @@
 ---
 title: dept_production
 source: includes/dept_production.php
-generated: 2026-06-23T11:17:47+02:00
+generated: 2026-06-24T03:45:59+02:00
 type: module
 function_count: 25
 ---
@@ -95,11 +95,12 @@ function_count: 25
 
 **Tables:** `stock_entries`, `stocks`
 
-**Callers (3):**
+**Callers (4):**
 
 - `includes/dept_production.php`:375 — `$res = dept_packaging_deduct($pdo, $stockId, (float) $line['qty'], $userId, $label);`
 - `includes/honey_inventory.php`:421 — `$res = dept_packaging_deduct($pdo, $stockId, $qty, $userId, 'bottling: ' . substr($label, 0, 100));`
 - `includes/honey_inventory.php`:436 — `$res = dept_packaging_deduct($pdo, $stickerId, $totalBottles, $userId, 'bottling: ' . substr($label, 0, 100));`
+- `includes/rts_damaged_use.php`:44 — `$res = dept_packaging_deduct($pdo, $stockId, $bottleCount, $userId, $label);`
 
 ## dept_production_apply_deduct_lines {#dept_production_apply_deduct_lines}
 

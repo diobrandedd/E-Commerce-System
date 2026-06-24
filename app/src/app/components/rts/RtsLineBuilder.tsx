@@ -10,9 +10,11 @@ interface RtsLineBuilderProps {
   catalog: RtsProductCatalog;
   lines: RtsLineItem[];
   onChange: (lines: RtsLineItem[]) => void;
+  title?: string;
+  description?: string;
 }
 
-export function RtsLineBuilder({ catalog, lines, onChange }: RtsLineBuilderProps) {
+export function RtsLineBuilder({ catalog, lines, onChange, title = "Product lines", description }: RtsLineBuilderProps) {
   const [productType, setProductType] = useState("honey");
   const [honeySize, setHoneySize] = useState("liter");
   const [honeyVariant, setHoneyVariant] = useState("light");
@@ -50,7 +52,10 @@ export function RtsLineBuilder({ catalog, lines, onChange }: RtsLineBuilderProps
 
   return (
     <div className="space-y-3 rounded-xl border border-border p-4 bg-card">
-      <p className="text-sm font-semibold">Product lines</p>
+      <div>
+        <p className="text-sm font-semibold">{title}</p>
+        {description ? <p className="text-xs text-muted-foreground mt-0.5">{description}</p> : null}
+      </div>
       {lines.length > 0 && (
         <ul className="text-sm space-y-1">
           {lines.map((l, i) => (

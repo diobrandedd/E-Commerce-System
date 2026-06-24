@@ -41,8 +41,12 @@ function rts_inventory_sync_run(PDO $pdo): array
         ? " AND COALESCE(c.case_disposition, 'standard') IN ('standard', 'leak')"
         : '';
 
+    $hasLineRole = rts_db_has_column($pdo, 'rts_line_items', 'line_role');
+    $hasInvPool = rts_db_has_column($pdo, 'rts_inventory_rows', 'inventory_pool');
+    $lineRoleCol = $hasLineRole ? ', COALESCE(li.line_role, \'reusable\') AS line_role' : '';
+
     $st = $pdo->prepare(
-        'SELECT li.id, li.product_type, li.honey_size, li.honey_variant, li.combo_product, li.quantity
+        'SELECT li.id, li.product_type, li.honey_size, li.honey_variant, li.combo_product, li.quantity' . $lineRoleCol . '
          FROM rts_line_items li
          INNER JOIN rts_cases c ON c.id = li.case_id
          WHERE c.voided_at IS NULL' . $dispositionSql . ' AND li.id > ?
@@ -51,14 +55,25 @@ function rts_inventory_sync_run(PDO $pdo): array
     $st->execute([$lastId]);
     $lines = $st->fetchAll();
 
-    $ins = $pdo->prepare(
-        'INSERT INTO rts_inventory_rows (
-            source_line_item_id, category, product_label, variant,
-            current_liter, initial_liter, current_250ml, initial_250ml,
-            current_350ml, initial_350ml, current_gallon, initial_gallon,
-            current_qty, initial_qty, synced_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
-    );
+    if ($hasInvPool) {
+        $ins = $pdo->prepare(
+            'INSERT INTO rts_inventory_rows (
+                source_line_item_id, category, inventory_pool, product_label, variant,
+                current_liter, initial_liter, current_250ml, initial_250ml,
+                current_350ml, initial_350ml, current_gallon, initial_gallon,
+                current_qty, initial_qty, synced_at
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+        );
+    } else {
+        $ins = $pdo->prepare(
+            'INSERT INTO rts_inventory_rows (
+                source_line_item_id, category, product_label, variant,
+                current_liter, initial_liter, current_250ml, initial_250ml,
+                current_350ml, initial_350ml, current_gallon, initial_gallon,
+                current_qty, initial_qty, synced_at
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+        );
+    }
 
     $pdo->beginTransaction();
     try {
@@ -85,18 +100,35 @@ function rts_inventory_sync_run(PDO $pdo): array
                 };
             }
 
-            $ins->execute([
-                $lineId,
-                $category,
-                $label,
-                $variant,
-                $liter, $liter,
-                $ml250, $ml250,
-                $ml350, $ml350,
-                $gallon, $gallon,
-                $isHoney ? 0 : $qty,
-                $isHoney ? 0 : $qty,
-            ]);
+            $pool = ($hasLineRole && (string) ($li['line_role'] ?? 'reusable') === 'damaged') ? 'damaged' : 'sellable';
+            if ($hasInvPool) {
+                $ins->execute([
+                    $lineId,
+                    $category,
+                    $pool,
+                    $label,
+                    $variant,
+                    $liter, $liter,
+                    $ml250, $ml250,
+                    $ml350, $ml350,
+                    $gallon, $gallon,
+                    $isHoney ? 0 : $qty,
+                    $isHoney ? 0 : $qty,
+                ]);
+            } else {
+                $ins->execute([
+                    $lineId,
+                    $category,
+                    $label,
+                    $variant,
+                    $liter, $liter,
+                    $ml250, $ml250,
+                    $ml350, $ml350,
+                    $gallon, $gallon,
+                    $isHoney ? 0 : $qty,
+                    $isHoney ? 0 : $qty,
+                ]);
+            }
             $synced++;
         }
 
@@ -140,6 +172,10 @@ function rts_inventory_deduct_sell(PDO $pdo, int $userId, int $rowId, array $siz
     $row = $st->fetch();
     if (!$row) {
         throw new RuntimeException('RTS inventory row not found.');
+    }
+    if (rts_db_has_column($pdo, 'rts_inventory_rows', 'inventory_pool')
+        && (string) ($row['inventory_pool'] ?? 'sellable') === 'damaged') {
+        throw new RuntimeException('Damaged stock cannot be sold — use Damaged stock workflow.');
     }
     if (!in_array($saleType, ['walk_in', 'parcel'], true)) {
         throw new RuntimeException('Invalid sale type.');

@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-19 — [[problems/records/2026-06-19_rts-leak-damaged-split|RTS leak damaged vs reusable split + damaged pool]]
+**Shipped:** Leak Record RTS uses two line lists (`damaged_lines` + `lines`); sync to sellable/damaged pools; `/rts/damaged` + Use damaged (`mix_production`/`scrap`). Run `migration_phase45` + `migration_phase46` on prod.
+
 ### 2026-06-19 — [[problems/records/2026-06-19_rts-swapped-leak-disposition-rollout|RTS swapped/leak rollout + registry media UI]]
 **Shipped:** disposition migration + role fix + registry thumbs/modal (`RtsCaseMediaUi`). Run `migration_phase44` on prod.
 

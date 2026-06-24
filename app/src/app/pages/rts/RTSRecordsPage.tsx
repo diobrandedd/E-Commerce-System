@@ -152,7 +152,7 @@ export function RTSRecordsPage() {
   const [voidOnly, setVoidOnly] = useState(() => searchParams.get("void_only") === "1");
 
   const [detail, setDetail] = useState<RtsCaseRow | null>(null);
-  const [detailLines, setDetailLines] = useState<string[]>([]);
+  const [detailRawLines, setDetailRawLines] = useState<RtsLineItem[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [claimStatus, setClaimStatus] = useState("for_submission");
   const [claimNote, setClaimNote] = useState("");
@@ -237,15 +237,9 @@ export function RTSRecordsPage() {
       if (data.case) {
         setDetail({ ...row, ...data.case });
       }
-      if (catalog && data.lines.length) {
-        setDetailLines(rtsFormatLines(data.lines as RtsLineItem[], catalog));
-      } else if (data.lines.length) {
-        setDetailLines(data.lines.map(l => `${l.quantity}× ${l.product_type}`));
-      } else {
-        setDetailLines([]);
-      }
+      setDetailRawLines((data.lines as RtsLineItem[]).map(l => ({ ...l, quantity: Number(l.quantity) })));
     } catch {
-      setDetailLines([]);
+      setDetailRawLines([]);
     } finally {
       setDetailLoading(false);
     }
@@ -464,20 +458,59 @@ export function RTSRecordsPage() {
                 {detail.voided_at && <><dt className="text-muted-foreground">Voided</dt><dd>{detail.voided_at}</dd></>}
               </dl>
 
-              <div className="mt-4 rounded-lg border border-border p-3 bg-secondary/20">
-                <p className={labelClass}>Product lines</p>
-                {detailLoading ? (
-                  <Loader2 size={14} className="animate-spin mt-2" />
-                ) : detailLines.length ? (
-                  <ul className="text-sm list-disc ml-4 mt-2 space-y-0.5">{detailLines.map((l, i) => <li key={i}>{l}</li>)}</ul>
+              <div className="mt-4 rounded-lg border border-border p-3 bg-secondary/20 space-y-3">
+                {detail.case_disposition === "leak" || detail.damaged_reason === "leak" ? (
+                  <>
+                    <div>
+                      <p className={labelClass}>Damaged / leaked</p>
+                      {detailLoading ? (
+                        <Loader2 size={14} className="animate-spin mt-2" />
+                      ) : detailRawLines.filter(l => l.line_role === "damaged").length ? (
+                        <ul className="text-sm list-disc ml-4 mt-2 space-y-0.5">
+                          {(catalog ? rtsFormatLines(detailRawLines.filter(l => l.line_role === "damaged"), catalog) : detailRawLines.filter(l => l.line_role === "damaged").map(l => `${l.quantity}× ${l.product_type}`)).map((l, i) => (
+                            <li key={`d-${i}`}>{l}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mt-2">None recorded.</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className={labelClass}>Reusable (RTS sellable)</p>
+                      {detailLoading ? (
+                        <Loader2 size={14} className="animate-spin mt-2" />
+                      ) : detailRawLines.filter(l => l.line_role !== "damaged").length ? (
+                        <ul className="text-sm list-disc ml-4 mt-2 space-y-0.5">
+                          {(catalog ? rtsFormatLines(detailRawLines.filter(l => l.line_role !== "damaged"), catalog) : detailRawLines.filter(l => l.line_role !== "damaged").map(l => `${l.quantity}× ${l.product_type}`)).map((l, i) => (
+                            <li key={`r-${i}`}>{l}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mt-2">None recorded.</p>
+                      )}
+                    </div>
+                  </>
                 ) : (
-                  <p className="text-sm text-amber-800 mt-2">
-                    No product lines —{" "}
-                    <Link to={`/rts/record?edit=${encodeURIComponent(detail.tracking_number)}`} className="font-semibold underline text-[#8a5c00]">
-                      add lines
-                    </Link>{" "}
-                    before syncing inventory.
-                  </p>
+                  <>
+                    <p className={labelClass}>Product lines</p>
+                    {detailLoading ? (
+                      <Loader2 size={14} className="animate-spin mt-2" />
+                    ) : detailRawLines.length ? (
+                      <ul className="text-sm list-disc ml-4 mt-2 space-y-0.5">
+                        {(catalog ? rtsFormatLines(detailRawLines, catalog) : detailRawLines.map(l => `${l.quantity}× ${l.product_type}`)).map((l, i) => (
+                          <li key={i}>{l}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-amber-800 mt-2">
+                        No product lines —{" "}
+                        <Link to={`/rts/record?edit=${encodeURIComponent(detail.tracking_number)}`} className="font-semibold underline text-[#8a5c00]">
+                          add lines
+                        </Link>{" "}
+                        before syncing inventory.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 

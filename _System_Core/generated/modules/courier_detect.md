@@ -1,7 +1,7 @@
 ---
 title: courier_detect
 source: includes/courier_detect.php
-generated: 2026-06-23T11:17:44+02:00
+generated: 2026-06-24T03:45:57+02:00
 type: module
 function_count: 1
 ---
@@ -19,7 +19,7 @@ function_count: 1
 
 - `includes/rts_case_handlers.php`:154 — `'detected_courier' => rts_detect_courier($tracking),`
 - `includes/rts_case_handlers.php`:177 — `'detected_courier' => rts_detect_courier($tracking),`
-- `includes/rts_case_handlers.php`:377 — `'courier_detected' => rts_detect_courier($tracking),`
+- `includes/rts_case_handlers.php`:430 — `'courier_detected' => rts_detect_courier($tracking),`
 - `includes/rts_prefill.php`:58 — `$detected = rts_detect_courier($tracking);`
 - `includes/rts_prefill.php`:306 — `'detected_courier' => rts_detect_courier($normalized),`
 

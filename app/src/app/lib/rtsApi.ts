@@ -10,6 +10,7 @@ export interface RtsLineItem {
   combo_honey_variant?: string | null;
   quantity: number;
   is_bonus?: boolean;
+  line_role?: "reusable" | "damaged";
 }
 
 export interface RtsAttachment {
@@ -197,6 +198,37 @@ export function rtsListCases(params: Record<string, string | number | boolean | 
 
 export function rtsDashboard() {
   return apiGet<RtsDashboardData>("rts_cases.php", "dashboard");
+}
+
+export function rtsListDamagedInventory() {
+  return apiGet<{
+    honey: Record<string, string>[];
+    other: Record<string, string>[];
+    can_use_damaged: boolean;
+    pool: string;
+  }>("rts.php", "inventory_list", { pool: "damaged" });
+}
+
+export function rtsUseDamaged(body: {
+  row_id: number;
+  outcome: "mix_production" | "scrap" | "cap_reseal";
+  variant?: string;
+  size_qtys?: Record<string, number>;
+  qty_other?: number;
+  notes?: string;
+}) {
+  return apiPost<{
+    outcome: string;
+    volume_gallons?: number | null;
+    production_row_id?: number | null;
+    sellable_row_id?: number | null;
+    bottles_resealed?: number | null;
+    packaging_deduct?: { stock_name: string; qty: number; on_hand: number }[];
+  }>(
+    "rts.php",
+    "use_damaged",
+    body,
+  );
 }
 
 export function rtsLineDisplay(line: RtsLineItem, labels: Record<string, string>): string {

@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-06-23T11:17:42+02:00
+generated: 2026-06-24T03:45:55+02:00
 type: memory-bank
-table_count: 55
+table_count: 56
 ---
 
 
@@ -165,6 +165,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_user_is_csr_dept]] |
+| `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_deduct_cap_seals]] |
 | `includes/waybill_stamper.php` | [[modules/waybill_stamper#waybill_stamper_user_is_csr_dept]] |
 
 ## `users`
@@ -268,6 +269,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_tier_lines]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_product_unit_cogs]] |
+| `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_deduct_cap_seals]] |
 
 ## `stock_entries`
 
@@ -597,6 +599,12 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_report_damage]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
 
+## `rts_damaged_use_events`
+
+| File | Function |
+|------|----------|
+| `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
+
 ## `pos_sales`
 
 | File | Function |
@@ -658,6 +666,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_traceability]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
+| `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
 
 ## `honey_packaging_rows`
 
@@ -730,6 +739,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `api/v1/rts.php` | [[modules/rts#api_rts_inventory_list]] |
+| `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_inventory_credit_sellable_repack]] |
+| `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell]] |
 

@@ -163,9 +163,10 @@ function rts_line_item_row_to_api(array $row): array
 function rts_line_items_fetch_for_case(PDO $pdo, int $caseId): array
 {
     if (rts_line_items_schema_v2($pdo)) {
+        $roleCol = rts_db_has_column($pdo, 'rts_line_items', 'line_role') ? ', line_role' : '';
         $st = $pdo->prepare(
             'SELECT id, product_type, honey_size, honey_variant, combo_product, combo_quantity,
-                    combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id, created_at
+                    combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id, created_at' . $roleCol . '
              FROM rts_line_items WHERE case_id = ? ORDER BY id ASC'
         );
         $st->execute([$caseId]);
@@ -322,23 +323,30 @@ function rts_cases_update_row(PDO $pdo, int $caseId, array $row): void
     $pdo->prepare($sql)->execute($params);
 }
 
-/** @param list<array<string, mixed>> $lines Normalized v2 lines from rts_normalize_line */
+/** @param list<array<string, mixed>> $lines Normalized v2 lines from rts_normalize_line; optional line_role */
 function rts_line_items_insert_batch(PDO $pdo, int $caseId, array $lines): void
 {
     $schemaErr = rts_line_items_ensure_v2_schema($pdo);
     if ($schemaErr !== null) {
         throw new RuntimeException($schemaErr);
     }
-    $li = $pdo->prepare(
-        'INSERT INTO rts_line_items (case_id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
-    );
+    $hasLineRole = rts_db_has_column($pdo, 'rts_line_items', 'line_role');
+    if ($hasLineRole) {
+        $li = $pdo->prepare(
+            'INSERT INTO rts_line_items (case_id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id, line_role) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
+        );
+    } else {
+        $li = $pdo->prepare(
+            'INSERT INTO rts_line_items (case_id, product_type, honey_size, honey_variant, combo_product, combo_quantity, combo_honey_size, combo_honey_variant, quantity, is_bonus, bonus_parent_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+        );
+    }
     $insertedIds = [];
     foreach ($lines as $idx => $L) {
         $parentId = null;
         if (!empty($L['is_bonus']) && isset($L['_bonus_parent_idx'])) {
             $parentId = $insertedIds[(int) $L['_bonus_parent_idx']] ?? null;
         }
-        $li->execute([
+        $params = [
             $caseId,
             $L['product_type'],
             $L['honey_size'],
@@ -350,7 +358,15 @@ function rts_line_items_insert_batch(PDO $pdo, int $caseId, array $lines): void
             $L['quantity'],
             $L['is_bonus'],
             $parentId,
-        ]);
+        ];
+        if ($hasLineRole) {
+            $role = (string) ($L['line_role'] ?? 'reusable');
+            if (!in_array($role, ['reusable', 'damaged'], true)) {
+                $role = 'reusable';
+            }
+            $params[] = $role;
+        }
+        $li->execute($params);
         $insertedIds[$idx] = (int) $pdo->lastInsertId();
     }
 }

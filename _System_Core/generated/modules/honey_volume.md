@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-06-23T11:17:54+02:00
+generated: 2026-06-24T03:46:05+02:00
 type: module
 function_count: 8
 ---
@@ -59,9 +59,10 @@ function_count: 8
 
 ## honey_lines_to_gallons {#honey_lines_to_gallons}
 
-**Callers (1):**
+**Callers (2):**
 
 - `includes/honey_inventory.php`:291 — `$usedGallons = honey_lines_to_gallons($lines);`
+- `includes/rts_damaged_use.php`:217 — `$volumeGallons = honey_lines_to_gallons($deductLines);`
 
 ## honey_parse_bottle_lines_from_input {#honey_parse_bottle_lines_from_input}
 

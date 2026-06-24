@@ -14,6 +14,7 @@ import { RTSRecordsPage } from "./pages/rts/RTSRecordsPage";
 import { RTSDashboardPage } from "./pages/rts/RTSDashboardPage";
 import { RTSLeaksPage } from "./pages/rts/RTSLeaksPage";
 import { RTSSwappedPage } from "./pages/rts/RTSSwappedPage";
+import { RTSDamagedInventoryPage } from "./pages/rts/RTSDamagedInventoryPage";
 import { HoneyWarehousePage } from "./pages/honey/HoneyWarehousePage";
 import { HoneyProductionPage } from "./pages/honey/HoneyProductionPage";
 import { HoneyPackagingPage } from "./pages/honey/HoneyPackagingPage";
@@ -57,7 +58,7 @@ const invGuard = (Component: React.ComponentType) => guarded(Component, { roles:
 // Raw materials + finished products are also readable by staff (scoped to their
 // own department, read-only, no pricing — enforced server-side in materials.php /
 // honey.php). Packaging + Supplies stay invRoles-only.
-const invViewRoles: Role[] = ["executive", "prod_manager", "hr", "staff"];
+const invViewRoles: Role[] = ["executive", "prod_manager", "hr", "staff", "team_leader"];
 const invViewGuard = (Component: React.ComponentType) => guarded(Component, { roles: invViewRoles });
 
 // In production we ship under Apache at /rts/app/dist/ so React Router
@@ -131,12 +132,13 @@ export const router = createBrowserRouter(
           path: "waybill-stamper",
           element: createElement(Navigate, { to: "/waybill/online-orders", replace: true }),
         },
-        { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
+        { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
         { path: "rts/record", element: guarded(RTSRecordPage, { roles: ["executive", "prod_manager", "csr_tl", "csr_staff"] }) },
-        { path: "rts/records", element: guarded(RTSRecordsPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
-        { path: "rts/swapped", element: guarded(RTSSwappedPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
-        { path: "rts/leaks", element: guarded(RTSLeaksPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
-        { path: "rts/dashboard", element: guarded(RTSDashboardPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff"] }) },
+        { path: "rts/records", element: guarded(RTSRecordsPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
+        { path: "rts/swapped", element: guarded(RTSSwappedPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
+        { path: "rts/leaks", element: guarded(RTSLeaksPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
+        { path: "rts/damaged", element: guarded(RTSDamagedInventoryPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
+        { path: "rts/dashboard", element: guarded(RTSDashboardPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
         { path: "settings", element: guarded(SettingsPage, { roles: ["executive"] }) },
         { path: "account", element: guarded(AccountSettingsPage) },
 

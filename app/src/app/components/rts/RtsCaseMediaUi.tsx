@@ -216,18 +216,36 @@ export function RtsRegistryDetailModal({
             </dl>
 
             {variant === "leak" && (
-              <div className="rounded-lg border border-border p-3 bg-secondary/20">
-                <p className={mediaLabelClass}>Product lines</p>
+              <div className="rounded-lg border border-border p-3 bg-secondary/20 space-y-3">
                 {loading ? (
                   <Loader2 size={14} className="animate-spin mt-2" />
-                ) : lines.length ? (
-                  <ul className="text-sm list-disc ml-4 mt-2 space-y-0.5">
-                    {lines.map((l, i) => (
-                      <li key={i}>{rtsLineDisplay(l, labels)}</li>
-                    ))}
-                  </ul>
                 ) : (
-                  <p className="text-sm text-muted-foreground mt-2">No lines recorded.</p>
+                  <>
+                    <div>
+                      <p className={mediaLabelClass}>Damaged / leaked</p>
+                      {lines.filter(l => l.line_role === "damaged").length ? (
+                        <ul className="text-sm list-disc ml-4 mt-2 space-y-0.5">
+                          {lines.filter(l => l.line_role === "damaged").map((l, i) => (
+                            <li key={`d-${i}`}>{rtsLineDisplay(l, labels)}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mt-2">None recorded.</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className={mediaLabelClass}>Reusable (RTS sellable)</p>
+                      {lines.filter(l => l.line_role !== "damaged").length ? (
+                        <ul className="text-sm list-disc ml-4 mt-2 space-y-0.5">
+                          {lines.filter(l => l.line_role !== "damaged").map((l, i) => (
+                            <li key={`r-${i}`}>{rtsLineDisplay(l, labels)}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mt-2">None recorded.</p>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
             )}

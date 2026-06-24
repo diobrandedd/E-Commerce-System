@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-23T11:17:42+02:00
+generated: 2026-06-24T03:45:55+02:00
 type: memory-bank
 ---
 
@@ -330,6 +330,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `legacy_urls` | `api_rts_legacy_urls()` | — |
 | `inventory_list` | `api_rts_inventory_list()` | `ims_pdo()`, `rts_inventory_sync_status()` |
 | `inventory_deduct_sell` | `api_rts_inventory_deduct_sell()` | `rts_inventory_deduct_sell()`, `ims_pdo()` |
+| `use_damaged` | `api_rts_use_damaged()` | `rts_damaged_use_apply()`, `ims_pdo()` |
 | `sync_status` | `api_rts_sync_status_action()` | `rts_inventory_sync_status()`, `ims_pdo()` |
 
 ### `rts_cases.php`

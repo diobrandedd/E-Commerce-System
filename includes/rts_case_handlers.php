@@ -243,6 +243,68 @@ function rts_case_handler_delivery_match(PDO $pdo, string $tracking): array
 
 /**
  * @param array<string, mixed> $data
+ * @return list<array<string, mixed>>
+ */
+function rts_case_parse_product_lines(string $disposition, array $data): array
+{
+    if ($disposition === 'swapped') {
+        return [];
+    }
+
+    if ($disposition === 'leak') {
+        $reusableIn = isset($data['lines']) && is_array($data['lines']) ? $data['lines'] : [];
+        $damagedIn = isset($data['damaged_lines']) && is_array($data['damaged_lines']) ? $data['damaged_lines'] : [];
+        if ($reusableIn !== []) {
+            $err = rts_validate_lines_v2($reusableIn);
+            if ($err !== null) {
+                throw new RtsCaseException($err, 'invalid_lines', 400);
+            }
+        }
+        if ($damagedIn !== []) {
+            $err = rts_validate_lines_v2($damagedIn);
+            if ($err !== null) {
+                throw new RtsCaseException($err, 'invalid_damaged_lines', 400);
+            }
+        }
+        if ($reusableIn === [] && $damagedIn === []) {
+            throw new RtsCaseException(
+                'Leak cases require at least one damaged or reusable product line.',
+                'leak_lines_required',
+                400
+            );
+        }
+        $lines = [];
+        foreach (array_map('rts_normalize_line', $reusableIn) as $L) {
+            $L['line_role'] = 'reusable';
+            $lines[] = $L;
+        }
+        foreach (array_map('rts_normalize_line', $damagedIn) as $L) {
+            $L['line_role'] = 'damaged';
+            $lines[] = $L;
+        }
+
+        return $lines;
+    }
+
+    $linesIn = isset($data['lines']) && is_array($data['lines']) ? $data['lines'] : [];
+    $err = rts_validate_lines_v2($linesIn);
+    if ($err !== null) {
+        throw new RtsCaseException($err, 'invalid_lines', 400);
+    }
+    if ($linesIn === []) {
+        throw new RtsCaseException('At least one product line is required.', 'lines_required', 400);
+    }
+    $lines = [];
+    foreach (array_map('rts_normalize_line', $linesIn) as $L) {
+        $L['line_role'] = 'reusable';
+        $lines[] = $L;
+    }
+
+    return $lines;
+}
+
+/**
+ * @param array<string, mixed> $data
  * @return array<string, mixed>
  */
 function rts_case_handler_parse_case_fields(PDO $pdo, array $data, bool $isCreate): array
@@ -253,16 +315,7 @@ function rts_case_handler_parse_case_fields(PDO $pdo, array $data, bool $isCreat
     }
 
     $disposition = rts_case_resolve_disposition($data);
-    $linesIn = isset($data['lines']) && is_array($data['lines']) ? $data['lines'] : [];
-    if ($disposition === 'swapped') {
-        $lines = [];
-    } else {
-        $err = rts_validate_lines_v2($linesIn);
-        if ($err !== null) {
-            throw new RtsCaseException($err, 'invalid_lines', 400);
-        }
-        $lines = array_map('rts_normalize_line', $linesIn);
-    }
+    $lines = rts_case_parse_product_lines($disposition, $data);
 
     $courierFinal = isset($data['courier_final']) ? (string) $data['courier_final'] : '';
     if ($courierFinal === '' || $courierFinal === 'unknown') {
@@ -502,7 +555,11 @@ function rts_case_handler_append_lines(PDO $pdo, string $tracking, array $data):
     if ($err !== null) {
         throw new RtsCaseException($err, 'invalid_lines', 400);
     }
-    $lines = array_map('rts_normalize_line', $linesIn);
+    $lines = array_map(static function (array $L): array {
+        $L['line_role'] = 'reusable';
+
+        return $L;
+    }, array_map('rts_normalize_line', $linesIn));
     $caseId = rts_cases_find_active_id_by_tracking($pdo, $tracking);
     if ($caseId === null) {
         throw new RtsCaseException('Case not found, voided, or invalid tracking number', 'not_found', 404);

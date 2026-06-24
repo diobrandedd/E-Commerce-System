@@ -127,6 +127,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
 
   const rtsSwapped: NavLinkChild = { label: "Swapped parcels", to: "/rts/swapped" };
   const rtsLeaks: NavLinkChild = { label: "Leaks", to: "/rts/leaks" };
+  const rtsDamaged: NavLinkChild = { label: "Damaged stock", to: "/rts/damaged" };
 
   const rtsNav = (children: NavLinkChild[]): NavItem => ({
     icon: RotateCcw,
@@ -135,8 +136,8 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
     children,
   });
 
-  const rtsNavFull = rtsNav([rtsInventory, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard, rtsRecord]);
-  const rtsNavReadOnly = rtsNav([rtsInventory, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard]);
+  const rtsNavFull = rtsNav([rtsInventory, rtsDamaged, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard, rtsRecord]);
+  const rtsNavReadOnly = rtsNav([rtsInventory, rtsDamaged, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard]);
 
   // Staff see raw materials + finished products for their own department only
   // (read-only — server enforces dept scope + hides pricing).
@@ -208,12 +209,13 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         { icon: PlusCircle, label: "Stock Input", to: "/stock-input" },
-        { icon: Package, label: "Inventory", to: `/inventory/${dept}` },
+        staffInventoryNav,
         { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
         { icon: ClipboardList, label: "Beginning Inventory", to: "/beginning-inventory" },
         { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
         { icon: ShoppingCart, label: "My AR Credits", to: "/ar" },
         forPackingItem,
+        rtsNavReadOnly,
       ];
     case "csr_tl":
       return [
