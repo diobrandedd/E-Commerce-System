@@ -980,7 +980,7 @@ function rts_case_handler_upload_error_message(int $code): string
  * @param array<string, mixed>|null $file
  * @return array{file_name: string, file_url: string, media_kind: string}
  */
-function rts_case_handler_upload_documentation(?array $file): array
+function rts_case_handler_upload_documentation(?array $file, ?string $recordDate = null): array
 {
     if ($file === null || !is_array($file)) {
         throw new RtsCaseException('Missing file input', 'missing_file', 400);
@@ -991,90 +991,21 @@ function rts_case_handler_upload_documentation(?array $file): array
     }
     $tmp = (string) ($file['tmp_name'] ?? '');
     $size = (int) ($file['size'] ?? 0);
-    if ($tmp === '' || $size < 1) {
-        throw new RtsCaseException('Empty upload', 'upload_failed', 400);
-    }
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = (string) $finfo->file($tmp);
-    $imageMax = RTS_DOC_IMAGE_MAX_BYTES;
-    $videoMax = RTS_DOC_VIDEO_MAX_BYTES;
-    $kind = '';
-    $ext = '';
-    $maxForType = $imageMax;
-    switch ($mime) {
-        case 'image/jpeg':
-            $ext = 'jpg';
-            $kind = 'image';
-            break;
-        case 'image/png':
-            $ext = 'png';
-            $kind = 'image';
-            break;
-        case 'image/webp':
-            $ext = 'webp';
-            $kind = 'image';
-            break;
-        case 'image/gif':
-            $ext = 'gif';
-            $kind = 'image';
-            break;
-        case 'image/heic':
-        case 'image/heif':
-            $ext = 'heic';
-            $kind = 'image';
-            break;
-        case 'video/mp4':
-            $ext = 'mp4';
-            $kind = 'video';
-            $maxForType = $videoMax;
-            break;
-        case 'video/webm':
-            $ext = 'webm';
-            $kind = 'video';
-            $maxForType = $videoMax;
-            break;
-        case 'video/quicktime':
-            $ext = 'mov';
-            $kind = 'video';
-            $maxForType = $videoMax;
-            break;
-        case 'video/3gpp':
-        case 'video/3gp':
-            $ext = '3gp';
-            $kind = 'video';
-            $maxForType = $videoMax;
-            break;
-        case 'application/octet-stream':
-            $orig = strtolower((string) ($file['name'] ?? ''));
-            if (preg_match('/\.(mp4|mov|webm|3gp)$/i', $orig, $m)) {
-                $ext = strtolower($m[1]);
-                $kind = 'video';
-                $maxForType = $videoMax;
-                break;
-            }
-            // fall through
-        default:
-            throw new RtsCaseException('Unsupported type (use JPG/PNG/WebP/GIF or MP4/WebM/MOV)', 'unsupported_type', 415);
-    }
-    if ($size > $maxForType) {
-        $mb = (int) round($maxForType / (1024 * 1024));
-        throw new RtsCaseException(
-            'File too large (max about ' . $mb . 'MB for ' . ($kind === 'video' ? 'video' : 'images') . ')',
-            'file_too_large',
-            413
+    try {
+        return rts_documentation_save_upload(
+            $tmp,
+            $size,
+            isset($file['name']) ? (string) $file['name'] : null,
+            $recordDate
         );
+    } catch (RuntimeException $e) {
+        $msg = $e->getMessage();
+        if (str_contains($msg, 'too large')) {
+            throw new RtsCaseException($msg, 'file_too_large', 413);
+        }
+        if (str_contains($msg, 'Unsupported type')) {
+            throw new RtsCaseException($msg, 'unsupported_type', 415);
+        }
+        throw new RtsCaseException($msg, 'upload_failed', 400);
     }
-    $targetDir = rts_storage_dir(RTS_STORAGE_BUCKET_RTS);
-    $prefix = $kind === 'video' ? 'rtsvid_' : 'rtsdoc_';
-    $name = $prefix . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-    $targetPath = $targetDir . '/' . $name;
-    if (!move_uploaded_file($tmp, $targetPath)) {
-        throw new RtsCaseException('Could not save uploaded file', 'upload_failed', 500);
-    }
-
-    return [
-        'file_name' => $name,
-        'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $name),
-        'media_kind' => $kind,
-    ];
 }

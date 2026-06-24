@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-24T10:32:10+02:00
+generated: 2026-06-24T11:06:31+02:00
 type: memory-bank
 ---
 
@@ -49,7 +49,7 @@ type: memory-bank
 | [[modules/pdf_to_excel]] | 15 |
 | [[modules/pos_discount_requests]] | 10 |
 | [[modules/qr_decode]] | 13 |
-| [[modules/rts_attachments]] | 5 |
+| [[modules/rts_attachments]] | 6 |
 | [[modules/rts_case_handlers]] | 26 |
 | [[modules/rts_claim_status]] | 3 |
 | [[modules/rts_damaged_use]] | 4 |
@@ -58,7 +58,7 @@ type: memory-bank
 | [[modules/rts_products]] | 14 |
 | [[modules/rts_schema]] | 13 |
 | [[modules/rts_shop_couriers]] | 2 |
-| [[modules/rts_storage]] | 12 |
+| [[modules/rts_storage]] | 14 |
 | [[modules/shopee_spx_packing_list]] | 4 |
 | [[modules/shopee_spx_product_info]] | 12 |
 | [[modules/sp_sort_service]] | 26 |

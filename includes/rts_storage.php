@@ -87,12 +87,39 @@ function rts_storage_deliveries_month_key(string $deliveryDate): string
 }
 
 /**
+ * Month segment for RTS documentation (upload month). Optional YYYY-MM-DD uses that month; else today.
+ */
+function rts_storage_rts_month_key(?string $recordDate = null): string
+{
+    $recordDate = $recordDate !== null ? trim($recordDate) : '';
+    if ($recordDate !== '' && preg_match('/^(\d{4}-\d{2})(?:-\d{2})?$/', $recordDate, $m)) {
+        return $m[1];
+    }
+
+    return date('Y-m');
+}
+
+/**
  * Absolute directory for a delivery month (creates deliveries_documentation/YYYY-MM/).
  */
 function rts_storage_dir_deliveries_month(string $deliveryDate): string
 {
     $month = rts_storage_deliveries_month_key($deliveryDate);
     $dir = rts_storage_dir(RTS_STORAGE_BUCKET_DELIVERIES) . '/' . $month;
+    if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+        throw new RuntimeException('Could not create storage directory: ' . $dir);
+    }
+
+    return $dir;
+}
+
+/**
+ * Absolute directory for RTS documentation month (creates rts_documentation/YYYY-MM/).
+ */
+function rts_storage_dir_rts_month(?string $recordDate = null): string
+{
+    $month = rts_storage_rts_month_key($recordDate);
+    $dir = rts_storage_dir(RTS_STORAGE_BUCKET_RTS) . '/' . $month;
     if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
         throw new RuntimeException('Could not create storage directory: ' . $dir);
     }
@@ -112,7 +139,7 @@ function rts_storage_normalize_stored_filename(string $bucket, string $stored): 
         return '';
     }
 
-    if ($bucket === RTS_STORAGE_BUCKET_DELIVERIES) {
+    if ($bucket === RTS_STORAGE_BUCKET_DELIVERIES || $bucket === RTS_STORAGE_BUCKET_RTS) {
         if (preg_match('#^\d{4}-\d{2}/[a-zA-Z0-9][a-zA-Z0-9._-]*$#', $stored)) {
             return $stored;
         }
@@ -157,8 +184,8 @@ function rts_storage_public_prefix(string $bucket, string $relativeToApp = ''): 
 {
     $rel = $relativeToApp !== '' ? rtrim($relativeToApp, '/') . '/' : '';
 
-    // Delivery photos use monthly subfolders; serve via PHP (works with ngrok, no /rts_storage alias).
-    if ($bucket === RTS_STORAGE_BUCKET_DELIVERIES) {
+    // Monthly subfolders; serve via PHP (works with ngrok, no /rts_storage alias).
+    if ($bucket === RTS_STORAGE_BUCKET_DELIVERIES || $bucket === RTS_STORAGE_BUCKET_RTS) {
         return $rel . 'api/storage_media.php?b=' . rawurlencode($bucket) . '&f=';
     }
 
@@ -227,8 +254,8 @@ function rts_storage_resolve_file(string $bucket, string $filename): ?string
         return $path;
     }
 
-    // Legacy rows: flat filename on disk may live under deliveries_documentation/YYYY-MM/.
-    if ($bucket === RTS_STORAGE_BUCKET_DELIVERIES && !str_contains($safe, '/')) {
+    // Legacy rows: flat filename on disk may live under bucket/YYYY-MM/.
+    if (($bucket === RTS_STORAGE_BUCKET_DELIVERIES || $bucket === RTS_STORAGE_BUCKET_RTS) && !str_contains($safe, '/')) {
         $matches = glob(rts_storage_dir($bucket) . '/*/' . $safe);
         if (is_array($matches)) {
             foreach ($matches as $candidate) {

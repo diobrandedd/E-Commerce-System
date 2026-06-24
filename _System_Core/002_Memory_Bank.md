@@ -585,3 +585,7 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 - **What we did:** When CSR saves Record RTS, matching `online_order_parcels` row (by normalized tracking) flips to `rts` with `rts_case_id` + `status_before_rts`; void restores prior status. Online Parcels filter/badge for RTS.
 - **Migration:** `sql/migration_phase49_online_parcels_rts_status.sql` — run `php tools/apply_migration_phase49.php` per environment.
 - **Record:** [[problems/records/2026-06-19_online-parcels-rts-status-sync]]
+
+### 2026-06-24 — RTS documentation monthly folders
+- **What we did:** RTS proof uploads now save under `rts_documentation/YYYY-MM/` (same pattern as deliveries); DB stores `YYYY-MM/filename`; legacy flat files still served.
+- **Record:** [[problems/records/2026-06-24_rts-documentation-monthly-folders]]

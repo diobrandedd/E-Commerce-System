@@ -5,7 +5,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 
 require_once dirname(__DIR__) . '/includes/auth.php';
-require_once dirname(__DIR__) . '/includes/rts_storage.php';
+require_once dirname(__DIR__) . '/includes/rts_attachments.php';
 rts_session_start();
 $authUser = rts_auth_user();
 if (!rts_can_access_rts_admin($authUser)) {
@@ -47,82 +47,31 @@ if ($tmp === '' || $size < 1) {
     exit;
 }
 
-$finfo = new finfo(FILEINFO_MIME_TYPE);
-$mime = (string) $finfo->file($tmp);
-
-$imageMax = 12 * 1024 * 1024;
-$videoMax = 120 * 1024 * 1024;
-
-$kind = '';
-$ext = '';
-$maxForType = $imageMax;
-
-switch ($mime) {
-    case 'image/jpeg':
-        $ext = 'jpg';
-        $kind = 'image';
-        break;
-    case 'image/png':
-        $ext = 'png';
-        $kind = 'image';
-        break;
-    case 'image/webp':
-        $ext = 'webp';
-        $kind = 'image';
-        break;
-    case 'image/gif':
-        $ext = 'gif';
-        $kind = 'image';
-        break;
-    case 'video/mp4':
-        $ext = 'mp4';
-        $kind = 'video';
-        $maxForType = $videoMax;
-        break;
-    case 'video/webm':
-        $ext = 'webm';
-        $kind = 'video';
-        $maxForType = $videoMax;
-        break;
-    case 'video/quicktime':
-        $ext = 'mov';
-        $kind = 'video';
-        $maxForType = $videoMax;
-        break;
-    default:
-        http_response_code(415);
-        echo json_encode(['ok' => false, 'error' => 'Unsupported type (use JPG/PNG/WebP/GIF or MP4/WebM/MOV)']);
-        exit;
-}
-
-if ($size > $maxForType) {
-    http_response_code(413);
-    $mb = (int) round($maxForType / (1024 * 1024));
-    echo json_encode(['ok' => false, 'error' => 'File too large (max about ' . $mb . 'MB for this type)']);
-    exit;
-}
+$recordDate = isset($_POST['record_date']) ? trim((string) $_POST['record_date']) : null;
 
 try {
-    $targetDir = rts_storage_dir(RTS_STORAGE_BUCKET_RTS);
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Could not create documentation directory']);
-    exit;
-}
-
-$prefix = $kind === 'video' ? 'rtsvid_' : 'rtsdoc_';
-$name = $prefix . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-$targetPath = $targetDir . '/' . $name;
-
-if (!move_uploaded_file($tmp, $targetPath)) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Could not save uploaded file']);
+    $saved = rts_documentation_save_upload(
+        $tmp,
+        $size,
+        isset($f['name']) ? (string) $f['name'] : null,
+        $recordDate !== '' ? $recordDate : null
+    );
+} catch (RuntimeException $e) {
+    $msg = $e->getMessage();
+    if (str_contains($msg, 'too large')) {
+        http_response_code(413);
+    } elseif (str_contains($msg, 'Unsupported type')) {
+        http_response_code(415);
+    } else {
+        http_response_code(400);
+    }
+    echo json_encode(['ok' => false, 'error' => $msg], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 echo json_encode([
     'ok' => true,
-    'file_name' => $name,
-    'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $name),
-    'media_kind' => $kind,
+    'file_name' => $saved['file_name'],
+    'file_url' => $saved['file_url'],
+    'media_kind' => $saved['media_kind'],
 ], JSON_UNESCAPED_UNICODE);
