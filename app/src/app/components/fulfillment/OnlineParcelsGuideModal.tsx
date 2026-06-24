@@ -67,7 +67,7 @@ export function OnlineParcelsGuideModal({
           {isCsr ? (
             <ol className="list-decimal pl-4 space-y-1.5">
               <li>Search or scan tracking to answer customer or courier inquiries.</li>
-              <li>Click a row for full detail — items, order no., packing photo when shipped.</li>
+              <li>Edit contents (packing only) — same item builder as VIP Online Orders; raw text fallback for odd marketplace lines.</li>
               <li>Filter by status to find packing vs shipped parcels — use <strong className="text-foreground">RTS</strong> after recording a return on Record RTS.</li>
             </ol>
           ) : isPm ? (
