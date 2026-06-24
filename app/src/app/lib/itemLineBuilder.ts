@@ -156,6 +156,33 @@ export function detectDeptProduct(segment: string): DeptProductKey | null {
   return null;
 }
 
+const DEPT_QTY_LEAD_RE =
+  /^(?:paragis|jar\s*cacao|black\s*rice|honey\s*comb|\bbrc\b|pito[\s-]*pito)/i;
+const DEPT_QTY_TRAIL_RE =
+  /\b(?:paragis(?:\s*tea)?|jar\s*cacao|black\s*rice\s*coffee|honey\s*comb|\bbrc\b)\s*[x×]\s*(\d+)\s*$/i;
+
+/** Qty for dept catalog lines — VIP often uses `1 x 2 Paragis Tea` (order prefix + real qty). */
+export function extractDeptQty(segment: string): number {
+  const trail = segment.match(DEPT_QTY_TRAIL_RE);
+  if (trail) return Math.max(1, parseInt(trail[1]!, 10));
+
+  const oneXN = segment.match(/^1\s*[x×]\s*(\d+)\s+(?=paragis|jar\s*cacao|black\s*rice|honey\s*comb|\bbrc\b|pito)/i);
+  if (oneXN) return Math.max(1, parseInt(oneXN[1]!, 10));
+
+  const lead = segment.match(/^(\d+)\s+(?=paragis|jar\s*cacao|black\s*rice|honey\s*comb|\bbrc\b|pito)/i);
+  if (lead) return Math.max(1, parseInt(lead[1]!, 10));
+
+  if (DEPT_QTY_LEAD_RE.test(segment.trim())) {
+    return 1;
+  }
+
+  return extractQty(segment);
+}
+
+export function isDeptBuilderProduct(product: BuilderProduct): boolean {
+  return !isHoneyBuilderProduct(product) && product !== "other";
+}
+
 /** J&T Item Name: "3L HONEY(ALL DARK)1 PC 350ML(DARK)" — no separator before trailing bulk ml. */
 function splitJntConcatenatedBulkMl(part: string): string[] {
   const m = part.match(/^(.*?)(\d+\s*PC\s*(?:250|350)\s*ML.*)$/i);
@@ -221,6 +248,7 @@ export interface InterpretResult {
   needsMainPick: boolean;
   needs350Pick: boolean;
   needsBuilder: boolean;
+  needsDeptConfirm: boolean;
   mainProduct: HoneySizeProduct;
 }
 
@@ -325,15 +353,15 @@ function detectVariantsFromText(text: string, size: HoneySizeProduct): string | 
 function parseSegment(segment: string, variantHint = ""): BuilderLine | null {
   const dept = detectDeptProduct(segment);
   if (dept && !/honey/i.test(segment.replace(/jar\s*cacao/i, ""))) {
-    return { product: dept, qty: extractQty(segment) };
+    return { product: dept, qty: extractDeptQty(segment) };
   }
   if (dept && /jar\s*cacao/i.test(segment) && !/honey/i.test(segment)) {
-    return { product: dept, qty: extractQty(segment) };
+    return { product: dept, qty: extractDeptQty(segment) };
   }
 
   const size = detectHoneySize(segment);
   if (size === "other") {
-    if (dept) return { product: dept, qty: extractQty(segment) };
+    if (dept) return { product: dept, qty: extractDeptQty(segment) };
     return null;
   }
 
@@ -371,6 +399,7 @@ export function interpretRawText(raw: string): InterpretResult {
     needsMainPick: false,
     needs350Pick: false,
     needsBuilder: false,
+    needsDeptConfirm: false,
     mainProduct: "other",
   };
   if (!raw?.trim()) return empty;
@@ -388,7 +417,7 @@ export function interpretRawText(raw: string): InterpretResult {
     const deptOnly = detectDeptProduct(seg);
     const hasHoney = /honey|250\s*ml|350\s*ml|gallon|g\s*honey|B2T1|B1T2|\d\s*L/i.test(seg);
     if (deptOnly && !hasHoney) {
-      lines.push({ product: deptOnly, qty: extractQty(seg) });
+      lines.push({ product: deptOnly, qty: extractDeptQty(seg) });
       continue;
     }
     const line = parseSegment(seg, variantHint);
@@ -417,13 +446,15 @@ export function interpretRawText(raw: string): InterpretResult {
   }
 
   const packerLine = composePackerLine(lines);
+  const needsDeptConfirm = lines.some(l => isDeptBuilderProduct(l.product));
 
   return {
     lines,
     packerLine,
     needsMainPick,
     needs350Pick,
-    needsBuilder: needsMainPick || needs350Pick || lines.length === 0,
+    needsBuilder: needsMainPick || needs350Pick || lines.length === 0 || needsDeptConfirm,
+    needsDeptConfirm,
     mainProduct,
   };
 }

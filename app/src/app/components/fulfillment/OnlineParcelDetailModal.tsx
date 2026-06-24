@@ -4,7 +4,7 @@ import { Loader2, Package, Pencil } from "lucide-react";
 import { AppErrorBanner, AppSuccessNotice } from "@/app/components/layout/appFeedbackMotion";
 import { FulfillmentModal, FulfillmentPressable } from "@/app/components/csr/onlineFulfillmentMotion";
 import type { Role } from "@/app/context/AuthContext";
-import { pipelineLabel } from "@/app/lib/duplicateTrackingUtils";
+import { partnerSellerLabel, pipelineLabel } from "@/app/lib/duplicateTrackingUtils";
 import {
   parcelsParsePreview,
   parcelsUpdateItems,
@@ -29,10 +29,19 @@ function ParcelStatusBadge({ status }: { status: OnlineParcel["status"] }) {
     on_hold: "bg-violet-100 text-violet-900 border-violet-200",
     cancelled: "bg-red-100 text-red-900 border-red-200",
     returned: "bg-secondary text-muted-foreground border-border",
+    rts: "bg-orange-100 text-orange-900 border-orange-200",
+  };
+  const labels: Record<OnlineParcel["status"], string> = {
+    packing: "Packing",
+    shipped: "Shipped",
+    on_hold: "On hold",
+    cancelled: "Cancelled",
+    returned: "Returned",
+    rts: "RTS",
   };
   return (
-    <span className={`inline-flex text-xs font-semibold capitalize px-2.5 py-0.5 rounded-md border ${styles[status] ?? "bg-secondary text-muted-foreground border-border"}`}>
-      {status.replace(/_/g, " ")}
+    <span className={`inline-flex text-xs font-semibold px-2.5 py-0.5 rounded-md border ${styles[status] ?? "bg-secondary text-muted-foreground border-border"}`}>
+      {labels[status] ?? status.replace(/_/g, " ")}
     </span>
   );
 }
@@ -209,9 +218,12 @@ export function OnlineParcelDetailModal({
               <DetailRow label="Recipient" value={detail.recipient_name} />
               <DetailRow label="Courier" value={detail.courier} />
               <DetailRow label="Pipeline" value={pipelineLabel(detail.source_pipeline)} />
+              <DetailRow label="Partner seller" value={partnerSellerLabel(detail.partner_seller)} />
               <DetailRow label="Order no." value={detail.order_no} mono />
               <DetailRow label="CSR batch" value={detail.csr_batch_id ? `#${detail.csr_batch_id}` : null} />
               <DetailRow label="Ship date" value={detail.ship_date} />
+              <DetailRow label="RTS recorded" value={detail.rts_recorded_at} />
+              <DetailRow label="RTS case" value={detail.rts_case_id ? `#${detail.rts_case_id}` : null} mono />
               <DetailRow label="Inventory deducted" value={detail.deducted_at} />
               <DetailRow label="Created" value={createdAt} />
             </dl>

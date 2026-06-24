@@ -32,11 +32,12 @@ _The CSR TL is the one that works with this task, sometimes CSR staffs_
 
 1. User opens feature side bar tab
 2. The system opens a modal saying proceed to creating batch of orders, buttons for Confirm and Cancel.
-3. clicking Confirm - User first needs to select which task to do, either process orders from partner sellers, process VIP orders, or process shopee spx orders (ours)
-4. When users select process orders from partner sellers (the 3 workers) the system will ask to import a pdf, and an excel to Stamp the waybill with the excel items. 
-5. if the user selects process VIP orders, the system will ask the user to import a excel for the system to edit the order remarks, if detected no variants like it currently does, the system will ask for the user to select variant like it currently does. Then when done with this step and confirmed that variants has been selected successfully, the system will now go and make the user download the excel and then wait for the user to import a pdf for the waybills. When the user has imported the PDF containing the waybills for that excel, the system will now proceed to stamp on the waybills. 
+3. clicking Confirm - User first needs to select which task to do: partner sellers, VIP, Shopee SPX, or TikTok.
+4. When users select process orders from partner sellers (the 3 workers: **Ian, Jono, Joven**) the system will ask to import a pdf, and an excel to Stamp the waybill with the excel items. **CSR must pick which partner seller** before stamp.
+5. if the user selects process VIP orders, the system will ask the user to import a excel for the system to edit the order remarks, if detected no variants like it currently does, the system will ask for the user to select variant like it currently does. Then when done with this step and confirmed that variants has been selected successfully, the system will now go and make the user download the excel and then wait for the user to import a pdf for the waybills. When the user has imported the PDF containing the waybills for that excel, the system will now proceed to stamp on the waybills.
 6. if the user selects process shopee spx orders, then the system asks to import the pdf file, and then the system creates an excel with the same format as the workers (3 partners) with the pdf contents. now since the pdf reader can only get the name, courier and tracking number column rows, the next step will be for the user to input every item for that tracking Name/tracking number to complete the excel, and then after than confirmation and then waybill stamper.
-7. after completing either, 4 5 or 6, the system will ask to continue doing other processes or done.
+6b. **TikTok** — colleague supplies iPYX-format Excel + PDF; stamper pipeline `tiktok` (no partner seller picker).
+7. after completing either pipeline step, the system will ask to continue doing other processes or done.
 8. if the user clicks done, every processes done will be saved into one excel for download. the format for the excel should be order no. name item/s column e blank, column F blank, Courier, and then Tracking number. Although some dont have order number, its fine leave blank.
 9. now the system will save it into the database and is marked as processed
 10. then the printed excel is given to the parcel packers

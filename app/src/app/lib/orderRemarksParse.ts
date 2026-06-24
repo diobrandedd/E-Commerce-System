@@ -25,6 +25,8 @@ export interface ParsedRemark {
   /** Structured lines from interpretRawText */
   builderLines?: BuilderLine[];
   needsBuilder?: boolean;
+  /** Paragis / Jar Cacao / etc. — CSR must confirm qty in builder */
+  needsDeptConfirm?: boolean;
 }
 
 export interface PresetOption {
@@ -155,6 +157,7 @@ export function parseRemarks(raw: string): ParsedRemark {
       variantRaw: "",
       builderLines: interpreted.lines,
       needsBuilder: interpreted.needsBuilder,
+      needsDeptConfirm: interpreted.needsDeptConfirm,
     };
   }
 
@@ -182,6 +185,7 @@ export function parseRemarks(raw: string): ParsedRemark {
     variantRaw,
     builderLines: interpreted.lines,
     needsBuilder: interpreted.needsBuilder || interpreted.needsMainPick || interpreted.needs350Pick,
+    needsDeptConfirm: interpreted.needsDeptConfirm,
   };
 }
 
@@ -317,6 +321,7 @@ export function isRowFullyResolved(raw: string, parsed: ParsedRemark, resolution
       l => isHoneyBuilderProduct(l.product) && l.product !== "other" && !builderLineIsValid(l),
     );
     if (invalidHoney) return false;
+    if (parsed.needsDeptConfirm && !resolution?.finalRemark) return false;
     const multiItem = (parsed.builderLines?.length ?? 0) > 1;
     if (multiItem && !resolution?.finalRemark) return false;
   }
@@ -459,7 +464,7 @@ export type RowCategory = "auto" | "ambiguous" | "passthrough" | "skipped";
 export function categorizeRow(raw: string, parsed: ParsedRemark): RowCategory {
   if (!raw?.trim()) return "skipped";
   if (isAmbiguousRemark(raw, parsed)) return "ambiguous";
-  if (parsed.product === "other" && !parsed.needsEdit) return "passthrough";
+  if (parsed.product === "other" && !parsed.needsEdit && !parsed.needsDeptConfirm) return "passthrough";
   const main = resolveMainVariant(raw, parsed);
   if (main && !needsFree350Pick(raw, parsed)) return "auto";
   if (!parsed.needsEdit && main) return "auto";
@@ -481,6 +486,7 @@ export function productLabel(product: HoneyProduct): string {
 }
 
 export function cardSubtitle(raw: string, parsed: ParsedRemark, steps: CardSteps): string {
+  if (parsed.needsDeptConfirm) return "Confirm product lines and quantities";
   if (steps.showMain) return "Pick variant for main product";
   if (steps.showFree350 && steps.mainLabel) {
     return `3L: ${steps.mainLabel} (from order) · pick 350ml`;

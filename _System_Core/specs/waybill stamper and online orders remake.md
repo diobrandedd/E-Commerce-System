@@ -38,7 +38,8 @@ Executive, CSR TL, CSR staff
 
 ## Data & integrity (conceptual)
 
-item/s, tracking number
+- **Online Parcels registry:** promoted from CSR batch finalize; statuses include `packing`, `shipped`, `on_hold`, `cancelled`, `returned`, **`rts`**; keyed by tracking number and item lines.
+- **RTS sync (phase 49):** saving Record RTS marks matching parcel `rts` (skipped if no parcel or status `cancelled`); voiding RTS case restores `status_before_rts`.
 
 ## UI/UX intent (if applicable)
 

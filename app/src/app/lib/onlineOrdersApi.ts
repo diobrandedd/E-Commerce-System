@@ -7,6 +7,7 @@ import type {
   OnlineOrdersLineInput,
   OnlineOrdersPipeline,
   OnlineOrdersPrepResult,
+  PartnerSeller,
   PartnerStampResult,
 } from "@/app/lib/onlineOrdersTypes";
 
@@ -77,6 +78,7 @@ export async function onlineOrdersRunUnifiedStamp(
   excelToken: string,
   pipeline: OnlineOrdersPipeline,
   excelTokens?: string[],
+  partnerSeller?: PartnerSeller | null,
 ): Promise<PartnerStampResult> {
   const raw = await api("online_orders.php", "run_unified_stamp", {
     method: "POST",
@@ -84,6 +86,7 @@ export async function onlineOrdersRunUnifiedStamp(
       batch_id: batchId,
       pdf_tokens: pdfTokens,
       pipeline,
+      ...(partnerSeller ? { partner_seller: partnerSeller } : {}),
       ...(excelTokens?.length ? { excel_tokens: excelTokens } : { excel_token: excelToken }),
     },
   });

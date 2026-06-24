@@ -101,14 +101,18 @@ function online_parcels_ensure_schema(PDO $pdo): void
           `items_raw` TEXT NOT NULL,
           `items_parsed_json` JSON NULL,
           `recipient_name` VARCHAR(255) NOT NULL DEFAULT "",
-          `courier` VARCHAR(64) NOT NULL DEFAULT "",
+          `courier` VARCHAR(191) NOT NULL DEFAULT "",
           `order_no` VARCHAR(64) NULL DEFAULT NULL,
-          `source_pipeline` ENUM("partner","vip","shopee_spx") NOT NULL,
-          `status` ENUM("packing","shipped","on_hold","cancelled","returned") NOT NULL DEFAULT "packing",
+          `source_pipeline` ENUM("partner","vip","shopee_spx","tiktok") NOT NULL,
+          `partner_seller` ENUM("ian","jono","joven") NULL DEFAULT NULL,
+          `status` ENUM("packing","shipped","on_hold","cancelled","returned","rts") NOT NULL DEFAULT "packing",
           `ship_date` DATE NULL DEFAULT NULL,
           `return_date` DATE NULL DEFAULT NULL,
           `shipped_by_user_id` INT UNSIGNED NULL DEFAULT NULL,
           `deducted_at` DATETIME NULL DEFAULT NULL,
+          `rts_case_id` INT UNSIGNED NULL DEFAULT NULL,
+          `status_before_rts` ENUM("packing","shipped","on_hold","cancelled","returned") NULL DEFAULT NULL,
+          `rts_recorded_at` DATETIME NULL DEFAULT NULL,
           `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (`id`),
           UNIQUE KEY `uq_online_order_parcels_tracking` (`tracking_number`),
@@ -147,7 +151,7 @@ function online_parcels_ensure_schema(PDO $pdo): void
           `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
           `online_parcel_id` INT UNSIGNED NOT NULL,
           `tracking_number` VARCHAR(96) NOT NULL,
-          `previous_status` ENUM("packing","shipped","on_hold","cancelled","returned") NOT NULL,
+          `previous_status` ENUM("packing","shipped","on_hold","cancelled","returned","rts") NOT NULL,
           `inventory_reverted` TINYINT(1) NOT NULL DEFAULT 0,
           `cancel_source` VARCHAR(32) NOT NULL DEFAULT "scanner",
           `note` VARCHAR(255) NULL DEFAULT NULL,
@@ -159,7 +163,70 @@ function online_parcels_ensure_schema(PDO $pdo): void
           KEY `idx_dce_created_at` (`created_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+
+    online_parcels_apply_rts_schema_migrations($pdo);
+
     $done = true;
+}
+
+function online_parcels_apply_rts_schema_migrations(PDO $pdo): void
+{
+    static $migrated = false;
+    if ($migrated) {
+        return;
+    }
+    $migrated = true;
+
+    try {
+        $st = $pdo->query(
+            "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'online_order_parcels'
+               AND COLUMN_NAME = 'status'
+             LIMIT 1"
+        );
+        $statusType = (string) ($st->fetchColumn() ?: '');
+        if ($statusType !== '' && strpos($statusType, 'rts') === false) {
+            $pdo->exec(
+                'ALTER TABLE `online_order_parcels` MODIFY COLUMN `status`
+                 ENUM("packing","shipped","on_hold","cancelled","returned","rts") NOT NULL DEFAULT "packing"'
+            );
+        }
+
+        $stDce = $pdo->query(
+            "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'delivery_cancel_events'
+               AND COLUMN_NAME = 'previous_status'
+             LIMIT 1"
+        );
+        $dceType = (string) ($stDce->fetchColumn() ?: '');
+        if ($dceType !== '' && strpos($dceType, 'rts') === false) {
+            $pdo->exec(
+                'ALTER TABLE `delivery_cancel_events` MODIFY COLUMN `previous_status`
+                 ENUM("packing","shipped","on_hold","cancelled","returned","rts") NOT NULL'
+            );
+        }
+
+        $stCol = $pdo->query(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'online_order_parcels'
+               AND COLUMN_NAME = 'rts_case_id'
+             LIMIT 1"
+        );
+        if ($stCol->fetchColumn() === false) {
+            $pdo->exec(
+                'ALTER TABLE `online_order_parcels`
+                 ADD COLUMN `rts_case_id` INT UNSIGNED NULL DEFAULT NULL AFTER `deducted_at`,
+                 ADD COLUMN `status_before_rts` ENUM("packing","shipped","on_hold","cancelled","returned") NULL DEFAULT NULL AFTER `rts_case_id`,
+                 ADD COLUMN `rts_recorded_at` DATETIME NULL DEFAULT NULL AFTER `status_before_rts`,
+                 ADD KEY `idx_parcels_rts_case` (`rts_case_id`)'
+            );
+        }
+    } catch (Throwable) {
+        // Dev DB without information_schema access — run tools/apply_migration_phase49.php
+    }
 }
 
 /**
@@ -170,7 +237,7 @@ function online_parcels_promote_from_batch(PDO $pdo, int $batchId): array
     online_parcels_ensure_schema($pdo);
 
     $st = $pdo->prepare(
-        'SELECT id, order_no, recipient_name, items, courier, tracking_number, source_pipeline
+        'SELECT id, order_no, recipient_name, items, courier, tracking_number, source_pipeline, partner_seller
          FROM csr_online_order_lines WHERE batch_id = ? ORDER BY id ASC'
     );
     $st->execute([$batchId]);
@@ -183,8 +250,8 @@ function online_parcels_promote_from_batch(PDO $pdo, int $batchId): array
     $ins = $pdo->prepare(
         'INSERT INTO online_order_parcels (
             csr_batch_id, csr_line_id, tracking_number, items_raw, items_parsed_json,
-            recipient_name, courier, order_no, source_pipeline, status
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "packing")'
+            recipient_name, courier, order_no, source_pipeline, partner_seller, status
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "packing")'
     );
 
     foreach ($lines as $line) {
@@ -239,6 +306,8 @@ function online_parcels_promote_from_batch(PDO $pdo, int $batchId): array
             (string) ($line['courier'] ?? ''),
             $line['order_no'] !== null && $line['order_no'] !== '' ? (string) $line['order_no'] : null,
             (string) ($line['source_pipeline'] ?? 'partner'),
+            isset($line['partner_seller']) && $line['partner_seller'] !== '' && $line['partner_seller'] !== null
+                ? (string) $line['partner_seller'] : null,
         ]);
         $promoted++;
     }
@@ -270,6 +339,114 @@ function online_parcels_get_by_tracking(PDO $pdo, string $tracking): ?array
     $st->execute([$tracking]);
 
     return online_parcels_format_row($st->fetch(PDO::FETCH_ASSOC) ?: null, $pdo);
+}
+
+/**
+ * Mark matching online parcel as RTS when CSR records an RTS case (by normalized tracking).
+ *
+ * @return array<string, mixed>|null Updated parcel row, or null if no parcel / skipped
+ */
+function online_parcels_mark_rts(PDO $pdo, string $tracking, int $rtsCaseId): ?array
+{
+    online_parcels_ensure_schema($pdo);
+    $tracking = online_parcels_normalize_tracking($tracking);
+    if ($tracking === '' || $rtsCaseId < 1) {
+        return null;
+    }
+
+    $st = $pdo->prepare(
+        'SELECT id, status, rts_case_id FROM online_order_parcels WHERE tracking_number = ? LIMIT 1'
+    );
+    $st->execute([$tracking]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        return null;
+    }
+
+    $parcelId = (int) $row['id'];
+    $currentStatus = (string) $row['status'];
+    $existingCaseId = isset($row['rts_case_id']) ? (int) $row['rts_case_id'] : 0;
+
+    if ($currentStatus === 'rts') {
+        if ($existingCaseId === $rtsCaseId) {
+            return online_parcels_get_by_id($pdo, $parcelId);
+        }
+
+        return null;
+    }
+    if ($currentStatus === 'cancelled') {
+        return null;
+    }
+
+    $lock = $pdo->prepare('SELECT id, status, rts_case_id FROM online_order_parcels WHERE id = ? FOR UPDATE');
+    $lock->execute([$parcelId]);
+    $locked = $lock->fetch(PDO::FETCH_ASSOC);
+    if ($locked === false) {
+        return null;
+    }
+
+    $lockedStatus = (string) $locked['status'];
+    $lockedCaseId = isset($locked['rts_case_id']) ? (int) $locked['rts_case_id'] : 0;
+    if ($lockedStatus === 'rts') {
+        if ($lockedCaseId === $rtsCaseId) {
+            return online_parcels_get_by_id($pdo, $parcelId);
+        }
+
+        return null;
+    }
+    if ($lockedStatus === 'cancelled') {
+        return null;
+    }
+
+    $upd = $pdo->prepare(
+        'UPDATE online_order_parcels
+         SET status = "rts",
+             status_before_rts = ?,
+             rts_case_id = ?,
+             rts_recorded_at = NOW(),
+             return_date = CURDATE()
+         WHERE id = ?'
+    );
+    $upd->execute([$lockedStatus, $rtsCaseId, $parcelId]);
+
+    return online_parcels_get_by_id($pdo, $parcelId);
+}
+
+/**
+ * Restore parcel status when an RTS case is voided.
+ */
+function online_parcels_revert_rts_by_case(PDO $pdo, int $rtsCaseId): void
+{
+    if ($rtsCaseId < 1) {
+        return;
+    }
+    online_parcels_ensure_schema($pdo);
+
+    $st = $pdo->prepare(
+        'SELECT id, status_before_rts FROM online_order_parcels
+         WHERE rts_case_id = ? AND status = "rts" LIMIT 1 FOR UPDATE'
+    );
+    $st->execute([$rtsCaseId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        return;
+    }
+
+    $before = trim((string) ($row['status_before_rts'] ?? ''));
+    if ($before === '' || !in_array($before, ['packing', 'shipped', 'on_hold', 'cancelled', 'returned'], true)) {
+        return;
+    }
+
+    $upd = $pdo->prepare(
+        'UPDATE online_order_parcels
+         SET status = ?,
+             rts_case_id = NULL,
+             status_before_rts = NULL,
+             rts_recorded_at = NULL,
+             return_date = NULL
+         WHERE id = ?'
+    );
+    $upd->execute([$before, (int) $row['id']]);
 }
 
 /**
@@ -491,10 +668,16 @@ function online_parcels_format_row($row, ?PDO $pdo = null): ?array
         'courier' => (string) $row['courier'],
         'order_no' => $row['order_no'] !== null ? (string) $row['order_no'] : null,
         'source_pipeline' => (string) $row['source_pipeline'],
+        'partner_seller' => isset($row['partner_seller']) && $row['partner_seller'] !== ''
+            ? (string) $row['partner_seller'] : null,
         'status' => (string) $row['status'],
         'ship_date' => $row['ship_date'] !== null ? (string) $row['ship_date'] : null,
         'return_date' => $row['return_date'] !== null ? (string) $row['return_date'] : null,
         'deducted_at' => $row['deducted_at'] !== null ? (string) $row['deducted_at'] : null,
+        'rts_case_id' => isset($row['rts_case_id']) && $row['rts_case_id'] !== null
+            ? (int) $row['rts_case_id'] : null,
+        'rts_recorded_at' => isset($row['rts_recorded_at']) && $row['rts_recorded_at'] !== null
+            ? (string) $row['rts_recorded_at'] : null,
         'created_at' => (string) $row['created_at'],
         'packing_photo' => null,
     ];
@@ -507,37 +690,180 @@ function online_parcels_format_row($row, ?PDO $pdo = null): ?array
 }
 
 /**
- * @return array{rows: list<array<string, mixed>>, total: int}
+ * @param array{
+ *   q?: string,
+ *   status?: string,
+ *   page?: int,
+ *   per_page?: int,
+ *   date_from?: string,
+ *   date_to?: string,
+ *   partner_seller?: string,
+ *   source_pipeline?: string,
+ *   courier?: string,
+ *   sort?: string,
+ *   dir?: string
+ * } $filters
+ * @return array{where: string, params: list<mixed>, order_by: string}
  */
-function online_parcels_list(PDO $pdo, string $q, string $status, int $page, int $perPage): array
+function online_parcels_list_query_parts(array $filters): array
 {
-    online_parcels_ensure_schema($pdo);
-    $page = max(1, $page);
-    $perPage = min(100, max(10, $perPage));
-    $offset = ($page - 1) * $perPage;
-
     $where = ['1=1'];
     $params = [];
+
+    $q = trim((string) ($filters['q'] ?? ''));
     if ($q !== '') {
-        $where[] = '(tracking_number LIKE ? OR recipient_name LIKE ? OR items_raw LIKE ? OR order_no LIKE ?)';
+        $where[] = '(tracking_number LIKE ? OR recipient_name LIKE ? OR items_raw LIKE ? OR order_no LIKE ? OR courier LIKE ?)';
         $like = '%' . $q . '%';
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
         $params[] = $like;
+        $params[] = $like;
     }
-    if ($status !== '' && in_array($status, ['packing', 'shipped', 'on_hold', 'cancelled', 'returned'], true)) {
+
+    $status = trim((string) ($filters['status'] ?? ''));
+    if ($status !== '' && in_array($status, ['packing', 'shipped', 'on_hold', 'cancelled', 'returned', 'rts'], true)) {
         $where[] = 'status = ?';
         $params[] = $status;
     }
-    $whereSql = implode(' AND ', $where);
+
+    $dateFrom = trim((string) ($filters['date_from'] ?? ''));
+    if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+        $where[] = 'created_at >= ?';
+        $params[] = $dateFrom . ' 00:00:00';
+    }
+    $dateTo = trim((string) ($filters['date_to'] ?? ''));
+    if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+        $where[] = 'created_at <= ?';
+        $params[] = $dateTo . ' 23:59:59';
+    }
+
+    $partnerSeller = strtolower(trim((string) ($filters['partner_seller'] ?? '')));
+    if ($partnerSeller !== '' && in_array($partnerSeller, ['ian', 'jono', 'joven'], true)) {
+        $where[] = 'partner_seller = ?';
+        $params[] = $partnerSeller;
+    }
+
+    $pipeline = strtolower(trim((string) ($filters['source_pipeline'] ?? '')));
+    $pipelines = ['partner', 'vip', 'shopee_spx', 'tiktok'];
+    if ($pipeline !== '' && in_array($pipeline, $pipelines, true)) {
+        $where[] = 'source_pipeline = ?';
+        $params[] = $pipeline;
+    }
+
+    $courier = trim((string) ($filters['courier'] ?? ''));
+    if ($courier !== '') {
+        $where[] = 'courier LIKE ?';
+        $params[] = '%' . $courier . '%';
+    }
+
+    $sortCol = strtolower(trim((string) ($filters['sort'] ?? 'created_at')));
+    $sortMap = [
+        'created_at' => 'created_at',
+        'order_no' => 'order_no',
+        'tracking_number' => 'tracking_number',
+        'courier' => 'courier',
+        'recipient_name' => 'recipient_name',
+    ];
+    $orderCol = $sortMap[$sortCol] ?? 'created_at';
+    $dir = strtolower(trim((string) ($filters['dir'] ?? 'desc'))) === 'asc' ? 'ASC' : 'DESC';
+
+    return [
+        'where' => implode(' AND ', $where),
+        'params' => $params,
+        'order_by' => $orderCol . ' ' . $dir . ', id DESC',
+    ];
+}
+
+/**
+ * @return array{couriers: list<string>, pipelines: list<string>}
+ */
+function online_parcels_filter_options(PDO $pdo): array
+{
+    online_parcels_ensure_schema($pdo);
+    $couriers = [];
+    $st = $pdo->query(
+        'SELECT DISTINCT courier FROM online_order_parcels
+         WHERE courier IS NOT NULL AND courier != ""
+         ORDER BY courier ASC LIMIT 200'
+    );
+    foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $c) {
+        $c = trim((string) $c);
+        if ($c !== '') {
+            $couriers[] = $c;
+        }
+    }
+
+    return [
+        'couriers' => $couriers,
+        'pipelines' => ['partner', 'vip', 'shopee_spx', 'tiktok'],
+        'partner_sellers' => ['ian', 'jono', 'joven'],
+    ];
+}
+
+/**
+ * @param list<int> $ids
+ * @return array{download_token: string, download_filename: string, row_count: int}
+ */
+function online_parcels_export_selected(PDO $pdo, array $ids): array
+{
+    online_parcels_ensure_schema($pdo);
+    require_once __DIR__ . '/online_orders_generator.php';
+
+    $ids = array_values(array_unique(array_filter(array_map(static fn ($id) => (int) $id, $ids), static fn ($id) => $id > 0)));
+    if ($ids === []) {
+        throw new RuntimeException('Select at least one parcel to export.');
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $st = $pdo->prepare(
+        "SELECT order_no, recipient_name, items_raw AS items, courier, tracking_number
+         FROM online_order_parcels WHERE id IN ({$placeholders}) ORDER BY id ASC"
+    );
+    $st->execute($ids);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    if ($rows === []) {
+        throw new RuntimeException('No parcels found for export.');
+    }
+
+    $metaJson = online_orders_build_print_workbook_meta($rows);
+    $token = online_orders_register_master_download($metaJson);
+    $meta = json_decode($metaJson, true);
+
+    return [
+        'download_token' => $token,
+        'download_filename' => is_array($meta) ? (string) ($meta['filename'] ?? 'export.xlsx') : 'export.xlsx',
+        'row_count' => count($rows),
+    ];
+}
+
+/**
+ * @return array{rows: list<array<string, mixed>>, total: int}
+ */
+function online_parcels_list(PDO $pdo, string $q, string $status, int $page, int $perPage, array $extra = []): array
+{
+    online_parcels_ensure_schema($pdo);
+    $page = max(1, $page);
+    $perPage = min(100, max(1, $perPage));
+    $offset = ($page - 1) * $perPage;
+
+    $filters = array_merge($extra, [
+        'q' => $q,
+        'status' => $status,
+        'page' => $page,
+        'per_page' => $perPage,
+    ]);
+    $parts = online_parcels_list_query_parts($filters);
+    $whereSql = $parts['where'];
+    $params = $parts['params'];
+    $orderBy = $parts['order_by'];
 
     $stc = $pdo->prepare("SELECT COUNT(*) FROM online_order_parcels WHERE {$whereSql}");
     $stc->execute($params);
     $total = (int) $stc->fetchColumn();
 
     $st = $pdo->prepare(
-        "SELECT * FROM online_order_parcels WHERE {$whereSql} ORDER BY id DESC LIMIT {$perPage} OFFSET {$offset}"
+        "SELECT * FROM online_order_parcels WHERE {$whereSql} ORDER BY {$orderBy} LIMIT {$perPage} OFFSET {$offset}"
     );
     $st->execute($params);
     $rows = [];

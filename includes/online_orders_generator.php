@@ -17,6 +17,46 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
+const ONLINE_ORDERS_PIPELINES = ['partner', 'vip', 'shopee_spx', 'tiktok', 'unified'];
+const ONLINE_ORDERS_PARTNER_SELLERS = ['ian', 'jono', 'joven'];
+
+function online_orders_normalize_pipeline(string $pipeline): string
+{
+    $p = strtolower(trim($pipeline));
+    if (!in_array($p, ONLINE_ORDERS_PIPELINES, true)) {
+        return 'unified';
+    }
+
+    return $p;
+}
+
+function online_orders_normalize_partner_seller(?string $seller): ?string
+{
+    $s = strtolower(trim((string) $seller));
+    if ($s === '') {
+        return null;
+    }
+    if (!in_array($s, ONLINE_ORDERS_PARTNER_SELLERS, true)) {
+        throw new RuntimeException('Invalid partner_seller (use ian, jono, or joven).');
+    }
+
+    return $s;
+}
+
+function online_orders_require_partner_seller_for_pipeline(string $pipeline, ?string $partnerSeller): ?string
+{
+    $pipeline = online_orders_normalize_pipeline($pipeline);
+    $seller = online_orders_normalize_partner_seller($partnerSeller);
+    if ($pipeline === 'partner' && $seller === null) {
+        throw new RuntimeException('partner_seller required for Partner orders (ian, jono, or joven).');
+    }
+    if ($pipeline !== 'partner') {
+        return null;
+    }
+
+    return $seller;
+}
+
 /** 1-based column index + row → Excel coordinate (e.g. B4). PhpSpreadsheet 2.x removed *ByColumnAndRow helpers. */
 function online_orders_coord(int $columnIndex1Based, int $row1Based): string
 {
@@ -467,22 +507,23 @@ function online_orders_assert_no_duplicate_tracking(PDO $pdo, string $pipeline, 
 }
 
 /**
- * @param list<array{order_no?:?string,name?:string,items:string,courier?:string,tracking_number:string}> $lines
+ * @param list<array{order_no?:?string,name?:string,items:string,courier?:string,tracking_number:string,partner_seller?:?string}> $lines
  */
 function online_orders_lines_append(
     PDO $pdo,
     int $batchId,
     int $runId,
     string $pipeline,
-    array $lines
+    array $lines,
+    ?string $partnerSeller = null
 ): int
 {
     online_orders_assert_no_duplicate_tracking($pdo, $pipeline, $lines);
 
     $ins = $pdo->prepare(
         'INSERT INTO csr_online_order_lines
-            (batch_id, run_id, order_no, recipient_name, items, courier, tracking_number, source_pipeline)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            (batch_id, run_id, order_no, recipient_name, items, courier, tracking_number, source_pipeline, partner_seller)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $count = 0;
     foreach ($lines as $line) {
@@ -495,6 +536,9 @@ function online_orders_lines_append(
         if ($tn === '') {
             $tn = $rawTn;
         }
+        $lineSeller = isset($line['partner_seller']) && $line['partner_seller'] !== ''
+            ? online_orders_normalize_partner_seller((string) $line['partner_seller'])
+            : $partnerSeller;
         $ins->execute([
             $batchId,
             $runId > 0 ? $runId : null,
@@ -505,6 +549,7 @@ function online_orders_lines_append(
             trim((string) ($line['courier'] ?? '')),
             $tn,
             $pipeline,
+            $lineSeller,
         ]);
         $count++;
     }
@@ -700,13 +745,15 @@ function online_orders_run_unified_stamp(
     int $batchId,
     array $pdfTokens,
     string|array $excelTokens,
-    string $pipelineTag
+    string $pipelineTag,
+    ?string $partnerSeller = null
 ): array
 {
-    $allowed = ['partner', 'vip', 'shopee_spx', 'unified'];
-    if (!in_array($pipelineTag, $allowed, true)) {
-        $pipelineTag = 'unified';
+    $pipelineTag = online_orders_normalize_pipeline($pipelineTag);
+    if ($pipelineTag === 'unified') {
+        throw new RuntimeException('Invalid pipeline.');
     }
+    $partnerSeller = online_orders_require_partner_seller_for_pipeline($pipelineTag, $partnerSeller);
 
     online_orders_assert_active_batch($pdo, $userId, $batchId);
 
@@ -740,8 +787,8 @@ function online_orders_run_unified_stamp(
     $runId = online_orders_run_start($pdo, $batchId, $pipelineTag);
     try {
         $stamp = waybill_stamper_process_uploads($pdfs, $excels);
-        $added = online_orders_lines_append($pdo, $batchId, $runId, $pipelineTag, $lines);
-        online_orders_run_complete($pdo, $runId, [
+        $added = online_orders_lines_append($pdo, $batchId, $runId, $pipelineTag, $lines, $partnerSeller);
+        $meta = [
             'stamp' => [
                 'matched' => $stamp['matched'],
                 'total' => $stamp['total'],
@@ -749,7 +796,11 @@ function online_orders_run_unified_stamp(
             ],
             'lines_added' => $added,
             'source' => 'unified_stamp',
-        ]);
+        ];
+        if ($partnerSeller !== null) {
+            $meta['partner_seller'] = $partnerSeller;
+        }
+        online_orders_run_complete($pdo, $runId, $meta);
         waybill_stamper_release_stash_tokens($stashRelease);
 
         return ['stamp' => $stamp, 'lines_added' => $added, 'run_id' => $runId];
@@ -890,9 +941,6 @@ function online_orders_run_shopee_stamp(
 
 function online_orders_merge_master_workbook(PDO $pdo, int $batchId): string
 {
-    $autoload = dirname(__DIR__) . '/vendor/autoload.php';
-    require_once $autoload;
-
     $st = $pdo->prepare(
         'SELECT order_no, recipient_name, items, courier, tracking_number
          FROM csr_online_order_lines WHERE batch_id = ? ORDER BY id ASC'
@@ -902,6 +950,17 @@ function online_orders_merge_master_workbook(PDO $pdo, int $batchId): string
     if ($dbRows === []) {
         throw new RuntimeException('No order lines in this batch. Process at least one pipeline first.');
     }
+
+    return online_orders_build_print_workbook_meta($dbRows);
+}
+
+/**
+ * @param list<array{order_no?:?string,recipient_name?:string,items?:string,courier?:string,tracking_number?:string}> $rows
+ */
+function online_orders_build_print_workbook_meta(array $rows): string
+{
+    $autoload = dirname(__DIR__) . '/vendor/autoload.php';
+    require_once $autoload;
 
     $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
@@ -933,17 +992,17 @@ function online_orders_merge_master_workbook(PDO $pdo, int $batchId): string
 
     $r = $firstData;
     $seq = 1;
-    foreach ($dbRows as $row) {
+    foreach ($rows as $row) {
         $sheet->setCellValue(online_orders_coord(1, $r), $seq++);
         $sheet->setCellValue(online_orders_coord(2, $r), (string) ($row['order_no'] ?? ''));
-        $sheet->setCellValue(online_orders_coord(3, $r), (string) $row['recipient_name']);
+        $sheet->setCellValue(online_orders_coord(3, $r), (string) ($row['recipient_name'] ?? ''));
         $sheet->getCell(online_orders_coord(4, $r))
-            ->setValueExplicit((string) $row['items'], DataType::TYPE_STRING);
+            ->setValueExplicit((string) ($row['items'] ?? ''), DataType::TYPE_STRING);
         $sheet->setCellValue(online_orders_coord(5, $r), '');
         $sheet->setCellValue(online_orders_coord(6, $r), '');
-        $sheet->setCellValue(online_orders_coord(7, $r), (string) $row['courier']);
+        $sheet->setCellValue(online_orders_coord(7, $r), (string) ($row['courier'] ?? ''));
         $sheet->getCell(online_orders_coord(8, $r))
-            ->setValueExplicit((string) $row['tracking_number'], DataType::TYPE_STRING);
+            ->setValueExplicit((string) ($row['tracking_number'] ?? ''), DataType::TYPE_STRING);
         $r++;
     }
 

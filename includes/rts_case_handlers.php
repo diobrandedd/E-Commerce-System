@@ -10,6 +10,7 @@ require_once __DIR__ . '/rts_products.php';
 require_once __DIR__ . '/rts_schema.php';
 require_once __DIR__ . '/rts_storage.php';
 require_once __DIR__ . '/rts_prefill.php';
+require_once __DIR__ . '/online_order_parcels.php';
 
 class RtsCaseException extends RuntimeException
 {
@@ -466,6 +467,7 @@ function rts_case_handler_create(PDO $pdo, array $data): array
             'before_shipment_photo_filename' => $fields['before_shipment_photo_filename'],
         ]);
         rts_line_items_insert_batch($pdo, $caseId, $fields['lines']);
+        online_parcels_mark_rts($pdo, $tracking, $caseId);
         $pdo->commit();
     } catch (RtsCaseException $e) {
         throw $e;
@@ -603,12 +605,34 @@ function rts_case_handler_void(PDO $pdo, int $caseId, int $userId): void
     if ($caseId < 1) {
         throw new RtsCaseException('Invalid case_id', 'invalid_case_id', 400);
     }
-    $st = $pdo->prepare(
-        'UPDATE rts_cases SET voided_at = NOW(), voided_by_user_id = ? WHERE id = ? AND voided_at IS NULL'
-    );
-    $st->execute([$userId, $caseId]);
-    if ($st->rowCount() === 0) {
-        throw new RtsCaseException('Case not found or already voided', 'not_found', 404);
+    $pdo->beginTransaction();
+    try {
+        $check = $pdo->prepare('SELECT id FROM rts_cases WHERE id = ? AND voided_at IS NULL LIMIT 1 FOR UPDATE');
+        $check->execute([$caseId]);
+        if (!$check->fetch()) {
+            $pdo->rollBack();
+            throw new RtsCaseException('Case not found or already voided', 'not_found', 404);
+        }
+        $st = $pdo->prepare(
+            'UPDATE rts_cases SET voided_at = NOW(), voided_by_user_id = ? WHERE id = ? AND voided_at IS NULL'
+        );
+        $st->execute([$userId, $caseId]);
+        if ($st->rowCount() === 0) {
+            $pdo->rollBack();
+            throw new RtsCaseException('Case not found or already voided', 'not_found', 404);
+        }
+        online_parcels_revert_rts_by_case($pdo, $caseId);
+        $pdo->commit();
+    } catch (RtsCaseException $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    } catch (Throwable) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw new RtsCaseException('Void failed', 'save_failed', 500);
     }
 }
 

@@ -255,6 +255,7 @@ function api_online_orders_run_unified_stamp(): void
     $excelToken = trim((string) ($input['excel_token'] ?? ''));
     $excelTokens = is_array($input['excel_tokens'] ?? null) ? array_values($input['excel_tokens']) : [];
     $pipeline = trim((string) ($input['pipeline'] ?? 'unified'));
+    $partnerSeller = trim((string) ($input['partner_seller'] ?? ''));
     if ($batchId < 1) {
         api_fail('batch_id required.', 400);
     }
@@ -266,7 +267,15 @@ function api_online_orders_run_unified_stamp(): void
     $pdo = ims_pdo();
     try {
         $excelInput = $excelToken !== '' ? $excelToken : $excelTokens;
-        $result = online_orders_run_unified_stamp($pdo, (int) $user['id'], $batchId, $pdfTokens, $excelInput, $pipeline);
+        $result = online_orders_run_unified_stamp(
+            $pdo,
+            (int) $user['id'],
+            $batchId,
+            $pdfTokens,
+            $excelInput,
+            $pipeline,
+            $partnerSeller !== '' ? $partnerSeller : null,
+        );
         api_ok($result);
     } catch (Throwable $e) {
         api_online_orders_fail_pipeline($e);

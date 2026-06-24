@@ -1,7 +1,7 @@
 ---
 title: rts_prefill
 source: includes/rts_prefill.php
-generated: 2026-06-24T07:59:04+02:00
+generated: 2026-06-24T10:30:48+02:00
 type: module
 function_count: 8
 ---
@@ -26,7 +26,7 @@ function_count: 8
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:42 — `if (in_array($d, rts_case_allowed_dispositions(), true)) {`
+- `includes/rts_case_handlers.php`:43 — `if (in_array($d, rts_case_allowed_dispositions(), true)) {`
 
 ## rts_case_disposition_label {#rts_case_disposition_label}
 
@@ -38,27 +38,27 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/rts_prefill.php`:214 — `$shop = rts_pipeline_to_shop($pipeline);`
-- `includes/rts_prefill.php`:246 — `$shop = rts_pipeline_to_shop((string) ($csrRow['source_pipeline'] ?? ''));`
+- `includes/rts_prefill.php`:215 — `$shop = rts_pipeline_to_shop($pipeline);`
+- `includes/rts_prefill.php`:247 — `$shop = rts_pipeline_to_shop((string) ($csrRow['source_pipeline'] ?? ''));`
 
 ## rts_parcel_courier_to_final {#rts_parcel_courier_to_final}
 
 **Callers (2):**
 
-- `includes/rts_prefill.php`:220 — `$courier = rts_parcel_courier_to_final((string) ($parcel['courier'] ?? ''), $normalized);`
-- `includes/rts_prefill.php`:254 — `$courier = rts_parcel_courier_to_final((string) ($csrRow['courier'] ?? ''), $normalized);`
+- `includes/rts_prefill.php`:221 — `$courier = rts_parcel_courier_to_final((string) ($parcel['courier'] ?? ''), $normalized);`
+- `includes/rts_prefill.php`:255 — `$courier = rts_parcel_courier_to_final((string) ($csrRow['courier'] ?? ''), $normalized);`
 
 ## rts_dept_key_to_product_type {#rts_dept_key_to_product_type}
 
 **Callers (1):**
 
-- `includes/rts_prefill.php`:129 — `$pt = $key !== '' ? rts_dept_key_to_product_type($key) : null;`
+- `includes/rts_prefill.php`:130 — `$pt = $key !== '' ? rts_dept_key_to_product_type($key) : null;`
 
 ## rts_items_raw_to_line_suggestions {#rts_items_raw_to_line_suggestions}
 
 **Callers (1):**
 
-- `includes/rts_prefill.php`:271 — `$mapped = rts_items_raw_to_line_suggestions($itemsRaw);`
+- `includes/rts_prefill.php`:272 — `$mapped = rts_items_raw_to_line_suggestions($itemsRaw);`
 
 ## rts_prefill_delivery_lookup {#rts_prefill_delivery_lookup}
 
@@ -66,9 +66,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:120 — `$match = rts_prefill_delivery_lookup($pdo, (string) $caseRow['tracking_number']);`
-- `includes/rts_case_handlers.php`:408 — `$deliveryLookup = rts_prefill_delivery_lookup($pdo, $tracking);`
-- `includes/rts_prefill.php`:280 — `$delivery = rts_prefill_delivery_lookup($pdo, $normalized);`
+- `includes/rts_case_handlers.php`:121 — `$match = rts_prefill_delivery_lookup($pdo, (string) $caseRow['tracking_number']);`
+- `includes/rts_case_handlers.php`:409 — `$deliveryLookup = rts_prefill_delivery_lookup($pdo, $tracking);`
+- `includes/rts_prefill.php`:281 — `$delivery = rts_prefill_delivery_lookup($pdo, $normalized);`
 
 ## rts_case_handler_tracking_prefill {#rts_case_handler_tracking_prefill}
 
@@ -76,5 +76,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:831 — `return rts_case_handler_tracking_prefill($pdo, $tracking);`
+- `includes/rts_case_handlers.php`:855 — `return rts_case_handler_tracking_prefill($pdo, $tracking);`
 

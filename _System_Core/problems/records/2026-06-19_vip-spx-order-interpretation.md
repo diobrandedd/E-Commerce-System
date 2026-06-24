@@ -35,3 +35,7 @@ Real J&T/SPX courier exports use different columns and messy item text. VIP prep
 → [[records/2026-06-19_waybill-stamp-text-only]] — PDF stamp text-only (no border).
 
 **Fix guides:** [[fixes/vip-spx-order-remarks-parser-guards]] · [[fixes/waybill-stamp-text-only-no-border]]
+
+## Follow-up (2026-06-19): Paragis VIP qty auto-submitted as 1
+
+`1 x 2 Paragis Tea` used honey-style `extractQty` → qty 1; dept-only rows skipped ambiguous carousel. Fixed: `extractDeptQty` / `honey_parcel_extract_dept_qty`; `needsDeptConfirm` gates export until CSR saves builder line.

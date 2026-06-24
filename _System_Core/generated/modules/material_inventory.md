@@ -1,7 +1,7 @@
 ---
 title: material_inventory
 source: includes/material_inventory.php
-generated: 2026-06-24T07:58:55+02:00
+generated: 2026-06-24T10:30:36+02:00
 type: module
 function_count: 64
 ---
@@ -392,7 +392,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `includes/material_inventory.php`:1111 — `if (parcel_fulfillment_already_deducted($pdo, $parcelId)) {`
-- `includes/online_order_parcels.php`:703 — `|| parcel_fulfillment_already_deducted($pdo, $parcelId);`
+- `includes/online_order_parcels.php`:1029 — `|| parcel_fulfillment_already_deducted($pdo, $parcelId);`
 
 ## parcel_fulfillment_apply_deduct {#parcel_fulfillment_apply_deduct}
 

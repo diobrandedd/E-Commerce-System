@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-24T07:58:45+02:00
+generated: 2026-06-24T10:30:21+02:00
 type: memory-bank
 ---
 
@@ -256,7 +256,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/parcels.php`
 - **URL:** `/rts/api/v1/parcels.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/online_order_parcels.php`, `includes/online_orders_generator.php`, `includes/honey_parcel_item_parser.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/online_order_parcels.php`, `includes/online_orders_generator.php`, `includes/online_orders_generator.php`, `includes/honey_parcel_item_parser.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
@@ -265,6 +265,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `lookup` | `api_parcels_lookup()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_normalize_tracking()`, `online_parcels_get_by_tracking()` |
 | `parse_preview` | `api_parcels_parse_preview()` | `online_parcels_user_can_edit_items()`, `online_orders_normalize_items_display()`, `honey_parcel_parse_items_string()` |
 | `update_items` | `api_parcels_update_items()` | `online_parcels_user_can_edit_items()`, `online_parcels_update_items()`, `ims_pdo()` |
+| `filter_options` | `api_parcels_filter_options()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_filter_options()` |
+| `export` | `api_parcels_export()` | `online_parcels_export_selected()`, `ims_pdo()` |
+| `export_download` | `api_parcels_export_download()` | `online_orders_serve_download()` |
 
 ### `pdf_to_excel.php`
 

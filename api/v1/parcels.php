@@ -32,6 +32,9 @@ api_dispatch([
     'lookup' => 'api_parcels_lookup',
     'parse_preview' => 'api_parcels_parse_preview',
     'update_items' => 'api_parcels_update_items',
+    'filter_options' => 'api_parcels_filter_options',
+    'export' => 'api_parcels_export',
+    'export_download' => 'api_parcels_export_download',
 ]);
 
 function api_parcels_list(): void
@@ -46,8 +49,53 @@ function api_parcels_list(): void
 
     $pdo = ims_pdo();
     online_parcels_ensure_schema($pdo);
-    $result = online_parcels_list($pdo, $q, $status, $page, $perPage);
+    $result = online_parcels_list($pdo, $q, $status, $page, $perPage, [
+        'date_from' => trim((string) ($_GET['date_from'] ?? '')),
+        'date_to' => trim((string) ($_GET['date_to'] ?? '')),
+        'partner_seller' => trim((string) ($_GET['partner_seller'] ?? '')),
+        'source_pipeline' => trim((string) ($_GET['source_pipeline'] ?? '')),
+        'courier' => trim((string) ($_GET['courier'] ?? '')),
+        'sort' => trim((string) ($_GET['sort'] ?? 'created_at')),
+        'dir' => trim((string) ($_GET['dir'] ?? 'desc')),
+    ]);
     api_ok($result);
+}
+
+function api_parcels_filter_options(): void
+{
+    api_method_allowed(['GET']);
+    api_parcels_assert_access();
+    $pdo = ims_pdo();
+    online_parcels_ensure_schema($pdo);
+    api_ok(online_parcels_filter_options($pdo));
+}
+
+function api_parcels_export(): void
+{
+    api_method_allowed(['POST']);
+    api_parcels_assert_access();
+    api_parcels_require_csrf();
+    $input = api_input();
+    $ids = $input['ids'] ?? [];
+    if (!is_array($ids)) {
+        api_fail('ids must be an array.', 400);
+    }
+    try {
+        $result = online_parcels_export_selected(ims_pdo(), $ids);
+        api_ok($result);
+    } catch (RuntimeException $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_parcels_export_download(): void
+{
+    require_once __DIR__ . '/../../includes/online_orders_generator.php';
+    $token = trim((string) ($_GET['token'] ?? ''));
+    if ($token === '') {
+        api_fail('token required.', 400);
+    }
+    online_orders_serve_download($token);
 }
 
 function api_parcels_get(): void

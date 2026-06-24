@@ -198,9 +198,10 @@ function honey_parcel_parse_segment(string $segment): array
 
     $other = honey_parcel_detect_other_product($segment);
     if ($other !== null && !preg_match('/honey|\d\s*L|250\s*ml|350\s*ml|gallon|g\s*honey/i', $segment)) {
+        $deptQty = honey_parcel_extract_dept_qty($segment);
         $item = [
             'label' => $other['label'],
-            'qty' => $qty,
+            'qty' => $deptQty,
             'raw' => trim($segment),
         ];
         if ($other['product_key'] !== null) {
@@ -261,6 +262,21 @@ function honey_parcel_parse_segment(string $segment): array
     }
 
     return ['deltas' => $deltas, 'other_items' => [], 'errors' => $errors];
+}
+
+function honey_parcel_extract_dept_qty(string $segment): float
+{
+    if (preg_match('/\b(?:paragis(?:\s*tea)?|jar\s*cacao|black\s*rice\s*coffee|honey\s*comb|\bbrc\b)\s*[x×]\s*(\d+)\s*$/i', $segment, $m)) {
+        return max(1.0, (float) $m[1]);
+    }
+    if (preg_match('/^1\s*[x×]\s*(\d+)\s+(?:paragis|jar\s*cacao|black\s*rice|honey\s*comb|\bbrc\b|pito)/i', $segment, $m)) {
+        return max(1.0, (float) $m[1]);
+    }
+    if (preg_match('/^(\d+)\s+(?:paragis|jar\s*cacao|black\s*rice|honey\s*comb|\bbrc\b|pito)/i', $segment, $m)) {
+        return max(1.0, (float) $m[1]);
+    }
+
+    return honey_parcel_extract_qty($segment);
 }
 
 function honey_parcel_extract_qty(string $segment): float

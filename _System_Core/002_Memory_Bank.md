@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-19 — [[problems/records/2026-06-19_waybill-stamper-partner-registry|Waybill stamper partner seller + TikTok + parcels registry]]
+**Shipped:** Ian/Jono/Joven on Partner stamp; TikTok pipeline; Online Parcels filters/sort/export with order no. Run `migration_phase48` on prod.
+
+### 2026-06-19 — [[problems/fixes/vip-spx-order-remarks-parser-guards|VIP Paragis qty + CSR confirm]]
+**Fixed:** `1 x 2 Paragis Tea` no longer becomes qty 1; dept-only VIP rows require ItemLineBuilder confirm before export.
+
 ### 2026-06-19 — [[problems/records/2026-06-19_rts-doc-upload-no-preview|RTS Record multi-attach + 512MB video cap]]
 **Shipped:** Camera, record, and gallery feed one thumbnail grid (24 max); parallel uploads; video limit raised to ~512MB; `api/.htaccess` raises PHP upload limits — restart Apache after deploy.
 
@@ -574,3 +580,8 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 
 ### 2026-06-19 — RTS doc upload no preview on mobile
 - **Record:** [[problems/records/2026-06-19_rts-doc-upload-no-preview]] (includes CSR role Forbidden fix on upload/save)
+
+### 2026-06-19 — Online Parcels RTS status sync
+- **What we did:** When CSR saves Record RTS, matching `online_order_parcels` row (by normalized tracking) flips to `rts` with `rts_case_id` + `status_before_rts`; void restores prior status. Online Parcels filter/badge for RTS.
+- **Migration:** `sql/migration_phase49_online_parcels_rts_status.sql` — run `php tools/apply_migration_phase49.php` per environment.
+- **Record:** [[problems/records/2026-06-19_online-parcels-rts-status-sync]]

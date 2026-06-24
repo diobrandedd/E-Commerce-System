@@ -24,8 +24,23 @@ export function pipelineLabel(pipeline?: string): string {
       return "VIP";
     case "shopee_spx":
       return "Shopee SPX";
+    case "tiktok":
+      return "TikTok";
     default:
       return pipeline ?? "—";
+  }
+}
+
+export function partnerSellerLabel(seller?: string | null): string {
+  switch (seller) {
+    case "ian":
+      return "Ian";
+    case "jono":
+      return "Jono";
+    case "joven":
+      return "Joven";
+    default:
+      return "—";
   }
 }
 

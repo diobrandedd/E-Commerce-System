@@ -34,6 +34,7 @@ function rts_pipeline_to_shop(?string $pipeline): ?string
     return match ($p) {
         'vip' => 'vip',
         'shopee_spx', 'shopee' => 'shopee',
+        'tiktok' => 'tiktok',
         default => null,
     };
 }

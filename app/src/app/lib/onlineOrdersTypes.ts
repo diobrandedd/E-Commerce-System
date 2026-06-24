@@ -1,4 +1,6 @@
-export type OnlineOrdersPipeline = "partner" | "vip" | "shopee_spx" | "unified";
+export type OnlineOrdersPipeline = "partner" | "vip" | "shopee_spx" | "tiktok" | "unified";
+
+export type PartnerSeller = "ian" | "jono" | "joven";
 
 export type OnlineOrdersPrepTool = "vip" | "spx" | "excel" | "stamper";
 

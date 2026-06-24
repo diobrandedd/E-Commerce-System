@@ -46,6 +46,13 @@ tags: [fix, vip, spx, parser]
 - Parse `350ML(DARK)` → variant **D** (word in parens, not only `(D)`).
 - **Cause:** [[causes/vip-spx-jnt-concatenated-350ml]]
 
+## 7. Dept products (Paragis, Jar Cacao, BRC) — qty + CSR confirm
+
+- VIP item text often uses `1 x 2 Paragis Tea` — leading `1 x` is **not** qty; use `extractDeptQty()` / `honey_parcel_extract_dept_qty()`.
+- Also parse trailing `Paragis Tea x2`.
+- **Never auto-submit** dept-only rows: `needsDeptConfirm` forces VIP carousel + `ItemLineBuilder` until CSR saves `finalRemark`.
+- Honey `1 x 2L Honey` still uses `extractQty()` (pack count = 1).
+
 ## Files (primary)
 
 | File | Role |

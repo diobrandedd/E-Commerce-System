@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-06-24T07:58:46+02:00
+generated: 2026-06-24T10:30:22+02:00
 type: module
 function_count: 14
 ---
@@ -34,9 +34,9 @@ function_count: 14
 - `includes/auth_check.php`:132 — `ims_session_start();`
 - `includes/auth_check.php`:145 — `ims_session_start();`
 - `includes/auth_check.php`:161 — `ims_session_start();`
-- `includes/online_orders_generator.php`:845 — `ims_session_start();`
-- `includes/online_orders_generator.php`:969 — `ims_session_start();`
-- `includes/online_orders_generator.php`:985 — `ims_session_start();`
+- `includes/online_orders_generator.php`:896 — `ims_session_start();`
+- `includes/online_orders_generator.php`:1028 — `ims_session_start();`
+- `includes/online_orders_generator.php`:1044 — `ims_session_start();`
 - `includes/order_remarks.php`:290 — `ims_session_start();`
 - `includes/order_remarks.php`:329 — `ims_session_start();`
 - `includes/order_remarks.php`:345 — `ims_session_start();`
@@ -62,11 +62,11 @@ function_count: 14
 - `api/v1/online_orders.php`:118 — `$user = ims_current_user();`
 - `api/v1/online_orders.php`:139 — `$user = ims_current_user();`
 - `api/v1/online_orders.php`:166 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:265 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:291 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:316 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:339 — `$user = ims_current_user();`
-- `api/v1/online_orders.php`:364 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:266 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:300 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:325 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:348 — `$user = ims_current_user();`
+- `api/v1/online_orders.php`:373 — `$user = ims_current_user();`
 - `api/v1/order_remarks.php`:30 — `$user = ims_current_user();`
 - `api/v1/parcels.php`:10 — `$user = ims_current_user();`
 - `api/v1/pdf_to_excel.php`:29 — `$user = ims_current_user();`

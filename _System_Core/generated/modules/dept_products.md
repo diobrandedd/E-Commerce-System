@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-06-24T07:58:49+02:00
+generated: 2026-06-24T10:30:28+02:00
 type: module
 function_count: 23
 ---
@@ -178,7 +178,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/honey_parcel_item_parser.php`:289 — `$deptDef = dept_product_resolve_segment($segment);`
+- `includes/honey_parcel_item_parser.php`:305 — `$deptDef = dept_product_resolve_segment($segment);`
 
 ## dept_products_for_dept {#dept_products_for_dept}
 

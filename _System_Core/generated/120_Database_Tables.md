@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-24T07:58:45+02:00
+generated: 2026-06-24T10:30:21+02:00
 type: memory-bank
 table_count: 56
 ---
@@ -473,9 +473,14 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_revert_parcel_to_packing_if_shipped]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_enrich_review_rows]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_apply_rts_schema_migrations]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_promote_from_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_tracking]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_mark_rts]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_revert_rts_by_case]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_id]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_filter_options]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_export_selected]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_list]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_update_items]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_ship]] |
@@ -546,6 +551,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_apply_rts_schema_migrations]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel_log_list]] |
 

@@ -1,4 +1,4 @@
-import { api, apiGet, apiPost } from "@/app/lib/api";
+import { api, apiGet, apiPost, API_BASE } from "@/app/lib/api";
 
 export interface OnlineParcelPackingPhoto {
   delivery_item_id: number;
@@ -20,20 +20,61 @@ export interface OnlineParcel {
   courier: string;
   order_no: string | null;
   source_pipeline: string;
-  status: "packing" | "shipped" | "on_hold" | "cancelled" | "returned";
+  partner_seller: string | null;
+  status: "packing" | "shipped" | "on_hold" | "cancelled" | "returned" | "rts";
   ship_date: string | null;
+  return_date?: string | null;
   deducted_at: string | null;
+  rts_case_id?: number | null;
+  rts_recorded_at?: string | null;
   created_at: string;
   packing_photo: OnlineParcelPackingPhoto | null;
 }
 
-export async function parcelsList(params: {
+export type ParcelsListSort =
+  | "created_at"
+  | "order_no"
+  | "tracking_number"
+  | "courier"
+  | "recipient_name";
+
+export interface ParcelsListParams {
   q?: string;
   status?: string;
   page?: number;
   per_page?: number;
-}): Promise<{ rows: OnlineParcel[]; total: number }> {
+  date_from?: string;
+  date_to?: string;
+  partner_seller?: string;
+  source_pipeline?: string;
+  courier?: string;
+  sort?: ParcelsListSort;
+  dir?: "asc" | "desc";
+}
+
+export async function parcelsList(params: ParcelsListParams): Promise<{ rows: OnlineParcel[]; total: number }> {
   return apiGet("parcels.php", "list", params);
+}
+
+export async function parcelsFilterOptions(): Promise<{
+  couriers: string[];
+  pipelines: string[];
+  partner_sellers: string[];
+}> {
+  return apiGet("parcels.php", "filter_options");
+}
+
+export async function parcelsExportSelected(ids: number[]): Promise<{
+  download_token: string;
+  download_filename: string;
+  row_count: number;
+}> {
+  return apiPost("parcels.php", "export", { ids });
+}
+
+export function triggerParcelsExportDownload(token: string): void {
+  const url = `${API_BASE}/parcels.php?action=export_download&token=${encodeURIComponent(token)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
 }
 
 export async function parcelsLookup(q: string): Promise<{ parcel: OnlineParcel; tracking_normalized: string }> {

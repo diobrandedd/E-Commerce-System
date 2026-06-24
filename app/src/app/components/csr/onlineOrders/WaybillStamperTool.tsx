@@ -4,7 +4,7 @@ import { FileZone } from "@/app/components/csr/FileZone";
 import { DuplicateTrackingModal } from "@/app/components/csr/onlineOrders/DuplicateTrackingModal";
 import { FulfillmentErrorBanner, FulfillmentPressable, FulfillmentSectionEnter } from "@/app/components/csr/onlineFulfillmentMotion";
 import { onlineOrdersRunUnifiedStamp, onlineOrdersToolExcelRegister } from "@/app/lib/onlineOrdersApi";
-import type { OnlineOrdersPipeline, OnlineOrdersPrepResult, PartnerStampResult } from "@/app/lib/onlineOrdersTypes";
+import type { OnlineOrdersPipeline, OnlineOrdersPrepResult, PartnerSeller, PartnerStampResult } from "@/app/lib/onlineOrdersTypes";
 import { triggerWaybillStashDownload, waybillUploadTooLarge } from "@/app/lib/waybillApi";
 import { useDuplicateTrackingHandler } from "@/app/lib/useDuplicateTrackingHandler";
 import { apiPostForm, getCsrfToken, ApiError } from "@/app/lib/api";
@@ -19,6 +19,13 @@ const PIPELINE_OPTIONS: { id: OnlineOrdersPipeline; label: string }[] = [
   { id: "partner", label: "Partner" },
   { id: "vip", label: "VIP" },
   { id: "shopee_spx", label: "Shopee SPX" },
+  { id: "tiktok", label: "TikTok" },
+];
+
+const PARTNER_SELLER_OPTIONS: { id: PartnerSeller; label: string }[] = [
+  { id: "ian", label: "Ian" },
+  { id: "jono", label: "Jono" },
+  { id: "joven", label: "Joven" },
 ];
 
 async function stashToken(kind: "pdf" | "excel", file: File): Promise<string> {
@@ -49,6 +56,7 @@ export function WaybillStamperTool({
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
   const [prep, setPrep] = useState<OnlineOrdersPrepResult | null>(null);
   const [pipeline, setPipeline] = useState<OnlineOrdersPipeline>("partner");
+  const [partnerSeller, setPartnerSeller] = useState<PartnerSeller | "">("");
   const [busy, setBusy] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const {
@@ -101,6 +109,11 @@ export function WaybillStamperTool({
       setBusy(false);
       return;
     }
+    if (pipeline === "partner" && !partnerSeller) {
+      setError("Select partner seller (Ian, Jono, or Joven).");
+      setBusy(false);
+      return;
+    }
     try {
       const pdfTokens: string[] = [];
       for (const f of pdfFiles) pdfTokens.push(await stashToken("pdf", f));
@@ -110,6 +123,7 @@ export function WaybillStamperTool({
         prep.excel_token,
         pipeline,
         prep.excel_tokens,
+        pipeline === "partner" ? partnerSeller : null,
       );
       onStampSuccess(res);
     } catch (e) {
@@ -117,7 +131,7 @@ export function WaybillStamperTool({
     } finally {
       setBusy(false);
     }
-  }, [batchId, pdfFiles, excelFiles, prep, pipeline, onStampSuccess, clearErrors, handleApiError, setError]);
+  }, [batchId, pdfFiles, excelFiles, prep, pipeline, partnerSeller, onStampSuccess, clearErrors, handleApiError, setError]);
 
   if (practiceMode) {
     return (
@@ -173,7 +187,10 @@ export function WaybillStamperTool({
             key={opt.id}
             type="button"
             disabled={busy}
-            onClick={() => setPipeline(opt.id)}
+            onClick={() => {
+              setPipeline(opt.id);
+              if (opt.id !== "partner") setPartnerSeller("");
+            }}
             className={`text-xs font-medium px-3 py-1.5 rounded-lg border ${
               pipeline === opt.id
                 ? "border-primary bg-primary/10 text-primary"
@@ -184,6 +201,27 @@ export function WaybillStamperTool({
           </button>
         ))}
       </div>
+
+      {pipeline === "partner" && (
+        <div className="flex flex-wrap gap-2 items-center" data-tour="online-orders-stamper-partner-seller">
+          <span className="text-xs text-muted-foreground">Partner seller:</span>
+          {PARTNER_SELLER_OPTIONS.map(opt => (
+            <button
+              key={opt.id}
+              type="button"
+              disabled={busy}
+              onClick={() => setPartnerSeller(opt.id)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg border ${
+                partnerSeller === opt.id
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div data-tour="online-orders-stamper-excel-upload">
       <FileZone
@@ -240,7 +278,7 @@ export function WaybillStamperTool({
       <div data-tour="online-orders-stamper-run">
       <FulfillmentPressable
         variant="primary"
-        disabled={busy || !prep || pdfFiles.length === 0}
+        disabled={busy || !prep || pdfFiles.length === 0 || (pipeline === "partner" && !partnerSeller)}
         onClick={() => void runStamp()}
         className="inline-flex items-center gap-2"
       >

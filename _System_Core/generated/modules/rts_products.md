@@ -1,7 +1,7 @@
 ---
 title: rts_products
 source: includes/rts_products.php
-generated: 2026-06-24T07:59:04+02:00
+generated: 2026-06-24T10:30:49+02:00
 type: module
 function_count: 14
 ---
@@ -29,7 +29,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/rts_prefill.php`:102 — `if (!rts_honey_size_valid($size)) {`
+- `includes/rts_prefill.php`:103 — `if (!rts_honey_size_valid($size)) {`
 - `includes/rts_products.php`:138 — `if (!rts_honey_size_valid($hs)) {`
 - `includes/rts_products.php`:165 — `if (!rts_honey_size_valid($chs)) {`
 
@@ -37,7 +37,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/rts_prefill.php`:93 — `if (!rts_honey_variant_valid($variant)) {`
+- `includes/rts_prefill.php`:94 — `if (!rts_honey_variant_valid($variant)) {`
 - `includes/rts_products.php`:141 — `if (!rts_honey_variant_valid($hv)) {`
 - `includes/rts_products.php`:168 — `if (!rts_honey_variant_valid($chv)) {`
 
@@ -87,10 +87,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/rts_case_handlers.php`:258 — `$err = rts_validate_lines_v2($reusableIn);`
-- `includes/rts_case_handlers.php`:264 — `$err = rts_validate_lines_v2($damagedIn);`
-- `includes/rts_case_handlers.php`:290 — `$err = rts_validate_lines_v2($linesIn);`
-- `includes/rts_case_handlers.php`:554 — `$err = rts_validate_lines_v2($linesIn);`
+- `includes/rts_case_handlers.php`:259 — `$err = rts_validate_lines_v2($reusableIn);`
+- `includes/rts_case_handlers.php`:265 — `$err = rts_validate_lines_v2($damagedIn);`
+- `includes/rts_case_handlers.php`:291 — `$err = rts_validate_lines_v2($linesIn);`
+- `includes/rts_case_handlers.php`:556 — `$err = rts_validate_lines_v2($linesIn);`
 
 ## rts_normalize_line {#rts_normalize_line}
 

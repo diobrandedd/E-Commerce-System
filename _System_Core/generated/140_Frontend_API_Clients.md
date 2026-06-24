@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-06-24T07:59:08+02:00
+generated: 2026-06-24T10:30:54+02:00
 type: memory-bank
 ---
 
@@ -20,6 +20,7 @@ Backend index: [[100_API_Index]]
 | `app/src/app/lib/materials.ts` | `(action: set_on_hand)` |
 | `app/src/app/lib/api.ts` | `/${path.replace(/^\/+/, "")}` |
 | `app/src/app/lib/onlineOrdersApi.ts` | `/online_orders.php?action=batch_download&token=${encodeURIComponent(token)}` |
+| `app/src/app/lib/parcelsApi.ts` | `/parcels.php?action=export_download&token=${encodeURIComponent(token)}` |
 | `app/src/app/pages/exec/ARCreditsPage.tsx` | `ar.php` |
 | `app/src/app/lib/parcelPackCosting.ts` | `costing.php` |
 | `app/src/app/pages/exec/CostingPage.tsx` | `costing.php` |
