@@ -1,7 +1,7 @@
 ---
 title: parcel_pack_costing
 source: includes/parcel_pack_costing.php
-generated: 2026-06-24T10:30:43+02:00
+generated: 2026-06-24T10:32:27+02:00
 type: module
 function_count: 37
 ---
