@@ -87,6 +87,7 @@ export interface RtsProductCatalog {
   damaged_reasons: { id: string; label: string }[];
   doc_url_base: string;
   attachments_max: number;
+  video_max_mb?: number;
 }
 
 export interface RtsCaseGetResult {

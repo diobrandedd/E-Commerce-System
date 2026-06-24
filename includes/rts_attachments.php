@@ -5,6 +5,12 @@ declare(strict_types=1);
 /** Max RTS proof files per case (photos + videos). */
 const RTS_ATTACHMENTS_MAX = 24;
 
+/** Max single image upload (bytes). */
+const RTS_DOC_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
+
+/** Max single video upload (bytes) — long phone recordings; PHP ini must allow this too. */
+const RTS_DOC_VIDEO_MAX_BYTES = 512 * 1024 * 1024;
+
 function rts_attachment_filename_valid(string $name): bool
 {
     return preg_match('/^[A-Za-z0-9._-]{1,190}$/', $name) === 1;

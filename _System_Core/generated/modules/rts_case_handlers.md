@@ -1,9 +1,9 @@
 ---
 title: rts_case_handlers
 source: includes/rts_case_handlers.php
-generated: 2026-06-24T05:31:14+02:00
+generated: 2026-06-24T07:59:02+02:00
 type: module
-function_count: 25
+function_count: 26
 ---
 
 
@@ -204,6 +204,12 @@ function_count: 25
 **Callers (1):**
 
 - `api/v1/rts_cases.php`:244 — `api_ok(rts_case_handler_product_catalog());`
+
+## rts_case_handler_upload_error_message {#rts_case_handler_upload_error_message}
+
+**Callers (1):**
+
+- `includes/rts_case_handlers.php`:966 — `throw new RtsCaseException(rts_case_handler_upload_error_message($uploadErr), 'upload_failed', 400);`
 
 ## rts_case_handler_upload_documentation {#rts_case_handler_upload_documentation}
 

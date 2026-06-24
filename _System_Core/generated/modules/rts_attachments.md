@@ -1,7 +1,7 @@
 ---
 title: rts_attachments
 source: includes/rts_attachments.php
-generated: 2026-06-24T05:31:14+02:00
+generated: 2026-06-24T07:59:02+02:00
 type: module
 function_count: 5
 ---
@@ -17,9 +17,9 @@ function_count: 5
 
 **Callers (4):**
 
-- `includes/rts_attachments.php`:50 — `if (($kind === 'image' || $kind === 'video') && rts_attachment_filename_valid($file)) {`
-- `includes/rts_attachments.php`:58 — `if ($lp !== '' && rts_attachment_filename_valid($lp)) {`
-- `includes/rts_attachments.php`:107 — `if (!rts_attachment_filename_valid($file)) {`
+- `includes/rts_attachments.php`:56 — `if (($kind === 'image' || $kind === 'video') && rts_attachment_filename_valid($file)) {`
+- `includes/rts_attachments.php`:64 — `if ($lp !== '' && rts_attachment_filename_valid($lp)) {`
+- `includes/rts_attachments.php`:113 — `if (!rts_attachment_filename_valid($file)) {`
 - `includes/rts_case_handlers.php`:361 — `if (!rts_attachment_filename_valid($docPhoto)) {`
 
 ## rts_damaged_tag {#rts_damaged_tag}

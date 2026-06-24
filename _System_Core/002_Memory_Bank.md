@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-19 — [[problems/records/2026-06-19_rts-doc-upload-no-preview|RTS Record multi-attach + 512MB video cap]]
+**Shipped:** Camera, record, and gallery feed one thumbnail grid (24 max); parallel uploads; video limit raised to ~512MB; `api/.htaccess` raises PHP upload limits — restart Apache after deploy.
+
 ### 2026-06-19 — [[problems/records/2026-06-19_rts-leak-damaged-split|RTS leak damaged vs reusable split + damaged pool]]
 **Shipped:** Leak Record RTS uses two line lists (`damaged_lines` + `lines`); sync to sellable/damaged pools; `/rts/damaged` + Use damaged (`mix_production`/`scrap`). Run `migration_phase45` + `migration_phase46` on prod.
 

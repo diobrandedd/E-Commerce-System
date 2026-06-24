@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { Camera, Loader2, QrCode, ScanLine, Video, CheckCircle2 } from "lucide-react";
+import { Camera, ImagePlus, Loader2, QrCode, ScanLine, Video, CheckCircle2, X } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { AppSectionEnter } from "@/app/components/layout/appFeedbackMotion";
 import { RtsLineBuilder } from "@/app/components/rts/RtsLineBuilder";
@@ -119,7 +119,6 @@ export function RTSRecordPage() {
   const [dateOpened, setDateOpened] = useState(todayIso());
   const [disposition, setDisposition] = useState<RtsCaseDisposition>("standard");
   const [attachments, setAttachments] = useState<DocAttachment[]>([]);
-  const [docUploadBusy, setDocUploadBusy] = useState(false);
   const [lines, setLines] = useState<RtsLineItem[]>([]);
   const [damagedLines, setDamagedLines] = useState<RtsLineItem[]>([]);
   const [caseId, setCaseId] = useState(0);
@@ -130,6 +129,7 @@ export function RTSRecordPage() {
   const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const editBootstrapped = useRef(false);
 
   const loadCatalog = useCallback(async () => {
@@ -311,15 +311,23 @@ export function RTSRecordPage() {
     mode === "edit" ? "Edit RTS case" : mode === "append" ? "Add products to case" : "Record RTS case";
 
   const onUpload = async (file: File, kind: "image" | "video") => {
-    if (!catalog || attachments.length >= catalog.attachments_max) return;
+    if (!catalog) return;
 
     const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     let previewUrl = URL.createObjectURL(file);
-    setAttachments(prev => [
-      ...prev,
-      { kind, file: localId, localId, previewUrl, uploadStatus: "uploading" },
-    ]);
-    setDocUploadBusy(true);
+    let accepted = false;
+    setAttachments(prev => {
+      if (prev.length >= catalog.attachments_max) {
+        return prev;
+      }
+      accepted = true;
+      return [...prev, { kind, file: localId, localId, previewUrl, uploadStatus: "uploading" as const }];
+    });
+    if (!accepted) {
+      URL.revokeObjectURL(previewUrl);
+      setModalError(`Maximum ${catalog.attachments_max} photos/videos per case.`);
+      return;
+    }
     setModalError(null);
 
     try {
@@ -346,7 +354,7 @@ export function RTSRecordPage() {
             ? {
                 kind: mediaKind,
                 file: res.file_name,
-                previewUrl: mediaKind === "image" ? res.file_url : res.file_url,
+                previewUrl: res.file_url,
                 uploadStatus: "ready" as const,
                 localId: undefined,
                 uploadError: undefined,
@@ -363,19 +371,34 @@ export function RTSRecordPage() {
             : a,
         ),
       );
-    } finally {
-      setDocUploadBusy(false);
     }
   };
 
-  const onPhotoPicked = (file: File | null | undefined) => {
+  const inferMediaKind = (file: File): "image" | "video" =>
+    file.type.startsWith("video/") ? "video" : "image";
+
+  const onMediaPicked = (file: File | null | undefined, kind?: "image" | "video") => {
     if (!file) return;
-    void onUpload(file, "image");
+    void onUpload(file, kind ?? inferMediaKind(file));
   };
 
-  const onVideoPicked = (file: File | null | undefined) => {
-    if (!file) return;
-    void onUpload(file, "video");
+  const onGalleryPicked = (files: FileList | null) => {
+    if (!files?.length) return;
+    for (const file of Array.from(files)) {
+      void onUpload(file, inferMediaKind(file));
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => {
+      const next = [...prev];
+      const removed = next[index];
+      if (removed?.previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      next.splice(index, 1);
+      return next;
+    });
   };
 
   const docBase = catalog?.doc_url_base ?? "";
@@ -384,6 +407,7 @@ export function RTSRecordPage() {
   const videoCount = readyAtt.filter(a => a.kind === "video").length;
   const atAttachmentLimit = catalog ? attachments.length >= catalog.attachments_max : false;
   const uploadsInFlight = attachments.some(a => a.uploadStatus === "uploading");
+  const videoMaxMb = catalog?.video_max_mb ?? 512;
 
   const buildPayload = () => ({
     tracking_number: tracking.trim(),
@@ -408,7 +432,7 @@ export function RTSRecordPage() {
     if (!shop || !courier) return "Shop and courier required";
     if (uploadsInFlight) return "Wait for photo/video uploads to finish";
     if (attachments.some(a => a.uploadStatus === "error")) {
-      return "One or more uploads failed — tap Take photo / Record video to try again";
+      return "One or more uploads failed — remove or add again";
     }
     if (!readyAtt.length) return "At least one documentation file required";
     if (disposition === "swapped") {
@@ -627,8 +651,11 @@ export function RTSRecordPage() {
               <p className="text-sm font-semibold">RTS documentation</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {disposition === "swapped"
-                  ? "Take at least one photo and one video of the return."
-                  : "Photograph or record the opened return parcel."}
+                  ? "Add at least one photo and one video (camera or gallery)."
+                  : "Add photos and videos of the opened return — all attach to this case."}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Up to {catalog.attachments_max} files · videos up to ~{videoMaxMb}MB each
               </p>
             </div>
 
@@ -639,7 +666,7 @@ export function RTSRecordPage() {
               capture="environment"
               className="hidden"
               onChange={e => {
-                onPhotoPicked(e.target.files?.[0]);
+                onMediaPicked(e.target.files?.[0], "image");
                 e.target.value = "";
               }}
             />
@@ -650,7 +677,18 @@ export function RTSRecordPage() {
               capture="environment"
               className="hidden"
               onChange={e => {
-                onVideoPicked(e.target.files?.[0]);
+                onMediaPicked(e.target.files?.[0], "video");
+                e.target.value = "";
+              }}
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              className="hidden"
+              onChange={e => {
+                onGalleryPicked(e.target.files);
                 e.target.value = "";
               }}
             />
@@ -660,23 +698,34 @@ export function RTSRecordPage() {
                 type="button"
                 variant="outline"
                 className="h-auto py-3 flex flex-col gap-1.5"
-                disabled={docUploadBusy || atAttachmentLimit}
+                disabled={atAttachmentLimit}
                 onClick={() => photoInputRef.current?.click()}
               >
-                {docUploadBusy ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+                <Camera size={18} />
                 <span className="text-xs font-semibold">Take photo</span>
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 className="h-auto py-3 flex flex-col gap-1.5"
-                disabled={docUploadBusy || atAttachmentLimit}
+                disabled={atAttachmentLimit}
                 onClick={() => videoInputRef.current?.click()}
               >
-                {docUploadBusy ? <Loader2 size={18} className="animate-spin" /> : <Video size={18} />}
+                <Video size={18} />
                 <span className="text-xs font-semibold">Record video</span>
               </Button>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-auto py-3 flex flex-col gap-1.5"
+              disabled={atAttachmentLimit}
+              onClick={() => galleryInputRef.current?.click()}
+            >
+              <ImagePlus size={18} />
+              <span className="text-xs font-semibold">Add photo or video</span>
+              <span className="text-[10px] font-normal text-muted-foreground">Gallery · multiple files</span>
+            </Button>
 
             {(photoCount > 0 || videoCount > 0) && (
               <div className="flex flex-wrap gap-2 text-xs">
@@ -732,6 +781,19 @@ export function RTSRecordPage() {
                           {a.uploadError ?? "Upload failed"}
                         </div>
                       )}
+                      {(a.uploadStatus === "ready" || a.uploadStatus === "error") && (
+                        <button
+                          type="button"
+                          className="absolute top-1.5 left-1.5 rounded-full bg-black/55 text-white p-0.5 hover:bg-black/75"
+                          aria-label="Remove"
+                          onClick={e => {
+                            e.stopPropagation();
+                            removeAttachment(i);
+                          }}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
                     </div>
                   );
                 })}
@@ -766,7 +828,7 @@ export function RTSRecordPage() {
                 </p>
               )}
               {disposition === "swapped" && (
-                <p className="text-xs text-amber-800 mt-1">Use Take photo and Record video above — both are required for swapped parcels.</p>
+                <p className="text-xs text-amber-800 mt-1">Swapped parcels need at least one photo and one video in the list above.</p>
               )}
               {disposition === "leak" && (
                 <p className="text-xs text-muted-foreground mt-1">
@@ -777,14 +839,14 @@ export function RTSRecordPage() {
           )}
         </AppModalBody>
         <AppModalFooter>
-          <Button type="button" variant="outline" disabled={busy || docUploadBusy} onClick={closeCaseModal}>
+          <Button type="button" variant="outline" disabled={busy || uploadsInFlight} onClick={closeCaseModal}>
             Cancel
           </Button>
-          <Button type="button" disabled={busy || docUploadBusy} onClick={() => void save(false)} className="bg-[#C8900A] hover:bg-[#C8900A]/90">
+          <Button type="button" disabled={busy || uploadsInFlight} onClick={() => void save(false)} className="bg-[#C8900A] hover:bg-[#C8900A]/90">
             {busy ? <Loader2 size={14} className="animate-spin" /> : null} Save
           </Button>
           {mode === "create" && (
-            <Button type="button" variant="outline" disabled={busy || docUploadBusy} onClick={() => void save(true)}>
+            <Button type="button" variant="outline" disabled={busy || uploadsInFlight} onClick={() => void save(true)}>
               Save & scan next
             </Button>
           )}

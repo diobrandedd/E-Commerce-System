@@ -927,8 +927,29 @@ function rts_case_handler_product_catalog(): array
             ['id' => 'packaging_replaced', 'label' => 'Packaging replaced'],
         ],
         'doc_url_base' => rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''),
-        'attachments_max' => 24,
+        'attachments_max' => RTS_ATTACHMENTS_MAX,
+        'video_max_mb' => (int) round(RTS_DOC_VIDEO_MAX_BYTES / (1024 * 1024)),
     ];
+}
+
+function rts_case_handler_upload_error_message(int $code): string
+{
+    if ($code === UPLOAD_ERR_INI_SIZE || $code === UPLOAD_ERR_FORM_SIZE) {
+        $postMax = ini_get('post_max_size') ?: 'unknown';
+        $uploadMax = ini_get('upload_max_filesize') ?: 'unknown';
+        $videoMb = (int) round(RTS_DOC_VIDEO_MAX_BYTES / (1024 * 1024));
+
+        return 'Upload exceeds server limit (post_max_size=' . $postMax
+            . ', upload_max_filesize=' . $uploadMax
+            . '). Videos may be up to ~' . $videoMb . 'MB when PHP limits allow — restart Apache after raising api/.htaccess or php.ini.';
+    }
+
+    return match ($code) {
+        UPLOAD_ERR_PARTIAL => 'Upload was interrupted — try again.',
+        UPLOAD_ERR_NO_FILE => 'No file received.',
+        UPLOAD_ERR_NO_TMP_DIR, UPLOAD_ERR_CANT_WRITE, UPLOAD_ERR_EXTENSION => 'Server could not store the upload.',
+        default => 'Upload failed',
+    };
 }
 
 /**
@@ -940,8 +961,9 @@ function rts_case_handler_upload_documentation(?array $file): array
     if ($file === null || !is_array($file)) {
         throw new RtsCaseException('Missing file input', 'missing_file', 400);
     }
-    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-        throw new RtsCaseException('Upload failed', 'upload_failed', 400);
+    $uploadErr = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($uploadErr !== UPLOAD_ERR_OK) {
+        throw new RtsCaseException(rts_case_handler_upload_error_message($uploadErr), 'upload_failed', 400);
     }
     $tmp = (string) ($file['tmp_name'] ?? '');
     $size = (int) ($file['size'] ?? 0);
@@ -950,8 +972,8 @@ function rts_case_handler_upload_documentation(?array $file): array
     }
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime = (string) $finfo->file($tmp);
-    $imageMax = 12 * 1024 * 1024;
-    $videoMax = 120 * 1024 * 1024;
+    $imageMax = RTS_DOC_IMAGE_MAX_BYTES;
+    $videoMax = RTS_DOC_VIDEO_MAX_BYTES;
     $kind = '';
     $ext = '';
     $maxForType = $imageMax;
@@ -992,12 +1014,31 @@ function rts_case_handler_upload_documentation(?array $file): array
             $kind = 'video';
             $maxForType = $videoMax;
             break;
+        case 'video/3gpp':
+        case 'video/3gp':
+            $ext = '3gp';
+            $kind = 'video';
+            $maxForType = $videoMax;
+            break;
+        case 'application/octet-stream':
+            $orig = strtolower((string) ($file['name'] ?? ''));
+            if (preg_match('/\.(mp4|mov|webm|3gp)$/i', $orig, $m)) {
+                $ext = strtolower($m[1]);
+                $kind = 'video';
+                $maxForType = $videoMax;
+                break;
+            }
+            // fall through
         default:
             throw new RtsCaseException('Unsupported type (use JPG/PNG/WebP/GIF or MP4/WebM/MOV)', 'unsupported_type', 415);
     }
     if ($size > $maxForType) {
         $mb = (int) round($maxForType / (1024 * 1024));
-        throw new RtsCaseException('File too large (max about ' . $mb . 'MB for this type)', 'file_too_large', 413);
+        throw new RtsCaseException(
+            'File too large (max about ' . $mb . 'MB for ' . ($kind === 'video' ? 'video' : 'images') . ')',
+            'file_too_large',
+            413
+        );
     }
     $targetDir = rts_storage_dir(RTS_STORAGE_BUCKET_RTS);
     $prefix = $kind === 'video' ? 'rtsvid_' : 'rtsdoc_';
