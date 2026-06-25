@@ -135,7 +135,7 @@ function rts_case_enrich_before_shipment(PDO $pdo, array $caseRow): array
         'item_id' => $itemId > 0 ? $itemId : null,
         'delivery_date' => $deliveryDate !== '' && $deliveryDate !== '0' ? $deliveryDate : null,
         'photo_filename' => $fn,
-        'download_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn),
+        'download_url' => rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn),
     ];
 }
 
@@ -238,7 +238,7 @@ function rts_case_handler_delivery_match(PDO $pdo, string $tracking): array
         'item_id' => (int) $row['item_id'],
         'photo_filename' => $fn,
         'delivery_date' => (string) $row['delivery_date'],
-        'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn),
+        'file_url' => rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn),
     ];
 }
 
@@ -950,7 +950,7 @@ function rts_case_handler_product_catalog(): array
             ['id' => 'item_replaced', 'label' => 'Item replaced'],
             ['id' => 'packaging_replaced', 'label' => 'Packaging replaced'],
         ],
-        'doc_url_base' => rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''),
+        'doc_url_base' => rts_storage_public_prefix_for_app(RTS_STORAGE_BUCKET_RTS),
         'attachments_max' => RTS_ATTACHMENTS_MAX,
         'video_max_mb' => (int) round(RTS_DOC_VIDEO_MAX_BYTES / (1024 * 1024)),
     ];

@@ -14,7 +14,8 @@ import {
 } from "@/app/lib/rtsApi";
 
 export function rtsDocUrl(docBase: string, file: string) {
-  return `${docBase}${file}`;
+  const encoded = file.split("/").map(encodeURIComponent).join("/");
+  return `${docBase}${encoded}`;
 }
 
 export function RtsMediaThumb({

@@ -220,6 +220,17 @@ function rts_storage_public_url(string $bucket, string $filename, string $relati
     return $prefix . $encoded;
 }
 
+/** Site-root URLs for SPA / JSON API (e.g. /rts/api/storage_media.php?…). */
+function rts_storage_public_prefix_for_app(string $bucket): string
+{
+    return rts_storage_public_prefix($bucket, '/rts/');
+}
+
+function rts_storage_public_url_for_app(string $bucket, string $filename): string
+{
+    return rts_storage_public_url($bucket, $filename, '/rts/');
+}
+
 /**
  * CSR waybill tools (stamper, PDF→Excel, order remarks, online orders).
  * When config storage.root is set → {root}/{bucket}/…; else project storage/{legacyFolder}/….
@@ -249,19 +260,32 @@ function rts_storage_resolve_file(string $bucket, string $filename): ?string
     if ($safe === '') {
         return null;
     }
-    $path = rts_storage_dir($bucket) . '/' . $safe;
+    $bucketDir = rts_storage_dir($bucket);
+    $path = $bucketDir . '/' . $safe;
     if (is_file($path)) {
         return $path;
     }
 
-    // Legacy rows: flat filename on disk may live under bucket/YYYY-MM/.
-    if (($bucket === RTS_STORAGE_BUCKET_DELIVERIES || $bucket === RTS_STORAGE_BUCKET_RTS) && !str_contains($safe, '/')) {
-        $matches = glob(rts_storage_dir($bucket) . '/*/' . $safe);
-        if (is_array($matches)) {
-            foreach ($matches as $candidate) {
-                if (is_file($candidate)) {
-                    return $candidate;
-                }
+    if ($bucket !== RTS_STORAGE_BUCKET_DELIVERIES && $bucket !== RTS_STORAGE_BUCKET_RTS) {
+        return null;
+    }
+
+    $base = basename($safe);
+
+    // Monthly path in DB but file still at bucket root (legacy flat disk).
+    if (str_contains($safe, '/')) {
+        $flat = $bucketDir . '/' . $base;
+        if (is_file($flat)) {
+            return $flat;
+        }
+    }
+
+    // Flat DB path or wrong month folder — locate by basename under any YYYY-MM/.
+    $matches = glob($bucketDir . '/*/' . $base);
+    if (is_array($matches)) {
+        foreach ($matches as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
             }
         }
     }

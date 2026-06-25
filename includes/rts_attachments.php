@@ -220,7 +220,7 @@ function rts_documentation_save_upload(string $tmp, int $size, ?string $original
 
     return [
         'file_name' => $storedName,
-        'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_RTS, $storedName),
+        'file_url' => rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_RTS, $storedName),
         'media_kind' => $kind,
     ];
 }

@@ -8,7 +8,8 @@ require_once __DIR__ . '/qr_decode.php';
 require_once __DIR__ . '/rts_schema.php';
 require_once __DIR__ . '/rts_storage.php';
 
-function online_parcels_user_is_csr_dept(array $user): bool
+/** Max rows per list page (SPA custom input and API). */
+const ONLINE_PARCELS_LIST_MAX_PER_PAGE = 10000;
 {
     $deptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
     if ($deptId < 1) {
@@ -521,10 +522,7 @@ function online_parcels_format_packing_photo(array $row): ?array
     if ($fn === '') {
         return null;
     }
-    $url = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);
-    if ($url !== '' && !str_starts_with($url, '/') && !preg_match('#^https?://#i', $url)) {
-        $url = '/rts/' . ltrim($url, '/');
-    }
+    $url = rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn);
 
     return [
         'delivery_item_id' => (int) ($row['delivery_item_id'] ?? 0),
@@ -815,6 +813,12 @@ function online_parcels_export_selected(PDO $pdo, array $ids): array
         throw new RuntimeException('Select at least one parcel to export.');
     }
 
+    if (count($ids) > ONLINE_PARCELS_LIST_MAX_PER_PAGE) {
+        throw new RuntimeException(
+            'Too many parcels selected (max ' . ONLINE_PARCELS_LIST_MAX_PER_PAGE . '). Export in smaller batches.'
+        );
+    }
+
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
     $st = $pdo->prepare(
         "SELECT order_no, recipient_name, items_raw AS items, courier, tracking_number
@@ -844,7 +848,7 @@ function online_parcels_list(PDO $pdo, string $q, string $status, int $page, int
 {
     online_parcels_ensure_schema($pdo);
     $page = max(1, $page);
-    $perPage = min(100, max(1, $perPage));
+    $perPage = min(ONLINE_PARCELS_LIST_MAX_PER_PAGE, max(1, $perPage));
     $offset = ($page - 1) * $perPage;
 
     $filters = array_merge($extra, [

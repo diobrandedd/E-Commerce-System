@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-06-25T08:52:28+02:00
+generated: 2026-06-25T09:47:49+02:00
 type: memory-bank
 ---
 
@@ -43,7 +43,7 @@ type: memory-bank
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/labels]] | 3 |
 | [[modules/material_inventory]] | 64 |
-| [[modules/online_order_parcels]] | 27 |
+| [[modules/online_order_parcels]] | 26 |
 | [[modules/online_orders_generator]] | 38 |
 | [[modules/order_remarks]] | 17 |
 | [[modules/parcel_pack_costing]] | 37 |
@@ -59,7 +59,7 @@ type: memory-bank
 | [[modules/rts_products]] | 14 |
 | [[modules/rts_schema]] | 13 |
 | [[modules/rts_shop_couriers]] | 2 |
-| [[modules/rts_storage]] | 14 |
+| [[modules/rts_storage]] | 16 |
 | [[modules/shopee_spx_packing_list]] | 4 |
 | [[modules/shopee_spx_product_info]] | 12 |
 | [[modules/sp_sort_service]] | 26 |

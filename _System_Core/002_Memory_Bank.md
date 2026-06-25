@@ -592,3 +592,7 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-06-24 — RTS documentation monthly folders
 - **What we did:** RTS proof uploads now save under `rts_documentation/YYYY-MM/` (same pattern as deliveries); DB stores `YYYY-MM/filename`; legacy flat files still served.
 - **Record:** [[problems/records/2026-06-24_rts-documentation-monthly-folders]]
+
+### 2026-06-25 — RTS Records blank media thumbnails
+- **What we did:** Fixed SPA-relative `storage_media.php` URLs (`/rts/api/...`), bidirectional file resolve on disk, and `rtsDocUrl()` path encoding so Before ship / Photo / Video load in RTS Records.
+- **Record:** [[problems/records/2026-06-24_rts-documentation-monthly-folders]] (updated)

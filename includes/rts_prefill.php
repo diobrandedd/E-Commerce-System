@@ -179,7 +179,7 @@ function rts_prefill_delivery_lookup(PDO $pdo, string $tracking): array
         'item_id' => (int) $row['item_id'],
         'photo_filename' => $fn,
         'delivery_date' => (string) $row['delivery_date'],
-        'file_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn),
+        'file_url' => rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn),
     ];
 }
 

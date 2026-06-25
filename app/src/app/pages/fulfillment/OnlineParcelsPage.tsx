@@ -32,7 +32,8 @@ import {
 } from "@/app/lib/parcelsApi";
 import { ApiError } from "@/app/lib/api";
 
-const PAGE_SIZE_PRESETS = [1, 5, 10, 25] as const;
+const PAGE_SIZE_PRESETS = [25, 100, 1000, 10000] as const;
+const MAX_PER_PAGE = 10000;
 
 function formatCreatedAt(iso: string): string {
   if (!iso) return "—";
@@ -123,7 +124,7 @@ export function OnlineParcelsPage() {
   const [courier, setCourier] = useState("");
   const [sort, setSort] = useState<ParcelsListSort>("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [perPage, setPerPage] = useState(10);
+  const [perPage, setPerPage] = useState(25);
   const [customPerPage, setCustomPerPage] = useState("");
   const [rows, setRows] = useState<OnlineParcel[]>([]);
   const [total, setTotal] = useState(0);
@@ -142,7 +143,7 @@ export function OnlineParcelsPage() {
   const effectivePerPage = useMemo(() => {
     const custom = parseInt(customPerPage, 10);
     if (customPerPage.trim() !== "" && !Number.isNaN(custom)) {
-      return Math.min(100, Math.max(1, custom));
+      return Math.min(MAX_PER_PAGE, Math.max(1, custom));
     }
     return perPage;
   }, [perPage, customPerPage]);
@@ -298,7 +299,9 @@ export function OnlineParcelsPage() {
       <FulfillmentToast message={toast} />
       <AppSuccessNotice message={exportNotice} />
 
-      <FulfillmentSectionEnter className="space-y-4">
+      <div className="flex flex-col h-[calc(100dvh-8rem)] min-h-[18rem] min-w-0">
+      <FulfillmentSectionEnter className="flex flex-col flex-1 min-h-0 gap-4">
+        <div className="shrink-0 space-y-4">
         <div className="flex flex-wrap gap-2 max-w-5xl" data-tour="online-parcels-filters">
           <div className="flex flex-1 min-w-[220px] gap-2">
             <input
@@ -414,12 +417,17 @@ export function OnlineParcelsPage() {
             <input
               type="number"
               min={1}
-              max={100}
+              max={MAX_PER_PAGE}
               placeholder="Custom"
               value={customPerPage}
               onChange={e => setCustomPerPage(e.target.value)}
               className="w-16 rounded-md border border-border bg-background px-2 py-1 text-xs"
             />
+            {effectivePerPage >= 1000 && (
+              <span className="text-[10px] text-amber-700 dark:text-amber-400">
+                Large lists may take a moment to load
+              </span>
+            )}
           </div>
           <FulfillmentPressable
             variant="primary"
@@ -433,18 +441,23 @@ export function OnlineParcelsPage() {
         </div>
 
         <FulfillmentErrorBanner message={error} />
+        </div>
 
-        <div className="px-1 pb-1">
+        <div className="px-1 pb-1 shrink-0">
           <h3 className="text-sm font-semibold text-foreground">Parcels</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             Click a row for details — use checkboxes to export a subset to Excel
           </p>
         </div>
 
-        <div className="bg-card rounded-xl border overflow-x-auto" data-tour="online-parcels-table">
+        <div
+          className="bg-card rounded-xl border flex flex-col flex-1 min-h-0 overflow-hidden"
+          data-tour="online-parcels-table"
+        >
+          <div className="flex-1 min-h-0 overflow-auto overscroll-contain">
           <table className="w-full text-sm min-w-[960px]">
             <thead>
-              <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
+              <tr className="border-b bg-secondary/95 text-xs uppercase text-muted-foreground sticky top-0 z-10 backdrop-blur-sm">
                 <th className="px-3 py-3 w-10">
                   <input
                     type="checkbox"
@@ -538,9 +551,11 @@ export function OnlineParcelsPage() {
                 ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {!loading && (
+          <div className="shrink-0">
           <TablePagination
             page={page}
             setPage={setPage}
@@ -548,8 +563,10 @@ export function OnlineParcelsPage() {
             perPage={effectivePerPage}
             noun="parcels"
           />
+          </div>
         )}
       </FulfillmentSectionEnter>
+      </div>
 
       <OnlineParcelDetailModal
         parcel={selected}

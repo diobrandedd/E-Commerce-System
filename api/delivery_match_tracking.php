@@ -73,7 +73,7 @@ if (!$row) {
 }
 
 $fn = (string) $row['photo_filename'];
-$fileUrl = rts_storage_public_url(RTS_STORAGE_BUCKET_DELIVERIES, $fn);
+$fileUrl = rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn);
 
 echo json_encode([
     'ok' => true,
