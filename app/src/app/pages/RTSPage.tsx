@@ -8,9 +8,12 @@ import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_SIZES } from "@/app/lib/honey";
+import { variantLabel } from "@/app/lib/posHoney";
 
 interface RtsInvRow {
-  id: number;
+  id?: number;
+  first_row_id?: number;
+  line_count?: number;
   category: string;
   product_label: string;
   variant: string | null;
@@ -207,8 +210,13 @@ function RtsTable({ rows, honey, onSell }: { rows: RtsInvRow[]; honey: boolean; 
           </thead>
           <tbody>
             {rows.map(r => (
-              <tr key={r.id} className="border-b">
-                <td className="px-3 py-2 capitalize">{r.variant ?? r.product_label}</td>
+              <tr key={r.variant ?? r.product_label} className="border-b">
+                <td className="px-3 py-2 capitalize">
+                  {r.variant ?? r.product_label}
+                  {(r.line_count ?? 0) > 1 && (
+                    <span className="ml-1 text-[10px] text-muted-foreground">({r.line_count} lots)</span>
+                  )}
+                </td>
                 <td className="px-3 py-2"><QtyCounter current={r.current_liter} initial={r.initial_liter} /></td>
                 <td className="px-3 py-2"><QtyCounter current={r.current_250ml} initial={r.initial_250ml} /></td>
                 <td className="px-3 py-2"><QtyCounter current={r.current_350ml} initial={r.initial_350ml} /></td>
@@ -233,8 +241,13 @@ function RtsTable({ rows, honey, onSell }: { rows: RtsInvRow[]; honey: boolean; 
         </thead>
         <tbody>
           {rows.map(r => (
-            <tr key={r.id} className="border-b">
-              <td className="px-4 py-3">{r.product_label}</td>
+            <tr key={r.product_label} className="border-b">
+              <td className="px-4 py-3">
+                {r.product_label}
+                {(r.line_count ?? 0) > 1 && (
+                  <span className="ml-1 text-[10px] text-muted-foreground">({r.line_count} lots)</span>
+                )}
+              </td>
               <td className="px-4 py-3"><QtyCounter current={r.current_qty} initial={r.initial_qty} /></td>
               {onSell && <td><button onClick={() => onSell(r)} className="text-xs text-[#C8900A] font-semibold">Deduct / Sell</button></td>}
             </tr>
@@ -254,18 +267,23 @@ function SellModal({ row, onClose, onDone }: { row: RtsInvRow; onClose: () => vo
     const size_qtys: Record<string, number> = {};
     if (row.category === "honey") {
       HONEY_SIZES.forEach(s => { const v = parseFloat(sizes[s] || "0"); if (v > 0) size_qtys[s] = v; });
+      await apiPost("rts.php", "inventory_deduct_sell", {
+        honey_variant: row.variant ?? "other",
+        size_qtys,
+        sale_type: saleType,
+      });
+    } else {
+      await apiPost("rts.php", "inventory_deduct_sell", {
+        product_label: row.product_label,
+        qty_other: parseFloat(qtyOther),
+        sale_type: saleType,
+      });
     }
-    await apiPost("rts.php", "inventory_deduct_sell", {
-      row_id: row.id,
-      size_qtys,
-      qty_other: row.category === "other" ? parseFloat(qtyOther) : undefined,
-      sale_type: saleType,
-    });
     onDone();
   };
   return (
     <AppModal open onClose={onClose} panelClassName="max-w-sm w-full" labelledBy="rts-sell-modal-title">
-      <AppModalHeader title={`Deduct / Sell — ${row.product_label}`} titleId="rts-sell-modal-title" onClose={onClose} />
+      <AppModalHeader title={`Deduct / Sell — ${row.variant ? variantLabel(row.variant) : row.product_label}`} titleId="rts-sell-modal-title" onClose={onClose} />
       <AppModalBody>
         <form onSubmit={submit} className="space-y-2 text-sm">
           {row.category === "honey" ? HONEY_SIZES.map(s => (

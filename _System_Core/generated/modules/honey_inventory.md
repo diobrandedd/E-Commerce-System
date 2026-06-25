@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-06-24T11:07:41+02:00
+generated: 2026-06-25T08:52:36+02:00
 type: module
 function_count: 39
 ---
@@ -78,13 +78,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:880 — `$variant = honey_normalize_variant((string) $fields['variant']);`
 - `includes/honey_inventory.php`:1064 — `$after = honey_normalize_variant($newValue);`
 - `includes/honey_parcel_inventory.php`:178 — `$variant = honey_normalize_variant($variant);`
-- `includes/honey_pos.php`:142 — `$variant = honey_normalize_variant($variant);`
-- `includes/honey_pos.php`:159 — `$variant = honey_normalize_variant($variant);`
-- `includes/honey_pos.php`:210 — `$variant = honey_normalize_variant($variant);`
+- `includes/honey_pos.php`:143 — `$variant = honey_normalize_variant($variant);`
+- `includes/honey_pos.php`:160 — `$variant = honey_normalize_variant($variant);`
+- `includes/honey_pos.php`:211 — `$variant = honey_normalize_variant($variant);`
 
 ## honey_packaging_size_columns {#honey_packaging_size_columns}
 
-**Callers (11):**
+**Callers (12):**
 
 - `includes/honey_inventory.php`:464 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_inventory.php`:480 — `[$curCol] = honey_packaging_size_columns($size);`
@@ -93,10 +93,11 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:892 — `[$curCol, $initCol] = honey_packaging_size_columns((string) $size);`
 - `includes/honey_inventory.php`:905 — `[$curCol, $initCol] = honey_packaging_size_columns($size);`
 - `includes/honey_parcel_inventory.php`:132 — `[$curCol] = honey_packaging_size_columns($size);`
-- `includes/honey_pos.php`:143 — `[$curCol] = honey_packaging_size_columns($size);`
-- `includes/honey_pos.php`:163 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/honey_pos.php`:144 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/honey_pos.php`:164 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/rts_damaged_use.php`:198 — `[$curCol] = honey_packaging_size_columns($size);`
-- `includes/rts_inventory_sync.php`:194 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/rts_inventory_sync.php`:273 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/rts_inventory_sync.php`:409 — `[$curCol] = honey_packaging_size_columns($size);`
 
 ## honey_fetch_warehouse {#honey_fetch_warehouse}
 

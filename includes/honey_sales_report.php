@@ -56,9 +56,11 @@ function honey_sales_pos_checkout_where_clause(?array $range, ?string $receiptSe
         $params[] = '%' . $escaped . '%';
     }
     if ($saleType === 'regular') {
-        $where .= ' AND (ps.discount_percent IS NULL OR ps.discount_percent = 0)';
+        $where .= ' AND COALESCE(ps.is_ar, 0) = 0 AND (ps.discount_percent IS NULL OR ps.discount_percent = 0)';
     } elseif ($saleType === 'discount') {
-        $where .= ' AND ps.discount_percent IN (10, 20)';
+        $where .= ' AND COALESCE(ps.is_ar, 0) = 0 AND ps.discount_percent IN (10, 20)';
+    } elseif ($saleType === 'ar') {
+        $where .= ' AND ps.is_ar = 1';
     }
 
     return [$where, $params];
@@ -104,7 +106,7 @@ function honey_sales_fetch_checkouts(
 {
     $perPage = HONEY_SALES_CHECKOUTS_PER_PAGE;
     $page = max(1, $page);
-    if (!in_array($saleType, ['all', 'regular', 'discount'], true)) {
+    if (!in_array($saleType, ['all', 'regular', 'discount', 'ar'], true)) {
         $saleType = 'all';
     }
     [$where, $params] = honey_sales_pos_checkout_where_clause($range, $receiptSearch, $saleType);
@@ -123,10 +125,11 @@ function honey_sales_fetch_checkouts(
 
     $offset = ($page - 1) * $perPage;
     $listSql = "SELECT ps.id AS sale_id, ps.receipt_no, ps.sale_date AS sold_at,
-                       ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount, ps.buyer_name
+                       ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount,
+                       ps.buyer_name, ps.buyer_credentials, COALESCE(ps.is_ar, 0) AS is_ar
                 FROM pos_sales ps
                 INNER JOIN honey_sales_log h ON h.pos_sale_id = ps.id{$where}
-                GROUP BY ps.id, ps.receipt_no, ps.sale_date, ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount, ps.buyer_name
+                GROUP BY ps.id, ps.receipt_no, ps.sale_date, ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount, ps.buyer_name, ps.buyer_credentials, ps.is_ar
                 ORDER BY ps.sale_date DESC
                 LIMIT {$perPage} OFFSET {$offset}";
     $lst = $pdo->prepare($listSql);
@@ -174,6 +177,8 @@ function honey_sales_fetch_checkouts(
             'discount_amount' => round((float) ($s['discount_amount'] ?? 0), 2),
             'total_amount' => round((float) $s['total_amount'], 2),
             'buyer_name' => (string) $s['buyer_name'],
+            'buyer_credentials' => $s['buyer_credentials'] !== null ? (string) $s['buyer_credentials'] : null,
+            'is_ar' => (int) ($s['is_ar'] ?? 0) === 1,
             'item_count' => count($items),
             'items' => $items,
         ];
@@ -245,7 +250,7 @@ function honey_sales_sold_snapshot(
     if ($receiptSearch === '') {
         $receiptSearch = null;
     }
-    if (!in_array($saleType, ['all', 'regular', 'discount'], true)) {
+    if (!in_array($saleType, ['all', 'regular', 'discount', 'ar'], true)) {
         $saleType = 'all';
     }
     [$logWhere, $logParams] = honey_sales_log_where_clause($range);
@@ -264,10 +269,10 @@ function honey_sales_sold_snapshot(
     $all = honey_sales_variant_breakdown($stAll->fetchAll(PDO::FETCH_ASSOC));
 
     $sqlRegular = "SELECT h.variant,
-                          COALESCE(SUM(CASE WHEN h.pos_sale_id IS NULL OR ps.discount_percent IS NULL OR ps.discount_percent = 0 THEN h.qty_liter ELSE 0 END), 0) AS liter,
-                          COALESCE(SUM(CASE WHEN h.pos_sale_id IS NULL OR ps.discount_percent IS NULL OR ps.discount_percent = 0 THEN h.qty_250ml ELSE 0 END), 0) AS ml250,
-                          COALESCE(SUM(CASE WHEN h.pos_sale_id IS NULL OR ps.discount_percent IS NULL OR ps.discount_percent = 0 THEN h.qty_350ml ELSE 0 END), 0) AS ml350,
-                          COALESCE(SUM(CASE WHEN h.pos_sale_id IS NULL OR ps.discount_percent IS NULL OR ps.discount_percent = 0 THEN h.qty_gallon ELSE 0 END), 0) AS gallon
+                          COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND (h.pos_sale_id IS NULL OR ps.discount_percent IS NULL OR ps.discount_percent = 0) THEN h.qty_liter ELSE 0 END), 0) AS liter,
+                          COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND (h.pos_sale_id IS NULL OR ps.discount_percent IS NULL OR ps.discount_percent = 0) THEN h.qty_250ml ELSE 0 END), 0) AS ml250,
+                          COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND (h.pos_sale_id IS NULL OR ps.discount_percent IS NULL OR ps.discount_percent = 0) THEN h.qty_350ml ELSE 0 END), 0) AS ml350,
+                          COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND (h.pos_sale_id IS NULL OR ps.discount_percent IS NULL OR ps.discount_percent = 0) THEN h.qty_gallon ELSE 0 END), 0) AS gallon
                    FROM honey_sales_log h
                    LEFT JOIN pos_sales ps ON ps.id = h.pos_sale_id{$logWhere}
                    GROUP BY h.variant
@@ -277,10 +282,10 @@ function honey_sales_sold_snapshot(
     $regular = honey_sales_variant_breakdown($stRegular->fetchAll(PDO::FETCH_ASSOC));
 
     $sqlDiscount10 = "SELECT h.variant,
-                             COALESCE(SUM(CASE WHEN ps.discount_percent = 10 THEN h.qty_liter ELSE 0 END), 0) AS liter,
-                             COALESCE(SUM(CASE WHEN ps.discount_percent = 10 THEN h.qty_250ml ELSE 0 END), 0) AS ml250,
-                             COALESCE(SUM(CASE WHEN ps.discount_percent = 10 THEN h.qty_350ml ELSE 0 END), 0) AS ml350,
-                             COALESCE(SUM(CASE WHEN ps.discount_percent = 10 THEN h.qty_gallon ELSE 0 END), 0) AS gallon
+                             COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND ps.discount_percent = 10 THEN h.qty_liter ELSE 0 END), 0) AS liter,
+                             COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND ps.discount_percent = 10 THEN h.qty_250ml ELSE 0 END), 0) AS ml250,
+                             COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND ps.discount_percent = 10 THEN h.qty_350ml ELSE 0 END), 0) AS ml350,
+                             COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND ps.discount_percent = 10 THEN h.qty_gallon ELSE 0 END), 0) AS gallon
                       FROM honey_sales_log h
                       LEFT JOIN pos_sales ps ON ps.id = h.pos_sale_id{$logWhere}
                       GROUP BY h.variant
@@ -290,10 +295,10 @@ function honey_sales_sold_snapshot(
     $discount10 = honey_sales_variant_breakdown($stDiscount10->fetchAll(PDO::FETCH_ASSOC));
 
     $sqlDiscount20 = "SELECT h.variant,
-                             COALESCE(SUM(CASE WHEN ps.discount_percent = 20 THEN h.qty_liter ELSE 0 END), 0) AS liter,
-                             COALESCE(SUM(CASE WHEN ps.discount_percent = 20 THEN h.qty_250ml ELSE 0 END), 0) AS ml250,
-                             COALESCE(SUM(CASE WHEN ps.discount_percent = 20 THEN h.qty_350ml ELSE 0 END), 0) AS ml350,
-                             COALESCE(SUM(CASE WHEN ps.discount_percent = 20 THEN h.qty_gallon ELSE 0 END), 0) AS gallon
+                             COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND ps.discount_percent = 20 THEN h.qty_liter ELSE 0 END), 0) AS liter,
+                             COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND ps.discount_percent = 20 THEN h.qty_250ml ELSE 0 END), 0) AS ml250,
+                             COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND ps.discount_percent = 20 THEN h.qty_350ml ELSE 0 END), 0) AS ml350,
+                             COALESCE(SUM(CASE WHEN COALESCE(ps.is_ar, 0) = 0 AND ps.discount_percent = 20 THEN h.qty_gallon ELSE 0 END), 0) AS gallon
                       FROM honey_sales_log h
                       LEFT JOIN pos_sales ps ON ps.id = h.pos_sale_id{$logWhere}
                       GROUP BY h.variant
@@ -305,14 +310,15 @@ function honey_sales_sold_snapshot(
 
     [$salesWhere, $salesParams] = honey_sales_pos_checkout_where_clause($range, null, 'all');
     $summarySql = "SELECT
-                     COALESCE(SUM(CASE WHEN x.discount_percent IS NULL OR x.discount_percent = 0 THEN x.total_amount ELSE 0 END), 0) AS revenue_regular,
-                     COALESCE(SUM(CASE WHEN x.discount_percent IN (10, 20) THEN x.total_amount ELSE 0 END), 0) AS revenue_discounted,
-                     COALESCE(SUM(CASE WHEN x.discount_percent IN (10, 20) THEN x.discount_amount ELSE 0 END), 0) AS discounts_given
+                     COALESCE(SUM(CASE WHEN COALESCE(x.is_ar, 0) = 0 AND (x.discount_percent IS NULL OR x.discount_percent = 0) THEN x.total_amount ELSE 0 END), 0) AS revenue_regular,
+                     COALESCE(SUM(CASE WHEN COALESCE(x.is_ar, 0) = 0 AND x.discount_percent IN (10, 20) THEN x.total_amount ELSE 0 END), 0) AS revenue_discounted,
+                     COALESCE(SUM(CASE WHEN COALESCE(x.is_ar, 0) = 0 AND x.discount_percent IN (10, 20) THEN x.discount_amount ELSE 0 END), 0) AS discounts_given,
+                     COALESCE(SUM(CASE WHEN x.is_ar = 1 THEN x.total_amount ELSE 0 END), 0) AS revenue_ar
                    FROM (
-                     SELECT ps.id, ps.total_amount, ps.discount_amount, ps.discount_percent
+                     SELECT ps.id, ps.total_amount, ps.discount_amount, ps.discount_percent, COALESCE(ps.is_ar, 0) AS is_ar
                      FROM pos_sales ps
                      INNER JOIN honey_sales_log h ON h.pos_sale_id = ps.id{$salesWhere}
-                     GROUP BY ps.id, ps.total_amount, ps.discount_amount, ps.discount_percent
+                     GROUP BY ps.id, ps.total_amount, ps.discount_amount, ps.discount_percent, ps.is_ar
                    ) x";
     $sst = $pdo->prepare($summarySql);
     $sst->execute($salesParams);
@@ -335,6 +341,7 @@ function honey_sales_sold_snapshot(
             'revenue_regular' => round((float) ($summaryRow['revenue_regular'] ?? 0), 2),
             'revenue_discounted' => round((float) ($summaryRow['revenue_discounted'] ?? 0), 2),
             'discounts_given' => round((float) ($summaryRow['discounts_given'] ?? 0), 2),
+            'revenue_ar' => round((float) ($summaryRow['revenue_ar'] ?? 0), 2),
         ],
         'variants_all' => $all['variants'],
         'variants_regular' => $regular['variants'],

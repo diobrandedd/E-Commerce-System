@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-06-24T11:07:33+02:00
+generated: 2026-06-25T08:52:28+02:00
 type: memory-bank
-edge_count: 228
+edge_count: 234
 ---
 
 
@@ -25,6 +25,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/_bootstrap.php` | `includes/db.php` |
 | `api/v1/_costing_helpers.php` | `api/v1/_bootstrap.php` |
 | `api/v1/ar.php` | `api/v1/_bootstrap.php` |
+| `api/v1/ar.php` | `includes/ar_credits.php` |
 | `api/v1/auth.php` | `api/v1/_bootstrap.php` |
 | `api/v1/costing.php` | `api/v1/_bootstrap.php` |
 | `api/v1/costing.php` | `api/v1/_costing_helpers.php` |
@@ -55,6 +56,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/pdf_to_excel.php` | `api/v1/_bootstrap.php` |
 | `api/v1/pdf_to_excel.php` | `includes/pdf_to_excel.php` |
 | `api/v1/pos.php` | `api/v1/_bootstrap.php` |
+| `api/v1/pos.php` | `includes/ar_credits.php` |
 | `api/v1/pos.php` | `includes/dept_pos.php` |
 | `api/v1/pos.php` | `includes/honey_pos.php` |
 | `api/v1/pos.php` | `includes/pos_discount_requests.php` |
@@ -115,8 +117,10 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/delivery_edit_requests.php` | `includes/rts_storage.php` |
 | `includes/dept_inventory.php` | `includes/dept_pricing.php` |
 | `includes/dept_inventory.php` | `includes/dept_products.php` |
+| `includes/dept_pos.php` | `includes/ar_credits.php` |
 | `includes/dept_pos.php` | `includes/dept_inventory.php` |
 | `includes/dept_pos.php` | `includes/dept_products.php` |
+| `includes/dept_pos.php` | `includes/honey_pos.php` |
 | `includes/dept_pricing.php` | `includes/dept_products.php` |
 | `includes/dept_pricing.php` | `includes/honey_inventory.php` |
 | `includes/dept_pricing.php` | `includes/suppliers.php` |
@@ -139,6 +143,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_parcel_inventory.php` | `includes/parcel_pack_costing.php` |
 | `includes/honey_parcel_inventory.php` | `includes/rts_schema.php` |
 | `includes/honey_parcel_item_parser.php` | `includes/dept_products.php` |
+| `includes/honey_pos.php` | `includes/ar_credits.php` |
 | `includes/honey_pos.php` | `includes/honey_inventory.php` |
 | `includes/honey_pricing.php` | `api/v1/_costing_helpers.php` |
 | `includes/honey_pricing.php` | `includes/honey_inventory.php` |
@@ -187,6 +192,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/rts_damaged_use.php` | `includes/honey_volume.php` |
 | `includes/rts_damaged_use.php` | `includes/rts_inventory_sync.php` |
 | `includes/rts_inventory_sync.php` | `includes/db.php` |
+| `includes/rts_inventory_sync.php` | `includes/honey_inventory.php` |
 | `includes/rts_inventory_sync.php` | `includes/honey_inventory.php` |
 | `includes/rts_inventory_sync.php` | `includes/rts_schema.php` |
 | `includes/rts_prefill.php` | `includes/courier_detect.php` |

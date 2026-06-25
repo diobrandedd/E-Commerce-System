@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/dept_inventory.php';
 require_once __DIR__ . '/dept_products.php';
+require_once __DIR__ . '/ar_credits.php';
+require_once __DIR__ . '/honey_pos.php';
 
 /** @return array{products: list<array<string, mixed>>} */
 function dept_pos_catalog(PDO $pdo, ?string $deptKey = null): array
@@ -199,5 +201,117 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
             'name' => $l['name'],
         ], $cleanLines),
         'buyer_name' => $buyerName !== '' ? $buyerName : 'Walk-in',
+    ];
+}
+
+/**
+ * @param list<array{product_key: string, product_id?: int, qty: float}> $items
+ * @param array{debtor_user_id?: int|null, debtor_name: string, debtor_mobile?: string|null} $debtor
+ * @return array<string, mixed>
+ */
+function dept_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debtor): array
+{
+    if ($posPinId < 1) {
+        throw new RuntimeException('POS session is invalid.');
+    }
+    if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {
+        throw new RuntimeException('AR checkout requires migration phase 50 (pos_sales.is_ar).');
+    }
+
+    $debtorName = trim((string) ($debtor['debtor_name'] ?? ''));
+    if ($debtorName === '') {
+        throw new RuntimeException('Debtor name is required.');
+    }
+    $debtorUserId = isset($debtor['debtor_user_id']) ? (int) $debtor['debtor_user_id'] : null;
+    if ($debtorUserId !== null && $debtorUserId < 1) {
+        $debtorUserId = null;
+    }
+    $debtorMobile = trim((string) ($debtor['debtor_mobile'] ?? ''));
+
+    $cleanLines = dept_pos_build_cart_lines($pdo, $items, 1.0);
+    $subtotal = round(array_sum(array_column($cleanLines, 'line_subtotal')), 2);
+    $total = round(array_sum(array_column($cleanLines, 'line_total')), 2);
+
+    $ownsTransaction = !$pdo->inTransaction();
+    if ($ownsTransaction) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $receiptNo = sprintf('AR-RCP-%s', strtoupper(bin2hex(random_bytes(4))));
+
+        $insSale = $pdo->prepare(
+            'INSERT INTO pos_sales (
+                receipt_no, buyer_name, buyer_credentials, subtotal_amount,
+                discount_percent, discount_amount, total_amount, is_ar, sold_by_pin_id, sale_date
+             ) VALUES (?, ?, ?, ?, NULL, 0, ?, 1, ?, NOW())'
+        );
+        $insSale->execute([
+            $receiptNo,
+            $debtorName,
+            $debtorMobile === '' ? null : $debtorMobile,
+            $subtotal,
+            $total,
+            $posPinId,
+        ]);
+        $saleId = (int) $pdo->lastInsertId();
+
+        $insLine = $pdo->prepare(
+            'INSERT INTO pos_receipt_items (sale_id, product_id, qty, unit_price, list_unit_price, line_total, discount_percent)
+             VALUES (?, ?, ?, ?, ?, ?, NULL)'
+        );
+
+        $arLines = [];
+        foreach ($cleanLines as $line) {
+            dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);
+            $insLine->execute([
+                $saleId,
+                $line['product_id'],
+                $line['qty'],
+                $line['unit_price'],
+                $line['list_unit_price'],
+                $line['line_total'],
+            ]);
+            $arLines[] = [
+                'product_id' => $line['product_id'],
+                'qty' => $line['qty'],
+                'unit_price' => $line['unit_price'],
+            ];
+        }
+
+        $arCreditIds = ar_credits_record_lines($pdo, [
+            'debtor_user_id' => $debtorUserId,
+            'debtor_name' => $debtorName,
+            'debtor_mobile' => $debtorMobile,
+            'source' => 'pos',
+            'recorded_by_pin_id' => $posPinId,
+            'pos_sale_id' => $saleId,
+        ], $arLines);
+
+        if ($ownsTransaction) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($ownsTransaction && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    return [
+        'sale_id' => $saleId,
+        'receipt_no' => $receiptNo,
+        'subtotal' => $subtotal,
+        'total' => $total,
+        'ar_credit_ids' => $arCreditIds,
+        'items' => array_map(static fn ($l) => [
+            'product_id' => $l['product_id'],
+            'product_key' => $l['product_key'],
+            'qty' => $l['qty'],
+            'unit_price' => $l['unit_price'],
+            'line_total' => $l['line_total'],
+            'name' => $l['name'],
+        ], $cleanLines),
+        'debtor_name' => $debtorName,
+        'debtor_mobile' => $debtorMobile !== '' ? $debtorMobile : null,
     ];
 }

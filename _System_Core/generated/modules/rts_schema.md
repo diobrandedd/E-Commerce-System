@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-06-24T11:07:54+02:00
+generated: 2026-06-25T08:52:49+02:00
 type: module
 function_count: 13
 ---
@@ -29,7 +29,6 @@ function_count: 13
 
 - `api/v1/deliveries.php`:327 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `api/v1/deliveries.php`:365 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
-- `api/v1/rts.php`:51 — `if (!rts_db_has_column($pdo, 'rts_inventory_rows', 'inventory_pool')) {`
 - `includes/deliveries_upload.php`:58 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `includes/delivery_edit_requests.php`:19 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `includes/delivery_edit_requests.php`:81 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
@@ -52,6 +51,7 @@ function_count: 13
 - `includes/rts_case_handlers.php`:77 — `if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
 - `includes/rts_case_handlers.php`:85 — `if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
 - `includes/rts_case_handlers.php`:170 — `if (!isset($case['case_disposition']) && rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
+- `includes/rts_case_handlers.php`:569 — `if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
 - _… and 22 more (run impact.php for full list)_
 
 ## rts_cases_void_sql {#rts_cases_void_sql}

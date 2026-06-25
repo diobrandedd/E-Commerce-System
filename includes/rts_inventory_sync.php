@@ -165,6 +165,221 @@ function rts_inventory_sync_status(PDO $pdo): array
     ];
 }
 
+function rts_inventory_pool_filter_sql(PDO $pdo, string $pool): string
+{
+    if (!rts_db_has_column($pdo, 'rts_inventory_rows', 'inventory_pool')) {
+        return $pool === 'damaged' ? ' AND 1=0' : '';
+    }
+    $pool = $pool === 'damaged' ? 'damaged' : 'sellable';
+
+    return " AND inventory_pool = '{$pool}'";
+}
+
+/** @return list<array<string, mixed>> */
+function rts_inventory_list_honey_aggregated(PDO $pdo, string $pool = 'sellable'): array
+{
+    $poolSql = rts_inventory_pool_filter_sql($pdo, $pool);
+    $st = $pdo->query(
+        "SELECT
+            COALESCE(NULLIF(TRIM(variant), ''), 'other') AS variant,
+            MIN(product_label) AS product_label,
+            'honey' AS category,
+            COALESCE(SUM(current_liter), 0) AS current_liter,
+            COALESCE(SUM(initial_liter), 0) AS initial_liter,
+            COALESCE(SUM(current_250ml), 0) AS current_250ml,
+            COALESCE(SUM(initial_250ml), 0) AS initial_250ml,
+            COALESCE(SUM(current_350ml), 0) AS current_350ml,
+            COALESCE(SUM(initial_350ml), 0) AS initial_350ml,
+            COALESCE(SUM(current_gallon), 0) AS current_gallon,
+            COALESCE(SUM(initial_gallon), 0) AS initial_gallon,
+            COUNT(*) AS line_count,
+            MIN(id) AS first_row_id
+         FROM rts_inventory_rows
+         WHERE category = 'honey'{$poolSql}
+         GROUP BY COALESCE(NULLIF(TRIM(variant), ''), 'other')
+         HAVING (current_liter + current_250ml + current_350ml + current_gallon) > 0
+            OR (initial_liter + initial_250ml + initial_350ml + initial_gallon) > 0
+         ORDER BY FIELD(variant, 'light', 'amber', 'dark', 'other'), variant"
+    );
+
+    return $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+}
+
+/** @return list<array<string, mixed>> */
+function rts_inventory_list_other_aggregated(PDO $pdo, string $pool = 'sellable'): array
+{
+    $poolSql = rts_inventory_pool_filter_sql($pdo, $pool);
+    $st = $pdo->query(
+        "SELECT
+            product_label,
+            'other' AS category,
+            NULL AS variant,
+            COALESCE(SUM(current_qty), 0) AS current_qty,
+            COALESCE(SUM(initial_qty), 0) AS initial_qty,
+            COUNT(*) AS line_count,
+            MIN(id) AS first_row_id
+         FROM rts_inventory_rows
+         WHERE category = 'other'{$poolSql}
+         GROUP BY product_label
+         HAVING current_qty > 0 OR initial_qty > 0
+         ORDER BY product_label ASC"
+    );
+
+    return $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+}
+
+/**
+ * FIFO deduct across all honey rows for a variant (sell / parcel).
+ *
+ * @param array<string, float|int|string> $sizeQtys
+ */
+function rts_inventory_deduct_sell_honey_variant(
+    PDO $pdo,
+    int $userId,
+    string $variant,
+    array $sizeQtys,
+    string $saleType,
+    string $pool = 'sellable'
+): void {
+    $variant = strtolower(trim($variant));
+    if ($variant === '') {
+        throw new RuntimeException('Variant is required.');
+    }
+    if (!in_array($saleType, ['walk_in', 'parcel'], true)) {
+        throw new RuntimeException('Invalid sale type.');
+    }
+
+    require_once __DIR__ . '/honey_inventory.php';
+
+    $hasQty = false;
+    foreach (HONEY_SIZES as $size) {
+        if ((float) ($sizeQtys[$size] ?? 0) > 0) {
+            $hasQty = true;
+            break;
+        }
+    }
+    if (!$hasQty) {
+        throw new RuntimeException('Enter quantity for at least one size.');
+    }
+
+    $poolSql = rts_inventory_pool_filter_sql($pdo, $pool);
+    $pdo->beginTransaction();
+    try {
+        foreach (HONEY_SIZES as $size) {
+            $need = (float) ($sizeQtys[$size] ?? 0);
+            if ($need <= 0) {
+                continue;
+            }
+            [$curCol] = honey_packaging_size_columns($size);
+            $remaining = $need;
+
+            while ($remaining > 0.0001) {
+                $st = $pdo->prepare(
+                    "SELECT id, {$curCol} AS on_hand, product_label, variant
+                     FROM rts_inventory_rows
+                     WHERE category = 'honey'{$poolSql}
+                       AND LOWER(TRIM(COALESCE(variant, ''))) = ?
+                       AND {$curCol} > 0
+                     ORDER BY id ASC
+                     LIMIT 1"
+                );
+                $st->execute([$variant]);
+                $row = $st->fetch(PDO::FETCH_ASSOC);
+                if (!$row) {
+                    throw new RuntimeException("Not enough {$size} for {$variant}.");
+                }
+                $rowId = (int) $row['id'];
+                $take = min($remaining, (float) $row['on_hand']);
+                $pdo->prepare("UPDATE rts_inventory_rows SET {$curCol} = {$curCol} - ? WHERE id = ?")
+                    ->execute([$take, $rowId]);
+
+                $logQtys = ['liter' => 0.0, '250ml' => 0.0, '350ml' => 0.0, 'gallon' => 0.0];
+                $logQtys[$size] = $take;
+                $pdo->prepare(
+                    'INSERT INTO honey_sales_log (source, rts_inventory_row_id, variant, qty_liter, qty_250ml, qty_350ml, qty_gallon, product_label, sale_type, sold_by)
+                     VALUES ("rts", ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                )->execute([
+                    $rowId,
+                    $row['variant'],
+                    $logQtys['liter'],
+                    $logQtys['250ml'],
+                    $logQtys['350ml'],
+                    $logQtys['gallon'],
+                    $row['product_label'],
+                    $saleType,
+                    $userId,
+                ]);
+
+                $remaining -= $take;
+            }
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+}
+
+/**
+ * FIFO deduct other-product RTS stock by product label.
+ */
+function rts_inventory_deduct_sell_other_label(
+    PDO $pdo,
+    int $userId,
+    string $productLabel,
+    float $qty,
+    string $saleType,
+    string $pool = 'sellable'
+): void {
+    $productLabel = trim($productLabel);
+    if ($productLabel === '' || $qty <= 0) {
+        throw new RuntimeException('Invalid quantity.');
+    }
+    if (!in_array($saleType, ['walk_in', 'parcel'], true)) {
+        throw new RuntimeException('Invalid sale type.');
+    }
+
+    $poolSql = rts_inventory_pool_filter_sql($pdo, $pool);
+    $pdo->beginTransaction();
+    try {
+        $remaining = $qty;
+        while ($remaining > 0.0001) {
+            $st = $pdo->prepare(
+                "SELECT id, current_qty, product_label
+                 FROM rts_inventory_rows
+                 WHERE category = 'other'{$poolSql}
+                   AND product_label = ?
+                   AND current_qty > 0
+                 ORDER BY id ASC
+                 LIMIT 1"
+            );
+            $st->execute([$productLabel]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                throw new RuntimeException('Not enough stock for ' . $productLabel . '.');
+            }
+            $rowId = (int) $row['id'];
+            $take = min($remaining, (float) $row['current_qty']);
+            $pdo->prepare('UPDATE rts_inventory_rows SET current_qty = current_qty - ? WHERE id = ?')
+                ->execute([$take, $rowId]);
+            $pdo->prepare(
+                'INSERT INTO honey_sales_log (source, rts_inventory_row_id, qty_other, product_label, sale_type, sold_by)
+                 VALUES ("rts", ?, ?, ?, ?, ?)'
+            )->execute([$rowId, $take, $row['product_label'], $saleType, $userId]);
+            $remaining -= $take;
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+}
+
 function rts_inventory_deduct_sell(PDO $pdo, int $userId, int $rowId, array $sizeQtys, ?float $qtyOther, string $saleType): array
 {
     $st = $pdo->prepare('SELECT * FROM rts_inventory_rows WHERE id = ? LIMIT 1');

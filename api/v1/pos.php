@@ -6,6 +6,7 @@ require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../../includes/honey_pos.php';
 require_once __DIR__ . '/../../includes/dept_pos.php';
 require_once __DIR__ . '/../../includes/pos_discount_requests.php';
+require_once __DIR__ . '/../../includes/ar_credits.php';
 
 /**
  * Walk-in POS terminal API.  Requires the dedicated POS session created by
@@ -23,7 +24,10 @@ api_dispatch([
     'dept_catalog' => 'api_pos_dept_catalog',
     'checkout' => 'api_pos_checkout',
     'honey_checkout' => 'api_pos_honey_checkout',
+    'honey_ar_checkout' => 'api_pos_honey_ar_checkout',
     'dept_checkout' => 'api_pos_dept_checkout',
+    'dept_ar_checkout' => 'api_pos_dept_ar_checkout',
+    'staff_picker' => 'api_pos_staff_picker',
     'discount_request_create' => 'api_pos_discount_request_create',
     'discount_request_status' => 'api_pos_discount_request_status',
 ]);
@@ -209,6 +213,75 @@ function api_pos_honey_checkout(): void
 
     try {
         $result = honey_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok($result);
+}
+
+function api_pos_staff_picker(): void
+{
+    api_method_allowed(['GET']);
+    api_pos_require_session();
+    try {
+        api_ok(['staff' => ar_staff_picker_list(ims_pdo())]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_pos_honey_ar_checkout(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_pos_require_session();
+
+    $pinId = (int) ($_SESSION['pos_pin_id'] ?? 0);
+    $items = is_array($input['items'] ?? null) ? $input['items'] : [];
+    $debtorUserId = isset($input['debtor_user_id']) ? (int) $input['debtor_user_id'] : null;
+    if ($debtorUserId !== null && $debtorUserId < 1) {
+        $debtorUserId = null;
+    }
+    $debtorName = trim((string) ($input['debtor_name'] ?? ''));
+    $debtorMobile = trim((string) ($input['debtor_mobile'] ?? ''));
+
+    try {
+        $result = honey_pos_ar_checkout(ims_pdo(), $pinId, $items, [
+            'debtor_user_id' => $debtorUserId,
+            'debtor_name' => $debtorName,
+            'debtor_mobile' => $debtorMobile,
+        ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok($result);
+}
+
+function api_pos_dept_ar_checkout(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_pos_require_session();
+
+    $pinId = (int) ($_SESSION['pos_pin_id'] ?? 0);
+    $items = is_array($input['items'] ?? null) ? $input['items'] : [];
+    $debtorUserId = isset($input['debtor_user_id']) ? (int) $input['debtor_user_id'] : null;
+    if ($debtorUserId !== null && $debtorUserId < 1) {
+        $debtorUserId = null;
+    }
+    $debtorName = trim((string) ($input['debtor_name'] ?? ''));
+    $debtorMobile = trim((string) ($input['debtor_mobile'] ?? ''));
+
+    try {
+        $result = dept_pos_ar_checkout(ims_pdo(), $pinId, $items, [
+            'debtor_user_id' => $debtorUserId,
+            'debtor_name' => $debtorName,
+            'debtor_mobile' => $debtorMobile,
+        ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

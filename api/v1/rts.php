@@ -48,12 +48,7 @@ function api_rts_role_can_use_damaged(string $role): bool
 
 function rts_inventory_pool_sql(PDO $pdo, string $pool): string
 {
-    if (!rts_db_has_column($pdo, 'rts_inventory_rows', 'inventory_pool')) {
-        return $pool === 'damaged' ? ' AND 1=0' : '';
-    }
-    $pool = $pool === 'damaged' ? 'damaged' : 'sellable';
-
-    return " AND inventory_pool = '{$pool}'";
+    return rts_inventory_pool_filter_sql($pdo, $pool);
 }
 
 function api_rts_pool(): void
@@ -137,12 +132,11 @@ function api_rts_inventory_list(): void
         $pool = 'sellable';
     }
     $poolSql = rts_inventory_pool_sql($pdo, $pool);
-    $honey = $pdo->query(
-        'SELECT * FROM rts_inventory_rows WHERE category = "honey"' . $poolSql . ' ORDER BY id DESC'
-    )->fetchAll();
-    $other = $pdo->query(
-        'SELECT * FROM rts_inventory_rows WHERE category = "other"' . $poolSql . ' ORDER BY id DESC'
-    )->fetchAll();
+    $honey = rts_inventory_list_honey_aggregated($pdo, $pool);
+    $other = rts_inventory_list_other_aggregated($pdo, $pool);
+    $lineRowCount = (int) $pdo->query(
+        'SELECT COUNT(*) FROM rts_inventory_rows WHERE 1=1' . $poolSql
+    )->fetchColumn();
     $sync = rts_inventory_sync_status($pdo);
     $caseCount = (int) $pdo->query('SELECT COUNT(*) FROM rts_cases')->fetchColumn();
     $lineItemCount = (int) $pdo->query('SELECT COUNT(*) FROM rts_line_items')->fetchColumn();
@@ -159,7 +153,8 @@ function api_rts_inventory_list(): void
             'case_count' => $caseCount,
             'line_item_count' => $lineItemCount,
             'syncable_line_item_count' => $syncableLineCount,
-            'inventory_row_count' => count($honey) + count($other),
+            'inventory_row_count' => $lineRowCount,
+            'inventory_line_count' => $lineRowCount,
         ],
         'readonly' => !api_rts_role_can_mutate((string) $user['role']) && (string) $user['role'] !== 'executive',
         'can_mutate' => api_rts_role_can_mutate((string) $user['role']),
@@ -202,14 +197,45 @@ function api_rts_inventory_deduct_sell(): void
         api_fail('Forbidden.', 403);
     }
     try {
-        rts_inventory_deduct_sell(
-            ims_pdo(),
-            (int) $user['id'],
-            (int) ($input['row_id'] ?? 0),
-            is_array($input['size_qtys'] ?? null) ? $input['size_qtys'] : [],
-            isset($input['qty_other']) ? (float) $input['qty_other'] : null,
-            (string) ($input['sale_type'] ?? 'walk_in')
-        );
+        $rowId = (int) ($input['row_id'] ?? 0);
+        $honeyVariant = trim((string) ($input['honey_variant'] ?? ''));
+        $productLabel = trim((string) ($input['product_label'] ?? ''));
+        $sizeQtys = is_array($input['size_qtys'] ?? null) ? $input['size_qtys'] : [];
+        $qtyOther = isset($input['qty_other']) ? (float) $input['qty_other'] : null;
+        $saleType = (string) ($input['sale_type'] ?? 'walk_in');
+        $pool = trim((string) ($input['pool'] ?? 'sellable'));
+        if (!in_array($pool, ['sellable', 'damaged'], true)) {
+            $pool = 'sellable';
+        }
+
+        if ($honeyVariant !== '') {
+            rts_inventory_deduct_sell_honey_variant(
+                ims_pdo(),
+                (int) $user['id'],
+                $honeyVariant,
+                $sizeQtys,
+                $saleType,
+                $pool
+            );
+        } elseif ($productLabel !== '') {
+            rts_inventory_deduct_sell_other_label(
+                ims_pdo(),
+                (int) $user['id'],
+                $productLabel,
+                (float) ($qtyOther ?? 0),
+                $saleType,
+                $pool
+            );
+        } else {
+            rts_inventory_deduct_sell(
+                ims_pdo(),
+                (int) $user['id'],
+                $rowId,
+                $sizeQtys,
+                $qtyOther,
+                $saleType
+            );
+        }
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

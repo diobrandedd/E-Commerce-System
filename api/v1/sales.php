@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../includes/honey_sales_report.php';
 /**
  * Honey walk-in sales reporting for Executive + Production Manager.
  *
- *   GET ?action=honey_sold&period=day|week|month|year|custom|all&from=&to=&page=1&receipt=&sale_type=all|regular|discount
+ *   GET ?action=honey_sold&period=day|week|month|year|custom|all&from=&to=&page=1&receipt=&sale_type=all|regular|discount|ar
  */
 
 api_dispatch([

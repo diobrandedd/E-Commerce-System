@@ -1,7 +1,7 @@
 ---
 title: admin_sidebar
 source: includes/admin_sidebar.php
-generated: 2026-06-24T11:07:33+02:00
+generated: 2026-06-25T08:52:28+02:00
 type: module
 function_count: 3
 ---
@@ -35,7 +35,7 @@ function_count: 3
 
 ## setOpen {#setopen}
 
-**Callers (19):**
+**Callers (24):**
 
 - `includes/admin_sidebar.php`:53 — `btn.addEventListener('click', function () { setOpen(!panel.classList.contains('open')); });`
 - `includes/admin_sidebar.php`:55 — `a.addEventListener('click', function () { setOpen(false); });`
@@ -49,6 +49,11 @@ function_count: 3
 - `records.php`:846 — `setOpen(!panel.classList.contains('open'));`
 - `records.php`:852 — `setOpen(false);`
 - `records.php`:881 — `setOpen(false);`
+- `app/src/app/components/pos/StaffDebtorCombobox.tsx`:57 — `setOpen(false);`
+- `app/src/app/components/pos/StaffDebtorCombobox.tsx`:77 — `setOpen(false);`
+- `app/src/app/components/pos/StaffDebtorCombobox.tsx`:84 — `setOpen(false);`
+- `app/src/app/components/pos/StaffDebtorCombobox.tsx`:95 — `setOpen(true);`
+- `app/src/app/components/pos/StaffDebtorCombobox.tsx`:102 — `onFocus={() => setOpen(true)}`
 - `app/src/app/components/requests/EditRequestsSection.tsx`:115 — `setOpen(true);`
 - `app/src/app/components/requests/RequestsHubSection.tsx`:54 — `onClick={() => setOpen(!open)}`
 - `app/src/app/components/suppliers/SupplierCombobox.tsx`:34 — `setOpen(false);`

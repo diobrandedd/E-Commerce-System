@@ -7,7 +7,7 @@ import { apiGet, ApiError } from "@/app/lib/api";
 import { peso, variantLabel } from "@/app/lib/posHoney";
 
 type PeriodFilter = "all" | "day" | "week" | "month" | "year" | "custom";
-type SaleTypeFilter = "all" | "regular" | "discount";
+type SaleTypeFilter = "all" | "regular" | "discount" | "ar";
 
 interface CheckoutItem {
   variant: string;
@@ -30,6 +30,8 @@ interface CheckoutRow {
   discount_amount?: number;
   total_amount: number;
   buyer_name: string;
+  buyer_credentials?: string | null;
+  is_ar?: boolean;
   item_count: number;
   items: CheckoutItem[];
 }
@@ -51,6 +53,7 @@ interface SalesSnapshot {
     revenue_regular: number;
     revenue_discounted: number;
     discounts_given: number;
+    revenue_ar?: number;
   };
   variants_all: VariantChart[];
   variants_regular: VariantChart[];
@@ -173,6 +176,7 @@ export function SalesPage() {
     revenue_regular: 0,
     revenue_discounted: 0,
     discounts_given: 0,
+    revenue_ar: 0,
   }, [data]);
 
   return (
@@ -235,7 +239,7 @@ export function SalesPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Regular sales</p>
             <p className="text-xl font-bold mt-1">{fmtQty(summary.total_bottles_regular)} bottles</p>
@@ -245,6 +249,10 @@ export function SalesPage() {
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Discounted sales</p>
             <p className="text-xl font-bold mt-1">{fmtQty(summary.total_bottles_discounted)} bottles</p>
             <p className="text-sm text-muted-foreground mt-1">{peso(summary.revenue_discounted)}</p>
+          </div>
+          <div className="rounded-xl border border-red-200 bg-red-50/40 p-4">
+            <p className="text-xs uppercase tracking-wide text-red-700">AR sales</p>
+            <p className="text-xl font-bold mt-1 text-red-700">{peso(summary.revenue_ar ?? 0)}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Discount given</p>
@@ -297,7 +305,11 @@ export function SalesPage() {
             { value: "all", label: "All checkouts" },
             { value: "regular", label: "Regular only" },
             { value: "discount", label: "Discount only" },
-          ] as Array<{ value: SaleTypeFilter; label: string }>).map(opt => (
+            { value: "ar", label: "AR only" },
+          ] as Array<{ value: SaleTypeFilter; label: string }>).map(opt => {
+            const active = saleType === opt.value;
+            const isAr = opt.value === "ar";
+            return (
             <button
               key={opt.value}
               type="button"
@@ -306,11 +318,18 @@ export function SalesPage() {
                 setPage(1);
                 void load({ page: 1, saleType: opt.value });
               }}
-              className={`px-3 py-1.5 text-xs rounded-full border ${saleType === opt.value ? "bg-[#C8900A]/10 border-[#C8900A] text-[#8a6506] font-semibold" : "border-border text-muted-foreground"}`}
+              className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                active
+                  ? isAr
+                    ? "bg-red-50 border-red-400 text-red-700 font-semibold"
+                    : "bg-[#C8900A]/10 border-[#C8900A] text-[#8a6506] font-semibold"
+                  : "border-border text-muted-foreground hover:bg-secondary/50"
+              }`}
             >
               {opt.label}
             </button>
-          ))}
+            );
+          })}
         </div>
 
         {error && (
@@ -381,7 +400,11 @@ export function SalesPage() {
                             <td className="px-3 py-2.5 font-mono text-xs">{row.receipt_no}</td>
                             <td className="px-3 py-2.5 text-muted-foreground">{itemSummary(row.items)}</td>
                             <td className="px-3 py-2.5">
-                              {row.discount_percent ? (
+                              {row.is_ar ? (
+                                <span className="inline-flex rounded-full bg-red-100 text-red-700 text-[11px] px-2 py-0.5 font-semibold">
+                                  AR
+                                </span>
+                              ) : row.discount_percent ? (
                                 <span className="inline-flex rounded-full bg-red-100 text-red-700 text-[11px] px-2 py-0.5 font-semibold">
                                   {row.discount_percent}% off
                                 </span>
@@ -400,6 +423,11 @@ export function SalesPage() {
                               <td colSpan={6} className="px-4 py-3">
                                 <p className="text-xs text-muted-foreground mb-2">
                                   Buyer: <span className="text-foreground font-medium">{row.buyer_name}</span>
+                                  {row.is_ar && row.buyer_credentials ? (
+                                    <span className="ml-2">
+                                      · Mobile: <span className="text-foreground font-medium">{row.buyer_credentials}</span>
+                                    </span>
+                                  ) : null}
                                 </p>
                                 {row.discount_percent ? (
                                   <p className="text-xs text-muted-foreground mb-2">

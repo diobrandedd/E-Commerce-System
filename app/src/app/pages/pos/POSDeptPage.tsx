@@ -17,8 +17,10 @@ import {
   PressableRoundButton,
   CartLineMotion,
 } from "@/app/components/pos/posMotion";
+import { POSARCheckoutPanel, type POSARCheckoutResult } from "@/app/components/pos/POSARCheckoutPanel";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
+import { loadPosCatalogCached, readPosCache } from "@/app/lib/posCache";
 import {
   POS_DEPT_LABELS,
   posDeptProductKeyFromRoute,
@@ -49,6 +51,8 @@ export function POSDeptPage() {
   const [qty, setQty] = useState(1);
   const [cart, setCart] = useState<DeptCartLine[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showARCheckout, setShowARCheckout] = useState(false);
+  const [arNotice, setArNotice] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [requestingDiscount, setRequestingDiscount] = useState<number | null>(null);
   const [pendingRequest, setPendingRequest] = useState<DeptDiscountRequestResult | null>(null);
@@ -61,19 +65,31 @@ export function POSDeptPage() {
 
   const loadCatalog = useCallback(async () => {
     if (!productKey) return;
-    setLoading(true);
     setError(null);
+    if (readPosCache("dept_catalog") === null) {
+      setLoading(true);
+    }
+    let showedCache = false;
     try {
-      const data = await apiGet<{ products: DeptPosProduct[] }>("pos.php", "dept_catalog");
-      const match = data.products.find(p => p.key === productKey) ?? null;
-      setProduct(match);
-      if (!match) {
-        setError("Product not found in catalog.");
-      }
+      await loadPosCatalogCached(
+        "dept_catalog",
+        () => apiGet<{ products: DeptPosProduct[] }>("pos.php", "dept_catalog"),
+        (data, fromCache) => {
+          const match = data.products.find(p => p.key === productKey) ?? null;
+          setProduct(match);
+          if (!match) {
+            setError("Product not found in catalog.");
+          }
+          if (fromCache) {
+            showedCache = true;
+            setLoading(false);
+          }
+        },
+      );
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load catalog.");
     } finally {
-      setLoading(false);
+      if (!showedCache) setLoading(false);
     }
   }, [productKey]);
 
@@ -125,6 +141,31 @@ export function POSDeptPage() {
   };
 
   const removeLine = (key: string) => setCart(prev => prev.filter(l => l.product_key !== key));
+
+  const handleARSuccess = (result: POSARCheckoutResult) => {
+    setShowARCheckout(false);
+    setShowCheckout(false);
+    setCart([]);
+    setBuyerName("");
+    setBuyerCreds("");
+    setArNotice(`AR recorded ${result.receipt_no} for ${result.debtor_name}`);
+    setFeedback("success");
+    void loadCatalog();
+    window.setTimeout(() => setArNotice(null), 4000);
+  };
+
+  const arLines = useMemo(
+    () =>
+      cart.map(l => ({
+        key: l.product_key,
+        label: l.label,
+        qty: l.qty,
+        unitPrice: l.unit_price,
+        productId: l.product_id,
+        productKey: l.product_key,
+      })),
+    [cart],
+  );
 
   const cartPayload = cart.map(l => ({
     product_key: l.product_key,
@@ -274,6 +315,11 @@ export function POSDeptPage() {
         <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-sm text-red-700 flex items-center gap-2">
           <AlertCircle size={14} className="flex-shrink-0" />
           <span>{error}</span>
+        </div>
+      )}
+      {arNotice && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-sm text-red-700 font-medium text-center">
+          {arNotice}
         </div>
       )}
 
@@ -461,7 +507,27 @@ export function POSDeptPage() {
           <p className="mt-2 text-[11px] text-muted-foreground text-center">
             Discounted checkouts require executive approval before the receipt is released.
           </p>
+          <button
+            type="button"
+            disabled={checkingOut || requestingDiscount !== null}
+            onClick={() => {
+              setShowCheckout(false);
+              setShowARCheckout(true);
+            }}
+            className="mt-3 w-full rounded-lg border border-red-400 bg-red-50 px-3 py-2.5 text-xs font-semibold text-red-700 transition-transform active:scale-[0.98] hover:bg-red-100 disabled:opacity-50"
+          >
+            Accounts Receivable
+          </button>
         </div>
+      </POSModal>
+
+      <POSModal open={showARCheckout} onClose={() => setShowARCheckout(false)} panelClassName="max-w-sm">
+        <POSARCheckoutPanel
+          mode="dept"
+          lines={arLines}
+          onCancel={() => setShowARCheckout(false)}
+          onSuccess={handleARSuccess}
+        />
       </POSModal>
 
       <POSModal open={pendingRequest !== null} onClose={() => {}} panelClassName="max-w-sm">

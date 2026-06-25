@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-24T11:07:33+02:00
+generated: 2026-06-25T08:52:28+02:00
 type: memory-bank
 ---
 
@@ -24,14 +24,16 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/ar.php`
 - **URL:** `/rts/api/v1/ar.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/ar_credits.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `list` | `api_ar_list()` | `ims_pdo()` |
-| `take` | `api_ar_take()` | `ims_pdo()` |
-| `mark_paid` | `api_ar_mark_paid()` | `ims_pdo()` |
-| `products` | `api_ar_products()` | `ims_pdo()` |
+| `list` | `api_ar_list()` | `ar_credits_list()`, `ims_pdo()` |
+| `take` | `api_ar_take()` | `ar_credits_staff_roles()`, `ar_credits_take_for_user()`, `ims_pdo()` |
+| `mark_paid` | `api_ar_mark_paid()` | `ar_credits_mark_paid()`, `ims_pdo()` |
+| `mark_unpaid` | `api_ar_mark_unpaid()` | `ar_credits_mark_unpaid()`, `ims_pdo()` |
+| `products` | `api_ar_products()` | `ar_credits_sellable_products()`, `ims_pdo()` |
+| `staff_picker` | `api_ar_staff_picker()` | `ar_staff_picker_list()`, `ims_pdo()` |
 
 ### `auth.php`
 
@@ -285,7 +287,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/pos.php`
 - **URL:** `/rts/api/v1/pos.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_discount_requests.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
@@ -294,7 +296,10 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `dept_catalog` | `api_pos_dept_catalog()` | `dept_pos_catalog()`, `ims_pdo()` |
 | `checkout` | `api_pos_checkout()` | `ims_pdo()` |
 | `honey_checkout` | `api_pos_honey_checkout()` | `honey_pos_checkout()`, `ims_pdo()` |
+| `honey_ar_checkout` | `api_pos_honey_ar_checkout()` | `honey_pos_ar_checkout()`, `ims_pdo()` |
 | `dept_checkout` | `api_pos_dept_checkout()` | `dept_pos_checkout()`, `ims_pdo()` |
+| `dept_ar_checkout` | `api_pos_dept_ar_checkout()` | `dept_pos_ar_checkout()`, `ims_pdo()` |
+| `staff_picker` | `api_pos_staff_picker()` | `ar_staff_picker_list()`, `ims_pdo()` |
 | `discount_request_create` | `api_pos_discount_request_create()` | `pos_discount_request_create()`, `ims_pdo()` |
 | `discount_request_status` | `api_pos_discount_request_status()` | `pos_discount_request_fetch_for_pin()`, `ims_pdo()` |
 
@@ -332,8 +337,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pool` | `api_rts_pool()` | `ims_pdo()` |
 | `recent` | `api_rts_recent()` | `ims_pdo()` |
 | `legacy_urls` | `api_rts_legacy_urls()` | — |
-| `inventory_list` | `api_rts_inventory_list()` | `ims_pdo()`, `rts_inventory_sync_status()` |
-| `inventory_deduct_sell` | `api_rts_inventory_deduct_sell()` | `rts_inventory_deduct_sell()`, `ims_pdo()` |
+| `inventory_list` | `api_rts_inventory_list()` | `ims_pdo()`, `rts_inventory_list_honey_aggregated()`, `rts_inventory_list_other_aggregated()`, `rts_inventory_sync_status()` |
+| `inventory_deduct_sell` | `api_rts_inventory_deduct_sell()` | `rts_inventory_deduct_sell_honey_variant()`, `ims_pdo()`, `rts_inventory_deduct_sell_other_label()`, `rts_inventory_deduct_sell()` |
 | `use_damaged` | `api_rts_use_damaged()` | `rts_damaged_use_apply()`, `ims_pdo()` |
 | `sync_status` | `api_rts_sync_status_action()` | `rts_inventory_sync_status()`, `ims_pdo()` |
 

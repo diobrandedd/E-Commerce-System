@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-24 — [[problems/records/2026-06-24_pos-ar-checkout-sales-pool|POS AR checkout + Sales pool]]
+**Shipped:** POS honey/dept AR checkout (inventory deduct, debtor picker); `pos_sales.is_ar` + linked `ar_credits`; Sales **AR only** red filter pill; `/ar` debtor/mobile + exec paid/unpaid. Run `migration_phase50` on prod.
+
 ### 2026-06-19 — [[problems/records/2026-06-19_waybill-stamper-partner-registry|Waybill stamper partner seller + TikTok + parcels registry]]
 **Shipped:** Ian/Jono/Joven on Partner stamp; TikTok pipeline; Online Parcels filters/sort/export with order no. Run `migration_phase48` on prod.
 

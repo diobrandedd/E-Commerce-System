@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-24T11:07:33+02:00
+generated: 2026-06-25T08:52:28+02:00
 type: memory-bank
 table_count: 56
 ---
@@ -130,6 +130,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/staff.php` | [[modules/staff#api_staff_list]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_create]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_update]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 
 ## `departments`
@@ -138,8 +139,6 @@ Schema sources: `sql/full_schema.sql` and migration files
 |------|----------|
 | `api/v1/_bootstrap.php` | [[modules/_bootstrap#api_dept_lookup]] |
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_fetch_product_scope]] |
-| `api/v1/ar.php` | [[modules/ar#api_ar_products]] |
-| `api/v1/ar.php` | [[modules/ar#api_ar_list]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_stocks_list]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_edit_requests]] |
@@ -153,6 +152,9 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/staff.php` | [[modules/staff#api_staff_list]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_departments]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_list]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_sellable_products]] |
 | `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_dept_products_snapshot]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_fetch_row]] |
 | `includes/dept_products.php` | [[modules/dept_products#dept_product_dept_id]] |
@@ -172,7 +174,6 @@ Schema sources: `sql/full_schema.sql` and migration files
 
 | File | Function |
 |------|----------|
-| `api/v1/ar.php` | [[modules/ar#api_ar_list]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_edit_requests]] |
@@ -185,6 +186,9 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/staff.php` | [[modules/staff#api_staff_update]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_reset_password]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_list]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_take_for_user]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_change_password]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
@@ -325,9 +329,6 @@ Schema sources: `sql/full_schema.sql` and migration files
 |------|----------|
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_fetch_product_scope]] |
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_recalculate_baseline]] |
-| `api/v1/ar.php` | [[modules/ar#api_ar_products]] |
-| `api/v1/ar.php` | [[modules/ar#api_ar_list]] |
-| `api/v1/ar.php` | [[modules/ar#api_ar_take]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_product_create]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_product_update_selling_price]] |
@@ -336,6 +337,9 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/pos.php` | [[modules/pos#api_pos_products]] |
 | `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_list]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_take_for_user]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_sellable_products]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_catalog_snapshot]] |
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_build_cart_lines]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
@@ -619,8 +623,11 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_list]] |
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_checkout]] |
+| `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_ar_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_ar_checkout]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
@@ -631,7 +638,9 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_checkout]] |
+| `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_ar_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_ar_checkout]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
 
@@ -639,9 +648,10 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
-| `api/v1/ar.php` | [[modules/ar#api_ar_list]] |
-| `api/v1/ar.php` | [[modules/ar#api_ar_take]] |
-| `api/v1/ar.php` | [[modules/ar#api_ar_mark_paid]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_list]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_record_lines]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_mark_paid]] |
+| `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_mark_unpaid]] |
 
 ## `honey_warehouse_rows`
 
@@ -710,6 +720,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_log_sale]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_honey_variant]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_other_label]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell]] |
 
 ## `inventory_correction_requests`
@@ -751,6 +763,10 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_inventory_credit_sellable_repack]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_list_honey_aggregated]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_list_other_aggregated]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_honey_variant]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_other_label]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell]] |
 
 ## `rts_sync_state`

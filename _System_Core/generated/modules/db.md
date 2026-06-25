@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-06-24T11:07:35+02:00
+generated: 2026-06-25T08:52:30+02:00
 type: module
 function_count: 3
 ---
@@ -56,13 +56,15 @@ function_count: 3
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (186):**
+**Callers (193):**
 
 - `api/v1/_bootstrap.php`:176 — `$pdo = ims_pdo();`
-- `api/v1/ar.php`:26 — `$pdo = ims_pdo();`
-- `api/v1/ar.php`:42 — `$pdo = ims_pdo();`
-- `api/v1/ar.php`:87 — `$pdo = ims_pdo();`
-- `api/v1/ar.php`:115 — `$pdo = ims_pdo();`
+- `api/v1/ar.php`:33 — `api_ok(['products' => ar_credits_sellable_products(ims_pdo())]);`
+- `api/v1/ar.php`:44 — `api_ok(['staff' => ar_staff_picker_list(ims_pdo())]);`
+- `api/v1/ar.php`:63 — `api_ok(['credits' => ar_credits_list(ims_pdo(), $user)]);`
+- `api/v1/ar.php`:87 — `$result = ar_credits_take_for_user(ims_pdo(), (int) $user['id'], $productId, $qty);`
+- `api/v1/ar.php`:107 — `ar_credits_mark_paid(ims_pdo(), $id, (int) $user['id']);`
+- `api/v1/ar.php`:127 — `ar_credits_mark_unpaid(ims_pdo(), $id);`
 - `api/v1/costing.php`:58 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:122 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:192 — `$pdo = ims_pdo();`
@@ -81,7 +83,5 @@ function_count: 3
 - `api/v1/deliveries.php`:110 — `$pdo = ims_pdo();`
 - `api/v1/deliveries.php`:131 — `$pdo = ims_pdo();`
 - `api/v1/deliveries.php`:168 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:201 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:231 — `$pdo = ims_pdo();`
-- _… and 161 more (run impact.php for full list)_
+- _… and 168 more (run impact.php for full list)_
 

@@ -34,6 +34,7 @@ import { SettingsPage } from "./pages/exec/SettingsPage";
 import { POSCategoryPage } from "./pages/pos/POSCategoryPage";
 import { POSDeptPage } from "./pages/pos/POSDeptPage";
 import { POSHoneyPage } from "./pages/pos/POSHoneyPage";
+import { POSLayout } from "./components/pos/POSLayout";
 import { SalesPage } from "./pages/exec/SalesPage";
 import { OnlineOrdersGeneratorPage } from "./pages/csr/OnlineOrdersGeneratorPage";
 import { DeliveriesPage } from "./pages/deliveries/DeliveriesPage";
@@ -171,7 +172,7 @@ export const router = createBrowserRouter(
           element: createElement(
             RequireAuth,
             { allowPOS: true, roles: ["pos"] },
-            createElement(Outlet)
+            createElement(POSLayout)
           ),
           children: [
             { index: true, Component: POSCategoryPage },

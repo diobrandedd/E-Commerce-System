@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-06-24T11:07:36+02:00
+generated: 2026-06-25T08:52:31+02:00
 type: module
 function_count: 16
 ---
@@ -142,9 +142,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `dept_inventory_rows`
 
-**Callers (2):**
+**Callers (3):**
 
-- `includes/dept_pos.php`:153 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
+- `includes/dept_pos.php`:155 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
+- `includes/dept_pos.php`:265 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
 - `includes/honey_parcel_inventory.php`:81 — `$deducted = dept_inventory_deduct($pdo, $productKey, (float) $qty);`
 
 ## dept_inventory_resolve_other_item {#dept_inventory_resolve_other_item}
@@ -162,6 +163,6 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/honey.php`:559 — `$catalog = dept_inventory_catalog_snapshot(`
 - `api/v1/honey.php`:598 — `api_ok(['products' => dept_inventory_catalog_snapshot($pdo, $deptKey !== '' ? $deptKey : null)]);`
-- `includes/dept_pos.php`:12 — `foreach (dept_inventory_catalog_snapshot($pdo, $deptKey) as $item) {`
-- `includes/dept_pos.php`:39 — `$snapshot = dept_inventory_catalog_snapshot($pdo);`
+- `includes/dept_pos.php`:14 — `foreach (dept_inventory_catalog_snapshot($pdo, $deptKey) as $item) {`
+- `includes/dept_pos.php`:41 — `$snapshot = dept_inventory_catalog_snapshot($pdo);`
 

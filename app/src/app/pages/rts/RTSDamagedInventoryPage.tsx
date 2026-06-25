@@ -11,7 +11,9 @@ import { HONEY_SIZES } from "@/app/lib/honey";
 import { rtsListDamagedInventory, rtsUseDamaged } from "@/app/lib/rtsApi";
 
 interface RtsInvRow {
-  id: number;
+  id?: number;
+  first_row_id?: number;
+  line_count?: number;
   category: string;
   product_label: string;
   variant: string | null;
@@ -140,8 +142,13 @@ function DamagedTable({
           </thead>
           <tbody>
             {rows.map(r => (
-              <tr key={r.id} className="border-b">
-                <td className="px-3 py-2 capitalize">{r.variant ?? r.product_label}</td>
+              <tr key={r.variant ?? r.product_label} className="border-b">
+                <td className="px-3 py-2 capitalize">
+                  {r.variant ?? r.product_label}
+                  {(r.line_count ?? 0) > 1 && (
+                    <span className="ml-1 text-[10px] text-muted-foreground">({r.line_count} lots)</span>
+                  )}
+                </td>
                 <td className="px-3 py-2">
                   <QtyCounter current={r.current_liter} initial={r.initial_liter} />
                 </td>
@@ -180,8 +187,13 @@ function DamagedTable({
         </thead>
         <tbody>
           {rows.map(r => (
-            <tr key={r.id} className="border-b">
-              <td className="px-3 py-2">{r.product_label}</td>
+            <tr key={r.product_label} className="border-b">
+              <td className="px-3 py-2">
+                {r.product_label}
+                {(r.line_count ?? 0) > 1 && (
+                  <span className="ml-1 text-[10px] text-muted-foreground">({r.line_count} lots)</span>
+                )}
+              </td>
               <td className="px-3 py-2">
                 <QtyCounter current={r.current_qty} initial={r.initial_qty} />
               </td>
@@ -226,7 +238,7 @@ function UseDamagedModal({
     onError("");
     try {
       const body: Parameters<typeof rtsUseDamaged>[0] = {
-        row_id: row.id,
+        row_id: row.first_row_id ?? row.id ?? 0,
         outcome,
         notes: notes.trim() || undefined,
       };
