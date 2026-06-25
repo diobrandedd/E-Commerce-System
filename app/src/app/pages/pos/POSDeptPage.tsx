@@ -114,7 +114,8 @@ export function POSDeptPage() {
   const itemCount = cart.reduce((s, l) => s + l.qty, 0);
 
   const addToCart = () => {
-    if (!product || !sellable || !product.product_id || qty < 1 || qty > maxQty) return;
+    if (!product || !sellable || product.product_id == null || qty < 1 || qty > maxQty) return;
+    const productId = product.product_id;
     setCart(prev => {
       const existing = prev.find(l => l.product_key === productKey);
       if (existing) {
@@ -126,7 +127,7 @@ export function POSDeptPage() {
         ...prev,
         {
           product_key: productKey,
-          product_id: product.product_id,
+          product_id: productId,
           label: product.label,
           qty,
           unit_price: unitPrice,
@@ -299,10 +300,7 @@ export function POSDeptPage() {
   }
 
   return (
-    <POSPageTransition
-      className="min-h-screen bg-background flex flex-col pb-24"
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
-    >
+    <POSPageTransition className="min-h-screen bg-background flex flex-col pb-24 [font-family:'DM_Sans',sans-serif]">
       <POSHeader
         title={title}
         subtitle="Walk-in sale"
@@ -389,12 +387,11 @@ export function POSDeptPage() {
 
             {sellable && maxQty > 0 && (
               <div className="flex items-center justify-center gap-4">
-                <PressableRoundButton type="button" onClick={() => setQty(q => Math.max(1, q - 1))} disabled={qty <= 1}>
+                <PressableRoundButton onClick={() => setQty(q => Math.max(1, q - 1))} disabled={qty <= 1}>
                   <Minus size={20} />
                 </PressableRoundButton>
                 <AnimatedQuantity value={qty} className="text-3xl font-bold w-12 text-center" />
                 <PressableRoundButton
-                  type="button"
                   onClick={() => setQty(q => Math.min(maxQty, q + 1))}
                   disabled={qty >= maxQty}
                 >
