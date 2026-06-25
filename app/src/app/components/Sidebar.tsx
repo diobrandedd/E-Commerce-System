@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
-  Truck, DollarSign, RotateCcw, ClipboardList,
+  Truck, DollarSign, RotateCcw, ClipboardList, Factory,
   CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, PackageCheck, UserCog,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
@@ -41,6 +41,13 @@ interface NavItem {
   children?: NavChild[];
 }
 
+type NavSeparator = { kind: "separator" };
+type NavEntry = NavItem | NavSeparator;
+
+function isNavSeparator(entry: NavEntry): entry is NavSeparator {
+  return "kind" in entry && entry.kind === "separator";
+}
+
 const HONEY_STAGE_CHILDREN: NavLinkChild[] = [
   { label: "Warehouse", to: "/inventory/raw-materials/honey/warehouse" },
   { label: "Production", to: "/inventory/raw-materials/honey/production" },
@@ -62,7 +69,7 @@ const PRODUCTS_CHILDREN: NavChild[] = [
   { label: "Cacao Tablets", to: "/inventory/products/cacao-tablets" },
 ];
 
-function getNavItems(role: Role, dept: string, pendingCorrections: number): NavItem[] {
+function getNavItems(role: Role, dept: string, pendingCorrections: number): NavEntry[] {
   const inventoryChildren: NavChild[] = [
     { label: "Raw Materials", children: RAW_MATERIALS_CHILDREN },
     { label: "Packaging Materials", to: "/inventory/packaging-materials" },
@@ -139,6 +146,16 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
   const rtsNavFull = rtsNav([rtsInventory, rtsDamaged, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard, rtsRecord]);
   const rtsNavReadOnly = rtsNav([rtsInventory, rtsDamaged, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard]);
 
+  const productSetupNav: NavItem = {
+    icon: Factory,
+    label: "Product setup",
+    to: "/suppliers",
+    children: [
+      { label: "Supplier Master", to: "/suppliers", end: true },
+      { label: "Product Costing", to: "/costing", end: true },
+    ],
+  };
+
   // Staff see raw materials + finished products for their own department only
   // (read-only — server enforces dept scope + hides pricing).
   const staffInventoryChildrenByDept: Record<string, NavChild[]> = {
@@ -171,18 +188,18 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavI
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         inventoryNav,
-        requestsNav(pendingCorrections),
-        { icon: Users, label: "Staff Management", to: "/staff" },
-        { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
         onlineOrdersItem,
         onlineParcelsItem,
         forPackingItem,
         deliveriesItem,
-        { icon: Truck, label: "Supplier Master", to: "/suppliers" },
-        { icon: DollarSign, label: "Product Costing", to: "/costing" },
-        { icon: ClipboardList, label: "AR Credits", to: "/ar" },
         rtsNavFull,
+        productSetupNav,
+        { kind: "separator" },
+        { icon: BarChart2, label: "Reports", to: "/reports" },
+        requestsNav(pendingCorrections),
+        { icon: DollarSign, label: "AR Credits", to: "/ar" },
+        { icon: Users, label: "Staff Management", to: "/staff" },
         { icon: Settings, label: "System Settings", to: "/settings" },
       ];
     case "prod_manager":
@@ -439,6 +456,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         return next;
       });
     }
+    if (location.pathname.startsWith("/suppliers") || location.pathname.startsWith("/costing")) {
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.add("Product setup");
+        return next;
+      });
+    }
   }, [location.pathname]);
 
   const toggleGroup = (key: string) => {
@@ -502,7 +526,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         <nav className="pyx-scroll-dark flex-1 min-h-0 px-3 py-2 space-y-0.5 overflow-y-auto overscroll-contain">
-          {navItems.map(({ icon: Icon, label, to, children, badge }) => {
+          {navItems.map((entry, index) => {
+            if (isNavSeparator(entry)) {
+              return (
+                <div key={`nav-sep-${index}`} className="my-2 mx-3 border-t border-white/10" aria-hidden />
+              );
+            }
+            const { icon: Icon, label, to, children, badge } = entry;
             if (children) {
               const isExpanded = expandedGroups.has(label);
               return (
