@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-06-26T02:58:03+02:00
+generated: 2026-06-26T03:25:19+02:00
 type: module
 function_count: 26
 ---
@@ -44,7 +44,7 @@ function_count: 26
 
 ## online_parcels_ensure_schema {#online_parcels_ensure_schema}
 
-**Callers (23):**
+**Callers (24):**
 
 - `api/v1/deliveries.php`:132 — `online_parcels_ensure_schema($pdo);`
 - `api/v1/parcels.php`:51 — `online_parcels_ensure_schema($pdo);`
@@ -69,6 +69,7 @@ function_count: 26
 - `includes/online_order_parcels.php`:1310 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_order_parcels.php`:1416 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_orders_generator.php`:388 — `online_parcels_ensure_schema($pdo);`
+- `includes/rts_case_handlers.php`:465 — `online_parcels_ensure_schema($pdo);`
 
 ## online_parcels_apply_rts_schema_migrations {#online_parcels_apply_rts_schema_migrations}
 
@@ -132,7 +133,7 @@ function_count: 26
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:492 — `online_parcels_mark_rts($pdo, $tracking, $caseId);`
+- `includes/rts_case_handlers.php`:502 — `online_parcels_mark_rts($pdo, $tracking, $caseId);`
 
 ## online_parcels_revert_rts_by_case {#online_parcels_revert_rts_by_case}
 
@@ -140,7 +141,7 @@ function_count: 26
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:646 — `online_parcels_revert_rts_by_case($pdo, $caseId);`
+- `includes/rts_case_handlers.php`:658 — `online_parcels_revert_rts_by_case($pdo, $caseId);`
 
 ## online_parcels_get_by_id {#online_parcels_get_by_id}
 

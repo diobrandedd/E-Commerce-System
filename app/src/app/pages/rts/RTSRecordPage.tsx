@@ -427,6 +427,20 @@ export function RTSRecordPage() {
     return null;
   };
 
+  const finishScanNext = () => {
+    setCaseModalOpen(false);
+    setLandingTracking("");
+    setTracking("");
+    resetCaseFields();
+    setScannerOpen(true);
+  };
+
+  const isDuplicateTrackingError = (e: unknown) => {
+    if (!(e instanceof ApiError)) return false;
+    const payload = e.data as { error?: string } | null;
+    return payload?.error === "duplicate_tracking" || /already exists/i.test(e.message);
+  };
+
   const save = async (andScanNext: boolean) => {
     const v = validate();
     if (v) {
@@ -447,14 +461,17 @@ export function RTSRecordPage() {
       setToast("RTS saved successfully");
       window.setTimeout(() => setToast(null), 2500);
       if (andScanNext) {
-        setCaseModalOpen(false);
-        setLandingTracking("");
-        setTracking("");
-        resetCaseFields();
+        finishScanNext();
       } else {
         navigate(disposition === "swapped" ? "/rts/swapped" : disposition === "leak" ? "/rts/leaks" : "/rts/records");
       }
     } catch (e) {
+      if (andScanNext && isDuplicateTrackingError(e)) {
+        setToast("Already saved — scan next parcel");
+        window.setTimeout(() => setToast(null), 2500);
+        finishScanNext();
+        return;
+      }
       const msg = e instanceof ApiError ? e.message : "Save failed.";
       setModalError(msg);
     } finally {

@@ -59,5 +59,15 @@ export function loadHtml5Qrcode(): Promise<Html5QrcodeCtor> {
 
 export function pickPreferredCameraIndex(cameras: Html5QrcodeCamera[]): number {
   const envIdx = cameras.findIndex(c => /back|rear|environment/i.test(c.label));
-  return envIdx >= 0 ? envIdx : 0;
+  if (envIdx >= 0) return envIdx;
+  const frontIdx = cameras.findIndex(c => /front|user|face/i.test(c.label));
+  if (frontIdx >= 0 && cameras.length > 1) {
+    return frontIdx === 0 ? cameras.length - 1 : 0;
+  }
+  return cameras.length > 1 ? cameras.length - 1 : 0;
 }
+
+/** Prefer rear camera via facingMode; falls back to labeled device id. */
+export const PREFERRED_REAR_CAMERA: MediaTrackConstraints = {
+  facingMode: { ideal: "environment" },
+};

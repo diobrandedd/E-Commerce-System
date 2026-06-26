@@ -7,6 +7,7 @@ import { cn } from "@/app/components/ui/utils";
 import {
   loadHtml5Qrcode,
   pickPreferredCameraIndex,
+  PREFERRED_REAR_CAMERA,
   type Html5QrcodeCamera,
   type Html5QrcodeInstance,
 } from "@/app/lib/html5QrcodeLoader";
@@ -21,6 +22,7 @@ export function TrackingQrScannerModal({
   onDecoded,
   manualEntryLabel = "Or enter tracking manually",
   showManualEntry = true,
+  autoStart = true,
   zIndex,
 }: {
   open: boolean;
@@ -30,6 +32,8 @@ export function TrackingQrScannerModal({
   onDecoded: (decoded: string) => void;
   manualEntryLabel?: string;
   showManualEntry?: boolean;
+  /** When true (default), opens rear camera as soon as the modal opens. */
+  autoStart?: boolean;
   zIndex?: string;
 }) {
   const reactId = useId();
@@ -120,6 +124,42 @@ export function TrackingQrScannerModal({
     [cameras, handleDecoded, readerId, refreshTorchSupport],
   );
 
+  const phaseRef = useRef<ScanPhase>("idle");
+  phaseRef.current = phase;
+
+  const startPreferredCamera = useCallback(async () => {
+    if (phaseRef.current === "starting" || phaseRef.current === "scanning") return;
+    setPhase("starting");
+    setError(null);
+    try {
+      const Html5Qrcode = await loadHtml5Qrcode();
+      if (!scannerRef.current) {
+        scannerRef.current = new Html5Qrcode(readerId);
+      }
+      try {
+        await scannerRef.current.start(
+          PREFERRED_REAR_CAMERA,
+          { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1 },
+          handleDecoded,
+          () => {},
+        );
+        const list = await Html5Qrcode.getCameras();
+        setCameras(list);
+        cameraIndexRef.current = pickPreferredCameraIndex(list);
+        refreshTorchSupport(scannerRef.current);
+        setPhase("scanning");
+        return;
+      } catch {
+        await stopScanner();
+        scannerRef.current = null;
+      }
+      await startCameraAt(pickPreferredCameraIndex([]));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start camera.");
+      setPhase("error");
+    }
+  }, [handleDecoded, readerId, refreshTorchSupport, startCameraAt, stopScanner]);
+
   const handleClose = useCallback(() => {
     void stopScanner();
     setPhase("idle");
@@ -136,8 +176,18 @@ export function TrackingQrScannerModal({
       setCameras([]);
       cameraIndexRef.current = 0;
       if (manualRef.current) manualRef.current.value = "";
+      return;
     }
-  }, [open, stopScanner]);
+    if (!autoStart) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (!cancelled) void startPreferredCamera();
+    }, 80);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [open, autoStart, startPreferredCamera, stopScanner]);
 
   const flipCamera = async () => {
     if (cameras.length < 2) return;
@@ -199,17 +249,17 @@ export function TrackingQrScannerModal({
         <div
           className={cn(
             "relative w-full overflow-hidden rounded-xl border border-border bg-black",
-            phase === "scanning" ? "min-h-[260px]" : "min-h-[140px] flex items-center justify-center",
+            phase === "scanning" || phase === "starting" ? "min-h-[260px]" : "min-h-[140px] flex items-center justify-center",
           )}
         >
           <div
             id={readerId}
             className={cn(
               "w-full [&_video]:!w-full [&_video]:!max-h-[320px] [&_video]:object-cover",
-              phase !== "scanning" && "hidden",
+              phase !== "scanning" && phase !== "starting" && "hidden",
             )}
           />
-          {phase !== "scanning" && (
+          {phase !== "scanning" && phase !== "starting" && (
             <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
               <ScanLine className="h-10 w-10 text-white/70" strokeWidth={1.5} />
               <p className="text-sm text-white/80">
@@ -229,10 +279,10 @@ export function TrackingQrScannerModal({
             <Button
               type="button"
               className="flex-1 min-w-[10rem] gap-2"
-              onClick={() => void startCameraAt(pickPreferredCameraIndex(cameras))}
+              onClick={() => void startPreferredCamera()}
             >
               <Camera size={16} />
-              Start camera
+              {phase === "error" ? "Retry camera" : "Start camera"}
             </Button>
           ) : null}
           {phase === "scanning" ? (

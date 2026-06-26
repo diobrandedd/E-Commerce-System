@@ -456,11 +456,21 @@ function rts_case_handler_parse_case_fields(PDO $pdo, array $data, bool $isCreat
     ];
 }
 
+function rts_case_handler_ensure_save_schemas(PDO $pdo): void
+{
+    $schemaErr = rts_line_items_ensure_v2_schema($pdo);
+    if ($schemaErr !== null) {
+        throw new RtsCaseException($schemaErr, 'schema_upgrade_required', 500);
+    }
+    online_parcels_ensure_schema($pdo);
+}
+
 /** @return array{case_id: int} */
 function rts_case_handler_create(PDO $pdo, array $data): array
 {
     $fields = rts_case_handler_parse_case_fields($pdo, $data, true);
     $tracking = $fields['tracking_number'];
+    rts_case_handler_ensure_save_schemas($pdo);
     $pdo->beginTransaction();
     try {
         if (rts_cases_find_active_id_by_tracking($pdo, $tracking) !== null) {
@@ -512,6 +522,7 @@ function rts_case_handler_update(PDO $pdo, int $caseId, array $data): array
     }
     $fields = rts_case_handler_parse_case_fields($pdo, $data, false);
     $tracking = $fields['tracking_number'];
+    rts_case_handler_ensure_save_schemas($pdo);
     $pdo->beginTransaction();
     try {
         $void = rts_cases_void_sql($pdo);
@@ -604,6 +615,7 @@ function rts_case_handler_append_lines(PDO $pdo, string $tracking, array $data):
             throw new RtsCaseException('Cannot append product lines to a swapped parcel case.', 'swapped_no_lines', 400);
         }
     }
+    rts_case_handler_ensure_save_schemas($pdo);
     $pdo->beginTransaction();
     try {
         rts_line_items_insert_batch($pdo, $caseId, $lines);
