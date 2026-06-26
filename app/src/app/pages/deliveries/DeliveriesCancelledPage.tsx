@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { BookOpen, Loader2, ScanLine } from "lucide-react";
 import { TrackingQrScannerModal } from "@/app/components/scan/TrackingQrScannerModal";
+import { usePreloadQrScanner } from "@/app/hooks/usePreloadQrScanner";
 import { DeliveriesCancelledGuideModal } from "@/app/components/fulfillment/DeliveriesCancelledGuideModal";
 import { runDeliveriesCancelledTour } from "@/app/components/fulfillment/deliveriesCancelledTour";
 import { PageLayout } from "@/app/components/PageLayout";
@@ -31,6 +32,7 @@ function ParcelStatusBadge({ status }: { status: string }) {
 }
 
 export function DeliveriesCancelledPage() {
+  usePreloadQrScanner();
   const { user } = useAuth();
   const isExecutive = user?.role === "executive";
   const [q, setQ] = useState("");
@@ -257,14 +259,15 @@ export function DeliveriesCancelledPage() {
         </button>
       </div>
 
-      <TrackingQrScannerModal
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        title="Scan parcel to cancel"
-        titleId="deliveries-cancel-scan-modal-title"
-        onDecoded={decoded => void runCancelByTracking(decoded)}
-        manualEntryLabel="Or type tracking to cancel"
-      />
+      {scannerOpen ? (
+        <TrackingQrScannerModal
+          onClose={() => setScannerOpen(false)}
+          title="Scan parcel to cancel"
+          titleId="deliveries-cancel-scan-modal-title"
+          onDecoded={decoded => void runCancelByTracking(decoded)}
+          manualEntryLabel="Or type tracking to cancel"
+        />
+      ) : null}
 
       <DeliveriesCancelledGuideModal
         open={guideOpen}

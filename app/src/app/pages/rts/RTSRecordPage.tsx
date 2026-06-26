@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { Camera, ImagePlus, Loader2, QrCode, ScanLine, Video, CheckCircle2, X } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { TrackingQrScannerModal } from "@/app/components/scan/TrackingQrScannerModal";
+import { usePreloadQrScanner } from "@/app/hooks/usePreloadQrScanner";
 import { AppSectionEnter } from "@/app/components/layout/appFeedbackMotion";
 import { RtsLineBuilder } from "@/app/components/rts/RtsLineBuilder";
 import { PageLayout } from "@/app/components/PageLayout";
@@ -99,6 +100,7 @@ function readyAttachments(list: DocAttachment[]): RtsAttachment[] {
 }
 
 export function RTSRecordPage() {
+  usePreloadQrScanner();
   const [searchParams] = useSearchParams();
   const editTracking = searchParams.get("edit")?.trim() ?? "";
   const navigate = useNavigate();
@@ -856,13 +858,14 @@ export function RTSRecordPage() {
         </AppModalFooter>
       </AppModal>
 
-      <TrackingQrScannerModal
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        title="Scan tracking"
-        titleId="rts-scan-title"
-        onDecoded={decoded => void beginLookup(decoded)}
-      />
+      {scannerOpen ? (
+        <TrackingQrScannerModal
+          onClose={() => setScannerOpen(false)}
+          title="Scan tracking"
+          titleId="rts-scan-title"
+          onDecoded={decoded => void beginLookup(decoded)}
+        />
+      ) : null}
     </PageLayout>
   );
 }

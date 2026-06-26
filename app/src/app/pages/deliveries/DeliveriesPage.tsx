@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateA
 import { BookOpen, Camera, CheckCircle2, Loader2, ScanLine } from "lucide-react";
 import { Link } from "react-router";
 import { TrackingQrScannerModal } from "@/app/components/scan/TrackingQrScannerModal";
+import { usePreloadQrScanner } from "@/app/hooks/usePreloadQrScanner";
 import { DeliveryDuplicateScanModal } from "@/app/components/fulfillment/DeliveryDuplicateScanModal";
 import { DeliveriesAddGuideModal } from "@/app/components/fulfillment/DeliveriesAddGuideModal";
 import { runDeliveriesAddTour } from "@/app/components/fulfillment/deliveriesAddTour";
@@ -50,6 +51,7 @@ function applyBatchCountFromUpload(
 }
 
 export function DeliveriesPage() {
+  usePreloadQrScanner();
   const { user } = useAuth();
   const isExecutive = user?.role === "executive";
   const today = new Date().toISOString().slice(0, 10);
@@ -510,14 +512,15 @@ export function DeliveriesPage() {
         </FulfillmentStepSwitch>
       </FulfillmentSectionEnter>
 
-      <TrackingQrScannerModal
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        title="Scan label"
-        titleId="deliveries-scan-modal-title"
-        onDecoded={decoded => void loadParcel(decoded)}
-        zIndex="z-50"
-      />
+      {scannerOpen ? (
+        <TrackingQrScannerModal
+          onClose={() => setScannerOpen(false)}
+          title="Scan label"
+          titleId="deliveries-scan-modal-title"
+          onDecoded={decoded => void loadParcel(decoded)}
+          zIndex="z-50"
+        />
+      ) : null}
 
       <DeliveryDuplicateScanModal
         open={duplicateOpen}

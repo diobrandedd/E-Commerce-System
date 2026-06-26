@@ -10,6 +10,7 @@ export type Html5QrcodeInstance = {
     qrCodeErrorCallback?: (errorMessage: string) => void,
   ) => Promise<void>;
   stop: () => Promise<void>;
+  clear?: () => void;
   scanFile: (imageFile: File, showImage?: boolean) => Promise<string>;
   applyVideoConstraints: (constraints: MediaTrackConstraints) => Promise<void>;
   getRunningTrackCameraCapabilities: () => MediaTrackCapabilities | null;
@@ -37,6 +38,10 @@ export function loadHtml5Qrcode(): Promise<Html5QrcodeCtor> {
     loadPromise = new Promise<void>((resolve, reject) => {
       const existing = document.querySelector(`script[src="${SCRIPT_URL}"]`);
       if (existing) {
+        if (window.Html5Qrcode) {
+          resolve();
+          return;
+        }
         existing.addEventListener("load", () => resolve());
         existing.addEventListener("error", () => reject(new Error("Could not load scanner library.")));
         return;
@@ -55,6 +60,15 @@ export function loadHtml5Qrcode(): Promise<Html5QrcodeCtor> {
     }
     return window.Html5Qrcode;
   });
+}
+
+/** Warm the CDN script on scanner pages so the first open is faster. */
+export function preloadHtml5Qrcode(): void {
+  void loadHtml5Qrcode();
+}
+
+export function camerasNeedPermissionPrime(cameras: Html5QrcodeCamera[]): boolean {
+  return cameras.length === 0;
 }
 
 export function pickRearCamera(cameras: Html5QrcodeCamera[]): Html5QrcodeCamera | null {
@@ -77,7 +91,7 @@ export function pickPreferredCameraIndex(cameras: Html5QrcodeCamera[]): number {
   return idx >= 0 ? idx : cameras.length > 1 ? cameras.length - 1 : 0;
 }
 
-/** Prime camera permission and bias the OS toward the rear lens before device enumeration. */
+/** One-shot permission prime when enumeration returns no devices (first visit). */
 export async function requestRearCameraAccess(): Promise<void> {
   if (!navigator.mediaDevices?.getUserMedia) return;
   let stream: MediaStream | null = null;
@@ -104,3 +118,37 @@ export async function requestRearCameraAccess(): Promise<void> {
 export const PREFERRED_REAR_CAMERA: MediaTrackConstraints = {
   facingMode: "environment",
 };
+
+/** Stop any live video tracks under a scanner reader element (safe if library already stopped). */
+export function releaseScannerElement(elementId: string): void {
+  const root = document.getElementById(elementId);
+  if (!root) return;
+  root.querySelectorAll("video").forEach(video => {
+    const stream = video.srcObject;
+    if (stream instanceof MediaStream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    video.srcObject = null;
+  });
+  root.replaceChildren();
+}
+
+/**
+ * Nuclear cleanup when leaving scanner routes — stops orphan streams/overlays
+ * that can block sidebar navigation until a full page refresh.
+ */
+export function forceReleaseAllScannerResources(): void {
+  document.querySelectorAll("video").forEach(video => {
+    const stream = video.srcObject;
+    if (stream instanceof MediaStream) {
+      stream.getTracks().forEach(track => {
+        if (track.readyState === "live") track.stop();
+      });
+    }
+    video.srcObject = null;
+  });
+  document.querySelectorAll('[id^="qr-reader-"]').forEach(el => el.replaceChildren());
+  document.querySelectorAll("#qr-shaded-region").forEach(el => el.remove());
+  document.body.style.overflow = "";
+  document.documentElement.style.overflow = "";
+}

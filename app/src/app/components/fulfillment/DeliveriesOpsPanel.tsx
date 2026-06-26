@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Camera, CheckCircle2, Loader2, ScanLine } from "lucide-react";
 import { TrackingQrScannerModal } from "@/app/components/scan/TrackingQrScannerModal";
+import { usePreloadQrScanner } from "@/app/hooks/usePreloadQrScanner";
 import {
   FulfillmentErrorBanner,
   FulfillmentPressable,
@@ -43,6 +44,7 @@ interface DeliveriesOpsPanelProps {
 }
 
 export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: DeliveriesOpsPanelProps) {
+  usePreloadQrScanner();
   const [oldTracking, setOldTracking] = useState("");
   const [newTracking, setNewTracking] = useState("");
   const [parcel, setParcel] = useState<OnlineParcel | null>(null);
@@ -534,15 +536,16 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
         </div>
       )}
 
-      <TrackingQrScannerModal
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        title={scannerTitle}
-        titleId="deliveries-ops-scan-title"
-        onDecoded={onScanDecoded}
-        manualEntryLabel="Or type tracking manually"
-        zIndex="z-50"
-      />
+      {scannerOpen ? (
+        <TrackingQrScannerModal
+          onClose={() => setScannerOpen(false)}
+          title={scannerTitle}
+          titleId="deliveries-ops-scan-title"
+          onDecoded={onScanDecoded}
+          manualEntryLabel="Or type tracking manually"
+          zIndex="z-50"
+        />
+      ) : null}
     </div>
   );
 }

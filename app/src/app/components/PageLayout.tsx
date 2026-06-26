@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, useEffect, ReactNode } from "react";
-import { Outlet, useNavigate } from "react-router";
+import { Outlet, useLocation, useNavigate } from "react-router";
 import { Menu, Bell } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/app/context/AuthContext";
@@ -12,6 +12,7 @@ import {
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
 import { formatEditRequestCategory, formatEditRequestField } from "@/app/lib/editRequestsApi";
 import { cn } from "@/app/components/ui/utils";
+import { forceReleaseAllScannerResources } from "@/app/lib/html5QrcodeLoader";
 
 export type { PageLayoutContentWidth } from "@/app/context/PageChromeContext";
 
@@ -38,6 +39,7 @@ function AppShellFrame() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { chrome } = usePageChrome();
@@ -58,6 +60,10 @@ function AppShellFrame() {
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
+
+  useLayoutEffect(() => {
+    forceReleaseAllScannerResources();
+  }, [location.pathname]);
 
   const openCorrectionRequest = (id: number) => {
     setBellOpen(false);
@@ -228,7 +234,7 @@ function AppShellFrame() {
 
         <main className="pyx-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain min-w-0 overflow-x-hidden">
           <div className={cn(contentChromeClass, "py-4 sm:py-6")}>
-            <Outlet />
+            <Outlet key={location.pathname} />
           </div>
         </main>
       </div>

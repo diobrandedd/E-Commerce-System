@@ -21,22 +21,67 @@ export function AppModal({
   onClose,
   children,
   panelClassName,
+  shellClassName,
   labelledBy,
   zIndex = "z-[100]",
+  instant = false,
 }: {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   panelClassName?: string;
+  /** Extra classes on the fixed shell (e.g. `lg:left-64` so sidebar stays clickable). */
+  shellClassName?: string;
   labelledBy?: string;
   zIndex?: string;
+  /** Skip exit animation — use for camera modals that must unmount immediately. */
+  instant?: boolean;
 }) {
   const reduce = useReducedMotion();
+
+  if (instant) {
+    if (!open) return null;
+    return (
+      <div
+        className={cn(
+          "fixed inset-0 flex items-center justify-center p-4 overflow-y-auto",
+          zIndex,
+          shellClassName,
+        )}
+      >
+        <button
+          type="button"
+          aria-label="Close"
+          className={cn("absolute inset-0", appModalBackdropClass)}
+          onClick={onClose}
+        />
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={labelledBy}
+          className={cn(
+            "relative w-full max-w-lg my-4 max-h-[90vh] overflow-hidden flex flex-col",
+            appModalPanelClass,
+            panelClassName,
+          )}
+          onClick={e => e.stopPropagation()}
+        >
+          {children}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AnimatePresence>
       {open && (
-        <div className={cn("fixed inset-0 flex items-center justify-center p-4 overflow-y-auto", zIndex)}>
+        <div
+          className={cn(
+            "fixed inset-0 flex items-center justify-center p-4 overflow-y-auto",
+            zIndex,
+            shellClassName,
+          )}
+        >
           <motion.button
             type="button"
             aria-label="Close"

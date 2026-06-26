@@ -1,14 +1,18 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Camera, FlipHorizontal, ImageUp, Loader2, ScanLine, Zap, ZapOff } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { AppErrorBanner } from "@/app/components/layout/appFeedbackMotion";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/app/components/ui/utils";
 import {
+  forceReleaseAllScannerResources,
   loadHtml5Qrcode,
   pickPreferredCameraIndex,
   pickRearCamera,
+  camerasNeedPermissionPrime,
   requestRearCameraAccess,
+  releaseScannerElement,
   PREFERRED_REAR_CAMERA,
   type Html5QrcodeCamera,
   type Html5QrcodeInstance,
@@ -17,9 +21,9 @@ import {
 type ScanPhase = "idle" | "starting" | "scanning" | "error";
 
 const SCAN_CONFIG = { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1 };
+const STOP_TIMEOUT_MS = 500;
 
 export function TrackingQrScannerModal({
-  open,
   onClose,
   title,
   titleId,
@@ -29,14 +33,12 @@ export function TrackingQrScannerModal({
   autoStart = true,
   zIndex,
 }: {
-  open: boolean;
   onClose: () => void;
   title: string;
   titleId: string;
   onDecoded: (decoded: string) => void;
   manualEntryLabel?: string;
   showManualEntry?: boolean;
-  /** When true (default), opens rear camera as soon as the modal opens. */
   autoStart?: boolean;
   zIndex?: string;
 }) {
@@ -47,6 +49,7 @@ export function TrackingQrScannerModal({
   const cameraIndexRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const manualRef = useRef<HTMLInputElement>(null);
+  const aliveRef = useRef(true);
 
   const [phase, setPhase] = useState<ScanPhase>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -56,16 +59,41 @@ export function TrackingQrScannerModal({
 
   const stopScanner = useCallback(async () => {
     const instance = scannerRef.current;
+    const elementId = readerId;
     scannerRef.current = null;
     if (instance) {
       try {
-        await instance.stop();
+        await Promise.race([
+          instance.stop(),
+          new Promise<void>(resolve => window.setTimeout(resolve, STOP_TIMEOUT_MS)),
+        ]);
       } catch {
         /* already stopped */
       }
+      try {
+        instance.clear?.();
+      } catch {
+        /* ignore */
+      }
     }
+    releaseScannerElement(elementId);
     setTorchOn(false);
     setTorchSupported(false);
+  }, [readerId]);
+
+  const teardown = useCallback(() => {
+    aliveRef.current = false;
+    void stopScanner().finally(() => {
+      forceReleaseAllScannerResources();
+    });
+  }, [stopScanner]);
+
+  const safeSetPhase = useCallback((next: ScanPhase) => {
+    if (aliveRef.current) setPhase(next);
+  }, []);
+
+  const safeSetError = useCallback((next: string | null) => {
+    if (aliveRef.current) setError(next);
   }, []);
 
   const handleDecoded = useCallback(
@@ -99,18 +127,21 @@ export function TrackingQrScannerModal({
 
   const startCameraAt = useCallback(
     async (index: number) => {
-      setPhase("starting");
-      setError(null);
+      if (!aliveRef.current) return;
+      safeSetPhase("starting");
+      safeSetError(null);
       try {
         const Html5Qrcode = await loadHtml5Qrcode();
+        if (!aliveRef.current) return;
         let list = cameras;
         if (list.length === 0) {
           list = await Html5Qrcode.getCameras();
+          if (!aliveRef.current) return;
           setCameras(list);
         }
         if (list.length === 0) {
-          setError("No camera found on this device.");
-          setPhase("error");
+          safeSetError("No camera found on this device.");
+          safeSetPhase("error");
           return;
         }
         const safeIndex = index >= 0 && index < list.length ? index : pickPreferredCameraIndex(list);
@@ -125,27 +156,39 @@ export function TrackingQrScannerModal({
           handleDecoded,
           () => {},
         );
+        if (!aliveRef.current) {
+          await stopScanner();
+          return;
+        }
         refreshTorchSupport(scannerRef.current);
-        setPhase("scanning");
+        safeSetPhase("scanning");
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not start camera.");
-        setPhase("error");
+        if (!aliveRef.current) return;
+        safeSetError(e instanceof Error ? e.message : "Could not start camera.");
+        safeSetPhase("error");
       }
     },
-    [cameras, handleDecoded, readerId, refreshTorchSupport],
+    [cameras, handleDecoded, readerId, refreshTorchSupport, safeSetError, safeSetPhase, stopScanner],
   );
 
   const phaseRef = useRef<ScanPhase>("idle");
   phaseRef.current = phase;
 
   const startPreferredCamera = useCallback(async () => {
-    if (phaseRef.current === "starting" || phaseRef.current === "scanning") return;
-    setPhase("starting");
-    setError(null);
+    if (!aliveRef.current || phaseRef.current === "starting" || phaseRef.current === "scanning") return;
+    safeSetPhase("starting");
+    safeSetError(null);
     try {
       const Html5Qrcode = await loadHtml5Qrcode();
-      await requestRearCameraAccess();
-      const list = await Html5Qrcode.getCameras();
+      if (!aliveRef.current) return;
+
+      let list = await Html5Qrcode.getCameras();
+      if (!aliveRef.current) return;
+      if (camerasNeedPermissionPrime(list)) {
+        await requestRearCameraAccess();
+        if (!aliveRef.current) return;
+        list = await Html5Qrcode.getCameras();
+      }
       setCameras(list);
 
       if (!scannerRef.current) {
@@ -161,6 +204,10 @@ export function TrackingQrScannerModal({
         await scannerRef.current.start(PREFERRED_REAR_CAMERA, SCAN_CONFIG, handleDecoded, () => {});
         cameraIndexRef.current = 0;
       }
+      if (!aliveRef.current) {
+        await stopScanner();
+        return;
+      }
 
       const facing = readActiveFacingMode();
       if (facing === "user" && list.length > 1) {
@@ -171,41 +218,38 @@ export function TrackingQrScannerModal({
       }
 
       refreshTorchSupport(scannerRef.current);
-      setPhase("scanning");
+      safeSetPhase("scanning");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start camera.");
-      setPhase("error");
+      if (!aliveRef.current) return;
+      safeSetError(e instanceof Error ? e.message : "Could not start camera.");
+      safeSetPhase("error");
     }
-  }, [handleDecoded, readerId, refreshTorchSupport, startCameraAt, stopScanner]);
+  }, [handleDecoded, readerId, refreshTorchSupport, safeSetError, safeSetPhase, startCameraAt, stopScanner]);
 
   const handleClose = useCallback(() => {
-    void stopScanner();
+    teardown();
     setPhase("idle");
     setError(null);
     onClose();
-  }, [onClose, stopScanner]);
+  }, [onClose, teardown]);
+
+  useLayoutEffect(() => {
+    aliveRef.current = true;
+    decodedRef.current = false;
+    return () => {
+      teardown();
+    };
+  }, [teardown]);
 
   useEffect(() => {
-    if (!open) {
-      decodedRef.current = false;
-      void stopScanner();
-      setPhase("idle");
-      setError(null);
-      setCameras([]);
-      cameraIndexRef.current = 0;
-      if (manualRef.current) manualRef.current.value = "";
-      return;
-    }
     if (!autoStart) return;
-    let cancelled = false;
-    const timer = window.setTimeout(() => {
-      if (!cancelled) void startPreferredCamera();
-    }, 80);
+    const frame = window.requestAnimationFrame(() => {
+      if (aliveRef.current) void startPreferredCamera();
+    });
     return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
+      window.cancelAnimationFrame(frame);
     };
-  }, [open, autoStart, startPreferredCamera, stopScanner]);
+  }, [autoStart, startPreferredCamera]);
 
   const flipCamera = async () => {
     const Html5Qrcode = await loadHtml5Qrcode();
@@ -258,13 +302,15 @@ export function TrackingQrScannerModal({
     handleDecoded(v);
   };
 
-  return (
+  return createPortal(
     <AppModal
-      open={open}
+      open
+      instant
       onClose={handleClose}
       panelClassName="max-w-md w-full"
+      shellClassName="lg:left-64"
       labelledBy={titleId}
-      zIndex={zIndex}
+      zIndex={zIndex ?? "z-[100]"}
     >
       <AppModalHeader title={title} titleId={titleId} onClose={handleClose} />
       <AppModalBody className="space-y-4">
@@ -376,6 +422,7 @@ export function TrackingQrScannerModal({
           </label>
         ) : null}
       </AppModalBody>
-    </AppModal>
+    </AppModal>,
+    document.body,
   );
 }
