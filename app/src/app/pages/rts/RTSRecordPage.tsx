@@ -398,6 +398,14 @@ export function RTSRecordPage() {
     case_id: caseId,
   });
 
+  const selectDisposition = (next: RtsCaseDisposition) => {
+    if (next === "leak" && disposition !== "leak" && damagedLines.length === 0 && lines.length > 0) {
+      setDamagedLines(lines);
+      setLines([]);
+    }
+    setDisposition(next);
+  };
+
   const validate = () => {
     if (!tracking.trim()) return "Tracking required";
     if (mode === "append") {
@@ -420,6 +428,9 @@ export function RTSRecordPage() {
     if (disposition === "leak") {
       if (!lines.length && !damagedLines.length) {
         return "Add at least one damaged or reusable product line";
+      }
+      if (!damagedLines.length && lines.length > 0) {
+        return "Put leaked items under Damaged / leaked — reusable lines sync to sellable RTS stock only.";
       }
       return null;
     }
@@ -805,7 +816,7 @@ export function RTSRecordPage() {
                     size="sm"
                     variant={disposition === d.id ? "default" : "outline"}
                     className={disposition === d.id ? "bg-[#C8900A] hover:bg-[#C8900A]/90" : ""}
-                    onClick={() => setDisposition(d.id)}
+                    onClick={() => selectDisposition(d.id)}
                   >
                     {d.label}
                   </Button>

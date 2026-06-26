@@ -1,7 +1,7 @@
 ---
 title: online_orders_generator
 source: includes/online_orders_generator.php
-generated: 2026-06-26T03:25:20+02:00
+generated: 2026-06-26T07:12:37+02:00
 type: module
 function_count: 38
 ---
@@ -162,7 +162,7 @@ function_count: 38
 **Callers (2):**
 
 - `includes/online_orders_generator.php`:348 — `parent::__construct($message ?? 'One or more tracking numbers already exist.');`
-- `includes/rts_case_handlers.php`:23 — `parent::__construct($message);`
+- `includes/rts_case_handlers.php`:24 — `parent::__construct($message);`
 
 ## online_orders_normalize_tracking {#online_orders_normalize_tracking}
 

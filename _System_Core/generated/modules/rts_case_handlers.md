@@ -1,7 +1,7 @@
 ---
 title: rts_case_handlers
 source: includes/rts_case_handlers.php
-generated: 2026-06-26T03:25:25+02:00
+generated: 2026-06-26T07:12:43+02:00
 type: module
 function_count: 28
 ---
@@ -24,19 +24,20 @@ function_count: 28
 - `includes/rts_storage.php`
 - `includes/rts_prefill.php`
 - `includes/online_order_parcels.php`
+- `includes/rts_inventory_sync.php`
 
 ## __construct {#__construct}
 
 **Callers (2):**
 
 - `includes/online_orders_generator.php`:348 — `parent::__construct($message ?? 'One or more tracking numbers already exist.');`
-- `includes/rts_case_handlers.php`:23 — `parent::__construct($message);`
+- `includes/rts_case_handlers.php`:24 — `parent::__construct($message);`
 
 ## rts_case_allowed_couriers {#rts_case_allowed_couriers}
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:347 — `if (!in_array($courierFinal, rts_case_allowed_couriers(), true)) {`
+- `includes/rts_case_handlers.php`:348 — `if (!in_array($courierFinal, rts_case_allowed_couriers(), true)) {`
 - `includes/rts_case_handlers.php`:732 — `if ($courier !== '' && in_array($courier, rts_case_allowed_couriers(), true)) {`
 - `includes/rts_prefill.php`:60 — `if ($detected !== 'unknown' && in_array($detected, rts_case_allowed_couriers(), true)) {`
 
@@ -44,7 +45,7 @@ function_count: 28
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:352 — `if (!in_array($shop, rts_case_allowed_shops(), true)) {`
+- `includes/rts_case_handlers.php`:353 — `if (!in_array($shop, rts_case_allowed_shops(), true)) {`
 - `includes/rts_case_handlers.php`:728 — `} elseif ($shop !== '' && in_array($shop, rts_case_allowed_shops(), true)) {`
 - `includes/rts_case_handlers.php`:974 — `'shops' => rts_case_allowed_shops(),`
 
@@ -52,15 +53,15 @@ function_count: 28
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:193 — `$case['case_disposition'] = rts_case_resolve_disposition(['damaged_reason' => $case['damaged_reason'] ?? '']);`
-- `includes/rts_case_handlers.php`:340 — `$disposition = rts_case_resolve_disposition($data);`
+- `includes/rts_case_handlers.php`:194 — `$case['case_disposition'] = rts_case_resolve_disposition(['damaged_reason' => $case['damaged_reason'] ?? '']);`
+- `includes/rts_case_handlers.php`:341 — `$disposition = rts_case_resolve_disposition($data);`
 - `includes/rts_case_handlers.php`:797 — `$row['case_disposition'] = rts_case_resolve_disposition(['damaged_reason' => $row['damaged_reason'] ?? '']);`
 
 ## rts_case_disposition_to_damaged_reason {#rts_case_disposition_to_damaged_reason}
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:425 — `$damagedReason = rts_case_disposition_to_damaged_reason($disposition);`
+- `includes/rts_case_handlers.php`:426 — `$damagedReason = rts_case_disposition_to_damaged_reason($disposition);`
 
 ## rts_case_disposition_registry_where {#rts_case_disposition_registry_where}
 
@@ -74,7 +75,7 @@ function_count: 28
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:195 — `$case['before_shipment'] = rts_case_enrich_before_shipment($pdo, $case);`
+- `includes/rts_case_handlers.php`:196 — `$case['before_shipment'] = rts_case_enrich_before_shipment($pdo, $case);`
 
 ## rts_case_list_before_shipment_light {#rts_case_list_before_shipment_light}
 
@@ -96,7 +97,7 @@ function_count: 28
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:430 — `$deliveryMatchItemId = rts_case_handler_find_delivery_match_item_id($pdo, $tracking);`
+- `includes/rts_case_handlers.php`:431 — `$deliveryMatchItemId = rts_case_handler_find_delivery_match_item_id($pdo, $tracking);`
 
 ## rts_case_handler_delivery_match {#rts_case_handler_delivery_match}
 
@@ -110,21 +111,21 @@ function_count: 28
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:341 — `$lines = rts_case_parse_product_lines($disposition, $data);`
+- `includes/rts_case_handlers.php`:342 — `$lines = rts_case_parse_product_lines($disposition, $data);`
 
 ## rts_case_handler_parse_case_fields {#rts_case_handler_parse_case_fields}
 
 **Callers (2):**
 
-- `includes/rts_case_handlers.php`:471 — `$fields = rts_case_handler_parse_case_fields($pdo, $data, true);`
-- `includes/rts_case_handlers.php`:523 — `$fields = rts_case_handler_parse_case_fields($pdo, $data, false);`
+- `includes/rts_case_handlers.php`:472 — `$fields = rts_case_handler_parse_case_fields($pdo, $data, true);`
+- `includes/rts_case_handlers.php`:524 — `$fields = rts_case_handler_parse_case_fields($pdo, $data, false);`
 
 ## rts_case_handler_ensure_save_schemas {#rts_case_handler_ensure_save_schemas}
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:473 — `rts_case_handler_ensure_save_schemas($pdo);`
-- `includes/rts_case_handlers.php`:525 — `rts_case_handler_ensure_save_schemas($pdo);`
+- `includes/rts_case_handlers.php`:474 — `rts_case_handler_ensure_save_schemas($pdo);`
+- `includes/rts_case_handlers.php`:526 — `rts_case_handler_ensure_save_schemas($pdo);`
 - `includes/rts_case_handlers.php`:618 — `rts_case_handler_ensure_save_schemas($pdo);`
 
 ## rts_case_handler_create {#rts_case_handler_create}
@@ -136,7 +137,7 @@ function_count: 28
 
 ## rts_case_handler_update {#rts_case_handler_update}
 
-**Tables:** `rts_cases`, `rts_line_items`
+**Tables:** `rts_cases`
 
 **Callers (2):**
 

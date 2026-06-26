@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-06-26T03:25:13+02:00
+generated: 2026-06-26T07:12:28+02:00
 type: module
 function_count: 39
 ---
@@ -96,8 +96,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_pos.php`:144 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_pos.php`:164 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/rts_damaged_use.php`:198 — `[$curCol] = honey_packaging_size_columns($size);`
-- `includes/rts_inventory_sync.php`:273 — `[$curCol] = honey_packaging_size_columns($size);`
-- `includes/rts_inventory_sync.php`:409 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/rts_inventory_sync.php`:352 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/rts_inventory_sync.php`:488 — `[$curCol] = honey_packaging_size_columns($size);`
 
 ## honey_fetch_warehouse {#honey_fetch_warehouse}
 

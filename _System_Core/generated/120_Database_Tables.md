@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-06-26T03:25:05+02:00
+generated: 2026-06-26T07:12:19+02:00
 type: memory-bank
 table_count: 56
 ---
@@ -94,9 +94,9 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/rts.php` | [[modules/rts#api_rts_pool]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_recent]] |
 | `api/v1/rts.php` | [[modules/rts#api_rts_inventory_list]] |
-| `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_update]] |
 | `includes/rts_case_handlers.php` | [[modules/rts_case_handlers#rts_case_handler_list]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_case_replace_line_items]] |
 | `includes/rts_products.php` | [[modules/rts_products#rts_line_items_schema_v2]] |
 | `includes/rts_schema.php` | [[modules/rts_schema#rts_line_items_fetch_for_case]] |
 | `includes/rts_schema.php` | [[modules/rts_schema#rts_line_items_ensure_v2_schema]] |
@@ -616,6 +616,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_case_replace_line_items]] |
 
 ## `pos_sales`
 
@@ -719,6 +720,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_log_sale]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_case_replace_line_items]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_honey_variant]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_other_label]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell]] |
@@ -762,6 +764,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_inventory_credit_sellable_repack]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_case_replace_line_items]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_list_honey_aggregated]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_list_other_aggregated]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_honey_variant]] |

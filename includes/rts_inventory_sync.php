@@ -154,6 +154,85 @@ function rts_inventory_sync_run(PDO $pdo): array
     ];
 }
 
+/**
+ * True when no RTS stock was sold, used, or adjusted from this mirrored row.
+ *
+ * @param array<string, mixed> $row
+ */
+function rts_inventory_row_is_untouched(array $row): bool
+{
+    $pairs = [
+        ['current_liter', 'initial_liter'],
+        ['current_250ml', 'initial_250ml'],
+        ['current_350ml', 'initial_350ml'],
+        ['current_gallon', 'initial_gallon'],
+        ['current_qty', 'initial_qty'],
+    ];
+    foreach ($pairs as [$cur, $init]) {
+        if (abs((float) ($row[$cur] ?? 0) - (float) ($row[$init] ?? 0)) > 0.0001) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Replace all product lines on a case (edit flow).
+ * Drops synced inventory rows first when still untouched so FK does not block line delete.
+ *
+ * @param list<array<string, mixed>> $lines
+ */
+function rts_case_replace_line_items(PDO $pdo, int $caseId, array $lines): void
+{
+    $st = $pdo->prepare(
+        'SELECT ir.id, ir.source_line_item_id,
+                ir.current_liter, ir.initial_liter,
+                ir.current_250ml, ir.initial_250ml,
+                ir.current_350ml, ir.initial_350ml,
+                ir.current_gallon, ir.initial_gallon,
+                ir.current_qty, ir.initial_qty
+         FROM rts_inventory_rows ir
+         INNER JOIN rts_line_items li ON li.id = ir.source_line_item_id
+         WHERE li.case_id = ?'
+    );
+    $st->execute([$caseId]);
+    $invRows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    foreach ($invRows as $ir) {
+        $rowId = (int) $ir['id'];
+        if (!rts_inventory_row_is_untouched($ir)) {
+            throw new RuntimeException(
+                'Cannot change product lines — RTS stock from this case was already used or sold.'
+            );
+        }
+        $salesSt = $pdo->prepare('SELECT COUNT(*) FROM honey_sales_log WHERE rts_inventory_row_id = ?');
+        $salesSt->execute([$rowId]);
+        if ((int) $salesSt->fetchColumn() > 0) {
+            throw new RuntimeException(
+                'Cannot change product lines — RTS stock from this case was already sold.'
+            );
+        }
+        try {
+            $useSt = $pdo->prepare('SELECT COUNT(*) FROM rts_damaged_use_events WHERE rts_inventory_row_id = ?');
+            $useSt->execute([$rowId]);
+            if ((int) $useSt->fetchColumn() > 0) {
+                throw new RuntimeException(
+                    'Cannot change product lines — damaged stock from this case was already used.'
+                );
+            }
+        } catch (PDOException $e) {
+            if (!str_contains($e->getMessage(), "doesn't exist")) {
+                throw $e;
+            }
+        }
+        $pdo->prepare('DELETE FROM rts_inventory_rows WHERE id = ?')->execute([$rowId]);
+    }
+
+    $pdo->prepare('DELETE FROM rts_line_items WHERE case_id = ?')->execute([$caseId]);
+    rts_line_items_insert_batch($pdo, $caseId, $lines);
+}
+
 function rts_inventory_sync_status(PDO $pdo): array
 {
     $state = $pdo->query('SELECT last_synced_at, last_error, last_line_item_id FROM rts_sync_state WHERE id = 1')->fetch();

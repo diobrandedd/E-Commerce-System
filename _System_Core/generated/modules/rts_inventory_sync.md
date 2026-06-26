@@ -1,9 +1,9 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-06-26T03:25:26+02:00
+generated: 2026-06-26T07:12:45+02:00
 type: module
-function_count: 10
+function_count: 12
 ---
 
 
@@ -41,6 +41,20 @@ function_count: 10
 - `api/v1/rts_cases.php`:73 — `rts_inventory_sync_run($pdo);`
 - `api/v1/rts_sync.php`:28 — `$result = rts_inventory_sync_run(ims_pdo());`
 
+## rts_inventory_row_is_untouched {#rts_inventory_row_is_untouched}
+
+**Callers (1):**
+
+- `includes/rts_inventory_sync.php`:204 — `if (!rts_inventory_row_is_untouched($ir)) {`
+
+## rts_case_replace_line_items {#rts_case_replace_line_items}
+
+**Tables:** `rts_inventory_rows`, `honey_sales_log`, `rts_damaged_use_events`, `rts_line_items`
+
+**Callers (1):**
+
+- `includes/rts_case_handlers.php`:566 — `rts_case_replace_line_items($pdo, $caseId, $fields['lines']);`
+
 ## rts_inventory_sync_status {#rts_inventory_sync_status}
 
 **Tables:** `rts_sync_state`
@@ -56,10 +70,10 @@ function_count: 10
 **Callers (5):**
 
 - `api/v1/rts.php`:51 — `return rts_inventory_pool_filter_sql($pdo, $pool);`
-- `includes/rts_inventory_sync.php`:181 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
-- `includes/rts_inventory_sync.php`:211 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
-- `includes/rts_inventory_sync.php`:265 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
-- `includes/rts_inventory_sync.php`:345 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
+- `includes/rts_inventory_sync.php`:260 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
+- `includes/rts_inventory_sync.php`:290 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
+- `includes/rts_inventory_sync.php`:344 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
+- `includes/rts_inventory_sync.php`:424 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
 
 ## rts_inventory_list_honey_aggregated {#rts_inventory_list_honey_aggregated}
 

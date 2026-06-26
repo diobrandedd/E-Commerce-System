@@ -11,6 +11,7 @@ require_once __DIR__ . '/rts_schema.php';
 require_once __DIR__ . '/rts_storage.php';
 require_once __DIR__ . '/rts_prefill.php';
 require_once __DIR__ . '/online_order_parcels.php';
+require_once __DIR__ . '/rts_inventory_sync.php';
 
 class RtsCaseException extends RuntimeException
 {
@@ -562,8 +563,7 @@ function rts_case_handler_update(PDO $pdo, int $caseId, array $data): array
             'delivery_match_item_id' => $fields['delivery_match_item_id'],
             'before_shipment_photo_filename' => $fields['before_shipment_photo_filename'],
         ]);
-        $pdo->prepare('DELETE FROM rts_line_items WHERE case_id = ?')->execute([$caseId]);
-        rts_line_items_insert_batch($pdo, $caseId, $fields['lines']);
+        rts_case_replace_line_items($pdo, $caseId, $fields['lines']);
         $pdo->commit();
     } catch (RtsCaseException $e) {
         throw $e;

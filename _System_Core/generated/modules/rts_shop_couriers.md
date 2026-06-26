@@ -1,7 +1,7 @@
 ---
 title: rts_shop_couriers
 source: includes/rts_shop_couriers.php
-generated: 2026-06-26T03:25:28+02:00
+generated: 2026-06-26T07:12:47+02:00
 type: module
 function_count: 2
 ---
@@ -24,5 +24,5 @@ function_count: 2
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:355 — `if (!rts_shop_allows_courier($shop, $courierFinal)) {`
+- `includes/rts_case_handlers.php`:356 — `if (!rts_shop_allows_courier($shop, $courierFinal)) {`
 

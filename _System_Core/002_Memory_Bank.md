@@ -4,7 +4,7 @@
 
 ## 📅 Recent Log Entries
 
-### 2026-06-19 — [[problems/records/2026-06-19_rts-save-scan-next-db-error|RTS Save & scan next DB error + auto rear-camera scanner]]
+### 2026-06-19 — [[problems/records/2026-06-19_rts-edit-lines-fk-inventory|RTS case edit + leak line placement FK fix]]
 
 ### 2026-06-24 — [[problems/records/2026-06-24_pos-ar-checkout-sales-pool|POS AR checkout + Sales pool]]
 **Shipped:** POS honey/dept AR checkout (inventory deduct, debtor picker); `pos_sales.is_ar` + linked `ar_credits`; Sales **AR only** red filter pill; `/ar` debtor/mobile + exec paid/unpaid. Run `migration_phase50` on prod.
