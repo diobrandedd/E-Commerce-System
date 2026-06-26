@@ -422,7 +422,7 @@ export function RTSRecordsPage() {
                   <td className="px-4 py-3"><LineCountBadge count={Number(c.line_count ?? 0)} /></td>
                   <td className="px-4 py-3"><DamageBadge row={c} /></td>
                   <td className="px-4 py-3"><ClaimBadge row={c} catalog={catalog} /></td>
-                  <RtsCaseMediaTableCells row={c} docBase={docBase} />
+                  <RtsCaseMediaTableCells row={c} />
                   <td className="px-4 py-3 text-muted-foreground">
                     <ChevronRight size={16} className="opacity-40 group-hover:opacity-100 group-hover:text-[#C8900A] transition-opacity" />
                   </td>

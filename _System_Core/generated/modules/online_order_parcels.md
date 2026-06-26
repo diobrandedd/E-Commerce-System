@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-06-25T09:48:05+02:00
+generated: 2026-06-26T02:58:03+02:00
 type: module
 function_count: 26
 ---
@@ -132,7 +132,7 @@ function_count: 26
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:470 — `online_parcels_mark_rts($pdo, $tracking, $caseId);`
+- `includes/rts_case_handlers.php`:492 — `online_parcels_mark_rts($pdo, $tracking, $caseId);`
 
 ## online_parcels_revert_rts_by_case {#online_parcels_revert_rts_by_case}
 
@@ -140,7 +140,7 @@ function_count: 26
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:624 — `online_parcels_revert_rts_by_case($pdo, $caseId);`
+- `includes/rts_case_handlers.php`:646 — `online_parcels_revert_rts_by_case($pdo, $caseId);`
 
 ## online_parcels_get_by_id {#online_parcels_get_by_id}
 

@@ -1,7 +1,7 @@
 ---
 title: rts_products
 source: includes/rts_products.php
-generated: 2026-06-25T09:48:18+02:00
+generated: 2026-06-26T02:58:10+02:00
 type: module
 function_count: 14
 ---
@@ -87,10 +87,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/rts_case_handlers.php`:259 — `$err = rts_validate_lines_v2($reusableIn);`
-- `includes/rts_case_handlers.php`:265 — `$err = rts_validate_lines_v2($damagedIn);`
-- `includes/rts_case_handlers.php`:291 — `$err = rts_validate_lines_v2($linesIn);`
-- `includes/rts_case_handlers.php`:556 — `$err = rts_validate_lines_v2($linesIn);`
+- `includes/rts_case_handlers.php`:281 — `$err = rts_validate_lines_v2($reusableIn);`
+- `includes/rts_case_handlers.php`:287 — `$err = rts_validate_lines_v2($damagedIn);`
+- `includes/rts_case_handlers.php`:313 — `$err = rts_validate_lines_v2($linesIn);`
+- `includes/rts_case_handlers.php`:578 — `$err = rts_validate_lines_v2($linesIn);`
 
 ## rts_normalize_line {#rts_normalize_line}
 

@@ -61,36 +61,37 @@ function firstAttachment(row: RtsCaseRow, kind: "image" | "video"): RtsAttachmen
   return row.documentation_attachments?.find(a => a.kind === kind);
 }
 
-/** Table cells: before-shipment thumb, RTS photo thumb, RTS video thumb. */
-export function RtsCaseMediaTableCells({ row, docBase }: { row: RtsCaseRow; docBase: string }) {
-  const beforeUrl = row.before_shipment?.available ? row.before_shipment.download_url ?? null : null;
-  const image = firstAttachment(row, "image");
-  const video = firstAttachment(row, "video");
-  const imageUrl = image ? rtsDocUrl(docBase, image.file) : null;
-  const videoUrl = video ? rtsDocUrl(docBase, video.file) : null;
+function MediaStatusPill({ yes, yesLabel = "Yes" }: { yes: boolean; yesLabel?: string }) {
+  if (!yes) {
+    return <span className="text-[10px] text-muted-foreground">—</span>;
+  }
+  return (
+    <span className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+      {yesLabel}
+    </span>
+  );
+}
+
+/** Table cells: media presence only — full assets load in row detail modal. */
+export function RtsCaseMediaTableCells({ row }: { row: RtsCaseRow }) {
+  const hasBeforeShip = Boolean(row.before_shipment?.available);
+  const hasPhoto = Boolean(firstAttachment(row, "image"));
+  const hasVideo = Boolean(firstAttachment(row, "video"));
 
   return (
     <>
       <td className="px-3 py-2">
-        {beforeUrl ? (
-          <RtsMediaThumb src={beforeUrl} kind="image" title="Before shipment" />
+        {hasBeforeShip ? (
+          <MediaStatusPill yes yesLabel="Yes" />
         ) : (
           <span className="text-[10px] text-muted-foreground">N/A</span>
         )}
       </td>
       <td className="px-3 py-2">
-        {imageUrl ? (
-          <RtsMediaThumb src={imageUrl} kind="image" title="RTS photo" />
-        ) : (
-          <span className="text-[10px] text-muted-foreground">—</span>
-        )}
+        <MediaStatusPill yes={hasPhoto} />
       </td>
       <td className="px-3 py-2">
-        {videoUrl ? (
-          <RtsMediaThumb src={videoUrl} kind="video" title="RTS video" />
-        ) : (
-          <span className="text-[10px] text-muted-foreground">—</span>
-        )}
+        <MediaStatusPill yes={hasVideo} />
       </td>
     </>
   );

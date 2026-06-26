@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { BookOpen, Loader2, ScanLine } from "lucide-react";
-import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { TrackingQrScannerModal } from "@/app/components/scan/TrackingQrScannerModal";
 import { DeliveriesCancelledGuideModal } from "@/app/components/fulfillment/DeliveriesCancelledGuideModal";
 import { runDeliveriesCancelledTour } from "@/app/components/fulfillment/deliveriesCancelledTour";
 import { PageLayout } from "@/app/components/PageLayout";
@@ -46,9 +46,6 @@ export function DeliveriesCancelledPage() {
   const [trackingInput, setTrackingInput] = useState("");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
-  const readerRef = useRef<HTMLDivElement | null>(null);
-  const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
-
   const loadCancelLogs = useCallback(async () => {
     setBusy(true);
     setError(null);
@@ -104,37 +101,6 @@ export function DeliveriesCancelledPage() {
     },
     [loadCancelLogs],
   );
-
-  useEffect(() => {
-    if (!scannerOpen || !readerRef.current) return;
-    let cancelled = false;
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
-    script.async = true;
-    script.onload = () => {
-      if (cancelled || !readerRef.current) return;
-      const Html5QrcodeScanner = (window as unknown as { Html5QrcodeScanner: new (
-        id: string,
-        config: object,
-        verbose: boolean,
-      ) => { render: (ok: (t: string) => void) => void; clear: () => Promise<void> } }).Html5QrcodeScanner;
-      if (!Html5QrcodeScanner) return;
-      const scanner = new Html5QrcodeScanner("deliveries-cancel-qr-reader", { fps: 10, qrbox: 220 }, false);
-      scannerRef.current = scanner;
-      scanner.render((decoded) => {
-        void scanner.clear();
-        scannerRef.current = null;
-        setScannerOpen(false);
-        void runCancelByTracking(decoded);
-      });
-    };
-    document.body.appendChild(script);
-    return () => {
-      cancelled = true;
-      void scannerRef.current?.clear();
-      scannerRef.current = null;
-    };
-  }, [scannerOpen, runCancelByTracking]);
 
   return (
     <PageLayout
@@ -291,27 +257,14 @@ export function DeliveriesCancelledPage() {
         </button>
       </div>
 
-      <AppModal
+      <TrackingQrScannerModal
         open={scannerOpen}
-        onClose={() => {
-          void scannerRef.current?.clear();
-          setScannerOpen(false);
-        }}
-        panelClassName="max-w-md w-full"
-        labelledBy="deliveries-cancel-scan-modal-title"
-      >
-        <AppModalHeader
-          title="Scan parcel to cancel"
-          titleId="deliveries-cancel-scan-modal-title"
-          onClose={() => {
-            void scannerRef.current?.clear();
-            setScannerOpen(false);
-          }}
-        />
-        <AppModalBody>
-          <div id="deliveries-cancel-qr-reader" ref={readerRef} />
-        </AppModalBody>
-      </AppModal>
+        onClose={() => setScannerOpen(false)}
+        title="Scan parcel to cancel"
+        titleId="deliveries-cancel-scan-modal-title"
+        onDecoded={decoded => void runCancelByTracking(decoded)}
+        manualEntryLabel="Or type tracking to cancel"
+      />
 
       <DeliveriesCancelledGuideModal
         open={guideOpen}

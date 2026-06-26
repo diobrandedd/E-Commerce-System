@@ -5,13 +5,6 @@ type DeliveriesReviewTourContext = {
   isExecutive: boolean;
 };
 
-function editStepCopy(isExecutive: boolean): string {
-  if (isExecutive) {
-    return "Executives can edit tracking, photo, or delete a row directly. Changes apply immediately.";
-  }
-  return "Production managers submit an edit request here. An executive approves it under Inventory → Requests → Edit requests.";
-}
-
 function buildSteps({ isExecutive }: DeliveriesReviewTourContext): DriveStep[] {
   const steps: DriveStep[] = [
     {
@@ -44,21 +37,22 @@ function buildSteps({ isExecutive }: DeliveriesReviewTourContext): DriveStep[] {
       },
     },
     {
-      element: "[data-tour='deliveries-review-photo']",
+      element: "[data-tour='deliveries-review-row']",
       popover: {
-        title: "Packing photo",
+        title: "Row details",
         description:
-          "Tap the thumbnail or View to open the full record — tracking, recipient, items, courier, and the photo taken at scan time.",
-        side: "bottom",
-        align: "center",
+          "Click any row to open the full record — tracking, recipient, items, courier, status, and the packing photo. Edit or delete from inside that panel.",
+        side: "top",
+        align: "start",
       },
     },
     {
-      element: "[data-tour='deliveries-review-actions']",
+      element: "[data-tour='deliveries-review-photo']",
       popover: {
-        title: "Edit or correct",
-        description: editStepCopy(isExecutive),
-        side: "left",
+        title: "Photo indicator",
+        description:
+          "Yes means a packing photo is on file. Open the row to view the full image — thumbnails are not loaded in the table for speed.",
+        side: "bottom",
         align: "center",
       },
     },

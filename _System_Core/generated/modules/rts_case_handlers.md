@@ -1,9 +1,9 @@
 ---
 title: rts_case_handlers
 source: includes/rts_case_handlers.php
-generated: 2026-06-25T09:48:16+02:00
+generated: 2026-06-26T02:58:09+02:00
 type: module
-function_count: 26
+function_count: 27
 ---
 
 
@@ -36,47 +36,52 @@ function_count: 26
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:325 — `if (!in_array($courierFinal, rts_case_allowed_couriers(), true)) {`
-- `includes/rts_case_handlers.php`:698 — `if ($courier !== '' && in_array($courier, rts_case_allowed_couriers(), true)) {`
+- `includes/rts_case_handlers.php`:347 — `if (!in_array($courierFinal, rts_case_allowed_couriers(), true)) {`
+- `includes/rts_case_handlers.php`:720 — `if ($courier !== '' && in_array($courier, rts_case_allowed_couriers(), true)) {`
 - `includes/rts_prefill.php`:60 — `if ($detected !== 'unknown' && in_array($detected, rts_case_allowed_couriers(), true)) {`
 
 ## rts_case_allowed_shops {#rts_case_allowed_shops}
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:330 — `if (!in_array($shop, rts_case_allowed_shops(), true)) {`
-- `includes/rts_case_handlers.php`:694 — `} elseif ($shop !== '' && in_array($shop, rts_case_allowed_shops(), true)) {`
-- `includes/rts_case_handlers.php`:940 — `'shops' => rts_case_allowed_shops(),`
+- `includes/rts_case_handlers.php`:352 — `if (!in_array($shop, rts_case_allowed_shops(), true)) {`
+- `includes/rts_case_handlers.php`:716 — `} elseif ($shop !== '' && in_array($shop, rts_case_allowed_shops(), true)) {`
+- `includes/rts_case_handlers.php`:962 — `'shops' => rts_case_allowed_shops(),`
 
 ## rts_case_resolve_disposition {#rts_case_resolve_disposition}
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:171 — `$case['case_disposition'] = rts_case_resolve_disposition(['damaged_reason' => $case['damaged_reason'] ?? '']);`
-- `includes/rts_case_handlers.php`:318 — `$disposition = rts_case_resolve_disposition($data);`
-- `includes/rts_case_handlers.php`:763 — `$row['case_disposition'] = rts_case_resolve_disposition(['damaged_reason' => $row['damaged_reason'] ?? '']);`
+- `includes/rts_case_handlers.php`:193 — `$case['case_disposition'] = rts_case_resolve_disposition(['damaged_reason' => $case['damaged_reason'] ?? '']);`
+- `includes/rts_case_handlers.php`:340 — `$disposition = rts_case_resolve_disposition($data);`
+- `includes/rts_case_handlers.php`:785 — `$row['case_disposition'] = rts_case_resolve_disposition(['damaged_reason' => $row['damaged_reason'] ?? '']);`
 
 ## rts_case_disposition_to_damaged_reason {#rts_case_disposition_to_damaged_reason}
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:403 — `$damagedReason = rts_case_disposition_to_damaged_reason($disposition);`
+- `includes/rts_case_handlers.php`:425 — `$damagedReason = rts_case_disposition_to_damaged_reason($disposition);`
 
 ## rts_case_disposition_registry_where {#rts_case_disposition_registry_where}
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:793 — `$registry = rts_case_disposition_registry_where($pdo, $disposition);`
+- `includes/rts_case_handlers.php`:815 — `$registry = rts_case_disposition_registry_where($pdo, $disposition);`
 
 ## rts_case_enrich_before_shipment {#rts_case_enrich_before_shipment}
 
 **Tables:** `delivery_batch_items`, `delivery_batches`
 
-**Callers (3):**
+**Callers (1):**
 
-- `includes/rts_case_handlers.php`:173 — `$case['before_shipment'] = rts_case_enrich_before_shipment($pdo, $case);`
-- `includes/rts_case_handlers.php`:765 — `$row['before_shipment'] = rts_case_enrich_before_shipment($pdo, $row);`
-- `includes/rts_case_handlers.php`:822 — `$row['before_shipment'] = rts_case_enrich_before_shipment($pdo, $row);`
+- `includes/rts_case_handlers.php`:195 — `$case['before_shipment'] = rts_case_enrich_before_shipment($pdo, $case);`
+
+## rts_case_list_before_shipment_light {#rts_case_list_before_shipment_light}
+
+**Callers (2):**
+
+- `includes/rts_case_handlers.php`:787 — `$row['before_shipment'] = rts_case_list_before_shipment_light($row);`
+- `includes/rts_case_handlers.php`:844 — `$row['before_shipment'] = rts_case_list_before_shipment_light($row);`
 
 ## rts_case_handler_get_by_tracking {#rts_case_handler_get_by_tracking}
 
@@ -91,7 +96,7 @@ function_count: 26
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:408 — `$deliveryMatchItemId = rts_case_handler_find_delivery_match_item_id($pdo, $tracking);`
+- `includes/rts_case_handlers.php`:430 — `$deliveryMatchItemId = rts_case_handler_find_delivery_match_item_id($pdo, $tracking);`
 
 ## rts_case_handler_delivery_match {#rts_case_handler_delivery_match}
 
@@ -105,14 +110,14 @@ function_count: 26
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:319 — `$lines = rts_case_parse_product_lines($disposition, $data);`
+- `includes/rts_case_handlers.php`:341 — `$lines = rts_case_parse_product_lines($disposition, $data);`
 
 ## rts_case_handler_parse_case_fields {#rts_case_handler_parse_case_fields}
 
 **Callers (2):**
 
-- `includes/rts_case_handlers.php`:440 — `$fields = rts_case_handler_parse_case_fields($pdo, $data, true);`
-- `includes/rts_case_handlers.php`:491 — `$fields = rts_case_handler_parse_case_fields($pdo, $data, false);`
+- `includes/rts_case_handlers.php`:462 — `$fields = rts_case_handler_parse_case_fields($pdo, $data, true);`
+- `includes/rts_case_handlers.php`:513 — `$fields = rts_case_handler_parse_case_fields($pdo, $data, false);`
 
 ## rts_case_handler_create {#rts_case_handler_create}
 
@@ -171,8 +176,8 @@ function_count: 26
 
 **Callers (2):**
 
-- `includes/rts_case_handlers.php`:843 — `return rts_case_handler_list_by_disposition($pdo, 'swapped', $filters);`
-- `includes/rts_case_handlers.php`:848 — `return rts_case_handler_list_by_disposition($pdo, 'leak', $filters);`
+- `includes/rts_case_handlers.php`:865 — `return rts_case_handler_list_by_disposition($pdo, 'swapped', $filters);`
+- `includes/rts_case_handlers.php`:870 — `return rts_case_handler_list_by_disposition($pdo, 'leak', $filters);`
 
 ## rts_case_handler_list_swapped {#rts_case_handler_list_swapped}
 
@@ -210,7 +215,7 @@ function_count: 26
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:990 — `throw new RtsCaseException(rts_case_handler_upload_error_message($uploadErr), 'upload_failed', 400);`
+- `includes/rts_case_handlers.php`:1012 — `throw new RtsCaseException(rts_case_handler_upload_error_message($uploadErr), 'upload_failed', 400);`
 
 ## rts_case_handler_upload_documentation {#rts_case_handler_upload_documentation}
 

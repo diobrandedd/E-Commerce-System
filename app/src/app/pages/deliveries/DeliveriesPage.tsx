@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { BookOpen, Camera, CheckCircle2, Loader2, ScanLine } from "lucide-react";
 import { Link } from "react-router";
-import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { TrackingQrScannerModal } from "@/app/components/scan/TrackingQrScannerModal";
 import { DeliveryDuplicateScanModal } from "@/app/components/fulfillment/DeliveryDuplicateScanModal";
 import { DeliveriesAddGuideModal } from "@/app/components/fulfillment/DeliveriesAddGuideModal";
 import { runDeliveriesAddTour } from "@/app/components/fulfillment/deliveriesAddTour";
@@ -71,8 +71,6 @@ export function DeliveriesPage() {
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicateRecordings, setDuplicateRecordings] = useState<DeliveryExistingRecording[]>([]);
   const [guideOpen, setGuideOpen] = useState(false);
-  const readerRef = useRef<HTMLDivElement>(null);
-  const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const uploadGenRef = useRef(0);
   const uploadPromiseRef = useRef<Promise<number | null> | null>(null);
@@ -175,39 +173,6 @@ export function DeliveriesPage() {
     setError(null);
     setDoneMessage(null);
   };
-
-  useEffect(() => {
-    if (!scannerOpen || !readerRef.current) return;
-
-    let cancelled = false;
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
-    script.async = true;
-    script.onload = () => {
-      if (cancelled || !readerRef.current) return;
-      const Html5QrcodeScanner = (window as unknown as { Html5QrcodeScanner: new (
-        id: string,
-        config: object,
-        verbose: boolean,
-      ) => { render: (ok: (t: string) => void) => void; clear: () => Promise<void> } }).Html5QrcodeScanner;
-      if (!Html5QrcodeScanner) return;
-      const scanner = new Html5QrcodeScanner("deliveries-qr-reader", { fps: 10, qrbox: 220 }, false);
-      scannerRef.current = scanner;
-      scanner.render((decoded) => {
-        void scanner.clear();
-        scannerRef.current = null;
-        setScannerOpen(false);
-        void loadParcel(decoded);
-      });
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      cancelled = true;
-      void scannerRef.current?.clear();
-      scannerRef.current = null;
-    };
-  }, [scannerOpen]);
 
   const onPhotoSelected = (file: File | null) => {
     if (!file || !tracking) return;
@@ -545,41 +510,14 @@ export function DeliveriesPage() {
         </FulfillmentStepSwitch>
       </FulfillmentSectionEnter>
 
-      <AppModal
+      <TrackingQrScannerModal
         open={scannerOpen}
-        onClose={() => {
-          void scannerRef.current?.clear();
-          setScannerOpen(false);
-        }}
-        panelClassName="max-w-md w-full"
-        labelledBy="deliveries-scan-modal-title"
+        onClose={() => setScannerOpen(false)}
+        title="Scan label"
+        titleId="deliveries-scan-modal-title"
+        onDecoded={decoded => void loadParcel(decoded)}
         zIndex="z-50"
-      >
-        <AppModalHeader
-          title="Scan label"
-          titleId="deliveries-scan-modal-title"
-          onClose={() => {
-            void scannerRef.current?.clear();
-            setScannerOpen(false);
-          }}
-        />
-        <AppModalBody>
-          <div id="deliveries-qr-reader" ref={readerRef} />
-          <label className="block mt-3 text-sm text-muted-foreground">
-            Or enter tracking manually
-            <input
-              className="mt-1 w-full rounded-lg border border-border px-3 py-2"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const v = (e.target as HTMLInputElement).value;
-                  setScannerOpen(false);
-                  void loadParcel(v);
-                }
-              }}
-            />
-          </label>
-        </AppModalBody>
-      </AppModal>
+      />
 
       <DeliveryDuplicateScanModal
         open={duplicateOpen}

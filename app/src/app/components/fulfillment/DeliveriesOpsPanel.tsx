@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { Camera, CheckCircle2, Loader2, ScanLine } from "lucide-react";
-import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { TrackingQrScannerModal } from "@/app/components/scan/TrackingQrScannerModal";
 import {
   FulfillmentErrorBanner,
   FulfillmentPressable,
@@ -56,8 +56,6 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoUploadState, setPhotoUploadState] = useState<PhotoUploadState>("idle");
   const [deliveryItemId, setDeliveryItemId] = useState<number | null>(null);
-  const readerRef = useRef<HTMLDivElement>(null);
-  const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const uploadGenRef = useRef(0);
   const uploadPromiseRef = useRef<Promise<number | null> | null>(null);
@@ -265,10 +263,6 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
 
   const onScanDecoded = useCallback(
     (decoded: string) => {
-      void scannerRef.current?.clear();
-      scannerRef.current = null;
-      setScannerOpen(false);
-
       if (mode === "hold") {
         void handleHoldScan(decoded);
         return;
@@ -279,7 +273,7 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
         void handleNewScan(decoded);
       }
     },
-    [mode, rewaybillStep, oldTracking],
+    [mode, rewaybillStep],
   );
 
   const openScanner = (_intent: ScanIntent) => {
@@ -287,49 +281,12 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
     setError(null);
   };
 
-  useEffect(() => {
-    if (!scannerOpen || !readerRef.current) return;
-
-    let cancelled = false;
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
-    script.async = true;
-    script.onload = () => {
-      if (cancelled || !readerRef.current) return;
-      const Html5QrcodeScanner = (window as unknown as {
-        Html5QrcodeScanner: new (
-          id: string,
-          config: object,
-          verbose: boolean,
-        ) => { render: (ok: (t: string) => void) => void; clear: () => Promise<void> };
-      }).Html5QrcodeScanner;
-      if (!Html5QrcodeScanner) return;
-      const scanner = new Html5QrcodeScanner("deliveries-ops-qr-reader", { fps: 10, qrbox: 220 }, false);
-      scannerRef.current = scanner;
-      scanner.render((decoded) => {
-        onScanDecoded(decoded);
-      });
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      cancelled = true;
-      void scannerRef.current?.clear();
-      scannerRef.current = null;
-    };
-  }, [scannerOpen, onScanDecoded]);
-
   const scannerTitle =
     mode === "hold"
       ? "Scan parcel to mark on hold"
       : rewaybillStep === "scan_old"
         ? "Scan old waybill on box"
         : "Scan new waybill from CSR";
-
-  const manualSubmit = (value: string) => {
-    setScannerOpen(false);
-    onScanDecoded(value);
-  };
 
   const photoUploading = photoUploadState === "compressing" || photoUploadState === "uploading";
   const savingLabel =
@@ -577,40 +534,15 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
         </div>
       )}
 
-      <AppModal
+      <TrackingQrScannerModal
         open={scannerOpen}
-        onClose={() => {
-          void scannerRef.current?.clear();
-          setScannerOpen(false);
-        }}
-        panelClassName="max-w-md w-full"
-        labelledBy="deliveries-ops-scan-title"
+        onClose={() => setScannerOpen(false)}
+        title={scannerTitle}
+        titleId="deliveries-ops-scan-title"
+        onDecoded={onScanDecoded}
+        manualEntryLabel="Or type tracking manually"
         zIndex="z-50"
-      >
-        <AppModalHeader
-          title={scannerTitle}
-          titleId="deliveries-ops-scan-title"
-          onClose={() => {
-            void scannerRef.current?.clear();
-            setScannerOpen(false);
-          }}
-        />
-        <AppModalBody>
-          <div id="deliveries-ops-qr-reader" ref={readerRef} />
-          <label className="block mt-3 text-sm text-muted-foreground">
-            Or type tracking manually
-            <input
-              className="mt-1 w-full rounded-lg border border-border px-3 py-2 font-mono"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const v = (e.target as HTMLInputElement).value;
-                  manualSubmit(v);
-                }
-              }}
-            />
-          </label>
-        </AppModalBody>
-      </AppModal>
+      />
     </div>
   );
 }

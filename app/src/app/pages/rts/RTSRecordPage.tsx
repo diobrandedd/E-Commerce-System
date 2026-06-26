@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { Camera, ImagePlus, Loader2, QrCode, ScanLine, Video, CheckCircle2, X } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
+import { TrackingQrScannerModal } from "@/app/components/scan/TrackingQrScannerModal";
 import { AppSectionEnter } from "@/app/components/layout/appFeedbackMotion";
 import { RtsLineBuilder } from "@/app/components/rts/RtsLineBuilder";
 import { PageLayout } from "@/app/components/PageLayout";
@@ -126,7 +127,6 @@ export function RTSRecordPage() {
   const [prefill, setPrefill] = useState<RtsTrackingPrefill | null>(null);
   const [caseModalOpen, setCaseModalOpen] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
-  const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -269,31 +269,6 @@ export function RTSRecordPage() {
     setLandingTracking(editTracking);
     void beginLookup(editTracking, { isEdit: true, skipReset: true });
   }, [editTracking, catalog, beginLookup]);
-
-  useEffect(() => {
-    if (!scannerOpen) return;
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
-    script.async = true;
-    script.onload = () => {
-      const Html5QrcodeScanner = (window as unknown as { Html5QrcodeScanner: new (id: string, cfg: object, verbose: boolean) => { render: (ok: (t: string) => void, fail: () => void) => void; clear: () => Promise<void> } }).Html5QrcodeScanner;
-      if (!Html5QrcodeScanner) return;
-      const scanner = new Html5QrcodeScanner("rts-qr-reader", { fps: 15, qrbox: 220 }, false);
-      scannerRef.current = scanner;
-      scanner.render(decoded => {
-        void scanner.clear();
-        scannerRef.current = null;
-        setScannerOpen(false);
-        void beginLookup(decoded);
-      }, () => {});
-    };
-    document.body.appendChild(script);
-    return () => {
-      void scannerRef.current?.clear();
-      scannerRef.current = null;
-      script.remove();
-    };
-  }, [scannerOpen, beginLookup]);
 
   const closeCaseModal = () => {
     setCaseModalOpen(false);
@@ -853,12 +828,13 @@ export function RTSRecordPage() {
         </AppModalFooter>
       </AppModal>
 
-      <AppModal open={scannerOpen} onClose={() => setScannerOpen(false)} panelClassName="max-w-md w-full" labelledBy="rts-scan-title">
-        <AppModalHeader title="Scan tracking" titleId="rts-scan-title" onClose={() => setScannerOpen(false)} />
-        <AppModalBody>
-          <div id="rts-qr-reader" />
-        </AppModalBody>
-      </AppModal>
+      <TrackingQrScannerModal
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        title="Scan tracking"
+        titleId="rts-scan-title"
+        onDecoded={decoded => void beginLookup(decoded)}
+      />
     </PageLayout>
   );
 }

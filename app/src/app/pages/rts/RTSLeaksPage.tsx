@@ -96,7 +96,7 @@ export function RTSLeaksPage() {
                     ))}
                   </td>
                   <td className="px-3 py-2">{row.date_opened}</td>
-                  <RtsCaseMediaTableCells row={row} docBase={docBase} />
+                  <RtsCaseMediaTableCells row={row} />
                   <td className="px-2 py-2 text-muted-foreground">
                     <ChevronRight size={16} className="opacity-40" />
                   </td>

@@ -140,6 +140,28 @@ function rts_case_enrich_before_shipment(PDO $pdo, array $caseRow): array
 }
 
 /**
+ * Lightweight before-shipment hint for list APIs — no delivery lookup or download URL.
+ *
+ * @return array{available: bool, item_id: ?int, delivery_date: ?string, photo_filename: ?string, download_url: ?string}
+ */
+function rts_case_list_before_shipment_light(array $caseRow): array
+{
+    $fn = isset($caseRow['before_shipment_photo_filename'])
+        ? trim((string) $caseRow['before_shipment_photo_filename'])
+        : '';
+    $itemId = isset($caseRow['delivery_match_item_id']) ? (int) $caseRow['delivery_match_item_id'] : 0;
+    $available = $fn !== '' || $itemId > 0;
+
+    return [
+        'available' => $available,
+        'item_id' => $itemId > 0 ? $itemId : null,
+        'delivery_date' => null,
+        'photo_filename' => $fn !== '' ? $fn : null,
+        'download_url' => null,
+    ];
+}
+
+/**
  * @return array{exists: bool, detected_courier: string, case: ?array, lines: list<array>}
  */
 function rts_case_handler_get_by_tracking(PDO $pdo, string $tracking): array
@@ -762,7 +784,7 @@ function rts_case_handler_list(PDO $pdo, array $filters): array
         if (!isset($row['case_disposition'])) {
             $row['case_disposition'] = rts_case_resolve_disposition(['damaged_reason' => $row['damaged_reason'] ?? '']);
         }
-        $row['before_shipment'] = rts_case_enrich_before_shipment($pdo, $row);
+        $row['before_shipment'] = rts_case_list_before_shipment_light($row);
         unset($row['before_shipment_photo_filename']);
     }
     unset($row);
@@ -819,7 +841,7 @@ function rts_case_handler_list_by_disposition(PDO $pdo, string $disposition, arr
             $attRaw !== null && $attRaw !== '' ? (string) $attRaw : null,
             isset($row['documentation_photo']) ? (string) $row['documentation_photo'] : null
         );
-        $row['before_shipment'] = rts_case_enrich_before_shipment($pdo, $row);
+        $row['before_shipment'] = rts_case_list_before_shipment_light($row);
         if ($disposition === 'leak') {
             $row['lines'] = rts_line_items_fetch_for_case($pdo, (int) $row['id']);
         }

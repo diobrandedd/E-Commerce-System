@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-06-25T09:48:19+02:00
+generated: 2026-06-26T02:58:11+02:00
 type: module
 function_count: 13
 ---
@@ -50,16 +50,16 @@ function_count: 13
 - `includes/online_order_parcels.php`:1050 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
 - `includes/rts_case_handlers.php`:77 — `if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
 - `includes/rts_case_handlers.php`:85 — `if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
-- `includes/rts_case_handlers.php`:170 — `if (!isset($case['case_disposition']) && rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
-- `includes/rts_case_handlers.php`:569 — `if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
+- `includes/rts_case_handlers.php`:192 — `if (!isset($case['case_disposition']) && rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
+- `includes/rts_case_handlers.php`:591 — `if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
 - _… and 22 more (run impact.php for full list)_
 
 ## rts_cases_void_sql {#rts_cases_void_sql}
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:495 — `$void = rts_cases_void_sql($pdo);`
-- `includes/rts_case_handlers.php`:502 — `$dupVoid = rts_cases_void_sql($pdo);`
+- `includes/rts_case_handlers.php`:517 — `$void = rts_cases_void_sql($pdo);`
+- `includes/rts_case_handlers.php`:524 — `$dupVoid = rts_cases_void_sql($pdo);`
 - `includes/rts_schema.php`:377 — `$void = rts_cases_void_sql($pdo);`
 
 ## rts_cases_select_columns {#rts_cases_select_columns}
@@ -74,7 +74,7 @@ function_count: 13
 
 **Callers (2):**
 
-- `includes/rts_case_handlers.php`:151 — `$case = rts_cases_fetch_by_tracking($pdo, $tracking);`
+- `includes/rts_case_handlers.php`:173 — `$case = rts_cases_fetch_by_tracking($pdo, $tracking);`
 - `includes/rts_prefill.php`:297 — `$existingCase = rts_cases_fetch_by_tracking($pdo, $normalized);`
 
 ## rts_v1_pack_to_honey_size {#rts_v1_pack_to_honey_size}
@@ -95,8 +95,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/rts_case_handlers.php`:174 — `$lineRows = rts_line_items_fetch_for_case($pdo, $lid);`
-- `includes/rts_case_handlers.php`:824 — `$row['lines'] = rts_line_items_fetch_for_case($pdo, (int) $row['id']);`
+- `includes/rts_case_handlers.php`:196 — `$lineRows = rts_line_items_fetch_for_case($pdo, $lid);`
+- `includes/rts_case_handlers.php`:846 — `$row['lines'] = rts_line_items_fetch_for_case($pdo, (int) $row['id']);`
 
 ## rts_line_items_ensure_v2_schema {#rts_line_items_ensure_v2_schema}
 
@@ -112,7 +112,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:453 — `$caseId = rts_cases_insert_row($pdo, [`
+- `includes/rts_case_handlers.php`:475 — `$caseId = rts_cases_insert_row($pdo, [`
 
 ## rts_cases_update_row {#rts_cases_update_row}
 
@@ -120,7 +120,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:516 — `rts_cases_update_row($pdo, $caseId, [`
+- `includes/rts_case_handlers.php`:538 — `rts_cases_update_row($pdo, $caseId, [`
 
 ## rts_line_items_insert_batch {#rts_line_items_insert_batch}
 
@@ -128,9 +128,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/rts_case_handlers.php`:469 — `rts_line_items_insert_batch($pdo, $caseId, $fields['lines']);`
-- `includes/rts_case_handlers.php`:533 — `rts_line_items_insert_batch($pdo, $caseId, $fields['lines']);`
-- `includes/rts_case_handlers.php`:587 — `rts_line_items_insert_batch($pdo, $caseId, $lines);`
+- `includes/rts_case_handlers.php`:491 — `rts_line_items_insert_batch($pdo, $caseId, $fields['lines']);`
+- `includes/rts_case_handlers.php`:555 — `rts_line_items_insert_batch($pdo, $caseId, $fields['lines']);`
+- `includes/rts_case_handlers.php`:609 — `rts_line_items_insert_batch($pdo, $caseId, $lines);`
 
 ## rts_cases_find_active_id_by_tracking {#rts_cases_find_active_id_by_tracking}
 
@@ -138,6 +138,6 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/rts_case_handlers.php`:444 — `if (rts_cases_find_active_id_by_tracking($pdo, $tracking) !== null) {`
-- `includes/rts_case_handlers.php`:565 — `$caseId = rts_cases_find_active_id_by_tracking($pdo, $tracking);`
+- `includes/rts_case_handlers.php`:466 — `if (rts_cases_find_active_id_by_tracking($pdo, $tracking) !== null) {`
+- `includes/rts_case_handlers.php`:587 — `$caseId = rts_cases_find_active_id_by_tracking($pdo, $tracking);`
 

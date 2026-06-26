@@ -1,14 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, Eye, Loader2, Pencil } from "lucide-react";
+import { BookOpen, ChevronRight, Loader2, Pencil } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { DeliveriesReviewGuideModal } from "@/app/components/fulfillment/DeliveriesReviewGuideModal";
 import { runDeliveriesReviewTour } from "@/app/components/fulfillment/deliveriesReviewTour";
 import { DeliveryReviewEditModal } from "@/app/components/fulfillment/DeliveryReviewEditModal";
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
-import { AppErrorBanner, AppSuccessNotice, appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
+import {
+  AppErrorBanner,
+  AppSuccessNotice,
+  appHeaderActionClass,
+} from "@/app/components/layout/appFeedbackMotion";
+import { fulfillmentHoverRow } from "@/app/components/csr/onlineFulfillmentMotion";
 import { Button } from "@/app/components/ui/button";
+import { cn } from "@/app/components/ui/utils";
 import { useAuth } from "@/app/context/AuthContext";
 import { deliveriesReviewList, type DeliveryReviewRow } from "@/app/lib/deliveriesApi";
 import { ApiError } from "@/app/lib/api";
@@ -70,13 +76,26 @@ export function DeliveriesReviewPage() {
     window.setTimeout(() => setNotice(null), 3200);
   };
 
+  const openDetail = (row: DeliveryReviewRow) => {
+    setViewRow(row);
+  };
+
+  const openEditFromDetail = () => {
+    if (!viewRow) return;
+    const row = viewRow;
+    setViewRow(null);
+    setEditRow(row);
+  };
+
+  const colSpan = 7;
+
   return (
     <PageLayout
       title="Deliveries review"
       subtitle={
         isExecutive
-          ? "View delivery photos — edit content or delete rows"
-          : "View delivery photos — submit edit or delete requests for executives"
+          ? "Click a row for photo and parcel details — edit or delete from the detail panel"
+          : "Click a row for details — submit edit or delete requests from the detail panel"
       }
       actions={
         <div className="flex items-center gap-2">
@@ -125,72 +144,76 @@ export function DeliveriesReviewPage() {
 
       <AppSuccessNotice message={notice} />
       <AppErrorBanner message={error} />
-      {busy && <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
 
-      <div className="overflow-x-auto rounded-xl border border-border" data-tour="deliveries-review-table">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40">
-            <tr>
-              <th className="px-3 py-2 text-left">ID</th>
-              <th className="px-3 py-2 text-left">Date</th>
-              <th className="px-3 py-2 text-left">Tracking</th>
-              <th className="px-3 py-2 text-left" data-tour="deliveries-review-photo">
-                Photo
-              </th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left w-28" data-tour="deliveries-review-actions">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.item_id} className="border-t border-border">
-                <td className="px-3 py-2">{r.item_id}</td>
-                <td className="px-3 py-2">{r.delivery_date}</td>
-                <td className="px-3 py-2 font-mono">{displayTracking(r)}</td>
-                <td className="px-3 py-2">
-                  {r.photo_url ? (
-                    <button
-                      type="button"
-                      className="block rounded-lg overflow-hidden border border-border hover:ring-2 hover:ring-[#C8900A]/40"
-                      onClick={() => setViewRow(r)}
-                      aria-label={`View ${displayTracking(r)}`}
-                    >
-                      <img src={r.photo_url} alt="" className="h-12 w-12 object-cover" />
-                    </button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="px-3 py-2">{r.parcel?.status ?? r.item_status}</td>
-                <td className="px-3 py-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 text-muted-foreground font-semibold text-xs"
-                      onClick={() => setViewRow(r)}
-                    >
-                      <Eye size={12} /> View
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 text-[#C8900A] font-semibold text-xs"
-                      onClick={() => setEditRow(r)}
-                    >
-                      <Pencil size={12} /> Edit
-                    </button>
-                  </div>
-                </td>
+      <div className="bg-card rounded-xl border border-border overflow-hidden" data-tour="deliveries-review-table">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[720px]">
+            <thead>
+              <tr className="border-b bg-secondary/40 text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="px-4 py-3 text-left">ID</th>
+                <th className="px-4 py-3 text-left">Date</th>
+                <th className="px-4 py-3 text-left">Tracking</th>
+                <th className="px-4 py-3 text-left">Recipient</th>
+                <th className="px-4 py-3 text-left" data-tour="deliveries-review-photo">
+                  Photo
+                </th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 w-8" aria-hidden />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {busy && (
+                <tr>
+                  <td colSpan={colSpan} className="py-10 text-center text-muted-foreground">
+                    <Loader2 className="inline animate-spin" size={16} />
+                  </td>
+                </tr>
+              )}
+              {!busy && rows.length === 0 && (
+                <tr>
+                  <td colSpan={colSpan} className="px-4 py-12 text-center text-muted-foreground">
+                    No delivery records match your filters.
+                  </td>
+                </tr>
+              )}
+              {!busy &&
+                rows.map(r => (
+                  <tr
+                    key={r.item_id}
+                    className={cn("border-b cursor-pointer group", fulfillmentHoverRow)}
+                    onClick={() => openDetail(r)}
+                    data-tour={r === rows[0] ? "deliveries-review-row" : undefined}
+                  >
+                    <td className="px-4 py-3 text-muted-foreground">{r.item_id}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{r.delivery_date}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{displayTracking(r)}</td>
+                    <td className="px-4 py-3 max-w-[10rem] truncate" title={r.parcel?.recipient_name ?? undefined}>
+                      {r.parcel?.recipient_name || "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {r.photo_url ? (
+                        <span className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                          Yes
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <ParcelStatusBadge status={r.parcel?.status ?? r.item_status} />
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      <ChevronRight
+                        size={16}
+                        className="opacity-40 group-hover:opacity-100 group-hover:text-[#C8900A] transition-opacity"
+                      />
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-
-      {!busy && rows.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-6">No delivery records match your filters.</p>
-      )}
 
       <div data-tour="deliveries-review-pagination">
       <p className="text-xs text-muted-foreground mt-2">
@@ -220,22 +243,18 @@ export function DeliveriesReviewPage() {
       <AppModal
         open={viewRow !== null}
         onClose={() => setViewRow(null)}
-        panelClassName="max-w-lg w-full"
+        panelClassName="max-w-lg w-full max-h-[90vh] overflow-y-auto"
         labelledBy="delivery-view-title"
       >
         {viewRow && (
           <>
             <AppModalHeader
-              title="Delivery record"
-              subtitle={`#${viewRow.item_id} · ${viewRow.delivery_date}`}
+              title={displayTracking(viewRow)}
+              subtitle={`Delivery #${viewRow.item_id} · ${viewRow.delivery_date}`}
               titleId="delivery-view-title"
               onClose={() => setViewRow(null)}
             />
             <AppModalBody className="space-y-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Tracking</p>
-                <p className="font-mono font-semibold break-all">{displayTracking(viewRow)}</p>
-              </div>
               {viewRow.parcel?.recipient_name ? (
                 <div>
                   <p className="text-xs text-muted-foreground">Name</p>
@@ -275,6 +294,16 @@ export function DeliveriesReviewPage() {
                   <p className="text-sm text-muted-foreground">No photo on file.</p>
                 )}
               </div>
+
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#C8900A] hover:underline"
+                onClick={openEditFromDetail}
+                data-tour="deliveries-review-edit"
+              >
+                <Pencil size={14} />
+                {isExecutive ? "Edit or delete" : "Request edit or delete"}
+              </button>
             </AppModalBody>
           </>
         )}

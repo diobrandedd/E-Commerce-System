@@ -59,9 +59,9 @@ export function DeliveriesReviewGuideModal({
           {isExecutive ? (
             <ol className="list-decimal pl-4 space-y-1.5">
               <li>Search or filter by date to find a tracking number.</li>
-              <li>Open the photo to confirm the parcel matches the order.</li>
+              <li>Click a row to open details and view the packing photo.</li>
               <li>
-                <strong className="text-foreground">Edit</strong> to change tracking, replace the photo, or delete a bad
+                Use <strong className="text-foreground">Edit or delete</strong> inside the detail panel to change tracking, replace the photo, or remove a bad
                 row — changes apply immediately.
               </li>
               <li>For courier-cancelled parcels, use the <strong className="text-foreground">Cancelled</strong> page — sealed box stays packed for re-waybill on Add deliveries.</li>
@@ -69,9 +69,9 @@ export function DeliveriesReviewGuideModal({
           ) : (
             <ol className="list-decimal pl-4 space-y-1.5">
               <li>Search or filter to find a delivery record.</li>
-              <li>View the packing photo and parcel status.</li>
+              <li>Click a row to open the packing photo and parcel status.</li>
               <li>
-                <strong className="text-foreground">Edit</strong> submits a correction request — an executive approves it
+                <strong className="text-foreground">Request edit or delete</strong> from the detail panel — an executive approves it
                 under Inventory → Requests → Edit requests.
               </li>
               <li>Scan and ship new parcels on Add deliveries; mark courier cancels on the Cancelled page, then re-waybill.</li>
