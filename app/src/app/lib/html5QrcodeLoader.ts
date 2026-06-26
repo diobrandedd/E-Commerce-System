@@ -57,17 +57,50 @@ export function loadHtml5Qrcode(): Promise<Html5QrcodeCtor> {
   });
 }
 
-export function pickPreferredCameraIndex(cameras: Html5QrcodeCamera[]): number {
-  const envIdx = cameras.findIndex(c => /back|rear|environment/i.test(c.label));
-  if (envIdx >= 0) return envIdx;
-  const frontIdx = cameras.findIndex(c => /front|user|face/i.test(c.label));
+export function pickRearCamera(cameras: Html5QrcodeCamera[]): Html5QrcodeCamera | null {
+  if (cameras.length === 0) return null;
+  const byLabel = cameras.find(c => /back|rear|environment/i.test(c.label));
+  if (byLabel) return byLabel;
+  const frontIdx = cameras.findIndex(c => /front|user|face|integrated|selfie/i.test(c.label));
   if (frontIdx >= 0 && cameras.length > 1) {
-    return frontIdx === 0 ? cameras.length - 1 : 0;
+    const nonFront = cameras.filter((_, i) => i !== frontIdx);
+    return nonFront[nonFront.length - 1] ?? null;
   }
-  return cameras.length > 1 ? cameras.length - 1 : 0;
+  // Unlabeled mobile browsers often list front first, rear last.
+  return cameras.length > 1 ? cameras[cameras.length - 1] : cameras[0];
 }
 
-/** Prefer rear camera via facingMode; falls back to labeled device id. */
+export function pickPreferredCameraIndex(cameras: Html5QrcodeCamera[]): number {
+  const rear = pickRearCamera(cameras);
+  if (!rear) return 0;
+  const idx = cameras.findIndex(c => c.id === rear.id);
+  return idx >= 0 ? idx : cameras.length > 1 ? cameras.length - 1 : 0;
+}
+
+/** Prime camera permission and bias the OS toward the rear lens before device enumeration. */
+export async function requestRearCameraAccess(): Promise<void> {
+  if (!navigator.mediaDevices?.getUserMedia) return;
+  let stream: MediaStream | null = null;
+  try {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: "environment" } },
+        audio: false,
+      });
+    } catch {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+    }
+  } catch {
+    /* Permission denied or no rear camera — enumeration may still work. */
+  } finally {
+    stream?.getTracks().forEach(track => track.stop());
+  }
+}
+
+/** Prefer rear camera via facingMode when device ids are unavailable (single-cam desktop). */
 export const PREFERRED_REAR_CAMERA: MediaTrackConstraints = {
-  facingMode: { ideal: "environment" },
+  facingMode: "environment",
 };

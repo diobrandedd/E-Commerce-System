@@ -179,6 +179,7 @@
   },
   "active": "1176b8ead49b7f1b",
   "lastOpenFiles": [
+    "problems/records/2026-06-19_rts-save-scan-next-db-error.md",
     "generated/modules/honey_inventory.md",
     "generated/modules/fulfillment_packing.md",
     "generated/modules/fulfillment_pack_tier_seed.md",
@@ -204,7 +205,6 @@
     "generated/modules/shopee_spx_product_info.md",
     "generated/modules/shopee_spx_packing_list.md",
     "generated/modules/rts_storage.md",
-    "generated/modules/rts_shop_couriers.md",
     "specs",
     "problems/records",
     "problems/fixes",

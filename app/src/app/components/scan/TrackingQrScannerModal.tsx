@@ -7,12 +7,16 @@ import { cn } from "@/app/components/ui/utils";
 import {
   loadHtml5Qrcode,
   pickPreferredCameraIndex,
+  pickRearCamera,
+  requestRearCameraAccess,
   PREFERRED_REAR_CAMERA,
   type Html5QrcodeCamera,
   type Html5QrcodeInstance,
 } from "@/app/lib/html5QrcodeLoader";
 
 type ScanPhase = "idle" | "starting" | "scanning" | "error";
+
+const SCAN_CONFIG = { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1 };
 
 export function TrackingQrScannerModal({
   open,
@@ -86,6 +90,13 @@ export function TrackingQrScannerModal({
     }
   }, []);
 
+  const readActiveFacingMode = (): string | undefined => {
+    const video = document.getElementById(readerId)?.querySelector("video");
+    const stream = video?.srcObject;
+    if (!(stream instanceof MediaStream)) return undefined;
+    return stream.getVideoTracks()[0]?.getSettings().facingMode;
+  };
+
   const startCameraAt = useCallback(
     async (index: number) => {
       setPhase("starting");
@@ -110,7 +121,7 @@ export function TrackingQrScannerModal({
         }
         await scannerRef.current.start(
           list[safeIndex].id,
-          { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1 },
+          SCAN_CONFIG,
           handleDecoded,
           () => {},
         );
@@ -133,27 +144,34 @@ export function TrackingQrScannerModal({
     setError(null);
     try {
       const Html5Qrcode = await loadHtml5Qrcode();
+      await requestRearCameraAccess();
+      const list = await Html5Qrcode.getCameras();
+      setCameras(list);
+
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode(readerId);
       }
-      try {
-        await scannerRef.current.start(
-          PREFERRED_REAR_CAMERA,
-          { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1 },
-          handleDecoded,
-          () => {},
-        );
-        const list = await Html5Qrcode.getCameras();
-        setCameras(list);
-        cameraIndexRef.current = pickPreferredCameraIndex(list);
-        refreshTorchSupport(scannerRef.current);
-        setPhase("scanning");
-        return;
-      } catch {
+
+      const rear = pickRearCamera(list);
+      if (rear) {
+        const rearIndex = list.findIndex(c => c.id === rear.id);
+        cameraIndexRef.current = rearIndex >= 0 ? rearIndex : pickPreferredCameraIndex(list);
+        await scannerRef.current.start(rear.id, SCAN_CONFIG, handleDecoded, () => {});
+      } else {
+        await scannerRef.current.start(PREFERRED_REAR_CAMERA, SCAN_CONFIG, handleDecoded, () => {});
+        cameraIndexRef.current = 0;
+      }
+
+      const facing = readActiveFacingMode();
+      if (facing === "user" && list.length > 1) {
         await stopScanner();
         scannerRef.current = null;
+        await startCameraAt(pickPreferredCameraIndex(list));
+        return;
       }
-      await startCameraAt(pickPreferredCameraIndex([]));
+
+      refreshTorchSupport(scannerRef.current);
+      setPhase("scanning");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start camera.");
       setPhase("error");
@@ -190,8 +208,14 @@ export function TrackingQrScannerModal({
   }, [open, autoStart, startPreferredCamera, stopScanner]);
 
   const flipCamera = async () => {
-    if (cameras.length < 2) return;
-    const next = (cameraIndexRef.current + 1) % cameras.length;
+    const Html5Qrcode = await loadHtml5Qrcode();
+    const list = cameras.length > 0 ? cameras : await Html5Qrcode.getCameras();
+    if (list.length < 2) return;
+    setCameras(list);
+    const rearIdx = pickPreferredCameraIndex(list);
+    const frontIdx = list.findIndex(c => /front|user|face|integrated|selfie/i.test(c.label));
+    const altIdx = frontIdx >= 0 ? frontIdx : (rearIdx + 1) % list.length;
+    const next = cameraIndexRef.current === rearIdx ? altIdx : rearIdx;
     await stopScanner();
     scannerRef.current = null;
     await startCameraAt(next);
