@@ -98,12 +98,23 @@ export function OnlineOrdersGuideModal({
 
         <GuideSection title="VIP Excel arranger">
           <ol className="list-decimal pl-4 space-y-1.5">
-            <li>Upload J&T / VIP courier Excel (.xlsx).</li>
+            <li>Upload VIP order list Excel (Parcel Name + Remarks).</li>
             <li>Resolve ambiguous remark cards (variant picks) if shown.</li>
             <li>
-              <strong className="text-foreground">Build arranged Excel</strong> — downloads remarks export + iPYX sheet.
+              <strong className="text-foreground">Save arranged rows</strong> — downloads cleaned remarks export; parcel refs saved for merge.
             </li>
-            <li>Back to tools → open stamper when PDFs are ready.</li>
+          </ol>
+        </GuideSection>
+
+        <GuideSection title="VIP Excel merger">
+          <ol className="list-decimal pl-4 space-y-1.5">
+            <li>After courier sends tracking, upload J&amp;T or SPX tracking export.</li>
+            <li>
+              Match <strong className="text-foreground">Parcel Name</strong> to Order Number (J&amp;T) or Customer Reference (SPX).
+            </li>
+            <li>
+              <strong className="text-foreground">Merge tracking → iPYX Excel</strong> → download → back to tools for stamper.
+            </li>
           </ol>
         </GuideSection>
 

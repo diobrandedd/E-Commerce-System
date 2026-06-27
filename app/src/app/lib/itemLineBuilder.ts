@@ -35,6 +35,14 @@ const VALID_2L = new Set(["LA", "LD", "AD", "LL", "AA", "DD"]);
 const VALID_1L = new Set(["L", "A", "D"]);
 const VALID_BULK_ML = new Set(["L", "A", "D", "LAD"]);
 
+/** "1 amber 2dark" → "1 amber 2 dark" so count + color tokens parse reliably. */
+export function normalizeVariantCountText(text: string): string {
+  return text
+    .replace(/(\d+)(dark|darks?|amber|ambers?|light|lights?)/gi, "$1 $2")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function isBulkMlProduct(product: BuilderProduct): product is "250ml" | "350ml" {
   return product === "250ml" || product === "350ml";
 }
@@ -298,6 +306,10 @@ function extractCodeFromSegment(segment: string, size: HoneySizeProduct): string
   if (size === "1L") {
     const p = segment.match(/1\s*L\s*Honey\s*\(\s*([LAD])\s*\)/i);
     if (p) return p[1]!.toUpperCase();
+    const inlineWord = segment.match(/1\s*L\s*HONEY\s*:\s*(Light|Amber|Dark)\b/i);
+    if (inlineWord) return inlineWord[1]![0]!.toUpperCase();
+    const inlineCode = segment.match(/1\s*L\s*HONEY\s*:\s*([LAD])\b/i);
+    if (inlineCode) return inlineCode[1]!.toUpperCase();
     const w = segment.match(/\b(Light|Amber|Dark)\b/i);
     if (w) return w[1]![0]!.toUpperCase();
   }
@@ -319,20 +331,22 @@ function extractCodeFromSegment(segment: string, size: HoneySizeProduct): string
 }
 
 function detectVariantsFromText(text: string, size: HoneySizeProduct): string | null {
-  const t = stripHoneySizeTokens(text).toLowerCase();
-  const hasLight = /\blight\b|\blights\b/.test(t);
-  const hasAmber = /\bamber\b/.test(t);
-  const hasDark = /\bdark\b/.test(t);
+  const t = stripHoneySizeTokens(normalizeVariantCountText(text)).toLowerCase();
+  const hasLight = /\blights?\b/.test(t);
+  const hasAmber = /\bambers?\b/.test(t);
+  const hasDark = /\bdarks?\b/.test(t);
   if (size === "3L") {
     if (hasLight && hasAmber && hasDark) return "LAD";
-    if (/2\s*amber.*1\s*dark|2a.*1d/i.test(t)) return "AAD";
-    if (/2\s*dark.*1\s*amber|2d.*1a/i.test(t)) return "ADD";
+    if (/1\s*amber.*2\s*dark|1\s*a.*2\s*d/i.test(t)) return "ADD";
+    if (/2\s*amber.*1\s*dark|2\s*a.*1\s*d/i.test(t)) return "AAD";
+    if (/2\s*dark.*1\s*amber|2\s*d.*1\s*a/i.test(t)) return "ADD";
     if (/2\s*light.*1\s*amber|2\s*lights.*1\s*amber/i.test(t)) return "LLA";
     if (/1\s*light.*2\s*amber|1\s*light.*2\s*ambers/i.test(t)) return "LAA";
     if (/2\s*light.*1\s*dark|2\s*lights.*1\s*dark/i.test(t)) return "LLD";
     if (hasAmber && !hasLight && !hasDark) return "AAA";
     if (hasLight && !hasAmber && !hasDark) return "LLL";
     if (hasDark && !hasLight && !hasAmber) return "DDD";
+    if (hasAmber && hasDark) return null;
     if (/color\s*:\s*mix|\/\s*color\s*:\s*mix/i.test(t)) return null;
   }
   if (size === "2L") {
@@ -408,7 +422,10 @@ export function interpretRawText(raw: string): InterpretResult {
   const m1 = raw.match(/textarea_input_1:\s*([^\n]+)/i);
   if (m1) variantHint = m1[1]!.trim();
 
-  const scanText = raw.replace(/textarea_input_\d+:[^,\n]*/gi, "").replace(/radio_input_\d+:[^,\n]*/gi, "");
+  const scanText = raw
+    .replace(/<[^>]*>/g, "")
+    .replace(/textarea_input_\d+:[^,\n]*/gi, "")
+    .replace(/radio_input_\d+:[^,\n]*/gi, "");
 
   const segments = splitItemSegments(scanText);
   const lines: BuilderLine[] = [];

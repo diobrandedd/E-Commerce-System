@@ -16,6 +16,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { BatchStartModal } from "@/app/components/csr/onlineOrders/BatchStartModal";
 import { ToolsPicker } from "@/app/components/csr/onlineOrders/ToolsPicker";
 import { VipPrepTool } from "@/app/components/csr/onlineOrders/VipPrepTool";
+import { VipMergeTool } from "@/app/components/csr/onlineOrders/VipMergeTool";
 import { SpxPrepTool } from "@/app/components/csr/onlineOrders/SpxPrepTool";
 import { ExcelUploadTool } from "@/app/components/csr/onlineOrders/ExcelUploadTool";
 import { WaybillStamperTool } from "@/app/components/csr/onlineOrders/WaybillStamperTool";
@@ -315,6 +316,21 @@ export function OnlineOrdersGeneratorPage() {
           <VipPrepTool
             practiceMode={tourPracticeActive}
             practiceStage={practiceStage}
+            onDone={handlePrepDone}
+            onOpenMerger={() => {
+              setSelectedTool("vip_merge");
+            }}
+            onBack={() => {
+              resetPrep();
+              setStep("tools");
+            }}
+          />
+        </FulfillmentStepSwitch>
+      )}
+
+      {step === "prep" && selectedTool === "vip_merge" && (
+        <FulfillmentStepSwitch stepKey="prep-vip-merge">
+          <VipMergeTool
             onDone={handlePrepDone}
             onBack={() => {
               resetPrep();

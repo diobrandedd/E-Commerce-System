@@ -61,6 +61,9 @@ api_dispatch([
     'batch_finalize' => 'api_online_orders_batch_finalize',
     'lines_append' => 'api_online_orders_lines_append',
     'tool_vip_prepare' => 'api_online_orders_tool_vip_prepare',
+    'tool_vip_arranger_save' => 'api_online_orders_tool_vip_arranger_save',
+    'tool_vip_arranger_get' => 'api_online_orders_tool_vip_arranger_get',
+    'tool_vip_merge' => 'api_online_orders_tool_vip_merge',
     'tool_spx_prepare' => 'api_online_orders_tool_spx_prepare',
     'tool_excel_register' => 'api_online_orders_tool_excel_register',
     'run_unified_stamp' => 'api_online_orders_run_unified_stamp',
@@ -196,6 +199,85 @@ function api_online_orders_tool_vip_prepare(): void
     try {
         $result = online_orders_tool_vip_prepare($rows);
         api_ok($result);
+    } catch (RuntimeException $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_online_orders_tool_vip_arranger_save(): void
+{
+    api_method_allowed(['POST']);
+    api_online_orders_assert_access();
+    api_online_orders_require_csrf();
+
+    $input = api_input();
+    $rows = $input['rows'] ?? [];
+    if (!is_array($rows) || $rows === []) {
+        api_fail('rows required.', 400);
+    }
+
+    try {
+        $result = online_orders_vip_arranger_stash_save($rows);
+        api_ok($result);
+    } catch (RuntimeException $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_online_orders_tool_vip_arranger_get(): void
+{
+    api_method_allowed(['GET']);
+    api_online_orders_assert_access();
+
+    $token = trim((string) ($_GET['arranger_token'] ?? ''));
+    if ($token === '') {
+        $token = online_orders_vip_arranger_latest_token() ?? '';
+    }
+    if ($token === '') {
+        api_ok(['arranger_token' => null, 'rows' => [], 'row_count' => 0]);
+        return;
+    }
+
+    try {
+        $stash = online_orders_vip_arranger_stash_get($token);
+        api_ok([
+            'arranger_token' => $token,
+            'rows' => $stash['rows'],
+            'row_count' => count($stash['rows']),
+            'created_at' => $stash['created_at'],
+        ]);
+    } catch (RuntimeException $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_online_orders_tool_vip_merge(): void
+{
+    api_method_allowed(['POST']);
+    api_online_orders_assert_access();
+    api_online_orders_require_csrf();
+
+    $input = api_input();
+    $arrangerToken = trim((string) ($input['arranger_token'] ?? ''));
+    $trackingToken = trim((string) ($input['tracking_excel_token'] ?? ''));
+    $courier = trim((string) ($input['courier'] ?? ''));
+
+    if ($arrangerToken === '') {
+        $arrangerToken = online_orders_vip_arranger_latest_token() ?? '';
+    }
+    if ($arrangerToken === '' || $trackingToken === '') {
+        api_fail('arranger_token and tracking_excel_token required.', 400);
+    }
+
+    try {
+        $result = online_orders_tool_vip_merge(
+            $arrangerToken,
+            $trackingToken,
+            $courier !== '' ? $courier : null
+        );
+        api_ok($result);
+    } catch (OnlineOrdersDuplicateTrackingException $e) {
+        api_fail($e->getMessage(), 409, ['duplicates' => $e->duplicates]);
     } catch (RuntimeException $e) {
         api_fail($e->getMessage(), 400);
     }

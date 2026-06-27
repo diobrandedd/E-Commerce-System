@@ -1,5 +1,5 @@
 import type { ElementType } from "react";
-import { ChevronRight, FileSpreadsheet, Package, Stamp, Truck } from "lucide-react";
+import { ChevronRight, FileSpreadsheet, GitMerge, Package, Stamp, Truck } from "lucide-react";
 import { FulfillmentPickerCard, FulfillmentSectionEnter } from "@/app/components/csr/onlineFulfillmentMotion";
 import type { OnlineOrdersPrepTool } from "@/app/lib/onlineOrdersTypes";
 import { cn } from "@/app/components/ui/utils";
@@ -13,8 +13,14 @@ const PREP_TOOLS: {
   {
     id: "vip",
     title: "VIP Excel arranger",
-    description: "J&T / VIP courier workbook → resolve remarks → download iPYX",
+    description: "VIP order list → resolve remarks → save arranged rows",
     icon: FileSpreadsheet,
+  },
+  {
+    id: "vip_merge",
+    title: "VIP Excel merger",
+    description: "Courier tracking export → match Parcel Name → download iPYX",
+    icon: GitMerge,
   },
   {
     id: "spx",
@@ -79,7 +85,7 @@ export function ToolsPicker({
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground text-center">
             Step 1 — Prep Excel (download only)
           </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {PREP_TOOLS.map((t, i) => {
               const Icon = t.icon;
               return (

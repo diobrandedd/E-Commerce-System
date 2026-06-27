@@ -4,6 +4,7 @@ import {
   builderLineIsValid,
   isHoneyBuilderProduct,
   stripHoneySizeTokens,
+  normalizeVariantCountText,
   type BuilderLine,
 } from "@/app/lib/itemLineBuilder";
 
@@ -131,7 +132,7 @@ export function parseRemarks(raw: string): ParsedRemark {
     };
   }
 
-  const r = raw.trim();
+  const r = raw.trim().replace(/<[^>]*>/g, "");
   let product: HoneyProduct = "other";
   if (/3L-HONEY|3 L Honey|3L HONEY/i.test(r)) product = "3L";
   else if (/2L-HONEY|2 L.Honey|2L HONEY|2\s*L\s*Honey/i.test(r)) product = "2L";
@@ -192,10 +193,10 @@ export function parseRemarks(raw: string): ParsedRemark {
 export function detectVariants(text: string, product: HoneyProduct): string[] {
   if (!text) return [];
 
-  const t = stripHoneySizeTokens(text).toLowerCase();
-  const hasLight = /\blight\b|(?:^|[\s,&])l(?:\s|$|[,&])/.test(t);
-  const hasAmber = /\bamber\b|(?:^|[\s,&])a(?:\s|$|[,&])/.test(t);
-  const hasDark = /\bdark\b|(?:^|[\s,&])d(?:\s|$|[,&])/.test(t);
+  const t = stripHoneySizeTokens(normalizeVariantCountText(text)).toLowerCase();
+  const hasLight = /\blights?\b|(?:^|[\s,&])l(?:\s|$|[,&])/.test(t);
+  const hasAmber = /\bambers?\b|(?:^|[\s,&])a(?:\s|$|[,&])/.test(t);
+  const hasDark = /\bdarks?\b|(?:^|[\s,&])d(?:\s|$|[,&])/.test(t);
   const allColors = /all color|all colour|\blad\b/i.test(t);
   const allAmber = /all.?amber/i.test(t);
   const allLight = /all.?light/i.test(t);
@@ -221,13 +222,15 @@ export function detectVariants(text: string, product: HoneyProduct): string[] {
   }
 
   if (product === "3L") {
-    if (/2\s*dark.*1\s*amber|2d.*1a/i.test(t)) return ["A", "D", "D"];
-    if (/2\s*amber.*1\s*dark|2a.*1d/i.test(t)) return ["A", "A", "D"];
+    if (/1\s*amber.*2\s*dark|1\s*a.*2\s*d/i.test(t)) return ["A", "D", "D"];
+    if (/2\s*dark.*1\s*amber|2\s*d.*1\s*a/i.test(t)) return ["A", "D", "D"];
+    if (/2\s*amber.*1\s*dark|2\s*a.*1\s*d/i.test(t)) return ["A", "A", "D"];
     if (/2\s*light.*1\s*amber|2\s*lights.*1\s*amber/i.test(t)) return ["L", "L", "A"];
     if (/1\s*light.*2\s*amber|1\s*light.*2\s*ambers/i.test(t)) return ["L", "A", "A"];
     if (/2\s*light.*1\s*dark|2\s*lights.*1\s*dark/i.test(t)) return ["L", "L", "D"];
     if (hasLight && hasAmber && hasDark) return ["L", "A", "D"];
     if (hasLight) return ["L", "L", "L"];
+    if (hasAmber && hasDark) return [];
     if (hasAmber) return ["A", "A", "A"];
     if (hasDark) return ["D", "D", "D"];
   }

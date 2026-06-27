@@ -53,6 +53,13 @@ tags: [fix, vip, spx, parser]
 - **Never auto-submit** dept-only rows: `needsDeptConfirm` forces VIP carousel + `ItemLineBuilder` until CSR saves `finalRemark`.
 - Honey `1 x 2L Honey` still uses `extractQty()` (pack count = 1).
 
+## 8. Concatenated count + color (`1 amber 2dark`)
+
+- `normalizeVariantCountText()` splits `2dark` → `2 dark` before variant detection.
+- Explicit **1 amber + 2 dark** → **ADD** (check before single-color fallbacks).
+- If both amber and dark appear but counts are ambiguous → return empty / null (CSR pick), **not** default AAA.
+- **Cause:** `\bdark\b` does not match `2dark` (no word boundary between digit and color).
+
 ## Files (primary)
 
 | File | Role |
@@ -72,6 +79,7 @@ tags: [fix, vip, spx, parser]
 1 x 1 L HONEY: 1 JAR CACAO          → builder: 1L (pick) + Jar Cacao; block export until save
 1 x 1L Honey (L) + 1 Jar Cacao      → auto export OK
 textarea: 2 lights and 1 amber + 3L  → LLA valid, no Pick variant
+textarea_input_1: 1 amber 2dark + Set B 3L → ADD (not AAA)
 1 x 250ml Honey (A)                 → parses 250ml
 3L HONEY(ALL DARK)1 PC 350ML(DARK)  → 1 x 3L Honey (DDD) + 1× 350ml (D)
 ```

@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-06-26T07:12:28+02:00
+generated: 2026-06-27T07:58:37+02:00
 type: module
 function_count: 39
 ---
@@ -368,5 +368,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/honey.php`:279 — `api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));`
-- `api/v1/online_orders.php`:411 — `api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));`
+- `api/v1/online_orders.php`:493 — `api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));`
 

@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-06-19 — [[problems/records/2026-06-19_vip-arranger-merger|VIP Excel arranger + merger two-tool workflow]]
+**Shipped:** VIP order list → carousel → arranged stash; tracking export merge (Parcel Name ↔ Order Number / Customer Reference) → iPYX.
+
 ### 2026-06-19 — [[problems/records/2026-06-19_rts-edit-lines-fk-inventory|RTS case edit + leak line placement FK fix]]
 
 ### 2026-06-24 — [[problems/records/2026-06-24_pos-ar-checkout-sales-pool|POS AR checkout + Sales pool]]
@@ -598,3 +601,7 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-06-25 — RTS Records blank media thumbnails
 - **What we did:** Fixed SPA-relative `storage_media.php` URLs (`/rts/api/...`), bidirectional file resolve on disk, and `rtsDocUrl()` path encoding so Before ship / Photo / Video load in RTS Records.
 - **Record:** [[problems/records/2026-06-24_rts-documentation-monthly-folders]] (updated)
+
+### 2026-06-19 — VIP 3L `1 amber 2dark` → ADD parser
+- **What we did:** `normalizeVariantCountText()` splits glued count+color tokens; `1 amber 2dark` resolves to **ADD** instead of wrong **AAA**.
+- **Fix note:** [[problems/fixes/vip-spx-order-remarks-parser-guards]] §8

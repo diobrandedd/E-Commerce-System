@@ -115,6 +115,16 @@ def resolve_columns(
     track_col = _find_col_by_aliases(
         header_cells, profile.get("tracking_header_aliases", [])
     )
+    ref_col = _find_col_by_aliases(
+        header_cells,
+        profile.get("ref_header_aliases", [])
+        or profile.get("parcel_ref_header_aliases", []),
+    )
+    parcel_col = _find_col_by_aliases(
+        header_cells, profile.get("parcel_ref_header_aliases", [])
+    )
+    if ref_col is None and parcel_col is not None:
+        ref_col = parcel_col
 
     if recv_col is None:
         recv_col = int(defaults.get("receiver", 0))
@@ -138,6 +148,9 @@ def resolve_columns(
         cols["item"] = item_col
     if track_col is not None:
         cols["tracking"] = track_col
+    if ref_col is not None:
+        cols["ref"] = ref_col
+        cols["parcel_ref"] = ref_col
     if addr_col is not None:
         cols["address"] = addr_col
     if city_col is not None:
@@ -190,11 +203,34 @@ def score_sheet(
         for marker in profile.get("header_markers") or []:
             if normalize(marker):
                 score += 4
+        if cols.get("ref") is not None or cols.get("parcel_ref") is not None:
+            score += 8
+        if profile.get("profile_kind") == "order_list" and cols.get("tracking") is None:
+            score += 10
+        if profile.get("profile_kind") == "tracking_export" and cols.get("tracking") is not None:
+            score += 10
     return score, header_row, cols
 
 
-def detect_layout(wb: openpyxl.Workbook, profiles: list[dict[str, Any]], override: str | None) -> dict[str, Any] | None:
-    candidates = profiles
+def profiles_for_mode(profiles: list[dict[str, Any]], mode: str) -> list[dict[str, Any]]:
+    if mode == "tracking_map":
+        tracking = [
+            p
+            for p in profiles
+            if p.get("profile_kind") == "tracking_export"
+            or p.get("id") in ("jnt_tracking", "spx", "jnt")
+        ]
+        return tracking if tracking else profiles
+    # Arranger / write — skip tracking-only exports when order-list exists
+    order_list = [p for p in profiles if p.get("profile_kind") == "order_list"]
+    legacy = [p for p in profiles if p.get("profile_kind") not in ("tracking_export",)]
+    if order_list:
+        return order_list + [p for p in legacy if p.get("profile_kind") != "order_list"]
+    return legacy if legacy else profiles
+
+
+def detect_layout(wb: openpyxl.Workbook, profiles: list[dict[str, Any]], override: str | None, mode: str = "detect") -> dict[str, Any] | None:
+    candidates = profiles_for_mode(profiles, mode)
     if override:
         candidates = [p for p in profiles if p.get("id") == override]
         if not candidates:
@@ -299,8 +335,61 @@ def read_orders(
             entry["region"] = cell_str(
                 ws.cell(row=row_num, column=cols["region"] + 1).value
             )
+        ref_idx = cols.get("parcel_ref")
+        if ref_idx is None:
+            ref_idx = cols.get("ref")
+        if ref_idx is not None:
+            entry["parcel_ref"] = cell_str(
+                ws.cell(row=row_num, column=ref_idx + 1).value
+            )
         orders.append(entry)
     return orders
+
+
+def normalize_ref_value(value: str, profile: dict[str, Any]) -> str:
+    ref = cell_str(value).upper()
+    if profile.get("ref_normalize") == "strip_pke" and ref.startswith("PKE"):
+        ref = ref[3:]
+    return ref
+
+
+def read_tracking_refs(
+    ws: openpyxl.worksheet.worksheet.Worksheet,
+    layout: dict[str, Any],
+    profile: dict[str, Any],
+) -> list[dict[str, Any]]:
+    header_row = int(layout["headerRow"])
+    cols = layout["columns"]
+    skip = set(profile.get("skip_receiver_values") or [])
+    ref_idx = cols.get("ref")
+    if ref_idx is None:
+        ref_idx = cols.get("parcel_ref")
+    track_idx = cols.get("tracking")
+    if ref_idx is None or track_idx is None:
+        return []
+
+    refs: list[dict[str, Any]] = []
+    for row_num in range(header_row + 1, (ws.max_row or 0) + 1):
+        raw_ref = cell_str(ws.cell(row=row_num, column=ref_idx + 1).value)
+        if not raw_ref or raw_ref in skip:
+            continue
+        tracking = cell_str(ws.cell(row=row_num, column=track_idx + 1).value)
+        if not tracking:
+            continue
+        recv = ""
+        if "receiver" in cols:
+            recv = cell_str(ws.cell(row=row_num, column=cols["receiver"] + 1).value)
+            if recv in skip:
+                recv = ""
+        refs.append(
+            {
+                "ref": normalize_ref_value(raw_ref, profile),
+                "raw_ref": raw_ref,
+                "tracking": tracking,
+                "receiver": recv,
+            }
+        )
+    return refs
 
 
 def write_remarks(
@@ -370,7 +459,7 @@ def main() -> None:
 
         if mode == "detect":
             override = sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] else None
-            layout = detect_layout(wb, profiles, override or None)
+            layout = detect_layout(wb, profiles, override or None, mode="detect")
             if layout is None:
                 emit_json({"error": "Could not detect a supported courier export format."})
                 sys.exit(2)
@@ -387,6 +476,28 @@ def main() -> None:
                     "orders": orders,
                     "sampleRows": sample,
                     "totalRows": len(orders),
+                }
+            )
+            return
+
+        if mode == "tracking_map":
+            override = sys.argv[4] if len(sys.argv) > 4 and sys.argv[4] else None
+            layout = detect_layout(wb, profiles, override or None, mode="tracking_map")
+            if layout is None:
+                emit_json({"error": "Could not detect a supported tracking export format."})
+                sys.exit(2)
+            profile = profile_by_id(profiles, layout["profileId"])
+            if profile is None:
+                emit_json({"error": "Profile missing after detection."})
+                sys.exit(2)
+            ws = wb[layout["sheetName"]]
+            refs = read_tracking_refs(ws, layout, profile)
+            emit_json(
+                {
+                    "profileId": layout["profileId"],
+                    "profileLabel": layout.get("profileLabel", layout["profileId"]),
+                    "refs": refs,
+                    "totalRefs": len(refs),
                 }
             )
             return

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-26T07:12:19+02:00
+generated: 2026-06-27T07:58:27+02:00
 type: memory-bank
 ---
 
@@ -231,6 +231,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `batch_finalize` | `api_online_orders_batch_finalize()` | `ims_current_user()`, `ims_pdo()`, `online_orders_batch_finalize()` |
 | `lines_append` | `api_online_orders_lines_append()` | `ims_current_user()`, `ims_pdo()`, `online_orders_assert_active_batch()`, `online_orders_run_start()`, `online_orders_lines_append()`, `online_orders_run_complete()` |
 | `tool_vip_prepare` | `api_online_orders_tool_vip_prepare()` | `online_orders_tool_vip_prepare()` |
+| `tool_vip_arranger_save` | `api_online_orders_tool_vip_arranger_save()` | `online_orders_vip_arranger_stash_save()` |
+| `tool_vip_arranger_get` | `api_online_orders_tool_vip_arranger_get()` | `online_orders_vip_arranger_latest_token()`, `online_orders_vip_arranger_stash_get()` |
+| `tool_vip_merge` | `api_online_orders_tool_vip_merge()` | `online_orders_vip_arranger_latest_token()`, `online_orders_tool_vip_merge()` |
 | `tool_spx_prepare` | `api_online_orders_tool_spx_prepare()` | `online_orders_tool_spx_prepare()` |
 | `tool_excel_register` | `api_online_orders_tool_excel_register()` | `online_orders_tool_excel_register()` |
 | `run_unified_stamp` | `api_online_orders_run_unified_stamp()` | `ims_current_user()`, `ims_pdo()`, `online_orders_run_unified_stamp()` |

@@ -1,7 +1,7 @@
 ---
 title: qr_decode
 source: includes/qr_decode.php
-generated: 2026-06-26T07:12:43+02:00
+generated: 2026-06-27T07:58:55+02:00
 type: module
 function_count: 13
 ---
@@ -95,7 +95,7 @@ function_count: 13
 - `includes/deliveries_upload.php`:210 — `$ht = rts_normalize_tracking_from_qr($hintRaw);`
 - `includes/online_order_parcels.php`:266 — `$tn = rts_normalize_tracking_from_qr($tn);`
 - `includes/online_order_parcels.php`:326 — `return rts_normalize_tracking_from_qr($raw);`
-- `includes/online_orders_generator.php`:355 — `$t = rts_normalize_tracking_from_qr($raw);`
+- `includes/online_orders_generator.php`:356 — `$t = rts_normalize_tracking_from_qr($raw);`
 - `includes/qr_decode.php`:280 — `$na = $okA ? rts_normalize_tracking_from_qr($a['text']) : '';`
 - `includes/qr_decode.php`:281 — `$nb = $okB ? rts_normalize_tracking_from_qr($b['text']) : '';`
 

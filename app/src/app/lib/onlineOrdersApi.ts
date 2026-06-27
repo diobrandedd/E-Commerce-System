@@ -9,6 +9,9 @@ import type {
   OnlineOrdersPrepResult,
   PartnerSeller,
   PartnerStampResult,
+  VipArrangerRow,
+  VipArrangerSaveResult,
+  VipMergeResult,
 } from "@/app/lib/onlineOrdersTypes";
 
 export async function onlineOrdersBatchStart(): Promise<OnlineOrdersBatch> {
@@ -50,6 +53,34 @@ export async function onlineOrdersToolVipPrepare(
   return api("online_orders.php", "tool_vip_prepare", {
     method: "POST",
     body: { rows },
+  });
+}
+
+export async function onlineOrdersToolVipArrangerSave(
+  rows: VipArrangerRow[],
+): Promise<VipArrangerSaveResult> {
+  return api("online_orders.php", "tool_vip_arranger_save", {
+    method: "POST",
+    body: { rows },
+  });
+}
+
+export async function onlineOrdersToolVipArrangerGet(
+  arrangerToken?: string,
+): Promise<{ arranger_token: string | null; rows: VipArrangerRow[]; row_count: number; created_at?: string | null }> {
+  return api("online_orders.php", "tool_vip_arranger_get", {
+    params: arrangerToken ? { arranger_token: arrangerToken } : {},
+  });
+}
+
+export async function onlineOrdersToolVipMerge(params: {
+  arranger_token?: string;
+  tracking_excel_token: string;
+  courier?: "jnt" | "spx";
+}): Promise<VipMergeResult> {
+  return api("online_orders.php", "tool_vip_merge", {
+    method: "POST",
+    body: params,
   });
 }
 

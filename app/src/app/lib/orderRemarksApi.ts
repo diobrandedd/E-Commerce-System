@@ -23,6 +23,7 @@ export interface OrderRow {
   remarks: string;
   itemText?: string;
   tracking?: string;
+  parcel_ref?: string;
   address?: string;
   city?: string;
   province?: string;

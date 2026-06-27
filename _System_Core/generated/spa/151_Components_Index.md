@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-26T07:12:52+02:00
+generated: 2026-06-27T07:59:04+02:00
 type: spa
 ---
 
@@ -93,6 +93,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 
 - `app/src/app/components/csr/onlineFulfillmentMotion.tsx`
 - `app/src/app/components/csr/onlineOrders/SpxPrepTool.tsx`
+- `app/src/app/components/csr/onlineOrders/VipMergeTool.tsx`
 - `app/src/app/components/csr/onlineOrders/VipPrepTool.tsx`
 - `app/src/app/components/csr/orderRemarksMotion.tsx`
 - `app/src/app/pages/csr/OnlineOrdersGeneratorPage.tsx`

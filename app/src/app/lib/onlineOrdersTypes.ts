@@ -2,7 +2,7 @@ export type OnlineOrdersPipeline = "partner" | "vip" | "shopee_spx" | "tiktok" |
 
 export type PartnerSeller = "ian" | "jono" | "joven";
 
-export type OnlineOrdersPrepTool = "vip" | "spx" | "excel" | "stamper";
+export type OnlineOrdersPrepTool = "vip" | "vip_merge" | "spx" | "excel" | "stamper";
 
 export interface OnlineOrdersPrepRow {
   order_no?: string | null;
@@ -17,6 +17,32 @@ export interface OnlineOrdersPrepResult {
   excel_tokens?: string[];
   row_count: number;
   rows: OnlineOrdersPrepRow[];
+}
+
+export interface VipArrangerRow {
+  parcel_ref: string;
+  receiver: string;
+  phone?: string;
+  items: string;
+  courier_hint?: string | null;
+}
+
+export interface VipArrangerSaveResult {
+  arranger_token: string;
+  row_count: number;
+}
+
+export interface VipMergeUnmatchedRow {
+  parcel_ref: string;
+  receiver: string;
+  phone?: string;
+}
+
+export interface VipMergeResult extends OnlineOrdersPrepResult {
+  matched: number;
+  unmatched: VipMergeUnmatchedRow[];
+  tracking_profile_id: string;
+  tracking_profile_label: string;
 }
 
 export interface OnlineOrdersBatchRun {

@@ -1,7 +1,7 @@
 ---
 title: deliveries_upload
 source: includes/deliveries_upload.php
-generated: 2026-06-26T07:12:21+02:00
+generated: 2026-06-27T07:58:30+02:00
 type: module
 function_count: 3
 ---

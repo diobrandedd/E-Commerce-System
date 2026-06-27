@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-06-26T07:12:36+02:00
+generated: 2026-06-27T07:58:47+02:00
 type: module
 function_count: 26
 ---
@@ -68,7 +68,7 @@ function_count: 26
 - `includes/online_order_parcels.php`:1208 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_order_parcels.php`:1310 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_order_parcels.php`:1416 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_orders_generator.php`:388 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_orders_generator.php`:389 — `online_parcels_ensure_schema($pdo);`
 - `includes/rts_case_handlers.php`:466 — `online_parcels_ensure_schema($pdo);`
 
 ## online_parcels_apply_rts_schema_migrations {#online_parcels_apply_rts_schema_migrations}
@@ -85,7 +85,7 @@ function_count: 26
 
 **Callers (1):**
 
-- `includes/online_orders_generator.php`:1086 — `$promote = online_parcels_promote_from_batch($pdo, $batchId);`
+- `includes/online_orders_generator.php`:1296 — `$promote = online_parcels_promote_from_batch($pdo, $batchId);`
 
 ## online_parcels_normalize_tracking {#online_parcels_normalize_tracking}
 

@@ -1,7 +1,7 @@
 ---
 title: rts_storage
 source: includes/rts_storage.php
-generated: 2026-06-26T07:12:47+02:00
+generated: 2026-06-27T07:59:00+02:00
 type: module
 function_count: 16
 ---
@@ -131,7 +131,7 @@ function_count: 16
 
 **Callers (4):**
 
-- `includes/online_orders_generator.php`:68 — `return rts_storage_csr_tool_root(`
+- `includes/online_orders_generator.php`:69 — `return rts_storage_csr_tool_root(`
 - `includes/order_remarks.php`:13 — `return rts_storage_csr_tool_root(`
 - `includes/pdf_to_excel.php`:13 — `return rts_storage_csr_tool_root(`
 - `includes/waybill_stamper.php`:13 — `return rts_storage_csr_tool_root(`

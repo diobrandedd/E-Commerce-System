@@ -43,6 +43,57 @@ function order_remarks_profiles(): array
 {
     return [
         [
+            'id' => 'vip_order_list',
+            'label' => 'VIP order list (J&T upload)',
+            'profile_kind' => 'order_list',
+            'branding' => ['order list', 'j&t', 'jnt', 'jet express', 'global jet'],
+            'header_markers' => ['Parcel Name (*)', 'Receiver(*)'],
+            'receiver_header_aliases' => ['Receiver(*)', 'Receiver'],
+            'phone_header_aliases' => ['Receiver Telephone (*)', 'Receiver Telephone', 'Receiver Cellphone'],
+            'parcel_ref_header_aliases' => ['Parcel Name (*)', 'Parcel Name'],
+            'address_header_aliases' => ['Receiver Address (*)', 'Receiver Address'],
+            'province_header_aliases' => ['Receiver Province (*)', 'Receiver Province', 'Province'],
+            'city_header_aliases' => ['Receiver City (*)', 'Receiver City', 'City'],
+            'region_header_aliases' => ['Receiver Region (*)', 'Receiver Region'],
+            'remarks_header_aliases' => ['Remarks', 'Remark'],
+            'skip_receiver_values' => [
+                'Receiver(*)',
+                '(*) Information that must be filled out',
+            ],
+            'default_columns' => [
+                'receiver' => 0,
+                'phone' => 1,
+                'address' => 2,
+                'province' => 3,
+                'city' => 4,
+                'region' => 5,
+                'remarks' => 12,
+                'parcel_ref' => 7,
+            ],
+        ],
+        [
+            'id' => 'jnt_tracking',
+            'label' => 'J&T tracking export',
+            'profile_kind' => 'tracking_export',
+            'ref_normalize' => 'strip_pke',
+            'branding' => ['j&t', 'jnt', 'creator code', 'order status'],
+            'header_markers' => ['Order Number', 'Waybill Number'],
+            'receiver_header_aliases' => ['Receiver', 'Receiver Name'],
+            'phone_header_aliases' => ['Receiver Cellphone', 'Receiver Telephone'],
+            'ref_header_aliases' => ['Order Number', 'Order No', 'Order No.'],
+            'tracking_header_aliases' => ['Waybill Number', 'Waybill No', 'Tracking Number'],
+            'remarks_header_aliases' => ['Remarks', 'Remark'],
+            'item_header_aliases' => ['Item Name', 'Item/s', 'Items'],
+            'skip_receiver_values' => ['Receiver', 'Order Number'],
+            'default_columns' => [
+                'receiver' => 6,
+                'phone' => 7,
+                'remarks' => 17,
+                'ref' => 2,
+                'tracking' => 4,
+            ],
+        ],
+        [
             'id' => 'jnt',
             'label' => 'J&T Express',
             'branding' => ['j&t', 'jnt', 'j and t', 'jet express'],
@@ -73,8 +124,11 @@ function order_remarks_profiles(): array
         [
             'id' => 'spx',
             'label' => 'SPX / Shopee Express',
+            'profile_kind' => 'tracking_export',
+            'ref_normalize' => 'upper',
             'branding' => ['spx', 'shopee express', 'shopee logistics'],
-            'header_markers' => ['Tracking No.', 'Item in Parcel', 'Recipient Name'],
+            'header_markers' => ['Tracking No.', 'Customer Reference No.', 'Item in Parcel', 'Recipient Name'],
+            'ref_header_aliases' => ['Customer Reference No.', 'Customer Reference No', 'Customer Reference'],
             'receiver_header_aliases' => [
                 'Recipient Name',
                 'Receiver Name',
@@ -231,6 +285,8 @@ function order_remarks_run_python(string $mode, string $workbookPath, ?string $p
             $args[] = $dstPath;
             $args[] = $layoutPath;
             $args[] = $remarksPath;
+        } elseif ($mode === 'tracking_map') {
+            $args[] = $profileOverride ?? '';
         } else {
             throw new RuntimeException('Invalid Python mode: ' . $mode);
         }
@@ -467,6 +523,39 @@ function order_remarks_register_download(string $absolutePath, string $downloadF
     }
 
     return $token;
+}
+
+/**
+ * Normalize VIP parcel ref for merge (J&T Order Number may prefix PKE).
+ */
+function vip_normalize_parcel_ref(string $ref): string
+{
+    $ref = strtoupper(trim($ref));
+    if (str_starts_with($ref, 'PKE')) {
+        $ref = substr($ref, 3);
+    }
+
+    return $ref;
+}
+
+/**
+ * @return array{profileId:string,profileLabel:string,refs:list<array{ref:string,tracking:string,receiver?:string}>}
+ */
+function order_remarks_parse_tracking_map(string $workbookPath, ?string $profileOverride = null): array
+{
+    $override = $profileOverride !== null && $profileOverride !== '' ? $profileOverride : null;
+    $data = order_remarks_run_python('tracking_map', $workbookPath, $override);
+
+    $refs = $data['refs'] ?? [];
+    if (!is_array($refs)) {
+        $refs = [];
+    }
+
+    return [
+        'profileId' => (string) ($data['profileId'] ?? ''),
+        'profileLabel' => (string) ($data['profileLabel'] ?? ''),
+        'refs' => $refs,
+    ];
 }
 
 function order_remarks_serve_download(string $token): void

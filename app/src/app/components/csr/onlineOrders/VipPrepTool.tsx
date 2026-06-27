@@ -11,9 +11,7 @@ import {
   parseRemarks,
   type RowResolution,
 } from "@/app/lib/orderRemarksParse";
-import { onlineOrdersToolVipPrepare } from "@/app/lib/onlineOrdersApi";
-import type { OnlineOrdersPrepResult } from "@/app/lib/onlineOrdersTypes";
-import { triggerWaybillStashDownload } from "@/app/lib/waybillApi";
+import { onlineOrdersToolVipArrangerSave } from "@/app/lib/onlineOrdersApi";
 import { FulfillmentPressable } from "@/app/components/csr/onlineFulfillmentMotion";
 import {
   exportOrderRemarks,
@@ -31,18 +29,28 @@ import {
 } from "@/app/components/csr/onlineOrders/onlineOrdersPractice";
 import { OnlineOrdersBackToToolsButton } from "@/app/components/csr/onlineOrders/OnlineOrdersNavButtons";
 
+const VIP_ARRANGER_TOKEN_KEY = "vip_arranger_token";
+
+function courierHintFromProfile(profileId: string): string | null {
+  if (profileId === "spx") return "SPX";
+  if (profileId === "vip_order_list" || profileId === "jnt") return "J&T Express";
+  return null;
+}
+
 export function VipPrepTool({
   onDone,
   onBack,
+  onOpenMerger,
   practiceMode = false,
   practiceStage = "vip-upload",
 }: {
   onDone: () => void;
   onBack: () => void;
+  onOpenMerger?: () => void;
   practiceMode?: boolean;
   practiceStage?: OnlineOrdersPracticeStage;
 }) {
-  const [courierExcelFile, setCourierExcelFile] = useState<File | null>(null);
+  const [orderListFile, setOrderListFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -50,7 +58,7 @@ export function VipPrepTool({
   const [resolutions, setResolutions] = useState<Record<number, RowResolution>>({});
   const [showCompleted, setShowCompleted] = useState(false);
   const [remarksToken, setRemarksToken] = useState<string | null>(null);
-  const [prepResult, setPrepResult] = useState<OnlineOrdersPrepResult | null>(null);
+  const [arrangerSaved, setArrangerSaved] = useState<{ row_count: number; arranger_token: string } | null>(null);
 
   const rows = useMemo(() => {
     if (!parseResult) return [];
@@ -61,7 +69,7 @@ export function VipPrepTool({
   }, [parseResult]);
 
   const ambiguousRows = useMemo(() => rows.filter(r => r.category === "ambiguous"), [rows]);
-  const canExport =
+  const canSave =
     parseResult !== null &&
     (ambiguousRows.length === 0 ||
       ambiguousRows.every(r => isRowFullyResolved(r.order.remarks, r.parsed, resolutions[r.order.idx])));
@@ -69,6 +77,7 @@ export function VipPrepTool({
   const uploadRemarks = async (file: File) => {
     setBusy(true);
     setError(null);
+    setArrangerSaved(null);
     const sizeErr = orderRemarksUploadTooLarge(file);
     if (sizeErr) {
       setError(sizeErr);
@@ -82,7 +91,7 @@ export function VipPrepTool({
       setParseResult(result);
       setResolutions({});
       setShowCompleted(false);
-      setToast("Workbook loaded — resolve any ambiguous orders");
+      setToast("Order list loaded — resolve any ambiguous orders");
       window.setTimeout(() => setToast(null), 2800);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not parse workbook.");
@@ -91,7 +100,7 @@ export function VipPrepTool({
     }
   };
 
-  const runPrepare = async () => {
+  const runArrange = async () => {
     if (!remarksToken || !parseResult) return;
     setBusy(true);
     setError(null);
@@ -99,26 +108,32 @@ export function VipPrepTool({
       const remarks = parseResult.orders.map(o =>
         finalRemarkForRow(o.remarks, parseRemarks(o.remarks), resolutions[o.idx]),
       );
-      const exp = await exportOrderRemarks(remarksToken, remarks);
+      const exp = await exportOrderRemarks(remarksToken, remarks, parseResult.layout);
       triggerOrderRemarksDownload(exp.download_token, exp.download_filename);
 
+      const courierHint = courierHintFromProfile(parseResult.layout.profileId);
       const payload = parseResult.orders.map((o, i) => {
         const final = remarks[i] ?? o.remarks;
-        const tn = o.tracking?.trim() || o.phone?.trim() || `VIP-${o.idx}`;
+        const parcelRef = (o.parcel_ref ?? "").trim();
+        if (!parcelRef) {
+          throw new Error(`Row ${i + 1} (${o.receiver}) is missing Parcel Name — cannot save for merge.`);
+        }
         return {
-          order_no: null,
-          name: o.receiver,
+          parcel_ref: parcelRef,
+          receiver: o.receiver,
+          phone: o.phone,
           items: final,
-          courier: parseResult.layout.profileLabel,
-          tracking_number: tn,
+          courier_hint: courierHint,
         };
       });
-      const prep = await onlineOrdersToolVipPrepare(payload);
-      setPrepResult(prep);
-      setToast(`${prep.row_count} rows ready — download your arranged Excel`);
-      window.setTimeout(() => setToast(null), 3200);
+
+      const saved = await onlineOrdersToolVipArrangerSave(payload);
+      sessionStorage.setItem(VIP_ARRANGER_TOKEN_KEY, saved.arranger_token);
+      setArrangerSaved(saved);
+      setToast(`${saved.row_count} rows arranged — open Excel merger when tracking export is ready`);
+      window.setTimeout(() => setToast(null), 4000);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not prepare VIP Excel.");
+      setError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not save arranged rows.");
     } finally {
       setBusy(false);
     }
@@ -133,7 +148,7 @@ export function VipPrepTool({
         </p>
         {practiceStageAtLeast(practiceStage, "vip-upload") && (
           <div data-tour="online-orders-vip-upload">
-            <PracticeTap label="Practice: upload VIP courier Excel" />
+            <PracticeTap label="Practice: upload VIP order list Excel" />
           </div>
         )}
         {practiceStageAtLeast(practiceStage, "vip-resolve") && (
@@ -145,12 +160,12 @@ export function VipPrepTool({
         )}
         {practiceStageAtLeast(practiceStage, "vip-build") && (
           <div data-tour="online-orders-vip-build">
-            <PracticeTap label="Practice: build arranged Excel" />
+            <PracticeTap label="Practice: save arranged rows" />
           </div>
         )}
         {practiceStageAtLeast(practiceStage, "vip-done") && (
           <div className="rounded-xl border border-green-200 bg-green-50/80 p-5 space-y-3" data-tour="online-orders-vip-done">
-            <p className="text-sm text-green-800 font-medium">Arranged Excel ready (12 rows — sample)</p>
+            <p className="text-sm text-green-800 font-medium">Arranged rows saved (12 — sample)</p>
             <PracticeTap label="Practice: back to tools" />
           </div>
         )}
@@ -163,30 +178,32 @@ export function VipPrepTool({
       <OrderRemarksToast message={toast} />
       <OnlineOrdersBackToToolsButton onClick={onBack} />
       <p className="text-sm text-muted-foreground">
-        Upload VIP courier Excel (J&T / SPX), resolve variants, then download the arranged iPYX sheet. When ready to
-        stamp, go back to tools and open PDF + Excel stamper.
+        Upload the VIP order list (Parcel Name + Remarks). Resolve variants on the cards, then save arranged rows.
+        When the courier sends tracking, open <strong className="font-semibold text-foreground">VIP Excel merger</strong> to
+        build the iPYX sheet.
       </p>
       <div data-tour="online-orders-vip-upload">
-      <FileZone
-        label="VIP courier Excel"
-        hint="Drop J&T or SPX workbook (.xlsx)"
-        accept=".xlsx,.xls"
-        icon={FileSpreadsheet}
-        files={courierExcelFile ? [courierExcelFile] : []}
-        disabled={busy}
-        multiple={false}
-        onFiles={fs => {
-          const f = fs[0] ?? null;
-          setCourierExcelFile(f);
-          if (f) {
-            void uploadRemarks(f);
-          } else {
-            setParseResult(null);
-            setRemarksToken(null);
-            setResolutions({});
-          }
-        }}
-      />
+        <FileZone
+          label="VIP order list Excel"
+          hint="J&T bulk upload — Receiver, Parcel Name, Remarks (.xlsx)"
+          accept=".xlsx,.xls"
+          icon={FileSpreadsheet}
+          files={orderListFile ? [orderListFile] : []}
+          disabled={busy}
+          multiple={false}
+          onFiles={fs => {
+            const f = fs[0] ?? null;
+            setOrderListFile(f);
+            setArrangerSaved(null);
+            if (f) {
+              void uploadRemarks(f);
+            } else {
+              setParseResult(null);
+              setRemarksToken(null);
+              setResolutions({});
+            }
+          }}
+        />
       </div>
       {busy && !parseResult && (
         <p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -196,59 +213,61 @@ export function VipPrepTool({
 
       {ambiguousRows.length > 0 && (
         <div data-tour="online-orders-vip-resolve">
-        <AmbiguousOrderCarousel
-          rows={ambiguousRows}
-          resolutions={resolutions}
-          showCompleted={showCompleted}
-          onShowCompletedChange={setShowCompleted}
-          onResolve={(idx, resolution) => setResolutions(prev => ({ ...prev, [idx]: resolution }))}
-          onClearResolution={idx => {
-            setResolutions(prev => {
-              const next = { ...prev };
-              delete next[idx];
-              return next;
-            });
-            setShowCompleted(false);
-          }}
-          disabled={busy}
-          onCardCompleted={remaining => {
-            setToast(remaining > 0 ? `${remaining} remaining` : "All orders resolved");
-            window.setTimeout(() => setToast(null), 2800);
-          }}
-        />
+          <AmbiguousOrderCarousel
+            rows={ambiguousRows}
+            resolutions={resolutions}
+            showCompleted={showCompleted}
+            onShowCompletedChange={setShowCompleted}
+            onResolve={(idx, resolution) => setResolutions(prev => ({ ...prev, [idx]: resolution }))}
+            onClearResolution={idx => {
+              setResolutions(prev => {
+                const next = { ...prev };
+                delete next[idx];
+                return next;
+              });
+              setShowCompleted(false);
+            }}
+            disabled={busy}
+            onCardCompleted={remaining => {
+              setToast(remaining > 0 ? `${remaining} remaining` : "All orders resolved");
+              window.setTimeout(() => setToast(null), 2800);
+            }}
+          />
         </div>
       )}
 
-      {canExport && !prepResult && (
+      {canSave && !arrangerSaved && (
         <button
           type="button"
           disabled={busy}
-          onClick={() => void runPrepare()}
+          onClick={() => void runArrange()}
           data-tour="online-orders-vip-build"
           className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-lg text-primary-foreground bg-primary"
         >
           {busy ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-          Build arranged Excel
+          Save arranged rows
         </button>
       )}
 
-      {prepResult && (
+      {arrangerSaved && (
         <div className="rounded-xl border border-green-200 bg-green-50/80 p-5 space-y-4" data-tour="online-orders-vip-done">
           <p className="text-sm text-green-800 flex items-center gap-2 font-medium">
             <CheckCircle2 size={18} />
-            Arranged Excel ready ({prepResult.row_count} rows)
+            {arrangerSaved.row_count} rows arranged — remarks export downloaded
           </p>
           <p className="text-sm text-muted-foreground">
-            Download the remarks export and iPYX sheet. Go back to tools, then open PDF + Excel stamper when waybills are ready.
+            Parcel refs are saved for merge. When J&amp;T or SPX sends the tracking export, open{" "}
+            <strong className="font-semibold text-foreground">VIP Excel merger</strong> and upload it there.
           </p>
           <div className="flex flex-wrap gap-3">
-            <FulfillmentPressable
-              variant="outline"
-              className="inline-flex items-center gap-2 px-4 py-2.5"
-              onClick={() => triggerWaybillStashDownload(prepResult.excel_token)}
-            >
-              <Download size={16} /> Download iPYX Excel
-            </FulfillmentPressable>
+            {onOpenMerger ? (
+              <FulfillmentPressable
+                className="inline-flex items-center gap-2 px-4 py-2.5 font-semibold text-primary-foreground bg-primary"
+                onClick={onOpenMerger}
+              >
+                Open Excel merger
+              </FulfillmentPressable>
+            ) : null}
             <OnlineOrdersBackToToolsButton onClick={onDone} />
           </div>
         </div>

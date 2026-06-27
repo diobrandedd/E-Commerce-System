@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/waybill_stamper.php';
+require_once __DIR__ . '/order_remarks.php';
 
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
@@ -729,6 +730,215 @@ function online_orders_tool_vip_prepare(array $rows): array
         'excel_token' => $excelToken,
         'row_count' => count($preview),
         'rows' => $preview,
+    ];
+}
+
+function online_orders_vip_arranger_stash_prune(): void
+{
+    ims_session_start();
+    if (!isset($_SESSION['vip_arranger_stash']) || !is_array($_SESSION['vip_arranger_stash'])) {
+        $_SESSION['vip_arranger_stash'] = [];
+
+        return;
+    }
+    foreach ($_SESSION['vip_arranger_stash'] as $token => $meta) {
+        if (!is_array($meta) || (int) ($meta['expires'] ?? 0) < time()) {
+            unset($_SESSION['vip_arranger_stash'][$token]);
+        }
+    }
+}
+
+/**
+ * @param list<array{parcel_ref:string,receiver:string,phone?:string,items:string,courier_hint?:?string}> $rows
+ * @return array{arranger_token:string,row_count:int}
+ */
+function online_orders_vip_arranger_stash_save(array $rows): array
+{
+    online_orders_vip_arranger_stash_prune();
+    $clean = [];
+    foreach ($rows as $row) {
+        $parcelRef = trim((string) ($row['parcel_ref'] ?? ''));
+        $items = trim((string) ($row['items'] ?? ''));
+        $receiver = trim((string) ($row['receiver'] ?? ''));
+        if ($parcelRef === '' || $items === '' || $receiver === '') {
+            continue;
+        }
+        $clean[] = [
+            'parcel_ref' => $parcelRef,
+            'receiver' => $receiver,
+            'phone' => trim((string) ($row['phone'] ?? '')),
+            'items' => online_orders_normalize_items_display($items),
+            'courier_hint' => isset($row['courier_hint']) && $row['courier_hint'] !== ''
+                ? (string) $row['courier_hint'] : null,
+        ];
+    }
+    if ($clean === []) {
+        throw new RuntimeException('No complete arranged VIP rows to save.');
+    }
+
+    $token = bin2hex(random_bytes(16));
+    ims_session_start();
+    if (!isset($_SESSION['vip_arranger_stash']) || !is_array($_SESSION['vip_arranger_stash'])) {
+        $_SESSION['vip_arranger_stash'] = [];
+    }
+    $_SESSION['vip_arranger_stash'][$token] = [
+        'rows' => $clean,
+        'expires' => time() + 7200,
+        'created_at' => date('c'),
+    ];
+    $_SESSION['vip_arranger_last_token'] = $token;
+
+    return [
+        'arranger_token' => $token,
+        'row_count' => count($clean),
+    ];
+}
+
+/**
+ * @return array{rows:list<array<string,mixed>>,created_at:?string}
+ */
+function online_orders_vip_arranger_stash_get(string $token): array
+{
+    online_orders_vip_arranger_stash_prune();
+    ims_session_start();
+    $token = preg_replace('/[^a-f0-9]/', '', strtolower($token));
+    if ($token === '') {
+        throw new RuntimeException('Invalid arranger token.');
+    }
+    $stash = $_SESSION['vip_arranger_stash'] ?? [];
+    if (!is_array($stash) || !isset($stash[$token]) || !is_array($stash[$token])) {
+        throw new RuntimeException('Arranged VIP rows expired or not found. Run Excel arranger again.');
+    }
+    $meta = $stash[$token];
+    $rows = $meta['rows'] ?? [];
+    if (!is_array($rows) || $rows === []) {
+        throw new RuntimeException('Arranged VIP rows are empty.');
+    }
+
+    return [
+        'rows' => $rows,
+        'created_at' => isset($meta['created_at']) ? (string) $meta['created_at'] : null,
+    ];
+}
+
+function online_orders_vip_arranger_latest_token(): ?string
+{
+    online_orders_vip_arranger_stash_prune();
+    ims_session_start();
+    $token = isset($_SESSION['vip_arranger_last_token']) ? (string) $_SESSION['vip_arranger_last_token'] : '';
+    if ($token === '') {
+        return null;
+    }
+    try {
+        online_orders_vip_arranger_stash_get($token);
+
+        return $token;
+    } catch (RuntimeException) {
+        return null;
+    }
+}
+
+function online_orders_vip_courier_label(?string $profileId, ?string $courierHint = null): string
+{
+    if ($courierHint !== null && $courierHint !== '') {
+        return $courierHint;
+    }
+    $id = strtolower(trim((string) $profileId));
+
+    return match ($id) {
+        'spx' => 'SPX',
+        'jnt', 'jnt_tracking', 'vip_order_list' => 'J&T Express',
+        default => 'VIP',
+    };
+}
+
+/**
+ * @return array{
+ *   excel_token:string,
+ *   row_count:int,
+ *   matched:int,
+ *   unmatched:list<array{parcel_ref:string,receiver:string,phone?:string}>,
+ *   rows:list<array<string,mixed>>,
+ *   tracking_profile_id:string,
+ *   tracking_profile_label:string
+ * }
+ */
+function online_orders_tool_vip_merge(string $arrangerToken, string $trackingExcelToken, ?string $courierOverride = null): array
+{
+    $arranger = online_orders_vip_arranger_stash_get($arrangerToken);
+    $trackingPath = order_remarks_resolve_stash_path($trackingExcelToken);
+    $override = $courierOverride !== null && $courierOverride !== '' ? $courierOverride : null;
+    if ($override === 'jnt') {
+        $override = 'jnt_tracking';
+    }
+    $tracking = order_remarks_parse_tracking_map($trackingPath, $override);
+
+    $map = [];
+    foreach ($tracking['refs'] as $refRow) {
+        if (!is_array($refRow)) {
+            continue;
+        }
+        $ref = vip_normalize_parcel_ref((string) ($refRow['ref'] ?? ''));
+        $tn = trim((string) ($refRow['tracking'] ?? ''));
+        if ($ref === '' || $tn === '') {
+            continue;
+        }
+        $map[$ref] = $tn;
+    }
+    if ($map === []) {
+        throw new RuntimeException('No tracking numbers found in the courier export.');
+    }
+
+    $profileId = (string) ($tracking['profileId'] ?? '');
+    $courierLabel = online_orders_vip_courier_label($profileId, null);
+    if ($profileId === 'spx') {
+        $courierLabel = 'SPX';
+    }
+
+    $matchedRows = [];
+    $unmatched = [];
+    foreach ($arranger['rows'] as $row) {
+        $parcelRef = vip_normalize_parcel_ref((string) ($row['parcel_ref'] ?? ''));
+        $trackingNo = $map[$parcelRef] ?? null;
+        if ($trackingNo === null || $trackingNo === '') {
+            $unmatched[] = [
+                'parcel_ref' => (string) ($row['parcel_ref'] ?? ''),
+                'receiver' => (string) ($row['receiver'] ?? ''),
+                'phone' => (string) ($row['phone'] ?? ''),
+            ];
+            continue;
+        }
+        $matchedRows[] = [
+            'order_no' => null,
+            'name' => (string) ($row['receiver'] ?? ''),
+            'items' => (string) ($row['items'] ?? ''),
+            'courier' => online_orders_vip_courier_label(
+                $profileId,
+                isset($row['courier_hint']) ? (string) $row['courier_hint'] : null
+            ) ?: $courierLabel,
+            'tracking_number' => $trackingNo,
+        ];
+    }
+
+    if ($matchedRows === []) {
+        throw new RuntimeException(
+            'No arranged rows matched the tracking export. Check Parcel Name vs Order Number / Customer Reference.'
+        );
+    }
+
+    $pdo = ims_pdo();
+    online_orders_assert_no_duplicate_tracking($pdo, 'vip', $matchedRows);
+
+    $prep = online_orders_tool_vip_prepare($matchedRows);
+
+    return [
+        'excel_token' => $prep['excel_token'],
+        'row_count' => $prep['row_count'],
+        'matched' => count($matchedRows),
+        'unmatched' => $unmatched,
+        'rows' => $prep['rows'],
+        'tracking_profile_id' => $profileId,
+        'tracking_profile_label' => (string) ($tracking['profileLabel'] ?? $profileId),
     ];
 }
 

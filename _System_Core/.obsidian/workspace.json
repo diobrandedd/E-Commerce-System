@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "8d9865b457ab68c8",
+        "id": "908d011a50d9ce96",
         "type": "tabs",
         "children": [
           {
-            "id": "1176b8ead49b7f1b",
+            "id": "a6a578ca2dd746b6",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -74,8 +74,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "0b6c2ca760104de3",
@@ -177,8 +176,10 @@
       "bases:Create new base": false
     }
   },
-  "active": "1176b8ead49b7f1b",
+  "active": "a6a578ca2dd746b6",
   "lastOpenFiles": [
+    "Untitled",
+    "problems/records/2026-06-19_rts-edit-lines-fk-inventory.md",
     "generated/modules/waybill_stamper.md",
     "generated/modules/suppliers.md",
     "generated/modules/sp_sort_service.md",
@@ -203,8 +204,6 @@
     "generated/modules/online_order_parcels.md",
     "generated/modules/material_inventory.md",
     "generated/modules/labels.md",
-    "generated/modules/ims_exec_sidebar.md",
-    "generated/modules/honey_volume.md",
     "specs",
     "problems/records",
     "problems/fixes",
