@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-06-27T07:58:29+02:00
+generated: 2026-06-30T11:13:27+02:00
 type: module
 function_count: 3
 ---
@@ -56,7 +56,7 @@ function_count: 3
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (194):**
+**Callers (204):**
 
 - `api/v1/_bootstrap.php`:176 — `$pdo = ims_pdo();`
 - `api/v1/ar.php`:33 — `api_ok(['products' => ar_credits_sellable_products(ims_pdo())]);`
@@ -65,6 +65,16 @@ function_count: 3
 - `api/v1/ar.php`:87 — `$result = ar_credits_take_for_user(ims_pdo(), (int) $user['id'], $productId, $qty);`
 - `api/v1/ar.php`:107 — `ar_credits_mark_paid(ims_pdo(), $id, (int) $user['id']);`
 - `api/v1/ar.php`:127 — `ar_credits_mark_unpaid(ims_pdo(), $id);`
+- `api/v1/bulk_orders.php`:37 — `$pdo = ims_pdo();`
+- `api/v1/bulk_orders.php`:55 — `api_ok(bulk_honey_order_get(ims_pdo(), $id));`
+- `api/v1/bulk_orders.php`:67 — `api_ok(['rows' => bulk_honey_warehouse_rows_for_variant(ims_pdo(), $variant)]);`
+- `api/v1/bulk_orders.php`:82 — `'allocations' => bulk_honey_suggest_fifo_allocations(ims_pdo(), $variant, $qty),`
+- `api/v1/bulk_orders.php`:96 — `api_ok(bulk_honey_preview_cost(ims_pdo(), $lines));`
+- `api/v1/bulk_orders.php`:109 — `$result = bulk_honey_save_draft(ims_pdo(), (int) $user['id'], null, $input);`
+- `api/v1/bulk_orders.php`:127 — `$result = bulk_honey_save_draft(ims_pdo(), (int) $user['id'], $id, $input);`
+- `api/v1/bulk_orders.php`:145 — `api_ok(bulk_honey_order_confirm(ims_pdo(), (int) $user['id'], $id));`
+- `api/v1/bulk_orders.php`:162 — `api_ok(bulk_honey_order_void(ims_pdo(), (int) $user['id'], $id));`
+- `api/v1/bulk_orders.php`:179 — `bulk_honey_order_delete_draft(ims_pdo(), $id);`
 - `api/v1/costing.php`:58 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:122 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:192 — `$pdo = ims_pdo();`
@@ -73,15 +83,5 @@ function_count: 3
 - `api/v1/costing.php`:331 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:363 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:489 — `$pdo = ims_pdo();`
-- `api/v1/costing.php`:505 — `$pdo = ims_pdo();`
-- `api/v1/costing.php`:563 — `$pdo = ims_pdo();`
-- `api/v1/costing.php`:585 — `$pdo = ims_pdo();`
-- `api/v1/dashboard.php`:106 — `$pdo = ims_pdo();`
-- `api/v1/dashboard.php`:277 — `$snapshot = dashboard_inventory_snapshot(ims_pdo(), $period, $from, $to);`
-- `api/v1/dashboard.php`:331 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:66 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:110 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:131 — `$pdo = ims_pdo();`
-- `api/v1/deliveries.php`:168 — `$pdo = ims_pdo();`
-- _… and 169 more (run impact.php for full list)_
+- _… and 179 more (run impact.php for full list)_
 

@@ -60,6 +60,18 @@ function Invoke-VerifyCommand([scriptblock]$Command) {
     }
 }
 
+# Vite can finish ("built in Ns") then Node crashes on Windows libuv shutdown (0xC0000409).
+function Test-SpaBuildOk([string]$BuildText, [int]$ExitCode, [string]$DistRoot) {
+    if ($ExitCode -eq 0) { return $true }
+    if ($ExitCode -ne -1073740791) { return $false }
+    if ($BuildText -notmatch 'built in [\d.]+s') { return $false }
+    $index = Join-Path $DistRoot 'index.html'
+    $assets = Join-Path $DistRoot 'assets'
+    if (-not (Test-Path $index)) { return $false }
+    $js = @(Get-ChildItem -Path $assets -Filter '*.js' -ErrorAction SilentlyContinue)
+    return ($js.Count -gt 0)
+}
+
 function Get-ChangedPaths {
     Push-Location $RepoRoot
     try {
@@ -160,12 +172,16 @@ if ($touchApp -or $All) {
     Test-Stage 'SPA build' {
         Push-Location (Join-Path $RepoRoot 'app')
         try {
+            $distRoot = Join-Path $RepoRoot 'app\dist'
             $result = Invoke-VerifyCommand { npm run build }
             if ($result.Text) { Write-Host $result.Text }
-            if ($result.ExitCode -ne 0) {
-                Write-Fail 'SPA build' "exit $($result.ExitCode)"
-            } else {
+            if (Test-SpaBuildOk $result.Text $result.ExitCode $distRoot) {
+                if ($result.ExitCode -ne 0) {
+                    Write-Host "Note: npm run build exited $($result.ExitCode) (known Windows libuv flake); dist artifacts OK."
+                }
                 Write-Pass 'SPA build'
+            } else {
+                Write-Fail 'SPA build' "exit $($result.ExitCode)"
             }
         } finally {
             Pop-Location

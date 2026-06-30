@@ -36,6 +36,7 @@ import { POSDeptPage } from "./pages/pos/POSDeptPage";
 import { POSHoneyPage } from "./pages/pos/POSHoneyPage";
 import { POSLayout } from "./components/pos/POSLayout";
 import { SalesPage } from "./pages/exec/SalesPage";
+import { BulkHoneyOrdersPage } from "./pages/sales/BulkHoneyOrdersPage";
 import { OnlineOrdersGeneratorPage } from "./pages/csr/OnlineOrdersGeneratorPage";
 import { DeliveriesPage } from "./pages/deliveries/DeliveriesPage";
 import { DeliveriesReviewPage } from "./pages/deliveries/DeliveriesReviewPage";
@@ -108,6 +109,7 @@ export const router = createBrowserRouter(
         { path: "staff", element: guarded(StaffManagementPage, { roles: ["executive"] }) },
         { path: "reports", element: guarded(ReportsPage, { roles: ["executive", "prod_manager"] }) },
         { path: "sales", element: guarded(SalesPage, { roles: ["executive", "prod_manager"] }) },
+        { path: "sales/bulk-orders", element: guarded(BulkHoneyOrdersPage, { roles: ["executive"] }) },
         { path: "suppliers", element: guarded(SuppliersPage, { roles: ["executive"] }) },
         { path: "costing", element: guarded(CostingPage, { roles: ["executive"] }) },
         { path: "ar", element: guarded(ARCreditsPage) },

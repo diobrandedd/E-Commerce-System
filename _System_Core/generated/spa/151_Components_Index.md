@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-06-27T07:59:04+02:00
+generated: 2026-06-30T11:13:51+02:00
 type: spa
 ---
 
@@ -88,6 +88,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/rts/RTSRecordPage.tsx`
 - `app/src/app/pages/rts/RTSRecordsPage.tsx`
 - `app/src/app/pages/rts/RTSSwappedPage.tsx`
+- `app/src/app/pages/sales/BulkHoneyOrdersPage.tsx`
 
 ## OrderRemarksToast
 

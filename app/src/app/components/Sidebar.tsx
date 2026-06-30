@@ -189,6 +189,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         inventoryNav,
         { icon: ShoppingBag, label: "Sales", to: "/sales" },
+        { icon: Package, label: "Bulk orders", to: "/sales/bulk-orders" },
         onlineOrdersItem,
         onlineParcelsItem,
         forPackingItem,

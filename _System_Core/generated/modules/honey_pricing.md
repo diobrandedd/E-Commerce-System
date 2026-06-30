@@ -1,7 +1,7 @@
 ---
 title: honey_pricing
 source: includes/honey_pricing.php
-generated: 2026-06-27T07:58:42+02:00
+generated: 2026-06-30T11:13:35+02:00
 type: module
 function_count: 19
 ---
@@ -142,9 +142,11 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_pricing_enrich_warehouse_row {#honey_pricing_enrich_warehouse_row}
 
-**Callers (2):**
+**Callers (4):**
 
 - `api/v1/honey.php`:174 — `static fn (array $r) => honey_pricing_enrich_warehouse_row(honey_warehouse_normalize_cost_row($r)),`
+- `includes/bulk_honey_orders.php`:76 — `? honey_pricing_enrich_warehouse_row(honey_warehouse_normalize_cost_row($row))`
+- `includes/bulk_honey_orders.php`:156 — `$enriched = honey_pricing_enrich_warehouse_row(`
 - `includes/honey_pricing.php`:362 — `return honey_pricing_enrich_warehouse_row($wh);`
 
 ## honey_pricing_role_can_view_cost {#honey_pricing_role_can_view_cost}

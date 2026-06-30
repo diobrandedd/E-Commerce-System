@@ -1,0 +1,71 @@
+-- Phase 51: Bulk honey orders (warehouse B2B, executive costing)
+
+CREATE TABLE IF NOT EXISTS `bulk_honey_orders` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_no` VARCHAR(32) NOT NULL,
+  `customer_name` VARCHAR(160) NOT NULL,
+  `partner_label` VARCHAR(120) NULL,
+  `notes` TEXT NULL,
+  `shipment_date` DATE NULL,
+  `courier` VARCHAR(120) NULL,
+  `tracking_ref` VARCHAR(120) NULL,
+  `status` ENUM('draft','confirmed','voided') NOT NULL DEFAULT 'draft',
+  `total_gallons` DECIMAL(12,3) NOT NULL DEFAULT 0.000,
+  `total_cogs` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  `total_revenue` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  `total_margin` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  `margin_pct` DECIMAL(8,4) NULL,
+  `created_by` INT UNSIGNED NOT NULL,
+  `confirmed_by` INT UNSIGNED NULL,
+  `confirmed_at` DATETIME NULL,
+  `voided_by` INT UNSIGNED NULL,
+  `voided_at` DATETIME NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_bulk_honey_orders_no` (`order_no`),
+  KEY `idx_bulk_honey_orders_status` (`status`),
+  KEY `idx_bulk_honey_orders_created` (`created_at`),
+  CONSTRAINT `fk_bulk_honey_orders_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_bulk_honey_orders_confirmed_by` FOREIGN KEY (`confirmed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_bulk_honey_orders_voided_by` FOREIGN KEY (`voided_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `bulk_honey_order_lines` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_id` INT UNSIGNED NOT NULL,
+  `line_sort` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  `variant` ENUM('light','amber','dark') NOT NULL,
+  `qty_gallons` DECIMAL(12,3) NOT NULL,
+  `unit_sale_price` DECIMAL(14,4) NOT NULL DEFAULT 0.0000,
+  `line_cogs` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  `cogs_per_gallon` DECIMAL(14,4) NOT NULL DEFAULT 0.0000,
+  `line_revenue` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  `line_margin` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  `line_margin_pct` DECIMAL(8,4) NULL,
+  `negotiation_mode` ENUM('margin_pct','unit_price','total_price') NULL,
+  `target_margin_pct` DECIMAL(8,4) NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_bulk_honey_lines_order` (`order_id`),
+  CONSTRAINT `fk_bulk_honey_lines_order` FOREIGN KEY (`order_id`) REFERENCES `bulk_honey_orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `bulk_honey_order_allocations` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_id` INT UNSIGNED NOT NULL,
+  `line_id` INT UNSIGNED NOT NULL,
+  `warehouse_row_id` INT UNSIGNED NOT NULL,
+  `supplier_code` VARCHAR(48) NOT NULL,
+  `variant` ENUM('light','amber','dark') NOT NULL,
+  `qty_gallons` DECIMAL(12,3) NOT NULL,
+  `unit_cost_per_gallon` DECIMAL(14,4) NULL,
+  `line_cogs_slice` DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+  PRIMARY KEY (`id`),
+  KEY `idx_bulk_honey_alloc_order` (`order_id`),
+  KEY `idx_bulk_honey_alloc_line` (`line_id`),
+  KEY `idx_bulk_honey_alloc_wh` (`warehouse_row_id`),
+  KEY `idx_bulk_honey_alloc_supplier` (`supplier_code`),
+  CONSTRAINT `fk_bulk_honey_alloc_order` FOREIGN KEY (`order_id`) REFERENCES `bulk_honey_orders` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bulk_honey_alloc_line` FOREIGN KEY (`line_id`) REFERENCES `bulk_honey_order_lines` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bulk_honey_alloc_wh` FOREIGN KEY (`warehouse_row_id`) REFERENCES `honey_warehouse_rows` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

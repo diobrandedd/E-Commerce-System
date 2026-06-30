@@ -605,3 +605,7 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-06-19 — VIP 3L `1 amber 2dark` → ADD parser
 - **What we did:** `normalizeVariantCountText()` splits glued count+color tokens; `1 amber 2dark` resolves to **ADD** instead of wrong **AAA**.
 - **Fix note:** [[problems/fixes/vip-spx-order-remarks-parser-guards]] §8
+
+### 2026-06-30 — Bulk honey orders (warehouse B2B)
+- **What we did:** Executive Bulk orders tab — supplier-code picks, COGS negotiation, draft → confirm deduct → void.
+- **Record:** [[problems/records/2026-06-30_bulk-honey-orders]]

@@ -1,7 +1,7 @@
 ---
 title: catalog_bootstrap
 source: includes/catalog_bootstrap.php
-generated: 2026-06-27T07:58:29+02:00
+generated: 2026-06-30T11:13:26+02:00
 type: module
 function_count: 8
 ---
@@ -22,7 +22,7 @@ function_count: 8
 **Callers (2):**
 
 - `includes/catalog_bootstrap.php`:120 — `$bottleName = catalog_honey_bottle_stock_name($productSize);`
-- `includes/honey_inventory.php`:412 — `$bottleName = catalog_honey_bottle_stock_name($size);`
+- `includes/honey_inventory.php`:459 — `$bottleName = catalog_honey_bottle_stock_name($size);`
 
 ## catalog_honey_raw_stock_name {#catalog_honey_raw_stock_name}
 

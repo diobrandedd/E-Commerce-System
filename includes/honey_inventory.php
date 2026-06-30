@@ -272,6 +272,53 @@ function honey_warehouse_stock_out(PDO $pdo, int $userId, int $warehouseRowId, f
 }
 
 /**
+ * Bulk B2B sale: deduct warehouse gallons only (no production row).
+ *
+ * @return array{warehouse_row_id:int, qty:float, supplier_code:string}
+ */
+function honey_warehouse_bulk_deduct(PDO $pdo, int $warehouseRowId, float $qty): array
+{
+    $wh = honey_fetch_warehouse($pdo, $warehouseRowId);
+    if (!$wh) {
+        throw new RuntimeException('Warehouse row not found.');
+    }
+    if ($qty <= 0) {
+        throw new RuntimeException('Quantity must be positive.');
+    }
+    $upd = $pdo->prepare(
+        'UPDATE honey_warehouse_rows SET current_qty = current_qty - ? WHERE id = ? AND current_qty >= ?'
+    );
+    $upd->execute([$qty, $warehouseRowId, $qty]);
+    if ($upd->rowCount() < 1) {
+        $code = (string) ($wh['supplier_code'] ?? '');
+        throw new RuntimeException(
+            "Not enough warehouse stock for supplier code {$code} (need {$qty} gal)."
+        );
+    }
+
+    return [
+        'warehouse_row_id' => $warehouseRowId,
+        'qty' => $qty,
+        'supplier_code' => (string) ($wh['supplier_code'] ?? ''),
+    ];
+}
+
+/**
+ * Restore warehouse gallons (bulk order void).
+ */
+function honey_warehouse_bulk_restore(PDO $pdo, int $warehouseRowId, float $qty): void
+{
+    if ($qty <= 0) {
+        throw new RuntimeException('Quantity must be positive.');
+    }
+    $upd = $pdo->prepare('UPDATE honey_warehouse_rows SET current_qty = current_qty + ? WHERE id = ?');
+    $upd->execute([$qty, $warehouseRowId]);
+    if ($upd->rowCount() < 1) {
+        throw new RuntimeException('Could not restore warehouse quantity.');
+    }
+}
+
+/**
  * Move bottled product from production to packaging.
  * Gallons deducted = auto from bottle line volumes. One packaging row per production row.
  *

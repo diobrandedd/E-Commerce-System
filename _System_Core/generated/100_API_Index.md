@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-06-27T07:58:27+02:00
+generated: 2026-06-30T11:13:23+02:00
 type: memory-bank
 ---
 
@@ -48,6 +48,25 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pos_login` | `api_auth_pos_login()` | `ims_login_pos()`, `rts_forwarding_api_payload()` |
 | `logout` | `api_auth_logout()` | `ims_logout()` |
 | `change_password` | `api_auth_change_password()` | `ims_change_password()` |
+
+### `bulk_orders.php`
+
+- **Path:** `api/v1/bulk_orders.php`
+- **URL:** `/rts/api/v1/bulk_orders.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/bulk_honey_orders.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `list` | `api_bulk_orders_list()` | `ims_pdo()`, `bulk_honey_orders_table_exists()`, `bulk_honey_orders_list()` |
+| `get` | `api_bulk_orders_get()` | `bulk_honey_order_get()`, `ims_pdo()` |
+| `warehouse_rows` | `api_bulk_orders_warehouse_rows()` | `bulk_honey_warehouse_rows_for_variant()`, `ims_pdo()` |
+| `suggest_allocations` | `api_bulk_orders_suggest_allocations()` | `bulk_honey_suggest_fifo_allocations()`, `ims_pdo()` |
+| `preview_cost` | `api_bulk_orders_preview_cost()` | `bulk_honey_preview_cost()`, `ims_pdo()` |
+| `create` | `api_bulk_orders_create()` | `bulk_honey_save_draft()`, `ims_pdo()` |
+| `update` | `api_bulk_orders_update()` | `bulk_honey_save_draft()`, `ims_pdo()` |
+| `confirm` | `api_bulk_orders_confirm()` | `bulk_honey_order_confirm()`, `ims_pdo()` |
+| `void` | `api_bulk_orders_void()` | `bulk_honey_order_void()`, `ims_pdo()` |
+| `delete` | `api_bulk_orders_delete()` | `bulk_honey_order_delete_draft()`, `ims_pdo()` |
 
 ### `costing.php`
 

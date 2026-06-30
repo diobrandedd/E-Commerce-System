@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-06-27T07:58:27+02:00
+generated: 2026-06-30T11:13:23+02:00
 type: memory-bank
-table_count: 56
+table_count: 59
 ---
 
 
@@ -618,6 +618,34 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_case_replace_line_items]] |
 
+## `bulk_honey_orders`
+
+| File | Function |
+|------|----------|
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_next_order_no]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_save_draft]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_order_confirm]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_order_void]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_order_delete_draft]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_order_get]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_orders_list]] |
+
+## `bulk_honey_order_lines`
+
+| File | Function |
+|------|----------|
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_save_draft]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_order_get]] |
+
+## `bulk_honey_order_allocations`
+
+| File | Function |
+|------|----------|
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_save_draft]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_order_confirm]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_order_void]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_order_get]] |
+
 ## `pos_sales`
 
 | File | Function |
@@ -658,9 +686,12 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `api/v1/honey.php` | [[modules/honey#api_honey_warehouse_list]] |
+| `includes/bulk_honey_orders.php` | [[modules/bulk_honey_orders#bulk_honey_warehouse_rows_for_variant]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_warehouse]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_warehouse_stock_in]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_warehouse_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_warehouse_bulk_deduct]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_warehouse_bulk_restore]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_traceability]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
