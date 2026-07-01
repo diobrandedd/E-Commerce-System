@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-07-01T06:18:25+02:00
+generated: 2026-07-01T09:42:23+02:00
 type: spa
 ---
 
@@ -70,6 +70,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/exec/SuppliersPage.tsx`
 - `app/src/app/pages/fulfillment/OnlineParcelsPage.tsx`
 - `app/src/app/pages/fulfillment/PackingMaterialsStagingPage.tsx`
+- `app/src/app/pages/fulfillment/PartnerSoldReconcilePage.tsx`
 - `app/src/app/pages/honey/HoneyPackagingPage.tsx`
 - `app/src/app/pages/honey/HoneyProductionPage.tsx`
 - `app/src/app/pages/honey/HoneyWarehousePage.tsx`

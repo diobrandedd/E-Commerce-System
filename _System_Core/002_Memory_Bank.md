@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-07-01 — [[problems/records/2026-07-01_partner-sold-list-reconcile|Partner sold list reconciliation]]
+**Shipped:** Order management nav; upload partner sold Excel; match shipped parcels by partner + order no; green/red highlight export.
+
 ### 2026-06-19 — [[problems/records/2026-06-19_vip-arranger-merger|VIP Excel arranger + merger two-tool workflow]]
 **Shipped:** VIP order list → carousel → arranged stash; tracking export merge (Parcel Name ↔ Order Number / Customer Reference) → iPYX.
 

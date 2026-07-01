@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-07-01T06:17:57+02:00
+generated: 2026-07-01T09:41:49+02:00
 type: memory-bank
 ---
 
@@ -292,6 +292,18 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `filter_options` | `api_parcels_filter_options()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_filter_options()` |
 | `export` | `api_parcels_export()` | `online_parcels_export_selected()`, `ims_pdo()` |
 | `export_download` | `api_parcels_export_download()` | `online_orders_serve_download()` |
+
+### `partner_sold_reconcile.php`
+
+- **Path:** `api/v1/partner_sold_reconcile.php`
+- **URL:** `/rts/api/v1/partner_sold_reconcile.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/partner_sold_reconcile.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `stash` | `api_partner_sold_stash()` | `partner_sold_require_access()`, `partner_sold_stash_upload()` |
+| `reconcile` | `api_partner_sold_reconcile()` | `partner_sold_require_access()`, `partner_sold_reconcile()`, `ims_pdo()` |
+| `download` | `api_partner_sold_download()` | `partner_sold_serve_download()` |
 
 ### `pdf_to_excel.php`
 

@@ -1,7 +1,7 @@
 ---
 title: online_orders_generator
 source: includes/online_orders_generator.php
-generated: 2026-07-01T06:18:14+02:00
+generated: 2026-07-01T09:42:09+02:00
 type: module
 function_count: 44
 ---
@@ -31,10 +31,11 @@ function_count: 44
 
 ## online_orders_normalize_partner_seller {#online_orders_normalize_partner_seller}
 
-**Callers (2):**
+**Callers (3):**
 
 - `includes/online_orders_generator.php`:50 — `$seller = online_orders_normalize_partner_seller($partnerSeller);`
 - `includes/online_orders_generator.php`:541 — `? online_orders_normalize_partner_seller((string) $line['partner_seller'])`
+- `includes/partner_sold_reconcile.php`:293 — `$partnerSeller = online_orders_normalize_partner_seller((string) ($input['partner_seller'] ?? ''));`
 
 ## online_orders_require_partner_seller_for_pipeline {#online_orders_require_partner_seller_for_pipeline}
 
@@ -219,7 +220,7 @@ function_count: 44
 **Callers (8):**
 
 - `api/v1/parcels.php`:166 — `$items = online_orders_normalize_items_display($items);`
-- `includes/online_order_parcels.php`:897 — `$itemsRaw = online_orders_normalize_items_display(trim($itemsRaw));`
+- `includes/online_order_parcels.php`:899 — `$itemsRaw = online_orders_normalize_items_display(trim($itemsRaw));`
 - `includes/online_orders_generator.php`:549 — `online_orders_normalize_items_display($items),`
 - `includes/online_orders_generator.php`:590 — `$items = online_orders_normalize_items_display((string) ($line['items'] ?? ''));`
 - `includes/online_orders_generator.php`:630 — `'items' => online_orders_normalize_items_display($row['items']),`
@@ -349,14 +350,14 @@ function_count: 44
 
 **Callers (2):**
 
-- `includes/online_order_parcels.php`:833 — `$metaJson = online_orders_build_print_workbook_meta($rows);`
+- `includes/online_order_parcels.php`:835 — `$metaJson = online_orders_build_print_workbook_meta($rows);`
 - `includes/online_orders_generator.php`:1164 — `return online_orders_build_print_workbook_meta($dbRows);`
 
 ## online_orders_register_master_download {#online_orders_register_master_download}
 
 **Callers (2):**
 
-- `includes/online_order_parcels.php`:834 — `$token = online_orders_register_master_download($metaJson);`
+- `includes/online_order_parcels.php`:836 — `$token = online_orders_register_master_download($metaJson);`
 - `includes/online_orders_generator.php`:1289 — `$token = online_orders_register_master_download($metaJson);`
 
 ## online_orders_serve_download {#online_orders_serve_download}

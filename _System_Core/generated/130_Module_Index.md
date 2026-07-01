@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-07-01T06:17:58+02:00
+generated: 2026-07-01T09:41:49+02:00
 type: memory-bank
 ---
 
@@ -44,10 +44,11 @@ type: memory-bank
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/labels]] | 3 |
 | [[modules/material_inventory]] | 64 |
-| [[modules/online_order_parcels]] | 26 |
+| [[modules/online_order_parcels]] | 27 |
 | [[modules/online_orders_generator]] | 44 |
 | [[modules/order_remarks]] | 19 |
 | [[modules/parcel_pack_costing]] | 37 |
+| [[modules/partner_sold_reconcile]] | 16 |
 | [[modules/pdf_to_excel]] | 15 |
 | [[modules/pos_discount_requests]] | 10 |
 | [[modules/qr_decode]] | 13 |
