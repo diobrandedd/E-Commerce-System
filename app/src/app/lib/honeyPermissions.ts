@@ -1,7 +1,7 @@
 import type { Role } from "@/app/context/AuthContext";
 
 export function canMutateHoneyInventory(role: Role | undefined): boolean {
-  return role === "prod_manager";
+  return role === "executive" || role === "prod_manager";
 }
 
 export function canExecutiveDirectEdit(role: Role | undefined): boolean {

@@ -5,6 +5,7 @@ import {
   isHoneyBuilderProduct,
   stripHoneySizeTokens,
   normalizeVariantCountText,
+  rawRemarkDeptFlags,
   type BuilderLine,
 } from "@/app/lib/itemLineBuilder";
 
@@ -28,6 +29,8 @@ export interface ParsedRemark {
   needsBuilder?: boolean;
   /** Paragis / Jar Cacao / etc. — CSR must confirm qty in builder */
   needsDeptConfirm?: boolean;
+  /** Cacao + honey bundle — CSR adds honey size/variant via item builder card */
+  needsCacaoHoneyManual?: boolean;
 }
 
 export interface PresetOption {
@@ -142,6 +145,15 @@ export function parseRemarks(raw: string): ParsedRemark {
   else if (/G HONEY|gallon/i.test(r)) product = "gallon";
 
   const interpreted = interpretRawText(r);
+  const rawDept = rawRemarkDeptFlags(r);
+  const needsDeptConfirm = interpreted.needsDeptConfirm || rawDept.needsDeptConfirm;
+  const needsCacaoHoneyManual = interpreted.needsCacaoHoneyManual || rawDept.needsCacaoHoneyManual;
+  const needsBuilder =
+    interpreted.needsBuilder ||
+    interpreted.needsMainPick ||
+    interpreted.needs350Pick ||
+    needsDeptConfirm ||
+    needsCacaoHoneyManual;
 
   if (!/textarea_input|radio_input/i.test(r)) {
     const scanText = r;
@@ -157,8 +169,9 @@ export function parseRemarks(raw: string): ParsedRemark {
       needsEdit: false,
       variantRaw: "",
       builderLines: interpreted.lines,
-      needsBuilder: interpreted.needsBuilder,
-      needsDeptConfirm: interpreted.needsDeptConfirm,
+      needsBuilder,
+      needsDeptConfirm,
+      needsCacaoHoneyManual,
     };
   }
 
@@ -185,8 +198,9 @@ export function parseRemarks(raw: string): ParsedRemark {
     needsEdit: true,
     variantRaw,
     builderLines: interpreted.lines,
-    needsBuilder: interpreted.needsBuilder || interpreted.needsMainPick || interpreted.needs350Pick,
-    needsDeptConfirm: interpreted.needsDeptConfirm,
+    needsBuilder,
+    needsDeptConfirm,
+    needsCacaoHoneyManual,
   };
 }
 
@@ -296,8 +310,18 @@ export function needsFree350Pick(raw: string, _parsed: ParsedRemark): boolean {
 }
 
 export function isAmbiguousRemark(raw: string, parsed: ParsedRemark): boolean {
+  if (parsed.needsCacaoHoneyManual || parsed.needsDeptConfirm) return true;
   if (parsed.needsBuilder) return true;
   return needsMainVariantPick(raw, parsed) || needsFree350Pick(raw, parsed);
+}
+
+function remarkRequiresBuilderSave(parsed: ParsedRemark): boolean {
+  if (parsed.needsCacaoHoneyManual || parsed.needsDeptConfirm) return true;
+  return (
+    parsed.builderLines?.some(
+      l => !isHoneyBuilderProduct(l.product) && l.product !== "other",
+    ) ?? false
+  );
 }
 
 export function getCardSteps(raw: string, parsed: ParsedRemark, resolution?: RowResolution): CardSteps {
@@ -319,14 +343,17 @@ export function getCardSteps(raw: string, parsed: ParsedRemark, resolution?: Row
 
 export function isRowFullyResolved(raw: string, parsed: ParsedRemark, resolution?: RowResolution): boolean {
   if (resolution?.finalRemark) return true;
+
+  // Jar cacao / dept lines and cacao+honey bundles must be saved from the item builder card.
+  if (remarkRequiresBuilderSave(parsed)) return false;
+
   if (parsed.needsBuilder) {
     const invalidHoney = parsed.builderLines?.some(
       l => isHoneyBuilderProduct(l.product) && l.product !== "other" && !builderLineIsValid(l),
     );
     if (invalidHoney) return false;
-    if (parsed.needsDeptConfirm && !resolution?.finalRemark) return false;
     const multiItem = (parsed.builderLines?.length ?? 0) > 1;
-    if (multiItem && !resolution?.finalRemark) return false;
+    if (multiItem) return false;
   }
   if (!isAmbiguousRemark(raw, parsed)) return true;
   const main = resolution?.mainVariant ?? resolveMainVariant(raw, parsed);
@@ -434,6 +461,7 @@ export function finalRemarkForRow(
   resolution?: RowResolution,
 ): string {
   if (resolution?.finalRemark) return resolution.finalRemark;
+  if (remarkRequiresBuilderSave(parsed)) return raw;
   if (resolution && (resolution.mainVariant || resolution.free350Variant)) {
     return buildResolutionFinalRemark(raw, parsed, resolution);
   }
@@ -442,7 +470,7 @@ export function finalRemarkForRow(
   const allBuilderValid = builderLines.every(
     l => !isHoneyBuilderProduct(l.product) || l.product === "other" || builderLineIsValid(l),
   );
-  if (builderLines.length > 1 && allBuilderValid) {
+  if (builderLines.length > 1 && allBuilderValid && !parsed.needsCacaoHoneyManual) {
     return composePackerLine(builderLines);
   }
 
@@ -454,7 +482,7 @@ export function finalRemarkForRow(
     if (main && builderLines.length <= 1) {
       return buildFinalRemark(raw, parsed, main, extract350Variant(raw) ?? undefined);
     }
-    if (allBuilderValid && builderLines.length > 0) {
+    if (allBuilderValid && builderLines.length > 0 && !parsed.needsCacaoHoneyManual) {
       return composePackerLine(builderLines);
     }
     return parsed.clean || raw;
@@ -466,6 +494,7 @@ export type RowCategory = "auto" | "ambiguous" | "passthrough" | "skipped";
 
 export function categorizeRow(raw: string, parsed: ParsedRemark): RowCategory {
   if (!raw?.trim()) return "skipped";
+  if (remarkRequiresBuilderSave(parsed)) return "ambiguous";
   if (isAmbiguousRemark(raw, parsed)) return "ambiguous";
   if (parsed.product === "other" && !parsed.needsEdit && !parsed.needsDeptConfirm) return "passthrough";
   const main = resolveMainVariant(raw, parsed);
@@ -489,6 +518,9 @@ export function productLabel(product: HoneyProduct): string {
 }
 
 export function cardSubtitle(raw: string, parsed: ParsedRemark, steps: CardSteps): string {
+  if (parsed.needsCacaoHoneyManual) {
+    return "Confirm cacao qty, then Add another product for honey size & variant";
+  }
   if (parsed.needsDeptConfirm) return "Confirm product lines and quantities";
   if (steps.showMain) return "Pick variant for main product";
   if (steps.showFree350 && steps.mainLabel) {

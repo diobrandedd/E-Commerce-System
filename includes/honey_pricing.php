@@ -295,24 +295,19 @@ function honey_pricing_save_supplier_prices(PDO $pdo, int $supplierId, array $ro
     return $saved;
 }
 
-/** Re-apply list prices to pending warehouse rows for this supplier. */
+/** Re-apply supplier price list to warehouse rows (skips cost_override). */
 function honey_pricing_reprice_pending_for_supplier(PDO $pdo, int $supplierId, int $userId): int
 {
     $st = $pdo->prepare(
         'SELECT id FROM honey_warehouse_rows
-         WHERE supplier_id = ? AND unit_cost_per_gallon IS NULL AND cost_override = 0'
+         WHERE supplier_id = ? AND cost_override = 0'
     );
     $st->execute([$supplierId]);
     $count = 0;
-    $variantsTouched = [];
     foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $wid) {
         $result = honey_pricing_snapshot_warehouse_row($pdo, (int) $wid);
         if ($result['priced']) {
             $count++;
-            $wh = honey_fetch_warehouse($pdo, (int) $wid);
-            if ($wh) {
-                $variantsTouched[(string) $wh['variant']] = true;
-            }
         }
     }
     honey_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);

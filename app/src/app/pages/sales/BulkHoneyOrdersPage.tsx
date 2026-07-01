@@ -16,7 +16,6 @@ import { Button } from "@/app/components/ui/button";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import {
   AppErrorBanner,
-  AppPressable,
   AppSectionEnter,
   AppSuccessNotice,
   appHoverRow,
@@ -534,6 +533,15 @@ export function BulkHoneyOrdersPage() {
     [lines],
   );
 
+  const saveDraftBlockers = useMemo(() => {
+    const blockers: string[] = [];
+    if (!customerName.trim()) blockers.push("customer name");
+    if (!linesReady) blockers.push("warehouse picks matching line gallons");
+    return blockers;
+  }, [customerName, linesReady]);
+
+  const canSaveDraft = saveDraftBlockers.length === 0;
+
   useEffect(() => {
     if (!formOpen || !linesReady) {
       setPreview({ lines: [], totals: null });
@@ -827,15 +835,26 @@ export function BulkHoneyOrdersPage() {
               />
             </div>
           )}
-          <AppModalFooter className="justify-between">
+          <AppModalFooter className="justify-between flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+            <div className="flex flex-col gap-1 min-w-0">
+              {!canSaveDraft && (
+                <p className="text-xs text-amber-800">
+                  To save: {saveDraftBlockers.join(" · ")}
+                </p>
+              )}
+              {previewError && canSaveDraft && (
+                <p className="text-xs text-amber-800">Fix costing errors above before save will succeed.</p>
+              )}
+            </div>
+            <div className="flex gap-2 justify-end shrink-0">
             <Button type="button" variant="outline" onClick={closeForm} disabled={saveBusy}>
               Cancel
             </Button>
-            <AppPressable
+            <Button
+              type="button"
               onClick={() => void saveDraft()}
-              disabled={saveBusy}
-              className="px-6 py-2.5 rounded-lg font-bold text-white disabled:opacity-50"
-              style={{ background: "#C8900A" }}
+              disabled={saveBusy || !canSaveDraft}
+              className="px-6 font-bold text-white bg-[#C8900A] hover:bg-[#a87808] disabled:opacity-50"
             >
               {saveBusy ? (
                 <Loader2 size={16} className="inline animate-spin mr-1" />
@@ -843,7 +862,8 @@ export function BulkHoneyOrdersPage() {
                 <Save size={16} className="inline mr-1" />
               )}
               Save draft
-            </AppPressable>
+            </Button>
+            </div>
           </AppModalFooter>
         </AppModal>
       </div>
@@ -1360,7 +1380,7 @@ function BulkLineEditor({
               <option value="">Supplier code…</option>
               {whRows.map(r => (
                 <option key={r.warehouse_row_id} value={String(r.warehouse_row_id)}>
-                  {r.supplier_code} — {r.current_qty} gal
+                  {r.supplier_code} — {r.arrival_date} — {r.current_qty} gal
                   {r.unit_cost_per_gallon != null ? ` @ ${peso(r.unit_cost_per_gallon)}` : " (no cost)"}
                 </option>
               ))}

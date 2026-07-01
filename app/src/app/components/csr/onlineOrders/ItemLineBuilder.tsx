@@ -26,6 +26,8 @@ interface ItemLineBuilderProps {
   initialLines?: BuilderLine[];
   packagingStock?: PackagingStockSnapshot | null;
   disabled?: boolean;
+  /** When true (cacao + honey bundles), Save requires at least one valid honey line. */
+  requireHoneyLine?: boolean;
   /** compact = VIP carousel cards; comfortable = parcel modal / wider surfaces */
   density?: "compact" | "comfortable";
   onSave: (packerLine: string, lines: BuilderLine[]) => void;
@@ -95,6 +97,7 @@ export function ItemLineBuilder({
   initialLines,
   packagingStock,
   disabled,
+  requireHoneyLine = false,
   density = "compact",
   onSave,
   onCancel,
@@ -150,10 +153,15 @@ export function ItemLineBuilder({
     });
   }, [lines.length]);
 
-  const canSave = lines.every(l => {
-    if (!isHoneyBuilderProduct(l.product)) return l.qty >= 1;
-    return builderLineIsValid(l);
-  });
+  const hasValidHoneyLine = lines.some(
+    l => isHoneyBuilderProduct(l.product) && l.product !== "other" && builderLineIsValid(l),
+  );
+
+  const canSave =
+    lines.every(l => {
+      if (!isHoneyBuilderProduct(l.product)) return l.qty >= 1;
+      return builderLineIsValid(l);
+    }) && (!requireHoneyLine || hasValidHoneyLine);
 
   const snapshot = packagingStock ?? null;
 
@@ -360,6 +368,11 @@ export function ItemLineBuilder({
         >
           <Plus size={14} /> Add another product
         </AppPressable>
+        {requireHoneyLine && !hasValidHoneyLine && (
+          <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5">
+            This bundle includes honey — use Add another product, pick size (e.g. 250ml) and Light/Amber/Dark.
+          </p>
+        )}
         <Button
           type="button"
           size={comfortable ? "default" : "sm"}

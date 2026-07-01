@@ -76,8 +76,8 @@ export function SupplierHoneyPricesInline({
       onPendingCountChange?.(result.pending_count);
       const msg =
         result.repriced_rows > 0
-          ? `Prices saved. Costing stocks updated; ${result.repriced_rows} pending warehouse row(s) priced.`
-          : "Prices saved. Costing stocks and linked product costs updated.";
+          ? `Prices saved. ${result.repriced_rows} warehouse lot(s) repriced from this list (lots without a matching effective date stay pending).`
+          : "Prices saved. No warehouse lots matched this effective date — check arrival dates on existing lots.";
       setNotice(msg);
       await loadPrices();
     } catch (e) {
@@ -100,7 +100,13 @@ export function SupplierHoneyPricesInline({
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
         <span className="font-semibold text-foreground">{supplierName}</span> — purchase ₱/gallon per variant.
-        Warehouse stock-in uses the rate effective on arrival date.
+        Warehouse stock-in uses the rate whose <strong>effective from</strong> date is on or before that lot&apos;s{" "}
+        <strong>arrival date</strong> (encoded in the supplier code, e.g. EJ070126 = 2026-07-01).
+      </p>
+      <p className="text-xs text-amber-900 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+        If <strong>effective from</strong> is later than a lot&apos;s arrival (e.g. price starts July 1 but the lot
+        arrived May 25), that lot stays <strong>(no cost)</strong> until you add an earlier effective date or set cost
+        on the warehouse row.
       </p>
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 flex gap-2">

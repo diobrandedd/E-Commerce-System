@@ -32,7 +32,7 @@ function honey_role_can_view(string $role): bool
 
 function honey_role_can_mutate(string $role): bool
 {
-    return $role === 'prod_manager';
+    return in_array($role, ['executive', 'prod_manager'], true);
 }
 
 function honey_role_can_executive_edit(string $role): bool

@@ -155,9 +155,53 @@ export function stripHoneySizeTokens(text: string): string {
     .replace(/\bgallon\b/gi, " ");
 }
 
+const CACAO_JAR_COUNT_RE = /(\d+)\s*JARS?\s*(?:FINEST\s*)?CACAO/i;
+const CACAO_LEADING_JAR_RE = /(\d+)\s*JAR\s+(?:FINEST\s+)?CACAO/i;
+const CACAO_SIMPLE_JAR_RE = /\b(\d+)\s*Jar\s+Cacao\b/i;
+
+function isCacaoDeptSegment(segment: string): boolean {
+  return detectDeptProduct(segment) === "jar_cacao";
+}
+
+/** VIP cacao lines: `4JARS FINEST CACAO`, `1JAR … WITH HONEY`, promo Buy 3 + FREE 1. */
+export function extractCacaoJarQty(segment: string, promoText = ""): number {
+  const jars = segment.match(CACAO_JAR_COUNT_RE);
+  if (jars) return Math.max(1, parseInt(jars[1]!, 10));
+
+  const oneJar = segment.match(CACAO_LEADING_JAR_RE);
+  if (oneJar) return Math.max(1, parseInt(oneJar[1]!, 10));
+
+  const simple = segment.match(CACAO_SIMPLE_JAR_RE);
+  if (simple) return Math.max(1, parseInt(simple[1]!, 10));
+
+  const dup = segment.match(/(\d+)\s*JARS?\s*CACAO\s*-\s*\1\s*JARS?\s*CACAO/i);
+  if (dup) return Math.max(1, parseInt(dup[1]!, 10));
+
+  const combined = `${segment} ${promoText}`;
+  const buyFree = combined.match(/BUY\s*(\d+)\s*\+\s*FREE\s*(\d+)/i);
+  if (buyFree) {
+    return Math.max(1, parseInt(buyFree[1]!, 10) + parseInt(buyFree[2]!, 10));
+  }
+  const buyPcs = combined.match(/BUY\s*(\d+)\s*PCS?\s+(?:OF\s+)?(?:FINEST\s+)?CACAO/i);
+  if (buyPcs) return Math.max(1, parseInt(buyPcs[1]!, 10));
+
+  if (DEPT_QTY_LEAD_RE.test(segment.trim())) {
+    return 1;
+  }
+
+  return extractQty(segment);
+}
+
 export function detectDeptProduct(segment: string): DeptProductKey | null {
   const s = segment.toLowerCase();
-  if (/jar\s*cacao|cacao\s*jar|tablea/i.test(s)) return "jar_cacao";
+  if (
+    CACAO_JAR_COUNT_RE.test(s) ||
+    CACAO_LEADING_JAR_RE.test(s) ||
+    CACAO_SIMPLE_JAR_RE.test(segment) ||
+    /jar\s*cacao|cacao\s*jar|finest\s*cacao|cacao\s*tableya|\bcacao\b/i.test(s)
+  ) {
+    return "jar_cacao";
+  }
   if (/paragis|pito[\s-]*pito/i.test(s)) return "pt";
   if (/black\s*rice|brc\b/i.test(s)) return "brc";
   if (/honey\s*comb|honeycomb/i.test(s)) return "honey_comb";
@@ -165,19 +209,51 @@ export function detectDeptProduct(segment: string): DeptProductKey | null {
 }
 
 const DEPT_QTY_LEAD_RE =
-  /^(?:paragis|jar\s*cacao|black\s*rice|honey\s*comb|\bbrc\b|pito[\s-]*pito)/i;
+  /^(?:paragis|\d+\s*jars?\s*(?:finest\s*)?cacao|jar\s*cacao|finest\s*cacao|cacao|black\s*rice|honey\s*comb|\bbrc\b|pito[\s-]*pito)/i;
 const DEPT_QTY_TRAIL_RE =
-  /\b(?:paragis(?:\s*tea)?|jar\s*cacao|black\s*rice\s*coffee|honey\s*comb|\bbrc\b)\s*[x×]\s*(\d+)\s*$/i;
+  /\b(?:paragis(?:\s*tea)?|jar\s*cacao|finest\s*cacao|cacao(?:\s*tableya)?|black\s*rice\s*coffee|honey\s*comb|\bbrc\b)\s*[x×]\s*(\d+)\s*$/i;
+
+function stripCacaoTokens(text: string): string {
+  return text
+    .replace(/\d+\s*jars?\s*(?:finest\s*)?cacao/gi, " ")
+    .replace(/\d+\s*jar\s+(?:finest\s+)?cacao/gi, " ")
+    .replace(/jar\s*cacao/gi, " ")
+    .replace(/finest\s*cacao/gi, " ")
+    .replace(/cacao\s*tableya/gi, " ")
+    .replace(/\bcacao\b/gi, " ");
+}
+
+function extractRadioPromoText(raw: string): string {
+  const parts = raw.match(/radio_input_\d+:\s*([^\n]*)/gi);
+  if (!parts?.length) return "";
+  return parts
+    .map(p => p.replace(/^radio_input_\d+:\s*/i, "").trim())
+    .join(" ");
+}
+
+/** Cacao bundle includes honey — CSR must add honey size + variant in the item builder card. */
+export function detectCacaoHoneyCombo(segment: string, promoText: string): boolean {
+  const blob = `${segment} ${promoText}`;
+  return /with\s*honey|raw\s*honey|\d+\s*ml\s*(?:raw\s*)?honey/i.test(blob);
+}
 
 /** Qty for dept catalog lines — VIP often uses `1 x 2 Paragis Tea` (order prefix + real qty). */
 export function extractDeptQty(segment: string): number {
+  if (isCacaoDeptSegment(segment)) {
+    return extractCacaoJarQty(segment);
+  }
+
   const trail = segment.match(DEPT_QTY_TRAIL_RE);
   if (trail) return Math.max(1, parseInt(trail[1]!, 10));
 
-  const oneXN = segment.match(/^1\s*[x×]\s*(\d+)\s+(?=paragis|jar\s*cacao|black\s*rice|honey\s*comb|\bbrc\b|pito)/i);
+  const oneXN = segment.match(
+    /^1\s*[x×]\s*(\d+)\s+(?=paragis|\d+\s*jars?\s*(?:finest\s*)?cacao|jar\s*cacao|finest\s*cacao|cacao|black\s*rice|honey\s*comb|\bbrc\b|pito)/i,
+  );
   if (oneXN) return Math.max(1, parseInt(oneXN[1]!, 10));
 
-  const lead = segment.match(/^(\d+)\s+(?=paragis|jar\s*cacao|black\s*rice|honey\s*comb|\bbrc\b|pito)/i);
+  const lead = segment.match(
+    /^(\d+)\s+(?=paragis|\d+\s*jars?\s*(?:finest\s*)?cacao|jar\s*cacao|finest\s*cacao|cacao|black\s*rice|honey\s*comb|\bbrc\b|pito)/i,
+  );
   if (lead) return Math.max(1, parseInt(lead[1]!, 10));
 
   if (DEPT_QTY_LEAD_RE.test(segment.trim())) {
@@ -257,6 +333,8 @@ export interface InterpretResult {
   needs350Pick: boolean;
   needsBuilder: boolean;
   needsDeptConfirm: boolean;
+  /** Jar cacao + honey promo — honey line is not auto-filled; card builder required. */
+  needsCacaoHoneyManual: boolean;
   mainProduct: HoneySizeProduct;
 }
 
@@ -364,12 +442,12 @@ function detectVariantsFromText(text: string, size: HoneySizeProduct): string | 
   return null;
 }
 
-function parseSegment(segment: string, variantHint = ""): BuilderLine | null {
+function parseSegment(segment: string, variantHint = "", promoText = ""): BuilderLine | null {
   const dept = detectDeptProduct(segment);
-  if (dept && !/honey/i.test(segment.replace(/jar\s*cacao/i, ""))) {
-    return { product: dept, qty: extractDeptQty(segment) };
+  if (dept === "jar_cacao") {
+    return { product: "jar_cacao", qty: extractCacaoJarQty(segment, promoText) };
   }
-  if (dept && /jar\s*cacao/i.test(segment) && !/honey/i.test(segment)) {
+  if (dept && !/honey/i.test(stripCacaoTokens(segment))) {
     return { product: dept, qty: extractDeptQty(segment) };
   }
 
@@ -414,6 +492,7 @@ export function interpretRawText(raw: string): InterpretResult {
     needs350Pick: false,
     needsBuilder: false,
     needsDeptConfirm: false,
+    needsCacaoHoneyManual: false,
     mainProduct: "other",
   };
   if (!raw?.trim()) return empty;
@@ -422,6 +501,8 @@ export function interpretRawText(raw: string): InterpretResult {
   const m1 = raw.match(/textarea_input_1:\s*([^\n]+)/i);
   if (m1) variantHint = m1[1]!.trim();
 
+  const radioPromo = extractRadioPromoText(raw);
+
   const scanText = raw
     .replace(/<[^>]*>/g, "")
     .replace(/textarea_input_\d+:[^,\n]*/gi, "")
@@ -429,22 +510,26 @@ export function interpretRawText(raw: string): InterpretResult {
 
   const segments = splitItemSegments(scanText);
   const lines: BuilderLine[] = [];
+  let needsCacaoHoneyManual = false;
 
   for (const seg of segments) {
     const deptOnly = detectDeptProduct(seg);
-    const hasHoney = /honey|250\s*ml|350\s*ml|gallon|g\s*honey|B2T1|B1T2|\d\s*L/i.test(seg);
+    if (deptOnly === "jar_cacao") {
+      lines.push({ product: "jar_cacao", qty: extractCacaoJarQty(seg, radioPromo) });
+      if (detectCacaoHoneyCombo(seg, radioPromo)) {
+        needsCacaoHoneyManual = true;
+      }
+      continue;
+    }
+    const hasHoney = /honey|250\s*ml|350\s*ml|gallon|g\s*honey|B2T1|B1T2|\d\s*L/i.test(
+      stripCacaoTokens(seg),
+    );
     if (deptOnly && !hasHoney) {
       lines.push({ product: deptOnly, qty: extractDeptQty(seg) });
       continue;
     }
-    const line = parseSegment(seg, variantHint);
+    const line = parseSegment(seg, variantHint, radioPromo);
     if (line) lines.push(line);
-    if (deptOnly && hasHoney) {
-      const deptQty = seg.match(/(\d+)\s*JAR\s*CACAO/i);
-      if (deptOnly === "jar_cacao" || /jar\s*cacao/i.test(seg)) {
-        lines.push({ product: "jar_cacao", qty: deptQty ? parseInt(deptQty[1]!, 10) : 1 });
-      }
-    }
   }
 
   const mainHoney = lines.find(l => l.product === "3L" || l.product === "2L" || l.product === "1L" || l.product === "gallon");
@@ -470,8 +555,40 @@ export function interpretRawText(raw: string): InterpretResult {
     packerLine,
     needsMainPick,
     needs350Pick,
-    needsBuilder: needsMainPick || needs350Pick || lines.length === 0 || needsDeptConfirm,
+    needsBuilder:
+      needsMainPick ||
+      needs350Pick ||
+      lines.length === 0 ||
+      needsDeptConfirm ||
+      needsCacaoHoneyManual,
     needsDeptConfirm,
+    needsCacaoHoneyManual,
     mainProduct,
   };
+}
+
+/** Scan raw VIP remark for cacao / dept lines (even when structured parse is empty). */
+export function rawRemarkDeptFlags(raw: string): {
+  needsDeptConfirm: boolean;
+  needsCacaoHoneyManual: boolean;
+} {
+  if (!raw?.trim()) {
+    return { needsDeptConfirm: false, needsCacaoHoneyManual: false };
+  }
+  const radioPromo = extractRadioPromoText(raw);
+  const scanText = raw
+    .replace(/<[^>]*>/g, "")
+    .replace(/textarea_input_\d+:[^,\n]*/gi, "")
+    .replace(/radio_input_\d+:[^,\n]*/gi, "");
+  let needsDeptConfirm = false;
+  let needsCacaoHoneyManual = false;
+  for (const seg of splitItemSegments(scanText)) {
+    if (detectDeptProduct(seg) === "jar_cacao") {
+      needsDeptConfirm = true;
+      if (detectCacaoHoneyCombo(seg, radioPromo)) {
+        needsCacaoHoneyManual = true;
+      }
+    }
+  }
+  return { needsDeptConfirm, needsCacaoHoneyManual };
 }

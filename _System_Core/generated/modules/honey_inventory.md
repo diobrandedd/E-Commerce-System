@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-06-30T11:13:32+02:00
+generated: 2026-07-01T06:18:07+02:00
 type: module
 function_count: 41
 ---
@@ -103,7 +103,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `honey_warehouse_rows`
 
-**Callers (12):**
+**Callers (11):**
 
 - `includes/bulk_honey_orders.php`:149 — `$wh = honey_fetch_warehouse($pdo, $wid);`
 - `includes/honey_inventory.php`:234 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
@@ -114,9 +114,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:851 — `$wh = honey_fetch_warehouse($pdo, $rowId);`
 - `includes/honey_inventory.php`:1010 — `$wh = honey_fetch_warehouse($pdo, $rowId);`
 - `includes/honey_pricing.php`:70 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
-- `includes/honey_pricing.php`:312 — `$wh = honey_fetch_warehouse($pdo, (int) $wid);`
-- `includes/honey_pricing.php`:344 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
-- `includes/honey_pricing.php`:357 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
+- `includes/honey_pricing.php`:339 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
+- `includes/honey_pricing.php`:352 — `$wh = honey_fetch_warehouse($pdo, $warehouseRowId);`
 
 ## honey_fetch_production {#honey_fetch_production}
 

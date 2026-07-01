@@ -37,6 +37,8 @@ interface NavItem {
   icon: React.ElementType;
   label: string;
   to: string;
+  /** When true, only highlight on exact path match (not child routes). */
+  end?: boolean;
   badge?: number;
   children?: NavChild[];
 }
@@ -188,7 +190,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         inventoryNav,
-        { icon: ShoppingBag, label: "Sales", to: "/sales" },
+        { icon: ShoppingBag, label: "Sales", to: "/sales", end: true },
         { icon: Package, label: "Bulk orders", to: "/sales/bulk-orders" },
         onlineOrdersItem,
         onlineParcelsItem,
@@ -209,7 +211,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
         inventoryNav,
         requestsNav(),
         { icon: BarChart2, label: "Reports", to: "/reports" },
-        { icon: ShoppingBag, label: "Sales", to: "/sales" },
+        { icon: ShoppingBag, label: "Sales", to: "/sales", end: true },
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
         forPackingItem,
         deliveriesItem,
@@ -533,7 +535,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 <div key={`nav-sep-${index}`} className="my-2 mx-3 border-t border-white/10" aria-hidden />
               );
             }
-            const { icon: Icon, label, to, children, badge } = entry;
+            const { icon: Icon, label, to, children, badge, end } = entry;
             if (children) {
               const isExpanded = expandedGroups.has(label);
               return (
@@ -566,6 +568,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <NavLink
                 key={to}
                 to={to}
+                end={end}
                 onClick={onClose}
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 cursor-pointer ${

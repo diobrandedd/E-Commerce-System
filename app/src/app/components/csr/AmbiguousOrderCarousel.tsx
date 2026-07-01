@@ -192,6 +192,7 @@ function OrderCard({
             initialLines={parsed.builderLines}
             packagingStock={packagingStock}
             disabled={disabled}
+            requireHoneyLine={parsed.needsCacaoHoneyManual}
             onSave={handleBuilderSave}
             onCancel={() => setShowBuilder(false)}
           />
@@ -222,7 +223,7 @@ function OrderCard({
             disabled={disabled}
             onClick={() => {
               onClearResolution();
-              setShowBuilder(false);
+              setShowBuilder(true);
             }}
             className="w-full text-xs font-medium py-1.5 rounded-lg border border-border flex items-center justify-center gap-1 hover:bg-muted/40"
           >
