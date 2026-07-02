@@ -23,7 +23,7 @@ function rts_pdo(): PDO
     $port = (int) ($c['port'] ?? 3306);
     $requestPort = (string) ($_SERVER['SERVER_PORT'] ?? '');
     $prodDbName = 'rts_system';
-    $devDbName = '[PUT_YOUR_NEW_DEV_DB_NAME_HERE]';
+    $devDbName = 'rts_development';
     $name = $requestPort === '8080' ? $devDbName : $prodDbName;
     $user = $c['user'] ?? 'root';
     $pass = $c['pass'] ?? '';
