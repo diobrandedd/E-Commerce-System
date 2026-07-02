@@ -1,7 +1,7 @@
 ---
 title: ims_exec_sidebar
 source: includes/ims_exec_sidebar.php
-generated: 2026-07-01T06:18:11+02:00
+generated: 2026-07-02T11:42:08+02:00
 type: module
 function_count: 1
 ---

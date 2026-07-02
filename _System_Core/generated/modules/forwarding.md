@@ -1,7 +1,7 @@
 ---
 title: forwarding
 source: includes/forwarding.php
-generated: 2026-07-01T06:18:05+02:00
+generated: 2026-07-02T11:42:03+02:00
 type: module
 function_count: 15
 ---
@@ -102,7 +102,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/db.php`:46 — `rts_forwarding_maybe_redirect();`
+- `includes/db.php`:49 — `rts_forwarding_maybe_redirect();`
 - `includes/forwarding.php`:182 — `* Prefer rts_forwarding_maybe_redirect() in PHP; this covers edge cases before PHP runs.`
 
 ## rts_forwarding_head_script {#rts_forwarding_head_script}

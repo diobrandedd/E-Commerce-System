@@ -21,7 +21,10 @@ function rts_pdo(): PDO
     $c = rts_config()['db'] ?? [];
     $host = $c['host'] ?? '127.0.0.1';
     $port = (int) ($c['port'] ?? 3306);
-    $name = $c['name'] ?? 'rts_db';
+    $requestPort = (string) ($_SERVER['SERVER_PORT'] ?? '');
+    $prodDbName = 'rts_system';
+    $devDbName = '[PUT_YOUR_NEW_DEV_DB_NAME_HERE]';
+    $name = $requestPort === '8080' ? $devDbName : $prodDbName;
     $user = $c['user'] ?? 'root';
     $pass = $c['pass'] ?? '';
     $charset = $c['charset'] ?? 'utf8mb4';

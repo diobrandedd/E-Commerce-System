@@ -4,6 +4,8 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-07-02 — [[problems/records/2026-07-02_db-port-based-auto-toggle|DB port-based auto toggle]]
+
 ### 2026-06-19 — [[problems/records/2026-06-19_vip-arranger-merger|VIP Excel arranger + merger two-tool workflow]]
 **Shipped:** VIP order list → carousel → arranged stash; tracking export merge (Parcel Name ↔ Order Number / Customer Reference) → iPYX.
 

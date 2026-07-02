@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-07-01T06:18:01+02:00
+generated: 2026-07-02T11:42:00+02:00
 type: module
 function_count: 3
 ---
@@ -38,7 +38,7 @@ function_count: 3
 - `includes/auth.php`:180 — `$pdo = rts_pdo();`
 - `includes/auth.php`:251 — `$pdo = rts_pdo();`
 - `includes/auth.php`:311 — `$pdo = rts_pdo();`
-- `includes/db.php`:42 — `return rts_pdo();`
+- `includes/db.php`:45 — `return rts_pdo();`
 - `sp_sort/api/complete.php`:10 — `$pdo = rts_pdo();`
 - `sp_sort/api/export.php`:8 — `$pdo = rts_pdo();`
 - `sp_sort/batches.php`:7 — `$pdo = rts_pdo();`
