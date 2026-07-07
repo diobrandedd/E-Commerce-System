@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-07-02T11:41:57+02:00
+generated: 2026-07-07T06:11:36+02:00
 type: memory-bank
 ---
 
@@ -21,7 +21,7 @@ type: memory-bank
 | [[modules/catalog_bootstrap]] | 8 |
 | [[modules/courier_detect]] | 1 |
 | [[modules/dashboard_inventory]] | 6 |
-| [[modules/db]] | 3 |
+| [[modules/db]] | 4 |
 | [[modules/deliveries_review_nav]] | 2 |
 | [[modules/deliveries_upload]] | 3 |
 | [[modules/delivery_duplicates]] | 1 |

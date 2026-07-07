@@ -4,6 +4,7 @@ import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModa
 import { PageLayout } from "@/app/components/PageLayout";
 import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
+import { HoneyStockStatusBadge } from "@/app/components/honey/HoneyStockStatusBadge";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
 import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
@@ -76,6 +77,7 @@ export function HoneyWarehousePage() {
                   "Arrival",
                   "Variant",
                   "Qty",
+                  "Status",
                   canMutate || canExecEdit ? "Actions" : "",
                 ]
                   .filter(Boolean)
@@ -87,7 +89,7 @@ export function HoneyWarehousePage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={canMutate || canExecEdit ? 5 : 4} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={canMutate || canExecEdit ? 6 : 5} className="px-4 py-8 text-center text-muted-foreground">
                     <Loader2 className="inline animate-spin" size={14} />
                   </td>
                 </tr>
@@ -106,6 +108,9 @@ export function HoneyWarehousePage() {
                     <td className="px-4 py-3 capitalize">{r.variant}</td>
                     <td className="px-4 py-3">
                       <QtyCounter current={r.current_qty} initial={r.initial_qty} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />
                     </td>
                     {(canMutate || canExecEdit) && (
                       <td className="px-4 py-3 space-x-2">

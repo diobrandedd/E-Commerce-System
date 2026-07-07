@@ -1,9 +1,9 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-07-02T11:42:00+02:00
+generated: 2026-07-07T06:11:39+02:00
 type: module
-function_count: 3
+function_count: 4
 ---
 
 
@@ -21,8 +21,14 @@ function_count: 3
 
 **Callers (2):**
 
-- `includes/db.php`:21 — `$c = rts_config()['db'] ?? [];`
+- `includes/db.php`:50 — `$c = rts_config()['db'] ?? [];`
 - `includes/rts_storage.php`:21 — `$cfg = rts_config()['storage'] ?? [];`
+
+## rts_runtime_db_name {#rts_runtime_db_name}
+
+**Callers (1):**
+
+- `includes/db.php`:46 — `$name = rts_runtime_db_name();`
 
 ## rts_pdo {#rts_pdo}
 
@@ -38,7 +44,7 @@ function_count: 3
 - `includes/auth.php`:180 — `$pdo = rts_pdo();`
 - `includes/auth.php`:251 — `$pdo = rts_pdo();`
 - `includes/auth.php`:311 — `$pdo = rts_pdo();`
-- `includes/db.php`:45 — `return rts_pdo();`
+- `includes/db.php`:71 — `return rts_pdo();`
 - `sp_sort/api/complete.php`:10 — `$pdo = rts_pdo();`
 - `sp_sort/api/export.php`:8 — `$pdo = rts_pdo();`
 - `sp_sort/batches.php`:7 — `$pdo = rts_pdo();`

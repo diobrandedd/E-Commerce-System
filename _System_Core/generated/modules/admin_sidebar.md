@@ -1,7 +1,7 @@
 ---
 title: admin_sidebar
 source: includes/admin_sidebar.php
-generated: 2026-07-02T11:41:57+02:00
+generated: 2026-07-07T06:11:36+02:00
 type: module
 function_count: 3
 ---

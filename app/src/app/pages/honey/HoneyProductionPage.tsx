@@ -3,6 +3,7 @@ import { Copy, Loader2, Check } from "lucide-react";
 import { AppModal, AppModalBody } from "@/app/components/AppModal";
 import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
+import { HoneyStockStatusBadge } from "@/app/components/honey/HoneyStockStatusBadge";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
 import { PageLayout } from "@/app/components/PageLayout";
 import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
@@ -78,7 +79,7 @@ export function HoneyProductionPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-secondary/40">
-              {["Supplier code", "From WH", "Variant", "Gallon/s", canMutate || canExecEdit ? "" : null].filter(Boolean).map(h => (
+              {["Supplier code", "From WH", "Variant", "Gallon/s", "Status", canMutate || canExecEdit ? "" : null].filter(Boolean).map(h => (
                 <th key={h!} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
                   {h}
                 </th>
@@ -88,7 +89,7 @@ export function HoneyProductionPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} className="py-8 text-center">
+                <td colSpan={canMutate || canExecEdit ? 6 : 5} className="py-8 text-center">
                   <Loader2 className="inline animate-spin" size={14} />
                 </td>
               </tr>
@@ -106,6 +107,9 @@ export function HoneyProductionPage() {
                 <td className="px-4 py-3 capitalize">{r.variant}</td>
                 <td className="px-4 py-3">
                   <QtyCounter current={r.current_qty} initial={r.initial_qty} />
+                </td>
+                <td className="px-4 py-3">
+                  <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />
                 </td>
                 {(canMutate || canExecEdit) && (
                   <td className="px-4 py-3 space-x-2">
