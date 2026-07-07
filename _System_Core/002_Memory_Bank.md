@@ -611,3 +611,7 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-06-30 — Bulk honey orders (warehouse B2B)
 - **What we did:** Executive Bulk orders tab — supplier-code picks, COGS negotiation, draft → confirm deduct → void.
 - **Record:** [[problems/records/2026-06-30_bulk-honey-orders]]
+
+### 2026-07-07 — Courier reports module (summary + pie + filters)
+- **What we did:** Added `reports.php?action=courier_summary` with exclusive date range/month/year filters and optional parcel status; replaced Reports chart block with courier summary cards and courier distribution pie tooltip (count + percentage).
+- **Record:** [[problems/records/2026-07-07_courier-reports-module]]

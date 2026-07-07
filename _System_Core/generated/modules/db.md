@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-07-07T06:11:39+02:00
+generated: 2026-07-07T10:08:05+02:00
 type: module
 function_count: 4
 ---
@@ -62,7 +62,7 @@ function_count: 4
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (204):**
+**Callers (205):**
 
 - `api/v1/_bootstrap.php`:176 — `$pdo = ims_pdo();`
 - `api/v1/ar.php`:33 — `api_ok(['products' => ar_credits_sellable_products(ims_pdo())]);`
@@ -89,5 +89,5 @@ function_count: 4
 - `api/v1/costing.php`:331 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:363 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:489 — `$pdo = ims_pdo();`
-- _… and 179 more (run impact.php for full list)_
+- _… and 180 more (run impact.php for full list)_
 

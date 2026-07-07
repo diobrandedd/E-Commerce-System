@@ -18,6 +18,7 @@ require_once __DIR__ . '/_bootstrap.php';
 api_dispatch([
     'stock_movement' => 'api_reports_stock_movement',
     'dept_summary' => 'api_reports_dept_summary',
+    'courier_summary' => 'api_reports_courier_summary',
 ]);
 
 function api_reports_require(): void
@@ -155,4 +156,129 @@ function api_reports_dept_summary(): void
     }
     unset($r);
     api_ok(['rows' => $rows]);
+}
+
+function api_reports_courier_summary(): void
+{
+    api_method_allowed(['GET']);
+    api_reports_require();
+    $pdo = ims_pdo();
+
+    $filterMode = (string) ($_GET['filter_mode'] ?? 'month');
+    if (!in_array($filterMode, ['date_range', 'month', 'year'], true)) {
+        $filterMode = 'month';
+    }
+
+    $allowedStatuses = ['packing', 'shipped', 'on_hold', 'cancelled', 'returned', 'rts'];
+    $status = trim((string) ($_GET['status'] ?? ''));
+    if ($status !== '' && !in_array($status, $allowedStatuses, true)) {
+        $status = '';
+    }
+
+    $where = ['1=1'];
+    $params = [];
+
+    if ($status !== '') {
+        $where[] = 'status = ?';
+        $params[] = $status;
+    }
+
+    if ($filterMode === 'date_range') {
+        $dateFrom = trim((string) ($_GET['date_from'] ?? ''));
+        $dateTo = trim((string) ($_GET['date_to'] ?? ''));
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+            $where[] = 'created_at >= ?';
+            $params[] = $dateFrom . ' 00:00:00';
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+            $where[] = 'created_at <= ?';
+            $params[] = $dateTo . ' 23:59:59';
+        }
+    } elseif ($filterMode === 'year') {
+        $year = trim((string) ($_GET['year'] ?? date('Y')));
+        if (!preg_match('/^\d{4}$/', $year)) {
+            $year = date('Y');
+        }
+        $where[] = 'YEAR(created_at) = ?';
+        $params[] = (int) $year;
+    } else {
+        $month = trim((string) ($_GET['month'] ?? date('Y-m')));
+        if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
+            $month = date('Y-m');
+        }
+        $where[] = "DATE_FORMAT(created_at, '%Y-%m') = ?";
+        $params[] = $month;
+    }
+
+    $counts = [
+        'jnt' => 0,
+        'spx' => 0,
+        'flash' => 0,
+    ];
+
+    try {
+        $sql = 'SELECT courier, COUNT(*) AS c
+                FROM online_order_parcels
+                WHERE ' . implode(' AND ', $where) . '
+                GROUP BY courier';
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
+        $rows = $st->fetchAll();
+        foreach ($rows as $row) {
+            $bucket = api_reports_courier_bucket((string) ($row['courier'] ?? ''));
+            if ($bucket === null) {
+                continue;
+            }
+            $counts[$bucket] += (int) ($row['c'] ?? 0);
+        }
+    } catch (Throwable) {
+        // table missing / migration pending
+    }
+
+    $total = $counts['jnt'] + $counts['spx'] + $counts['flash'];
+    $chartRaw = [
+        ['key' => 'jnt', 'name' => 'J&T Express', 'count' => $counts['jnt']],
+        ['key' => 'spx', 'name' => 'SPX Express', 'count' => $counts['spx']],
+        ['key' => 'flash', 'name' => 'Flash Express', 'count' => $counts['flash']],
+    ];
+    $chart = [];
+    foreach ($chartRaw as $entry) {
+        $count = (int) $entry['count'];
+        $chart[] = [
+            'key' => $entry['key'],
+            'name' => $entry['name'],
+            'count' => $count,
+            'percent' => $total > 0 ? round(($count / $total) * 100, 2) : 0.0,
+        ];
+    }
+
+    api_ok([
+        'filter_mode' => $filterMode,
+        'status' => $status,
+        'total_shipments' => $total,
+        'counts' => $counts,
+        'chart' => $chart,
+    ]);
+}
+
+function api_reports_courier_bucket(string $courier): ?string
+{
+    $c = strtoupper(trim($courier));
+    if ($c === '') {
+        return null;
+    }
+    if (str_contains($c, 'SPX')) {
+        return 'spx';
+    }
+    if (str_contains($c, 'FLASH')) {
+        return 'flash';
+    }
+    if (
+        str_contains($c, 'J&T') ||
+        str_contains($c, 'JNT') ||
+        str_contains($c, 'J&T EXPRESS')
+    ) {
+        return 'jnt';
+    }
+    return null;
 }
