@@ -26,6 +26,26 @@ interface CourierSummaryPayload {
   chart: CourierChartRow[];
 }
 
+interface PipelineChartRow {
+  key: "partner" | "vip" | "shopee_spx" | "tiktok";
+  name: string;
+  count: number;
+  percent: number;
+}
+
+interface PipelineSummaryPayload {
+  filter_mode: CourierFilterMode;
+  status: string;
+  total_shipments: number;
+  counts: {
+    partner: number;
+    vip: number;
+    shopee_spx: number;
+    tiktok: number;
+  };
+  chart: PipelineChartRow[];
+}
+
 interface DeptSummaryRow {
   dept_id: number;
   dept_name: string;
@@ -39,6 +59,13 @@ const COURIER_COLORS: Record<"jnt" | "spx" | "flash", string> = {
   jnt: "#C8900A",
   spx: "#3366CC",
   flash: "#F97316",
+};
+
+const PIPELINE_COLORS: Record<"partner" | "vip" | "shopee_spx" | "tiktok", string> = {
+  partner: "#7C3AED",
+  vip: "#0891B2",
+  shopee_spx: "#EA580C",
+  tiktok: "#16A34A",
 };
 
 const STATUS_OPTIONS: Array<{ value: "" | ParcelStatus; label: string }> = [
@@ -73,6 +100,18 @@ const CourierTooltip = ({ active, payload }: { active?: boolean; payload?: Array
   );
 };
 
+const PipelineTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: PipelineChartRow }> }) => {
+  if (!active || !payload || payload.length === 0) return null;
+  const row = payload[0].payload;
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-sm">
+      <p className="font-semibold text-foreground">{row.name}</p>
+      <p className="text-muted-foreground">Shipments: {row.count.toLocaleString()}</p>
+      <p className="text-muted-foreground">Percentage: {pctLabel(row.percent)}</p>
+    </div>
+  );
+};
+
 export function ReportsPage() {
   const [filterMode, setFilterMode] = useState<CourierFilterMode>("month");
   const [dateFrom, setDateFrom] = useState(defaultDateFrom);
@@ -81,6 +120,7 @@ export function ReportsPage() {
   const [year, setYear] = useState(defaultYear);
   const [status, setStatus] = useState<"" | ParcelStatus>("");
   const [courierSummary, setCourierSummary] = useState<CourierSummaryPayload | null>(null);
+  const [pipelineSummary, setPipelineSummary] = useState<PipelineSummaryPayload | null>(null);
   const [deptSummary, setDeptSummary] = useState<DeptSummaryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,11 +143,13 @@ export function ReportsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [c, d] = await Promise.all([
+      const [c, p, d] = await Promise.all([
         apiGet<CourierSummaryPayload>("reports.php", "courier_summary", query),
+        apiGet<PipelineSummaryPayload>("reports.php", "pipeline_summary", query),
         apiGet<{ rows: DeptSummaryRow[] }>("reports.php", "dept_summary"),
       ]);
       setCourierSummary(c);
+      setPipelineSummary(p);
       setDeptSummary(d.rows);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load reports.");
@@ -250,6 +292,51 @@ export function ReportsPage() {
                   ))}
                 </Pie>
                 <Tooltip content={<CourierTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border p-6" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="flex items-center gap-2 mb-5">
+            <PieChartIcon size={16} style={{ color: "#C8900A" }} />
+            <h3 className="text-sm font-semibold text-foreground">Shop statistics</h3>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5 mb-5">
+            <SummaryCard label="Total shipments" value={pipelineSummary?.total_shipments ?? 0} />
+            <SummaryCard label="Partners shipments" value={pipelineSummary?.counts.partner ?? 0} />
+            <SummaryCard label="VIP shipments" value={pipelineSummary?.counts.vip ?? 0} />
+            <SummaryCard label="Shopee SPX shipments" value={pipelineSummary?.counts.shopee_spx ?? 0} />
+            <SummaryCard label="TikTok shipments" value={pipelineSummary?.counts.tiktok ?? 0} />
+          </div>
+
+          {loading ? (
+            <div className="h-[320px] flex items-center justify-center text-sm text-muted-foreground">
+              <Loader2 className="animate-spin mr-2" size={14} /> Loading…
+            </div>
+          ) : !pipelineSummary || pipelineSummary.total_shipments <= 0 ? (
+            <div className="h-[320px] flex items-center justify-center text-sm text-muted-foreground">
+              No pipeline shipments for the selected filters.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie
+                  data={pipelineSummary.chart}
+                  dataKey="count"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={110}
+                  label={entry => `${entry.name}: ${pctLabel(Number(entry.percent ?? 0))}`}
+                >
+                  {pipelineSummary.chart.map(entry => (
+                    <Cell key={entry.key} fill={PIPELINE_COLORS[entry.key]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<PipelineTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
               </PieChart>
             </ResponsiveContainer>
