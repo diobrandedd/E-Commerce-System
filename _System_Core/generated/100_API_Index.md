@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-07-08T05:14:55+02:00
+generated: 2026-07-08T05:40:03+02:00
 type: memory-bank
 ---
 
@@ -348,6 +348,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `stock_movement` | `api_reports_stock_movement()` | `ims_pdo()` |
 | `dept_summary` | `api_reports_dept_summary()` | `ims_pdo()` |
 | `courier_summary` | `api_reports_courier_summary()` | `ims_pdo()` |
+| `pipeline_summary` | `api_reports_pipeline_summary()` | `ims_pdo()` |
 
 ### `rts.php`
 

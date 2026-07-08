@@ -615,3 +615,7 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-07-07 — Courier reports module (summary + pie + filters)
 - **What we did:** Added `reports.php?action=courier_summary` with exclusive date range/month/year filters and optional parcel status; replaced Reports chart block with courier summary cards and courier distribution pie tooltip (count + percentage).
 - **Record:** [[problems/records/2026-07-07_courier-reports-module]]
+
+### 2026-07-07 — Pipeline reports module (summary + pie + shared filters)
+- **What we did:** Added `reports.php?action=pipeline_summary` and a new Pipeline Statistics section below Courier Statistics with summary cards + pie chart (percentage + count tooltip), reusing the same date/status filters and auto-updating on filter changes.
+- **Record:** [[problems/records/2026-07-07_pipeline-reports-module]]

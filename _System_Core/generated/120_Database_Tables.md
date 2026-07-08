@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-07-08T05:14:55+02:00
+generated: 2026-07-08T05:40:03+02:00
 type: memory-bank
 table_count: 59
 ---
@@ -475,6 +475,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_shipped_summary]] |
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_courier_summary]] |
+| `api/v1/reports.php` | [[modules/reports#api_reports_pipeline_summary]] |
 | `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_revert_parcel_to_packing_if_shipped]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_enrich_review_rows]] |
