@@ -10,6 +10,9 @@ require_once __DIR__ . '/rts_storage.php';
 
 /** Max rows per list page (SPA custom input and API). */
 const ONLINE_PARCELS_LIST_MAX_PER_PAGE = 10000;
+
+/** @param array{role:string,dept_id:?int} $user */
+function online_parcels_user_is_csr_dept(array $user): bool
 {
     $deptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
     if ($deptId < 1) {
