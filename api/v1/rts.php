@@ -27,9 +27,12 @@ api_dispatch([
     'legacy_urls' => 'api_rts_legacy_urls',
     'inventory_list' => 'api_rts_inventory_list',
     'inventory_deduct_sell' => 'api_rts_inventory_deduct_sell',
+    'inventory_use_rts' => 'api_rts_inventory_deduct_sell',
+    'inventory_use_log' => 'api_rts_inventory_use_log',
     'inventory_set_honey' => 'api_rts_inventory_set_honey',
     'inventory_set_other' => 'api_rts_inventory_set_other',
     'use_damaged' => 'api_rts_use_damaged',
+    'damaged_use_log' => 'api_rts_damaged_use_log',
     'sync_status' => 'api_rts_sync_status_action',
 ]);
 
@@ -40,7 +43,8 @@ function api_rts_role_allowed(string $role): bool
 
 function api_rts_role_can_mutate(string $role): bool
 {
-    return $role === 'prod_manager';
+    // Use RTS (packing-area deduct) — floor + exec oversight
+    return in_array($role, ['executive', 'prod_manager', 'tl', 'team_leader', 'staff'], true);
 }
 
 function api_rts_role_can_use_damaged(string $role): bool
@@ -189,6 +193,17 @@ function api_rts_use_damaged(): void
     api_ok($result);
 }
 
+function api_rts_damaged_use_log(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    if (!api_rts_role_allowed((string) $user['role'])) {
+        api_fail('Forbidden.', 403);
+    }
+    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 100;
+    api_ok(['rows' => rts_damaged_use_events_list(ims_pdo(), $limit)]);
+}
+
 function api_rts_inventory_deduct_sell(): void
 {
     api_method_allowed(['POST']);
@@ -209,6 +224,10 @@ function api_rts_inventory_deduct_sell(): void
         if (!in_array($pool, ['sellable', 'damaged'], true)) {
             $pool = 'sellable';
         }
+        $useOpts = [
+            'used_where' => 'packaging',
+            'actor_user_id' => (int) $user['id'],
+        ];
 
         if ($honeyVariant !== '') {
             rts_inventory_deduct_sell_honey_variant(
@@ -217,7 +236,8 @@ function api_rts_inventory_deduct_sell(): void
                 $honeyVariant,
                 $sizeQtys,
                 $saleType,
-                $pool
+                $pool,
+                $useOpts
             );
         } elseif ($productLabel !== '') {
             rts_inventory_deduct_sell_other_label(
@@ -226,7 +246,8 @@ function api_rts_inventory_deduct_sell(): void
                 $productLabel,
                 (float) ($qtyOther ?? 0),
                 $saleType,
-                $pool
+                $pool,
+                $useOpts
             );
         } else {
             rts_inventory_deduct_sell(
@@ -235,13 +256,25 @@ function api_rts_inventory_deduct_sell(): void
                 $rowId,
                 $sizeQtys,
                 $qtyOther,
-                $saleType
+                $saleType,
+                $useOpts
             );
         }
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }
-    api_ok(['sold' => true]);
+    api_ok(['sold' => true, 'used' => true]);
+}
+
+function api_rts_inventory_use_log(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    if (!api_rts_role_allowed((string) $user['role'])) {
+        api_fail('Forbidden.', 403);
+    }
+    $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 100;
+    api_ok(['rows' => rts_pool_use_log_list(ims_pdo(), $limit)]);
 }
 
 function api_rts_sync_status_action(): void

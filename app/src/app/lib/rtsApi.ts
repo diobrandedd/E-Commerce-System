@@ -206,8 +206,24 @@ export function rtsListDamagedInventory() {
     honey: Record<string, string>[];
     other: Record<string, string>[];
     can_use_damaged: boolean;
+    can_executive_edit: boolean;
     pool: string;
   }>("rts.php", "inventory_list", { pool: "damaged" });
+}
+
+export interface RtsDamagedUseLogRow {
+  id: number;
+  outcome: string;
+  summary: string;
+  account: string;
+  created_at: string;
+  notes?: string | null;
+}
+
+export function rtsListDamagedUseLog(limit = 100) {
+  return apiGet<{ rows: RtsDamagedUseLogRow[] }>("rts.php", "damaged_use_log", {
+    limit: String(limit),
+  });
 }
 
 export function rtsUseDamaged(body: {

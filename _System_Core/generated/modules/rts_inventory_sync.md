@@ -1,9 +1,9 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-07-14T09:45:03+02:00
+generated: 2026-07-14T11:51:02+02:00
 type: module
-function_count: 14
+function_count: 22
 ---
 
 
@@ -22,6 +22,8 @@ function_count: 14
 - `includes/honey_inventory.php`
 - `includes/inventory_edit_log.php`
 - `includes/inventory_edit_log.php`
+- `includes/honey_inventory.php`
+- `includes/honey_inventory.php`
 
 ## rts_inv_product_label {#rts_inv_product_label}
 
@@ -64,21 +66,23 @@ function_count: 14
 
 **Callers (3):**
 
-- `api/v1/rts.php`:142 — `$sync = rts_inventory_sync_status($pdo);`
-- `api/v1/rts.php`:251 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
+- `api/v1/rts.php`:146 — `$sync = rts_inventory_sync_status($pdo);`
+- `api/v1/rts.php`:284 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
 - `api/v1/rts_sync.php`:39 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
 
 ## rts_inventory_pool_filter_sql {#rts_inventory_pool_filter_sql}
 
-**Callers (7):**
+**Callers (9):**
 
-- `api/v1/rts.php`:53 — `return rts_inventory_pool_filter_sql($pdo, $pool);`
+- `api/v1/rts.php`:57 — `return rts_inventory_pool_filter_sql($pdo, $pool);`
 - `includes/rts_inventory_sync.php`:260 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
 - `includes/rts_inventory_sync.php`:290 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
-- `includes/rts_inventory_sync.php`:344 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
-- `includes/rts_inventory_sync.php`:424 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
-- `includes/rts_inventory_sync.php`:556 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
-- `includes/rts_inventory_sync.php`:649 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
+- `includes/rts_inventory_sync.php`:346 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
+- `includes/rts_inventory_sync.php`:436 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
+- `includes/rts_inventory_sync.php`:610 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
+- `includes/rts_inventory_sync.php`:708 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
+- `includes/rts_inventory_sync.php`:937 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
+- `includes/rts_inventory_sync.php`:952 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
 
 ## rts_inventory_list_honey_aggregated {#rts_inventory_list_honey_aggregated}
 
@@ -86,7 +90,7 @@ function_count: 14
 
 **Callers (1):**
 
-- `api/v1/rts.php`:137 — `$honey = rts_inventory_list_honey_aggregated($pdo, $pool);`
+- `api/v1/rts.php`:141 — `$honey = rts_inventory_list_honey_aggregated($pdo, $pool);`
 
 ## rts_inventory_list_other_aggregated {#rts_inventory_list_other_aggregated}
 
@@ -94,23 +98,27 @@ function_count: 14
 
 **Callers (1):**
 
-- `api/v1/rts.php`:138 — `$other = rts_inventory_list_other_aggregated($pdo, $pool);`
+- `api/v1/rts.php`:142 — `$other = rts_inventory_list_other_aggregated($pdo, $pool);`
 
 ## rts_inventory_deduct_sell_honey_variant {#rts_inventory_deduct_sell_honey_variant}
 
 **Tables:** `rts_inventory_rows`, `honey_sales_log`
 
-**Callers (1):**
+**Callers (3):**
 
-- `api/v1/rts.php`:214 — `rts_inventory_deduct_sell_honey_variant(`
+- `api/v1/rts.php`:233 — `rts_inventory_deduct_sell_honey_variant(`
+- `includes/honey_pos.php`:377 — `rts_inventory_deduct_sell_honey_variant(`
+- `includes/honey_pos.php`:584 — `rts_inventory_deduct_sell_honey_variant(`
 
 ## rts_inventory_deduct_sell_other_label {#rts_inventory_deduct_sell_other_label}
 
 **Tables:** `rts_inventory_rows`, `honey_sales_log`
 
-**Callers (1):**
+**Callers (3):**
 
-- `api/v1/rts.php`:223 — `rts_inventory_deduct_sell_other_label(`
+- `api/v1/rts.php`:243 — `rts_inventory_deduct_sell_other_label(`
+- `includes/dept_pos.php`:189 — `rts_inventory_deduct_sell_other_label(`
+- `includes/dept_pos.php`:333 — `rts_inventory_deduct_sell_other_label(`
 
 ## rts_inventory_deduct_sell {#rts_inventory_deduct_sell}
 
@@ -118,7 +126,7 @@ function_count: 14
 
 **Callers (1):**
 
-- `api/v1/rts.php`:232 — `rts_inventory_deduct_sell(`
+- `api/v1/rts.php`:253 — `rts_inventory_deduct_sell(`
 
 ## rts_inventory_set_honey_variant_totals {#rts_inventory_set_honey_variant_totals}
 
@@ -126,7 +134,7 @@ function_count: 14
 
 **Callers (1):**
 
-- `api/v1/rts.php`:263 — `$result = rts_inventory_set_honey_variant_totals(`
+- `api/v1/rts.php`:296 — `$result = rts_inventory_set_honey_variant_totals(`
 
 ## rts_inventory_set_other_label_total {#rts_inventory_set_other_label_total}
 
@@ -134,5 +142,70 @@ function_count: 14
 
 **Callers (1):**
 
-- `api/v1/rts.php`:289 — `$result = rts_inventory_set_other_label_total(`
+- `api/v1/rts.php`:322 — `$result = rts_inventory_set_other_label_total(`
+
+## rts_inventory_seed_honey_row {#rts_inventory_seed_honey_row}
+
+**Tables:** `rts_inventory_rows`
+
+**Callers (1):**
+
+- `includes/rts_inventory_sync.php`:631 — `rts_inventory_seed_honey_row($pdo, $variant, $pool);`
+
+## rts_inventory_seed_other_row {#rts_inventory_seed_other_row}
+
+**Tables:** `rts_inventory_rows`
+
+**Callers (1):**
+
+- `includes/rts_inventory_sync.php`:719 — `rts_inventory_seed_other_row($pdo, $productLabel, $pool);`
+
+## rts_pool_use_log_insert {#rts_pool_use_log_insert}
+
+**Tables:** `rts_pool_use_log`
+
+**Callers (3):**
+
+- `includes/rts_inventory_sync.php`:469 — `rts_pool_use_log_insert($pdo, [`
+- `includes/rts_inventory_sync.php`:564 — `rts_pool_use_log_insert($pdo, [`
+- `includes/rts_inventory_sync.php`:918 — `rts_pool_use_log_insert($pdo, [`
+
+## rts_pool_use_log_write_honey {#rts_pool_use_log_write_honey}
+
+**Callers (2):**
+
+- `includes/rts_inventory_sync.php`:401 — `rts_pool_use_log_write_honey($pdo, $variant, $sizeQtys, $userId, $opts);`
+- `includes/rts_inventory_sync.php`:547 — `rts_pool_use_log_write_honey(`
+
+## rts_inventory_available_honey {#rts_inventory_available_honey}
+
+**Tables:** `rts_inventory_rows`
+
+**Callers (2):**
+
+- `includes/honey_pos.php`:318 — `? rts_inventory_available_honey($pdo, $variant, $size, 'sellable')`
+- `includes/honey_pos.php`:529 — `? rts_inventory_available_honey($pdo, $variant, $size, 'sellable')`
+
+## rts_inventory_available_other {#rts_inventory_available_other}
+
+**Tables:** `rts_inventory_rows`
+
+**Callers (1):**
+
+- `includes/dept_pos.php`:88 — `$onHand = rts_inventory_available_other($pdo, $rtsLabel, 'sellable');`
+
+## rts_other_label_for_dept_key {#rts_other_label_for_dept_key}
+
+**Callers (2):**
+
+- `includes/dept_pos.php`:84 — `$rtsLabel = rts_other_label_for_dept_key($productKey);`
+- `includes/dept_pos.php`:116 — `'rts_label' => $stockSource === 'rts' ? rts_other_label_for_dept_key($productKey) : null,`
+
+## rts_pool_use_log_list {#rts_pool_use_log_list}
+
+**Tables:** `rts_pool_use_log`
+
+**Callers (1):**
+
+- `api/v1/rts.php`:277 — `api_ok(['rows' => rts_pool_use_log_list(ims_pdo(), $limit)]);`
 

@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-07-14T09:45:04+02:00
+generated: 2026-07-14T11:51:04+02:00
 type: module
 function_count: 13
 ---
@@ -25,7 +25,7 @@ function_count: 13
 
 ## rts_db_has_column {#rts_db_has_column}
 
-**Callers (47):**
+**Callers (49):**
 
 - `api/v1/deliveries.php`:335 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `api/v1/deliveries.php`:374 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
@@ -52,7 +52,7 @@ function_count: 13
 - `includes/rts_case_handlers.php`:87 — `if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
 - `includes/rts_case_handlers.php`:194 — `if (!isset($case['case_disposition']) && rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
 - `includes/rts_case_handlers.php`:603 — `if (rts_db_has_column($pdo, 'rts_cases', 'case_disposition')) {`
-- _… and 22 more (run impact.php for full list)_
+- _… and 24 more (run impact.php for full list)_
 
 ## rts_cases_void_sql {#rts_cases_void_sql}
 

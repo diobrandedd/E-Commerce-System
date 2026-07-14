@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { ActionFeedbackButton } from "@/app/components/pos/posMotion";
 import { StaffDebtorCombobox, type StaffDebtorValue } from "@/app/components/pos/StaffDebtorCombobox";
+import type { PosStockSource } from "@/app/components/pos/POSStockSourceModal";
 import { apiPost, ApiError } from "@/app/lib/api";
 import { peso, variantLabel } from "@/app/lib/posHoney";
 
@@ -35,6 +36,7 @@ interface POSARCheckoutPanelProps {
 export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCheckoutPanelProps) {
   const [debtor, setDebtor] = useState<StaffDebtorValue>({ debtor_user_id: null, debtor_name: "" });
   const [mobile, setMobile] = useState("");
+  const [stockSource, setStockSource] = useState<PosStockSource>("packaging");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +86,7 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
         debtor_user_id: debtor.debtor_user_id,
         debtor_name: debtorName,
         debtor_mobile: mobile.trim(),
+        stock_source: stockSource,
       });
       onSuccess(result);
     } catch (e) {
@@ -104,6 +107,34 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
           <span>{error}</span>
         </div>
       )}
+
+      <div className="mb-4 space-y-2">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Stock source</p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setStockSource("rts")}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+              stockSource === "rts"
+                ? "border-[#C8900A] bg-[#C8900A]/10 text-[#8a5c00]"
+                : "border-border text-muted-foreground"
+            }`}
+          >
+            RTS products
+          </button>
+          <button
+            type="button"
+            onClick={() => setStockSource("packaging")}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+              stockSource === "packaging"
+                ? "border-[#C8900A] bg-[#C8900A]/10 text-[#8a5c00]"
+                : "border-border text-muted-foreground"
+            }`}
+          >
+            Non-RTS
+          </button>
+        </div>
+      </div>
 
       <div className="space-y-3 mb-4">
         <label className="block text-xs uppercase tracking-wide text-muted-foreground font-semibold">

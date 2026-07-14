@@ -18,6 +18,7 @@ import {
   CartLineMotion,
 } from "@/app/components/pos/posMotion";
 import { POSARCheckoutPanel, type POSARCheckoutResult } from "@/app/components/pos/POSARCheckoutPanel";
+import { POSStockSourceModal, type PosStockSource } from "@/app/components/pos/POSStockSourceModal";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { loadPosCatalogCached, prefetchPosImages, readPosCache } from "@/app/lib/posCache";
@@ -44,6 +45,7 @@ export function POSHoneyPage() {
   const [selectedSize, setSelectedSize] = useState<HoneyBottleSize | null>(null);
   const [qty, setQty] = useState(1);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showStockSource, setShowStockSource] = useState(false);
   const [showARCheckout, setShowARCheckout] = useState(false);
   const [arNotice, setArNotice] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -193,7 +195,7 @@ export function POSHoneyPage() {
     [cart],
   );
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (stockSource: PosStockSource) => {
     if (cart.length === 0) return;
     setCheckingOut(true);
     setError(null);
@@ -207,7 +209,9 @@ export function POSHoneyPage() {
         })),
         buyer_name: buyerName.trim() || "Walk-in",
         buyer_credentials: buyerCreds.trim(),
+        stock_source: stockSource,
       });
+      setShowStockSource(false);
       setShowCheckout(false);
       setFeedback("success");
       setTimeout(() => {
@@ -578,10 +582,13 @@ export function POSHoneyPage() {
                   variant="confirm"
                   disabled={checkingOut}
                   flashOnClick={false}
-                  onClick={() => void handleCheckout()}
+                  onClick={() => {
+                    setShowCheckout(false);
+                    setShowStockSource(true);
+                  }}
                   className="font-bold"
                 >
-                  {checkingOut ? "Processing…" : "Confirm"}
+                  Confirm
                 </ActionFeedbackButton>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -618,6 +625,13 @@ export function POSHoneyPage() {
               </button>
             </div>
           </POSModal>
+
+          <POSStockSourceModal
+            open={showStockSource}
+            busy={checkingOut}
+            onClose={() => setShowStockSource(false)}
+            onPick={source => void handleCheckout(source)}
+          />
 
           <POSModal open={showARCheckout} onClose={() => setShowARCheckout(false)} panelClassName="max-w-sm">
             <POSARCheckoutPanel

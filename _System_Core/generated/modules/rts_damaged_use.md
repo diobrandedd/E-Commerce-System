@@ -1,9 +1,9 @@
 ---
 title: rts_damaged_use
 source: includes/rts_damaged_use.php
-generated: 2026-07-14T09:45:03+02:00
+generated: 2026-07-14T11:51:02+02:00
 type: module
-function_count: 4
+function_count: 6
 ---
 
 
@@ -22,11 +22,25 @@ function_count: 4
 - `includes/dept_production.php`
 - `includes/rts_inventory_sync.php`
 
+## rts_damaged_use_events_list {#rts_damaged_use_events_list}
+
+**Tables:** `rts_damaged_use_events`, `rts_inventory_rows`, `users`
+
+**Callers (1):**
+
+- `api/v1/rts.php`:204 — `api_ok(['rows' => rts_damaged_use_events_list(ims_pdo(), $limit)]);`
+
+## rts_damaged_use_event_summary {#rts_damaged_use_event_summary}
+
+**Callers (1):**
+
+- `includes/rts_damaged_use.php`:36 — `$row['summary'] = rts_damaged_use_event_summary($row);`
+
 ## rts_damaged_total_bottles {#rts_damaged_total_bottles}
 
 **Callers (1):**
 
-- `includes/rts_damaged_use.php`:236 — `$bottlesResealed = rts_damaged_total_bottles($deductLines);`
+- `includes/rts_damaged_use.php`:332 — `$bottlesResealed = rts_damaged_total_bottles($deductLines);`
 
 ## rts_damaged_deduct_cap_seals {#rts_damaged_deduct_cap_seals}
 
@@ -34,7 +48,7 @@ function_count: 4
 
 **Callers (1):**
 
-- `includes/rts_damaged_use.php`:237 — `$packagingDeduct = rts_damaged_deduct_cap_seals(`
+- `includes/rts_damaged_use.php`:333 — `$packagingDeduct = rts_damaged_deduct_cap_seals(`
 
 ## rts_inventory_credit_sellable_repack {#rts_inventory_credit_sellable_repack}
 
@@ -42,7 +56,7 @@ function_count: 4
 
 **Callers (1):**
 
-- `includes/rts_damaged_use.php`:243 — `$sellableRowId = rts_inventory_credit_sellable_repack($pdo, $row, $deductLines);`
+- `includes/rts_damaged_use.php`:339 — `$sellableRowId = rts_inventory_credit_sellable_repack($pdo, $row, $deductLines);`
 
 ## rts_damaged_use_apply {#rts_damaged_use_apply}
 
@@ -50,5 +64,5 @@ function_count: 4
 
 **Callers (1):**
 
-- `api/v1/rts.php`:179 — `$result = rts_damaged_use_apply(`
+- `api/v1/rts.php`:183 — `$result = rts_damaged_use_apply(`
 

@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-07-14T09:44:39+02:00
+generated: 2026-07-14T11:50:40+02:00
 type: memory-bank
-edge_count: 251
+edge_count: 258
 ---
 
 
@@ -127,6 +127,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_pos.php` | `includes/dept_inventory.php` |
 | `includes/dept_pos.php` | `includes/dept_products.php` |
 | `includes/dept_pos.php` | `includes/honey_pos.php` |
+| `includes/dept_pos.php` | `includes/rts_inventory_sync.php` |
+| `includes/dept_pos.php` | `includes/rts_inventory_sync.php` |
+| `includes/dept_pos.php` | `includes/rts_inventory_sync.php` |
 | `includes/dept_pricing.php` | `includes/dept_products.php` |
 | `includes/dept_pricing.php` | `includes/honey_inventory.php` |
 | `includes/dept_pricing.php` | `includes/suppliers.php` |
@@ -152,6 +155,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_parcel_item_parser.php` | `includes/dept_products.php` |
 | `includes/honey_pos.php` | `includes/ar_credits.php` |
 | `includes/honey_pos.php` | `includes/honey_inventory.php` |
+| `includes/honey_pos.php` | `includes/rts_inventory_sync.php` |
+| `includes/honey_pos.php` | `includes/rts_inventory_sync.php` |
 | `includes/honey_pricing.php` | `api/v1/_costing_helpers.php` |
 | `includes/honey_pricing.php` | `includes/honey_inventory.php` |
 | `includes/honey_pricing.php` | `includes/honey_pos.php` |
@@ -206,6 +211,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/rts_damaged_use.php` | `includes/honey_volume.php` |
 | `includes/rts_damaged_use.php` | `includes/rts_inventory_sync.php` |
 | `includes/rts_inventory_sync.php` | `includes/db.php` |
+| `includes/rts_inventory_sync.php` | `includes/honey_inventory.php` |
+| `includes/rts_inventory_sync.php` | `includes/honey_inventory.php` |
 | `includes/rts_inventory_sync.php` | `includes/honey_inventory.php` |
 | `includes/rts_inventory_sync.php` | `includes/honey_inventory.php` |
 | `includes/rts_inventory_sync.php` | `includes/honey_inventory.php` |

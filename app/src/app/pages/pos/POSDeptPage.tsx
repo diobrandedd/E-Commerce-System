@@ -18,6 +18,7 @@ import {
   CartLineMotion,
 } from "@/app/components/pos/posMotion";
 import { POSARCheckoutPanel, type POSARCheckoutResult } from "@/app/components/pos/POSARCheckoutPanel";
+import { POSStockSourceModal, type PosStockSource } from "@/app/components/pos/POSStockSourceModal";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { loadPosCatalogCached, readPosCache } from "@/app/lib/posCache";
@@ -51,6 +52,7 @@ export function POSDeptPage() {
   const [qty, setQty] = useState(1);
   const [cart, setCart] = useState<DeptCartLine[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showStockSource, setShowStockSource] = useState(false);
   const [showARCheckout, setShowARCheckout] = useState(false);
   const [arNotice, setArNotice] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
@@ -198,7 +200,7 @@ export function POSDeptPage() {
     navigate("/", { replace: true });
   };
 
-  const checkout = async () => {
+  const checkout = async (stockSource: PosStockSource) => {
     if (cart.length === 0) return;
     setCheckingOut(true);
     setError(null);
@@ -207,7 +209,9 @@ export function POSDeptPage() {
         items: cartPayload,
         buyer_name: buyerName.trim() || "Walk-in",
         buyer_credentials: buyerCreds.trim(),
+        stock_source: stockSource,
       });
+      setShowStockSource(false);
       setShowCheckout(false);
       setFeedback("success");
       setTimeout(() => {
@@ -477,10 +481,13 @@ export function POSDeptPage() {
               variant="confirm"
               disabled={checkingOut}
               flashOnClick={false}
-              onClick={() => void checkout()}
+              onClick={() => {
+                setShowCheckout(false);
+                setShowStockSource(true);
+              }}
               className="font-bold"
             >
-              {checkingOut ? "Processing…" : "Confirm"}
+              Confirm
             </ActionFeedbackButton>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -517,6 +524,13 @@ export function POSDeptPage() {
           </button>
         </div>
       </POSModal>
+
+      <POSStockSourceModal
+        open={showStockSource}
+        busy={checkingOut}
+        onClose={() => setShowStockSource(false)}
+        onPick={source => void checkout(source)}
+      />
 
       <POSModal open={showARCheckout} onClose={() => setShowARCheckout(false)} panelClassName="max-w-sm">
         <POSARCheckoutPanel

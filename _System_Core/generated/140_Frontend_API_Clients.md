@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-07-14T09:45:08+02:00
+generated: 2026-07-14T11:51:08+02:00
 type: memory-bank
 ---
 
@@ -41,6 +41,7 @@ Backend index: [[100_API_Index]]
 | `app/src/app/pages/InventoryRequestsPage.tsx` | `pos_discounts.php` |
 | `app/src/app/pages/RTSPage.tsx` | `rts.php` |
 | `app/src/app/pages/exec/MonthlyInventoryPage.tsx` | `rts.php` |
+| `app/src/app/pages/rts/RTSDamagedInventoryPage.tsx` | `rts.php` |
 | `app/src/app/lib/rtsApi.ts` | `rts_cases.php` |
 | `app/src/app/pages/RTSPage.tsx` | `rts_sync.php` |
 | `app/src/app/pages/exec/SettingsPage.tsx` | `settings.php` |

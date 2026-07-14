@@ -89,9 +89,12 @@ function api_pos_dept_checkout(): void
     $items = is_array($input['items'] ?? null) ? $input['items'] : [];
     $buyerName = trim((string) ($input['buyer_name'] ?? 'Walk-in'));
     $buyerCreds = trim((string) ($input['buyer_credentials'] ?? ''));
+    $stockSource = strtolower(trim((string) ($input['stock_source'] ?? 'packaging')));
 
     try {
-        $result = dept_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds);
+        $result = dept_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds, [
+            'stock_source' => $stockSource,
+        ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }
@@ -210,9 +213,12 @@ function api_pos_honey_checkout(): void
     $items = is_array($input['items'] ?? null) ? $input['items'] : [];
     $buyerName = trim((string) ($input['buyer_name'] ?? 'Walk-in'));
     $buyerCreds = trim((string) ($input['buyer_credentials'] ?? ''));
+    $stockSource = strtolower(trim((string) ($input['stock_source'] ?? 'packaging')));
 
     try {
-        $result = honey_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds);
+        $result = honey_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds, [
+            'stock_source' => $stockSource,
+        ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }
@@ -252,6 +258,8 @@ function api_pos_honey_ar_checkout(): void
             'debtor_user_id' => $debtorUserId,
             'debtor_name' => $debtorName,
             'debtor_mobile' => $debtorMobile,
+        ], [
+            'stock_source' => strtolower(trim((string) ($input['stock_source'] ?? 'packaging'))),
         ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
@@ -281,6 +289,8 @@ function api_pos_dept_ar_checkout(): void
             'debtor_user_id' => $debtorUserId,
             'debtor_name' => $debtorName,
             'debtor_mobile' => $debtorMobile,
+        ], [
+            'stock_source' => strtolower(trim((string) ($input['stock_source'] ?? 'packaging'))),
         ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);

@@ -10,6 +10,102 @@ require_once __DIR__ . '/dept_production.php';
 require_once __DIR__ . '/rts_inventory_sync.php';
 
 /**
+ * @return list<array<string, mixed>>
+ */
+function rts_damaged_use_events_list(PDO $pdo, int $limit = 100): array
+{
+    $limit = max(1, min(500, $limit));
+    try {
+        $chk = $pdo->query("SHOW TABLES LIKE 'rts_damaged_use_events'");
+        if (!$chk || !$chk->fetch()) {
+            return [];
+        }
+        $st = $pdo->query(
+            "SELECT e.id, e.outcome, e.variant, e.volume_gallons, e.size_qtys_json, e.qty_other, e.notes,
+                    e.created_at, e.performed_by,
+                    r.category, r.product_label, r.variant AS row_variant,
+                    u.name AS performed_by_name, u.username AS performed_by_username
+             FROM rts_damaged_use_events e
+             INNER JOIN rts_inventory_rows r ON r.id = e.rts_inventory_row_id
+             LEFT JOIN users u ON u.id = e.performed_by
+             ORDER BY e.created_at DESC, e.id DESC
+             LIMIT {$limit}"
+        );
+        $rows = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
+        foreach ($rows as &$row) {
+            $row['summary'] = rts_damaged_use_event_summary($row);
+            $row['account'] = trim((string) ($row['performed_by_name'] ?? '')) !== ''
+                ? (string) $row['performed_by_name']
+                : (string) ($row['performed_by_username'] ?? ('#' . (int) ($row['performed_by'] ?? 0)));
+        }
+        unset($row);
+
+        return $rows;
+    } catch (Throwable) {
+        return [];
+    }
+}
+
+/**
+ * @param array<string, mixed> $row
+ */
+function rts_damaged_use_event_summary(array $row): string
+{
+    $outcome = (string) ($row['outcome'] ?? '');
+    $outcomeLabel = match ($outcome) {
+        'mix_production' => 'Mix to production',
+        'scrap' => 'Scrap',
+        'cap_reseal' => 'Cap reseal → sellable',
+        default => $outcome !== '' ? $outcome : 'Use',
+    };
+
+    $bits = [$outcomeLabel];
+    $category = (string) ($row['category'] ?? '');
+    if ($category === 'honey') {
+        $v = trim((string) ($row['row_variant'] ?? ''));
+        $bits[] = $v !== '' ? (ucfirst($v) . ' honey') : trim((string) ($row['product_label'] ?? 'Honey'));
+        $sizes = $row['size_qtys_json'] ?? null;
+        if (is_string($sizes)) {
+            $decoded = json_decode($sizes, true);
+            $sizes = is_array($decoded) ? $decoded : [];
+        }
+        if (is_array($sizes) && $sizes !== []) {
+            $parts = [];
+            foreach ($sizes as $line) {
+                if (!is_array($line)) {
+                    continue;
+                }
+                $size = (string) ($line['size'] ?? '');
+                $qty = (float) ($line['qty'] ?? 0);
+                if ($size !== '' && $qty > 0) {
+                    $parts[] = $size . '×' . rtrim(rtrim(number_format($qty, 2, '.', ''), '0'), '.');
+                }
+            }
+            if ($parts !== []) {
+                $bits[] = implode(', ', $parts);
+            }
+        }
+        if ($outcome === 'mix_production' && trim((string) ($row['variant'] ?? '')) !== '') {
+            $bits[] = '→ ' . ucfirst((string) $row['variant']);
+        }
+        if (isset($row['volume_gallons']) && $row['volume_gallons'] !== null && (float) $row['volume_gallons'] > 0) {
+            $bits[] = '(' . rtrim(rtrim(number_format((float) $row['volume_gallons'], 4, '.', ''), '0'), '.') . ' gal)';
+        }
+    } else {
+        $label = trim((string) ($row['product_label'] ?? ''));
+        $bits[] = $label !== '' ? $label : 'Other product';
+        if (isset($row['qty_other']) && $row['qty_other'] !== null) {
+            $q = (float) $row['qty_other'];
+            if ($q > 0) {
+                $bits[] = '×' . rtrim(rtrim(number_format($q, 2, '.', ''), '0'), '.');
+            }
+        }
+    }
+
+    return implode(' — ', $bits);
+}
+
+/**
  * @param list<array{size:string, qty:float}> $deductLines
  */
 function rts_damaged_total_bottles(array $deductLines): float

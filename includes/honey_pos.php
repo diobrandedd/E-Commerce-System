@@ -287,6 +287,13 @@ function honey_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyer
     }
     $discountFactor = $discountPercent > 0 ? (1 - ($discountPercent / 100)) : 1.0;
     $discountRequestId = isset($opts['discount_request_id']) ? (int) $opts['discount_request_id'] : null;
+    $stockSource = strtolower(trim((string) ($opts['stock_source'] ?? 'packaging')));
+    if (!in_array($stockSource, ['packaging', 'rts'], true)) {
+        throw new RuntimeException('Invalid stock source.');
+    }
+    if ($stockSource === 'rts') {
+        require_once __DIR__ . '/rts_inventory_sync.php';
+    }
 
     $productMap = honey_pos_product_map($pdo);
     $cleanLines = [];
@@ -307,10 +314,13 @@ function honey_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyer
             throw new RuntimeException('Product not found or mismatch.');
         }
 
-        $avail = honey_pos_available_qty($pdo, $variant, $size);
+        $avail = $stockSource === 'rts'
+            ? rts_inventory_available_honey($pdo, $variant, $size, 'sellable')
+            : honey_pos_available_qty($pdo, $variant, $size);
         if ($qty > $avail + 0.0001) {
+            $poolLabel = $stockSource === 'rts' ? 'RTS' : 'on hand';
             throw new RuntimeException(
-                'Not enough ' . ucfirst($variant) . ' ' . (HONEY_POS_SIZE_LABELS[$size] ?? $size) . " on hand ({$avail} available)."
+                'Not enough ' . ucfirst($variant) . ' ' . (HONEY_POS_SIZE_LABELS[$size] ?? $size) . " {$poolLabel} ({$avail} available)."
             );
         }
 
@@ -363,7 +373,23 @@ function honey_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyer
         $hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');
 
         foreach ($cleanLines as $line) {
-            honey_pos_deduct_packaging_aggregate($pdo, $line['variant'], $line['size'], $line['qty']);
+            if ($stockSource === 'rts') {
+                rts_inventory_deduct_sell_honey_variant(
+                    $pdo,
+                    0,
+                    $line['variant'],
+                    [$line['size'] => $line['qty']],
+                    'walk_in',
+                    'sellable',
+                    [
+                        'used_where' => 'pos',
+                        'pos_sale_id' => $saleId,
+                        'actor_user_id' => null,
+                    ]
+                );
+            } else {
+                honey_pos_deduct_packaging_aggregate($pdo, $line['variant'], $line['size'], $line['qty']);
+            }
             honey_pos_log_sale($pdo, $line['variant'], $line['size'], $line['qty'], $saleId, $posPinId);
 
             if ($hasVariantCol) {
@@ -427,6 +453,7 @@ function honey_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyer
         'discount_percent' => $discountPercent > 0 ? $discountPercent : null,
         'discount_amount' => $discountAmount,
         'total' => $total,
+        'stock_source' => $stockSource,
         'items' => array_map(static fn ($l) => [
             'product_id' => $l['product_id'],
             'qty' => $l['qty'],
@@ -447,9 +474,10 @@ function honey_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyer
  *
  * @param list<array{product_id: int, qty: float, variant?: string, size?: string}> $items
  * @param array{debtor_user_id?: int|null, debtor_name: string, debtor_mobile?: string|null} $debtor
+ * @param array{stock_source?: string} $opts
  * @return array<string, mixed>
  */
-function honey_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debtor): array
+function honey_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debtor, array $opts = []): array
 {
     if ($posPinId < 1) {
         throw new RuntimeException('POS session is invalid.');
@@ -470,6 +498,13 @@ function honey_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $deb
         $debtorUserId = null;
     }
     $debtorMobile = trim((string) ($debtor['debtor_mobile'] ?? ''));
+    $stockSource = strtolower(trim((string) ($opts['stock_source'] ?? 'packaging')));
+    if (!in_array($stockSource, ['packaging', 'rts'], true)) {
+        throw new RuntimeException('Invalid stock source.');
+    }
+    if ($stockSource === 'rts') {
+        require_once __DIR__ . '/rts_inventory_sync.php';
+    }
 
     $productMap = honey_pos_product_map($pdo);
     $cleanLines = [];
@@ -490,10 +525,13 @@ function honey_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $deb
             throw new RuntimeException('Product not found or mismatch.');
         }
 
-        $avail = honey_pos_available_qty($pdo, $variant, $size);
+        $avail = $stockSource === 'rts'
+            ? rts_inventory_available_honey($pdo, $variant, $size, 'sellable')
+            : honey_pos_available_qty($pdo, $variant, $size);
         if ($qty > $avail + 0.0001) {
+            $poolLabel = $stockSource === 'rts' ? 'RTS' : 'on hand';
             throw new RuntimeException(
-                'Not enough ' . ucfirst($variant) . ' ' . (HONEY_POS_SIZE_LABELS[$size] ?? $size) . " on hand ({$avail} available)."
+                'Not enough ' . ucfirst($variant) . ' ' . (HONEY_POS_SIZE_LABELS[$size] ?? $size) . " {$poolLabel} ({$avail} available)."
             );
         }
 
@@ -542,7 +580,23 @@ function honey_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $deb
         $arLines = [];
 
         foreach ($cleanLines as $line) {
-            honey_pos_deduct_packaging_aggregate($pdo, $line['variant'], $line['size'], $line['qty']);
+            if ($stockSource === 'rts') {
+                rts_inventory_deduct_sell_honey_variant(
+                    $pdo,
+                    0,
+                    $line['variant'],
+                    [$line['size'] => $line['qty']],
+                    'walk_in',
+                    'sellable',
+                    [
+                        'used_where' => 'pos',
+                        'pos_sale_id' => $saleId,
+                        'actor_user_id' => null,
+                    ]
+                );
+            } else {
+                honey_pos_deduct_packaging_aggregate($pdo, $line['variant'], $line['size'], $line['qty']);
+            }
             honey_pos_log_sale($pdo, $line['variant'], $line['size'], $line['qty'], $saleId, $posPinId);
 
             if ($hasVariantCol) {
@@ -608,6 +662,7 @@ function honey_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $deb
         'receipt_no' => $receiptNo,
         'subtotal' => $subtotal,
         'total' => $total,
+        'stock_source' => $stockSource,
         'ar_credit_ids' => $arCreditIds,
         'items' => array_map(static fn ($l) => [
             'product_id' => $l['product_id'],

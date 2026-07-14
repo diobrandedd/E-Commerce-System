@@ -27,15 +27,22 @@ function dept_pos_catalog(PDO $pdo, ?string $deptKey = null): array
 /**
  * @param list<array{product_key: string, product_id?: int, qty: float}> $items
  * @param float $discountFactor 1.0 for full price, 0.9 for 10% off, etc.
+ * @param string $stockSource packaging|rts
  * @return list<array<string, mixed>>
  */
-function dept_pos_build_cart_lines(PDO $pdo, array $items, float $discountFactor = 1.0): array
+function dept_pos_build_cart_lines(PDO $pdo, array $items, float $discountFactor = 1.0, string $stockSource = 'packaging'): array
 {
     if ($items === []) {
         throw new RuntimeException('Cart is empty.');
     }
     if ($discountFactor <= 0 || $discountFactor > 1.0001) {
         throw new RuntimeException('Invalid discount factor.');
+    }
+    if (!in_array($stockSource, ['packaging', 'rts'], true)) {
+        throw new RuntimeException('Invalid stock source.');
+    }
+    if ($stockSource === 'rts') {
+        require_once __DIR__ . '/rts_inventory_sync.php';
     }
 
     $snapshot = dept_inventory_catalog_snapshot($pdo);
@@ -71,12 +78,26 @@ function dept_pos_build_cart_lines(PDO $pdo, array $items, float $discountFactor
             throw new RuntimeException('Product not found or mismatch.');
         }
 
-        $onHand = $onHandByKey[$productKey] ?? 0.0;
-        if ($qty > $onHand + 0.0001) {
-            $def = dept_product_by_key($productKey);
-            throw new RuntimeException(
-                'Not enough ' . ($def['label'] ?? $productKey) . " on hand ({$onHand} available)."
-            );
+        $def = dept_product_by_key($productKey);
+        $label = (string) ($def['label'] ?? $productKey);
+        if ($stockSource === 'rts') {
+            $rtsLabel = rts_other_label_for_dept_key($productKey);
+            if ($rtsLabel === null) {
+                throw new RuntimeException($label . ' cannot be sold from RTS stock.');
+            }
+            $onHand = rts_inventory_available_other($pdo, $rtsLabel, 'sellable');
+            if ($qty > $onHand + 0.0001) {
+                throw new RuntimeException(
+                    'Not enough ' . $label . " RTS stock ({$onHand} available)."
+                );
+            }
+        } else {
+            $onHand = $onHandByKey[$productKey] ?? 0.0;
+            if ($qty > $onHand + 0.0001) {
+                throw new RuntimeException(
+                    'Not enough ' . $label . " on hand ({$onHand} available)."
+                );
+            }
         }
 
         $listUnit = round((float) $prod['selling_price'], 2);
@@ -92,6 +113,7 @@ function dept_pos_build_cart_lines(PDO $pdo, array $items, float $discountFactor
             'line_subtotal' => $lineSubtotal,
             'line_total' => $lineTotal,
             'name' => (string) $prod['name'],
+            'rts_label' => $stockSource === 'rts' ? rts_other_label_for_dept_key($productKey) : null,
         ];
     }
 
@@ -100,7 +122,7 @@ function dept_pos_build_cart_lines(PDO $pdo, array $items, float $discountFactor
 
 /**
  * @param list<array{product_key: string, product_id?: int, qty: float}> $items
- * @param array{discount_percent?: int|float|string|null, discount_request_id?: int|null} $opts
+ * @param array{discount_percent?: int|float|string|null, discount_request_id?: int|null, stock_source?: string} $opts
  * @return array<string, mixed>
  */
 function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerName, string $buyerCreds, array $opts = []): array
@@ -115,8 +137,15 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
     }
     $discountFactor = $discountPercent > 0 ? (1 - ($discountPercent / 100)) : 1.0;
     $discountRequestId = isset($opts['discount_request_id']) ? (int) $opts['discount_request_id'] : null;
+    $stockSource = strtolower(trim((string) ($opts['stock_source'] ?? 'packaging')));
+    if (!in_array($stockSource, ['packaging', 'rts'], true)) {
+        throw new RuntimeException('Invalid stock source.');
+    }
+    if ($stockSource === 'rts') {
+        require_once __DIR__ . '/rts_inventory_sync.php';
+    }
 
-    $cleanLines = dept_pos_build_cart_lines($pdo, $items, $discountFactor);
+    $cleanLines = dept_pos_build_cart_lines($pdo, $items, $discountFactor, $stockSource);
     $subtotal = round(array_sum(array_column($cleanLines, 'line_subtotal')), 2);
     $total = round(array_sum(array_column($cleanLines, 'line_total')), 2);
     $discountAmount = round($subtotal - $total, 2);
@@ -152,7 +181,27 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
         );
 
         foreach ($cleanLines as $line) {
-            dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);
+            if ($stockSource === 'rts') {
+                $rtsLabel = (string) ($line['rts_label'] ?? '');
+                if ($rtsLabel === '') {
+                    throw new RuntimeException('RTS product label missing for ' . $line['name']);
+                }
+                rts_inventory_deduct_sell_other_label(
+                    $pdo,
+                    0,
+                    $rtsLabel,
+                    (float) $line['qty'],
+                    'walk_in',
+                    'sellable',
+                    [
+                        'used_where' => 'pos',
+                        'pos_sale_id' => $saleId,
+                        'actor_user_id' => null,
+                    ]
+                );
+            } else {
+                dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);
+            }
             $insLine->execute([
                 $saleId,
                 $line['product_id'],
@@ -190,6 +239,7 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
         'discount_percent' => $discountPercent > 0 ? $discountPercent : null,
         'discount_amount' => $discountAmount,
         'total' => $total,
+        'stock_source' => $stockSource,
         'items' => array_map(static fn ($l) => [
             'product_id' => $l['product_id'],
             'product_key' => $l['product_key'],
@@ -209,7 +259,13 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
  * @param array{debtor_user_id?: int|null, debtor_name: string, debtor_mobile?: string|null} $debtor
  * @return array<string, mixed>
  */
-function dept_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debtor): array
+/**
+ * @param list<array{product_key: string, product_id?: int, qty: float}> $items
+ * @param array{debtor_user_id?: int|null, debtor_name: string, debtor_mobile?: string|null} $debtor
+ * @param array{stock_source?: string} $opts
+ * @return array<string, mixed>
+ */
+function dept_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debtor, array $opts = []): array
 {
     if ($posPinId < 1) {
         throw new RuntimeException('POS session is invalid.');
@@ -227,8 +283,15 @@ function dept_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debt
         $debtorUserId = null;
     }
     $debtorMobile = trim((string) ($debtor['debtor_mobile'] ?? ''));
+    $stockSource = strtolower(trim((string) ($opts['stock_source'] ?? 'packaging')));
+    if (!in_array($stockSource, ['packaging', 'rts'], true)) {
+        throw new RuntimeException('Invalid stock source.');
+    }
+    if ($stockSource === 'rts') {
+        require_once __DIR__ . '/rts_inventory_sync.php';
+    }
 
-    $cleanLines = dept_pos_build_cart_lines($pdo, $items, 1.0);
+    $cleanLines = dept_pos_build_cart_lines($pdo, $items, 1.0, $stockSource);
     $subtotal = round(array_sum(array_column($cleanLines, 'line_subtotal')), 2);
     $total = round(array_sum(array_column($cleanLines, 'line_total')), 2);
 
@@ -262,7 +325,27 @@ function dept_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debt
 
         $arLines = [];
         foreach ($cleanLines as $line) {
-            dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);
+            if ($stockSource === 'rts') {
+                $rtsLabel = (string) ($line['rts_label'] ?? '');
+                if ($rtsLabel === '') {
+                    throw new RuntimeException('RTS product label missing for ' . $line['name']);
+                }
+                rts_inventory_deduct_sell_other_label(
+                    $pdo,
+                    0,
+                    $rtsLabel,
+                    (float) $line['qty'],
+                    'walk_in',
+                    'sellable',
+                    [
+                        'used_where' => 'pos',
+                        'pos_sale_id' => $saleId,
+                        'actor_user_id' => null,
+                    ]
+                );
+            } else {
+                dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);
+            }
             $insLine->execute([
                 $saleId,
                 $line['product_id'],
@@ -302,6 +385,7 @@ function dept_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debt
         'receipt_no' => $receiptNo,
         'subtotal' => $subtotal,
         'total' => $total,
+        'stock_source' => $stockSource,
         'ar_credit_ids' => $arCreditIds,
         'items' => array_map(static fn ($l) => [
             'product_id' => $l['product_id'],

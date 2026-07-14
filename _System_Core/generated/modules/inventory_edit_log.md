@@ -1,7 +1,7 @@
 ---
 title: inventory_edit_log
 source: includes/inventory_edit_log.php
-generated: 2026-07-14T09:44:53+02:00
+generated: 2026-07-14T11:50:52+02:00
 type: module
 function_count: 3
 ---
@@ -37,10 +37,10 @@ function_count: 3
 - `includes/honey_inventory.php`:782 — `inventory_edit_log_write($pdo, $userId, $rowTable, $rowId, $field, $old, $new, $source);`
 - `includes/material_inventory.php`:928 — `inventory_edit_log_write(`
 - `includes/material_inventory.php`:1399 — `inventory_edit_log_write(`
-- `includes/rts_inventory_sync.php`:597 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, $curCol, (string) $old, (string) $new, 'monthly_inventory');`
-- `includes/rts_inventory_sync.php`:613 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, $curCol, (string) $have, (string) $new, 'monthly_inventory');`
-- `includes/rts_inventory_sync.php`:678 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, 'current_qty', (string) $old, (string) $new, 'monthly_inventory');`
-- `includes/rts_inventory_sync.php`:693 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, 'current_qty', (string) $have, (string) $new, 'monthly_inventory');`
+- `includes/rts_inventory_sync.php`:656 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, $curCol, (string) $old, (string) $new, 'monthly_inventory');`
+- `includes/rts_inventory_sync.php`:672 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, $curCol, (string) $have, (string) $new, 'monthly_inventory');`
+- `includes/rts_inventory_sync.php`:742 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, 'current_qty', (string) $old, (string) $new, 'monthly_inventory');`
+- `includes/rts_inventory_sync.php`:757 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, 'current_qty', (string) $have, (string) $new, 'monthly_inventory');`
 
 ## inventory_edit_log_list {#inventory_edit_log_list}
 

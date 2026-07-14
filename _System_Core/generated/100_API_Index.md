@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-07-14T09:44:39+02:00
+generated: 2026-07-14T11:50:40+02:00
 type: memory-bank
 ---
 
@@ -369,9 +369,12 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `legacy_urls` | `api_rts_legacy_urls()` | — |
 | `inventory_list` | `api_rts_inventory_list()` | `ims_pdo()`, `rts_inventory_list_honey_aggregated()`, `rts_inventory_list_other_aggregated()`, `rts_inventory_sync_status()` |
 | `inventory_deduct_sell` | `api_rts_inventory_deduct_sell()` | `rts_inventory_deduct_sell_honey_variant()`, `ims_pdo()`, `rts_inventory_deduct_sell_other_label()`, `rts_inventory_deduct_sell()` |
+| `inventory_use_rts` | `api_rts_inventory_deduct_sell()` | `rts_inventory_deduct_sell_honey_variant()`, `ims_pdo()`, `rts_inventory_deduct_sell_other_label()`, `rts_inventory_deduct_sell()` |
+| `inventory_use_log` | `api_rts_inventory_use_log()` | `rts_pool_use_log_list()`, `ims_pdo()` |
 | `inventory_set_honey` | `api_rts_inventory_set_honey()` | `ims_pdo()`, `rts_inventory_set_honey_variant_totals()` |
 | `inventory_set_other` | `api_rts_inventory_set_other()` | `ims_pdo()`, `rts_inventory_set_other_label_total()` |
 | `use_damaged` | `api_rts_use_damaged()` | `rts_damaged_use_apply()`, `ims_pdo()` |
+| `damaged_use_log` | `api_rts_damaged_use_log()` | `rts_damaged_use_events_list()`, `ims_pdo()` |
 | `sync_status` | `api_rts_sync_status_action()` | `rts_inventory_sync_status()`, `ims_pdo()` |
 
 ### `rts_cases.php`
