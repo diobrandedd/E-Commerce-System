@@ -1,7 +1,7 @@
 ---
 title: rts_storage
 source: includes/rts_storage.php
-generated: 2026-07-14T08:36:02+02:00
+generated: 2026-07-14T09:45:05+02:00
 type: module
 function_count: 16
 ---
@@ -114,17 +114,17 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:987 — `'doc_url_base' => rts_storage_public_prefix_for_app(RTS_STORAGE_BUCKET_RTS),`
+- `includes/rts_case_handlers.php`:1004 — `'doc_url_base' => rts_storage_public_prefix_for_app(RTS_STORAGE_BUCKET_RTS),`
 
 ## rts_storage_public_url_for_app {#rts_storage_public_url_for_app}
 
 **Callers (6):**
 
 - `api/delivery_match_tracking.php`:76 — `$fileUrl = rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
-- `includes/online_order_parcels.php`:528 — `$url = rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
+- `includes/online_order_parcels.php`:529 — `$url = rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn);`
 - `includes/rts_attachments.php`:223 — `'file_url' => rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_RTS, $storedName),`
-- `includes/rts_case_handlers.php`:139 — `'download_url' => rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn),`
-- `includes/rts_case_handlers.php`:264 — `'file_url' => rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn),`
+- `includes/rts_case_handlers.php`:140 — `'download_url' => rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn),`
+- `includes/rts_case_handlers.php`:265 — `'file_url' => rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn),`
 - `includes/rts_prefill.php`:182 — `'file_url' => rts_storage_public_url_for_app(RTS_STORAGE_BUCKET_DELIVERIES, $fn),`
 
 ## rts_storage_csr_tool_root {#rts_storage_csr_tool_root}

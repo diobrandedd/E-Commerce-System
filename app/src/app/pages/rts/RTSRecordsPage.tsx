@@ -15,6 +15,7 @@ import {
 } from "@/app/components/csr/onlineFulfillmentMotion";
 import { cn } from "@/app/components/ui/utils";
 import { useAuth } from "@/app/context/AuthContext";
+import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
 import { ApiError } from "@/app/lib/api";
 import {
   rtsGetCase,
@@ -141,6 +142,7 @@ export function RTSRecordsPage() {
   const [filtersOpen, setFiltersOpen] = useState(() => searchParams.toString().length > 0);
 
   const [q, setQ] = useState(() => searchParams.get("q") ?? "");
+  const debouncedQ = useDebouncedValue(q, 300);
   const [shop, setShop] = useState(() => searchParams.get("shop") ?? "");
   const [courier, setCourier] = useState(() => searchParams.get("courier") ?? "");
   const [vipOnly, setVipOnly] = useState(() => searchParams.get("vip_only") === "1");
@@ -176,12 +178,12 @@ export function RTSRecordsPage() {
     void rtsGetCatalog().then(setCatalog).catch(() => null);
   }, []);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (qOverride?: string) => {
     setLoading(true);
     setError(null);
     try {
       const res = await rtsListCases({
-        q: q || undefined,
+        q: (qOverride !== undefined ? qOverride : debouncedQ) || undefined,
         shop: shop || undefined,
         courier: courier || undefined,
         vip_only: vipOnly ? 1 : undefined,
@@ -201,11 +203,15 @@ export function RTSRecordsPage() {
     } finally {
       setLoading(false);
     }
-  }, [q, shop, courier, vipOnly, dateFrom, dateTo, delFrom, delTo, damage, voidOnly, page]);
+  }, [debouncedQ, shop, courier, vipOnly, dateFrom, dateTo, delFrom, delTo, damage, voidOnly, page]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQ]);
 
   const clearFilters = () => {
     setQ("");
@@ -224,7 +230,7 @@ export function RTSRecordsPage() {
   const applyFilters = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    void load();
+    void load(q);
   };
 
   const openDetail = async (row: RtsCaseRow) => {

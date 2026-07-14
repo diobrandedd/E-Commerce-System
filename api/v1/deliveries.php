@@ -6,6 +6,7 @@ require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../../includes/deliveries_upload.php';
 require_once __DIR__ . '/../../includes/delivery_edit_requests.php';
 require_once __DIR__ . '/../../includes/online_order_parcels.php';
+require_once __DIR__ . '/../../includes/tracking_search.php';
 
 function api_deliveries_assert_access(): array
 {
@@ -323,34 +324,42 @@ function api_deliveries_review_list(): void
         $params[] = $to;
     }
     if ($q !== '') {
-        $like = '%' . $q . '%';
-        $hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');
-        if ($hasParcelLink) {
-            $where[] = '(i.tracking_number LIKE ? OR i.photo_filename LIKE ?
-                OR EXISTS (
-                    SELECT 1 FROM online_order_parcels p
-                    WHERE (p.id = i.online_parcel_id OR p.tracking_number = i.tracking_number)
-                      AND (p.recipient_name LIKE ? OR p.items_raw LIKE ? OR p.tracking_number LIKE ? OR p.order_no LIKE ?)
-                ))';
-            $params[] = $like;
-            $params[] = $like;
-            $params[] = $like;
-            $params[] = $like;
-            $params[] = $like;
-            $params[] = $like;
+        if (tracking_search_is_tn_shaped($q)) {
+            [$tnSql, $tnParams] = tracking_search_tn_column_sql('i.tracking_number', $q);
+            $where[] = $tnSql;
+            foreach ($tnParams as $p) {
+                $params[] = $p;
+            }
         } else {
-            $where[] = '(i.tracking_number LIKE ? OR i.photo_filename LIKE ?
-                OR EXISTS (
-                    SELECT 1 FROM online_order_parcels p
-                    WHERE p.tracking_number = i.tracking_number
-                      AND (p.recipient_name LIKE ? OR p.items_raw LIKE ? OR p.tracking_number LIKE ? OR p.order_no LIKE ?)
-                ))';
-            $params[] = $like;
-            $params[] = $like;
-            $params[] = $like;
-            $params[] = $like;
-            $params[] = $like;
-            $params[] = $like;
+            $like = tracking_search_contains_like($q);
+            $hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');
+            if ($hasParcelLink) {
+                $where[] = '(i.tracking_number LIKE ? OR i.photo_filename LIKE ?
+                    OR EXISTS (
+                        SELECT 1 FROM online_order_parcels p
+                        WHERE (p.id = i.online_parcel_id OR p.tracking_number = i.tracking_number)
+                          AND (p.recipient_name LIKE ? OR p.items_raw LIKE ? OR p.tracking_number LIKE ? OR p.order_no LIKE ?)
+                    ))';
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+            } else {
+                $where[] = '(i.tracking_number LIKE ? OR i.photo_filename LIKE ?
+                    OR EXISTS (
+                        SELECT 1 FROM online_order_parcels p
+                        WHERE p.tracking_number = i.tracking_number
+                          AND (p.recipient_name LIKE ? OR p.items_raw LIKE ? OR p.tracking_number LIKE ? OR p.order_no LIKE ?)
+                    ))';
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+            }
         }
     }
     $whereSql = implode(' AND ', $where);

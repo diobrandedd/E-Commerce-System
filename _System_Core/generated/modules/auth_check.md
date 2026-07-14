@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-07-14T08:35:37+02:00
+generated: 2026-07-14T09:44:40+02:00
 type: module
 function_count: 14
 ---
@@ -55,7 +55,7 @@ function_count: 14
 - `api/v1/_bootstrap.php`:131 — `$u = ims_current_user();`
 - `api/v1/auth.php`:69 — `$user = ims_current_user();`
 - `api/v1/auth.php`:113 — `$user = ims_current_user();`
-- `api/v1/deliveries.php`:12 — `$user = ims_current_user();`
+- `api/v1/deliveries.php`:13 — `$user = ims_current_user();`
 - `api/v1/online_orders.php`:21 — `$user = ims_current_user();`
 - `api/v1/online_orders.php`:84 — `$user = ims_current_user();`
 - `api/v1/online_orders.php`:99 — `$user = ims_current_user();`

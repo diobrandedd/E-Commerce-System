@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-07-14T08:35:36+02:00
+generated: 2026-07-14T09:44:39+02:00
 type: memory-bank
 ---
 
@@ -107,7 +107,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/deliveries.php`
 - **URL:** `/rts/api/v1/deliveries.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/deliveries_upload.php`, `includes/delivery_edit_requests.php`, `includes/online_order_parcels.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/deliveries_upload.php`, `includes/delivery_edit_requests.php`, `includes/online_order_parcels.php`, `includes/tracking_search.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
@@ -119,7 +119,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `cancel_log_list` | `api_deliveries_cancel_log_list()` | `ims_pdo()`, `online_parcels_cancel_log_list()` |
 | `hold_parcel` | `api_deliveries_hold_parcel()` | `ims_pdo()`, `online_parcels_hold()` |
 | `rewaybill` | `api_deliveries_rewaybill()` | `ims_pdo()`, `online_parcels_rewaybill()` |
-| `review_list` | `api_deliveries_review_list()` | `ims_pdo()`, `rts_db_has_column()`, `online_parcels_format_packing_photo()`, `deliveries_enrich_review_rows()` |
+| `review_list` | `api_deliveries_review_list()` | `ims_pdo()`, `tracking_search_is_tn_shaped()`, `tracking_search_tn_column_sql()`, `tracking_search_contains_like()`, `rts_db_has_column()`, `online_parcels_format_packing_photo()`, `deliveries_enrich_review_rows()` |
 | `void_item` | `api_deliveries_delete_item()` | `ims_pdo()`, `deliveries_delete_item_by_id()` |
 | `delete_item` | `api_deliveries_delete_item()` | `ims_pdo()`, `deliveries_delete_item_by_id()` |
 | `resolve_item` | `api_deliveries_resolve_item()` | `ims_pdo()`, `deliveries_resolve_item_by_id()` |

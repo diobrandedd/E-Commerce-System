@@ -7,6 +7,7 @@ import { appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion"
 import { runOnlineParcelsTour } from "@/app/components/tour/guides/onlineParcelsTour";
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { useAuth } from "@/app/context/AuthContext";
+import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
 import {
   OnlineParcelDetailModal,
   ParcelStatusBadgeInline,
@@ -34,6 +35,8 @@ import { ApiError } from "@/app/lib/api";
 
 const PAGE_SIZE_PRESETS = [25, 100, 1000, 10000] as const;
 const MAX_PER_PAGE = 10000;
+/** While typing a search, cap page size so we do not pull 1k/10k rows every keystroke. */
+const SEARCH_LIVE_MAX_PER_PAGE = 100;
 
 function formatCreatedAt(iso: string): string {
   if (!iso) return "—";
@@ -116,6 +119,7 @@ function showToast(setter: (v: string | null) => void, message: string, ms = 280
 export function OnlineParcelsPage() {
   const { user } = useAuth();
   const [q, setQ] = useState("");
+  const debouncedQ = useDebouncedValue(q, 300);
   const [status, setStatus] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -148,6 +152,13 @@ export function OnlineParcelsPage() {
     return perPage;
   }, [perPage, customPerPage]);
 
+  const listPerPage = useMemo(() => {
+    if (debouncedQ.trim() !== "" && effectivePerPage > SEARCH_LIVE_MAX_PER_PAGE) {
+      return SEARCH_LIVE_MAX_PER_PAGE;
+    }
+    return effectivePerPage;
+  }, [debouncedQ, effectivePerPage]);
+
   useEffect(() => {
     void parcelsFilterOptions()
       .then(opts => setCourierOptions(opts.couriers))
@@ -159,10 +170,10 @@ export function OnlineParcelsPage() {
     if (!quiet) setError(null);
     try {
       const res = await parcelsList({
-        q,
+        q: debouncedQ,
         status: status || undefined,
         page,
-        per_page: effectivePerPage,
+        per_page: listPerPage,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
         partner_seller: partnerSeller || undefined,
@@ -188,10 +199,10 @@ export function OnlineParcelsPage() {
       setLoading(false);
     }
   }, [
-    q,
+    debouncedQ,
     status,
     page,
-    effectivePerPage,
+    listPerPage,
     dateFrom,
     dateTo,
     partnerSeller,
@@ -207,7 +218,7 @@ export function OnlineParcelsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [q, status, dateFrom, dateTo, partnerSeller, sourcePipeline, courier, sort, sortDir, effectivePerPage]);
+  }, [debouncedQ, status, dateFrom, dateTo, partnerSeller, sourcePipeline, courier, sort, sortDir, listPerPage]);
 
   const lookup = async () => {
     if (!q.trim()) return;
@@ -423,7 +434,12 @@ export function OnlineParcelsPage() {
               onChange={e => setCustomPerPage(e.target.value)}
               className="w-16 rounded-md border border-border bg-background px-2 py-1 text-xs"
             />
-            {effectivePerPage >= 1000 && (
+            {debouncedQ.trim() !== "" && effectivePerPage > SEARCH_LIVE_MAX_PER_PAGE && (
+              <span className="text-[10px] text-muted-foreground">
+                Search capped at {SEARCH_LIVE_MAX_PER_PAGE}/page — clear search for larger pages
+              </span>
+            )}
+            {effectivePerPage >= 1000 && debouncedQ.trim() === "" && (
               <span className="text-[10px] text-amber-700 dark:text-amber-400">
                 Large lists may take a moment to load
               </span>
@@ -560,7 +576,7 @@ export function OnlineParcelsPage() {
             page={page}
             setPage={setPage}
             totalRows={total}
-            perPage={effectivePerPage}
+            perPage={listPerPage}
             noun="parcels"
           />
           </div>

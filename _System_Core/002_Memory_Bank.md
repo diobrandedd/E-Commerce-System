@@ -631,3 +631,7 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-07-14 — Honey dept TL gallon pipeline
 - **What we did:** Honey-dept TL can warehouse stock in/out, production→packaging, packaging sell, and submit corrections (`honey_role_can_honey_ops`); `suppliers.php` list allowed for `tl` so stock-in picker works.
 - **Record:** [[problems/fixes/honey-pipeline-tl-ops]]
+
+### 2026-07-14 — Fast tracking search
+- **What we did:** Debounced list search + TN-shaped `=`/prefix SQL on Deliveries review, RTS lists, Online parcels; search caps parcels `per_page` at 100.
+- **Record:** [[problems/fixes/fast-tracking-search]]

@@ -1,7 +1,7 @@
 ---
 title: online_orders_generator
 source: includes/online_orders_generator.php
-generated: 2026-07-14T08:35:53+02:00
+generated: 2026-07-14T09:44:57+02:00
 type: module
 function_count: 44
 ---
@@ -163,7 +163,7 @@ function_count: 44
 **Callers (2):**
 
 - `includes/online_orders_generator.php`:349 — `parent::__construct($message ?? 'One or more tracking numbers already exist.');`
-- `includes/rts_case_handlers.php`:24 — `parent::__construct($message);`
+- `includes/rts_case_handlers.php`:25 — `parent::__construct($message);`
 
 ## online_orders_normalize_tracking {#online_orders_normalize_tracking}
 
@@ -219,7 +219,7 @@ function_count: 44
 **Callers (8):**
 
 - `api/v1/parcels.php`:166 — `$items = online_orders_normalize_items_display($items);`
-- `includes/online_order_parcels.php`:900 — `$itemsRaw = online_orders_normalize_items_display(trim($itemsRaw));`
+- `includes/online_order_parcels.php`:909 — `$itemsRaw = online_orders_normalize_items_display(trim($itemsRaw));`
 - `includes/online_orders_generator.php`:549 — `online_orders_normalize_items_display($items),`
 - `includes/online_orders_generator.php`:590 — `$items = online_orders_normalize_items_display((string) ($line['items'] ?? ''));`
 - `includes/online_orders_generator.php`:630 — `'items' => online_orders_normalize_items_display($row['items']),`
@@ -349,14 +349,14 @@ function_count: 44
 
 **Callers (2):**
 
-- `includes/online_order_parcels.php`:836 — `$metaJson = online_orders_build_print_workbook_meta($rows);`
+- `includes/online_order_parcels.php`:845 — `$metaJson = online_orders_build_print_workbook_meta($rows);`
 - `includes/online_orders_generator.php`:1164 — `return online_orders_build_print_workbook_meta($dbRows);`
 
 ## online_orders_register_master_download {#online_orders_register_master_download}
 
 **Callers (2):**
 
-- `includes/online_order_parcels.php`:837 — `$token = online_orders_register_master_download($metaJson);`
+- `includes/online_order_parcels.php`:846 — `$token = online_orders_register_master_download($metaJson);`
 - `includes/online_orders_generator.php`:1289 — `$token = online_orders_register_master_download($metaJson);`
 
 ## online_orders_serve_download {#online_orders_serve_download}

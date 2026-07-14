@@ -16,6 +16,7 @@ import { fulfillmentHoverRow } from "@/app/components/csr/onlineFulfillmentMotio
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/app/components/ui/utils";
 import { useAuth } from "@/app/context/AuthContext";
+import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
 import { deliveriesReviewList, type DeliveryReviewRow } from "@/app/lib/deliveriesApi";
 import { ApiError } from "@/app/lib/api";
 
@@ -41,6 +42,7 @@ export function DeliveriesReviewPage() {
   const { user } = useAuth();
   const isExecutive = user?.role === "executive";
   const [q, setQ] = useState("");
+  const debouncedQ = useDebouncedValue(q, 300);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
@@ -53,11 +55,17 @@ export function DeliveriesReviewPage() {
   const [viewRow, setViewRow] = useState<DeliveryReviewRow | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (qOverride?: string) => {
     setBusy(true);
     setError(null);
     try {
-      const res = await deliveriesReviewList({ q, from, to, page, per_page: 10 });
+      const res = await deliveriesReviewList({
+        q: qOverride !== undefined ? qOverride : debouncedQ,
+        from,
+        to,
+        page,
+        per_page: 10,
+      });
       setRows(res.rows);
       setTotal(res.total);
     } catch (e) {
@@ -65,11 +73,15 @@ export function DeliveriesReviewPage() {
     } finally {
       setBusy(false);
     }
-  }, [q, from, to, page]);
+  }, [debouncedQ, from, to, page]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQ, from, to]);
 
   const flash = (msg: string) => {
     setNotice(msg);
@@ -137,7 +149,7 @@ export function DeliveriesReviewPage() {
         />
         <input type="date" className="rounded-lg border border-border px-2 py-2 text-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
         <input type="date" className="rounded-lg border border-border px-2 py-2 text-sm" value={to} onChange={(e) => setTo(e.target.value)} />
-        <Button type="button" onClick={() => void load()}>
+        <Button type="button" onClick={() => void load(q)}>
           Search
         </Button>
       </div>

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-07-14T08:35:36+02:00
+generated: 2026-07-14T09:44:39+02:00
 type: memory-bank
 ---
 
@@ -66,4 +66,5 @@ type: memory-bank
 | [[modules/shopee_spx_product_info]] | 12 |
 | [[modules/sp_sort_service]] | 26 |
 | [[modules/suppliers]] | 12 |
+| [[modules/tracking_search]] | 4 |
 | [[modules/waybill_stamper]] | 19 |

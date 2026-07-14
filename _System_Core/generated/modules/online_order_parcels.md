@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-07-14T08:35:53+02:00
+generated: 2026-07-14T09:44:56+02:00
 type: module
 function_count: 27
 ---
@@ -20,6 +20,7 @@ function_count: 27
 - `includes/qr_decode.php`
 - `includes/rts_schema.php`
 - `includes/rts_storage.php`
+- `includes/tracking_search.php`
 - `includes/online_orders_generator.php`
 - `includes/online_orders_generator.php`
 
@@ -29,8 +30,8 @@ function_count: 27
 
 **Callers (2):**
 
-- `includes/online_order_parcels.php`:56 — `return online_parcels_user_is_csr_dept($user);`
-- `includes/online_order_parcels.php`:86 — `if (in_array($role, ['tl', 'staff'], true) && online_parcels_user_is_csr_dept($user)) {`
+- `includes/online_order_parcels.php`:57 — `return online_parcels_user_is_csr_dept($user);`
+- `includes/online_order_parcels.php`:87 — `if (in_array($role, ['tl', 'staff'], true) && online_parcels_user_is_csr_dept($user)) {`
 
 ## online_parcels_user_can_access {#online_parcels_user_can_access}
 
@@ -42,7 +43,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:16 — `if (!online_parcels_user_can_ship($user)) {`
+- `api/v1/deliveries.php`:17 — `if (!online_parcels_user_can_ship($user)) {`
 
 ## online_parcels_user_can_edit_items {#online_parcels_user_can_edit_items}
 
@@ -55,7 +56,7 @@ function_count: 27
 
 **Callers (24):**
 
-- `api/v1/deliveries.php`:132 — `online_parcels_ensure_schema($pdo);`
+- `api/v1/deliveries.php`:133 — `online_parcels_ensure_schema($pdo);`
 - `api/v1/parcels.php`:51 — `online_parcels_ensure_schema($pdo);`
 - `api/v1/parcels.php`:69 — `online_parcels_ensure_schema($pdo);`
 - `api/v1/parcels.php`:109 — `online_parcels_ensure_schema($pdo);`
@@ -63,22 +64,22 @@ function_count: 27
 - `includes/deliveries_upload.php`:63 — `online_parcels_ensure_schema($pdo);`
 - `includes/delivery_edit_requests.php`:144 — `online_parcels_ensure_schema($pdo);`
 - `includes/delivery_edit_requests.php`:417 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:241 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:337 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:355 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:427 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:461 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:784 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:811 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:852 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:894 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:977 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:1092 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:1211 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:1313 — `online_parcels_ensure_schema($pdo);`
-- `includes/online_order_parcels.php`:1419 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:242 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:338 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:356 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:428 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:462 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:793 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:820 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:861 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:903 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:986 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:1101 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:1220 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:1322 — `online_parcels_ensure_schema($pdo);`
+- `includes/online_order_parcels.php`:1428 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_orders_generator.php`:389 — `online_parcels_ensure_schema($pdo);`
-- `includes/rts_case_handlers.php`:466 — `online_parcels_ensure_schema($pdo);`
+- `includes/rts_case_handlers.php`:467 — `online_parcels_ensure_schema($pdo);`
 
 ## online_parcels_apply_rts_schema_migrations {#online_parcels_apply_rts_schema_migrations}
 
@@ -86,7 +87,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `includes/online_order_parcels.php`:171 — `online_parcels_apply_rts_schema_migrations($pdo);`
+- `includes/online_order_parcels.php`:172 — `online_parcels_apply_rts_schema_migrations($pdo);`
 
 ## online_parcels_promote_from_batch {#online_parcels_promote_from_batch}
 
@@ -100,7 +101,7 @@ function_count: 27
 
 **Callers (19):**
 
-- `api/v1/deliveries.php`:133 — `$tracking = online_parcels_normalize_tracking($raw);`
+- `api/v1/deliveries.php`:134 — `$tracking = online_parcels_normalize_tracking($raw);`
 - `api/v1/parcels.php`:138 — `$tracking = online_parcels_normalize_tracking($raw);`
 - `includes/deliveries_upload.php`:126 — `$tnNorm = online_parcels_normalize_tracking((string) $tn);`
 - `includes/delivery_edit_requests.php`:14 — `$tracking = online_parcels_normalize_tracking($tracking);`
@@ -111,13 +112,13 @@ function_count: 27
 - `includes/delivery_edit_requests.php`:361 — `$normalized = online_parcels_normalize_tracking($newValue);`
 - `includes/delivery_edit_requests.php`:429 — `$tn = online_parcels_normalize_tracking((string) ($row['tracking_number'] ?? ''));`
 - `includes/delivery_edit_requests.php`:483 — `$tn = online_parcels_normalize_tracking((string) ($row['tracking_number'] ?? ''));`
-- `includes/online_order_parcels.php`:338 — `$tracking = online_parcels_normalize_tracking($tracking);`
-- `includes/online_order_parcels.php`:356 — `$tracking = online_parcels_normalize_tracking($tracking);`
-- `includes/online_order_parcels.php`:978 — `$tracking = online_parcels_normalize_tracking($tracking);`
-- `includes/online_order_parcels.php`:1093 — `$tracking = online_parcels_normalize_tracking($tracking);`
-- `includes/online_order_parcels.php`:1212 — `$tracking = online_parcels_normalize_tracking($tracking);`
-- `includes/online_order_parcels.php`:1314 — `$oldTracking = online_parcels_normalize_tracking($oldTracking);`
-- `includes/online_order_parcels.php`:1315 — `$newTracking = online_parcels_normalize_tracking($newTracking);`
+- `includes/online_order_parcels.php`:339 — `$tracking = online_parcels_normalize_tracking($tracking);`
+- `includes/online_order_parcels.php`:357 — `$tracking = online_parcels_normalize_tracking($tracking);`
+- `includes/online_order_parcels.php`:987 — `$tracking = online_parcels_normalize_tracking($tracking);`
+- `includes/online_order_parcels.php`:1102 — `$tracking = online_parcels_normalize_tracking($tracking);`
+- `includes/online_order_parcels.php`:1221 — `$tracking = online_parcels_normalize_tracking($tracking);`
+- `includes/online_order_parcels.php`:1323 — `$oldTracking = online_parcels_normalize_tracking($oldTracking);`
+- `includes/online_order_parcels.php`:1324 — `$newTracking = online_parcels_normalize_tracking($newTracking);`
 - `includes/rts_prefill.php`:191 — `$normalized = online_parcels_normalize_tracking(trim($tracking));`
 
 ## online_parcels_get_by_tracking {#online_parcels_get_by_tracking}
@@ -126,14 +127,14 @@ function_count: 27
 
 **Callers (9):**
 
-- `api/v1/deliveries.php`:138 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
+- `api/v1/deliveries.php`:139 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `api/v1/parcels.php`:115 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `api/v1/parcels.php`:142 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `includes/delivery_edit_requests.php`:130 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
-- `includes/online_order_parcels.php`:989 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
-- `includes/online_order_parcels.php`:1098 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
-- `includes/online_order_parcels.php`:1217 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
-- `includes/online_order_parcels.php`:1323 — `$parcel = online_parcels_get_by_tracking($pdo, $oldTracking);`
+- `includes/online_order_parcels.php`:998 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
+- `includes/online_order_parcels.php`:1107 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
+- `includes/online_order_parcels.php`:1226 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
+- `includes/online_order_parcels.php`:1332 — `$parcel = online_parcels_get_by_tracking($pdo, $oldTracking);`
 - `includes/rts_prefill.php`:209 — `$parcel = online_parcels_get_by_tracking($pdo, $normalized);`
 
 ## online_parcels_mark_rts {#online_parcels_mark_rts}
@@ -142,7 +143,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:503 — `online_parcels_mark_rts($pdo, $tracking, $caseId);`
+- `includes/rts_case_handlers.php`:504 — `online_parcels_mark_rts($pdo, $tracking, $caseId);`
 
 ## online_parcels_revert_rts_by_case {#online_parcels_revert_rts_by_case}
 
@@ -150,7 +151,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:658 — `online_parcels_revert_rts_by_case($pdo, $caseId);`
+- `includes/rts_case_handlers.php`:659 — `online_parcels_revert_rts_by_case($pdo, $caseId);`
 
 ## online_parcels_get_by_id {#online_parcels_get_by_id}
 
@@ -160,17 +161,17 @@ function_count: 27
 
 - `api/v1/parcels.php`:113 — `$parcel = online_parcels_get_by_id($pdo, $id);`
 - `includes/delivery_edit_requests.php`:198 — `return online_parcels_get_by_id($pdo, $parcelId) ?? $parcel;`
-- `includes/online_order_parcels.php`:376 — `return online_parcels_get_by_id($pdo, $parcelId);`
-- `includes/online_order_parcels.php`:396 — `return online_parcels_get_by_id($pdo, $parcelId);`
-- `includes/online_order_parcels.php`:416 — `return online_parcels_get_by_id($pdo, $parcelId);`
-- `includes/online_order_parcels.php`:957 — `$fresh = online_parcels_get_by_id($pdo, $parcelId);`
-- `includes/online_order_parcels.php`:1029 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
-- `includes/online_order_parcels.php`:1071 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
-- `includes/online_order_parcels.php`:1136 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
-- `includes/online_order_parcels.php`:1189 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
-- `includes/online_order_parcels.php`:1248 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
-- `includes/online_order_parcels.php`:1292 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
-- `includes/online_order_parcels.php`:1406 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
+- `includes/online_order_parcels.php`:377 — `return online_parcels_get_by_id($pdo, $parcelId);`
+- `includes/online_order_parcels.php`:397 — `return online_parcels_get_by_id($pdo, $parcelId);`
+- `includes/online_order_parcels.php`:417 — `return online_parcels_get_by_id($pdo, $parcelId);`
+- `includes/online_order_parcels.php`:966 — `$fresh = online_parcels_get_by_id($pdo, $parcelId);`
+- `includes/online_order_parcels.php`:1038 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
+- `includes/online_order_parcels.php`:1080 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
+- `includes/online_order_parcels.php`:1145 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
+- `includes/online_order_parcels.php`:1198 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
+- `includes/online_order_parcels.php`:1257 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
+- `includes/online_order_parcels.php`:1301 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
+- `includes/online_order_parcels.php`:1415 — `$fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);`
 
 ## online_parcels_find_packing_photo {#online_parcels_find_packing_photo}
 
@@ -178,23 +179,23 @@ function_count: 27
 
 **Callers (1):**
 
-- `includes/online_order_parcels.php`:544 — `$parcel['packing_photo'] = online_parcels_find_packing_photo(`
+- `includes/online_order_parcels.php`:545 — `$parcel['packing_photo'] = online_parcels_find_packing_photo(`
 
 ## online_parcels_format_packing_photo {#online_parcels_format_packing_photo}
 
 **Callers (5):**
 
-- `api/v1/deliveries.php`:380 — `$photo = online_parcels_format_packing_photo([`
-- `includes/online_order_parcels.php`:491 — `return online_parcels_format_packing_photo($row);`
-- `includes/online_order_parcels.php`:515 — `return online_parcels_format_packing_photo($row);`
-- `includes/online_order_parcels.php`:590 — `$formatted = online_parcels_format_packing_photo($photoRow);`
-- `includes/online_order_parcels.php`:626 — `$formatted = online_parcels_format_packing_photo($photoRow);`
+- `api/v1/deliveries.php`:389 — `$photo = online_parcels_format_packing_photo([`
+- `includes/online_order_parcels.php`:492 — `return online_parcels_format_packing_photo($row);`
+- `includes/online_order_parcels.php`:516 — `return online_parcels_format_packing_photo($row);`
+- `includes/online_order_parcels.php`:591 — `$formatted = online_parcels_format_packing_photo($photoRow);`
+- `includes/online_order_parcels.php`:627 — `$formatted = online_parcels_format_packing_photo($photoRow);`
 
 ## online_parcels_enrich_packing_photo {#online_parcels_enrich_packing_photo}
 
 **Callers (1):**
 
-- `includes/online_order_parcels.php`:687 — `return online_parcels_enrich_packing_photo($pdo, $formatted);`
+- `includes/online_order_parcels.php`:688 — `return online_parcels_enrich_packing_photo($pdo, $formatted);`
 
 ## online_parcels_enrich_packing_photos_batch {#online_parcels_enrich_packing_photos_batch}
 
@@ -202,7 +203,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `includes/online_order_parcels.php`:884 — `return ['rows' => online_parcels_enrich_packing_photos_batch($pdo, $rows), 'total' => $total];`
+- `includes/online_order_parcels.php`:893 — `return ['rows' => online_parcels_enrich_packing_photos_batch($pdo, $rows), 'total' => $total];`
 
 ## online_parcels_format_row {#online_parcels_format_row}
 
@@ -210,15 +211,15 @@ function_count: 27
 
 - `includes/delivery_edit_requests.php`:444 — `$parcel = online_parcels_format_row($raw, null);`
 - `includes/delivery_edit_requests.php`:464 — `$parcel = online_parcels_format_row($raw, null);`
-- `includes/online_order_parcels.php`:345 — `return online_parcels_format_row($st->fetch(PDO::FETCH_ASSOC) ?: null, $pdo);`
-- `includes/online_order_parcels.php`:465 — `return online_parcels_format_row($st->fetch(PDO::FETCH_ASSOC) ?: null, $pdo);`
-- `includes/online_order_parcels.php`:878 — `$formatted = online_parcels_format_row($r);`
+- `includes/online_order_parcels.php`:346 — `return online_parcels_format_row($st->fetch(PDO::FETCH_ASSOC) ?: null, $pdo);`
+- `includes/online_order_parcels.php`:466 — `return online_parcels_format_row($st->fetch(PDO::FETCH_ASSOC) ?: null, $pdo);`
+- `includes/online_order_parcels.php`:887 — `$formatted = online_parcels_format_row($r);`
 
 ## online_parcels_list_query_parts {#online_parcels_list_query_parts}
 
 **Callers (1):**
 
-- `includes/online_order_parcels.php`:863 — `$parts = online_parcels_list_query_parts($filters);`
+- `includes/online_order_parcels.php`:872 — `$parts = online_parcels_list_query_parts($filters);`
 
 ## online_parcels_filter_options {#online_parcels_filter_options}
 
@@ -258,7 +259,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:170 — `$result = online_parcels_ship($pdo, (int) $user['id'], $tracking, $deliveryItemId, $shipDate);`
+- `api/v1/deliveries.php`:171 — `$result = online_parcels_ship($pdo, (int) $user['id'], $tracking, $deliveryItemId, $shipDate);`
 
 ## online_parcels_cancel {#online_parcels_cancel}
 
@@ -266,7 +267,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:203 — `$result = online_parcels_cancel($pdo, (int) $user['id'], $tracking, $source, $note);`
+- `api/v1/deliveries.php`:204 — `$result = online_parcels_cancel($pdo, (int) $user['id'], $tracking, $source, $note);`
 
 ## online_parcels_hold {#online_parcels_hold}
 
@@ -274,7 +275,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:259 — `$result = online_parcels_hold($pdo, (int) $user['id'], $tracking, $note);`
+- `api/v1/deliveries.php`:260 — `$result = online_parcels_hold($pdo, (int) $user['id'], $tracking, $note);`
 
 ## online_parcels_rewaybill {#online_parcels_rewaybill}
 
@@ -282,7 +283,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:291 — `$result = online_parcels_rewaybill($pdo, (int) $user['id'], $oldTracking, $newTracking);`
+- `api/v1/deliveries.php`:292 — `$result = online_parcels_rewaybill($pdo, (int) $user['id'], $oldTracking, $newTracking);`
 
 ## online_parcels_cancel_log_list {#online_parcels_cancel_log_list}
 
@@ -290,5 +291,5 @@ function_count: 27
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:232 — `$result = online_parcels_cancel_log_list($pdo, $q, $from, $to, $page, $perPage);`
+- `api/v1/deliveries.php`:233 — `$result = online_parcels_cancel_log_list($pdo, $q, $from, $to, $page, $perPage);`
 

@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-07-14T08:36:00+02:00
+generated: 2026-07-14T09:45:03+02:00
 type: module
 function_count: 14
 ---
@@ -56,7 +56,7 @@ function_count: 14
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:566 — `rts_case_replace_line_items($pdo, $caseId, $fields['lines']);`
+- `includes/rts_case_handlers.php`:567 — `rts_case_replace_line_items($pdo, $caseId, $fields['lines']);`
 
 ## rts_inventory_sync_status {#rts_inventory_sync_status}
 

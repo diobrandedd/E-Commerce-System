@@ -7,6 +7,7 @@ require_once __DIR__ . '/honey_parcel_inventory.php';
 require_once __DIR__ . '/qr_decode.php';
 require_once __DIR__ . '/rts_schema.php';
 require_once __DIR__ . '/rts_storage.php';
+require_once __DIR__ . '/tracking_search.php';
 
 /** Max rows per list page (SPA custom input and API). */
 const ONLINE_PARCELS_LIST_MAX_PER_PAGE = 10000;
@@ -713,13 +714,21 @@ function online_parcels_list_query_parts(array $filters): array
 
     $q = trim((string) ($filters['q'] ?? ''));
     if ($q !== '') {
-        $where[] = '(tracking_number LIKE ? OR recipient_name LIKE ? OR items_raw LIKE ? OR order_no LIKE ? OR courier LIKE ?)';
-        $like = '%' . $q . '%';
-        $params[] = $like;
-        $params[] = $like;
-        $params[] = $like;
-        $params[] = $like;
-        $params[] = $like;
+        if (tracking_search_is_tn_shaped($q)) {
+            [$tnSql, $tnParams] = tracking_search_tn_column_sql('tracking_number', $q);
+            $where[] = $tnSql;
+            foreach ($tnParams as $p) {
+                $params[] = $p;
+            }
+        } else {
+            $where[] = '(tracking_number LIKE ? OR recipient_name LIKE ? OR items_raw LIKE ? OR order_no LIKE ? OR courier LIKE ?)';
+            $like = tracking_search_contains_like($q);
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
     }
 
     $status = trim((string) ($filters['status'] ?? ''));

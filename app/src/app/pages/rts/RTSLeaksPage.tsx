@@ -10,6 +10,7 @@ import {
   rtsRegistryRowClassName,
 } from "@/app/components/rts/RtsCaseMediaUi";
 import { FulfillmentErrorBanner } from "@/app/components/csr/onlineFulfillmentMotion";
+import { useDebouncedValue } from "@/app/hooks/useDebouncedValue";
 import { ApiError } from "@/app/lib/api";
 import { rtsGetCatalog, rtsLineDisplay, rtsListLeaks, type RtsCaseRow, type RtsProductCatalog } from "@/app/lib/rtsApi";
 
@@ -19,18 +20,19 @@ export function RTSLeaksPage() {
   const [catalog, setCatalog] = useState<RtsProductCatalog | null>(null);
   const [rows, setRows] = useState<RtsCaseRow[]>([]);
   const [q, setQ] = useState("");
+  const debouncedQ = useDebouncedValue(q, 300);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<RtsCaseRow | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (qOverride?: string) => {
     setLoading(true);
     try {
       const [cat, data] = await Promise.all([
         catalog ? Promise.resolve(catalog) : rtsGetCatalog(),
-        rtsListLeaks({ q, page, per_page: PER_PAGE }),
+        rtsListLeaks({ q: qOverride !== undefined ? qOverride : debouncedQ, page, per_page: PER_PAGE }),
       ]);
       if (!catalog) setCatalog(cat);
       setRows(data.cases);
@@ -40,11 +42,15 @@ export function RTSLeaksPage() {
     } finally {
       setLoading(false);
     }
-  }, [catalog, page, q]);
+  }, [catalog, page, debouncedQ]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQ]);
 
   const labels = catalog?.product_labels ?? {};
   const docBase = catalog?.doc_url_base ?? "";
@@ -59,11 +65,11 @@ export function RTSLeaksPage() {
       <div className="flex gap-2 mb-4 max-w-md">
         <input
           value={q}
-          onChange={e => { setQ(e.target.value); setPage(1); }}
+          onChange={e => setQ(e.target.value)}
           placeholder="Search tracking…"
           className="flex-1 border rounded-lg px-3 py-2 text-sm"
         />
-        <Button type="button" variant="outline" onClick={() => void load()}>Search</Button>
+        <Button type="button" variant="outline" onClick={() => { setPage(1); void load(q); }}>Search</Button>
       </div>
 
       {loading ? (

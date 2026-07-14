@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-07-14T08:35:36+02:00
+generated: 2026-07-14T09:44:39+02:00
 type: memory-bank
-edge_count: 248
+edge_count: 251
 ---
 
 
@@ -40,6 +40,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/deliveries.php` | `includes/deliveries_upload.php` |
 | `api/v1/deliveries.php` | `includes/delivery_edit_requests.php` |
 | `api/v1/deliveries.php` | `includes/online_order_parcels.php` |
+| `api/v1/deliveries.php` | `includes/tracking_search.php` |
 | `api/v1/edit_requests.php` | `api/v1/_bootstrap.php` |
 | `api/v1/edit_requests.php` | `includes/delivery_edit_requests.php` |
 | `api/v1/fulfillment_packing.php` | `api/v1/_bootstrap.php` |
@@ -171,6 +172,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/online_order_parcels.php` | `includes/qr_decode.php` |
 | `includes/online_order_parcels.php` | `includes/rts_schema.php` |
 | `includes/online_order_parcels.php` | `includes/rts_storage.php` |
+| `includes/online_order_parcels.php` | `includes/tracking_search.php` |
 | `includes/online_orders_generator.php` | `includes/db.php` |
 | `includes/online_orders_generator.php` | `includes/online_order_parcels.php` |
 | `includes/online_orders_generator.php` | `includes/online_order_parcels.php` |
@@ -196,6 +198,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/rts_case_handlers.php` | `includes/rts_schema.php` |
 | `includes/rts_case_handlers.php` | `includes/rts_shop_couriers.php` |
 | `includes/rts_case_handlers.php` | `includes/rts_storage.php` |
+| `includes/rts_case_handlers.php` | `includes/tracking_search.php` |
 | `includes/rts_damaged_use.php` | `includes/catalog_bootstrap.php` |
 | `includes/rts_damaged_use.php` | `includes/db.php` |
 | `includes/rts_damaged_use.php` | `includes/dept_production.php` |

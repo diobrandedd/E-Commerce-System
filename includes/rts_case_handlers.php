@@ -12,6 +12,7 @@ require_once __DIR__ . '/rts_storage.php';
 require_once __DIR__ . '/rts_prefill.php';
 require_once __DIR__ . '/online_order_parcels.php';
 require_once __DIR__ . '/rts_inventory_sync.php';
+require_once __DIR__ . '/tracking_search.php';
 
 class RtsCaseException extends RuntimeException
 {
@@ -720,8 +721,16 @@ function rts_case_handler_list(PDO $pdo, array $filters): array
     $where = ['1=1'];
     $params = [];
     if ($q !== '') {
-        $where[] = 'c.tracking_number LIKE ?';
-        $params[] = '%' . $q . '%';
+        if (tracking_search_is_tn_shaped($q)) {
+            [$tnSql, $tnParams] = tracking_search_tn_column_sql('c.tracking_number', $q);
+            $where[] = $tnSql;
+            foreach ($tnParams as $p) {
+                $params[] = $p;
+            }
+        } else {
+            $where[] = 'c.tracking_number LIKE ?';
+            $params[] = tracking_search_contains_like($q);
+        }
     }
     if ($vipOnly) {
         $where[] = "c.shop = 'vip'";
@@ -828,8 +837,16 @@ function rts_case_handler_list_by_disposition(PDO $pdo, string $disposition, arr
     $where = [$registry['sql'], 'c.voided_at IS NULL'];
     $params = $registry['params'];
     if ($q !== '') {
-        $where[] = 'c.tracking_number LIKE ?';
-        $params[] = '%' . $q . '%';
+        if (tracking_search_is_tn_shaped($q)) {
+            [$tnSql, $tnParams] = tracking_search_tn_column_sql('c.tracking_number', $q);
+            $where[] = $tnSql;
+            foreach ($tnParams as $p) {
+                $params[] = $p;
+            }
+        } else {
+            $where[] = 'c.tracking_number LIKE ?';
+            $params[] = tracking_search_contains_like($q);
+        }
     }
     $whereSql = implode(' AND ', $where);
 
