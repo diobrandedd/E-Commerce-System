@@ -924,6 +924,17 @@ function material_packaging_set_on_hand(
             $userId,
         ]);
         $entryId = (int) $pdo->lastInsertId();
+        require_once __DIR__ . '/inventory_edit_log.php';
+        inventory_edit_log_write(
+            $pdo,
+            $userId,
+            'stocks',
+            $stockId,
+            'on_hand',
+            (string) $oldOnHand,
+            (string) $newOnHand,
+            'set_on_hand'
+        );
     }
 
     return [
@@ -1384,6 +1395,17 @@ function material_supply_set_on_hand(
             $userId,
         ]);
         $entryId = (int) $pdo->lastInsertId();
+        require_once __DIR__ . '/inventory_edit_log.php';
+        inventory_edit_log_write(
+            $pdo,
+            $userId,
+            'stocks',
+            $stockId,
+            'on_hand',
+            (string) $oldOnHand,
+            (string) $newOnHand,
+            'set_on_hand'
+        );
     }
 
     return [

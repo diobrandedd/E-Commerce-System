@@ -12,6 +12,7 @@ const ROLE_LABELS: Partial<Record<Role, string>> = {
   executive: "Executive",
   hr: "HR",
   prod_manager: "Production Manager",
+  team_leader: "Team Leader",
 };
 
 function GuideSection({ title, children }: { title: string; children: React.ReactNode }) {

@@ -19,7 +19,7 @@ export function HoneyProductInventoryPage() {
             to="/inventory/raw-materials/honey/packaging"
             className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary"
           >
-            Batch rows & sales →
+            Batch rows →
           </Link>
         </div>
       }

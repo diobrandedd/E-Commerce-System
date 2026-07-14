@@ -31,6 +31,7 @@ import { ARCreditsPage } from "./pages/exec/ARCreditsPage";
 import { ReportsPage } from "./pages/exec/ReportsPage";
 import { SuppliersPage } from "./pages/exec/SuppliersPage";
 import { SettingsPage } from "./pages/exec/SettingsPage";
+import { MonthlyInventoryPage } from "./pages/exec/MonthlyInventoryPage";
 import { POSCategoryPage } from "./pages/pos/POSCategoryPage";
 import { POSDeptPage } from "./pages/pos/POSDeptPage";
 import { POSHoneyPage } from "./pages/pos/POSHoneyPage";
@@ -86,6 +87,7 @@ export const router = createBrowserRouter(
         { path: "beginning-inventory", element: guarded(InventoryPage) },
         { path: "edit-requests", element: guarded(EditRequestsPage) },
         { path: "inventory/requests", element: guarded(InventoryRequestsPage, { roles: invRoles }) },
+        { path: "inventory/monthly-count", element: guarded(MonthlyInventoryPage, { roles: ["executive"] }) },
         { path: "inventory/raw-materials", element: invGuard(RawMaterialsHubPage) },
         { path: "inventory/raw-materials/honey", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
         { path: "inventory/raw-materials/honey/warehouse", element: invViewGuard(HoneyWarehousePage) },

@@ -30,7 +30,7 @@ export const RAW_MATERIAL_ROUTES: Record<string, RawMaterialRoute> = {
   cacao: {
     slug: "cacao",
     productKey: "jar_cacao",
-    title: "Cacao Beans",
+    title: "Cacao",
     subtitle: "Raw bag inventory — stock in and produce finished jars",
     finishedProductPath: "/inventory/products/cacao-tablets",
     finishedTitle: "Cacao Tablets",

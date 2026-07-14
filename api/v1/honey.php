@@ -8,6 +8,7 @@ require_once dirname(__DIR__, 2) . '/includes/honey_pricing.php';
 require_once dirname(__DIR__, 2) . '/includes/dept_inventory.php';
 require_once dirname(__DIR__, 2) . '/includes/dept_production.php';
 require_once dirname(__DIR__, 2) . '/includes/dept_pricing.php';
+require_once dirname(__DIR__, 2) . '/includes/inventory_edit_log.php';
 
 api_dispatch([
     'warehouse_list' => 'api_honey_warehouse_list',
@@ -45,6 +46,8 @@ api_dispatch([
     'dept_comb_produce' => 'api_honey_dept_comb_produce',
     'dept_wip_waste' => 'api_honey_dept_wip_waste',
     'dept_production_preview' => 'api_honey_dept_production_preview',
+    'dept_production_log' => 'api_honey_dept_production_log',
+    'dept_production_daily_record' => 'api_honey_dept_production_daily_record',
     'dept_add_row' => 'api_honey_dept_add_row',
     'supplier_honey_prices' => 'api_honey_supplier_honey_prices',
     'supplier_honey_prices_save' => 'api_honey_supplier_honey_prices_save',
@@ -53,6 +56,10 @@ api_dispatch([
     'warehouse_pending_prices' => 'api_honey_warehouse_pending_prices',
     'warehouse_set_unit_cost' => 'api_honey_warehouse_set_unit_cost',
     'pricing_sync_stocks' => 'api_honey_pricing_sync_stocks',
+    'edit_log_list' => 'api_honey_edit_log_list',
+    'seed_production_row' => 'api_honey_seed_production_row',
+    'seed_packaging_row' => 'api_honey_seed_packaging_row',
+    'dept_raw_set_bags' => 'api_honey_dept_raw_set_bags',
 ]);
 
 function api_honey_require_view(): array
@@ -154,6 +161,62 @@ function api_honey_require_mutate(): array
     return $user;
 }
 
+/**
+ * Honey warehouse / production → packaging / packaging sell / correction submit.
+ * Team leaders (IMS role `tl`) only when assigned to the honey department.
+ *
+ * @return array<string, mixed>
+ */
+function api_honey_require_honey_ops(): array
+{
+    $user = api_require_ims_user();
+    $role = (string) $user['role'];
+    if (!honey_role_can_honey_ops($role)) {
+        api_fail('Forbidden.', 403);
+    }
+    if ($role === 'tl') {
+        $userDept = honey_resolve_user_dept_key($user);
+        if ($userDept === null) {
+            api_fail('Your account has no department assigned.', 403);
+        }
+        if ($userDept !== 'honey') {
+            api_fail('Out of scope for your department.', 403);
+        }
+    }
+
+    return $user;
+}
+
+/**
+ * Stock-in / Use raw bags / Pouch / Produce for dept raw materials.
+ * Team leaders (IMS role `tl`) are allowed only within their assigned department.
+ *
+ * @param string|null $productKey Catalog key (pt, brc, jar_cacao, …) for TL scope check
+ * @return array<string, mixed>
+ */
+function api_honey_require_dept_produce(?string $productKey = null): array
+{
+    $user = api_require_ims_user();
+    $role = (string) $user['role'];
+    if (!honey_role_can_dept_produce($role)) {
+        api_fail('Forbidden.', 403);
+    }
+    if ($role === 'tl') {
+        $userDept = honey_resolve_user_dept_key($user);
+        if ($userDept === null) {
+            api_fail('Your account has no department assigned.', 403);
+        }
+        if ($productKey !== null && trim($productKey) !== '') {
+            $target = honey_dept_key_for_product_key($productKey);
+            if ($target !== null && $target !== $userDept) {
+                api_fail('Out of scope for your department.', 403);
+            }
+        }
+    }
+
+    return $user;
+}
+
 function api_honey_warehouse_list(): void
 {
     api_method_allowed(['GET']);
@@ -187,7 +250,7 @@ function api_honey_warehouse_stock_in(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_honey_ops();
     $variants = is_array($input['variants'] ?? null) ? $input['variants'] : [];
     try {
         $result = honey_warehouse_stock_in(
@@ -208,7 +271,7 @@ function api_honey_warehouse_stock_out(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_honey_ops();
     try {
         $result = honey_warehouse_stock_out(
             ims_pdo(),
@@ -243,7 +306,7 @@ function api_honey_production_stock_out(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_honey_ops();
     try {
         $lines = honey_parse_bottle_lines_from_input($input);
         $result = honey_production_stock_out(
@@ -284,6 +347,7 @@ function api_honey_packaging_stock_out(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
+    // Legacy path; Packaging UI no longer sells — keep gated to exec/PM if still called.
     $user = api_honey_require_mutate();
     try {
         $result = honey_packaging_stock_out_sold(
@@ -312,7 +376,7 @@ function api_honey_correction_submit(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_honey_ops();
     $stage = (string) ($input['stage'] ?? '');
     $rowTable = (string) ($input['row_table'] ?? '');
     $rowId = (int) ($input['row_id'] ?? 0);
@@ -397,7 +461,7 @@ function api_honey_correction_list(): void
 function api_honey_correction_row_options(): void
 {
     api_method_allowed(['GET']);
-    api_honey_require_mutate();
+    api_honey_require_honey_ops();
     $stage = (string) ($_GET['stage'] ?? '');
     api_ok(['options' => honey_correction_row_options(ims_pdo(), $stage)]);
 }
@@ -650,8 +714,8 @@ function api_honey_dept_raw_stock_in(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
     $productKey = trim((string) ($input['product_key'] ?? ''));
+    $user = api_honey_require_dept_produce($productKey);
     $def = dept_product_by_key($productKey);
     if ($def === null || !($def['uses_supplier_pricing'] ?? false)) {
         api_fail('Invalid product for raw stock-in.', 422);
@@ -688,8 +752,8 @@ function api_honey_dept_raw_stock_out(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
     $productKey = trim((string) ($input['product_key'] ?? ''));
+    $user = api_honey_require_dept_produce($productKey);
     if (!dept_product_key_valid($productKey)) {
         api_fail('Invalid product.', 422);
     }
@@ -726,7 +790,7 @@ function api_honey_dept_pt_use_raw_bags(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_dept_produce('pt');
     $qty = (float) ($input['qty'] ?? 0);
     $note = trim((string) ($input['note'] ?? ''));
     $pdo = ims_pdo();
@@ -748,7 +812,7 @@ function api_honey_dept_pt_make_tea_bags(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_dept_produce('pt');
     $qty = (float) ($input['qty'] ?? 0);
     $note = trim((string) ($input['note'] ?? ''));
     $pdo = ims_pdo();
@@ -770,7 +834,7 @@ function api_honey_dept_pt_pouch(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_dept_produce('pt');
     $qty = (float) ($input['qty'] ?? 0);
     $note = trim((string) ($input['note'] ?? ''));
     $pdo = ims_pdo();
@@ -792,7 +856,7 @@ function api_honey_dept_brc_produce(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_dept_produce('brc');
     $qty = (float) ($input['qty'] ?? 0);
     $note = trim((string) ($input['note'] ?? ''));
     $pdo = ims_pdo();
@@ -814,7 +878,7 @@ function api_honey_dept_jar_produce(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_dept_produce('jar_cacao');
     $qty = (float) ($input['qty'] ?? 0);
     $note = trim((string) ($input['note'] ?? ''));
     $pdo = ims_pdo();
@@ -836,7 +900,7 @@ function api_honey_dept_comb_produce(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_dept_produce('honey_comb');
     $qty = (float) ($input['qty'] ?? 0);
     $note = trim((string) ($input['note'] ?? ''));
     $pdo = ims_pdo();
@@ -858,7 +922,7 @@ function api_honey_dept_wip_waste(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_honey_require_mutate();
+    $user = api_honey_require_dept_produce('pt');
     $qty = (float) ($input['qty'] ?? 0);
     $reason = trim((string) ($input['reason'] ?? ''));
     $pdo = ims_pdo();
@@ -894,6 +958,65 @@ function api_honey_dept_production_preview(): void
         api_fail($e->getMessage(), 400);
     }
     api_ok($preview);
+}
+
+function api_honey_dept_production_log(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    $productKey = trim((string) ($_GET['product_key'] ?? ''));
+    if (!dept_product_key_valid($productKey)) {
+        api_fail('Invalid product.', 422);
+    }
+    $action = isset($_GET['log_action']) ? trim((string) $_GET['log_action']) : null;
+    $date = isset($_GET['date']) ? trim((string) $_GET['date']) : null;
+    $groupBy = isset($_GET['group_by']) ? trim((string) $_GET['group_by']) : '';
+    $page = (int) ($_GET['page'] ?? 1);
+    $perPage = (int) ($_GET['per_page'] ?? 10);
+    if ($action === '') {
+        $action = null;
+    }
+    if ($date === '') {
+        $date = null;
+    }
+    if ($groupBy === 'day') {
+        if ($action === null) {
+            api_fail('log_action required when group_by=day.', 422);
+        }
+        api_ok(dept_production_daily_totals(ims_pdo(), $productKey, $action, $date, $page, $perPage));
+    }
+    api_ok(dept_production_list_entries(ims_pdo(), $productKey, $action, $date, $page, $perPage));
+}
+
+function api_honey_dept_production_daily_record(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $productKey = trim((string) ($input['product_key'] ?? ''));
+    $user = api_honey_require_dept_produce($productKey);
+    $qty = (float) ($input['qty'] ?? 0);
+    $productionDate = trim((string) ($input['production_date'] ?? ''));
+    $note = trim((string) ($input['note'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_production_record_daily(
+            $pdo,
+            $productKey,
+            $qty,
+            $productionDate,
+            (int) $user['id'],
+            $note !== '' ? $note : null
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
 }
 
 function api_honey_dept_add_row(): void
@@ -1088,3 +1211,107 @@ function api_honey_pricing_sync_stocks(): void
     }
     api_ok(['synced' => $synced]);
 }
+
+function api_honey_edit_log_list(): void
+{
+    api_method_allowed(['GET']);
+    api_require_role(['executive']);
+    $limit = (int) ($_GET['limit'] ?? 50);
+    $offset = (int) ($_GET['offset'] ?? 0);
+    $rowTable = isset($_GET['row_table']) ? trim((string) $_GET['row_table']) : null;
+    $source = isset($_GET['source']) ? trim((string) $_GET['source']) : null;
+    $dateFrom = isset($_GET['date_from']) ? trim((string) $_GET['date_from']) : null;
+    $dateTo = isset($_GET['date_to']) ? trim((string) $_GET['date_to']) : null;
+    $q = isset($_GET['q']) ? trim((string) $_GET['q']) : null;
+    $result = inventory_edit_log_list(
+        ims_pdo(),
+        $limit,
+        $offset,
+        $rowTable !== '' ? $rowTable : null,
+        $source !== '' ? $source : null,
+        $dateFrom !== '' ? $dateFrom : null,
+        $dateTo !== '' ? $dateTo : null,
+        $q !== '' ? $q : null
+    );
+    api_ok($result);
+}
+
+function api_honey_seed_production_row(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $row = honey_executive_seed_production_row(
+            $pdo,
+            (int) $user['id'],
+            (int) ($input['warehouse_row_id'] ?? 0),
+            (float) ($input['qty'] ?? 0),
+            isset($input['variant']) ? (string) $input['variant'] : null
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok(['row' => $row]);
+}
+
+function api_honey_seed_packaging_row(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $row = honey_executive_seed_packaging_row(
+            $pdo,
+            (int) $user['id'],
+            (int) ($input['production_row_id'] ?? 0),
+            (string) ($input['bottling_date'] ?? date('Y-m-d')),
+            is_array($input['size_qtys'] ?? null) ? $input['size_qtys'] : []
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok(['row' => $row]);
+}
+
+function api_honey_dept_raw_set_bags(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $productKey = trim((string) ($input['product_key'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_raw_set_bags_on_hand(
+            $pdo,
+            (int) $user['id'],
+            $productKey,
+            (float) ($input['bags'] ?? -1),
+            isset($input['note']) ? (string) $input['note'] : null
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+

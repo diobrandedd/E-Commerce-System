@@ -11,13 +11,14 @@ tags: [fix, inventory, roles, permissions, spa, api]
 
 ## Inventory surfaces
 
-| Surface | HR | Production manager | Executive |
-|---------|----|--------------------|-----------|
-| **Packaging Materials** | Stock in lot | Deduct for use | All + set on-hand + pool yield + catalog + full log |
-| **Supplies** | Add item, stock in lot, **issue request** | View only | All HR actions + set on-hand; approve on Requests |
-| **Requests hub** | Track supply issues; submit packaging count | Honey corrections | Review supply issues, corrections, edits, discounts |
-| **Product Costing** | — | — | **Only role** (route + `costing.php` API) |
-| **Raw / dept production** | View (where routed) | Produce, BOM preview | All |
+| Surface | HR | Production manager | Executive | Dept TL (`tl`) |
+|---------|----|--------------------|-----------|----------------|
+| **Packaging Materials** | Stock in lot | Deduct for use | All + set on-hand + pool yield + catalog + full log | — |
+| **Supplies** | Add item, stock in lot, **issue request** | View only | All HR actions + set on-hand; approve on Requests | — |
+| **Requests hub** | Track supply issues; submit packaging count | Honey corrections | Review supply issues, corrections, edits, discounts | — |
+| **Product Costing** | — | — | **Only role** (route + `costing.php` API) | — |
+| **Raw / dept production** | View (where routed) | Produce, BOM preview | All | Own dept: Stock in, Use raw bags / Pouch / Produce ([[fixes/dept-raw-tl-produce]]) |
+| **Honey warehouse → packaging** | View (honey dept staff/TL) | Stock in/out, bottle, sell | All + exec edit/seed | Honey dept TL: same ops as PM ([[fixes/honey-pipeline-tl-ops]]) |
 
 ## SPA conventions
 

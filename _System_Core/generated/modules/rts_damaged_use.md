@@ -1,7 +1,7 @@
 ---
 title: rts_damaged_use
 source: includes/rts_damaged_use.php
-generated: 2026-07-08T05:43:14+02:00
+generated: 2026-07-14T08:36:00+02:00
 type: module
 function_count: 4
 ---
@@ -50,5 +50,5 @@ function_count: 4
 
 **Callers (1):**
 
-- `api/v1/rts.php`:177 — `$result = rts_damaged_use_apply(`
+- `api/v1/rts.php`:179 — `$result = rts_damaged_use_apply(`
 

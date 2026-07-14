@@ -619,3 +619,15 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-07-07 — Pipeline reports module (summary + pie + shared filters)
 - **What we did:** Added `reports.php?action=pipeline_summary` and a new Pipeline Statistics section below Courier Statistics with summary cards + pie chart (percentage + count tooltip), reusing the same date/status filters and auto-updating on filter changes.
 - **Record:** [[problems/records/2026-07-07_pipeline-reports-module]]
+
+### 2026-07-14 — Monthly inventory (executive create/set + edit logs)
+- **What we did:** Executive Monthly Inventory page + edit log list; seed honey prod/packaging; raw bag set; RTS set; materials set-on-hand mirrored to `inventory_edit_log`.
+- **Record:** [[problems/records/2026-07-14_monthly-inventory-executive]]
+
+### 2026-07-14 — Paragis pouch creation table
+- **What we did:** Daily totals on Dried Paragis / Black Rice / Cacao; **Add** date+qty (log-only); renamed Cacao; mobile **Do next** action strip; **dept TL** can Stock in / Pouch / Produce (own dept).
+- **Record:** [[problems/fixes/dept-raw-tl-produce]]
+
+### 2026-07-14 — Honey dept TL gallon pipeline
+- **What we did:** Honey-dept TL can warehouse stock in/out, production→packaging, packaging sell, and submit corrections (`honey_role_can_honey_ops`); `suppliers.php` list allowed for `tl` so stock-in picker works.
+- **Record:** [[problems/fixes/honey-pipeline-tl-ops]]

@@ -60,7 +60,7 @@ const RAW_MATERIALS_CHILDREN: NavChild[] = [
   { label: "Raw Honey", children: HONEY_STAGE_CHILDREN },
   { label: "Dried Paragis", to: "/inventory/raw-materials/paragis" },
   { label: "Black Rice", to: "/inventory/raw-materials/black-rice" },
-  { label: "Cacao Beans", to: "/inventory/raw-materials/cacao" },
+  { label: "Cacao", to: "/inventory/raw-materials/cacao" },
 ];
 
 const PRODUCTS_CHILDREN: NavChild[] = [
@@ -79,11 +79,23 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     { label: "Products", children: PRODUCTS_CHILDREN },
   ];
 
+  const inventoryChildrenExec: NavChild[] = [
+    ...inventoryChildren,
+    { label: "Monthly inventory", to: "/inventory/monthly-count" },
+  ];
+
   const inventoryNav: NavItem = {
     icon: Package,
     label: "Inventory",
     to: "/inventory/raw-materials",
     children: inventoryChildren,
+  };
+
+  const inventoryNavExec: NavItem = {
+    icon: Package,
+    label: "Inventory",
+    to: "/inventory/raw-materials",
+    children: inventoryChildrenExec,
   };
 
   const inventoryNavHr: NavItem = {
@@ -171,7 +183,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     ],
     cacao_brc: [
       { label: "Black Rice", to: "/inventory/raw-materials/black-rice" },
-      { label: "Cacao Beans", to: "/inventory/raw-materials/cacao" },
+      { label: "Cacao", to: "/inventory/raw-materials/cacao" },
       { label: "Black Rice Coffee", to: "/inventory/products/black-rice-coffee" },
       { label: "Cacao Tablets", to: "/inventory/products/cacao-tablets" },
     ],
@@ -189,7 +201,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     case "executive":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        inventoryNav,
+        inventoryNavExec,
         { icon: ShoppingBag, label: "Sales", to: "/sales", end: true },
         { icon: Package, label: "Bulk orders", to: "/sales/bulk-orders" },
         onlineOrdersItem,

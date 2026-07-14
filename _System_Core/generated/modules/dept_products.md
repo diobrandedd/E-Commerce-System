@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-07-08T05:42:59+02:00
+generated: 2026-07-14T08:35:43+02:00
 type: module
 function_count: 23
 ---
@@ -19,9 +19,9 @@ function_count: 23
 
 - `includes/dept_inventory.php`:578 — `'tea_bags_per_bag' => $def['key'] === 'pt' ? dept_pt_tea_bags_per_bag() : null,`
 - `includes/dept_production.php`:249 — `$teaBagsDerived = round($qty * dept_pt_tea_bags_per_bag(), 6);`
-- `includes/dept_production.php`:537 — `$consumeQty = round($qty * dept_pt_tea_bags_per_bag(), 6);`
-- `includes/dept_production.php`:582 — `$derivedTeaBags = round($qty * dept_pt_tea_bags_per_bag(), 2);`
-- `includes/dept_production.php`:606 — `$teaBags = round($bags * dept_pt_tea_bags_per_bag(), 2);`
+- `includes/dept_production.php`:772 — `$consumeQty = round($qty * dept_pt_tea_bags_per_bag(), 6);`
+- `includes/dept_production.php`:817 — `$derivedTeaBags = round($qty * dept_pt_tea_bags_per_bag(), 2);`
+- `includes/dept_production.php`:841 — `$teaBags = round($bags * dept_pt_tea_bags_per_bag(), 2);`
 - `includes/dept_products.php`:58 — `return dept_pt_tea_bags_per_bag() / PT_TEA_BAGS_PER_POUCH;`
 - `includes/dept_products.php`:63 — `return PT_TEA_BAGS_PER_POUCH / dept_pt_tea_bags_per_bag();`
 
@@ -128,9 +128,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## dept_product_by_key {#dept_product_by_key}
 
-**Callers (27):**
+**Callers (28):**
 
-- `api/v1/honey.php`:655 — `$def = dept_product_by_key($productKey);`
+- `api/v1/honey.php`:719 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:12 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:40 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:77 — `$def = dept_product_by_key($productKey);`
@@ -140,29 +140,30 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_inventory.php`:312 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:390 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:505 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_inventory.php`:626 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pos.php`:65 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pos.php`:76 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pricing.php`:49 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pricing.php`:234 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_production.php`:393 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_production.php`:422 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_production.php`:721 — `$def = dept_product_by_key('brc');`
-- `includes/dept_production.php`:774 — `$def = dept_product_by_key('jar_cacao');`
-- `includes/dept_production.php`:804 — `$def = dept_product_by_key('honey_comb');`
+- `includes/dept_production.php`:956 — `$def = dept_product_by_key('brc');`
+- `includes/dept_production.php`:1009 — `$def = dept_product_by_key('jar_cacao');`
+- `includes/dept_production.php`:1039 — `$def = dept_product_by_key('honey_comb');`
 - `includes/dept_products.php`:98 — `$def = dept_product_by_key($key);`
 - `includes/dept_products.php`:223 — `return dept_product_by_key($key) !== null;`
 - `includes/dept_products.php`:259 — `return dept_product_by_key('honey_comb');`
 - `includes/dept_products.php`:266 — `return dept_product_by_key('pt');`
 - `includes/dept_products.php`:269 — `return dept_product_by_key('brc');`
-- `includes/dept_products.php`:272 — `return dept_product_by_key('jar_cacao');`
-- _… and 2 more (run impact.php for full list)_
+- _… and 3 more (run impact.php for full list)_
 
 ## dept_product_key_valid {#dept_product_key_valid}
 
-**Callers (5):**
+**Callers (6):**
 
-- `api/v1/honey.php`:693 — `if (!dept_product_key_valid($productKey)) {`
-- `api/v1/honey.php`:885 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:757 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:949 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:968 — `if (!dept_product_key_valid($productKey)) {`
 - `includes/dept_pos.php`:52 — `if (!dept_product_key_valid($productKey) || $qty <= 0) {`
 - `includes/honey_parcel_inventory.php`:34 — `if ($key === '' || !dept_product_key_valid($key)) {`
 - `includes/pos_discount_requests.php`:17 — `return $productKey !== '' && dept_product_key_valid($productKey);`
@@ -190,7 +191,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `departments`
 
-**Callers (12):**
+**Callers (13):**
 
 - `includes/dept_inventory.php`:16 — `$deptId = dept_product_dept_id($pdo, $def['dept']);`
 - `includes/dept_inventory.php`:44 — `$deptId = dept_product_dept_id($pdo, $def['dept']);`
@@ -200,6 +201,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_inventory.php`:316 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_inventory.php`:448 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_inventory.php`:559 — `$deptId = dept_product_dept_id($pdo, $def['dept']);`
+- `includes/dept_inventory.php`:631 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_pricing.php`:180 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_pricing.php`:242 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_production.php`:397 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`

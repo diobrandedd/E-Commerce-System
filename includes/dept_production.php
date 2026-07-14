@@ -446,6 +446,7 @@ function dept_wip_adjust(PDO $pdo, int $userId, string $productKey, float $delta
 
 /**
  * @param list<array<string, mixed>> $deductLines
+ * @param string|null $createdAt Y-m-d H:i:s for backdated log rows; null = DB default (now)
  */
 function dept_production_log_entry(
     PDO $pdo,
@@ -454,21 +455,60 @@ function dept_production_log_entry(
     float $qty,
     int $userId,
     ?string $note,
-    array $deductLines
+    array $deductLines,
+    ?string $createdAt = null
 ): int {
-    $pdo->prepare(
-        'INSERT INTO dept_production_entries (product_key, action, qty, note, deduct_lines, created_by)
-         VALUES (?, ?, ?, ?, ?, ?)'
-    )->execute([
-        $productKey,
-        $action,
-        $qty,
-        $note !== null && trim($note) !== '' ? trim($note) : null,
-        json_encode($deductLines, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        $userId,
-    ]);
+    $noteVal = $note !== null && trim($note) !== '' ? trim($note) : null;
+    $deductJson = json_encode($deductLines, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    if ($createdAt !== null && $createdAt !== '') {
+        $pdo->prepare(
+            'INSERT INTO dept_production_entries (product_key, action, qty, note, deduct_lines, created_by, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
+        )->execute([
+            $productKey,
+            $action,
+            $qty,
+            $noteVal,
+            $deductJson,
+            $userId,
+            $createdAt,
+        ]);
+    } else {
+        $pdo->prepare(
+            'INSERT INTO dept_production_entries (product_key, action, qty, note, deduct_lines, created_by)
+             VALUES (?, ?, ?, ?, ?, ?)'
+        )->execute([
+            $productKey,
+            $action,
+            $qty,
+            $noteVal,
+            $deductJson,
+            $userId,
+        ]);
+    }
 
     return (int) $pdo->lastInsertId();
+}
+
+/** @param array<string, mixed> $row */
+function dept_production_format_entry_row(array $row): array
+{
+    $deduct = $row['deduct_lines'] ?? null;
+    if (is_string($deduct)) {
+        $deduct = json_decode($deduct, true);
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'product_key' => (string) $row['product_key'],
+        'action' => (string) $row['action'],
+        'qty' => (float) $row['qty'],
+        'note' => $row['note'],
+        'deduct_lines' => is_array($deduct) ? $deduct : [],
+        'created_by_name' => $row['created_by_name'],
+        'created_at' => (string) $row['created_at'],
+    ];
 }
 
 /** @return list<array<string, mixed>> */
@@ -489,23 +529,218 @@ function dept_production_recent_entries(PDO $pdo, string $productKey, int $limit
     $st->execute([$productKey]);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-    return array_map(static function (array $row): array {
-        $deduct = $row['deduct_lines'] ?? null;
-        if (is_string($deduct)) {
-            $deduct = json_decode($deduct, true);
-        }
+    return array_map('dept_production_format_entry_row', $rows);
+}
 
+/**
+ * Paginated production log (optional action + calendar-day filter).
+ *
+ * @return array{rows: list<array<string, mixed>>, total: int, page: int, per_page: int, total_pages: int}
+ */
+function dept_production_list_entries(
+    PDO $pdo,
+    string $productKey,
+    ?string $action = null,
+    ?string $date = null,
+    int $page = 1,
+    int $perPage = 10
+): array {
+    $page = max(1, $page);
+    $perPage = max(1, min(50, $perPage));
+    if (!dept_production_tables_ready($pdo)) {
         return [
-            'id' => (int) $row['id'],
-            'product_key' => (string) $row['product_key'],
-            'action' => (string) $row['action'],
-            'qty' => (float) $row['qty'],
-            'note' => $row['note'],
-            'deduct_lines' => is_array($deduct) ? $deduct : [],
-            'created_by_name' => $row['created_by_name'],
-            'created_at' => (string) $row['created_at'],
+            'rows' => [],
+            'total' => 0,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => 1,
         ];
-    }, $rows);
+    }
+
+    $where = ['dpe.product_key = ?'];
+    $params = [$productKey];
+    if ($action !== null && trim($action) !== '') {
+        $where[] = 'dpe.action = ?';
+        $params[] = trim($action);
+    }
+    if ($date !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        $where[] = 'DATE(dpe.created_at) = ?';
+        $params[] = $date;
+    }
+    $whereSql = implode(' AND ', $where);
+
+    $countSt = $pdo->prepare(
+        "SELECT COUNT(*) FROM dept_production_entries dpe WHERE {$whereSql}"
+    );
+    $countSt->execute($params);
+    $total = (int) $countSt->fetchColumn();
+    $totalPages = max(1, (int) ceil($total / $perPage));
+    if ($page > $totalPages) {
+        $page = $totalPages;
+    }
+    $offset = ($page - 1) * $perPage;
+
+    $st = $pdo->prepare(
+        "SELECT dpe.*, u.name AS created_by_name
+         FROM dept_production_entries dpe
+         LEFT JOIN users u ON u.id = dpe.created_by
+         WHERE {$whereSql}
+         ORDER BY dpe.created_at DESC, dpe.id DESC
+         LIMIT {$perPage} OFFSET {$offset}"
+    );
+    $st->execute($params);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    return [
+        'rows' => array_map('dept_production_format_entry_row', $rows),
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'total_pages' => $totalPages,
+    ];
+}
+
+/**
+ * One row per calendar day: total qty for an action (e.g. pouch creations).
+ *
+ * @return array{rows: list<array<string, mixed>>, total: int, page: int, per_page: int, total_pages: int}
+ */
+function dept_production_daily_totals(
+    PDO $pdo,
+    string $productKey,
+    string $action,
+    ?string $date = null,
+    int $page = 1,
+    int $perPage = 10
+): array {
+    $page = max(1, $page);
+    $perPage = max(1, min(50, $perPage));
+    $action = trim($action);
+    if ($action === '' || !dept_production_tables_ready($pdo)) {
+        return [
+            'rows' => [],
+            'total' => 0,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => 1,
+        ];
+    }
+
+    $where = ['dpe.product_key = ?', 'dpe.action = ?'];
+    $params = [$productKey, $action];
+    if ($date !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        $where[] = 'DATE(dpe.created_at) = ?';
+        $params[] = $date;
+    }
+    $whereSql = implode(' AND ', $where);
+
+    $countSt = $pdo->prepare(
+        "SELECT COUNT(*) FROM (
+            SELECT DATE(dpe.created_at) AS production_date
+            FROM dept_production_entries dpe
+            WHERE {$whereSql}
+            GROUP BY DATE(dpe.created_at)
+         ) daily"
+    );
+    $countSt->execute($params);
+    $total = (int) $countSt->fetchColumn();
+    $totalPages = max(1, (int) ceil($total / $perPage));
+    if ($page > $totalPages) {
+        $page = $totalPages;
+    }
+    $offset = ($page - 1) * $perPage;
+
+    $st = $pdo->prepare(
+        "SELECT DATE(dpe.created_at) AS production_date,
+                COALESCE(SUM(dpe.qty), 0) AS qty_total,
+                COUNT(*) AS run_count
+         FROM dept_production_entries dpe
+         WHERE {$whereSql}
+         GROUP BY DATE(dpe.created_at)
+         ORDER BY production_date DESC
+         LIMIT {$perPage} OFFSET {$offset}"
+    );
+    $st->execute($params);
+    $raw = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    $rows = array_map(static function (array $r): array {
+        return [
+            'production_date' => (string) $r['production_date'],
+            'qty_total' => (float) $r['qty_total'],
+            'run_count' => (int) $r['run_count'],
+        ];
+    }, $raw);
+
+    return [
+        'rows' => $rows,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'total_pages' => $totalPages,
+    ];
+}
+
+/**
+ * Log-only catch-up: record qty made on a calendar day (no stock / packaging changes).
+ *
+ * @return array{id: int, product_key: string, action: string, qty: float, production_date: string}
+ */
+function dept_production_record_daily(
+    PDO $pdo,
+    string $productKey,
+    float $qty,
+    string $productionDate,
+    int $userId,
+    ?string $note = null
+): array {
+    if (!dept_production_tables_ready($pdo)) {
+        throw new RuntimeException('Production tables missing. Run migration_phase26_dept_wip.sql.');
+    }
+    $productKey = trim($productKey);
+    $actions = [
+        'pt' => 'pouch',
+        'brc' => 'produce_brc',
+        'jar_cacao' => 'produce_jar',
+    ];
+    if (!isset($actions[$productKey])) {
+        throw new RuntimeException('Manual daily record is only for Paragis, Black Rice, or Cacao.');
+    }
+    if ($qty <= 0) {
+        throw new RuntimeException('Quantity must be > 0.');
+    }
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $productionDate)) {
+        throw new RuntimeException('Invalid production date.');
+    }
+    $dt = DateTimeImmutable::createFromFormat('Y-m-d', $productionDate);
+    if ($dt === false || $dt->format('Y-m-d') !== $productionDate) {
+        throw new RuntimeException('Invalid production date.');
+    }
+
+    $action = $actions[$productKey];
+    $userNote = $note !== null && trim($note) !== '' ? trim($note) : null;
+    $fullNote = $userNote !== null
+        ? 'Manual daily record: ' . $userNote
+        : 'Manual daily record';
+    $createdAt = $productionDate . ' 12:00:00';
+
+    $id = dept_production_log_entry(
+        $pdo,
+        $productKey,
+        $action,
+        $qty,
+        $userId,
+        $fullNote,
+        [],
+        $createdAt
+    );
+
+    return [
+        'id' => $id,
+        'product_key' => $productKey,
+        'action' => $action,
+        'qty' => $qty,
+        'production_date' => $productionDate,
+    ];
 }
 
 /**

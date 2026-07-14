@@ -1,7 +1,7 @@
 ---
 title: dept_pricing
 source: includes/dept_pricing.php
-generated: 2026-07-08T05:42:58+02:00
+generated: 2026-07-14T08:35:41+02:00
 type: module
 function_count: 8
 ---
@@ -36,12 +36,13 @@ function_count: 8
 
 ## dept_pricing_leaf_stock_name {#dept_pricing_leaf_stock_name}
 
-**Callers (7):**
+**Callers (8):**
 
 - `includes/dept_inventory.php`:144 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_inventory.php`:167 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_inventory.php`:224 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_inventory.php`:311 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
+- `includes/dept_inventory.php`:627 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_pricing.php`:170 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_pricing.php`:238 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_production.php`:99 — `$leaf = dept_pricing_leaf_stock_name($productKey);`
@@ -52,7 +53,7 @@ function_count: 8
 
 **Callers (1):**
 
-- `api/v1/honey.php`:912 — `$prices = dept_pricing_list_supplier_prices(`
+- `api/v1/honey.php`:1035 — `$prices = dept_pricing_list_supplier_prices(`
 
 ## dept_pricing_save_supplier_prices {#dept_pricing_save_supplier_prices}
 
@@ -60,7 +61,7 @@ function_count: 8
 
 **Callers (1):**
 
-- `api/v1/honey.php`:960 — `$saved = dept_pricing_save_supplier_prices($pdo, $supplierId, $products, $effectiveFrom, (int) $user['id']);`
+- `api/v1/honey.php`:1083 — `$saved = dept_pricing_save_supplier_prices($pdo, $supplierId, $products, $effectiveFrom, (int) $user['id']);`
 
 ## dept_pricing_upsert_supplier_costing_stocks {#dept_pricing_upsert_supplier_costing_stocks}
 

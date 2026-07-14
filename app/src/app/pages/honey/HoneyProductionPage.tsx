@@ -8,7 +8,7 @@ import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButto
 import { PageLayout } from "@/app/components/PageLayout";
 import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { useAuth } from "@/app/context/AuthContext";
-import { canExecutiveDirectEdit, canMutateHoneyInventory, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
+import { canExecutiveDirectEdit, canMutateHoneyPipeline, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import {
@@ -37,7 +37,7 @@ type ModalStep = "enter" | "confirm" | "success";
 
 export function HoneyProductionPage() {
   const { user } = useAuth();
-  const canMutate = canMutateHoneyInventory(user?.role);
+  const canMutate = canMutateHoneyPipeline(user?.role);
   const canExecEdit = canExecutiveDirectEdit(user?.role);
   const showSupplierProfile = canViewSupplierProfile(user?.role);
   const [rows, setRows] = useState<PrRow[]>([]);

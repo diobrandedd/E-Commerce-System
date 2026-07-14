@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-07-08T05:42:49+02:00
+generated: 2026-07-14T08:35:36+02:00
 type: memory-bank
 ---
 
@@ -195,6 +195,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `dept_comb_produce` | `api_honey_dept_comb_produce()` | `ims_pdo()`, `dept_honey_comb_produce()` |
 | `dept_wip_waste` | `api_honey_dept_wip_waste()` | `ims_pdo()`, `dept_wip_waste_tea_bags()` |
 | `dept_production_preview` | `api_honey_dept_production_preview()` | `dept_product_key_valid()`, `dept_production_preview_lines()`, `ims_pdo()` |
+| `dept_production_log` | `api_honey_dept_production_log()` | `dept_product_key_valid()`, `dept_production_daily_totals()`, `ims_pdo()`, `dept_production_list_entries()` |
+| `dept_production_daily_record` | `api_honey_dept_production_daily_record()` | `ims_pdo()`, `dept_production_record_daily()` |
 | `dept_add_row` | `api_honey_dept_add_row()` | — |
 | `supplier_honey_prices` | `api_honey_supplier_honey_prices()` | `ims_pdo()`, `honey_pricing_list_supplier_prices()`, `supplier_display_name()`, `honey_pricing_pending_count()` |
 | `supplier_honey_prices_save` | `api_honey_supplier_honey_prices_save()` | `ims_pdo()`, `honey_pricing_save_supplier_prices()`, `honey_pricing_reprice_pending_for_supplier()`, `honey_pricing_pending_count()` |
@@ -203,6 +205,10 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `warehouse_pending_prices` | `api_honey_warehouse_pending_prices()` | `ims_pdo()`, `honey_pricing_pending_warehouse_rows()`, `honey_pricing_pending_count()` |
 | `warehouse_set_unit_cost` | `api_honey_warehouse_set_unit_cost()` | `honey_pricing_set_warehouse_row_cost()`, `ims_pdo()`, `honey_pricing_pending_count()` |
 | `pricing_sync_stocks` | `api_honey_pricing_sync_stocks()` | `honey_pricing_sync_all_variant_stocks()`, `ims_pdo()` |
+| `edit_log_list` | `api_honey_edit_log_list()` | `inventory_edit_log_list()`, `ims_pdo()` |
+| `seed_production_row` | `api_honey_seed_production_row()` | `ims_pdo()`, `honey_executive_seed_production_row()` |
+| `seed_packaging_row` | `api_honey_seed_packaging_row()` | `ims_pdo()`, `honey_executive_seed_packaging_row()` |
+| `dept_raw_set_bags` | `api_honey_dept_raw_set_bags()` | `ims_pdo()`, `dept_raw_set_bags_on_hand()` |
 
 ### `materials.php`
 
@@ -363,6 +369,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `legacy_urls` | `api_rts_legacy_urls()` | — |
 | `inventory_list` | `api_rts_inventory_list()` | `ims_pdo()`, `rts_inventory_list_honey_aggregated()`, `rts_inventory_list_other_aggregated()`, `rts_inventory_sync_status()` |
 | `inventory_deduct_sell` | `api_rts_inventory_deduct_sell()` | `rts_inventory_deduct_sell_honey_variant()`, `ims_pdo()`, `rts_inventory_deduct_sell_other_label()`, `rts_inventory_deduct_sell()` |
+| `inventory_set_honey` | `api_rts_inventory_set_honey()` | `ims_pdo()`, `rts_inventory_set_honey_variant_totals()` |
+| `inventory_set_other` | `api_rts_inventory_set_other()` | `ims_pdo()`, `rts_inventory_set_other_label_total()` |
 | `use_damaged` | `api_rts_use_damaged()` | `rts_damaged_use_apply()`, `ims_pdo()` |
 | `sync_status` | `api_rts_sync_status_action()` | `rts_inventory_sync_status()`, `ims_pdo()` |
 

@@ -1,7 +1,7 @@
 ---
 title: parcel_pack_costing
 source: includes/parcel_pack_costing.php
-generated: 2026-07-08T05:43:10+02:00
+generated: 2026-07-14T08:35:56+02:00
 type: module
 function_count: 37
 ---
@@ -34,7 +34,7 @@ function_count: 37
 - `api/v1/costing.php`:586 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/fulfillment_pack_tier_seed.php`:428 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/fulfillment_packing.php`:311 — `if ($lines === [] || !parcel_pack_tables_ready($pdo)) {`
-- `includes/material_inventory.php`:1108 — `if (!parcel_pack_tables_ready($pdo)) {`
+- `includes/material_inventory.php`:1119 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/parcel_pack_costing.php`:310 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/parcel_pack_costing.php`:377 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/parcel_pack_costing.php`:595 — `if (!parcel_pack_tables_ready($pdo)) {`
@@ -235,7 +235,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/material_inventory.php`:1119 — `$lines = parcel_pack_fulfillment_lines_for_items_raw($pdo, $itemsRaw);`
+- `includes/material_inventory.php`:1130 — `$lines = parcel_pack_fulfillment_lines_for_items_raw($pdo, $itemsRaw);`
 
 ## parcel_pack_save_tier_line {#parcel_pack_save_tier_line}
 

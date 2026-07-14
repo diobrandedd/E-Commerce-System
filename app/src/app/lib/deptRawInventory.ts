@@ -56,6 +56,76 @@ export function fetchDeptRawDetail(slug: string) {
   return apiGet<DeptRawSnapshot>("honey.php", "dept_raw_detail", { slug });
 }
 
+export type DeptProductionDailyRow = {
+  production_date: string;
+  qty_total: number;
+  run_count: number;
+};
+
+export function fetchDeptProductionLog(params: {
+  product_key: string;
+  log_action?: string;
+  date?: string;
+  page?: number;
+  per_page?: number;
+  group_by?: "day";
+}) {
+  return apiGet<{
+    rows: Array<DeptProductionEntry | DeptProductionDailyRow>;
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+  }>("honey.php", "dept_production_log", {
+    product_key: params.product_key,
+    ...(params.log_action ? { log_action: params.log_action } : {}),
+    ...(params.date ? { date: params.date } : {}),
+    ...(params.group_by ? { group_by: params.group_by } : {}),
+    page: String(params.page ?? 1),
+    per_page: String(params.per_page ?? 10),
+  });
+}
+
+/** Daily totals for a production action (pouch / produce_brc / produce_jar). */
+export function fetchDeptProductionDaily(params: {
+  product_key: string;
+  log_action: string;
+  date?: string;
+  page?: number;
+  per_page?: number;
+}) {
+  return apiGet<{
+    rows: DeptProductionDailyRow[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+  }>("honey.php", "dept_production_log", {
+    product_key: params.product_key,
+    log_action: params.log_action,
+    group_by: "day",
+    ...(params.date ? { date: params.date } : {}),
+    page: String(params.page ?? 1),
+    per_page: String(params.per_page ?? 10),
+  });
+}
+
+/** Log-only: append qty for a calendar day (no stock / packaging changes). */
+export function recordDeptProductionDaily(payload: {
+  product_key: string;
+  qty: number;
+  production_date: string;
+  note?: string;
+}) {
+  return apiPost<{
+    id: number;
+    product_key: string;
+    action: string;
+    qty: number;
+    production_date: string;
+  }>("honey.php", "dept_production_daily_record", payload);
+}
+
 export function fetchDeptProductionPreview(productKey: string, action: string, qty: number) {
   return apiGet<{
     product_key: string;

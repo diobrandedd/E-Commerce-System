@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-07-08T05:42:50+02:00
+generated: 2026-07-14T08:35:36+02:00
 type: memory-bank
 table_count: 59
 ---
@@ -192,9 +192,11 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_change_password]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_list_entries]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_unread_list]] |
@@ -233,6 +235,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_recent_entries]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_deduct_bags_fifo]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_set_bags_on_hand]] |
 | `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_upsert_supplier_costing_stocks]] |
 | `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_leaf_stock_id]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
@@ -291,6 +294,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_stock_in_bags]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_deduct_bags_fifo]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_set_bags_on_hand]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_packaging_deduct]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issue_create]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#material_packaging_record_invoice_price]] |
@@ -393,7 +397,9 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
-| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_log_edit]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_has_source_column]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_write]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_list]] |
 
 ## `supplier_honey_prices`
 
@@ -532,6 +538,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_tables_ready]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_log_entry]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_list_entries]] |
+| `includes/dept_production.php` | [[modules/dept_production#dept_production_daily_totals]] |
 
 ## `parcel_pack_tiers`
 
@@ -719,6 +727,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_traceability]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_seed_production_row]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
 
 ## `honey_packaging_rows`
@@ -738,6 +747,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_total_inventory_snapshot]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_seed_packaging_row]] |
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_packaging_availability]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_available_qty]] |
@@ -804,6 +814,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_honey_variant]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_other_label]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_set_honey_variant_totals]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_set_other_label_total]] |
 
 ## `rts_sync_state`
 

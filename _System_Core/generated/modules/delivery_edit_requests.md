@@ -1,7 +1,7 @@
 ---
 title: delivery_edit_requests
 source: includes/delivery_edit_requests.php
-generated: 2026-07-08T05:42:56+02:00
+generated: 2026-07-14T08:35:40+02:00
 type: module
 function_count: 15
 ---

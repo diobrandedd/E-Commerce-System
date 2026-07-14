@@ -27,6 +27,8 @@ api_dispatch([
     'legacy_urls' => 'api_rts_legacy_urls',
     'inventory_list' => 'api_rts_inventory_list',
     'inventory_deduct_sell' => 'api_rts_inventory_deduct_sell',
+    'inventory_set_honey' => 'api_rts_inventory_set_honey',
+    'inventory_set_other' => 'api_rts_inventory_set_other',
     'use_damaged' => 'api_rts_use_damaged',
     'sync_status' => 'api_rts_sync_status_action',
 ]);
@@ -248,3 +250,56 @@ function api_rts_sync_status_action(): void
     api_require_ims_user();
     api_ok(rts_inventory_sync_status(ims_pdo()));
 }
+
+function api_rts_inventory_set_honey(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = rts_inventory_set_honey_variant_totals(
+            $pdo,
+            (int) $user['id'],
+            (string) ($input['variant'] ?? ''),
+            is_array($input['size_qtys'] ?? null) ? $input['size_qtys'] : [],
+            (string) ($input['pool'] ?? 'sellable')
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_rts_inventory_set_other(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_role(['executive']);
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = rts_inventory_set_other_label_total(
+            $pdo,
+            (int) $user['id'],
+            (string) ($input['product_label'] ?? ''),
+            (float) ($input['qty'] ?? -1),
+            (string) ($input['pool'] ?? 'sellable')
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+

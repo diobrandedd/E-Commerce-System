@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, Loader2, Minus, Plus, Factory, Package, ListChecks } from "lucide-react";
+import { BookOpen, Loader2, Minus, Plus, Factory, Package } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
+import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { ApiError } from "@/app/lib/api";
-import { canMutateHoneyInventory } from "@/app/lib/honeyPermissions";
+import { canMutateDeptRawProduction } from "@/app/lib/honeyPermissions";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import {
   deptStockInYieldHint,
@@ -14,7 +15,7 @@ import {
   ptTeaBagsPerBag,
   type DeptSupplierProductKey,
 } from "@/app/lib/deptProducts";
-import { RAW_MATERIAL_ROUTES, type RawMaterialRoute } from "@/app/lib/inventoryRoutes";
+import { type RawMaterialRoute } from "@/app/lib/inventoryRoutes";
 import {
   deptBrcProduce,
   deptJarProduce,
@@ -27,11 +28,20 @@ import {
   deptRawStockOut,
   deptWipWaste,
   fetchDeptProductionPreview,
+  fetchDeptProductionDaily,
   fetchDeptRawDetail,
+  recordDeptProductionDaily,
+  type DeptProductionDailyRow,
   type DeptProductionPreviewLine,
   type DeptRawSnapshot,
 } from "@/app/lib/deptRawInventory";
 import { listSuppliers, type Supplier } from "@/app/lib/suppliers";
+import {
+  AppErrorBanner,
+  AppPressable,
+  AppSuccessNotice,
+  appHoverRow,
+} from "@/app/components/layout/appFeedbackMotion";
 import { DeptRawProduceGuideModal } from "@/app/components/inventory/DeptRawProduceGuideModal";
 import { ParagisProductionGuideModal } from "@/app/components/inventory/ParagisProductionGuideModal";
 import { runDeptRawProduceTour } from "@/app/components/tour/guides/deptRawProduceTour";
@@ -85,11 +95,19 @@ interface RawDeptMaterialPageProps {
 
 export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const { user } = useAuth();
-  const canMutate = canMutateHoneyInventory(user?.role);
+  const canMutate = canMutateDeptRawProduction(user?.role);
   const productKey = route.productKey;
   const isParagis = productKey === "pt";
   const isSingleStageProduce = productKey === "brc" || productKey === "jar_cacao" || productKey === "honey_comb";
   const showGuide = isParagis || isSingleStageProduce;
+  const dailyProduce =
+    productKey === "pt"
+      ? { logAction: "pouch", title: "Pouch creation", unitPlural: "pouches", unitSingular: "pouch" }
+      : productKey === "brc"
+        ? { logAction: "produce_brc", title: "Pouch creation", unitPlural: "pouches", unitSingular: "pouch" }
+        : productKey === "jar_cacao"
+          ? { logAction: "produce_jar", title: "Jar creation", unitPlural: "jars", unitSingular: "jar" }
+          : null;
   const [data, setData] = useState<DeptRawSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -101,7 +119,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const [showWipWaste, setShowWipWaste] = useState(false);
   const [showProduce, setShowProduce] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const [pouchLogTick, setPouchLogTick] = useState(0);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -128,26 +146,15 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
       subtitle={route.subtitle}
       actions={
         <div className="flex items-center gap-2">
-          <div className="sm:hidden flex items-center gap-2">
-            {showGuide && (
-              <button
-                type="button"
-                onClick={() => setGuideOpen(true)}
-                className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg border border-border"
-              >
-                <BookOpen size={12} /> Guide
-              </button>
-            )}
-            {canMutate && (
-              <button
-                type="button"
-                onClick={() => setActionsOpen(true)}
-                className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-[#C8900A] text-[#8a6506]"
-              >
-                <ListChecks size={12} /> Actions
-              </button>
-            )}
-          </div>
+          {showGuide && (
+            <button
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              className="sm:hidden inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg border border-border"
+            >
+              <BookOpen size={12} /> Guide
+            </button>
+          )}
 
           <div className="hidden sm:flex flex-wrap items-center gap-2">
           <Link
@@ -260,6 +267,38 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             </div>
           </div>
 
+          {canMutate && (
+            <div className="sm:hidden">
+              <RawDeptInlineActions
+                isParagis={isParagis}
+                finishedProductPath={route.finishedProductPath}
+                finishedTitle={route.finishedTitle}
+                bagsOnHand={data.bags_on_hand}
+                wipTeaBags={wipTeaBags}
+                maxPouchesFromWip={maxPouchesFromWip}
+                onStockIn={() => setShowStockIn(true)}
+                onUseRawBags={() => setShowUseRawBags(true)}
+                onPouch={() => setShowPouch(true)}
+                onWipWaste={() => setShowWipWaste(true)}
+                onProduce={() => setShowProduce(true)}
+                onBagWaste={() => setShowWarehouseWaste(true)}
+              />
+            </div>
+          )}
+
+          {dailyProduce && (
+            <DailyProductionTable
+              productKey={productKey}
+              logAction={dailyProduce.logAction}
+              title={dailyProduce.title}
+              unitPlural={dailyProduce.unitPlural}
+              unitSingular={dailyProduce.unitSingular}
+              canMutate={canMutate}
+              refreshTick={pouchLogTick}
+              onRecorded={() => setPouchLogTick((t) => t + 1)}
+            />
+          )}
+
           <div className="rounded-xl border bg-card overflow-hidden" data-tour="raw-dept-production-log">
             <div className="px-5 py-4 border-b bg-secondary/30">
               <p className="text-sm font-semibold">Production activity</p>
@@ -352,26 +391,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
         </div>
       )}
 
-      {actionsOpen && canMutate && (
-        <RawActionsModal
-          finishedProductPath={route.finishedProductPath}
-          finishedTitle={route.finishedTitle}
-          isParagis={isParagis}
-          canUseRawBags={(data?.bags_on_hand ?? 0) > 0}
-          canPouch={maxPouchesFromWip > 0 || wipTeaBags >= PT_TEA_BAGS_PER_POUCH}
-          canWipWaste={wipTeaBags > 0}
-          canBagWaste={(data?.bags_on_hand ?? 0) > 0}
-          canProduce={(data?.bags_on_hand ?? 0) > 0}
-          onClose={() => setActionsOpen(false)}
-          onStockIn={() => { setActionsOpen(false); setShowStockIn(true); }}
-          onUseRawBags={() => { setActionsOpen(false); setShowUseRawBags(true); }}
-          onPouch={() => { setActionsOpen(false); setShowPouch(true); }}
-          onWipWaste={() => { setActionsOpen(false); setShowWipWaste(true); }}
-          onProduce={() => { setActionsOpen(false); setShowProduce(true); }}
-          onBagWaste={() => { setActionsOpen(false); setShowWarehouseWaste(true); }}
-        />
-      )}
-
       {isParagis && (
         <ParagisProductionGuideModal
           open={guideOpen}
@@ -449,7 +468,11 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           hint={`Uses ${PT_TEA_BAGS_PER_POUCH} tea bags per pouch · ${wipTeaBags} WIP tea bags on hand`}
           onClose={() => setShowPouch(false)}
           onSubmit={(qty, note) => deptPtPouch({ qty, note })}
-          onDone={() => { setShowPouch(false); void refresh(); }}
+          onDone={() => {
+            setShowPouch(false);
+            setPouchLogTick((t) => t + 1);
+            void refresh();
+          }}
         />
       )}
       {showWipWaste && data && (
@@ -472,23 +495,24 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             if (productKey === "honey_comb") return deptCombProduce({ qty, note });
             return deptJarProduce({ qty, note });
           }}
-          onDone={() => { setShowProduce(false); void refresh(); }}
+          onDone={() => {
+            setShowProduce(false);
+            setPouchLogTick((t) => t + 1);
+            void refresh();
+          }}
         />
       )}
     </PageLayout>
   );
 }
 
-function RawActionsModal({
+function RawDeptInlineActions({
+  isParagis,
   finishedProductPath,
   finishedTitle,
-  isParagis,
-  canUseRawBags,
-  canPouch,
-  canWipWaste,
-  canBagWaste,
-  canProduce,
-  onClose,
+  bagsOnHand,
+  wipTeaBags,
+  maxPouchesFromWip,
   onStockIn,
   onUseRawBags,
   onPouch,
@@ -496,15 +520,12 @@ function RawActionsModal({
   onProduce,
   onBagWaste,
 }: {
+  isParagis: boolean;
   finishedProductPath: string;
   finishedTitle: string;
-  isParagis: boolean;
-  canUseRawBags: boolean;
-  canPouch: boolean;
-  canWipWaste: boolean;
-  canBagWaste: boolean;
-  canProduce: boolean;
-  onClose: () => void;
+  bagsOnHand: number;
+  wipTeaBags: number;
+  maxPouchesFromWip: number;
   onStockIn: () => void;
   onUseRawBags: () => void;
   onPouch: () => void;
@@ -512,46 +533,83 @@ function RawActionsModal({
   onProduce: () => void;
   onBagWaste: () => void;
 }) {
-  const btnCls = "w-full text-left px-3 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-secondary disabled:opacity-40";
+  const canUseRaw = bagsOnHand > 0;
+  const canPouch = maxPouchesFromWip > 0 || wipTeaBags >= PT_TEA_BAGS_PER_POUCH;
+  const canWip = wipTeaBags > 0;
+  const canBags = bagsOnHand > 0;
+
   return (
-    <AppModal open onClose={onClose} panelClassName="max-w-sm w-full" labelledBy="raw-actions-title">
-      <AppModalHeader title="Quick actions" titleId="raw-actions-title" onClose={onClose} />
-      <AppModalBody className="space-y-2">
-        <Link
-          to={finishedProductPath}
-          onClick={onClose}
-          className="block w-full text-left px-3 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-secondary"
+    <div
+      className="rounded-xl border bg-card overflow-hidden"
+      data-tour="raw-dept-inline-actions"
+    >
+      <div className="px-4 py-3 border-b bg-secondary/30">
+        <p className="text-sm font-semibold">Do next</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Production steps — tap the action you need.
+        </p>
+      </div>
+      <div className="p-3 grid grid-cols-1 gap-2">
+        <AppPressable
+          variant="primary"
+          onClick={onStockIn}
+          className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold"
         >
-          Open {finishedTitle}
-        </Link>
-        <button type="button" onClick={onStockIn} className={btnCls}>
-          <span className="inline-flex items-center gap-2"><Plus size={14} /> Stock in</span>
-        </button>
+          <Plus size={16} /> Stock in raw bags
+        </AppPressable>
         {isParagis ? (
           <>
-            <button type="button" onClick={onUseRawBags} disabled={!canUseRawBags} className={btnCls}>
-              <span className="inline-flex items-center gap-2"><Factory size={14} /> Use raw bags</span>
-            </button>
-            <button type="button" onClick={onPouch} disabled={!canPouch} className={btnCls}>
-              <span className="inline-flex items-center gap-2"><Package size={14} /> Pouch</span>
-            </button>
-            <button type="button" onClick={onWipWaste} disabled={!canWipWaste} className={btnCls}>
-              <span className="inline-flex items-center gap-2"><Minus size={14} /> WIP waste</span>
-            </button>
+            <AppPressable
+              variant="outline"
+              disabled={!canUseRaw}
+              onClick={onUseRawBags}
+              className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
+            >
+              <Factory size={16} /> Use raw bags → tea bags
+            </AppPressable>
+            <AppPressable
+              variant="outline"
+              disabled={!canPouch}
+              onClick={onPouch}
+              className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
+            >
+              <Package size={16} /> Pouch finished product
+            </AppPressable>
+            <AppPressable
+              variant="outline"
+              disabled={!canWip}
+              onClick={onWipWaste}
+              className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-medium"
+            >
+              <Minus size={16} /> WIP tea bag waste
+            </AppPressable>
           </>
         ) : (
-          <button type="button" onClick={onProduce} disabled={!canProduce} className={btnCls}>
-            <span className="inline-flex items-center gap-2"><Factory size={14} /> Produce</span>
-          </button>
+          <AppPressable
+            variant="outline"
+            disabled={!canBags}
+            onClick={onProduce}
+            className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
+          >
+            <Factory size={16} /> Produce finished product
+          </AppPressable>
         )}
-        <button type="button" onClick={onBagWaste} disabled={!canBagWaste} className={btnCls}>
-          <span className="inline-flex items-center gap-2"><Minus size={14} /> Bag waste</span>
-        </button>
-      </AppModalBody>
-      <AppModalFooter>
-        <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-border">Close</button>
-      </AppModalFooter>
-    </AppModal>
+        <AppPressable
+          variant="outline"
+          disabled={!canBags}
+          onClick={onBagWaste}
+          className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-medium"
+        >
+          <Minus size={16} /> Bag waste
+        </AppPressable>
+        <Link
+          to={finishedProductPath}
+          className="block w-full text-center text-sm font-medium px-3 py-3 rounded-lg border border-border hover:bg-secondary"
+        >
+          Open {finishedTitle} →
+        </Link>
+      </div>
+    </div>
   );
 }
 
@@ -1053,3 +1111,341 @@ function WipWasteModal({
     </AppModal>
   );
 }
+
+function DailyProductionTable({
+  productKey,
+  logAction,
+  title,
+  unitPlural,
+  unitSingular,
+  canMutate,
+  refreshTick,
+  onRecorded,
+}: {
+  productKey: string;
+  logAction: string;
+  title: string;
+  unitPlural: string;
+  unitSingular: string;
+  canMutate: boolean;
+  refreshTick: number;
+  onRecorded: () => void;
+}) {
+  const [date, setDate] = useState("");
+  const [dateDraft, setDateDraft] = useState("");
+  const [page, setPage] = useState(1);
+  const [rows, setRows] = useState<DeptProductionDailyRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addDate, setAddDate] = useState("");
+  const [addQty, setAddQty] = useState("");
+  const [addNote, setAddNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const d = await fetchDeptProductionDaily({
+        product_key: productKey,
+        log_action: logAction,
+        date: date || undefined,
+        page,
+        per_page: 10,
+      });
+      setRows(d.rows ?? []);
+      setTotal(d.total ?? 0);
+      setTotalPages(Math.max(1, d.total_pages ?? 1));
+    } catch (err) {
+      setRows([]);
+      setError(err instanceof ApiError ? err.message : `Could not load ${title.toLowerCase()}.`);
+    } finally {
+      setLoading(false);
+    }
+  }, [date, page, productKey, logAction, title]);
+
+  useEffect(() => {
+    void load();
+  }, [load, refreshTick]);
+
+  useEffect(() => {
+    if (!success) return;
+    const t = window.setTimeout(() => setSuccess(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [success]);
+
+  const applyDate = () => {
+    setPage(1);
+    setDate(dateDraft);
+  };
+
+  const clearDate = () => {
+    setDateDraft("");
+    setDate("");
+    setPage(1);
+  };
+
+  const formatDay = (isoDate: string) => {
+    const d = new Date(`${isoDate}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return isoDate;
+    return d.toLocaleDateString(undefined, {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const formatQty = (n: number) => {
+    const rounded = Math.round(n);
+    const unit = rounded === 1 ? unitSingular : unitPlural;
+    return `${rounded.toLocaleString()} ${unit}`;
+  };
+
+  const openAdd = () => {
+    setAddDate(dateDraft || date || new Date().toISOString().slice(0, 10));
+    setAddQty("");
+    setAddNote("");
+    setSaveError(null);
+    setAddOpen(true);
+  };
+
+  const submitAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const qty = parseFloat(addQty);
+    if (!addDate || !Number.isFinite(qty) || qty <= 0) {
+      setSaveError("Enter a date and a quantity greater than 0.");
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await recordDeptProductionDaily({
+        product_key: productKey,
+        qty,
+        production_date: addDate,
+        note: addNote.trim() || undefined,
+      });
+      setAddOpen(false);
+      setSuccess(`Recorded ${formatQty(qty)} for ${formatDay(addDate)}.`);
+      setPage(1);
+      onRecorded();
+    } catch (err) {
+      setSaveError(err instanceof ApiError ? err.message : "Could not save.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputCls =
+    "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-[#C8900A]/40";
+
+  return (
+    <div className="rounded-xl border bg-card overflow-hidden" data-tour="raw-dept-daily-produce-log">
+      <div className="px-5 py-4 border-b bg-secondary/30 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold">{title}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Total {unitPlural} made per day — search by date, 10 days per page.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="text-xs space-y-1">
+            <span className="text-muted-foreground">Date</span>
+            <input
+              type="date"
+              value={dateDraft}
+              onChange={(e) => setDateDraft(e.target.value)}
+              className="block border border-border rounded-lg px-2.5 py-1.5 text-sm bg-background"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={applyDate}
+            className="text-xs font-medium rounded-lg px-3 py-1.5 border border-border hover:bg-secondary/50"
+          >
+            Search
+          </button>
+          {date ? (
+            <button
+              type="button"
+              onClick={clearDate}
+              className="text-xs font-medium rounded-lg px-3 py-1.5 border border-border hover:bg-secondary/50"
+            >
+              Clear
+            </button>
+          ) : null}
+          {canMutate ? (
+            <Button type="button" size="sm" onClick={openAdd}>
+              Add
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      {success ? (
+        <div className="px-5 pt-3">
+          <AppSuccessNotice message={success} />
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="px-5 py-3">
+          <AppErrorBanner message={error} />
+        </div>
+      ) : null}
+
+      {loading ? (
+        <div className="px-5 py-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" /> Loading…
+        </div>
+      ) : rows.length === 0 ? (
+        <p className="px-5 py-8 text-sm text-muted-foreground text-center">
+          {date ? `No ${unitPlural} made on this date.` : `No ${title.toLowerCase()} yet.`}
+        </p>
+      ) : (
+        <>
+          <div className="sm:hidden divide-y divide-border">
+            {rows.map((e) => (
+              <div key={e.production_date} className="px-4 py-3 space-y-1">
+                <p className="text-sm font-medium">{formatDay(e.production_date)}</p>
+                <p className="text-sm">{formatQty(e.qty_total)}</p>
+                {e.run_count > 1 ? (
+                  <p className="text-xs text-muted-foreground">{e.run_count} runs</p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-secondary/20">
+                  {["Date", `${unitPlural.charAt(0).toUpperCase()}${unitPlural.slice(1)} made`].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((e) => (
+                  <tr key={e.production_date} className={`border-b last:border-0 ${appHoverRow}`}>
+                    <td className="px-4 py-2.5 whitespace-nowrap">{formatDay(e.production_date)}</td>
+                    <td className="px-4 py-2.5 font-medium">
+                      {formatQty(e.qty_total)}
+                      {e.run_count > 1 ? (
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          ({e.run_count} runs)
+                        </span>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {!loading && total > 0 ? (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t bg-secondary/10">
+          <p className="text-xs text-muted-foreground">
+            Showing {(page - 1) * 10 + 1}–{Math.min(page * 10, total)} of {total} day
+            {total === 1 ? "" : "s"}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {addOpen ? (
+        <AppModal open onClose={() => setAddOpen(false)} panelClassName="max-w-md w-full" labelledBy="daily-prod-add-title">
+          <AppModalHeader title={`Add ${title.toLowerCase()}`} titleId="daily-prod-add-title" onClose={() => setAddOpen(false)} />
+          <form onSubmit={(e) => void submitAdd(e)}>
+            <AppModalBody className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Records {unitPlural} for that date only. Does not change stock or deduct packaging.
+              </p>
+              {saveError ? <AppErrorBanner message={saveError} /> : null}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={addDate}
+                  onChange={(e) => setAddDate(e.target.value)}
+                  required
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+                  {unitPlural.charAt(0).toUpperCase() + unitPlural.slice(1)} made
+                </label>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="1"
+                  value={addQty}
+                  onChange={(e) => setAddQty(e.target.value)}
+                  required
+                  className={inputCls}
+                  placeholder={`Number of ${unitPlural}`}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+                  Note (optional)
+                </label>
+                <input
+                  type="text"
+                  value={addNote}
+                  onChange={(e) => setAddNote(e.target.value)}
+                  maxLength={200}
+                  className={inputCls}
+                />
+              </div>
+            </AppModalBody>
+            <AppModalFooter>
+              <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </Button>
+            </AppModalFooter>
+          </form>
+        </AppModal>
+      ) : null}
+    </div>
+  );
+}
+

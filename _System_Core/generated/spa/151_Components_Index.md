@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-07-08T05:43:19+02:00
+generated: 2026-07-14T08:36:05+02:00
 type: spa
 ---
 
@@ -63,6 +63,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/dept/DeptInventoryPage.tsx`
 - `app/src/app/pages/exec/ARCreditsPage.tsx`
 - `app/src/app/pages/exec/CostingPage.tsx`
+- `app/src/app/pages/exec/MonthlyInventoryPage.tsx`
 - `app/src/app/pages/exec/ReportsPage.tsx`
 - `app/src/app/pages/exec/SalesPage.tsx`
 - `app/src/app/pages/exec/SettingsPage.tsx`

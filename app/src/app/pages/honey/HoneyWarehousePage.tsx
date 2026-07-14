@@ -11,7 +11,7 @@ import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButto
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_VARIANTS } from "@/app/lib/honey";
-import { canExecutiveDirectEdit, canMutateHoneyInventory, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
+import { canExecutiveDirectEdit, canMutateHoneyPipeline, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { previewSupplierCode, type Supplier } from "@/app/lib/suppliers";
 import type { WarehousePricingRow } from "@/app/lib/honeyPricing";
@@ -23,7 +23,7 @@ const peso = (n: number) =>
 
 export function HoneyWarehousePage() {
   const { user } = useAuth();
-  const canMutate = canMutateHoneyInventory(user?.role);
+  const canMutate = canMutateHoneyPipeline(user?.role);
   const canExecEdit = canExecutiveDirectEdit(user?.role);
   const showSupplierProfile = canViewSupplierProfile(user?.role);
   const [rows, setRows] = useState<WhRow[]>([]);

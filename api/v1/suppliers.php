@@ -17,7 +17,8 @@ api_dispatch([
 
 function api_suppliers_can_list(string $role): bool
 {
-    return in_array($role, ['executive', 'prod_manager'], true);
+    // Exec + PM manage and pick; dept TL picks for stock-in (honey pipeline / dept raw).
+    return in_array($role, ['executive', 'prod_manager', 'tl'], true);
 }
 
 function api_suppliers_list(): void

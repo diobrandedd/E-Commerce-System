@@ -530,3 +530,174 @@ function rts_inventory_deduct_sell(PDO $pdo, int $userId, int $rowId, array $siz
 
     return ['ok' => true];
 }
+
+/**
+ * Executive monthly count: set absolute honey RTS totals for a variant+pool.
+ * Positive delta lands on newest row; negative uses FIFO across rows.
+ *
+ * @param array<string, float|int|string> $sizeQtys absolute totals per size
+ * @return array{variant: string, pool: string, sizes: array<string, float>}
+ */
+function rts_inventory_set_honey_variant_totals(
+    PDO $pdo,
+    int $userId,
+    string $variant,
+    array $sizeQtys,
+    string $pool = 'sellable'
+): array {
+    require_once __DIR__ . '/honey_inventory.php';
+    require_once __DIR__ . '/inventory_edit_log.php';
+
+    $variant = strtolower(trim($variant));
+    if ($variant === '') {
+        throw new RuntimeException('Variant is required.');
+    }
+    $pool = $pool === 'damaged' ? 'damaged' : 'sellable';
+    $poolSql = rts_inventory_pool_filter_sql($pdo, $pool);
+
+    $desired = [];
+    foreach (HONEY_SIZES as $size) {
+        $q = (float) ($sizeQtys[$size] ?? 0);
+        if ($q < 0) {
+            throw new RuntimeException('Quantity cannot be negative.');
+        }
+        $desired[$size] = $q;
+    }
+
+    $st = $pdo->prepare(
+        "SELECT * FROM rts_inventory_rows
+         WHERE category = 'honey'
+           AND COALESCE(NULLIF(TRIM(variant), ''), 'other') = ?{$poolSql}
+         ORDER BY id DESC
+         FOR UPDATE"
+    );
+    $st->execute([$variant]);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    if (!$rows) {
+        throw new RuntimeException('No RTS honey rows for this variant. Sync RTS cases first or seed inventory.');
+    }
+
+    foreach (HONEY_SIZES as $size) {
+        [$curCol, $initCol] = honey_packaging_size_columns($size);
+        $currentTotal = 0.0;
+        foreach ($rows as $r) {
+            $currentTotal += (float) ($r[$curCol] ?? 0);
+        }
+        $delta = round($desired[$size] - $currentTotal, 4);
+        if (abs($delta) < 0.0001) {
+            continue;
+        }
+        if ($delta > 0) {
+            $target = $rows[0];
+            $id = (int) $target['id'];
+            $old = (float) ($target[$curCol] ?? 0);
+            $new = round($old + $delta, 4);
+            $pdo->prepare("UPDATE rts_inventory_rows SET {$curCol} = ?, {$initCol} = GREATEST({$initCol}, ?) WHERE id = ?")
+                ->execute([$new, $new, $id]);
+            inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, $curCol, (string) $old, (string) $new, 'monthly_inventory');
+            $rows[0][$curCol] = $new;
+        } else {
+            $need = abs($delta);
+            foreach ($rows as &$r) {
+                if ($need <= 0) {
+                    break;
+                }
+                $have = (float) ($r[$curCol] ?? 0);
+                if ($have <= 0) {
+                    continue;
+                }
+                $take = min($have, $need);
+                $id = (int) $r['id'];
+                $new = round($have - $take, 4);
+                $pdo->prepare("UPDATE rts_inventory_rows SET {$curCol} = ? WHERE id = ?")->execute([$new, $id]);
+                inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, $curCol, (string) $have, (string) $new, 'monthly_inventory');
+                $r[$curCol] = $new;
+                $need = round($need - $take, 4);
+            }
+            unset($r);
+            if ($need > 0.0001) {
+                throw new RuntimeException("Could not reduce {$size} enough for variant {$variant}.");
+            }
+        }
+    }
+
+    return ['variant' => $variant, 'pool' => $pool, 'sizes' => $desired];
+}
+
+/**
+ * Executive monthly count: set absolute other-product RTS total for a label+pool.
+ *
+ * @return array{product_label: string, pool: string, current_qty: float}
+ */
+function rts_inventory_set_other_label_total(
+    PDO $pdo,
+    int $userId,
+    string $productLabel,
+    float $newQty,
+    string $pool = 'sellable'
+): array {
+    require_once __DIR__ . '/inventory_edit_log.php';
+
+    $productLabel = trim($productLabel);
+    if ($productLabel === '') {
+        throw new RuntimeException('Product label is required.');
+    }
+    if ($newQty < 0) {
+        throw new RuntimeException('Quantity cannot be negative.');
+    }
+    $pool = $pool === 'damaged' ? 'damaged' : 'sellable';
+    $poolSql = rts_inventory_pool_filter_sql($pdo, $pool);
+
+    $st = $pdo->prepare(
+        "SELECT * FROM rts_inventory_rows
+         WHERE category = 'other' AND product_label = ?{$poolSql}
+         ORDER BY id DESC
+         FOR UPDATE"
+    );
+    $st->execute([$productLabel]);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    if (!$rows) {
+        throw new RuntimeException('No RTS rows for this product. Sync RTS cases first.');
+    }
+
+    $currentTotal = 0.0;
+    foreach ($rows as $r) {
+        $currentTotal += (float) ($r['current_qty'] ?? 0);
+    }
+    $delta = round($newQty - $currentTotal, 4);
+    if (abs($delta) < 0.0001) {
+        return ['product_label' => $productLabel, 'pool' => $pool, 'current_qty' => $currentTotal];
+    }
+
+    if ($delta > 0) {
+        $id = (int) $rows[0]['id'];
+        $old = (float) ($rows[0]['current_qty'] ?? 0);
+        $new = round($old + $delta, 4);
+        $pdo->prepare('UPDATE rts_inventory_rows SET current_qty = ?, initial_qty = GREATEST(initial_qty, ?) WHERE id = ?')
+            ->execute([$new, $new, $id]);
+        inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, 'current_qty', (string) $old, (string) $new, 'monthly_inventory');
+    } else {
+        $need = abs($delta);
+        foreach ($rows as $r) {
+            if ($need <= 0) {
+                break;
+            }
+            $have = (float) ($r['current_qty'] ?? 0);
+            if ($have <= 0) {
+                continue;
+            }
+            $take = min($have, $need);
+            $id = (int) $r['id'];
+            $new = round($have - $take, 4);
+            $pdo->prepare('UPDATE rts_inventory_rows SET current_qty = ? WHERE id = ?')->execute([$new, $id]);
+            inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, 'current_qty', (string) $have, (string) $new, 'monthly_inventory');
+            $need = round($need - $take, 4);
+        }
+        if ($need > 0.0001) {
+            throw new RuntimeException('Could not reduce quantity enough for this RTS product.');
+        }
+    }
+
+    return ['product_label' => $productLabel, 'pool' => $pool, 'current_qty' => round($newQty, 4)];
+}
+

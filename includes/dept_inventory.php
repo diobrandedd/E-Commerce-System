@@ -607,3 +607,85 @@ function dept_inventory_catalog_snapshot(PDO $pdo, ?string $deptKey = null, ?str
 
     return $items;
 }
+
+/**
+ * Executive monthly count: set raw bag on-hand via balancing stock_entries row.
+ *
+ * @return array{product_key: string, bags_on_hand: float, previous: float, entry_id: int|null}
+ */
+function dept_raw_set_bags_on_hand(
+    PDO $pdo,
+    int $userId,
+    string $productKey,
+    float $newBags,
+    ?string $note = null
+): array {
+    if ($newBags < 0) {
+        throw new RuntimeException('Bags on-hand cannot be negative.');
+    }
+    $def = dept_product_by_key($productKey);
+    $stockName = dept_pricing_leaf_stock_name($productKey);
+    if ($def === null || $stockName === null) {
+        throw new RuntimeException('Unknown product.');
+    }
+    $deptId = dept_product_dept_id($pdo, (string) $def['dept']);
+    $previous = dept_raw_bags_on_hand($pdo, $productKey);
+    $delta = round($newBags - $previous, 4);
+    if (abs($delta) < 0.0001) {
+        return [
+            'product_key' => $productKey,
+            'bags_on_hand' => $previous,
+            'previous' => $previous,
+            'entry_id' => null,
+        ];
+    }
+
+    $st = $pdo->prepare(
+        'SELECT s.id,
+                (SELECT COALESCE(SUM(se.qty), 0) FROM stock_entries se WHERE se.stock_id = s.id) AS balance
+         FROM stocks s
+         WHERE s.dept_id = ? AND s.name = ?
+         ORDER BY balance DESC, s.id ASC
+         LIMIT 1'
+    );
+    $st->execute([$deptId, $stockName]);
+    $stock = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$stock) {
+        throw new RuntimeException('No leaf stock for this product. Stock-in at least once first, or set supplier prices.');
+    }
+    $stockId = (int) $stock['id'];
+    $auditNote = $note !== null && trim($note) !== '' ? trim($note) : 'Monthly inventory count';
+    $ins = $pdo->prepare(
+        'INSERT INTO stock_entries (stock_id, dept_id, qty, batching_date, supplier_batch_no, entered_by)
+         VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    $ins->execute([
+        $stockId,
+        $deptId,
+        $delta,
+        date('Y-m-d H:i:s'),
+        substr('count_correction: ' . $auditNote, 0, 120),
+        $userId,
+    ]);
+    $entryId = (int) $pdo->lastInsertId();
+
+    require_once __DIR__ . '/inventory_edit_log.php';
+    inventory_edit_log_write(
+        $pdo,
+        $userId,
+        'dept_raw_bags',
+        $stockId,
+        $productKey . ':bags_on_hand',
+        (string) $previous,
+        (string) $newBags,
+        'monthly_inventory'
+    );
+
+    return [
+        'product_key' => $productKey,
+        'bags_on_hand' => round($newBags, 4),
+        'previous' => $previous,
+        'entry_id' => $entryId,
+    ];
+}
+

@@ -1,7 +1,7 @@
 ---
 title: fulfillment_packing
 source: includes/fulfillment_packing.php
-generated: 2026-07-08T05:43:00+02:00
+generated: 2026-07-14T08:35:44+02:00
 type: module
 function_count: 33
 ---
@@ -175,8 +175,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/fulfillment_packing.php`:757 — `if (!fulfillment_packing_tables_ready($pdo)) {`
 - `includes/fulfillment_packing.php`:879 — `if (!fulfillment_packing_tables_ready($pdo)) {`
 - `includes/fulfillment_packing.php`:938 — `if (!fulfillment_packing_tables_ready($pdo)) {`
-- `includes/material_inventory.php`:1123 — `if (fulfillment_packing_tables_ready($pdo)) {`
-- `includes/material_inventory.php`:1189 — `if (fulfillment_packing_tables_ready($pdo)) {`
+- `includes/material_inventory.php`:1134 — `if (fulfillment_packing_tables_ready($pdo)) {`
+- `includes/material_inventory.php`:1200 — `if (fulfillment_packing_tables_ready($pdo)) {`
 
 ## material_inventory_role_can_issue_packing {#material_inventory_role_can_issue_packing}
 
@@ -240,7 +240,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/material_inventory.php`:1124 — `$result = fulfillment_packing_consume_line(`
+- `includes/material_inventory.php`:1135 — `$result = fulfillment_packing_consume_line(`
 
 ## fulfillment_packing_balances_list {#fulfillment_packing_balances_list}
 
