@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>A web-based operations management system</strong> for multi-channel order consolidation,<br />
-  inventory, production, returns (RTS), and sales — built for <a href="https://www.pyxfoodproducts.pyxfood.com/">Pyx Food Products</a> / Finest Wellness PH.
+  inventory, production, returns (RTS), and sales — built for <a href="https://pyxfoodproducts.pyxfood.com/">Pyx Food Products</a> / Finest Wellness PH.
 </p>
 
 <p align="center">
