@@ -1,98 +1,184 @@
-# Pyx Tracker BRENT CHANGES
+<p align="center">
+  <img src="docs/readme/logo-pyx-food-products.png" alt="Pyx Food Products logo" width="160" />
+</p>
 
-**Finest Wellness PH** — unified operations platform for inventory, production, returns (RTS), sales, and fulfillment tools. The repo folder is still `rts/` for historical reasons (Apache path `/rts/`), but the product is **Pyx Tracker**, not “RTS only.”
+<h1 align="center">Pyx Tracker</h1>
 
-| Layer | Stack |
-|--------|--------|
-| **SPA** | React + Vite + TypeScript (`app/`) |
-| **API** | PHP JSON gateway (`api/v1/*.php`) |
-| **Legacy UI** | PHP pages (`record.php`, `deliveries/`, etc.) |
-| **Database** | MySQL (`rts_system`) |
-| **Heavy jobs** | Python (`waybill-stamper/`, `pdf-to-excel/`) |
+<p align="center">
+  <strong>A web-based operations management system</strong> for multi-channel order consolidation,<br />
+  inventory, production, returns (RTS), and sales — built for <a href="https://www.pyxfood.com/">Pyx Food Products</a> / Finest Wellness PH.
+</p>
 
-**Production URL (local):** `http://localhost/rts/app/dist/`  
-**API base:** `/rts/api/v1/`
+<p align="center">
+  <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
+  <img alt="PHP" src="https://img.shields.io/badge/PHP-8-777BB4?logo=php&logoColor=white" />
+  <img alt="MySQL" src="https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white" />
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" />
+  <img alt="Python" src="https://img.shields.io/badge/Python-3-3776AB?logo=python&logoColor=white" />
+</p>
+
+<p align="center">
+  <a href="#-features">Features</a> ·
+  <a href="#-screenshots">Screenshots</a> ·
+  <a href="#-tech-stack">Tech stack</a> ·
+  <a href="#-quick-start">Quick start</a> ·
+  <a href="#-developer">Developer</a>
+</p>
 
 ---
 
-## What this system covers
+## Overview
+
+Pyx Tracker is an internal **operations platform** (lightweight vertical ERP) that unifies day-to-day work that used to live in spreadsheets and ad-hoc scripts:
+
+| Domain | What it covers |
+|--------|----------------|
+| **Inventory & production** | Honey warehouse → production → packaging; dept products (Paragis, BRC, Jar Cacao); packaging materials & supplies |
+| **Order fulfillment** | CSR Online Orders (VIP / Shopee SPX prep + PDF waybill stamper), parcels, deliveries |
+| **Returns (RTS)** | Case recording, sellable & damaged pools, Use RTS / Use damaged with audit trails |
+| **Sales** | Walk-in POS (PIN), AR credits, sales analytics |
+| **Costing & master data** | Product COGS / parcel packaging costing, suppliers, staff & roles |
+
+> Repo folder remains `rts/` (Apache path `/rts/`) for historical reasons — the product name is **Pyx Tracker**.
+
+---
+
+## Features
+
+- **Role-based SPA** — Executive, Production Manager, HR, CSR, Team Lead / Staff, POS PIN
+- **Honey pipeline** — gallons in warehouse/production, bottled stock by variant & size with batch traceability
+- **Packaging materials** — per-unit vs pool SKUs, HR stock-in, production deduct, staging for packing
+- **Multi-channel order consolidation** — VIP Excel tools, Shopee SPX packing-list merge, PDF + Excel waybill stamper (OCR fallback)
+- **Deliveries & parcels** — scan/photo ship flow, cancel/re-waybill handling
+- **RTS returns** — operational cases synced into sellable/damaged inventory; Use RTS → POS or packaging
+- **POS & AR** — walk-in honey/dept sales with RTS vs non-RTS stock source; staff credit ledger
+- **Product costing** — manufacturing COGS separate from fulfillment parcel packaging tiers
+- **Guides & approvals** — page guides, inventory correction / supply issue request workflows
+
+---
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/readme/01-dashboard.png" alt="Executive dashboard" width="820" /><br />
+  <em>Dashboard — fulfillment pulse and finished-goods snapshot</em>
+</p>
+
+<p align="center">
+  <img src="docs/readme/02-honey-inventory.png" alt="Honey finished inventory" width="820" /><br />
+  <em>Honey inventory — bottled stock by variant and size</em>
+</p>
+
+<p align="center">
+  <img src="docs/readme/03-packaging-materials.png" alt="Packaging materials" width="820" /><br />
+  <em>Packaging materials — catalog, on-hand, and production impact</em>
+</p>
+
+<p align="center">
+  <img src="docs/readme/04-online-orders.png" alt="Online Orders tools" width="820" /><br />
+  <em>Online Orders — prep Excel tools + PDF/Excel waybill stamper</em>
+</p>
+
+<p align="center">
+  <img src="docs/readme/05-sales-pos.png" alt="Sales and POS analytics" width="820" /><br />
+  <em>Sales — walk-in POS volumes, discounts, and AR</em>
+</p>
+
+<p align="center">
+  <img src="docs/readme/06-rts-inventory.png" alt="RTS inventory" width="820" /><br />
+  <em>RTS inventory — sellable returns pool with Use RTS history</em>
+</p>
+
+---
+
+## Tech stack
+
+| Layer | Stack |
+|-------|--------|
+| **SPA** | React 18, TypeScript, Vite, Tailwind, Radix/shadcn-style UI |
+| **API** | PHP 8 JSON gateway (`api/v1/*.php`), session + CSRF |
+| **Database** | MySQL (`rts_system`) via PDO |
+| **Heavy jobs** | Python — waybill stamper (PyMuPDF), PDF→Excel (pdfplumber), OCR (Tesseract / Poppler) |
+| **Deploy (local)** | Apache (XAMPP) serving `app/dist/` + `/rts/api/v1/` |
+
+---
+
+## Project layout
 
 ```text
-Pyx Tracker
-├── Inventory & production (Honey v3, dept stubs, costing)
-├── RTS (returns tracking + inventory mirror)
-├── Sales & POS (walk-in terminal, reports)
-├── Suppliers & AR
-├── CSR tools (Online Orders batch wizard)
-└── Legacy / bridge pages (deliveries upload, old RTS record flow)
+rts/
+├── app/                 # React SPA (primary UI)
+├── api/v1/              # JSON API endpoints
+├── includes/            # Shared PHP domain logic
+├── config/              # config.php, forwarding.php
+├── sql/                 # Migrations
+├── waybill-stamper/     # Python stamp engine
+├── pdf-to-excel/        # PDF label extraction
+├── docs/readme/         # README images
+├── tools/               # verify.ps1, memory-bank generators
+└── _System_Core/        # Specs, plans, architecture notes
 ```
 
 ---
 
-## Current progress (live today)
+## Quick start
 
-### React SPA (primary UI)
+### Prerequisites
 
-Built app: `cd app && npm install && npm run build:prod` → `app/dist/`
+- PHP 8 + Apache (XAMPP) + MySQL  
+- Node.js 18+ (SPA)  
+- Python 3 + packages for waybill/OCR tools (optional until you use CSR stampers)
 
-| Area | Routes | Roles | Notes |
-|------|--------|-------|--------|
-| **Dashboard** | `/dashboard` | Most roles | Role-specific landing |
-| **Honey inventory** | `/inventory/honey/*` | Executive, PM, HR | Warehouse → Production → Packaging |
-| **Dept inventory** | `/inventory/paragis`, `/inventory/cacao-brc` | Executive, PM, HR | UI present; depth varies vs Honey |
-| **Correction requests** | `/inventory/requests` | Executive, PM, HR | Approvals + notifications |
-| **Product costing** | `/costing` | Executive, PM | Stocks, formulas, honey variant groups |
-| **Supplier master** | `/suppliers` | Executive | ID photos, categories |
-| **RTS inventory** | `/rts` | Executive, PM, HR, CSR | Mirror of returns; sync from legacy cases |
-| **Reports / Sales** | `/reports`, `/sales` | Executive, PM | POS + AR-backed reporting |
-| **AR credits** | `/ar` | Several roles | Staff credit tracking |
-| **Online Orders** | `/waybill/online-orders` | Executive, CSR TL, CSR staff | Batch wizard: 4 tools (3 prep + PDF+Excel stamper) → one master Excel |
-| **Staff / settings** | `/staff`, `/settings` | Executive | User management |
-| **POS terminal** | `/pos`, `/pos/honey` | POS PIN | Walk-in sales |
+### 1. Database
 
-Auth: `api/v1/auth.php` (session + CSRF). SPA proxies API in dev via Vite.
+1. Create database `rts_system` (or the name in `config/config.php`).
+2. Run SQL migrations under `sql/` in order (`migration_phase*.sql`).
+3. Apply newer phases as needed (e.g. `migration_phase53_rts_pool_use_log.sql`).
 
-### Legacy PHP (still in use)
+### 2. Config
 
-| Page | Purpose |
-|------|---------|
-| `record.php` / `records.php` | Original RTS case recording |
-| `deliveries/` | Pre-dispatch delivery photo upload |
-| `login.php`, `portal.php` | Older auth / restricted portal |
-| `executive.php`, `dashboard.php` | Legacy dashboards (being superseded by SPA) |
+```bash
+cp config/config.sample.php config/config.php
+# optional ngrok / HTTPS camera forwarding:
+cp config/forwarding.sample.php config/forwarding.php
+```
 
-RTS **operational** data still originates here; the SPA **inventory mirror** is updated via `api/v1/rts_sync.php`.
+Prefer an **external** `storage.root` so uploads are not inside the git tree.
 
-### Online Orders (CSR)
+### 3. SPA
 
-| Tool | SPA route | API |
-|------|-----------|-----|
-| **Online Orders Generator** | `/waybill/online-orders` | `api/v1/online_orders.php` |
+```bash
+cd app
+npm install
+npm run dev          # http://localhost:5173 — proxies /rts/api
+npm run build:prod   # → app/dist/ for Apache
+```
 
-One **active batch** per session. The **tools page** has **four independent cards** — there is no prep → stamper chain:
+**Production URL (local):** `http://localhost/rts/app/dist/`  
+**API base:** `/rts/api/v1/`
 
-| Tool | Job |
-|------|-----|
-| VIP Excel arranger | Courier Excel → resolve remarks → **download** iPYX sheet → **Back to tools** |
-| SPX name merge | Packing list / PDF → review → **download** iPYX sheet → **Back to tools** |
-| Validate existing Excel | Check partner workbook → **download** → **Back to tools** |
-| **PDF + Excel stamper** | User returns to tools and picks this separately: prepared Excel + waybill PDFs → `run_unified_stamp` → batch lines |
+### 4. Verify (dev / agents)
 
-**Done** merges all stamped parcel lines into one master iPYX-style Excel (cols B–H) and persists rows in `csr_online_order_lines` for parcels/inventory.
+```powershell
+powershell -File tools/verify.ps1
+powershell -File tools/verify.ps1 -WithApi   # when XAMPP is up
+```
 
-Underlying engines (unchanged): `waybill-stamper/processor.py`, `pdf-to-excel/extractor.py`, `includes/order_remarks_workbook.py` — invoked via `waybill.php`, `pdf_to_excel.php`, and `order_remarks.php` from the orchestration layer in `includes/online_orders_generator.php`.
+<details>
+<summary><strong>Waybill / OCR setup (Windows)</strong></summary>
 
-**DB migration (once):** `Get-Content sql/migration_phase17_csr_online_orders.sql | mysql -u root rts_system` (or equivalent on your DB name)
+Required only for Online Orders stamper, PDF→Excel, and OCR fallbacks.
 
-Legacy SPA routes `/waybill/stamper`, `/waybill/pdf-to-excel`, and `/waybill/order-remarks` redirect to `/waybill/online-orders`. `/waybill-stamper` redirects there as well.
+1. Install Python 3 (add to PATH).
+2. `pip install pdfplumber openpyxl PyMuPDF pytesseract pdf2image`
+3. Install [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) and [Poppler](https://github.com/oschwartz10612/poppler-windows/releases).
+4. In `php.ini`, ensure `shell_exec` is allowed; raise upload limits for large PDFs.
+5. Optional: copy `waybill-stamper/paths.sample.json` → `paths.json` for custom Tesseract/Poppler paths.
 
-Full install steps for Python / OCR: [Quick start, section 3](#3-waybill--pdf-tools-setup-windows) and [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md).
+See [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md) and [`pdf-to-excel/README.md`](pdf-to-excel/README.md).
 
-### Infrastructure
-
-- **Upload storage** can live outside the git tree (`config/config.php` → `storage.root`)
-- **ngrok / HTTPS forwarding** for mobile camera & remote access: `config/forwarding.php`
-- **SQL migrations:** `sql/migration_phase*.sql` (run in order)
+</details>
 
 ---
 
@@ -101,348 +187,47 @@ Full install steps for Python / OCR: [Quick start, section 3](#3-waybill--pdf-to
 | Role | Typical access |
 |------|----------------|
 | `executive` | Full inventory, costing, suppliers, RTS, waybill, staff, settings |
-| `prod_manager` | Honey ops, RTS inventory, reports, sales, AR (own) |
-| `hr` | Read-only Honey + RTS + requests history |
-| `csr_tl` | Online Orders, RTS inventory |
-| `csr_staff` | Online Orders, RTS record flow |
-| `team_leader` / `staff` | Dept stock input, daily count, edit requests (legacy-style dept tools) |
+| `prod_manager` | Honey ops, packaging deduct, RTS, deliveries, reports |
+| `hr` | Packaging/supplies stock-in, requests; read-heavy inventory |
+| `csr_tl` / `csr_staff` | Online Orders, RTS recording |
+| `team_leader` / `staff` | Dept stock tools |
 | `pos` | POS terminal only |
 
-Department (CSR, Honey, etc.) is resolved from the `users` / `departments` tables and mapped in `api_normalize_role()`.
+---
+
+## Documentation
+
+| Doc | Purpose |
+|-----|---------|
+| [`_System_Core/000_System_Architecture.md`](_System_Core/000_System_Architecture.md) | Architecture & rules |
+| [`_System_Core/010_Product_Theory.md`](_System_Core/010_Product_Theory.md) | Product theory |
+| [`_System_Core/001_System_State.md`](_System_Core/001_System_State.md) | Active spec / sprint |
+| [`docs/Pyx_Tracker_Executive_Guide.docx`](docs/Pyx_Tracker_Executive_Guide.docx) | Non-technical overview |
+| [`app/README.md`](app/README.md) | SPA commands |
 
 ---
 
-## Project layout
+## Developer
 
-```text
-rts/
-├── app/                    # React SPA (Pyx Tracker UI)
-├── api/v1/                 # JSON API endpoints
-├── includes/               # PHP shared logic (auth, honey, waybill, …)
-├── config/                 # config.php, forwarding.php
-├── sql/                    # Database migrations
-├── waybill-stamper/        # Stamper Python + SETUP.md
-├── pdf-to-excel/           # PDF→Excel extractor.py
-├── storage/                # App-private files (waybill, order-remarks, pdf-to-excel)
-├── assets/                 # Legacy static uploads (prefer external storage)
-├── record.php, deliveries/ # Legacy RTS / logistics pages
-└── README.md               # This file
-```
+<p align="center">
+  <img src="docs/readme/developer-noli-fin.png" alt="Noli M Fin III" width="140" style="border-radius: 50%;" />
+  &nbsp;&nbsp;
+  <img src="docs/readme/developer-linkedin.png" alt="Noli M Fin III — LinkedIn" width="140" style="border-radius: 12px;" />
+</p>
+
+<p align="center">
+  <strong>Noli M Fin III</strong><br />
+  Full-stack developer · Pyx Tracker<br />
+  <a href="https://www.linkedin.com/in/noli-fin-5b295a276/">LinkedIn</a>
+  ·
+  <a href="https://www.pyxfood.com/">Pyx Food Products</a>
+</p>
+
+Built as an internal operations system for Finest Wellness PH / Pyx Food Products (Polomolok, South Cotabato).
 
 ---
 
-## Quick start (development)
+## License / use
 
-### 1. Database
-
-1. Create MySQL database `rts_system` (or name in `config/config.php`).
-2. Run migrations in order: `sql/migration_phase1_*.sql` through `migration_phase9_*.sql`.
-3. One-time bootstrap (if applicable): `auth/phase1_5_setup.php`  
-   - Default password for new users is often **employee ID** (see migration docs).
-
-### 2. PHP / Apache (XAMPP)
-
-- Point Apache document root at `htdocs`; app is served under `/rts/`.
-- **Waybill / PDF → Excel / Order remarks** need `shell_exec` enabled in `php.ini` (see [section 3 below](#3-waybill--pdf-tools-setup-windows)).
-- Raise upload limits for large waybill PDFs (see same section).
-
-### 3. Waybill & PDF tools setup (Windows)
-
-Required for **Waybill Stamper**, **PDF → Excel**, and OCR fallback on image-only label pages. Install on the **same machine that runs Apache** (your XAMPP PC).
-
-#### 3.1 Python 3
-
-1. Download: [python.org/downloads](https://www.python.org/downloads/) (64-bit recommended).
-2. Run the installer.
-3. On the first screen, check **“Add python.exe to PATH”** (or “Add Python to PATH”).
-4. Choose **Install Now** (or customize if you prefer a fixed path).
-
-Verify in **Command Prompt** (new window after install):
-
-```bat
-python --version
-```
-
-If `python` is not found, try:
-
-```bat
-py -3 --version
-```
-
-The app tries `python`, then `py -3`, then common install paths automatically.
-
-#### 3.2 Python packages (pip)
-
-Open **Command Prompt** and run:
-
-```bat
-pip install pdfplumber openpyxl PyMuPDF pytesseract pdf2image
-```
-
-| Package | Used by |
-|---------|---------|
-| `pdfplumber` | PDF → Excel (text layer per page) |
-| `PyMuPDF` (`fitz`) | Waybill Stamper (read/stamp PDF) |
-| `openpyxl` | Excel read/write (stamper, PDF→Excel, order remarks) |
-| `pytesseract` | OCR wrapper (stamper + PDF→Excel fallback) |
-| `pdf2image` | Renders PDF pages to images for OCR |
-
-Verify imports:
-
-```bat
-python -c "import pdfplumber, fitz, openpyxl, pytesseract, pdf2image; print('All OK')"
-```
-
-If you use `py` instead of `python`:
-
-```bat
-py -3 -m pip install pdfplumber openpyxl PyMuPDF pytesseract pdf2image
-py -3 -c "import pdfplumber, fitz, openpyxl, pytesseract, pdf2image; print('All OK')"
-```
-
-#### 3.3 Tesseract OCR
-
-Needed when a waybill page has **no text layer** (some Lazada/Shopee scans) or PDF → Excel cannot read the tracking number from text.
-
-1. Download the Windows installer: [UB Mannheim Tesseract wiki](https://github.com/UB-Mannheim/tesseract/wiki).
-2. Install to the default folder: `C:\Program Files\Tesseract-OCR\`
-3. Optional: check “Add to PATH” during install. The app also checks this path even if PATH is not set for Apache.
-
-Confirm the executable exists:
-
-`C:\Program Files\Tesseract-OCR\tesseract.exe`
-
-Or in CMD:
-
-```bat
-tesseract --version
-```
-
-**Custom install path:** copy `waybill-stamper/paths.sample.json` to `waybill-stamper/paths.json` and set the full path to `tesseract.exe`.
-
-#### 3.4 Poppler (for pdf2image)
-
-`pdf2image` needs Poppler’s `pdftoppm` to turn PDF pages into images before OCR.
-
-1. Download a Windows build: [poppler-windows releases](https://github.com/oschwartz10612/poppler-windows/releases).
-2. Extract the ZIP (e.g. to `C:\poppler\`).
-3. Add the **bin** folder to your system PATH, for example:
-   - `C:\poppler\Library\bin`
-   - (Exact folder name depends on the release; look for `pdftoppm.exe` inside.)
-
-Verify:
-
-```bat
-pdftoppm -h
-```
-
-**Custom path:** set `"poppler": "C:\\poppler\\Library\\bin"` in `waybill-stamper/paths.json` (see `paths.sample.json`).
-
-#### 3.5 PHP: allow Python and large uploads
-
-Edit `C:\xampp\php\php.ini`, then **restart Apache** in XAMPP.
-
-**Enable `shell_exec`** (required for Python jobs):
-
-- Find `disable_functions`.
-- Remove `shell_exec` from that list (leave other restrictions if your policy requires them).
-
-**Upload / runtime limits** (per-file uploads are ~60 MB max in the UI; raise if needed):
-
-```ini
-upload_max_filesize = 64M
-post_max_size = 68M
-max_execution_time = 300
-```
-
-`api/v1/.htaccess` may also raise limits for API routes when Apache allows `.htaccess` overrides.
-
-#### 3.6 Optional path overrides
-
-If Tesseract or Poppler are not on PATH (common when Apache runs as a service):
-
-```bat
-copy waybill-stamper\paths.sample.json waybill-stamper\paths.json
-```
-
-Edit `paths.json`:
-
-```json
-{
-  "tesseract": "C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
-  "poppler": "C:\\poppler\\Library\\bin"
-}
-```
-
-PDF → Excel reads the same `waybill-stamper/paths.json` for OCR fallback.
-
-#### 3.7 Quick checklist
-
-| Step | Command / check |
-|------|------------------|
-| Python | `python --version` |
-| pip packages | `python -c "import pdfplumber, fitz, openpyxl, pytesseract, pdf2image; print('OK')"` |
-| Tesseract | `tesseract --version` or file exists under `Program Files\Tesseract-OCR` |
-| Poppler | `pdftoppm -h` or `paths.json` |
-| PHP | `shell_exec` not disabled; Apache restarted |
-| App | Log in → **Waybill → PDF to Excel** or **Stamper** and run a small test PDF |
-
-#### 3.8 Troubleshooting
-
-| Problem | What to do |
-|---------|------------|
-| “Python is not available” | Install Python, add to PATH, restart Apache; try `py -3` in CMD |
-| `pip` not found | `python -m pip install …` or reinstall Python with pip enabled |
-| OCR fails / empty tracking | Install Tesseract + Poppler; set `paths.json` |
-| `pdf2image` / Poppler error | Add `Library\bin` to PATH or `paths.json` → `poppler` |
-| Upload too large | Increase `upload_max_filesize` / `post_max_size` in `php.ini` |
-| Processing timeout | Increase `max_execution_time`; large OCR batches take minutes |
-| `shell_exec` disabled | Remove from `disable_functions` in `php.ini` |
-
-More detail: [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md), [`pdf-to-excel/README.md`](pdf-to-excel/README.md).
-
-### 4. React SPA
-
-```bash
-cd app
-npm install
-npm run dev          # http://localhost:5173 — proxies /rts/api to XAMPP
-npm run build:prod   # output → app/dist/ for Apache
-```
-
-### Verify script (agent loop + local QA)
-
-After code changes, run the unified verify harness (used by `.cursor/agents/verifier` and hooks):
-
-```powershell
-powershell -File tools/verify.ps1              # scoped by git diff
-powershell -File tools/verify.ps1 -All         # all stages
-powershell -File tools/verify.ps1 -WithApi     # include API smoke (XAMPP up)
-```
-
-Stages: PHP syntax (`includes/`, `api/`), parcel tier tests, SPA build (when `app/` touched), memory bank regenerate (when PHP API touched), optional API smoke.
-
-Implementation prompt for approved plans:
-
-```text
-Implement <plan>. Sub-agent loop: verifier after each batch; fixer on FAIL; max 5 cycles.
-```
-
-### 5. Config
-
-```bash
-cp config/config.sample.php config/config.php    # if missing
-cp config/forwarding.sample.php config/forwarding.php   # optional ngrok
-```
-
----
-
-## Upload storage (recommended for git workflows)
-
-Store uploads **outside** this repo so `git pull` never touches user files.
-
-```php
-// config/config.php
-'storage' => [
-    'root' => 'C:/xampp/htdocs/rts_storage',
-    'web_base' => '/rts_storage',
-],
-```
-
-Create under that root:
-
-- `rts_documentation/` — RTS parcel photos/videos  
-- `deliveries_documentation/` — pre-dispatch delivery photos  
-- `sp_sort/` — SP Sort Excel exports  
-- `supplier_valid_ids/` — supplier ID photos (if using supplier master)
-
-Leave `storage.root` empty to keep using `assets/` inside the project (not ideal for git).
-
----
-
-## HTTPS forwarding (ngrok)
-
-Edit **`config/forwarding.php`** when switching tunnels:
-
-```php
-'enabled' => true,
-'public_url' => 'https://your-subdomain.ngrok-free.dev',
-'label' => 'testing',
-```
-
-- Phone/LAN HTTP URLs can redirect to HTTPS ngrok (camera/QR).
-- `localhost` on the dev PC is usually not redirected.
-- **`/rts/api/` is never redirected** (JSON `fetch` must stay on-origin).
-- SPA build includes `.htaccess` for deep-link refresh under `/rts/app/dist/`.
-
----
-
-## Data model (high level)
-
-| Domain | Main tables / API |
-|--------|-------------------|
-| **Honey v3** | `honey_*` tables, `api/v1/honey.php` |
-| **Generic costing** | `stocks`, `products`, `product_formula`, `api/v1/costing.php` |
-| **RTS mirror** | `rts_inventory_rows`, `api/v1/rts.php`, `rts_sync.php` |
-| **Suppliers** | `suppliers`, `api/v1/suppliers.php` |
-| **POS / AR** | `pos_sales`, `ar_credits`, `api/v1/pos.php`, `ar.php` |
-| **Waybill / CSR tools** | With `config.php` `storage.root` set (recommended): `rts_storage/waybill_stamper/`, `pdf_to_excel/`, `order_remarks/`, `online_orders/` — stashes & outputs stay outside the git repo. Legacy fallback: `storage/*` inside project when `storage.root` is empty. |
-
-Honey ops and generic costing share one DB but serve different screens.
-
----
-
-## API index (`api/v1/`)
-
-| File | Purpose |
-|------|---------|
-| `auth.php` | Login, session, CSRF |
-| `honey.php` | Warehouse / production / packaging |
-| `costing.php` | Stocks & product costing |
-| `rts.php` / `rts_sync.php` | RTS inventory mirror |
-| `suppliers.php` | Supplier master |
-| `staff.php`, `settings.php` | Admin |
-| `reports.php`, `sales.php` | Reporting |
-| `pos.php`, `ar.php` | POS & credits |
-| `online_orders.php` | CSR Online Orders batch wizard (partner / VIP / Shopee SPX) |
-| `waybill.php` | Waybill stamper |
-| `pdf_to_excel.php` | PDF → Excel (waybill labels → iPYX) |
-| `order_remarks.php` | Courier Excel remarks cleanup |
-| `dashboard.php`, `edit_requests.php` | Dashboard & corrections |
-
----
-
-## Planned / future additions
-
-| Item | Status | Notes |
-|------|--------|--------|
-| **CSR portal expansion** | Planned | `portal.php` is a stub; more CSR self-service pages |
-| **Paragis / Cacao-BRC inventory** | Partial | Routes exist; operational parity with Honey v3 |
-| **Waybill stamper** | ✅ Shipped | |
-| **PDF → Excel** | ✅ Shipped | Review gate before download; Stamper handoff manual |
-| **Order remarks** | ✅ Shipped | JNT / SPX / Flash profiles |
-| **Legacy → SPA migration** | Ongoing | `record.php` RTS flow still primary for case capture |
-| **Team leader / staff SPA** | Partial | Stock input & daily count in SPA; some flows still legacy |
-| **Executive legacy pages** | Deprecated path | Prefer SPA dashboard / reports |
-| **Dashboard shortcuts** | Planned | Quick links per role (e.g. waybill, RTS sync) |
-| **Stronger production deploy** | Planned | Env-based config, CI build, documented PHP/Python paths |
-| **Automated tests** | Planned | API smoke tests, waybill processor fixture runs |
-
----
-
-## Related docs
-
-- [`docs/Pyx_Tracker_Project_Specification.docx`](docs/Pyx_Tracker_Project_Specification.docx) — project spec (executive / IT)  
-- [`docs/Pyx_Tracker_Executive_Guide.docx`](docs/Pyx_Tracker_Executive_Guide.docx) — how the system works (non-technical)  
-- [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md) — Waybill-focused setup & troubleshooting  
-- [`pdf-to-excel/README.md`](pdf-to-excel/README.md) — PDF → Excel API & columns  
-- [`app/README.md`](app/README.md) — SPA dev commands  
-- [`config/forwarding.sample.php`](config/forwarding.sample.php) — ngrok fields  
-
-Regenerate DOCX files: `py -3 docs/generate_executive_docs.py`
-
----
-
-## License / internal use
-
-Internal Finest Wellness PH tooling. Do not commit secrets (`config/config.php`, cookies, `.env`) to git.
+Internal tooling for Finest Wellness PH / Pyx Food Products.  
+Do **not** commit secrets (`config/config.php`, credentials, `.env`) to git.
