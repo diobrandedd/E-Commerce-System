@@ -210,9 +210,9 @@ See [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md) and [`pdf-to-excel/RE
 ## Developer
 
 <p align="center">
-  <img src="docs/readme/developer-noli-fin.png" alt="Noli M Fin III" width="140" style="border-radius: 50%;" />
+  <img src="docs/readme/developer-noli-fin-circle.png" alt="Noli M Fin III" width="140" />
   &nbsp;&nbsp;
-  <img src="docs/readme/developer-linkedin.png" alt="Noli M Fin III — LinkedIn" width="140" style="border-radius: 12px;" />
+  <img src="docs/readme/developer-linkedin-circle.png" alt="Noli M Fin III — LinkedIn" width="140" />
 </p>
 
 <p align="center">
@@ -220,7 +220,7 @@ See [`waybill-stamper/SETUP.md`](waybill-stamper/SETUP.md) and [`pdf-to-excel/RE
   Full-stack developer · Pyx Tracker<br />
   <a href="https://www.linkedin.com/in/noli-fin-5b295a276/">LinkedIn</a>
   ·
-  <a href="https://www.pyxfood.com/">Pyx Food Products</a>
+  <a href="https://pyxfoodproducts.pyxfood.com/">Pyx Food Products</a>
 </p>
 
 Built as an internal operations system for Finest Wellness PH / Pyx Food Products (Polomolok, South Cotabato).
