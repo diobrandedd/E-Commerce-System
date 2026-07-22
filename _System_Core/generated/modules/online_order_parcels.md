@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-07-18T05:14:02+02:00
+generated: 2026-07-22T03:47:36+02:00
 type: module
 function_count: 27
 ---
@@ -35,9 +35,10 @@ function_count: 27
 
 ## online_parcels_user_can_access {#online_parcels_user_can_access}
 
-**Callers (1):**
+**Callers (2):**
 
 - `api/v1/parcels.php`:14 — `if (!online_parcels_user_can_access($user)) {`
+- `includes/partner_sold_reconcile.php`:29 — `return online_parcels_user_can_access($user);`
 
 ## online_parcels_user_can_ship {#online_parcels_user_can_ship}
 
@@ -54,7 +55,7 @@ function_count: 27
 
 ## online_parcels_ensure_schema {#online_parcels_ensure_schema}
 
-**Callers (24):**
+**Callers (25):**
 
 - `api/v1/deliveries.php`:133 — `online_parcels_ensure_schema($pdo);`
 - `api/v1/parcels.php`:51 — `online_parcels_ensure_schema($pdo);`
@@ -79,6 +80,7 @@ function_count: 27
 - `includes/online_order_parcels.php`:1322 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_order_parcels.php`:1428 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_orders_generator.php`:389 — `online_parcels_ensure_schema($pdo);`
+- `includes/partner_sold_reconcile.php`:252 — `online_parcels_ensure_schema($pdo);`
 - `includes/rts_case_handlers.php`:467 — `online_parcels_ensure_schema($pdo);`
 
 ## online_parcels_apply_rts_schema_migrations {#online_parcels_apply_rts_schema_migrations}

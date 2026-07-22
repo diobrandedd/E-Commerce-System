@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-07-18T05:13:48+02:00
+generated: 2026-07-22T03:47:21+02:00
 type: module
 function_count: 14
 ---
@@ -19,7 +19,7 @@ function_count: 14
 
 ## ims_session_start {#ims_session_start}
 
-**Callers (47):**
+**Callers (53):**
 
 - `api/v1/_bootstrap.php`:51 — `ims_session_start();`
 - `auth/login.php`:7 — `ims_session_start();`
@@ -46,11 +46,11 @@ function_count: 14
 - `includes/order_remarks.php`:401 — `ims_session_start();`
 - `includes/order_remarks.php`:446 — `ims_session_start();`
 - `includes/order_remarks.php`:470 — `ims_session_start();`
-- _… and 22 more (run impact.php for full list)_
+- _… and 28 more (run impact.php for full list)_
 
 ## ims_current_user {#ims_current_user}
 
-**Callers (41):**
+**Callers (42):**
 
 - `api/v1/_bootstrap.php`:131 — `$u = ims_current_user();`
 - `api/v1/auth.php`:69 — `$user = ims_current_user();`
@@ -77,7 +77,7 @@ function_count: 14
 - `dept/beginning_inventory.php`:9 — `$user = ims_current_user();`
 - `dept/example_protected.php`:7 — `$user = ims_current_user();`
 - `dept/home.php`:7 — `$user = ims_current_user();`
-- _… and 16 more (run impact.php for full list)_
+- _… and 17 more (run impact.php for full list)_
 
 ## ims_pos_authenticated {#ims_pos_authenticated}
 

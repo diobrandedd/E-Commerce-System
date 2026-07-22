@@ -1,7 +1,7 @@
 ---
 title: waybill_stamper
 source: includes/waybill_stamper.php
-generated: 2026-07-18T05:14:14+02:00
+generated: 2026-07-22T03:47:48+02:00
 type: module
 function_count: 19
 ---
@@ -68,12 +68,13 @@ function_count: 19
 
 ## waybill_stamper_upload_preflight {#waybill_stamper_upload_preflight}
 
-**Callers (4):**
+**Callers (5):**
 
 - `api/v1/pdf_to_excel.php`:62 — `waybill_stamper_upload_preflight();`
 - `api/v1/waybill.php`:72 — `waybill_stamper_upload_preflight();`
 - `api/v1/waybill.php`:104 — `waybill_stamper_upload_preflight();`
 - `includes/order_remarks.php`:365 — `waybill_stamper_upload_preflight();`
+- `includes/partner_sold_reconcile.php`:178 — `waybill_stamper_upload_preflight();`
 
 ## waybill_stamper_files_field {#waybill_stamper_files_field}
 
@@ -84,9 +85,10 @@ function_count: 19
 
 ## waybill_stamper_utf8 {#waybill_stamper_utf8}
 
-**Callers (5):**
+**Callers (6):**
 
 - `includes/order_remarks.php`:328 — `throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
+- `includes/partner_sold_reconcile.php`:147 — `throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
 - `includes/pdf_to_excel.php`:223 — `$hint = waybill_stamper_utf8(trim($output));`
 - `includes/pdf_to_excel.php`:303 — `$logExcerpt = waybill_stamper_utf8($output);`
 - `includes/waybill_stamper.php`:422 — `$hint = waybill_stamper_utf8($hint);`
@@ -94,19 +96,21 @@ function_count: 19
 
 ## waybill_stamper_resolve_python {#waybill_stamper_resolve_python}
 
-**Callers (3):**
+**Callers (4):**
 
 - `includes/order_remarks.php`:224 — `$python = waybill_stamper_resolve_python();`
+- `includes/partner_sold_reconcile.php`:76 — `$python = waybill_stamper_resolve_python();`
 - `includes/pdf_to_excel.php`:198 — `$python = waybill_stamper_resolve_python();`
 - `includes/waybill_stamper.php`:385 — `$python = waybill_stamper_resolve_python();`
 
 ## waybill_stamper_collect_uploads {#waybill_stamper_collect_uploads}
 
-**Callers (5):**
+**Callers (6):**
 
 - `api/v1/waybill.php`:109 — `$pdfs = waybill_stamper_collect_uploads($pdfField, ['pdf'], 'pdf_');`
 - `api/v1/waybill.php`:114 — `$excels = waybill_stamper_collect_uploads($excelField, ['xlsx', 'xls'], 'xls_');`
 - `includes/order_remarks.php`:373 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'xlsx_', $stashDir);`
+- `includes/partner_sold_reconcile.php`:184 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'ps_', $stashDir);`
 - `includes/pdf_to_excel.php`:60 — `$saved = waybill_stamper_collect_uploads($field, ['pdf'], 'pdf_', $stashDir);`
 - `includes/waybill_stamper.php`:272 — `$saved = waybill_stamper_collect_uploads($field, $allowed, $prefix, $stashDir);`
 

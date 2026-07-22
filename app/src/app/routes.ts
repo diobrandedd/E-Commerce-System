@@ -43,6 +43,7 @@ import { DeliveriesPage } from "./pages/deliveries/DeliveriesPage";
 import { DeliveriesReviewPage } from "./pages/deliveries/DeliveriesReviewPage";
 import { DeliveriesCancelledPage } from "./pages/deliveries/DeliveriesCancelledPage";
 import { OnlineParcelsPage } from "./pages/fulfillment/OnlineParcelsPage";
+import { PartnerSoldReconcilePage } from "./pages/fulfillment/PartnerSoldReconcilePage";
 import { PackingMaterialsStagingPage } from "./pages/fulfillment/PackingMaterialsStagingPage";
 import { PackingMaterialsLogPage } from "./pages/fulfillment/PackingMaterialsLogPage";
 import { AccountSettingsPage } from "./pages/AccountSettingsPage";
@@ -150,6 +151,12 @@ export const router = createBrowserRouter(
         { path: "deliveries", element: guarded(DeliveriesPage, { roles: ["executive", "prod_manager", "staff"] }) },
         { path: "deliveries/review", element: guarded(DeliveriesReviewPage, { roles: ["executive", "prod_manager", "staff"] }) },
         { path: "deliveries/cancelled", element: guarded(DeliveriesCancelledPage, { roles: ["executive", "prod_manager", "staff"] }) },
+        {
+          path: "fulfillment/partner-sold-reconcile",
+          element: guarded(PartnerSoldReconcilePage, {
+            roles: ["executive", "prod_manager", "staff", "csr_tl", "csr_staff"],
+          }),
+        },
         {
           path: "fulfillment/online-parcels",
           element: guarded(OnlineParcelsPage, {

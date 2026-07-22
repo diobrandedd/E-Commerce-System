@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-07-18T05:13:50+02:00
+generated: 2026-07-22T03:47:23+02:00
 type: module
 function_count: 4
 ---
@@ -22,7 +22,7 @@ function_count: 4
 **Callers (2):**
 
 - `includes/db.php`:50 — `$c = rts_config()['db'] ?? [];`
-- `includes/rts_storage.php`:21 — `$cfg = rts_config()['storage'] ?? [];`
+- `includes/rts_storage.php`:22 — `$cfg = rts_config()['storage'] ?? [];`
 
 ## rts_runtime_db_name {#rts_runtime_db_name}
 
@@ -62,7 +62,7 @@ function_count: 4
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (217):**
+**Callers (218):**
 
 - `api/v1/_bootstrap.php`:176 — `$pdo = ims_pdo();`
 - `api/v1/ar.php`:33 — `api_ok(['products' => ar_credits_sellable_products(ims_pdo())]);`
@@ -89,5 +89,5 @@ function_count: 4
 - `api/v1/costing.php`:331 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:363 — `$pdo = ims_pdo();`
 - `api/v1/costing.php`:489 — `$pdo = ims_pdo();`
-- _… and 192 more (run impact.php for full list)_
+- _… and 193 more (run impact.php for full list)_
 

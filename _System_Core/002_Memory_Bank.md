@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-07-22 — [[problems/records/2026-07-01_partner-sold-list-reconcile|Partner sold list reconcile]]
+**Merged onto `v3.8.0`:** Order management → Partner sold list; upload Excel → match shipped parcels → green/red Order No export. (Brought from `v3.7.11` / `f22699e4` without full branch merge.)
+
 ### 2026-07-14 — [[problems/records/2026-07-14_rts-use-and-pos-stock-source|Use RTS + POS stock source]]
 **Shipped:** Use RTS replaces Deduct/Sell; Used RTS table with Where used (POS|Packaging); POS/AR checkout asks RTS vs Non-RTS. Run `migration_phase53` on prod. Executives can **Edit** / **Add honey** / **Add product** on RTS inventory (set seeds missing rows). Same Edit/Add on **Damaged RTS**; **Used damaged history** from `rts_damaged_use_events` (`damaged_use_log`).
 

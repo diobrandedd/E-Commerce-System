@@ -12,6 +12,7 @@ const RTS_STORAGE_BUCKET_WAYBILL_STAMPER = 'waybill_stamper';
 const RTS_STORAGE_BUCKET_PDF_TO_EXCEL = 'pdf_to_excel';
 const RTS_STORAGE_BUCKET_ORDER_REMARKS = 'order_remarks';
 const RTS_STORAGE_BUCKET_ONLINE_ORDERS = 'online_orders';
+const RTS_STORAGE_BUCKET_PARTNER_SOLD = 'partner_sold';
 
 /** @return array<string, mixed> */
 function rts_storage_cfg(): array
@@ -56,6 +57,7 @@ function rts_storage_dir(string $bucket): string
         RTS_STORAGE_BUCKET_PDF_TO_EXCEL,
         RTS_STORAGE_BUCKET_ORDER_REMARKS,
         RTS_STORAGE_BUCKET_ONLINE_ORDERS,
+        RTS_STORAGE_BUCKET_PARTNER_SOLD,
     ];
     if (!in_array($bucket, $allowed, true)) {
         throw new InvalidArgumentException('Unknown storage bucket: ' . $bucket);

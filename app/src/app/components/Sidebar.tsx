@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
   Truck, DollarSign, RotateCcw, ClipboardList, Factory,
-  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, PackageCheck, UserCog,
+  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, UserCog,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import {
@@ -112,23 +112,36 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     badge: badge && badge > 0 ? badge : undefined,
   });
 
-  const onlineOrdersItem: NavItem = {
-    icon: Package,
-    label: "Online Orders",
-    to: "/waybill/online-orders",
-  };
-
-  const onlineParcelsItem: NavItem = {
-    icon: PackageCheck,
-    label: "Online parcels",
+  const orderManagementNav = (navRole: Role): NavItem => ({
+    icon: ClipboardList,
+    label: "Order management",
     to: "/fulfillment/online-parcels",
-  };
+    children: orderManagementChildren(navRole),
+  });
 
-  const forPackingItem: NavItem = {
-    icon: Package,
-    label: "For packing",
-    to: "/fulfillment/packing-materials",
-  };
+  function orderManagementChildren(navRole: Role): NavChild[] {
+    const onlineOrders: NavLinkChild = { label: "Online Orders", to: "/waybill/online-orders" };
+    const bulkOrders: NavLinkChild = { label: "Bulk orders", to: "/sales/bulk-orders" };
+    const forPacking: NavLinkChild = { label: "For packing", to: "/fulfillment/packing-materials" };
+    const onlineParcels: NavLinkChild = { label: "Online parcels", to: "/fulfillment/online-parcels" };
+    const partnerSold: NavLinkChild = { label: "Partner sold list", to: "/fulfillment/partner-sold-reconcile" };
+
+    switch (navRole) {
+      case "executive":
+        return [onlineOrders, bulkOrders, forPacking, onlineParcels, partnerSold];
+      case "csr_tl":
+        return [onlineOrders, onlineParcels, partnerSold, forPacking];
+      case "csr_staff":
+        return [onlineOrders, onlineParcels, partnerSold];
+      case "prod_manager":
+      case "staff":
+        return [forPacking, onlineParcels, partnerSold];
+      case "team_leader":
+        return [forPacking];
+      default:
+        return [];
+    }
+  }
 
   const deliveriesItem: NavItem = {
     icon: Truck,
@@ -203,10 +216,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         inventoryNavExec,
         { icon: ShoppingBag, label: "Sales", to: "/sales", end: true },
-        { icon: Package, label: "Bulk orders", to: "/sales/bulk-orders" },
-        onlineOrdersItem,
-        onlineParcelsItem,
-        forPackingItem,
+        orderManagementNav(role),
         deliveriesItem,
         rtsNavFull,
         productSetupNav,
@@ -225,9 +235,8 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
         { icon: BarChart2, label: "Reports", to: "/reports" },
         { icon: ShoppingBag, label: "Sales", to: "/sales", end: true },
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
-        forPackingItem,
+        orderManagementNav(role),
         deliveriesItem,
-        onlineParcelsItem,
         rtsNavFull,
       ];
     case "hr":
@@ -246,15 +255,13 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
         { icon: ClipboardList, label: "Beginning Inventory", to: "/beginning-inventory" },
         { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
         { icon: ShoppingCart, label: "My AR Credits", to: "/ar" },
-        forPackingItem,
+        orderManagementNav(role),
         rtsNavReadOnly,
       ];
     case "csr_tl":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        onlineOrdersItem,
-        onlineParcelsItem,
-        forPackingItem,
+        orderManagementNav(role),
         rtsNavFull,
       ];
     case "staff":
@@ -264,8 +271,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
         { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
         staffInventoryNav,
         deliveriesItem,
-        onlineParcelsItem,
-        forPackingItem,
+        orderManagementNav(role),
         rtsNavReadOnly,
         { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
         { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
@@ -273,8 +279,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     case "csr_staff":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        onlineOrdersItem,
-        onlineParcelsItem,
+        orderManagementNav(role),
         rtsNavFull,
       ];
     default:
@@ -450,10 +455,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         return next;
       });
     }
-    if (location.pathname.includes("/waybill")) {
+    if (
+      location.pathname.startsWith("/fulfillment") ||
+      location.pathname.startsWith("/waybill") ||
+      location.pathname.startsWith("/sales/bulk")
+    ) {
       setExpandedGroups(prev => {
         const next = new Set(prev);
-        next.add("Waybill");
+        next.add("Order management");
         return next;
       });
     }
