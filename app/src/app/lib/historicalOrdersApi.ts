@@ -6,6 +6,8 @@ export type ConflictAction = "keep" | "use_uploaded";
 export interface HistoricalUploadedRow {
   row_key: string;
   tracking_number: string;
+  tracking_missing?: boolean;
+  original_tracking_number?: string | null;
   recipient_name: string;
   order_no: string | null;
   items_raw: string;
@@ -93,7 +95,6 @@ export async function historicalOrdersPreview(payload: {
   pipeline: HistoricalPipeline;
   year: number;
   month: number;
-  profile?: string;
 }): Promise<HistoricalPreviewResult> {
   return apiPost<HistoricalPreviewResult>("historical_orders.php", "preview", payload);
 }

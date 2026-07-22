@@ -8,7 +8,7 @@
 **Shipped:** Order management → Courier SOA; J&T/SPX Excel vs shipped parcels by ship_date; missing/extra lists; green/red tracking download.
 
 ### 2026-07-22 — [[problems/records/2026-07-22_historical-vip-excel-import|Historical VIP Excel → Online parcels]]
-**Shipped:** Order management → Import historical orders; VIP ORDER LIST preview/commit; synthetic TN; conflict compare (keep vs overwrite); shipped + month ship_date; no inventory deduct.
+**Shipped:** Order management → Import historical orders; Snappy Excel with real Tracking number (e.g. JT…); preview/commit + conflict compare; shipped + month ship_date; no inventory deduct.
 
 ### 2026-07-22 — [[problems/records/2026-07-01_partner-sold-list-reconcile|Partner sold list reconcile]]
 **Merged onto `v3.8.0`:** Order management → Partner sold list; upload Excel → match shipped parcels → green/red Order No export. (Brought from `v3.7.11` / `f22699e4` without full branch merge.)

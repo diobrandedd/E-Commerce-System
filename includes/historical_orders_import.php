@@ -3,13 +3,12 @@
 declare(strict_types=1);
 
 /**
- * Historical VIP (and other pipeline) ORDER LIST Excel → online_order_parcels backfill.
+ * Historical Snappy/Webcake shipped Excel (with Tracking number) → online_order_parcels backfill.
  * Two-step: preview (with TN conflicts) → commit (insert new / keep or overwrite conflicts).
  */
 
 require_once __DIR__ . '/online_order_parcels.php';
 require_once __DIR__ . '/online_orders_generator.php';
-require_once __DIR__ . '/order_remarks.php';
 require_once __DIR__ . '/honey_parcel_item_parser.php';
 require_once __DIR__ . '/waybill_stamper.php';
 require_once __DIR__ . '/rts_storage.php';
@@ -23,6 +22,73 @@ function historical_orders_storage_root(): string
         'historical-orders',
         ['stash'],
     );
+}
+
+function historical_orders_workbook_script(): string
+{
+    return __DIR__ . '/historical_orders_workbook.py';
+}
+
+/**
+ * @return array{cmd:string, env:array<string,string>}
+ */
+function historical_orders_python_command(string ...$args): array
+{
+    $python = waybill_stamper_resolve_python();
+    $script = historical_orders_workbook_script();
+    if (!is_file($script)) {
+        throw new RuntimeException('historical_orders_workbook.py is missing.');
+    }
+    $quoted = array_map(static fn (string $a): string => escapeshellarg($a), $args);
+    $cmd = $python . ' ' . escapeshellarg($script) . ' ' . implode(' ', $quoted);
+    $env = [];
+    if (DIRECTORY_SEPARATOR === '\\') {
+        $env['PYTHONIOENCODING'] = 'utf-8';
+    }
+
+    return ['cmd' => $cmd, 'env' => $env];
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function historical_orders_run_python_parse(string $workbookPath): array
+{
+    $built = historical_orders_python_command('parse', $workbookPath);
+    $cmd = $built['cmd'] . ' 2>&1';
+    $prevEnv = [];
+    foreach ($built['env'] as $key => $val) {
+        $prev = getenv($key);
+        $prevEnv[$key] = $prev === false ? null : $prev;
+        putenv($key . '=' . $val);
+    }
+    $out = shell_exec($cmd);
+    foreach ($prevEnv as $key => $val) {
+        if ($val === null) {
+            putenv($key);
+        } else {
+            putenv($key . '=' . $val);
+        }
+    }
+    if (!is_string($out) || trim($out) === '') {
+        throw new RuntimeException('Python produced no output. Is openpyxl installed?');
+    }
+    $jsonText = trim($out);
+    if ($jsonText !== '' && $jsonText[0] !== '{') {
+        $start = strpos($out, '{');
+        if ($start !== false) {
+            $jsonText = substr($out, $start);
+        }
+    }
+    $data = json_decode($jsonText, true);
+    if (!is_array($data)) {
+        throw new RuntimeException('Failed to parse workbook output: ' . substr(waybill_stamper_utf8($out), 0, 400));
+    }
+    if (!empty($data['error'])) {
+        throw new RuntimeException((string) $data['error']);
+    }
+
+    return $data;
 }
 
 function historical_orders_user_can_access(?array $user): bool
@@ -148,18 +214,39 @@ function historical_orders_resolve_month(int $year, int $month): array
 }
 
 /**
- * VIP ORDER LIST has no courier waybill — use Parcel Name as plain TN
- * (no "VIP" prefix, no dashes), e.g. 130441.
+ * Prefer real courier TN from Excel. Plain alphanumeric (no invented VIP- prefix).
  */
-function historical_orders_synthetic_tn(string $parcelName): string
+function historical_orders_normalize_tn(string $raw): string
 {
-    $ref = preg_replace('/[^A-Za-z0-9]/', '', $parcelName) ?? '';
-    $ref = trim($ref);
-    if ($ref === '') {
-        throw new RuntimeException('Parcel Name is empty; cannot build tracking number.');
+    $tn = preg_replace('/\s+/', '', trim($raw)) ?? '';
+    $tn = preg_replace('/[^A-Za-z0-9]/', '', $tn) ?? '';
+
+    return $tn;
+}
+
+function historical_orders_missing_tn_placeholder(string $yyyymm, ?string $orderNo, string $rowKey): string
+{
+    $orderPart = $orderNo !== null && trim($orderNo) !== ''
+        ? preg_replace('/[^A-Za-z0-9]/', '', trim($orderNo)) ?? ''
+        : '';
+    if ($orderPart === '') {
+        $orderPart = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $rowKey) ?? 'ROW');
     }
 
-    return $ref;
+    return 'MISSING' . $yyyymm . $orderPart;
+}
+
+function historical_orders_courier_from_tn(string $tn, string $pipeline): string
+{
+    $upper = strtoupper($tn);
+    if (str_starts_with($upper, 'JT') || str_starts_with($upper, 'JNT')) {
+        return 'J&T Express';
+    }
+    if (str_starts_with($upper, 'SPE') || str_starts_with($upper, 'SPX')) {
+        return 'SPX';
+    }
+
+    return historical_orders_default_courier($pipeline);
 }
 
 function historical_orders_default_courier(string $pipeline): string
@@ -257,19 +344,14 @@ function historical_orders_preview(PDO $pdo, array $input): array
     $year = (int) ($input['year'] ?? 0);
     $month = (int) ($input['month'] ?? 0);
     $range = historical_orders_resolve_month($year, $month);
-    $profile = trim((string) ($input['profile'] ?? 'vip_order_list'));
-    if ($profile === '') {
-        $profile = 'vip_order_list';
-    }
 
     $path = historical_orders_resolve_stash_path($token);
-    $data = order_remarks_run_python('detect', $path, $profile);
+    $data = historical_orders_run_python_parse($path);
     $orders = is_array($data['orders'] ?? null) ? $data['orders'] : [];
     if ($orders === []) {
-        throw new RuntimeException('No order rows found in this Excel. Use a VIP J&T ORDER LIST file.');
+        throw new RuntimeException('No order rows found. Use a Snappy Excel with a Tracking number column.');
     }
 
-    $courier = historical_orders_default_courier($pipeline);
     $newRows = [];
     $conflicts = [];
     $failed = [];
@@ -280,33 +362,42 @@ function historical_orders_preview(PDO $pdo, array $input): array
             continue;
         }
         $rowIndex++;
-        $receiver = trim((string) ($order['receiver'] ?? ''));
-        $parcelRef = trim((string) ($order['parcel_ref'] ?? $order['ref'] ?? ''));
-        $remarks = trim((string) ($order['remarks'] ?? ''));
+        $receiver = trim((string) ($order['recipient_name'] ?? ''));
+        $orderNo = trim((string) ($order['order_no'] ?? ''));
+        $itemsSrc = trim((string) ($order['items_raw'] ?? ''));
+        $tnRaw = (string) ($order['tracking_number'] ?? '');
         $rowKey = 'r' . $rowIndex;
 
-        if ($receiver === '' && $parcelRef === '' && $remarks === '') {
+        if ($receiver === '' && $orderNo === '' && $itemsSrc === '' && trim($tnRaw) === '') {
             continue;
         }
 
         try {
-            if ($parcelRef === '') {
-                throw new RuntimeException('Parcel Name is missing.');
+            $tn = historical_orders_normalize_tn($tnRaw);
+            if ($itemsSrc === '') {
+                throw new RuntimeException('Product / items is empty.');
             }
-            if ($remarks === '') {
-                throw new RuntimeException('Remarks is empty.');
-            }
-            $tn = historical_orders_synthetic_tn($parcelRef);
-            $prepared = historical_orders_prepare_items($remarks);
+            $prepared = historical_orders_prepare_items($itemsSrc);
             if ($prepared['items_raw'] === '') {
                 throw new RuntimeException('Items text is empty after normalize.');
             }
+            $trackingMissing = ($tn === '');
+            if ($trackingMissing) {
+                $tn = historical_orders_missing_tn_placeholder(
+                    $range['yyyymm'],
+                    $orderNo !== '' ? $orderNo : null,
+                    $rowKey
+                );
+            }
+            $courier = historical_orders_courier_from_tn($tn, $pipeline);
 
             $uploaded = [
                 'row_key' => $rowKey,
                 'tracking_number' => $tn,
+                'tracking_missing' => $trackingMissing,
+                'original_tracking_number' => $trackingMissing ? null : $tn,
                 'recipient_name' => $receiver !== '' ? $receiver : 'Unknown',
-                'order_no' => $parcelRef,
+                'order_no' => $orderNo !== '' ? $orderNo : null,
                 'items_raw' => $prepared['items_raw'],
                 'items_parsed_json' => $prepared['items_parsed_json'],
                 'parse_ok' => $prepared['parse_ok'],
@@ -316,6 +407,7 @@ function historical_orders_preview(PDO $pdo, array $input): array
                 'partner_seller' => null,
                 'status' => 'shipped',
                 'ship_date' => $range['ship_date'],
+                'sheet_status' => (string) ($order['sheet_status'] ?? ''),
             ];
 
             $existing = online_parcels_get_by_tracking($pdo, $tn);
@@ -335,9 +427,9 @@ function historical_orders_preview(PDO $pdo, array $input): array
         } catch (Throwable $e) {
             $failed[] = [
                 'row_key' => $rowKey,
-                'parcel_ref' => $parcelRef,
+                'parcel_ref' => $orderNo !== '' ? $orderNo : $tnRaw,
                 'receiver' => $receiver,
-                'remarks' => mb_substr($remarks, 0, 200),
+                'remarks' => mb_substr($itemsSrc, 0, 200),
                 'error' => $e->getMessage(),
             ];
         }

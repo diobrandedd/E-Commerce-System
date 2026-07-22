@@ -1,9 +1,9 @@
 ---
 title: historical_orders_import
 source: includes/historical_orders_import.php
-generated: 2026-07-22T10:13:31+02:00
+generated: 2026-07-22T11:02:41+02:00
 type: module
-function_count: 16
+function_count: 21
 ---
 
 
@@ -17,7 +17,6 @@ function_count: 16
 
 - `includes/online_order_parcels.php`
 - `includes/online_orders_generator.php`
-- `includes/order_remarks.php`
 - `includes/honey_parcel_item_parser.php`
 - `includes/waybill_stamper.php`
 - `includes/rts_storage.php`
@@ -26,13 +25,31 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:76 — `$stashDir = historical_orders_storage_root() . '/stash';`
+- `includes/historical_orders_import.php`:142 — `$stashDir = historical_orders_storage_root() . '/stash';`
+
+## historical_orders_workbook_script {#historical_orders_workbook_script}
+
+**Callers (1):**
+
+- `includes/historical_orders_import.php`:38 — `$script = historical_orders_workbook_script();`
+
+## historical_orders_python_command {#historical_orders_python_command}
+
+**Callers (1):**
+
+- `includes/historical_orders_import.php`:57 — `$built = historical_orders_python_command('parse', $workbookPath);`
+
+## historical_orders_run_python_parse {#historical_orders_run_python_parse}
+
+**Callers (1):**
+
+- `includes/historical_orders_import.php`:349 — `$data = historical_orders_run_python_parse($path);`
 
 ## historical_orders_user_can_access {#historical_orders_user_can_access}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:40 — `if (!historical_orders_user_can_access($user)) {`
+- `includes/historical_orders_import.php`:106 — `if (!historical_orders_user_can_access($user)) {`
 
 ## historical_orders_require_access {#historical_orders_require_access}
 
@@ -46,8 +63,8 @@ function_count: 16
 
 **Callers (2):**
 
-- `includes/historical_orders_import.php`:68 — `historical_orders_stash_prune();`
-- `includes/historical_orders_import.php`:104 — `historical_orders_stash_prune();`
+- `includes/historical_orders_import.php`:134 — `historical_orders_stash_prune();`
+- `includes/historical_orders_import.php`:170 — `historical_orders_stash_prune();`
 
 ## historical_orders_stash_upload {#historical_orders_stash_upload}
 
@@ -59,37 +76,49 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:265 — `$path = historical_orders_resolve_stash_path($token);`
+- `includes/historical_orders_import.php`:348 — `$path = historical_orders_resolve_stash_path($token);`
 
 ## historical_orders_resolve_month {#historical_orders_resolve_month}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:259 — `$range = historical_orders_resolve_month($year, $month);`
+- `includes/historical_orders_import.php`:346 — `$range = historical_orders_resolve_month($year, $month);`
 
-## historical_orders_synthetic_tn {#historical_orders_synthetic_tn}
+## historical_orders_normalize_tn {#historical_orders_normalize_tn}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:299 — `$tn = historical_orders_synthetic_tn($parcelRef);`
+- `includes/historical_orders_import.php`:376 — `$tn = historical_orders_normalize_tn($tnRaw);`
+
+## historical_orders_missing_tn_placeholder {#historical_orders_missing_tn_placeholder}
+
+**Callers (1):**
+
+- `includes/historical_orders_import.php`:386 — `$tn = historical_orders_missing_tn_placeholder(`
+
+## historical_orders_courier_from_tn {#historical_orders_courier_from_tn}
+
+**Callers (1):**
+
+- `includes/historical_orders_import.php`:392 — `$courier = historical_orders_courier_from_tn($tn, $pipeline);`
 
 ## historical_orders_default_courier {#historical_orders_default_courier}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:272 — `$courier = historical_orders_default_courier($pipeline);`
+- `includes/historical_orders_import.php`:249 — `return historical_orders_default_courier($pipeline);`
 
 ## historical_orders_prepare_items {#historical_orders_prepare_items}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:300 — `$prepared = historical_orders_prepare_items($remarks);`
+- `includes/historical_orders_import.php`:380 — `$prepared = historical_orders_prepare_items($itemsSrc);`
 
 ## historical_orders_existing_snapshot {#historical_orders_existing_snapshot}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:323 — `$snap = historical_orders_existing_snapshot($existing);`
+- `includes/historical_orders_import.php`:415 — `$snap = historical_orders_existing_snapshot($existing);`
 
 ## historical_orders_preview {#historical_orders_preview}
 
@@ -101,7 +130,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:330 — `'diff_fields' => historical_orders_diff_fields($snap, $uploaded),`
+- `includes/historical_orders_import.php`:422 — `'diff_fields' => historical_orders_diff_fields($snap, $uploaded),`
 
 ## historical_orders_commit {#historical_orders_commit}
 
@@ -115,7 +144,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:459 — `historical_orders_insert_shipped($pdo, $row, $createdAt);`
+- `includes/historical_orders_import.php`:551 — `historical_orders_insert_shipped($pdo, $row, $createdAt);`
 
 ## historical_orders_overwrite_shipped {#historical_orders_overwrite_shipped}
 
@@ -123,5 +152,5 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:488 — `historical_orders_overwrite_shipped($pdo, (int) ($existing['id'] ?? 0), $uploaded, $createdAt);`
+- `includes/historical_orders_import.php`:580 — `historical_orders_overwrite_shipped($pdo, (int) ($existing['id'] ?? 0), $uploaded, $createdAt);`
 

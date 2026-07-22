@@ -201,7 +201,7 @@ export function HistoricalOrdersImportPage() {
 
   const runPreview = async () => {
     if (!file) {
-      setError("Upload a VIP ORDER LIST Excel first.");
+      setError("Upload a Snappy Excel with Tracking number first.");
       return;
     }
     setBusy(true);
@@ -216,7 +216,6 @@ export function HistoricalOrdersImportPage() {
         pipeline,
         year,
         month,
-        profile: "vip_order_list",
       });
       setPreview(data);
       const next: Record<string, ConflictAction> = {};
@@ -266,7 +265,7 @@ export function HistoricalOrdersImportPage() {
   return (
     <PageLayout
       title="Import historical orders"
-      subtitle="Backfill VIP ORDER LIST Excel rows as already-shipped Online parcels. No inventory deduct. Conflicts show current vs uploaded before you commit."
+      subtitle="Backfill Snappy shipped-order Excel (with Tracking number) as already-shipped Online parcels. No inventory deduct. Conflicts show current vs uploaded before you commit."
     >
       <FulfillmentSectionEnter className="max-w-5xl space-y-6">
         <div className="grid gap-4 sm:grid-cols-3">
@@ -318,14 +317,15 @@ export function HistoricalOrdersImportPage() {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Tracking number = Parcel Name only (plain, no VIP / dashes), e.g.{" "}
-          <span className="font-mono text-foreground">130441</span>. Ship date = last day of the selected month.
-          Status = shipped.
+          Uses the Excel <span className="font-semibold text-foreground">Tracking number</span> column as-is (e.g.{" "}
+          <span className="font-mono text-foreground">JT0012987721845</span>). Ship date = last day of the selected
+          month. Status = shipped. Rows with no tracking number still import with a temporary placeholder so you can edit
+          them later in Online parcels.
         </p>
 
         <FileZone
-          label="VIP ORDER LIST Excel"
-          hint="Headers: Receiver, Parcel Name, Remarks (vip_order_list layout)"
+          label="Snappy shipped orders Excel"
+          hint="Columns: Order ID, Tracking number, Recipient/Customer, Product name, Quantity…"
           accept=".xlsx,.xls"
           icon={FileSpreadsheet}
           files={file ? [file] : []}
@@ -424,7 +424,12 @@ export function HistoricalOrdersImportPage() {
                     <tbody>
                       {preview.new.slice(0, 15).map(r => (
                         <tr key={r.row_key} className="border-b border-border/60">
-                          <td className="px-3 py-2 font-mono">{r.tracking_number}</td>
+                          <td className="px-3 py-2 font-mono">
+                            {r.tracking_number}
+                            {r.tracking_missing ? (
+                              <span className="ml-2 font-sans text-[11px] text-amber-700">(temporary)</span>
+                            ) : null}
+                          </td>
                           <td className="px-3 py-2">{r.recipient_name}</td>
                           <td className="px-3 py-2">{r.order_no}</td>
                         </tr>

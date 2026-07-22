@@ -11,7 +11,7 @@ tags: [fix]
 Dedicated Order management tool:
 
 1. Stash Excel → preview with `vip_order_list` parser
-2. Tracking number = Parcel Name only (plain, no `VIP` / dashes); `ship_date` = last day of selected month; `status = shipped`; no inventory deduct
+2. Uses Excel **Tracking number** as-is (Snappy/Webcake export); if missing, imports with a temporary editable placeholder; `ship_date` = last day of selected month; `status = shipped`; no inventory deduct
 3. TN conflicts: side-by-side current vs uploaded; Keep current / Use uploaded (per row + bulk); RTS/packing/photo rows default Keep
 4. Commit inserts new rows / overwrites historical-safe fields only
 
