@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-07-22T03:47:20+02:00
+generated: 2026-07-22T10:13:21+02:00
 type: memory-bank
 table_count: 60
 ---
@@ -483,9 +483,12 @@ _No references detected in includes/api (may be legacy pages only)._
 | `api/v1/deliveries.php` | [[modules/deliveries#api_deliveries_review_list]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_courier_summary]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_pipeline_summary]] |
+| `includes/courier_soa_reconcile.php` | [[modules/courier_soa_reconcile#courier_soa_shipped_tracking_map]] |
 | `includes/deliveries_upload.php` | [[modules/deliveries_upload#deliveries_upload_photos]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_revert_parcel_to_packing_if_shipped]] |
 | `includes/delivery_edit_requests.php` | [[modules/delivery_edit_requests#deliveries_enrich_review_rows]] |
+| `includes/historical_orders_import.php` | [[modules/historical_orders_import#historical_orders_insert_shipped]] |
+| `includes/historical_orders_import.php` | [[modules/historical_orders_import#historical_orders_overwrite_shipped]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_apply_rts_schema_migrations]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_promote_from_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_tracking]] |

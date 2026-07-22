@@ -1,9 +1,9 @@
 ---
 title: courier_detect
 source: includes/courier_detect.php
-generated: 2026-07-22T03:47:23+02:00
+generated: 2026-07-22T10:13:24+02:00
 type: module
-function_count: 1
+function_count: 2
 ---
 
 
@@ -22,4 +22,11 @@ function_count: 1
 - `includes/rts_case_handlers.php`:455 — `'courier_detected' => rts_detect_courier($tracking),`
 - `includes/rts_prefill.php`:59 — `$detected = rts_detect_courier($tracking);`
 - `includes/rts_prefill.php`:307 — `'detected_courier' => rts_detect_courier($normalized),`
+
+## rts_courier_label_bucket {#rts_courier_label_bucket}
+
+**Callers (2):**
+
+- `api/v1/reports.php`:374 — `return rts_courier_label_bucket($courier);`
+- `includes/courier_soa_reconcile.php`:266 — `$bucket = rts_courier_label_bucket((string) ($row['courier'] ?? ''));`
 

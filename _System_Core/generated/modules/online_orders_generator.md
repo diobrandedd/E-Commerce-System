@@ -1,7 +1,7 @@
 ---
 title: online_orders_generator
 source: includes/online_orders_generator.php
-generated: 2026-07-22T03:47:37+02:00
+generated: 2026-07-22T10:13:39+02:00
 type: module
 function_count: 44
 ---
@@ -217,9 +217,10 @@ function_count: 44
 
 ## online_orders_normalize_items_display {#online_orders_normalize_items_display}
 
-**Callers (8):**
+**Callers (9):**
 
 - `api/v1/parcels.php`:166 — `$items = online_orders_normalize_items_display($items);`
+- `includes/historical_orders_import.php`:180 — `$raw = online_orders_normalize_items_display(trim($remarks));`
 - `includes/online_order_parcels.php`:909 — `$itemsRaw = online_orders_normalize_items_display(trim($itemsRaw));`
 - `includes/online_orders_generator.php`:549 — `online_orders_normalize_items_display($items),`
 - `includes/online_orders_generator.php`:590 — `$items = online_orders_normalize_items_display((string) ($line['items'] ?? ''));`

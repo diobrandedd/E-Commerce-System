@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-07-22T03:47:49+02:00
+generated: 2026-07-22T10:13:51+02:00
 type: spa
 ---
 
@@ -69,6 +69,8 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/exec/SettingsPage.tsx`
 - `app/src/app/pages/exec/StaffManagementPage.tsx`
 - `app/src/app/pages/exec/SuppliersPage.tsx`
+- `app/src/app/pages/fulfillment/CourierSoaReconcilePage.tsx`
+- `app/src/app/pages/fulfillment/HistoricalOrdersImportPage.tsx`
 - `app/src/app/pages/fulfillment/OnlineParcelsPage.tsx`
 - `app/src/app/pages/fulfillment/PackingMaterialsStagingPage.tsx`
 - `app/src/app/pages/fulfillment/PartnerSoldReconcilePage.tsx`
@@ -132,6 +134,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/csr/onlineOrders/DuplicateTrackingModal.tsx`
 - `app/src/app/components/dept/DeptStockInModal.tsx`
 - `app/src/app/components/exec/StaffManagementGuideModal.tsx`
+- `app/src/app/components/fulfillment/CourierSoaGuideModal.tsx`
 - `app/src/app/components/fulfillment/DeliveriesAddGuideModal.tsx`
 - `app/src/app/components/fulfillment/DeliveriesCancelledGuideModal.tsx`
 - `app/src/app/components/fulfillment/DeliveriesReviewGuideModal.tsx`

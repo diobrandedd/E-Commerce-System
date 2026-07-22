@@ -125,17 +125,22 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     const forPacking: NavLinkChild = { label: "For packing", to: "/fulfillment/packing-materials" };
     const onlineParcels: NavLinkChild = { label: "Online parcels", to: "/fulfillment/online-parcels" };
     const partnerSold: NavLinkChild = { label: "Partner sold list", to: "/fulfillment/partner-sold-reconcile" };
+    const courierSoa: NavLinkChild = { label: "Courier SOA", to: "/fulfillment/courier-soa-reconcile" };
+    const historicalImport: NavLinkChild = {
+      label: "Import historical orders",
+      to: "/fulfillment/historical-orders-import",
+    };
 
     switch (navRole) {
       case "executive":
-        return [onlineOrders, bulkOrders, forPacking, onlineParcels, partnerSold];
+        return [onlineOrders, bulkOrders, forPacking, onlineParcels, partnerSold, courierSoa, historicalImport];
       case "csr_tl":
-        return [onlineOrders, onlineParcels, partnerSold, forPacking];
+        return [onlineOrders, onlineParcels, partnerSold, courierSoa, historicalImport, forPacking];
       case "csr_staff":
-        return [onlineOrders, onlineParcels, partnerSold];
+        return [onlineOrders, onlineParcels, partnerSold, courierSoa, historicalImport];
       case "prod_manager":
       case "staff":
-        return [forPacking, onlineParcels, partnerSold];
+        return [forPacking, onlineParcels, partnerSold, courierSoa, historicalImport];
       case "team_leader":
         return [forPacking];
       default:

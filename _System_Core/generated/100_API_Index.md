@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-07-22T03:47:20+02:00
+generated: 2026-07-22T10:13:21+02:00
 type: memory-bank
 ---
 
@@ -90,6 +90,18 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `parcel_tier_line_delete` | `api_costing_parcel_tier_line_delete()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_delete_tier_line()`, `parcel_pack_tier_cost_estimate()` |
 | `parcel_cost_preview` | `api_costing_parcel_cost_preview()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_preview_tier_by_key()`, `parcel_pack_preview_from_items_raw()` |
 
+### `courier_soa_reconcile.php`
+
+- **Path:** `api/v1/courier_soa_reconcile.php`
+- **URL:** `/rts/api/v1/courier_soa_reconcile.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/courier_soa_reconcile.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `stash` | `api_courier_soa_stash()` | `courier_soa_require_access()`, `courier_soa_stash_upload()` |
+| `reconcile` | `api_courier_soa_reconcile()` | `courier_soa_require_access()`, `courier_soa_reconcile()`, `ims_pdo()` |
+| `download` | `api_courier_soa_download()` | `courier_soa_serve_download()` |
+
 ### `dashboard.php`
 
 - **Path:** `api/v1/dashboard.php`
@@ -151,6 +163,18 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `packing_issue_estimate` | `api_fulfillment_packing_issue_estimate()` | `ims_pdo()`, `fulfillment_packing_estimate_parcels()` |
 | `packing_damage_report` | `api_fulfillment_packing_damage_report()` | `ims_pdo()`, `fulfillment_packing_report_damage()` |
 | `packing_damage_list` | `api_fulfillment_packing_damage_list()` | `ims_pdo()`, `fulfillment_packing_damage_list()` |
+
+### `historical_orders.php`
+
+- **Path:** `api/v1/historical_orders.php`
+- **URL:** `/rts/api/v1/historical_orders.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/historical_orders_import.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `stash` | `api_historical_orders_stash()` | `historical_orders_require_access()`, `historical_orders_stash_upload()` |
+| `preview` | `api_historical_orders_preview()` | `historical_orders_require_access()`, `historical_orders_preview()`, `ims_pdo()` |
+| `commit` | `api_historical_orders_commit()` | `historical_orders_require_access()`, `historical_orders_commit()`, `ims_pdo()` |
 
 ### `honey.php`
 
@@ -359,7 +383,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/reports.php`
 - **URL:** `/rts/api/v1/reports.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/courier_detect.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|

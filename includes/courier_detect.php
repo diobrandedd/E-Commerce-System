@@ -32,3 +32,29 @@ function rts_detect_courier(string $raw): string
     }
     return 'unknown';
 }
+
+/**
+ * Bucket free-text parcel/courier labels into jnt|spx|flash (same rules as reports).
+ */
+function rts_courier_label_bucket(string $courier): ?string
+{
+    $c = strtoupper(trim($courier));
+    if ($c === '') {
+        return null;
+    }
+    if (str_contains($c, 'SPX')) {
+        return 'spx';
+    }
+    if (str_contains($c, 'FLASH')) {
+        return 'flash';
+    }
+    if (
+        str_contains($c, 'J&T') ||
+        str_contains($c, 'JNT') ||
+        str_contains($c, 'J&T EXPRESS')
+    ) {
+        return 'jnt';
+    }
+
+    return null;
+}

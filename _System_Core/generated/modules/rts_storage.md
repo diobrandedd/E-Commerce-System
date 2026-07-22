@@ -1,7 +1,7 @@
 ---
 title: rts_storage
 source: includes/rts_storage.php
-generated: 2026-07-22T03:47:46+02:00
+generated: 2026-07-22T10:13:48+02:00
 type: module
 function_count: 16
 ---
@@ -21,35 +21,35 @@ function_count: 16
 
 **Callers (3):**
 
-- `includes/rts_storage.php`:30 — `return trim((string) (rts_storage_cfg()['root'] ?? '')) !== '';`
-- `includes/rts_storage.php`:36 — `$root = trim((string) (rts_storage_cfg()['root'] ?? ''));`
-- `includes/rts_storage.php`:167 — `$base = trim((string) (rts_storage_cfg()['web_base'] ?? ''));`
+- `includes/rts_storage.php`:32 — `return trim((string) (rts_storage_cfg()['root'] ?? '')) !== '';`
+- `includes/rts_storage.php`:38 — `$root = trim((string) (rts_storage_cfg()['root'] ?? ''));`
+- `includes/rts_storage.php`:171 — `$base = trim((string) (rts_storage_cfg()['web_base'] ?? ''));`
 
 ## rts_storage_external_enabled {#rts_storage_external_enabled}
 
 **Callers (4):**
 
-- `includes/rts_storage.php`:66 — `if (rts_storage_external_enabled()) {`
-- `includes/rts_storage.php`:163 — `if (!rts_storage_external_enabled()) {`
-- `includes/rts_storage.php`:194 — `if (rts_storage_external_enabled()) {`
-- `includes/rts_storage.php`:245 — `$root = rts_storage_external_enabled()`
+- `includes/rts_storage.php`:70 — `if (rts_storage_external_enabled()) {`
+- `includes/rts_storage.php`:167 — `if (!rts_storage_external_enabled()) {`
+- `includes/rts_storage.php`:198 — `if (rts_storage_external_enabled()) {`
+- `includes/rts_storage.php`:249 — `$root = rts_storage_external_enabled()`
 
 ## rts_storage_root_path {#rts_storage_root_path}
 
 **Callers (2):**
 
-- `includes/rts_storage.php`:67 — `$dir = rts_storage_root_path() . '/' . $bucket;`
-- `includes/rts_storage.php`:169 — `$name = basename(rts_storage_root_path());`
+- `includes/rts_storage.php`:71 — `$dir = rts_storage_root_path() . '/' . $bucket;`
+- `includes/rts_storage.php`:173 — `$name = basename(rts_storage_root_path());`
 
 ## rts_storage_dir {#rts_storage_dir}
 
 **Callers (8):**
 
 - `includes/delivery_edit_requests.php`:109 — `$path = rts_storage_dir(RTS_STORAGE_BUCKET_DELIVERIES) . '/' . $safe;`
-- `includes/rts_storage.php`:110 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_DELIVERIES) . '/' . $month;`
-- `includes/rts_storage.php`:124 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_RTS) . '/' . $month;`
-- `includes/rts_storage.php`:246 — `? rts_storage_dir($bucket)`
-- `includes/rts_storage.php`:265 — `$bucketDir = rts_storage_dir($bucket);`
+- `includes/rts_storage.php`:114 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_DELIVERIES) . '/' . $month;`
+- `includes/rts_storage.php`:128 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_RTS) . '/' . $month;`
+- `includes/rts_storage.php`:250 — `? rts_storage_dir($bucket)`
+- `includes/rts_storage.php`:269 — `$bucketDir = rts_storage_dir($bucket);`
 - `includes/sp_sort_service.php`:26 — `return rts_storage_dir(RTS_STORAGE_BUCKET_SP_SORT);`
 - `includes/sp_sort_service.php`:33 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_SP_SORT) . '/tmp';`
 - `includes/suppliers.php`:142 — `$dir = rts_storage_dir(RTS_STORAGE_BUCKET_SUPPLIER_IDS);`
@@ -59,14 +59,14 @@ function_count: 16
 **Callers (2):**
 
 - `includes/deliveries_upload.php`:43 — `$monthKey = rts_storage_deliveries_month_key($deliveryDate);`
-- `includes/rts_storage.php`:109 — `$month = rts_storage_deliveries_month_key($deliveryDate);`
+- `includes/rts_storage.php`:113 — `$month = rts_storage_deliveries_month_key($deliveryDate);`
 
 ## rts_storage_rts_month_key {#rts_storage_rts_month_key}
 
 **Callers (2):**
 
 - `includes/rts_attachments.php`:210 — `$monthKey = rts_storage_rts_month_key($recordDate);`
-- `includes/rts_storage.php`:123 — `$month = rts_storage_rts_month_key($recordDate);`
+- `includes/rts_storage.php`:127 — `$month = rts_storage_rts_month_key($recordDate);`
 
 ## rts_storage_dir_deliveries_month {#rts_storage_dir_deliveries_month}
 
@@ -85,21 +85,21 @@ function_count: 16
 **Callers (3):**
 
 - `includes/delivery_edit_requests.php`:105 — `$safe = rts_storage_normalize_stored_filename(RTS_STORAGE_BUCKET_DELIVERIES, $photoFilename);`
-- `includes/rts_storage.php`:211 — `$safe = rts_storage_normalize_stored_filename($bucket, $filename);`
-- `includes/rts_storage.php`:261 — `$safe = rts_storage_normalize_stored_filename($bucket, $filename);`
+- `includes/rts_storage.php`:215 — `$safe = rts_storage_normalize_stored_filename($bucket, $filename);`
+- `includes/rts_storage.php`:265 — `$safe = rts_storage_normalize_stored_filename($bucket, $filename);`
 
 ## rts_storage_web_base {#rts_storage_web_base}
 
 **Callers (1):**
 
-- `includes/rts_storage.php`:195 — `$web = rts_storage_web_base();`
+- `includes/rts_storage.php`:199 — `$web = rts_storage_web_base();`
 
 ## rts_storage_public_prefix {#rts_storage_public_prefix}
 
 **Callers (4):**
 
-- `includes/rts_storage.php`:217 — `$prefix = rts_storage_public_prefix($bucket, $relativeToApp);`
-- `includes/rts_storage.php`:228 — `return rts_storage_public_prefix($bucket, '/rts/');`
+- `includes/rts_storage.php`:221 — `$prefix = rts_storage_public_prefix($bucket, $relativeToApp);`
+- `includes/rts_storage.php`:232 — `return rts_storage_public_prefix($bucket, '/rts/');`
 - `record.php`:786 — `const RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;`
 - `records.php`:834 — `var RTS_DOC_URL_BASE = <?= json_encode(rts_storage_public_prefix(RTS_STORAGE_BUCKET_RTS, ''), JSON_UNESCAPED_SLASHES) ?>;`
 
@@ -107,7 +107,7 @@ function_count: 16
 
 **Callers (2):**
 
-- `includes/rts_storage.php`:233 — `return rts_storage_public_url($bucket, $filename, '/rts/');`
+- `includes/rts_storage.php`:237 — `return rts_storage_public_url($bucket, $filename, '/rts/');`
 - `includes/suppliers.php`:80 — `'valid_id_url' => rts_storage_public_url(RTS_STORAGE_BUCKET_SUPPLIER_IDS, (string) $row['valid_id_filename'], '/rts/'),`
 
 ## rts_storage_public_prefix_for_app {#rts_storage_public_prefix_for_app}
@@ -129,8 +129,10 @@ function_count: 16
 
 ## rts_storage_csr_tool_root {#rts_storage_csr_tool_root}
 
-**Callers (5):**
+**Callers (7):**
 
+- `includes/courier_soa_reconcile.php`:16 — `return rts_storage_csr_tool_root(`
+- `includes/historical_orders_import.php`:21 — `return rts_storage_csr_tool_root(`
 - `includes/online_orders_generator.php`:69 — `return rts_storage_csr_tool_root(`
 - `includes/order_remarks.php`:13 — `return rts_storage_csr_tool_root(`
 - `includes/partner_sold_reconcile.php`:15 — `return rts_storage_csr_tool_root(`

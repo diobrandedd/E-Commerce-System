@@ -369,24 +369,9 @@ function api_reports_pipeline_summary(): void
 
 function api_reports_courier_bucket(string $courier): ?string
 {
-    $c = strtoupper(trim($courier));
-    if ($c === '') {
-        return null;
-    }
-    if (str_contains($c, 'SPX')) {
-        return 'spx';
-    }
-    if (str_contains($c, 'FLASH')) {
-        return 'flash';
-    }
-    if (
-        str_contains($c, 'J&T') ||
-        str_contains($c, 'JNT') ||
-        str_contains($c, 'J&T EXPRESS')
-    ) {
-        return 'jnt';
-    }
-    return null;
+    require_once __DIR__ . '/../../includes/courier_detect.php';
+
+    return rts_courier_label_bucket($courier);
 }
 
 function api_reports_pipeline_bucket(string $sourcePipeline): ?string

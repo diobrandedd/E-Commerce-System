@@ -1,7 +1,7 @@
 ---
 title: order_remarks
 source: includes/order_remarks.php
-generated: 2026-07-22T03:47:38+02:00
+generated: 2026-07-22T10:13:40+02:00
 type: module
 function_count: 19
 ---
@@ -79,8 +79,9 @@ function_count: 19
 
 ## order_remarks_run_python {#order_remarks_run_python}
 
-**Callers (3):**
+**Callers (4):**
 
+- `includes/historical_orders_import.php`:266 — `$data = order_remarks_run_python('detect', $path, $profile);`
 - `includes/order_remarks.php`:429 — `$data = order_remarks_run_python('detect', $path, $override);`
 - `includes/order_remarks.php`:483 — `order_remarks_run_python('write', $path, null, $outPath, $layout, $remarks);`
 - `includes/order_remarks.php`:547 — `$data = order_remarks_run_python('tracking_map', $workbookPath, $override);`

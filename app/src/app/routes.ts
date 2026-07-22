@@ -44,6 +44,8 @@ import { DeliveriesReviewPage } from "./pages/deliveries/DeliveriesReviewPage";
 import { DeliveriesCancelledPage } from "./pages/deliveries/DeliveriesCancelledPage";
 import { OnlineParcelsPage } from "./pages/fulfillment/OnlineParcelsPage";
 import { PartnerSoldReconcilePage } from "./pages/fulfillment/PartnerSoldReconcilePage";
+import { CourierSoaReconcilePage } from "./pages/fulfillment/CourierSoaReconcilePage";
+import { HistoricalOrdersImportPage } from "./pages/fulfillment/HistoricalOrdersImportPage";
 import { PackingMaterialsStagingPage } from "./pages/fulfillment/PackingMaterialsStagingPage";
 import { PackingMaterialsLogPage } from "./pages/fulfillment/PackingMaterialsLogPage";
 import { AccountSettingsPage } from "./pages/AccountSettingsPage";
@@ -154,6 +156,18 @@ export const router = createBrowserRouter(
         {
           path: "fulfillment/partner-sold-reconcile",
           element: guarded(PartnerSoldReconcilePage, {
+            roles: ["executive", "prod_manager", "staff", "csr_tl", "csr_staff"],
+          }),
+        },
+        {
+          path: "fulfillment/courier-soa-reconcile",
+          element: guarded(CourierSoaReconcilePage, {
+            roles: ["executive", "prod_manager", "staff", "csr_tl", "csr_staff"],
+          }),
+        },
+        {
+          path: "fulfillment/historical-orders-import",
+          element: guarded(HistoricalOrdersImportPage, {
             roles: ["executive", "prod_manager", "staff", "csr_tl", "csr_staff"],
           }),
         },
