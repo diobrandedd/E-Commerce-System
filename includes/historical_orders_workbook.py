@@ -25,6 +25,8 @@ IPYX_ORDER_ALIASES = ["order no.", "order no", "order number", "order #"]
 IPYX_NAME_ALIASES = ["name", "customer", "receiver", "recipient name"]
 IPYX_ITEMS_ALIASES = ["item/s", "items", "item", "remarks"]
 IPYX_COURIER_ALIASES = ["courier"]
+IPYX_TRACKING_ALIASES = ["tracking number", "tracking no", "tracking no.", "waybill", "waybill number"]
+IPYX_NOTE_ALIASES = ["note", "notes", "remark", "remarks"]
 
 
 def cell_str(value: Any) -> str:
@@ -48,13 +50,27 @@ def normalize_id(value: Any) -> str:
         if value != value:
             return ""
         try:
-            return str(int(Decimal(str(value)).to_integral_value()))
+            # TikTok/marketplace IDs often arrive as scientific floats.
+            return format(Decimal(str(value)).to_integral_value(), "f").split(".")[0]
         except (InvalidOperation, OverflowError, ValueError):
             return cell_str(value)
-    text = cell_str(value)
+    text = cell_str(value).strip().strip("'\"")
     if re.match(r"^\d+\.0$", text):
         text = text[:-2]
+    if re.match(r"^\d+\.?\d*[eE][+]?\d+$", text):
+        try:
+            return format(Decimal(text).to_integral_value(), "f").split(".")[0]
+        except (InvalidOperation, OverflowError, ValueError):
+            pass
     return text
+
+
+def looks_precision_lost_id(text: str) -> bool:
+    """True when an ID looks like Excel float corruption (many trailing zeros)."""
+    if not text or not text.isdigit():
+        return False
+    # e.g. 820148000000 / 1097810000000000 — real Lazada TNs/order nos rarely end this way.
+    return bool(re.search(r"0{5,}$", text))
 
 
 def normalize_qty(value: Any) -> int:
@@ -112,6 +128,13 @@ def is_ipyx_header(cells: list[Any]) -> dict[str, int] | None:
             found["items"] = i
         if "courier" not in found and any(norm == a for a in IPYX_COURIER_ALIASES):
             found["courier"] = i
+        if "tracking" not in found and any(norm == a or a in norm for a in IPYX_TRACKING_ALIASES):
+            found["tracking"] = i
+        if "note" not in found and any(norm == a for a in IPYX_NOTE_ALIASES):
+            # Don't steal Item/s remarks column if already bound as items.
+            if "items" in found and found["items"] == i:
+                continue
+            found["note"] = i
     if "order_no" in found and "name" in found and "items" in found:
         return found
     return None
@@ -119,50 +142,105 @@ def is_ipyx_header(cells: list[Any]) -> dict[str, int] | None:
 
 def is_section_noise(order_no: str, name: str) -> bool:
     low = order_no.lower()
-    if low in ("ipyx", "-", "order no.", "order no", "order number"):
+    if low in (
+        "ipyx",
+        "-",
+        "order no.",
+        "order no",
+        "order number",
+        "pending",
+        "new",
+        "additional",
+        "fwellness ph",
+    ):
         return True
     if low.startswith("order date") or low.startswith("pickup date"):
+        return True
+    if low.startswith("sir "):
         return True
     if name.lower() in ("name", "customer"):
         return True
     return False
 
 
-def parse_pickup_date_from_cells(cells: list[Any], default_year: int | None = None) -> str | None:
-    """Return YYYY-MM-DD from a 'Pickup Date: Jan 2, 2026' / 'Pickup Date: Mar 1' cell."""
-    from datetime import datetime
+def coerce_excel_date(value: Any, default_year: int | None = None) -> str | None:
+    """Convert Excel date/datetime/string into YYYY-MM-DD."""
+    from datetime import datetime, date
 
-    for cell in cells:
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        # Excel serial date
+        try:
+            from openpyxl.utils.datetime import from_excel
+
+            dt = from_excel(value)
+            if isinstance(dt, datetime):
+                return dt.date().isoformat()
+            if isinstance(dt, date):
+                return dt.isoformat()
+        except Exception:
+            pass
+    text = cell_str(value)
+    if not text:
+        return None
+    # "2026-04-04 00:00:00"
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+        "%b %d, %Y",
+        "%B %d, %Y",
+        "%b %d %Y",
+        "%B %d %Y",
+        "%m/%d/%Y",
+    ):
+        try:
+            return datetime.strptime(text, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    if default_year is not None:
+        raw = re.sub(r"([A-Za-z])(\d)", r"\1 \2", text)
+        for fmt in ("%b %d", "%B %d", "%m/%d"):
+            try:
+                return datetime.strptime(f"{raw} {default_year}", f"{fmt} %Y").strftime("%Y-%m-%d")
+            except ValueError:
+                continue
+    return None
+
+
+def parse_pickup_date_from_cells(cells: list[Any], default_year: int | None = None) -> str | None:
+    """
+    Return YYYY-MM-DD from:
+      - 'Pickup Date: Jan 2, 2026' in one cell
+      - 'Pickup Date:' in one cell + date/datetime in the next cell (Joven layout)
+    """
+    for i, cell in enumerate(cells):
         text = cell_str(cell)
         if not text:
             continue
-        m = re.search(r"pickup\s*date\s*:\s*(.+)$", text, flags=re.I)
+        m = re.search(r"pickup\s*date\s*:?\s*(.*)$", text, flags=re.I)
         if not m:
             continue
-        raw = re.sub(r"\s+", " ", m.group(1).strip())
-        # Normalize "Feb28" / "Mar3" style fragments if any slip in
-        raw = re.sub(r"([A-Za-z])(\d)", r"\1 \2", raw)
-        formats_with_year = (
-            "%b %d, %Y",
-            "%B %d, %Y",
-            "%b %d %Y",
-            "%B %d %Y",
-            "%Y-%m-%d",
-            "%m/%d/%Y",
-        )
-        for fmt in formats_with_year:
-            try:
-                return datetime.strptime(raw, fmt).strftime("%Y-%m-%d")
-            except ValueError:
-                continue
-        if default_year is not None:
-            for fmt in ("%b %d", "%B %d", "%m/%d"):
-                try:
-                    # Avoid ambiguous no-year strptime (Python 3.15+); inject year explicitly.
-                    dt = datetime.strptime(f"{raw} {default_year}", f"{fmt} %Y")
-                    return dt.strftime("%Y-%m-%d")
-                except ValueError:
-                    continue
+        rest = m.group(1).strip()
+        if rest:
+            parsed = coerce_excel_date(rest, default_year)
+            if parsed:
+                return parsed
+            # Inline "Pickup Date: Mar 6"
+            raw = re.sub(r"\s+", " ", rest)
+            raw = re.sub(r"([A-Za-z])(\d)", r"\1 \2", raw)
+            parsed = coerce_excel_date(raw, default_year)
+            if parsed:
+                return parsed
+        # Adjacent cell holds the date (Joven / FWELLNESS layout).
+        if i + 1 < len(cells):
+            parsed = coerce_excel_date(cells[i + 1], default_year)
+            if parsed:
+                return parsed
     return None
 
 
@@ -207,6 +285,14 @@ def parse_partner_ipyx(ws, sheet_title: str) -> dict[str, Any]:
         recipient = cell_str(get("name"))
         items = cell_str(get("items")).strip()
         courier = cell_str(get("courier")) if "courier" in cols else ""
+        note = cell_str(get("note")) if "note" in cols else ""
+        tracking = ""
+        if "tracking" in cols:
+            # Numeric waybills often arrive as floats ("820145453404.0"); normalize_id strips .0.
+            tracking = re.sub(r"\s+", "", normalize_id(get("tracking")))
+            # Drop Excel-corrupted waybills so import falls back to Order No.
+            if looks_precision_lost_id(tracking):
+                tracking = ""
 
         if order_no == "" and recipient == "" and items == "":
             continue
@@ -214,11 +300,16 @@ def parse_partner_ipyx(ws, sheet_title: str) -> dict[str, Any]:
             continue
         if order_no == "" or recipient == "" or items == "":
             continue
+        if looks_precision_lost_id(order_no) and tracking == "":
+            # Both keys corrupted in Excel — skip rather than invent colliding TNs.
+            continue
+        if note and re.search(r"\bcancel+ed\b", note, flags=re.I):
+            continue
 
         orders.append(
             {
                 "excel_row": excel_row,
-                "tracking_number": "",  # partner list has order no, not waybill
+                "tracking_number": tracking,  # waybill when present (Jun/Jul Joven sheets)
                 "order_no": order_no,
                 "recipient_name": recipient,
                 "product_name": items,
@@ -226,7 +317,7 @@ def parse_partner_ipyx(ws, sheet_title: str) -> dict[str, Any]:
                 "items_raw": items,
                 "courier": courier,
                 "ship_date": current_ship_date,
-                "sheet_status": "",
+                "sheet_status": note,
             }
         )
 

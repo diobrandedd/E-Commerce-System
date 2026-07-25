@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-07-25T05:50:35+02:00
+generated: 2026-07-25T10:15:46+02:00
 type: module
 function_count: 14
 ---
@@ -42,9 +42,9 @@ function_count: 14
 - `includes/historical_orders_import.php`:119 — `ims_session_start();`
 - `includes/historical_orders_import.php`:159 — `ims_session_start();`
 - `includes/historical_orders_import.php`:179 — `ims_session_start();`
-- `includes/historical_orders_import.php`:533 — `ims_session_start();`
-- `includes/historical_orders_import.php`:612 — `ims_session_start();`
-- `includes/historical_orders_import.php`:744 — `ims_session_start();`
+- `includes/historical_orders_import.php`:537 — `ims_session_start();`
+- `includes/historical_orders_import.php`:616 — `ims_session_start();`
+- `includes/historical_orders_import.php`:748 — `ims_session_start();`
 - `includes/online_orders_generator.php`:738 — `ims_session_start();`
 - _… and 39 more (run impact.php for full list)_
 

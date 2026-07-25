@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-07-25T05:50:52+02:00
+generated: 2026-07-25T10:16:03+02:00
 type: module
 function_count: 27
 ---
@@ -68,8 +68,8 @@ function_count: 27
 - `includes/deliveries_upload.php`:63 — `online_parcels_ensure_schema($pdo);`
 - `includes/delivery_edit_requests.php`:144 — `online_parcels_ensure_schema($pdo);`
 - `includes/delivery_edit_requests.php`:417 — `online_parcels_ensure_schema($pdo);`
-- `includes/historical_orders_import.php`:381 — `online_parcels_ensure_schema($pdo);`
-- `includes/historical_orders_import.php`:605 — `online_parcels_ensure_schema($pdo);`
+- `includes/historical_orders_import.php`:385 — `online_parcels_ensure_schema($pdo);`
+- `includes/historical_orders_import.php`:609 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_order_parcels.php`:242 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_order_parcels.php`:338 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_order_parcels.php`:356 — `online_parcels_ensure_schema($pdo);`
@@ -137,8 +137,8 @@ function_count: 27
 - `api/v1/parcels.php`:115 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `api/v1/parcels.php`:142 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `includes/delivery_edit_requests.php`:130 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
-- `includes/historical_orders_import.php`:507 — `$existing = online_parcels_get_by_tracking($pdo, $tn);`
-- `includes/historical_orders_import.php`:804 — `if (online_parcels_get_by_tracking($pdo, $tn) !== null) {`
+- `includes/historical_orders_import.php`:511 — `$existing = online_parcels_get_by_tracking($pdo, $tn);`
+- `includes/historical_orders_import.php`:808 — `if (online_parcels_get_by_tracking($pdo, $tn) !== null) {`
 - `includes/online_order_parcels.php`:998 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `includes/online_order_parcels.php`:1107 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `includes/online_order_parcels.php`:1226 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`

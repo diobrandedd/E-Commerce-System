@@ -1,7 +1,7 @@
 ---
 title: online_orders_generator
 source: includes/online_orders_generator.php
-generated: 2026-07-25T05:50:53+02:00
+generated: 2026-07-25T10:16:04+02:00
 type: module
 function_count: 44
 ---
@@ -33,7 +33,7 @@ function_count: 44
 
 **Callers (4):**
 
-- `includes/historical_orders_import.php`:303 — `return online_orders_normalize_partner_seller($raw);`
+- `includes/historical_orders_import.php`:307 — `return online_orders_normalize_partner_seller($raw);`
 - `includes/online_orders_generator.php`:50 — `$seller = online_orders_normalize_partner_seller($partnerSeller);`
 - `includes/online_orders_generator.php`:541 — `? online_orders_normalize_partner_seller((string) $line['partner_seller'])`
 - `includes/partner_sold_reconcile.php`:293 — `$partnerSeller = online_orders_normalize_partner_seller((string) ($input['partner_seller'] ?? ''));`
@@ -221,7 +221,7 @@ function_count: 44
 **Callers (9):**
 
 - `api/v1/parcels.php`:166 — `$items = online_orders_normalize_items_display($items);`
-- `includes/historical_orders_import.php`:311 — `$raw = online_orders_normalize_items_display(trim($remarks));`
+- `includes/historical_orders_import.php`:315 — `$raw = online_orders_normalize_items_display(trim($remarks));`
 - `includes/online_order_parcels.php`:909 — `$itemsRaw = online_orders_normalize_items_display(trim($itemsRaw));`
 - `includes/online_orders_generator.php`:549 — `online_orders_normalize_items_display($items),`
 - `includes/online_orders_generator.php`:590 — `$items = online_orders_normalize_items_display((string) ($line['items'] ?? ''));`

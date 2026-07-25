@@ -1,7 +1,7 @@
 ---
 title: historical_orders_import
 source: includes/historical_orders_import.php
-generated: 2026-07-25T05:50:44+02:00
+generated: 2026-07-25T10:15:55+02:00
 type: module
 function_count: 25
 ---
@@ -43,7 +43,7 @@ function_count: 25
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:403 — `$data = historical_orders_run_python_parse($path, $sheetName !== '' ? $sheetName : null);`
+- `includes/historical_orders_import.php`:407 — `$data = historical_orders_run_python_parse($path, $sheetName !== '' ? $sheetName : null);`
 
 ## historical_orders_user_can_access {#historical_orders_user_can_access}
 
@@ -76,94 +76,94 @@ function_count: 25
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:402 — `$path = historical_orders_resolve_stash_path($token);`
+- `includes/historical_orders_import.php`:406 — `$path = historical_orders_resolve_stash_path($token);`
 
 ## historical_orders_resolve_month {#historical_orders_resolve_month}
 
 **Callers (2):**
 
-- `includes/historical_orders_import.php`:399 — `$range = historical_orders_resolve_month($year, $month);`
-- `includes/historical_orders_import.php`:741 — `$range = historical_orders_resolve_month($year, $month);`
+- `includes/historical_orders_import.php`:403 — `$range = historical_orders_resolve_month($year, $month);`
+- `includes/historical_orders_import.php`:745 — `$range = historical_orders_resolve_month($year, $month);`
 
 ## historical_orders_normalize_tn {#historical_orders_normalize_tn}
 
 **Callers (3):**
 
-- `includes/historical_orders_import.php`:435 — `$tn = historical_orders_normalize_tn($tnRaw);`
-- `includes/historical_orders_import.php`:453 — `$tn = historical_orders_normalize_tn($orderNo);`
-- `includes/historical_orders_import.php`:492 — `'original_tracking_number' => $trackingMissing ? null : historical_orders_normalize_tn($tnRaw),`
+- `includes/historical_orders_import.php`:439 — `$tn = historical_orders_normalize_tn($tnRaw);`
+- `includes/historical_orders_import.php`:457 — `$tn = historical_orders_normalize_tn($orderNo);`
+- `includes/historical_orders_import.php`:496 — `'original_tracking_number' => $trackingMissing ? null : historical_orders_normalize_tn($tnRaw),`
 
 ## historical_orders_missing_tn_placeholder {#historical_orders_missing_tn_placeholder}
 
 **Callers (2):**
 
-- `includes/historical_orders_import.php`:455 — `$tn = historical_orders_missing_tn_placeholder($range['yyyymm'], $orderNo, $rowKey);`
-- `includes/historical_orders_import.php`:458 — `$tn = historical_orders_missing_tn_placeholder(`
+- `includes/historical_orders_import.php`:459 — `$tn = historical_orders_missing_tn_placeholder($range['yyyymm'], $orderNo, $rowKey);`
+- `includes/historical_orders_import.php`:462 — `$tn = historical_orders_missing_tn_placeholder(`
 
 ## historical_orders_courier_from_tn {#historical_orders_courier_from_tn}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:478 — `$courier = historical_orders_courier_from_tn($tn, $rowPipeline);`
+- `includes/historical_orders_import.php`:482 — `$courier = historical_orders_courier_from_tn($tn, $rowPipeline);`
 
 ## historical_orders_default_courier {#historical_orders_default_courier}
 
 **Callers (3):**
 
-- `includes/historical_orders_import.php`:253 — `return historical_orders_default_courier($pipeline);`
-- `includes/historical_orders_import.php`:295 — `return historical_orders_default_courier($pipeline);`
-- `includes/historical_orders_import.php`:480 — `$courier = historical_orders_default_courier($rowPipeline);`
+- `includes/historical_orders_import.php`:257 — `return historical_orders_default_courier($pipeline);`
+- `includes/historical_orders_import.php`:299 — `return historical_orders_default_courier($pipeline);`
+- `includes/historical_orders_import.php`:484 — `$courier = historical_orders_default_courier($rowPipeline);`
 
 ## historical_orders_pipeline_from_courier {#historical_orders_pipeline_from_courier}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:446 — `$rowPipeline = historical_orders_pipeline_from_courier($courierRaw, $pipeline === 'partner' ? 'partner' : $pipeline);`
+- `includes/historical_orders_import.php`:450 — `$rowPipeline = historical_orders_pipeline_from_courier($courierRaw, $pipeline === 'partner' ? 'partner' : $pipeline);`
 
 ## historical_orders_normalize_courier_label {#historical_orders_normalize_courier_label}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:476 — `$courier = historical_orders_normalize_courier_label($courierRaw, $rowPipeline);`
+- `includes/historical_orders_import.php`:480 — `$courier = historical_orders_normalize_courier_label($courierRaw, $rowPipeline);`
 
 ## historical_orders_normalize_partner_seller {#historical_orders_normalize_partner_seller}
 
 **Callers (2):**
 
-- `includes/historical_orders_import.php`:388 — `$partnerSeller = historical_orders_normalize_partner_seller(`
-- `includes/historical_orders_import.php`:735 — `$partnerSeller = historical_orders_normalize_partner_seller(`
+- `includes/historical_orders_import.php`:392 — `$partnerSeller = historical_orders_normalize_partner_seller(`
+- `includes/historical_orders_import.php`:739 — `$partnerSeller = historical_orders_normalize_partner_seller(`
 
 ## historical_orders_prepare_items {#historical_orders_prepare_items}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:439 — `$prepared = historical_orders_prepare_items($itemsSrc);`
+- `includes/historical_orders_import.php`:443 — `$prepared = historical_orders_prepare_items($itemsSrc);`
 
 ## historical_orders_existing_snapshot {#historical_orders_existing_snapshot}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:509 — `$snap = historical_orders_existing_snapshot($existing);`
+- `includes/historical_orders_import.php`:513 — `$snap = historical_orders_existing_snapshot($existing);`
 
 ## historical_orders_preview {#historical_orders_preview}
 
 **Callers (2):**
 
 - `api/v1/historical_orders.php`:42 — `$result = historical_orders_preview(ims_pdo(), $input);`
-- `includes/historical_orders_import.php`:755 — `$preview = historical_orders_preview($pdo, [`
+- `includes/historical_orders_import.php`:759 — `$preview = historical_orders_preview($pdo, [`
 
 ## historical_orders_diff_fields {#historical_orders_diff_fields}
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:516 — `'diff_fields' => historical_orders_diff_fields($snap, $uploaded),`
+- `includes/historical_orders_import.php`:520 — `'diff_fields' => historical_orders_diff_fields($snap, $uploaded),`
 
 ## historical_orders_commit {#historical_orders_commit}
 
 **Callers (2):**
 
 - `api/v1/historical_orders.php`:58 — `$result = historical_orders_commit(ims_pdo(), $input);`
-- `includes/historical_orders_import.php`:776 — `$commit = historical_orders_commit($pdo, [`
+- `includes/historical_orders_import.php`:780 — `$commit = historical_orders_commit($pdo, [`
 
 ## historical_orders_import_file {#historical_orders_import_file}
 
@@ -177,7 +177,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:655 — `historical_orders_insert_shipped($pdo, $row, $rowShip . ' 12:00:00');`
+- `includes/historical_orders_import.php`:659 — `historical_orders_insert_shipped($pdo, $row, $rowShip . ' 12:00:00');`
 
 ## historical_orders_overwrite_shipped {#historical_orders_overwrite_shipped}
 
@@ -185,5 +185,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/historical_orders_import.php`:688 — `historical_orders_overwrite_shipped($pdo, (int) ($existing['id'] ?? 0), $uploaded, $rowShip . ' 12:00:00');`
+- `includes/historical_orders_import.php`:692 — `historical_orders_overwrite_shipped($pdo, (int) ($existing['id'] ?? 0), $uploaded, $rowShip . ' 12:00:00');`
 

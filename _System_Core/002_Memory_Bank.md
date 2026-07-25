@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-07-25 — Jono 2026 partner months Mar–Jul historical import
+**Loaded + SQL:** Mar–Jul 2026 from `SIR JONO (FWELLNESS) ORDERS.xlsx` (`partner_seller=jono`, Pickup Date → ship_date). Jun/Jul use Tracking Number when present; Excel float-corrupted IDs skipped. Files: `sql/seed_jono_{march|april|may|june|july}_2026_partner_orders.sql` (322 parcels total).
+
+### 2026-07-25 — Joven 2026 partner months Mar–Jul historical import
+**Loaded + SQL:** Mar–Jul 2026 from `SIR JOVEN FINEST WELLNESS PH ORDERS.xlsx` (`partner_seller=joven`, Pickup Date → ship_date). March sheet early-April pickups kept on April seed only. Jun/Jul use JT Tracking Number when present. Files: `sql/seed_joven_{march|april|may|june|july}_2026_partner_orders.sql` (856 parcels total).
+
 ### 2026-07-25 — Ian 2026 partner months Feb–Jul historical import
 **Loaded + SQL:** Feb–Jul 2026 from `FINEST HEALTH ORDERS.xlsx` (Pickup Date → ship_date). Files: `sql/seed_ian_{february|march|april|may|june|july}_2026_partner_orders.sql` (+ January already).
 

@@ -223,6 +223,10 @@ function historical_orders_resolve_month(int $year, int $month): array
 function historical_orders_normalize_tn(string $raw): string
 {
     $tn = preg_replace('/\s+/', '', trim($raw)) ?? '';
+    // Excel numeric waybills often stringify as "820145453404.0".
+    if (preg_match('/^\d+\.0$/', $tn) === 1) {
+        $tn = substr($tn, 0, -2);
+    }
     $tn = preg_replace('/[^A-Za-z0-9]/', '', $tn) ?? '';
 
     return $tn;

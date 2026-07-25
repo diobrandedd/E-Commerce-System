@@ -95,7 +95,7 @@ $write = static function (string $line) use ($fh): void {
 };
 
 $fileBase = basename($outPath);
-$write("-- {$partner} partner seller - {$monthLabel} historical orders (FINEST HEALTH ORDERS.xlsx)\n");
+$write("-- {$partner} partner seller - {$monthLabel} historical partner orders\n");
 $write('-- ' . count($rows) . " shipped parcels - ship_date = section Pickup Date\n");
 $write("-- Ship date range in file: {$dateFrom} .. {$dateTo}\n");
 $write("-- Run on production: mysql -u USER -p rts_system < sql/{$fileBase}\n");
