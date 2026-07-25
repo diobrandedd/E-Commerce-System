@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-07-25 — Partner June/July seeds use Order No (not Excel waybill)
+**Redo:** `sql/seed_{ian,joven,jono}_{june|july}_2026_partner_orders.sql` — `tracking_number` = Order No. so seeds do not collide with live parcels that already store JT/Flash waybills. Jan–May seeds unchanged.
+
 ### 2026-07-25 — Jono 2026 partner months Mar–Jul historical import
 **Loaded + SQL:** Mar–Jul 2026 from `SIR JONO (FWELLNESS) ORDERS.xlsx` (`partner_seller=jono`, Pickup Date → ship_date). Jun/Jul use Tracking Number when present; Excel float-corrupted IDs skipped. Files: `sql/seed_jono_{march|april|may|june|july}_2026_partner_orders.sql` (322 parcels total).
 

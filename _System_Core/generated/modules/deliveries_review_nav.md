@@ -1,7 +1,7 @@
 ---
 title: deliveries_review_nav
 source: includes/deliveries_review_nav.php
-generated: 2026-07-25T10:15:49+02:00
+generated: 2026-07-25T10:36:22+02:00
 type: module
 function_count: 2
 ---

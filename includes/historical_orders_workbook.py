@@ -286,22 +286,17 @@ def parse_partner_ipyx(ws, sheet_title: str) -> dict[str, Any]:
         items = cell_str(get("items")).strip()
         courier = cell_str(get("courier")) if "courier" in cols else ""
         note = cell_str(get("note")) if "note" in cols else ""
-        tracking = ""
-        if "tracking" in cols:
-            # Numeric waybills often arrive as floats ("820145453404.0"); normalize_id strips .0.
-            tracking = re.sub(r"\s+", "", normalize_id(get("tracking")))
-            # Drop Excel-corrupted waybills so import falls back to Order No.
-            if looks_precision_lost_id(tracking):
-                tracking = ""
-
+        # Partner iPYX lists may include a Tracking Number column (Jun/Jul), but live
+        # parcels already use those waybills. Always key historical partner rows by
+        # Order No. so seeds do not collide with existing tracked parcels.
         if order_no == "" and recipient == "" and items == "":
             continue
         if is_section_noise(order_no, recipient):
             continue
         if order_no == "" or recipient == "" or items == "":
             continue
-        if looks_precision_lost_id(order_no) and tracking == "":
-            # Both keys corrupted in Excel — skip rather than invent colliding TNs.
+        if looks_precision_lost_id(order_no):
+            # Excel float corruption — skip rather than invent colliding TNs.
             continue
         if note and re.search(r"\bcancel+ed\b", note, flags=re.I):
             continue
@@ -309,7 +304,7 @@ def parse_partner_ipyx(ws, sheet_title: str) -> dict[str, Any]:
         orders.append(
             {
                 "excel_row": excel_row,
-                "tracking_number": tracking,  # waybill when present (Jun/Jul Joven sheets)
+                "tracking_number": "",  # never use Excel waybill for partner historical seeds
                 "order_no": order_no,
                 "recipient_name": recipient,
                 "product_name": items,

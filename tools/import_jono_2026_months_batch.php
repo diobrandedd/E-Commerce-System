@@ -61,10 +61,8 @@ foreach ($months as $cfg) {
         }
         $orderNo = trim((string) ($order['order_no'] ?? ''));
         $tnRaw = trim((string) ($order['tracking_number'] ?? ''));
-        $tn = historical_orders_normalize_tn($tnRaw);
-        if ($tn === '' && $orderNo !== '') {
-            $tn = historical_orders_normalize_tn($orderNo);
-        }
+        // Prefer Order No. for partner historical seeds (ignore Excel waybills).
+        $tn = $orderNo !== '' ? historical_orders_normalize_tn($orderNo) : historical_orders_normalize_tn($tnRaw);
         if ($tn === '') {
             continue;
         }
