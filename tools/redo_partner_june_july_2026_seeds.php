@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 /**
  * Redo June + July 2026 partner seeds for ian / joven / jono.
- * Uses Order No. as tracking_number (ignores Excel Tracking Number column)
- * so seeds do not collide with live parcels that already have those waybills.
+ * Uses Excel column H Tracking Number as tracking_number when present;
+ * Order No. is stored in order_no (and used as TN fallback when waybill is blank).
  *
  *   php tools/redo_partner_june_july_2026_seeds.php
  */
@@ -88,16 +88,21 @@ foreach ($jobs as $job) {
         $inMonthTns = [];
         $spillTns = [];
         $usedTn = [];
-        $withExcelTnIgnored = 0;
+        $withExcelTn = 0;
         foreach ($orders as $order) {
             if (!is_array($order)) {
                 continue;
             }
-            if (trim((string) ($order['tracking_number'] ?? '')) !== '') {
-                $withExcelTnIgnored++;
-            }
             $orderNo = trim((string) ($order['order_no'] ?? ''));
-            $tn = $orderNo !== '' ? historical_orders_normalize_tn($orderNo) : '';
+            $tnRaw = trim((string) ($order['tracking_number'] ?? ''));
+            if ($tnRaw !== '') {
+                $withExcelTn++;
+            }
+            // Prefer Excel Tracking Number (col H) when present; else Order No.
+            $tn = historical_orders_normalize_tn($tnRaw);
+            if ($tn === '' && $orderNo !== '') {
+                $tn = historical_orders_normalize_tn($orderNo);
+            }
             if ($tn === '') {
                 continue;
             }
@@ -125,7 +130,7 @@ foreach ($jobs as $job) {
 
         fwrite(STDERR, "cleared_old={$cleared} parsed_in_month=" . count($tnList)
             . ' spill_skip=' . count($spillList)
-            . " excel_tn_ignored={$withExcelTnIgnored}\n");
+            . " excel_tn={$withExcelTn}\n");
 
         $prev = set_error_handler(static function (int $severity, string $errstr): bool {
             return str_contains($errstr, 'preg_match(): Unknown modifier');

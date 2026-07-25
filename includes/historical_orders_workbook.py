@@ -286,17 +286,21 @@ def parse_partner_ipyx(ws, sheet_title: str) -> dict[str, Any]:
         items = cell_str(get("items")).strip()
         courier = cell_str(get("courier")) if "courier" in cols else ""
         note = cell_str(get("note")) if "note" in cols else ""
-        # Partner iPYX lists may include a Tracking Number column (Jun/Jul), but live
-        # parcels already use those waybills. Always key historical partner rows by
-        # Order No. so seeds do not collide with existing tracked parcels.
+        tracking = ""
+        if "tracking" in cols:
+            # Column H "Tracking Number" (Jun/Jul) — prefer as parcel key when present.
+            tracking = re.sub(r"\s+", "", normalize_id(get("tracking")))
+            if looks_precision_lost_id(tracking):
+                tracking = ""
+
         if order_no == "" and recipient == "" and items == "":
             continue
         if is_section_noise(order_no, recipient):
             continue
         if order_no == "" or recipient == "" or items == "":
             continue
-        if looks_precision_lost_id(order_no):
-            # Excel float corruption — skip rather than invent colliding TNs.
+        # Skip only when Order No. is float-corrupted AND no usable waybill.
+        if looks_precision_lost_id(order_no) and tracking == "":
             continue
         if note and re.search(r"\bcancel+ed\b", note, flags=re.I):
             continue
@@ -304,7 +308,7 @@ def parse_partner_ipyx(ws, sheet_title: str) -> dict[str, Any]:
         orders.append(
             {
                 "excel_row": excel_row,
-                "tracking_number": "",  # never use Excel waybill for partner historical seeds
+                "tracking_number": tracking,
                 "order_no": order_no,
                 "recipient_name": recipient,
                 "product_name": items,
