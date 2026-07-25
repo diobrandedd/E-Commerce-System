@@ -135,15 +135,14 @@ function api_parcels_lookup(): void
 
     $pdo = ims_pdo();
     online_parcels_ensure_schema($pdo);
-    $tracking = online_parcels_normalize_tracking($raw);
-    if ($tracking === '') {
-        api_fail('Could not read tracking from scan.', 400);
-    }
-    $parcel = online_parcels_get_by_tracking($pdo, $tracking);
+    $parcel = online_parcels_lookup_q($pdo, $raw);
     if ($parcel === null) {
-        api_fail('No parcel found for this tracking number.', 404);
+        api_fail('No parcel found for this tracking or order number.', 404);
     }
-    api_ok(['parcel' => $parcel, 'tracking_normalized' => $tracking]);
+    api_ok([
+        'parcel' => $parcel,
+        'tracking_normalized' => (string) ($parcel['tracking_number'] ?? ''),
+    ]);
 }
 
 function api_parcels_parse_preview(): void

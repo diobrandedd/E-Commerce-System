@@ -347,6 +347,39 @@ function online_parcels_get_by_tracking(PDO $pdo, string $tracking): ?array
 }
 
 /**
+ * Exact match on order_no (partner / marketplace order id).
+ */
+function online_parcels_get_by_order_no(PDO $pdo, string $orderNo): ?array
+{
+    online_parcels_ensure_schema($pdo);
+    $orderNo = trim($orderNo);
+    if ($orderNo === '') {
+        return null;
+    }
+    $st = $pdo->prepare('SELECT * FROM online_order_parcels WHERE order_no = ? LIMIT 1');
+    $st->execute([$orderNo]);
+
+    return online_parcels_format_row($st->fetch(PDO::FETCH_ASSOC) ?: null, $pdo);
+}
+
+/**
+ * Resolve a scan / search string: tracking first, then order_no.
+ */
+function online_parcels_lookup_q(PDO $pdo, string $raw): ?array
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return null;
+    }
+    $byTn = online_parcels_get_by_tracking($pdo, $raw);
+    if ($byTn !== null) {
+        return $byTn;
+    }
+
+    return online_parcels_get_by_order_no($pdo, $raw);
+}
+
+/**
  * Mark matching online parcel as RTS when CSR records an RTS case (by normalized tracking).
  *
  * @return array<string, mixed>|null Updated parcel row, or null if no parcel / skipped
@@ -715,9 +748,11 @@ function online_parcels_list_query_parts(array $filters): array
     $q = trim((string) ($filters['q'] ?? ''));
     if ($q !== '') {
         if (tracking_search_is_tn_shaped($q)) {
+            // Order nos are also long alphanumeric — search both columns.
             [$tnSql, $tnParams] = tracking_search_tn_column_sql('tracking_number', $q);
-            $where[] = $tnSql;
-            foreach ($tnParams as $p) {
+            [$onoSql, $onoParams] = tracking_search_tn_column_sql('order_no', $q);
+            $where[] = '(' . $tnSql . ' OR ' . $onoSql . ')';
+            foreach (array_merge($tnParams, $onoParams) as $p) {
                 $params[] = $p;
             }
         } else {

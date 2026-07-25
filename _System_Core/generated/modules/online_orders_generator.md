@@ -1,7 +1,7 @@
 ---
 title: online_orders_generator
 source: includes/online_orders_generator.php
-generated: 2026-07-25T10:44:39+02:00
+generated: 2026-07-25T10:56:47+02:00
 type: module
 function_count: 44
 ---
@@ -220,9 +220,9 @@ function_count: 44
 
 **Callers (9):**
 
-- `api/v1/parcels.php`:166 — `$items = online_orders_normalize_items_display($items);`
+- `api/v1/parcels.php`:165 — `$items = online_orders_normalize_items_display($items);`
 - `includes/historical_orders_import.php`:315 — `$raw = online_orders_normalize_items_display(trim($remarks));`
-- `includes/online_order_parcels.php`:909 — `$itemsRaw = online_orders_normalize_items_display(trim($itemsRaw));`
+- `includes/online_order_parcels.php`:944 — `$itemsRaw = online_orders_normalize_items_display(trim($itemsRaw));`
 - `includes/online_orders_generator.php`:549 — `online_orders_normalize_items_display($items),`
 - `includes/online_orders_generator.php`:590 — `$items = online_orders_normalize_items_display((string) ($line['items'] ?? ''));`
 - `includes/online_orders_generator.php`:630 — `'items' => online_orders_normalize_items_display($row['items']),`
@@ -352,14 +352,14 @@ function_count: 44
 
 **Callers (2):**
 
-- `includes/online_order_parcels.php`:845 — `$metaJson = online_orders_build_print_workbook_meta($rows);`
+- `includes/online_order_parcels.php`:880 — `$metaJson = online_orders_build_print_workbook_meta($rows);`
 - `includes/online_orders_generator.php`:1164 — `return online_orders_build_print_workbook_meta($dbRows);`
 
 ## online_orders_register_master_download {#online_orders_register_master_download}
 
 **Callers (2):**
 
-- `includes/online_order_parcels.php`:846 — `$token = online_orders_register_master_download($metaJson);`
+- `includes/online_order_parcels.php`:881 — `$token = online_orders_register_master_download($metaJson);`
 - `includes/online_orders_generator.php`:1289 — `$token = online_orders_register_master_download($metaJson);`
 
 ## online_orders_serve_download {#online_orders_serve_download}

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-07-25T10:44:20+02:00
+generated: 2026-07-25T10:56:26+02:00
 type: memory-bank
 ---
 
@@ -316,7 +316,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 |--------|---------|--------------|
 | `list` | `api_parcels_list()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_list()` |
 | `get` | `api_parcels_get()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_get_by_id()`, `online_parcels_get_by_tracking()` |
-| `lookup` | `api_parcels_lookup()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_normalize_tracking()`, `online_parcels_get_by_tracking()` |
+| `lookup` | `api_parcels_lookup()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_lookup_q()` |
 | `parse_preview` | `api_parcels_parse_preview()` | `online_parcels_user_can_edit_items()`, `online_orders_normalize_items_display()`, `honey_parcel_parse_items_string()` |
 | `update_items` | `api_parcels_update_items()` | `online_parcels_user_can_edit_items()`, `online_parcels_update_items()`, `ims_pdo()` |
 | `filter_options` | `api_parcels_filter_options()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_filter_options()` |

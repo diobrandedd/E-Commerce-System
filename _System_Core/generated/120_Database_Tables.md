@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-07-25T10:44:20+02:00
+generated: 2026-07-25T10:56:26+02:00
 type: memory-bank
 table_count: 60
 ---
@@ -492,6 +492,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_apply_rts_schema_migrations]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_promote_from_batch]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_tracking]] |
+| `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_order_no]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_mark_rts]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_revert_rts_by_case]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_get_by_id]] |
