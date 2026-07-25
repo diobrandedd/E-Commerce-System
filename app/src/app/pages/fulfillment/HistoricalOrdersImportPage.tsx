@@ -16,6 +16,7 @@ import {
   historicalOrdersStashUpload,
   type ConflictAction,
   type HistoricalConflict,
+  type HistoricalPartnerSeller,
   type HistoricalPipeline,
   type HistoricalPreviewResult,
   type HistoricalCommitResult,
@@ -26,6 +27,12 @@ const PIPELINES: { value: HistoricalPipeline; label: string }[] = [
   { value: "partner", label: "Partner" },
   { value: "shopee_spx", label: "Shopee / SPX" },
   { value: "tiktok", label: "TikTok" },
+];
+
+const PARTNERS: { value: HistoricalPartnerSeller; label: string }[] = [
+  { value: "ian", label: "Ian" },
+  { value: "jono", label: "Jono" },
+  { value: "joven", label: "Joven" },
 ];
 
 const MONTHS = [
@@ -185,6 +192,8 @@ function ConflictCard({
 export function HistoricalOrdersImportPage() {
   const now = new Date();
   const [pipeline, setPipeline] = useState<HistoricalPipeline>("vip");
+  const [partnerSeller, setPartnerSeller] = useState<HistoricalPartnerSeller>("ian");
+  const [sheet, setSheet] = useState("");
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(Math.max(1, now.getMonth())); // prior month default-ish; JS month 0-based
   const [file, setFile] = useState<File | null>(null);
@@ -201,7 +210,11 @@ export function HistoricalOrdersImportPage() {
 
   const runPreview = async () => {
     if (!file) {
-      setError("Upload a Snappy Excel with Tracking number first.");
+      setError("Upload a Snappy or partner iPYX Excel first.");
+      return;
+    }
+    if (pipeline === "partner" && !partnerSeller) {
+      setError("Choose a partner seller (Ian / Jono / Joven).");
       return;
     }
     setBusy(true);
@@ -216,6 +229,8 @@ export function HistoricalOrdersImportPage() {
         pipeline,
         year,
         month,
+        partner_seller: pipeline === "partner" ? partnerSeller : null,
+        sheet: sheet.trim() || undefined,
       });
       setPreview(data);
       const next: Record<string, ConflictAction> = {};
@@ -265,10 +280,10 @@ export function HistoricalOrdersImportPage() {
   return (
     <PageLayout
       title="Import historical orders"
-      subtitle="Backfill Snappy shipped-order Excel (with Tracking number) as already-shipped Online parcels. No inventory deduct. Conflicts show current vs uploaded before you commit."
+      subtitle="Backfill Snappy (Tracking number) or partner iPYX (Order No. / Name / Item/s) Excel as already-shipped Online parcels. No inventory deduct."
     >
       <FulfillmentSectionEnter className="max-w-5xl space-y-6">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block space-y-1.5">
             <span className="text-xs font-medium text-muted-foreground">Pipeline</span>
             <select
@@ -284,6 +299,23 @@ export function HistoricalOrdersImportPage() {
               ))}
             </select>
           </label>
+          {pipeline === "partner" && (
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Partner seller</span>
+              <select
+                value={partnerSeller}
+                disabled={busy || !!preview}
+                onChange={e => setPartnerSeller(e.target.value as HistoricalPartnerSeller)}
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-card"
+              >
+                {PARTNERS.map(o => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="block space-y-1.5">
             <span className="text-xs font-medium text-muted-foreground">Month</span>
             <select
@@ -316,16 +348,27 @@ export function HistoricalOrdersImportPage() {
           </label>
         </div>
 
+        <label className="block space-y-1.5 max-w-md">
+          <span className="text-xs font-medium text-muted-foreground">Sheet name (multi-sheet books)</span>
+          <input
+            type="text"
+            value={sheet}
+            disabled={busy || !!preview}
+            onChange={e => setSheet(e.target.value)}
+            placeholder='e.g. JANUARY 2026'
+            className="w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-card"
+          />
+        </label>
+
         <p className="text-xs text-muted-foreground">
-          Uses the Excel <span className="font-semibold text-foreground">Tracking number</span> column as-is (e.g.{" "}
-          <span className="font-mono text-foreground">JT0012987721845</span>). Ship date = last day of the selected
-          month. Status = shipped. Rows with no tracking number still import with a temporary placeholder so you can edit
-          them later in Online parcels.
+          Snappy files use the <span className="font-semibold text-foreground">Tracking number</span> column. Partner
+          iPYX lists use <span className="font-semibold text-foreground">Order No.</span> as tracking when no waybill is
+          present. Ship date = last day of the selected month. Status = shipped.
         </p>
 
         <FileZone
-          label="Snappy shipped orders Excel"
-          hint="Columns: Order ID, Tracking number, Recipient/Customer, Product name, Quantity…"
+          label="Historical orders Excel"
+          hint="Snappy: Tracking number · Partner iPYX: Order No., Name, Item/s, Courier"
           accept=".xlsx,.xls"
           icon={FileSpreadsheet}
           files={file ? [file] : []}

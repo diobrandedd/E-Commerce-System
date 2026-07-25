@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-07-22T11:02:32+02:00
+generated: 2026-07-25T05:50:35+02:00
 type: module
 function_count: 14
 ---
@@ -34,17 +34,17 @@ function_count: 14
 - `includes/auth_check.php`:132 — `ims_session_start();`
 - `includes/auth_check.php`:145 — `ims_session_start();`
 - `includes/auth_check.php`:161 — `ims_session_start();`
-- `includes/courier_soa_reconcile.php`:147 — `ims_session_start();`
-- `includes/courier_soa_reconcile.php`:183 — `ims_session_start();`
-- `includes/courier_soa_reconcile.php`:199 — `ims_session_start();`
-- `includes/courier_soa_reconcile.php`:222 — `ims_session_start();`
-- `includes/courier_soa_reconcile.php`:424 — `ims_session_start();`
-- `includes/courier_soa_reconcile.php`:441 — `ims_session_start();`
-- `includes/historical_orders_import.php`:115 — `ims_session_start();`
-- `includes/historical_orders_import.php`:155 — `ims_session_start();`
-- `includes/historical_orders_import.php`:175 — `ims_session_start();`
-- `includes/historical_orders_import.php`:439 — `ims_session_start();`
-- `includes/historical_orders_import.php`:511 — `ims_session_start();`
+- `includes/courier_soa_reconcile.php`:172 — `ims_session_start();`
+- `includes/courier_soa_reconcile.php`:223 — `ims_session_start();`
+- `includes/courier_soa_reconcile.php`:244 — `ims_session_start();`
+- `includes/courier_soa_reconcile.php`:560 — `ims_session_start();`
+- `includes/courier_soa_reconcile.php`:577 — `ims_session_start();`
+- `includes/historical_orders_import.php`:119 — `ims_session_start();`
+- `includes/historical_orders_import.php`:159 — `ims_session_start();`
+- `includes/historical_orders_import.php`:179 — `ims_session_start();`
+- `includes/historical_orders_import.php`:533 — `ims_session_start();`
+- `includes/historical_orders_import.php`:612 — `ims_session_start();`
+- `includes/historical_orders_import.php`:744 — `ims_session_start();`
 - `includes/online_orders_generator.php`:738 — `ims_session_start();`
 - _… and 39 more (run impact.php for full list)_
 

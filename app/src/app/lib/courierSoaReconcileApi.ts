@@ -10,6 +10,7 @@ export interface CourierSoaReconcileSummary {
   matched: number;
   missing_from_soa: number;
   extra_in_soa: number;
+  file_count?: number;
 }
 
 export interface CourierSoaMissingRow {
@@ -22,24 +23,44 @@ export interface CourierSoaMissingRow {
 export interface CourierSoaExtraRow {
   row: number;
   tracking_number: string;
+  source_file?: string;
+  format?: CourierSoaFormat;
+}
+
+export interface CourierSoaFileResult {
+  original_name: string;
+  format: CourierSoaFormat;
+  courier_label: string;
+  sheet: string;
+  soa_rows: number;
+  download_token: string;
+  download_filename: string;
 }
 
 export interface CourierSoaReconcileResult {
   summary: CourierSoaReconcileSummary;
   format: CourierSoaFormat;
+  formats?: CourierSoaFormat[];
   courier_label: string;
   date_from: string;
   date_to: string;
   sheet: string;
+  files?: CourierSoaFileResult[];
   download_token: string;
   download_filename: string;
   missing_from_soa: CourierSoaMissingRow[];
   extra_in_soa: CourierSoaExtraRow[];
 }
 
-export async function courierSoaStashUpload(file: File): Promise<string> {
+export async function courierSoaStashUpload(files: File | File[]): Promise<string> {
+  const list = Array.isArray(files) ? files : [files];
+  if (list.length === 0) {
+    throw new Error("No file selected.");
+  }
   const form = new FormData();
-  form.append("file", file);
+  for (const file of list) {
+    form.append("file[]", file);
+  }
   const csrf = getCsrfToken();
   if (csrf) form.append("csrf", csrf);
   const data = await apiPostForm<{ token: string }>("courier_soa_reconcile.php", "stash", form);

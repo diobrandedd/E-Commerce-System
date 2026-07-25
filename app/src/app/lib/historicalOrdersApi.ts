@@ -54,11 +54,17 @@ export interface HistoricalFailedRow {
   error: string;
 }
 
+export type HistoricalPartnerSeller = "ian" | "jono" | "joven";
+
 export interface HistoricalPreviewResult {
   preview_token: string;
   month_label: string;
   ship_date: string;
   pipeline: HistoricalPipeline;
+  partner_seller?: HistoricalPartnerSeller | null;
+  format?: string;
+  sheet?: string;
+  available_sheets?: string[];
   counts: {
     new: number;
     conflicts: number;
@@ -74,6 +80,7 @@ export interface HistoricalCommitResult {
   month_label: string;
   ship_date: string;
   pipeline: string;
+  partner_seller?: string | null;
   inserted: number;
   updated: number;
   kept: number;
@@ -95,6 +102,8 @@ export async function historicalOrdersPreview(payload: {
   pipeline: HistoricalPipeline;
   year: number;
   month: number;
+  partner_seller?: HistoricalPartnerSeller | null;
+  sheet?: string;
 }): Promise<HistoricalPreviewResult> {
   return apiPost<HistoricalPreviewResult>("historical_orders.php", "preview", payload);
 }

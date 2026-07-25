@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-07-22T11:02:50+02:00
+generated: 2026-07-25T05:50:52+02:00
 type: module
 function_count: 27
 ---
@@ -39,7 +39,7 @@ function_count: 27
 
 - `api/v1/parcels.php`:14 — `if (!online_parcels_user_can_access($user)) {`
 - `includes/courier_soa_reconcile.php`:30 — `return online_parcels_user_can_access($user);`
-- `includes/historical_orders_import.php`:96 — `return online_parcels_user_can_access($user);`
+- `includes/historical_orders_import.php`:100 — `return online_parcels_user_can_access($user);`
 - `includes/partner_sold_reconcile.php`:29 — `return online_parcels_user_can_access($user);`
 
 ## online_parcels_user_can_ship {#online_parcels_user_can_ship}
@@ -64,12 +64,12 @@ function_count: 27
 - `api/v1/parcels.php`:69 — `online_parcels_ensure_schema($pdo);`
 - `api/v1/parcels.php`:109 — `online_parcels_ensure_schema($pdo);`
 - `api/v1/parcels.php`:137 — `online_parcels_ensure_schema($pdo);`
-- `includes/courier_soa_reconcile.php`:250 — `online_parcels_ensure_schema($pdo);`
+- `includes/courier_soa_reconcile.php`:338 — `online_parcels_ensure_schema($pdo);`
 - `includes/deliveries_upload.php`:63 — `online_parcels_ensure_schema($pdo);`
 - `includes/delivery_edit_requests.php`:144 — `online_parcels_ensure_schema($pdo);`
 - `includes/delivery_edit_requests.php`:417 — `online_parcels_ensure_schema($pdo);`
-- `includes/historical_orders_import.php`:337 — `online_parcels_ensure_schema($pdo);`
-- `includes/historical_orders_import.php`:504 — `online_parcels_ensure_schema($pdo);`
+- `includes/historical_orders_import.php`:381 — `online_parcels_ensure_schema($pdo);`
+- `includes/historical_orders_import.php`:605 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_order_parcels.php`:242 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_order_parcels.php`:338 — `online_parcels_ensure_schema($pdo);`
 - `includes/online_order_parcels.php`:356 — `online_parcels_ensure_schema($pdo);`
@@ -137,8 +137,8 @@ function_count: 27
 - `api/v1/parcels.php`:115 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `api/v1/parcels.php`:142 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `includes/delivery_edit_requests.php`:130 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
-- `includes/historical_orders_import.php`:413 — `$existing = online_parcels_get_by_tracking($pdo, $tn);`
-- `includes/historical_orders_import.php`:622 — `if (online_parcels_get_by_tracking($pdo, $tn) !== null) {`
+- `includes/historical_orders_import.php`:507 — `$existing = online_parcels_get_by_tracking($pdo, $tn);`
+- `includes/historical_orders_import.php`:804 — `if (online_parcels_get_by_tracking($pdo, $tn) !== null) {`
 - `includes/online_order_parcels.php`:998 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `includes/online_order_parcels.php`:1107 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`
 - `includes/online_order_parcels.php`:1226 — `$parcel = online_parcels_get_by_tracking($pdo, $tracking);`

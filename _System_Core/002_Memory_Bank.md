@@ -4,6 +4,15 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-07-25 — Ian 2026 partner months Feb–Jul historical import
+**Loaded + SQL:** Feb–Jul 2026 from `FINEST HEALTH ORDERS.xlsx` (Pickup Date → ship_date). Files: `sql/seed_ian_{february|march|april|may|june|july}_2026_partner_orders.sql` (+ January already).
+
+### 2026-07-25 — Ian January 2026 partner iPYX historical import
+**Loaded:** `FINEST HEALTH ORDERS.xlsx` sheet `JANUARY 2026` → 6,444 shipped Online parcels (`partner_seller=ian`). `ship_date` = each section **Pickup Date** (not month-end). Tracking = Order No. SQL: `sql/seed_ian_january_2026_partner_orders.sql`.
+
+### 2026-07-24 — [[problems/records/2026-07-22_courier-soa-reconcile|Courier SOA multi-file + mixed courier]]
+**Updated:** Upload multiple SOA Excels in one run; merge TNs; J&T and SPX together when both present; per-file highlighted downloads.
+
 ### 2026-07-22 — [[problems/records/2026-07-22_courier-soa-reconcile|Courier SOA reconcile]]
 **Shipped:** Order management → Courier SOA; J&T/SPX Excel vs shipped parcels by ship_date; missing/extra lists; green/red tracking download.
 

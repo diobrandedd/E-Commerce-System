@@ -142,6 +142,31 @@ function courier_soa_run_python(string $mode, string $workbookPath, ?string $dst
     return $data;
 }
 
+/**
+ * @param array<string, mixed> $meta
+ */
+function courier_soa_stash_unlink_meta(array $meta): void
+{
+    $files = $meta['files'] ?? null;
+    if (is_array($files)) {
+        foreach ($files as $fileMeta) {
+            if (!is_array($fileMeta)) {
+                continue;
+            }
+            $p = (string) ($fileMeta['path'] ?? '');
+            if ($p !== '' && is_file($p)) {
+                @unlink($p);
+            }
+        }
+
+        return;
+    }
+    $p = (string) ($meta['path'] ?? '');
+    if ($p !== '' && is_file($p)) {
+        @unlink($p);
+    }
+}
+
 function courier_soa_stash_prune(): void
 {
     ims_session_start();
@@ -152,18 +177,17 @@ function courier_soa_stash_prune(): void
     }
     foreach ($_SESSION['courier_soa_stash'] as $token => $meta) {
         if (!is_array($meta) || (int) ($meta['expires'] ?? 0) < time()) {
-            $p = (string) ($meta['path'] ?? '');
-            if ($p !== '' && is_file($p)) {
-                @unlink($p);
-            }
+            courier_soa_stash_unlink_meta($meta);
             unset($_SESSION['courier_soa_stash'][$token]);
         }
     }
 }
 
-function courier_soa_stash_upload(): string
+/**
+ * @return list<array{path:string, original_name:string}>
+ */
+function courier_soa_stash_files_from_upload(): array
 {
-    courier_soa_stash_prune();
     waybill_stamper_upload_preflight();
     $field = $_FILES['file'] ?? null;
     if (!is_array($field)) {
@@ -174,26 +198,47 @@ function courier_soa_stash_upload(): string
     if ($saved === []) {
         throw new RuntimeException('No file uploaded.');
     }
-    $path = $saved[0];
-    $token = bin2hex(random_bytes(16));
-    $originalName = '';
-    if (isset($field['name'])) {
-        $originalName = is_array($field['name']) ? (string) ($field['name'][0] ?? '') : (string) $field['name'];
+
+    $names = $field['name'] ?? null;
+    if (!is_array($names)) {
+        $names = $names !== null && $names !== '' ? [$names] : [];
     }
+
+    $files = [];
+    foreach ($saved as $i => $path) {
+        $files[] = [
+            'path' => $path,
+            'original_name' => (string) ($names[$i] ?? ('courier-soa-' . ($i + 1) . '.xlsx')),
+        ];
+    }
+
+    return $files;
+}
+
+function courier_soa_stash_upload(): string
+{
+    courier_soa_stash_prune();
+    $files = courier_soa_stash_files_from_upload();
+    $token = bin2hex(random_bytes(16));
     ims_session_start();
     if (!isset($_SESSION['courier_soa_stash']) || !is_array($_SESSION['courier_soa_stash'])) {
         $_SESSION['courier_soa_stash'] = [];
     }
     $_SESSION['courier_soa_stash'][$token] = [
-        'path' => $path,
-        'original_name' => $originalName,
+        'files' => $files,
+        // Legacy single-file keys for older callers.
+        'path' => $files[0]['path'],
+        'original_name' => $files[0]['original_name'],
         'expires' => time() + 3600,
     ];
 
     return $token;
 }
 
-function courier_soa_resolve_stash_path(string $token): string
+/**
+ * @return list<array{path:string, original_name:string}>
+ */
+function courier_soa_resolve_stash_files(string $token): array
 {
     courier_soa_stash_prune();
     ims_session_start();
@@ -209,33 +254,68 @@ function courier_soa_resolve_stash_path(string $token): string
     if (!is_array($meta)) {
         throw new RuntimeException('Invalid or expired upload token.');
     }
-    $path = (string) ($meta['path'] ?? '');
-    if ($path === '' || !is_file($path)) {
+
+    $files = [];
+    $rawFiles = $meta['files'] ?? null;
+    if (is_array($rawFiles) && $rawFiles !== []) {
+        foreach ($rawFiles as $fileMeta) {
+            if (!is_array($fileMeta)) {
+                continue;
+            }
+            $path = (string) ($fileMeta['path'] ?? '');
+            if ($path === '' || !is_file($path)) {
+                throw new RuntimeException('Stashed file missing. Upload again.');
+            }
+            $files[] = [
+                'path' => $path,
+                'original_name' => (string) ($fileMeta['original_name'] ?? 'courier-soa.xlsx'),
+            ];
+        }
+    } else {
+        $path = (string) ($meta['path'] ?? '');
+        if ($path === '' || !is_file($path)) {
+            throw new RuntimeException('Stashed file missing. Upload again.');
+        }
+        $files[] = [
+            'path' => $path,
+            'original_name' => (string) ($meta['original_name'] ?? 'courier-soa.xlsx'),
+        ];
+    }
+
+    if ($files === []) {
         throw new RuntimeException('Stashed file missing. Upload again.');
     }
 
-    return $path;
+    return $files;
+}
+
+function courier_soa_resolve_stash_path(string $token): string
+{
+    $files = courier_soa_resolve_stash_files($token);
+
+    return $files[0]['path'];
 }
 
 function courier_soa_stash_original_name(string $token): string
 {
-    ims_session_start();
-    $token = preg_replace('/[^a-f0-9]/', '', strtolower($token)) ?? '';
-    $meta = $_SESSION['courier_soa_stash'][$token] ?? null;
-    if (!is_array($meta)) {
-        return 'courier-soa.xlsx';
-    }
+    $files = courier_soa_resolve_stash_files($token);
 
-    return (string) ($meta['original_name'] ?? 'courier-soa.xlsx');
+    return $files[0]['original_name'] !== '' ? $files[0]['original_name'] : 'courier-soa.xlsx';
+}
+
+function courier_soa_format_label(string $format): string
+{
+    return $format === 'jnt' ? 'J&T' : ($format === 'spx' ? 'SPX' : strtoupper($format));
 }
 
 /**
+ * @param list<string> $courierKeys e.g. ['jnt'], ['spx'], or ['jnt','spx']
  * @return array{
  *   by_tn: array<string, array{tracking_number:string, ship_date:?string, order_no:string, courier:string}>,
  *   set: array<string, true>
  * }
  */
-function courier_soa_shipped_tracking_map(PDO $pdo, string $courierKey, string $dateFrom, string $dateTo): array
+function courier_soa_shipped_tracking_map(PDO $pdo, array $courierKeys, string $dateFrom, string $dateTo): array
 {
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
         throw new RuntimeException('date_from and date_to required (YYYY-MM-DD).');
@@ -243,7 +323,15 @@ function courier_soa_shipped_tracking_map(PDO $pdo, string $courierKey, string $
     if ($dateFrom > $dateTo) {
         throw new RuntimeException('date_from must be on or before date_to.');
     }
-    if ($courierKey !== 'jnt' && $courierKey !== 'spx') {
+
+    $allowed = [];
+    foreach ($courierKeys as $key) {
+        $key = strtolower(trim((string) $key));
+        if ($key === 'jnt' || $key === 'spx') {
+            $allowed[$key] = true;
+        }
+    }
+    if ($allowed === []) {
         throw new RuntimeException('Unsupported courier format.');
     }
 
@@ -264,7 +352,7 @@ function courier_soa_shipped_tracking_map(PDO $pdo, string $courierKey, string $
     $set = [];
     while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
         $bucket = rts_courier_label_bucket((string) ($row['courier'] ?? ''));
-        if ($bucket !== $courierKey) {
+        if (!isset($allowed[$bucket])) {
             continue;
         }
         $norm = courier_soa_normalize_tracking((string) ($row['tracking_number'] ?? ''));
@@ -301,61 +389,126 @@ function courier_soa_reconcile(PDO $pdo, array $input): array
         throw new RuntimeException('date_from and date_to required.');
     }
 
-    $srcPath = courier_soa_resolve_stash_path($token);
-    $scan = courier_soa_run_python('scan', $srcPath);
-    $format = strtolower(trim((string) ($scan['format'] ?? '')));
-    if ($format !== 'jnt' && $format !== 'spx') {
-        throw new RuntimeException('Could not detect J&T or SPX SOA format.');
+    $stashFiles = courier_soa_resolve_stash_files($token);
+    $outDir = courier_soa_storage_root() . '/outputs';
+    if (!is_dir($outDir) && !mkdir($outDir, 0775, true) && !is_dir($outDir)) {
+        throw new RuntimeException('Could not create output directory.');
     }
 
-    $rows = $scan['rows'] ?? [];
-    if (!is_array($rows)) {
-        $rows = [];
+    $soaSet = [];
+    $soaRowsWithTn = 0;
+    $soaDuplicates = 0;
+    $formatsSeen = [];
+    $fileResults = [];
+    $extraInSoa = [];
+    $sheets = [];
+
+    // First pass: scan all files and collect SOA tracking set + formats.
+    $scans = [];
+    foreach ($stashFiles as $fileMeta) {
+        $srcPath = $fileMeta['path'];
+        $original = $fileMeta['original_name'];
+        $scan = courier_soa_run_python('scan', $srcPath);
+        $format = strtolower(trim((string) ($scan['format'] ?? '')));
+        if ($format !== 'jnt' && $format !== 'spx') {
+            throw new RuntimeException(
+                'Could not detect J&T or SPX SOA format in ' . ($original !== '' ? $original : 'upload') . '.'
+            );
+        }
+        $formatsSeen[$format] = true;
+        $sheet = (string) ($scan['sheet'] ?? '');
+        if ($sheet !== '') {
+            $sheets[] = $sheet;
+        }
+        $rows = $scan['rows'] ?? [];
+        if (!is_array($rows)) {
+            $rows = [];
+        }
+        $scans[] = [
+            'path' => $srcPath,
+            'original_name' => $original,
+            'format' => $format,
+            'scan' => $scan,
+            'rows' => $rows,
+        ];
     }
 
-    $ours = courier_soa_shipped_tracking_map($pdo, $format, $dateFrom, $dateTo);
+    $courierKeys = array_keys($formatsSeen);
+    sort($courierKeys);
+    $ours = courier_soa_shipped_tracking_map($pdo, $courierKeys, $dateFrom, $dateTo);
     $ourSet = $ours['set'];
     $ourByTn = $ours['by_tn'];
 
-    $soaSet = [];
-    $highlightRows = [];
-    $extraInSoa = [];
-    $soaRowsWithTn = 0;
-    $soaDuplicates = 0;
+    foreach ($scans as $fileScan) {
+        $srcPath = (string) $fileScan['path'];
+        $original = (string) $fileScan['original_name'];
+        $format = (string) $fileScan['format'];
+        $scan = is_array($fileScan['scan']) ? $fileScan['scan'] : [];
+        $rows = is_array($fileScan['rows']) ? $fileScan['rows'] : [];
+        $highlightRows = [];
+        $fileSoaRows = 0;
 
-    foreach ($rows as $row) {
-        if (!is_array($row)) {
-            continue;
-        }
-        $excelRow = (int) ($row['row'] ?? 0);
-        $tracking = courier_soa_normalize_tracking(isset($row['tracking']) ? (string) $row['tracking'] : null);
-        if ($tracking === null) {
-            continue;
-        }
-        $soaRowsWithTn++;
-        if (!empty($row['duplicate'])) {
-            $soaDuplicates++;
-        }
-        $soaSet[$tracking] = true;
-        $status = isset($ourSet[$tracking]) ? 'matched' : 'missing';
-        if ($status === 'missing' && count($extraInSoa) < 100) {
-            $alreadyListed = false;
-            foreach ($extraInSoa as $ex) {
-                if (($ex['tracking_number'] ?? '') === $tracking) {
-                    $alreadyListed = true;
-                    break;
-                }
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
             }
-            if (!$alreadyListed) {
+            $excelRow = (int) ($row['row'] ?? 0);
+            $tracking = courier_soa_normalize_tracking(isset($row['tracking']) ? (string) $row['tracking'] : null);
+            if ($tracking === null) {
+                continue;
+            }
+            $soaRowsWithTn++;
+            $fileSoaRows++;
+            if (!empty($row['duplicate'])) {
+                $soaDuplicates++;
+            }
+            $alreadyInSoa = isset($soaSet[$tracking]);
+            $soaSet[$tracking] = true;
+            $status = isset($ourSet[$tracking]) ? 'matched' : 'missing';
+            if ($status === 'missing' && !$alreadyInSoa && count($extraInSoa) < 100) {
                 $extraInSoa[] = [
                     'row' => $excelRow,
                     'tracking_number' => $tracking,
+                    'source_file' => $original,
+                    'format' => $format,
                 ];
             }
+            if ($excelRow > 0) {
+                $highlightRows[] = ['row' => $excelRow, 'status' => $status];
+            }
         }
-        if ($excelRow > 0) {
-            $highlightRows[] = ['row' => $excelRow, 'status' => $status];
+
+        $outPath = $outDir . '/reconciled_' . bin2hex(random_bytes(8)) . '.xlsx';
+        $matchesPayload = json_encode([
+            'header_row' => (int) ($scan['header_row'] ?? 1),
+            'track_col' => (int) ($scan['track_col'] ?? 1),
+            'rows' => $highlightRows,
+        ], JSON_UNESCAPED_UNICODE);
+        if ($matchesPayload === false) {
+            throw new RuntimeException('Could not encode highlight payload.');
         }
+        $matchesPath = courier_soa_write_temp_json($matchesPayload);
+        try {
+            courier_soa_run_python('highlight', $srcPath, $outPath, $matchesPath);
+        } finally {
+            @unlink($matchesPath);
+        }
+
+        $base = pathinfo($original, PATHINFO_FILENAME);
+        if ($base === '') {
+            $base = 'courier-soa';
+        }
+        $downloadFilename = $base . '-reconciled.xlsx';
+        $downloadToken = courier_soa_register_download($outPath, $downloadFilename);
+        $fileResults[] = [
+            'original_name' => $original,
+            'format' => $format,
+            'courier_label' => courier_soa_format_label($format),
+            'sheet' => (string) ($scan['sheet'] ?? ''),
+            'soa_rows' => $fileSoaRows,
+            'download_token' => $downloadToken,
+            'download_filename' => $downloadFilename,
+        ];
     }
 
     $missingFromSoa = [];
@@ -369,33 +522,13 @@ function courier_soa_reconcile(PDO $pdo, array $input): array
     $missingCount = count($ourSet) - $matchedUnique;
     $extraCount = count($soaSet) - $matchedUnique;
 
-    $outDir = courier_soa_storage_root() . '/outputs';
-    if (!is_dir($outDir) && !mkdir($outDir, 0775, true) && !is_dir($outDir)) {
-        throw new RuntimeException('Could not create output directory.');
+    $labels = [];
+    foreach ($courierKeys as $key) {
+        $labels[] = courier_soa_format_label($key);
     }
-    $outPath = $outDir . '/reconciled_' . bin2hex(random_bytes(8)) . '.xlsx';
-    $matchesPayload = json_encode([
-        'header_row' => (int) ($scan['header_row'] ?? 1),
-        'track_col' => (int) ($scan['track_col'] ?? 1),
-        'rows' => $highlightRows,
-    ], JSON_UNESCAPED_UNICODE);
-    if ($matchesPayload === false) {
-        throw new RuntimeException('Could not encode highlight payload.');
-    }
-    $matchesPath = courier_soa_write_temp_json($matchesPayload);
-    try {
-        courier_soa_run_python('highlight', $srcPath, $outPath, $matchesPath);
-    } finally {
-        @unlink($matchesPath);
-    }
-
-    $original = courier_soa_stash_original_name($token);
-    $base = pathinfo($original, PATHINFO_FILENAME);
-    if ($base === '') {
-        $base = 'courier-soa';
-    }
-    $downloadFilename = $base . '-reconciled.xlsx';
-    $downloadToken = courier_soa_register_download($outPath, $downloadFilename);
+    $courierLabel = implode(' + ', $labels);
+    $primaryFormat = $courierKeys[0] ?? 'jnt';
+    $firstDownload = $fileResults[0] ?? null;
 
     return [
         'summary' => [
@@ -406,14 +539,17 @@ function courier_soa_reconcile(PDO $pdo, array $input): array
             'matched' => $matchedUnique,
             'missing_from_soa' => $missingCount,
             'extra_in_soa' => $extraCount,
+            'file_count' => count($fileResults),
         ],
-        'format' => $format,
-        'courier_label' => $format === 'jnt' ? 'J&T' : 'SPX',
+        'format' => $primaryFormat,
+        'formats' => $courierKeys,
+        'courier_label' => $courierLabel,
         'date_from' => $dateFrom,
         'date_to' => $dateTo,
-        'sheet' => (string) ($scan['sheet'] ?? ''),
-        'download_token' => $downloadToken,
-        'download_filename' => $downloadFilename,
+        'sheet' => $sheets !== [] ? implode(', ', array_unique($sheets)) : '',
+        'files' => $fileResults,
+        'download_token' => is_array($firstDownload) ? (string) ($firstDownload['download_token'] ?? '') : '',
+        'download_filename' => is_array($firstDownload) ? (string) ($firstDownload['download_filename'] ?? '') : '',
         'missing_from_soa' => $missingFromSoa,
         'extra_in_soa' => $extraInSoa,
     ];

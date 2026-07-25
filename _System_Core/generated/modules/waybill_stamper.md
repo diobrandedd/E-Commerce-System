@@ -1,7 +1,7 @@
 ---
 title: waybill_stamper
 source: includes/waybill_stamper.php
-generated: 2026-07-22T11:03:04+02:00
+generated: 2026-07-25T05:51:05+02:00
 type: module
 function_count: 19
 ---
@@ -73,8 +73,8 @@ function_count: 19
 - `api/v1/pdf_to_excel.php`:62 — `waybill_stamper_upload_preflight();`
 - `api/v1/waybill.php`:72 — `waybill_stamper_upload_preflight();`
 - `api/v1/waybill.php`:104 — `waybill_stamper_upload_preflight();`
-- `includes/courier_soa_reconcile.php`:167 — `waybill_stamper_upload_preflight();`
-- `includes/historical_orders_import.php`:135 — `waybill_stamper_upload_preflight();`
+- `includes/courier_soa_reconcile.php`:191 — `waybill_stamper_upload_preflight();`
+- `includes/historical_orders_import.php`:139 — `waybill_stamper_upload_preflight();`
 - `includes/order_remarks.php`:365 — `waybill_stamper_upload_preflight();`
 - `includes/partner_sold_reconcile.php`:178 — `waybill_stamper_upload_preflight();`
 
@@ -90,7 +90,7 @@ function_count: 19
 **Callers (8):**
 
 - `includes/courier_soa_reconcile.php`:136 — `throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
-- `includes/historical_orders_import.php`:85 — `throw new RuntimeException('Failed to parse workbook output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
+- `includes/historical_orders_import.php`:89 — `throw new RuntimeException('Failed to parse workbook output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
 - `includes/order_remarks.php`:328 — `throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
 - `includes/partner_sold_reconcile.php`:147 — `throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
 - `includes/pdf_to_excel.php`:223 — `$hint = waybill_stamper_utf8(trim($output));`
@@ -115,8 +115,8 @@ function_count: 19
 
 - `api/v1/waybill.php`:109 — `$pdfs = waybill_stamper_collect_uploads($pdfField, ['pdf'], 'pdf_');`
 - `api/v1/waybill.php`:114 — `$excels = waybill_stamper_collect_uploads($excelField, ['xlsx', 'xls'], 'xls_');`
-- `includes/courier_soa_reconcile.php`:173 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'csoa_', $stashDir);`
-- `includes/historical_orders_import.php`:143 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'hist_', $stashDir);`
+- `includes/courier_soa_reconcile.php`:197 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'csoa_', $stashDir);`
+- `includes/historical_orders_import.php`:147 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'hist_', $stashDir);`
 - `includes/order_remarks.php`:373 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'xlsx_', $stashDir);`
 - `includes/partner_sold_reconcile.php`:184 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'ps_', $stashDir);`
 - `includes/pdf_to_excel.php`:60 — `$saved = waybill_stamper_collect_uploads($field, ['pdf'], 'pdf_', $stashDir);`

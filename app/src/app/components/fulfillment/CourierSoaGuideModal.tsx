@@ -31,21 +31,26 @@ export function CourierSoaGuideModal({ open, onClose }: { open: boolean; onClose
       <AppModalBody className="flex flex-col min-h-0 overflow-y-auto overscroll-contain gap-5 py-4">
         <GuideSection title="What this page is for">
           <p>
-            Upload a J&amp;T or SPX statement-of-account Excel and compare tracking numbers to parcels you marked{" "}
-            <strong className="text-foreground">shipped</strong> in Online Parcels for a ship-date range.
+            Upload one or more J&amp;T and/or SPX statement-of-account Excel files and compare tracking numbers to parcels
+            you marked <strong className="text-foreground">shipped</strong> in Online Parcels for a ship-date range. You
+            can mix couriers in a single run.
           </p>
         </GuideSection>
         <GuideSection title="How matching works">
           <ol className="list-decimal pl-4 space-y-1.5">
             <li>Pick ship date from / to — this filters only our shipped parcels.</li>
-            <li>Upload the full SOA file (format is auto-detected from headers).</li>
+            <li>Upload one or many SOA files (each format is auto-detected from headers).</li>
             <li>
-              <strong className="text-foreground">Missing from SOA</strong> — we shipped them in range, but they are not
-              on the file.
+              Tracking numbers from all files are merged. Our shipped set includes every courier detected in the uploads
+              (J&amp;T and/or SPX).
             </li>
             <li>
-              <strong className="text-foreground">Extra in SOA</strong> — on the file, but not in our shipped set for
-              that range / courier.
+              <strong className="text-foreground">Missing from SOA</strong> — we shipped them in range, but they are not
+              on any uploaded file.
+            </li>
+            <li>
+              <strong className="text-foreground">Extra in SOA</strong> — on a file, but not in our shipped set for that
+              range / courier.
             </li>
           </ol>
         </GuideSection>
@@ -57,7 +62,7 @@ export function CourierSoaGuideModal({ open, onClose }: { open: boolean; onClose
         </GuideSection>
         <GuideSection title="Download">
           <p>
-            The download is a copy of your upload: tracking / waybill cells are{" "}
+            Each upload gets its own download: tracking / waybill cells are{" "}
             <span className="text-green-700 font-medium">green</span> when matched and{" "}
             <span className="text-red-700 font-medium">red</span> when not found in our shipped set. Amounts are ignored.
           </p>

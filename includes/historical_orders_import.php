@@ -52,9 +52,13 @@ function historical_orders_python_command(string ...$args): array
 /**
  * @return array<string, mixed>
  */
-function historical_orders_run_python_parse(string $workbookPath): array
+function historical_orders_run_python_parse(string $workbookPath, ?string $sheetName = null): array
 {
-    $built = historical_orders_python_command('parse', $workbookPath);
+    $args = ['parse', $workbookPath];
+    if ($sheetName !== null && trim($sheetName) !== '') {
+        $args[] = trim($sheetName);
+    }
+    $built = historical_orders_python_command(...$args);
     $cmd = $built['cmd'] . ' 2>&1';
     $prevEnv = [];
     foreach ($built['env'] as $key => $val) {
@@ -260,6 +264,46 @@ function historical_orders_default_courier(string $pipeline): string
 }
 
 /**
+ * Infer source_pipeline from partner iPYX courier label (Ian/Jono/Joven lists mix channels).
+ */
+function historical_orders_pipeline_from_courier(string $courier, string $fallback): string
+{
+    $c = strtoupper($courier);
+    if (str_contains($c, 'SHOPEE') || str_contains($c, 'SPX')) {
+        return 'shopee_spx';
+    }
+    if (str_contains($c, 'TIKTOK') || str_contains($c, 'TIK TOK')) {
+        return 'tiktok';
+    }
+    if (str_contains($c, 'LAZADA') || str_contains($c, 'FLASH')) {
+        return 'partner';
+    }
+    if (in_array($fallback, HISTORICAL_ORDERS_PIPELINES, true)) {
+        return $fallback;
+    }
+
+    return 'partner';
+}
+
+function historical_orders_normalize_courier_label(string $courier, string $pipeline): string
+{
+    $c = trim($courier);
+    if ($c !== '') {
+        return $c;
+    }
+
+    return historical_orders_default_courier($pipeline);
+}
+
+/**
+ * @return ?string ian|jono|joven
+ */
+function historical_orders_normalize_partner_seller(?string $raw): ?string
+{
+    return online_orders_normalize_partner_seller($raw);
+}
+
+/**
  * @return array{items_raw:string,items_parsed_json:?string,parse_ok:bool,parse_errors:list<string>}
  */
 function historical_orders_prepare_items(string $remarks): array
@@ -341,21 +385,35 @@ function historical_orders_preview(PDO $pdo, array $input): array
     if (!in_array($pipeline, HISTORICAL_ORDERS_PIPELINES, true)) {
         throw new RuntimeException('Invalid pipeline.');
     }
+    $partnerSeller = historical_orders_normalize_partner_seller(
+        isset($input['partner_seller']) ? (string) $input['partner_seller'] : null
+    );
+    if ($pipeline === 'partner' && $partnerSeller === null) {
+        throw new RuntimeException('partner_seller required for partner imports (ian, jono, or joven).');
+    }
+    if ($pipeline !== 'partner') {
+        $partnerSeller = null;
+    }
     $year = (int) ($input['year'] ?? 0);
     $month = (int) ($input['month'] ?? 0);
     $range = historical_orders_resolve_month($year, $month);
+    $sheetName = trim((string) ($input['sheet'] ?? $input['sheet_name'] ?? ''));
 
     $path = historical_orders_resolve_stash_path($token);
-    $data = historical_orders_run_python_parse($path);
+    $data = historical_orders_run_python_parse($path, $sheetName !== '' ? $sheetName : null);
+    $format = (string) ($data['format'] ?? '');
     $orders = is_array($data['orders'] ?? null) ? $data['orders'] : [];
     if ($orders === []) {
-        throw new RuntimeException('No order rows found. Use a Snappy Excel with a Tracking number column.');
+        throw new RuntimeException(
+            'No order rows found. Use Snappy (Tracking number) or partner iPYX (Order No. / Name / Item/s) Excel.'
+        );
     }
 
     $newRows = [];
     $conflicts = [];
     $failed = [];
     $rowIndex = 0;
+    $usedTn = [];
 
     foreach ($orders as $order) {
         if (!is_array($order)) {
@@ -366,6 +424,7 @@ function historical_orders_preview(PDO $pdo, array $input): array
         $orderNo = trim((string) ($order['order_no'] ?? ''));
         $itemsSrc = trim((string) ($order['items_raw'] ?? ''));
         $tnRaw = (string) ($order['tracking_number'] ?? '');
+        $courierRaw = trim((string) ($order['courier'] ?? ''));
         $rowKey = 'r' . $rowIndex;
 
         if ($receiver === '' && $orderNo === '' && $itemsSrc === '' && trim($tnRaw) === '') {
@@ -381,21 +440,56 @@ function historical_orders_preview(PDO $pdo, array $input): array
             if ($prepared['items_raw'] === '') {
                 throw new RuntimeException('Items text is empty after normalize.');
             }
+
+            $rowPipeline = $pipeline;
+            if ($format === 'partner_ipyx') {
+                $rowPipeline = historical_orders_pipeline_from_courier($courierRaw, $pipeline === 'partner' ? 'partner' : $pipeline);
+            }
+
             $trackingMissing = ($tn === '');
             if ($trackingMissing) {
-                $tn = historical_orders_missing_tn_placeholder(
-                    $range['yyyymm'],
-                    $orderNo !== '' ? $orderNo : null,
-                    $rowKey
-                );
+                // Partner iPYX: Order No. is the natural key (no waybill column).
+                if ($format === 'partner_ipyx' && $orderNo !== '') {
+                    $tn = historical_orders_normalize_tn($orderNo);
+                    if ($tn === '') {
+                        $tn = historical_orders_missing_tn_placeholder($range['yyyymm'], $orderNo, $rowKey);
+                    }
+                } else {
+                    $tn = historical_orders_missing_tn_placeholder(
+                        $range['yyyymm'],
+                        $orderNo !== '' ? $orderNo : null,
+                        $rowKey
+                    );
+                }
             }
-            $courier = historical_orders_courier_from_tn($tn, $pipeline);
+
+            // Keep tracking unique within this import batch (duplicate order nos in sheet).
+            $baseTn = $tn;
+            $suffix = 2;
+            while (isset($usedTn[$tn])) {
+                $tn = $baseTn . 'D' . $suffix;
+                $suffix++;
+            }
+            $usedTn[$tn] = true;
+
+            if ($format === 'partner_ipyx') {
+                $courier = historical_orders_normalize_courier_label($courierRaw, $rowPipeline);
+            } elseif (!$trackingMissing) {
+                $courier = historical_orders_courier_from_tn($tn, $rowPipeline);
+            } else {
+                $courier = historical_orders_default_courier($rowPipeline);
+            }
+
+            $rowShipDate = trim((string) ($order['ship_date'] ?? ''));
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $rowShipDate)) {
+                $rowShipDate = $range['ship_date'];
+            }
 
             $uploaded = [
                 'row_key' => $rowKey,
                 'tracking_number' => $tn,
                 'tracking_missing' => $trackingMissing,
-                'original_tracking_number' => $trackingMissing ? null : $tn,
+                'original_tracking_number' => $trackingMissing ? null : historical_orders_normalize_tn($tnRaw),
                 'recipient_name' => $receiver !== '' ? $receiver : 'Unknown',
                 'order_no' => $orderNo !== '' ? $orderNo : null,
                 'items_raw' => $prepared['items_raw'],
@@ -403,10 +497,10 @@ function historical_orders_preview(PDO $pdo, array $input): array
                 'parse_ok' => $prepared['parse_ok'],
                 'parse_errors' => $prepared['parse_errors'],
                 'courier' => $courier,
-                'source_pipeline' => $pipeline,
-                'partner_seller' => null,
+                'source_pipeline' => $rowPipeline,
+                'partner_seller' => $partnerSeller,
                 'status' => 'shipped',
-                'ship_date' => $range['ship_date'],
+                'ship_date' => $rowShipDate,
                 'sheet_status' => (string) ($order['sheet_status'] ?? ''),
             ];
 
@@ -446,6 +540,9 @@ function historical_orders_preview(PDO $pdo, array $input): array
         'yyyymm' => $range['yyyymm'],
         'month_label' => $range['label'],
         'pipeline' => $pipeline,
+        'partner_seller' => $partnerSeller,
+        'format' => $format,
+        'sheet' => (string) ($data['sheet'] ?? ''),
         'new' => $newRows,
         'conflicts' => $conflicts,
         'failed' => $failed,
@@ -463,6 +560,10 @@ function historical_orders_preview(PDO $pdo, array $input): array
         'month_label' => $range['label'],
         'ship_date' => $range['ship_date'],
         'pipeline' => $pipeline,
+        'partner_seller' => $partnerSeller,
+        'format' => $format,
+        'sheet' => (string) ($data['sheet'] ?? ''),
+        'available_sheets' => is_array($data['available_sheets'] ?? null) ? $data['available_sheets'] : [],
         'counts' => [
             'new' => count($newRows),
             'conflicts' => count($conflicts),
@@ -533,7 +634,6 @@ function historical_orders_commit(PDO $pdo, array $input): array
 
     $importNew = !isset($input['import_new']) || (bool) $input['import_new'];
     $shipDate = (string) ($preview['ship_date'] ?? '');
-    $createdAt = $shipDate . ' 12:00:00';
 
     $inserted = 0;
     $updated = 0;
@@ -548,7 +648,11 @@ function historical_orders_commit(PDO $pdo, array $input): array
                     continue;
                 }
                 try {
-                    historical_orders_insert_shipped($pdo, $row, $createdAt);
+                    $rowShip = trim((string) ($row['ship_date'] ?? ''));
+                    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $rowShip)) {
+                        $rowShip = $shipDate;
+                    }
+                    historical_orders_insert_shipped($pdo, $row, $rowShip . ' 12:00:00');
                     $inserted++;
                 } catch (Throwable $e) {
                     $errors[] = [
@@ -577,7 +681,11 @@ function historical_orders_commit(PDO $pdo, array $input): array
                 continue;
             }
             try {
-                historical_orders_overwrite_shipped($pdo, (int) ($existing['id'] ?? 0), $uploaded, $createdAt);
+                $rowShip = trim((string) ($uploaded['ship_date'] ?? ''));
+                if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $rowShip)) {
+                    $rowShip = $shipDate;
+                }
+                historical_orders_overwrite_shipped($pdo, (int) ($existing['id'] ?? 0), $uploaded, $rowShip . ' 12:00:00');
                 $updated++;
             } catch (Throwable $e) {
                 $errors[] = [
@@ -602,11 +710,85 @@ function historical_orders_commit(PDO $pdo, array $input): array
         'month_label' => (string) ($preview['month_label'] ?? ''),
         'ship_date' => $shipDate,
         'pipeline' => (string) ($preview['pipeline'] ?? ''),
+        'partner_seller' => $preview['partner_seller'] ?? null,
         'inserted' => $inserted,
         'updated' => $updated,
         'kept' => $kept,
         'failed_preview' => count($preview['failed'] ?? []),
         'errors' => $errors,
+    ];
+}
+
+/**
+ * CLI / offline import: parse workbook path and insert all new rows (keep conflicts unchanged).
+ *
+ * @param array{year:int,month:int,pipeline?:string,partner_seller?:string,sheet?:string} $opts
+ * @return array<string, mixed>
+ */
+function historical_orders_import_file(PDO $pdo, string $workbookPath, array $opts): array
+{
+    if (!is_file($workbookPath)) {
+        throw new RuntimeException('Workbook not found: ' . $workbookPath);
+    }
+
+    $pipeline = strtolower(trim((string) ($opts['pipeline'] ?? 'partner')));
+    $partnerSeller = historical_orders_normalize_partner_seller(
+        isset($opts['partner_seller']) ? (string) $opts['partner_seller'] : null
+    );
+    $year = (int) ($opts['year'] ?? 0);
+    $month = (int) ($opts['month'] ?? 0);
+    $sheet = trim((string) ($opts['sheet'] ?? ''));
+    $range = historical_orders_resolve_month($year, $month);
+
+    // Fake a stash token via session so preview/commit path stays one source of truth.
+    ims_session_start();
+    $token = bin2hex(random_bytes(16));
+    if (!isset($_SESSION['historical_orders_stash']) || !is_array($_SESSION['historical_orders_stash'])) {
+        $_SESSION['historical_orders_stash'] = [];
+    }
+    $_SESSION['historical_orders_stash'][$token] = [
+        'path' => $workbookPath,
+        'original_name' => basename($workbookPath),
+        'expires' => time() + 3600,
+    ];
+
+    $preview = historical_orders_preview($pdo, [
+        'token' => $token,
+        'pipeline' => $pipeline,
+        'partner_seller' => $partnerSeller,
+        'year' => $year,
+        'month' => $month,
+        'sheet' => $sheet,
+    ]);
+
+    // Default: keep conflicts (don't overwrite live/existing)
+    $decisions = [];
+    foreach ($preview['conflicts'] ?? [] as $c) {
+        if (!is_array($c)) {
+            continue;
+        }
+        $decisions[] = [
+            'row_key' => (string) ($c['row_key'] ?? ''),
+            'action' => 'keep',
+        ];
+    }
+
+    $commit = historical_orders_commit($pdo, [
+        'preview_token' => (string) ($preview['preview_token'] ?? ''),
+        'import_new' => true,
+        'decisions' => $decisions,
+    ]);
+
+    unset($_SESSION['historical_orders_stash'][$token]);
+
+    return [
+        'preview_counts' => $preview['counts'] ?? [],
+        'format' => $preview['format'] ?? null,
+        'sheet' => $preview['sheet'] ?? null,
+        'month_label' => $range['label'],
+        'ship_date' => $range['ship_date'],
+        'partner_seller' => $partnerSeller,
+        'commit' => $commit,
     ];
 }
 
@@ -628,8 +810,11 @@ function historical_orders_insert_shipped(PDO $pdo, array $row, string $createdA
             csr_batch_id, csr_line_id, tracking_number, items_raw, items_parsed_json,
             recipient_name, courier, order_no, source_pipeline, partner_seller,
             status, ship_date, created_at
-         ) VALUES (NULL, NULL, ?, ?, ?, ?, ?, ?, ?, NULL, "shipped", ?, ?)'
+         ) VALUES (NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, "shipped", ?, ?)'
     );
+    $partnerSeller = isset($row['partner_seller']) && $row['partner_seller'] !== null && $row['partner_seller'] !== ''
+        ? (string) $row['partner_seller']
+        : null;
     $st->execute([
         $tn,
         (string) ($row['items_raw'] ?? ''),
@@ -639,6 +824,7 @@ function historical_orders_insert_shipped(PDO $pdo, array $row, string $createdA
         isset($row['order_no']) && $row['order_no'] !== null && $row['order_no'] !== ''
             ? (string) $row['order_no'] : null,
         (string) ($row['source_pipeline'] ?? 'vip'),
+        $partnerSeller,
         (string) ($row['ship_date'] ?? ''),
         $createdAt,
     ]);
@@ -661,12 +847,15 @@ function historical_orders_overwrite_shipped(PDO $pdo, int $parcelId, array $row
              order_no = ?,
              courier = ?,
              source_pipeline = ?,
-             partner_seller = NULL,
+             partner_seller = ?,
              status = "shipped",
              ship_date = ?,
              created_at = ?
          WHERE id = ?'
     );
+    $partnerSeller = isset($row['partner_seller']) && $row['partner_seller'] !== null && $row['partner_seller'] !== ''
+        ? (string) $row['partner_seller']
+        : null;
     $st->execute([
         (string) ($row['recipient_name'] ?? ''),
         (string) ($row['items_raw'] ?? ''),
@@ -675,6 +864,7 @@ function historical_orders_overwrite_shipped(PDO $pdo, int $parcelId, array $row
             ? (string) $row['order_no'] : null,
         (string) ($row['courier'] ?? 'J&T Express'),
         (string) ($row['source_pipeline'] ?? 'vip'),
+        $partnerSeller,
         (string) ($row['ship_date'] ?? ''),
         $createdAt,
         $parcelId,

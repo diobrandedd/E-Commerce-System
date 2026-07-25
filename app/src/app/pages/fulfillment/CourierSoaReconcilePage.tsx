@@ -47,15 +47,15 @@ function StatCard({
 export function CourierSoaReconcilePage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CourierSoaReconcileResult | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
 
   const runReconcile = async () => {
-    if (!file) {
-      setError("Upload a J&T or SPX SOA Excel first.");
+    if (files.length === 0) {
+      setError("Upload one or more J&T / SPX SOA Excel files first.");
       return;
     }
     if (!dateFrom || !dateTo) {
@@ -66,7 +66,7 @@ export function CourierSoaReconcilePage() {
     setError(null);
     setResult(null);
     try {
-      const token = await courierSoaStashUpload(file);
+      const token = await courierSoaStashUpload(files);
       const data = await courierSoaReconcile({
         token,
         date_from: dateFrom,
@@ -80,10 +80,26 @@ export function CourierSoaReconcilePage() {
     }
   };
 
+  const downloadFiles = result?.files?.length
+    ? result.files
+    : result?.download_token
+      ? [
+          {
+            original_name: result.download_filename || "courier-soa.xlsx",
+            format: result.format,
+            courier_label: result.courier_label,
+            sheet: result.sheet,
+            soa_rows: result.summary.soa_rows,
+            download_token: result.download_token,
+            download_filename: result.download_filename,
+          },
+        ]
+      : [];
+
   return (
     <PageLayout
       title="Courier SOA"
-      subtitle="Compare J&T or SPX SOA Excel tracking numbers to shipped Online Parcels (green = matched, red = not in our set)."
+      subtitle="Compare one or more J&T / SPX SOA Excel files to shipped Online Parcels (green = matched, red = not in our set). Mix couriers in one run."
       actions={
         <button type="button" className={appHeaderActionClass} onClick={() => setGuideOpen(true)}>
           <BookOpen size={14} />
@@ -118,20 +134,20 @@ export function CourierSoaReconcilePage() {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Date range filters only our <strong className="font-semibold text-foreground">shipped</strong> parcels for the
-          detected courier (J&amp;T or SPX). The whole SOA file is compared — amounts are ignored.
+          Date range filters our <strong className="font-semibold text-foreground">shipped</strong> parcels for every
+          courier detected in the uploads (J&amp;T and/or SPX). All selected SOA files are merged — amounts are ignored.
         </p>
 
         <FileZone
           label="Courier SOA Excel"
-          hint="J&T: Waybill Number column · SPX: Tracking Number column"
+          hint="Upload one or many · J&T: Waybill Number · SPX: Tracking Number · mix both in one run"
           accept=".xlsx,.xls"
           icon={FileSpreadsheet}
-          files={file ? [file] : []}
+          files={files}
           disabled={busy}
-          multiple={false}
+          multiple
           onFiles={fs => {
-            setFile(fs[0] ?? null);
+            setFiles(fs);
             setResult(null);
             setError(null);
           }}
@@ -139,7 +155,7 @@ export function CourierSoaReconcilePage() {
 
         <FulfillmentPressable
           className="inline-flex items-center gap-2 px-5 py-2.5 font-semibold text-primary-foreground bg-primary disabled:opacity-50"
-          disabled={busy || !file || !dateFrom || !dateTo}
+          disabled={busy || files.length === 0 || !dateFrom || !dateTo}
           onClick={() => void runReconcile()}
         >
           {busy ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
@@ -150,10 +166,9 @@ export function CourierSoaReconcilePage() {
 
         {result && (
           <div className="space-y-4">
-            <AppSuccessNotice>
-              Detected <strong>{result.courier_label}</strong> · sheet <strong>{result.sheet}</strong> ·{" "}
-              {result.date_from} → {result.date_to}
-            </AppSuccessNotice>
+            <AppSuccessNotice
+              message={`Detected ${result.courier_label} · ${result.summary.file_count ?? downloadFiles.length} file(s) · ${result.date_from} → ${result.date_to}`}
+            />
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <StatCard label="Matched" value={result.summary.matched} tone="good" />
@@ -163,6 +178,28 @@ export function CourierSoaReconcilePage() {
               <StatCard label="Our shipped in range" value={result.summary.our_shipped} />
               <StatCard label="SOA rows (w/ TN)" value={result.summary.soa_rows} tone="muted" />
             </div>
+
+            {downloadFiles.length > 1 && (
+              <div className="rounded-xl border border-border overflow-hidden">
+                <p className="text-xs font-semibold px-3 py-2 bg-muted/40 border-b border-border">
+                  Uploaded files ({downloadFiles.length})
+                </p>
+                <ul className="divide-y divide-border text-xs">
+                  {downloadFiles.map(f => (
+                    <li key={f.download_token} className="px-3 py-2 flex flex-wrap items-center gap-2 justify-between">
+                      <span>
+                        <span className="font-medium text-foreground">{f.original_name}</span>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · {f.courier_label}
+                          {f.sheet ? ` · ${f.sheet}` : ""} · {f.soa_rows.toLocaleString()} TN rows
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {result.missing_from_soa.length > 0 && (
               <div className="rounded-xl border border-border overflow-hidden">
@@ -203,13 +240,18 @@ export function CourierSoaReconcilePage() {
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="text-left text-muted-foreground border-b border-border">
+                        <th className="px-3 py-2">File</th>
                         <th className="px-3 py-2">Sheet row</th>
                         <th className="px-3 py-2">Tracking</th>
                       </tr>
                     </thead>
                     <tbody>
                       {result.extra_in_soa.map(row => (
-                        <tr key={`${row.row}-${row.tracking_number}`} className="border-b border-border/60 last:border-0">
+                        <tr
+                          key={`${row.source_file ?? ""}-${row.row}-${row.tracking_number}`}
+                          className="border-b border-border/60 last:border-0"
+                        >
+                          <td className="px-3 py-2">{row.source_file || "—"}</td>
                           <td className="px-3 py-2 tabular-nums">{row.row}</td>
                           <td className="px-3 py-2 font-mono">{row.tracking_number}</td>
                         </tr>
@@ -221,17 +263,23 @@ export function CourierSoaReconcilePage() {
             )}
 
             <FulfillmentSuccessPanel>
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="text-sm text-green-800 flex-1 min-w-[12rem]">
-                  Download the same SOA with tracking cells highlighted green (matched) or red (not in our shipped set).
+              <div className="space-y-3">
+                <p className="text-sm text-green-800">
+                  Download highlighted copies — tracking / waybill cells are green when matched and red when not in our
+                  shipped set.
                 </p>
-                <FulfillmentPressable
-                  className="inline-flex items-center gap-2 px-4 py-2 font-semibold text-primary-foreground bg-primary"
-                  onClick={() => triggerCourierSoaDownload(result.download_token)}
-                >
-                  <Download size={16} />
-                  Download Excel
-                </FulfillmentPressable>
+                <div className="flex flex-wrap gap-2">
+                  {downloadFiles.map(f => (
+                    <FulfillmentPressable
+                      key={f.download_token}
+                      className="inline-flex items-center gap-2 px-4 py-2 font-semibold text-primary-foreground bg-primary"
+                      onClick={() => triggerCourierSoaDownload(f.download_token)}
+                    >
+                      <Download size={16} />
+                      {downloadFiles.length === 1 ? "Download Excel" : f.original_name}
+                    </FulfillmentPressable>
+                  ))}
+                </div>
               </div>
             </FulfillmentSuccessPanel>
           </div>
