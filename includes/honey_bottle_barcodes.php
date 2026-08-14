@@ -1435,7 +1435,7 @@ function honey_bottle_ensure_packaging_shell(PDO $pdo, int $userId, int $product
         throw new RuntimeException('Production row not found.');
     }
     $bottlingDate = date('Y-m-d');
-    $batchNo = honey_bottle_unique_batch_no($pdo, (string) $pr['supplier_code'], $bottlingDate);
+    $batchNo = honey_bottle_unique_batch_no($pdo, honey_batch_no((string) $pr['supplier_code'], $bottlingDate));
     $ins = $pdo->prepare(
         'INSERT INTO honey_packaging_rows (
             production_row_id, supplier_code, batch_no, bottling_date, variant,
@@ -1483,7 +1483,9 @@ function honey_bottle_create_custom_packaging(
     }
     $bottlingDate = date('Y-m-d', $ts);
     $supplierCode = honey_supplier_code($supplierName, $bottlingDate);
-    $batchNo = honey_bottle_unique_batch_no($pdo, $supplierCode, $bottlingDate);
+    // Custom batch code is just the supplier code (initials + MMDDYY), e.g. JR063026.
+    // Production lots keep the two-part supplier-bottling form via honey_batch_no().
+    $batchNo = honey_bottle_unique_batch_no($pdo, $supplierCode);
 
     $ins = $pdo->prepare(
         'INSERT INTO honey_packaging_rows (
@@ -1507,10 +1509,9 @@ function honey_bottle_create_custom_packaging(
     return $pack;
 }
 
-/** Unique batch_no — appends -2, -3… when the same supplier bottles twice on one day. */
-function honey_bottle_unique_batch_no(PDO $pdo, string $supplierCode, string $bottlingDate): string
+/** Unique batch_no — appends -2, -3… when the same base code already exists. */
+function honey_bottle_unique_batch_no(PDO $pdo, string $base): string
 {
-    $base = honey_batch_no($supplierCode, $bottlingDate);
     $candidate = $base;
     $n = 2;
     $st = $pdo->prepare('SELECT 1 FROM honey_packaging_rows WHERE batch_no = ? LIMIT 1');
