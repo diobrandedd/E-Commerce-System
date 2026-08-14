@@ -8,9 +8,14 @@
   RewriteRule . /rts/app/dist/index.html [L]
 </IfModule>
 
+# Streaming WebAssembly instantiation refuses any other content type.
+<IfModule mod_mime.c>
+  AddType application/wasm .wasm
+</IfModule>
+
 # Hashed build assets — long cache (Vite content-hashes in filenames).
 <IfModule mod_headers.c>
-  <FilesMatch "\.(js|css|woff2?|png|jpe?g|webp|svg|ico)$">
+  <FilesMatch "\.(js|css|wasm|woff2?|png|jpe?g|webp|svg|ico)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
   <FilesMatch "^index\.html$">

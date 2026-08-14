@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-14 — Bottle camera scanning moved off html5-qrcode to zxing-wasm
+**Change:** New `BarcodeCameraScannerModal` + `lib/barcodeDecoder.ts` drive `getUserMedia` directly and decode with the native `BarcodeDetector` when present, else ZXing compiled to WebAssembly (`zxing-wasm`, `tryHarder`). html5-qrcode reads `formatsToSupport`/`experimentalFeatures` from its **constructor**, not the `start()` config, so those options were silently ignored; worse, its native-detector path is unavailable on iOS Safari, leaving the weak JS ZXing port that never decoded Code 128 stickers. Used by pack scan, stock-in, and honey POS; tracking/QR surfaces keep `TrackingQrScannerModal`. `.htaccess` serves `.wasm` as `application/wasm` so streaming instantiation works. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — Scanner: never letterbox the video; resolution goes in videoConstraints
+**Change:** Scanner `<video>` must stay `object-cover` — html5-qrcode maps the decode region onto the element box, so `object-contain` letterboxing offsets the scan area off the real frame. Resolution (1920×1080 ideal) must be passed as the config's `videoConstraints`; html5-qrcode's first `start()` arg rejects objects with more than one key, which caused a camera retry loop. Start now falls back to library defaults if constraints are refused. Barcode box is ~4:1 (one label) with a "move closer" hint. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
 ### 2026-08-14 — Camera could not read 1D bottle barcodes (QR-shaped scan config)
 **Change:** `TrackingQrScannerModal` takes `scanMode="barcode"`; `buildScanConfig` uses a wide qrbox, Code 128 format list, native `BarcodeDetector` when available, and continuous autofocus. The old square 240×240 qrbox cropped the ends off linear barcodes so they never decoded. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
 

@@ -11,6 +11,7 @@ export type Html5QrcodeScanConfig = {
   disableFlip?: boolean;
   formatsToSupport?: number[];
   experimentalFeatures?: { useBarCodeDetectorIfSupported?: boolean };
+  videoConstraints?: MediaTrackConstraints;
 };
 
 export type Html5QrcodeInstance = {
@@ -74,10 +75,12 @@ export function buildScanConfig(mode: "qr" | "barcode"): Html5QrcodeScanConfig {
       fps: 15,
       experimentalFeatures,
       formatsToSupport: formatIds(["CODE_128", "CODE_39", "CODE_93", "ITF", "EAN_13", "UPC_A", "QR_CODE"]),
+      // Shaped like one printed label (~4:1). A taller box invites users to
+      // frame several stickers at once, which starves each symbol of pixels.
       qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-        const width = Math.max(120, Math.floor(Math.min(viewfinderWidth * 0.94, viewfinderWidth - 2)));
-        const tall = Math.max(96, Math.floor(width * 0.45));
-        const height = Math.max(72, Math.floor(Math.min(tall, viewfinderHeight * 0.75, viewfinderHeight - 2)));
+        const width = Math.max(120, Math.floor(Math.min(viewfinderWidth * 0.92, viewfinderWidth - 2)));
+        const target = Math.max(64, Math.round(width / 4));
+        const height = Math.max(56, Math.floor(Math.min(target, viewfinderHeight * 0.6, viewfinderHeight - 2)));
         return { width, height };
       },
     };
@@ -193,6 +196,25 @@ export async function requestRearCameraAccess(): Promise<void> {
 export const PREFERRED_REAR_CAMERA: MediaTrackConstraints = {
   facingMode: "environment",
 };
+
+/**
+ * Request a high-resolution stream. Default capture is often 640x480, which
+ * leaves a 0.4mm bar barely a pixel wide once the label is an arm's length
+ * away — not enough for the decoder to resolve narrow/wide bars.
+ *
+ * Must be passed as the config's `videoConstraints`, never as html5-qrcode's
+ * first `start()` argument: that argument rejects objects with more than one
+ * key, so a multi-key constraint there throws before the camera opens.
+ */
+export function cameraVideoConstraints(deviceId?: string): MediaTrackConstraints {
+  const base: MediaTrackConstraints = {
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+  };
+  return deviceId
+    ? { ...base, deviceId: { exact: deviceId } }
+    : { ...base, ...PREFERRED_REAR_CAMERA };
+}
 
 /** Stop any live video tracks under a scanner reader element (safe if library already stopped). */
 export function releaseScannerElement(elementId: string): void {

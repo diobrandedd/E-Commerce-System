@@ -9,6 +9,7 @@ import { cn } from "@/app/components/ui/utils";
 import {
   applyContinuousFocus,
   buildScanConfig,
+  cameraVideoConstraints,
   forceReleaseAllScannerResources,
   loadHtml5Qrcode,
   pickPreferredCameraIndex,
@@ -28,6 +29,13 @@ export type ScannerDecodeFeedback = {
 };
 
 const STOP_TIMEOUT_MS = 500;
+
+/** html5-qrcode rejects with plain strings, which `instanceof Error` misses. */
+function describeScannerError(e: unknown): string {
+  if (e instanceof Error && e.message) return e.message;
+  if (typeof e === "string" && e.trim()) return e.trim();
+  return "Could not start camera.";
+}
 const SAME_CODE_COOLDOWN_MS = 2500;
 
 export function TrackingQrScannerModal({
@@ -163,6 +171,31 @@ export function TrackingQrScannerModal({
     }
   }, []);
 
+  /**
+   * Start with our preferred resolution, then retry on library defaults if the
+   * device rejects the constraints — otherwise a constraint the camera cannot
+   * satisfy leaves the user pressing "Retry camera" forever.
+   */
+  const startWithConstraints = useCallback(
+    async (
+      instance: Html5QrcodeInstance,
+      cameraArg: string | MediaTrackConstraints,
+      deviceId?: string,
+    ) => {
+      try {
+        await instance.start(
+          cameraArg,
+          { ...scanConfig, videoConstraints: cameraVideoConstraints(deviceId) },
+          handleDecoded,
+          () => {},
+        );
+      } catch {
+        await instance.start(cameraArg, scanConfig, handleDecoded, () => {});
+      }
+    },
+    [handleDecoded, scanConfig],
+  );
+
   const readActiveFacingMode = (): string | undefined => {
     const video = document.getElementById(readerId)?.querySelector("video");
     const stream = video?.srcObject;
@@ -195,12 +228,7 @@ export function TrackingQrScannerModal({
         if (!scannerRef.current) {
           scannerRef.current = new Html5Qrcode(readerId);
         }
-        await scannerRef.current.start(
-          list[safeIndex].id,
-          scanConfig,
-          handleDecoded,
-          () => {},
-        );
+        await startWithConstraints(scannerRef.current, list[safeIndex].id, list[safeIndex].id);
         if (!aliveRef.current) {
           await stopScanner();
           return;
@@ -210,11 +238,11 @@ export function TrackingQrScannerModal({
         safeSetPhase("scanning");
       } catch (e) {
         if (!aliveRef.current) return;
-        safeSetError(e instanceof Error ? e.message : "Could not start camera.");
+        safeSetError(describeScannerError(e));
         safeSetPhase("error");
       }
     },
-    [cameras, handleDecoded, readerId, refreshTorchSupport, safeSetError, safeSetPhase, scanConfig, stopScanner],
+    [cameras, readerId, refreshTorchSupport, safeSetError, safeSetPhase, startWithConstraints, stopScanner],
   );
 
   const phaseRef = useRef<ScanPhase>("idle");
@@ -245,9 +273,9 @@ export function TrackingQrScannerModal({
       if (rear) {
         const rearIndex = list.findIndex(c => c.id === rear.id);
         cameraIndexRef.current = rearIndex >= 0 ? rearIndex : pickPreferredCameraIndex(list);
-        await scannerRef.current.start(rear.id, scanConfig, handleDecoded, () => {});
+        await startWithConstraints(scannerRef.current, rear.id, rear.id);
       } else {
-        await scannerRef.current.start(PREFERRED_REAR_CAMERA, scanConfig, handleDecoded, () => {});
+        await startWithConstraints(scannerRef.current, PREFERRED_REAR_CAMERA);
         cameraIndexRef.current = 0;
       }
       if (!aliveRef.current) {
@@ -268,10 +296,10 @@ export function TrackingQrScannerModal({
       safeSetPhase("scanning");
     } catch (e) {
       if (!aliveRef.current) return;
-      safeSetError(e instanceof Error ? e.message : "Could not start camera.");
+      safeSetError(describeScannerError(e));
       safeSetPhase("error");
     }
-  }, [handleDecoded, readerId, refreshTorchSupport, safeSetError, safeSetPhase, scanConfig, startCameraAt, stopScanner]);
+  }, [readerId, refreshTorchSupport, safeSetError, safeSetPhase, startCameraAt, startWithConstraints, stopScanner]);
 
   const handleClose = useCallback(() => {
     teardown();
@@ -390,10 +418,10 @@ export function TrackingQrScannerModal({
           <div
             id={readerId}
             className={cn(
-              "w-full [&_video]:!w-full [&_video]:!max-h-[320px]",
-              // A cropped preview hides the ends of a wide 1D barcode, so users
-              // aim at a symbol the decoder is only seeing part of.
-              scanMode === "barcode" ? "[&_video]:object-contain" : "[&_video]:object-cover",
+              // Must fill its box: html5-qrcode maps the decode region onto the
+              // video element's dimensions, so letterboxing (object-contain)
+              // silently offsets the scan area from the real camera frame.
+              "w-full [&_video]:!w-full [&_video]:!max-h-[320px] [&_video]:object-cover",
               phase !== "scanning" && phase !== "starting" && "hidden",
             )}
           />
@@ -412,6 +440,10 @@ export function TrackingQrScannerModal({
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/65 px-3 py-2 text-xs font-medium text-white">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
               Checking bottle…
+            </div>
+          ) : scanMode === "barcode" && phase === "scanning" ? (
+            <div className="absolute inset-x-0 bottom-0 bg-black/65 px-3 py-2 text-center text-xs font-medium text-white">
+              Move closer — fill the box with one barcode
             </div>
           ) : null}
         </div>

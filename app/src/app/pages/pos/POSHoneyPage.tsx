@@ -3,10 +3,8 @@ import { useNavigate } from "react-router";
 import { AnimatePresence } from "motion/react";
 import { AlertCircle, Camera, Loader2, Minus, Plus, Trash2, X } from "lucide-react";
 import { POSHeader } from "@/app/components/pos/POSHeader";
-import {
-  TrackingQrScannerModal,
-  type ScannerDecodeFeedback,
-} from "@/app/components/scan/TrackingQrScannerModal";
+import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
+import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
 import { POSGuideModal } from "@/app/components/pos/POSGuideModal";
 import { POSReceiptView } from "@/app/components/pos/POSReceiptView";
 import { runPosProductTour } from "@/app/components/tour/guides/posTour";
@@ -795,12 +793,10 @@ export function POSHoneyPage() {
           />
 
           {cameraOpen ? (
-            <TrackingQrScannerModal
+            <BarcodeCameraScannerModal
               title="Scan bottle barcode"
               titleId={cameraTitleId}
-              showManualEntry={false}
               continuous
-              scanMode="barcode"
               scanPrompt="Point at each bottle barcode to add it to the cart."
               onClose={() => setCameraOpen(false)}
               onDecoded={decoded => addScannedBottle(decoded)}

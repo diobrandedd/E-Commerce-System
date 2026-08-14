@@ -2,10 +2,8 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { BookOpen, Camera, CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
-import {
-  TrackingQrScannerModal,
-  type ScannerDecodeFeedback,
-} from "@/app/components/scan/TrackingQrScannerModal";
+import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
+import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
 import { Button } from "@/app/components/ui/button";
 import {
   AppErrorBanner,
@@ -215,12 +213,10 @@ export function HoneyPackScanPage() {
         </AppModalBody>
       </AppModal>
       {cameraOpen ? (
-        <TrackingQrScannerModal
+        <BarcodeCameraScannerModal
           title="Scan bottle barcode"
           titleId={cameraTitleId}
-          showManualEntry={false}
           continuous
-          scanMode="barcode"
           scanPrompt="Point at each bottle barcode. Keep scanning until the batch is complete."
           onClose={() => setCameraOpen(false)}
           onDecoded={decoded => onScan(decoded)}

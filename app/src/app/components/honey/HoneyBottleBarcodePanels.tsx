@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Camera, Loader2, Printer } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
-import {
-  TrackingQrScannerModal,
-  type ScannerDecodeFeedback,
-} from "@/app/components/scan/TrackingQrScannerModal";
+import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
+import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
 import {
   AppErrorBanner,
   AppSectionEnter,
@@ -251,12 +249,10 @@ export function HoneyBottleScanInPanel() {
         {progress && <p className="text-lg font-bold">{progress}</p>}
       </div>
       {cameraOpen ? (
-        <TrackingQrScannerModal
+        <BarcodeCameraScannerModal
           title="Scan bottle barcode"
           titleId={cameraTitleId}
-          showManualEntry={false}
           continuous
-          scanMode="barcode"
           scanPrompt="Point at each bottle barcode. Keep scanning until stock-in is complete."
           onClose={() => setCameraOpen(false)}
           onDecoded={decoded => onScan(decoded)}
