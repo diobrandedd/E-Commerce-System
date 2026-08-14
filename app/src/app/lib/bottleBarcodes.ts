@@ -123,7 +123,7 @@ export const bottleBarcodesApi = {
       "ensure_packaging_shell",
       { production_row_id: productionRowId },
     ),
-  createCustomPackaging: (body: { supplier_name: string; variant: string; bottling_date: string }) =>
+  createCustomPackaging: (body: { supplier_name?: string; code?: string; variant: string; bottling_date: string }) =>
     apiPost<{ packaging: HoneyPackagingOption & { created: boolean } }>(
       "bottle_barcodes.php",
       "create_custom_packaging",

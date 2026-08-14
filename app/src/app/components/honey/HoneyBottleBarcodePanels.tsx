@@ -35,6 +35,7 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
   const [qty, setQty] = useState("50");
   const [packId, setPackId] = useState<number | "">("");
   const [packMode, setPackMode] = useState<"pick" | "custom">("pick");
+  const [customCode, setCustomCode] = useState("");
   const [customSupplier, setCustomSupplier] = useState("");
   const [customBottlingDate, setCustomBottlingDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
@@ -73,7 +74,8 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
       let packagingRowId: number | null = packMode === "pick" && packId !== "" ? packId : null;
       if (packMode === "custom") {
         const created = await bottleBarcodesApi.createCustomPackaging({
-          supplier_name: customSupplier.trim(),
+          code: customCode.trim() || undefined,
+          supplier_name: customSupplier.trim() || undefined,
           variant,
           bottling_date: customBottlingDate,
         });
@@ -81,6 +83,7 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
         setPacks(prev => [created.packaging, ...prev.filter(p => p.id !== created.packaging.id)]);
         setPackId(created.packaging.id);
         setPackMode("pick");
+        setCustomCode("");
         setCustomSupplier("");
       }
       await bottleBarcodesApi.requestCreate({
@@ -159,16 +162,26 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
         {packMode === "custom" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border border-dashed border-border bg-secondary/20 p-3">
             <label className="text-xs text-muted-foreground sm:col-span-2">
+              Batch code (type it directly)
+              <input
+                className="mt-1 w-full border rounded-lg px-2 py-2 font-mono text-sm uppercase"
+                placeholder="e.g. JR073026"
+                value={customCode}
+                onChange={e => setCustomCode(e.target.value.toUpperCase())}
+              />
+              <span className="mt-1 block text-[11px] text-muted-foreground">
+                Ends in MMDDYY? That becomes the bottling date (JR073026 → Jul 30 &rsquo;26). Or leave blank and fill supplier + date below.
+              </span>
+            </label>
+            <label className="text-xs text-muted-foreground">
               Supplier name
               <input
                 className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
                 placeholder="e.g. Maria Santos Apiary"
                 value={customSupplier}
                 onChange={e => setCustomSupplier(e.target.value)}
+                disabled={customCode.trim() !== ""}
               />
-              <span className="mt-1 block text-[11px] text-muted-foreground">
-                Creates a new packaging batch from this name + bottling date (no old supplier list needed).
-              </span>
             </label>
             <label className="text-xs text-muted-foreground">
               Bottling date
@@ -182,7 +195,7 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
           </div>
         ) : null}
         <textarea className="w-full border rounded-lg px-2 py-2 text-sm" rows={2} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
-        <Button type="button" onClick={() => void submit()} disabled={saving || (packMode === "custom" && !customSupplier.trim())}>
+        <Button type="button" onClick={() => void submit()} disabled={saving || (packMode === "custom" && !customCode.trim() && !customSupplier.trim())}>
           {saving ? <Loader2 className="animate-spin" size={16} /> : null}
           Submit request
         </Button>
@@ -329,6 +342,7 @@ export function HoneyBottleAdminPanel() {
   const [packPick, setPackPick] = useState<Record<number, number>>({});
   const [lotPick, setLotPick] = useState<Record<number, number>>({});
   const [customOpenFor, setCustomOpenFor] = useState<number | null>(null);
+  const [customCode, setCustomCode] = useState("");
   const [customSupplier, setCustomSupplier] = useState("");
   const [customBottlingDate, setCustomBottlingDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [error, setError] = useState<string | null>(null);
@@ -413,7 +427,8 @@ export function HoneyBottleAdminPanel() {
     setError(null);
     try {
       const created = await bottleBarcodesApi.createCustomPackaging({
-        supplier_name: customSupplier.trim(),
+        code: customCode.trim() || undefined,
+        supplier_name: customSupplier.trim() || undefined,
         variant: req.variant,
         bottling_date: customBottlingDate,
       });
@@ -425,6 +440,7 @@ export function HoneyBottleAdminPanel() {
         return next;
       });
       setCustomOpenFor(null);
+      setCustomCode("");
       setCustomSupplier("");
       setOk(`Created ${created.packaging.label}`);
       triggerLiveRefresh();
@@ -478,6 +494,7 @@ export function HoneyBottleAdminPanel() {
                       const v = e.target.value;
                       if (v === "__custom__") {
                         setCustomOpenFor(r.id);
+                        setCustomCode("");
                         setCustomSupplier("");
                         setCustomBottlingDate(new Date().toISOString().slice(0, 10));
                         return;
@@ -500,22 +517,31 @@ export function HoneyBottleAdminPanel() {
                   {customOpenFor === r.id ? (
                     <div className="max-w-xs space-y-1 rounded-lg border border-dashed border-border bg-secondary/20 p-2">
                       <input
+                        className="w-full border rounded-lg px-2 py-1 font-mono text-xs uppercase"
+                        placeholder="Batch code, e.g. JR073026"
+                        value={customCode}
+                        onChange={e => setCustomCode(e.target.value.toUpperCase())}
+                      />
+                      <p className="text-[11px] text-muted-foreground">…or build it from supplier + date:</p>
+                      <input
                         className="w-full border rounded-lg px-2 py-1 text-xs"
                         placeholder="Supplier name"
                         value={customSupplier}
                         onChange={e => setCustomSupplier(e.target.value)}
+                        disabled={customCode.trim() !== ""}
                       />
                       <input
                         className="w-full border rounded-lg px-2 py-1 text-xs"
                         type="date"
                         value={customBottlingDate}
                         onChange={e => setCustomBottlingDate(e.target.value)}
+                        disabled={customCode.trim() !== ""}
                       />
                       <div className="flex gap-1">
                         <Button
                           type="button"
                           size="sm"
-                          disabled={busy || !customSupplier.trim()}
+                          disabled={busy || (!customCode.trim() && !customSupplier.trim())}
                           onClick={() => void createCustomForRequest(r)}
                         >
                           Create batch

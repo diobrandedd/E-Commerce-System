@@ -1470,22 +1470,48 @@ function honey_bottle_create_custom_packaging(
     int $userId,
     string $supplierName,
     string $variant,
-    string $bottlingDate
+    string $bottlingDate,
+    ?string $manualCode = null
 ): array {
-    $supplierName = trim(preg_replace('/\s+/', ' ', $supplierName) ?? '');
-    if ($supplierName === '' || mb_strlen($supplierName) > 120) {
-        throw new RuntimeException('Supplier name is required (max 120 characters).');
-    }
     $variant = honey_normalize_variant($variant);
     $ts = strtotime($bottlingDate);
     if ($ts === false) {
         throw new RuntimeException('Invalid bottling date.');
     }
     $bottlingDate = date('Y-m-d', $ts);
-    $supplierCode = honey_supplier_code($supplierName, $bottlingDate);
-    // Custom batch code is just the supplier code (initials + MMDDYY), e.g. JR063026.
-    // Production lots keep the two-part supplier-bottling form via honey_batch_no().
-    $batchNo = honey_bottle_unique_batch_no($pdo, $supplierCode);
+
+    $manualCode = $manualCode !== null ? strtoupper(trim($manualCode)) : '';
+    if ($manualCode !== '') {
+        // User typed the batch code directly, e.g. JR073026.
+        if (!preg_match('/^[A-Z0-9][A-Z0-9-]{2,31}$/', $manualCode)) {
+            throw new RuntimeException('Batch code must be 3–32 letters, digits or dashes (e.g. JR073026).');
+        }
+        $st = $pdo->prepare('SELECT 1 FROM honey_packaging_rows WHERE batch_no = ? LIMIT 1');
+        $st->execute([$manualCode]);
+        if ($st->fetchColumn() !== false) {
+            throw new RuntimeException("Batch {$manualCode} already exists — pick it from the dropdown instead.");
+        }
+        // Trailing MMDDYY in the code wins over the date field (JR073026 → 2026-07-30).
+        if (preg_match('/(\d{6})$/', $manualCode, $m)) {
+            $mm = (int) substr($m[1], 0, 2);
+            $dd = (int) substr($m[1], 2, 2);
+            $yy = (int) substr($m[1], 4, 2);
+            if (checkdate($mm, $dd, 2000 + $yy)) {
+                $bottlingDate = sprintf('%04d-%02d-%02d', 2000 + $yy, $mm, $dd);
+            }
+        }
+        $supplierCode = $manualCode;
+        $batchNo = $manualCode;
+    } else {
+        $supplierName = trim(preg_replace('/\s+/', ' ', $supplierName) ?? '');
+        if ($supplierName === '' || mb_strlen($supplierName) > 120) {
+            throw new RuntimeException('Supplier name is required (max 120 characters).');
+        }
+        $supplierCode = honey_supplier_code($supplierName, $bottlingDate);
+        // Custom batch code is just the supplier code (initials + MMDDYY), e.g. JR063026.
+        // Production lots keep the two-part supplier-bottling form via honey_batch_no().
+        $batchNo = honey_bottle_unique_batch_no($pdo, $supplierCode);
+    }
 
     $ins = $pdo->prepare(
         'INSERT INTO honey_packaging_rows (
