@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-14T10:21:25+02:00
+generated: 2026-08-14T10:58:04+02:00
 type: memory-bank
 ---
 
@@ -85,6 +85,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `stock_summary` | `api_bottle_stock_summary()` | `honey_bottle_stock_summary()`, `ims_pdo()` |
 | `packaging_options` | `api_bottle_packaging_options()` | `honey_bottle_packaging_options()`, `ims_pdo()` |
 | `ensure_packaging_shell` | `api_bottle_ensure_packaging_shell()` | `honey_fetch_packaging_by_production()`, `ims_pdo()`, `honey_bottle_ensure_packaging_shell()`, `honey_bottle_serialize_packaging_option()` |
+| `create_custom_packaging` | `api_bottle_create_custom_packaging()` | `honey_bottle_can_request()`, `honey_bottle_user_can_generate()`, `honey_bottle_create_custom_packaging()`, `ims_pdo()`, `honey_bottle_serialize_packaging_option()` |
 
 ### `bulk_orders.php`
 

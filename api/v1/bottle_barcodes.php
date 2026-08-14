@@ -77,6 +77,7 @@ api_dispatch([
     'stock_summary' => 'api_bottle_stock_summary',
     'packaging_options' => 'api_bottle_packaging_options',
     'ensure_packaging_shell' => 'api_bottle_ensure_packaging_shell',
+    'create_custom_packaging' => 'api_bottle_create_custom_packaging',
 ]);
 
 function api_bottle_meta(): void
@@ -110,6 +111,29 @@ function api_bottle_ensure_packaging_shell(): void
     $pk = honey_bottle_ensure_packaging_shell(ims_pdo(), (int) $user['id'], $productionRowId);
     api_ok([
         'packaging' => honey_bottle_serialize_packaging_option($pk, $before === null),
+    ]);
+}
+
+function api_bottle_create_custom_packaging(): void
+{
+    api_method_allowed(['POST']);
+    api_bottle_require_csrf();
+    // Honey staff (request) and CSR/exec (generate) both need this when old lots are gone.
+    $user = api_bottle_require_user();
+    $role = (string) $user['role'];
+    if (!honey_bottle_can_request($role) && !honey_bottle_user_can_generate($user)) {
+        api_fail('Forbidden.', 403);
+    }
+    $in = api_input();
+    $pk = honey_bottle_create_custom_packaging(
+        ims_pdo(),
+        (int) $user['id'],
+        (string) ($in['supplier_name'] ?? ''),
+        (string) ($in['variant'] ?? ''),
+        (string) ($in['bottling_date'] ?? date('Y-m-d'))
+    );
+    api_ok([
+        'packaging' => honey_bottle_serialize_packaging_option($pk, true),
     ]);
 }
 

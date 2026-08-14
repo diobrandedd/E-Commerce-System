@@ -34,6 +34,9 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
   const [size, setSize] = useState("liter");
   const [qty, setQty] = useState("50");
   const [packId, setPackId] = useState<number | "">("");
+  const [packMode, setPackMode] = useState<"pick" | "custom">("pick");
+  const [customSupplier, setCustomSupplier] = useState("");
+  const [customBottlingDate, setCustomBottlingDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [packs, setPacks] = useState<HoneyPackagingOption[]>([]);
   const [rows, setRows] = useState<HoneyBottleRequest[]>([]);
@@ -67,14 +70,31 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
     setOk(null);
     setSaving(true);
     try {
+      let packagingRowId: number | null = packMode === "pick" && packId !== "" ? packId : null;
+      if (packMode === "custom") {
+        const created = await bottleBarcodesApi.createCustomPackaging({
+          supplier_name: customSupplier.trim(),
+          variant,
+          bottling_date: customBottlingDate,
+        });
+        packagingRowId = created.packaging.id;
+        setPacks(prev => [created.packaging, ...prev.filter(p => p.id !== created.packaging.id)]);
+        setPackId(created.packaging.id);
+        setPackMode("pick");
+        setCustomSupplier("");
+      }
       await bottleBarcodesApi.requestCreate({
         variant,
         size,
         quantity: Number(qty),
-        packaging_row_id: packId === "" ? null : packId,
+        packaging_row_id: packagingRowId,
         notes: notes.trim() || undefined,
       });
-      setOk("Request submitted.");
+      setOk(
+        packagingRowId
+          ? "Request submitted with packaging batch."
+          : "Request submitted.",
+      );
       setNotes("");
       triggerLiveRefresh();
       await refresh();
@@ -114,16 +134,55 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
           </label>
           <label className="text-xs text-muted-foreground">
             Packaging batch (optional)
-            <select className="mt-1 w-full border rounded-lg px-2 py-2 text-sm" value={packId} onChange={e => setPackId(e.target.value === "" ? "" : Number(e.target.value))}>
+            <select
+              className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+              value={packMode === "custom" ? "__custom__" : packId === "" ? "" : String(packId)}
+              onChange={e => {
+                const v = e.target.value;
+                if (v === "__custom__") {
+                  setPackMode("custom");
+                  setPackId("");
+                  return;
+                }
+                setPackMode("pick");
+                setPackId(v === "" ? "" : Number(v));
+              }}
+            >
               <option value="">Pick later</option>
+              <option value="__custom__">+ Create custom batch / supplier…</option>
               {packs.filter(p => p.variant === variant).map(p => (
                 <option key={p.id} value={p.id}>{p.label}</option>
               ))}
             </select>
           </label>
         </div>
+        {packMode === "custom" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border border-dashed border-border bg-secondary/20 p-3">
+            <label className="text-xs text-muted-foreground sm:col-span-2">
+              Supplier name
+              <input
+                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                placeholder="e.g. Maria Santos Apiary"
+                value={customSupplier}
+                onChange={e => setCustomSupplier(e.target.value)}
+              />
+              <span className="mt-1 block text-[11px] text-muted-foreground">
+                Creates a new packaging batch from this name + bottling date (no old supplier list needed).
+              </span>
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Bottling date
+              <input
+                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                type="date"
+                value={customBottlingDate}
+                onChange={e => setCustomBottlingDate(e.target.value)}
+              />
+            </label>
+          </div>
+        ) : null}
         <textarea className="w-full border rounded-lg px-2 py-2 text-sm" rows={2} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
-        <Button type="button" onClick={() => void submit()} disabled={saving}>
+        <Button type="button" onClick={() => void submit()} disabled={saving || (packMode === "custom" && !customSupplier.trim())}>
           {saving ? <Loader2 className="animate-spin" size={16} /> : null}
           Submit request
         </Button>
@@ -269,6 +328,9 @@ export function HoneyBottleAdminPanel() {
   const [lots, setLots] = useState<ProductionLotOption[]>([]);
   const [packPick, setPackPick] = useState<Record<number, number>>({});
   const [lotPick, setLotPick] = useState<Record<number, number>>({});
+  const [customOpenFor, setCustomOpenFor] = useState<number | null>(null);
+  const [customSupplier, setCustomSupplier] = useState("");
+  const [customBottlingDate, setCustomBottlingDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -346,6 +408,33 @@ export function HoneyBottleAdminPanel() {
     }
   };
 
+  const createCustomForRequest = async (req: HoneyBottleRequest) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const created = await bottleBarcodesApi.createCustomPackaging({
+        supplier_name: customSupplier.trim(),
+        variant: req.variant,
+        bottling_date: customBottlingDate,
+      });
+      setPacks(prev => [created.packaging, ...prev.filter(p => p.id !== created.packaging.id)]);
+      setPackPick(p => ({ ...p, [req.id]: created.packaging.id }));
+      setLotPick(p => {
+        const next = { ...p };
+        delete next[req.id];
+        return next;
+      });
+      setCustomOpenFor(null);
+      setCustomSupplier("");
+      setOk(`Created ${created.packaging.label}`);
+      triggerLiveRefresh();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not create custom batch.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const packOptions = useMemo(() => packs, [packs]);
 
   return (
@@ -362,7 +451,7 @@ export function HoneyBottleAdminPanel() {
         {drift !== null && <span className="text-sm self-center">{drift} drifted rows</span>}
       </div>
       <p className="text-xs text-muted-foreground">
-        Labels print on A4 at 68 per page (4×17) — barcode plus the code text underneath (type it in if a sticker won&rsquo;t scan), dashed cut guides. Print at 100% scale (not &ldquo;fit to page&rdquo;) or the bars get too thin to scan. If no packaging batch exists yet, pick a production lot — a batch shell is created without deducting gallons.
+        Labels print on A4 at 68 per page (4×17) — barcode plus the code text underneath (type it in if a sticker won&rsquo;t scan), dashed cut guides. Print at 100% scale (not &ldquo;fit to page&rdquo;) or the bars get too thin to scan. If no packaging batch exists, pick a production lot or create a custom supplier batch (no gallon deduct).
       </p>
       <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-sm">
@@ -380,9 +469,20 @@ export function HoneyBottleAdminPanel() {
                 <td className="px-3 py-2 space-y-1">
                   <select
                     className="border rounded-lg px-2 py-1 text-xs w-full max-w-xs"
-                    value={packPick[r.id] ?? r.packaging_row_id ?? ""}
+                    value={
+                      customOpenFor === r.id
+                        ? "__custom__"
+                        : String(packPick[r.id] ?? r.packaging_row_id ?? "")
+                    }
                     onChange={e => {
                       const v = e.target.value;
+                      if (v === "__custom__") {
+                        setCustomOpenFor(r.id);
+                        setCustomSupplier("");
+                        setCustomBottlingDate(new Date().toISOString().slice(0, 10));
+                        return;
+                      }
+                      setCustomOpenFor(null);
                       setPackPick(p => {
                         const next = { ...p };
                         if (v === "") delete next[r.id];
@@ -392,11 +492,40 @@ export function HoneyBottleAdminPanel() {
                     }}
                   >
                     <option value="">Select packaging batch</option>
+                    <option value="__custom__">+ Create custom batch / supplier…</option>
                     {packOptions.filter(p => p.variant === r.variant).map(p => (
                       <option key={p.id} value={p.id}>{p.label}</option>
                     ))}
                   </select>
-                  {!(packPick[r.id] ?? r.packaging_row_id) && (
+                  {customOpenFor === r.id ? (
+                    <div className="max-w-xs space-y-1 rounded-lg border border-dashed border-border bg-secondary/20 p-2">
+                      <input
+                        className="w-full border rounded-lg px-2 py-1 text-xs"
+                        placeholder="Supplier name"
+                        value={customSupplier}
+                        onChange={e => setCustomSupplier(e.target.value)}
+                      />
+                      <input
+                        className="w-full border rounded-lg px-2 py-1 text-xs"
+                        type="date"
+                        value={customBottlingDate}
+                        onChange={e => setCustomBottlingDate(e.target.value)}
+                      />
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={busy || !customSupplier.trim()}
+                          onClick={() => void createCustomForRequest(r)}
+                        >
+                          Create batch
+                        </Button>
+                        <Button type="button" size="sm" variant="outline" onClick={() => setCustomOpenFor(null)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : !(packPick[r.id] ?? r.packaging_row_id) ? (
                     <select
                       className="border rounded-lg px-2 py-1 text-xs w-full max-w-xs"
                       value={lotPick[r.id] ?? ""}
@@ -409,7 +538,7 @@ export function HoneyBottleAdminPanel() {
                         </option>
                       ))}
                     </select>
-                  )}
+                  ) : null}
                 </td>
                 <td className="px-3 py-2">
                   <Button type="button" size="sm" disabled={busy} onClick={() => void generate(r)}>

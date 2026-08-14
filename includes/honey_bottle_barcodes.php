@@ -1435,7 +1435,7 @@ function honey_bottle_ensure_packaging_shell(PDO $pdo, int $userId, int $product
         throw new RuntimeException('Production row not found.');
     }
     $bottlingDate = date('Y-m-d');
-    $batchNo = honey_batch_no((string) $pr['supplier_code'], $bottlingDate);
+    $batchNo = honey_bottle_unique_batch_no($pdo, (string) $pr['supplier_code'], $bottlingDate);
     $ins = $pdo->prepare(
         'INSERT INTO honey_packaging_rows (
             production_row_id, supplier_code, batch_no, bottling_date, variant,
@@ -1460,17 +1460,92 @@ function honey_bottle_ensure_packaging_shell(PDO $pdo, int $userId, int $product
 }
 
 /**
+ * Create a packaging batch with a custom supplier (no production lot).
+ * Used when older suppliers/lots are gone but bottles still need stickers.
+ *
+ * @return array<string, mixed>
+ */
+function honey_bottle_create_custom_packaging(
+    PDO $pdo,
+    int $userId,
+    string $supplierName,
+    string $variant,
+    string $bottlingDate
+): array {
+    $supplierName = trim(preg_replace('/\s+/', ' ', $supplierName) ?? '');
+    if ($supplierName === '' || mb_strlen($supplierName) > 120) {
+        throw new RuntimeException('Supplier name is required (max 120 characters).');
+    }
+    $variant = honey_normalize_variant($variant);
+    $ts = strtotime($bottlingDate);
+    if ($ts === false) {
+        throw new RuntimeException('Invalid bottling date.');
+    }
+    $bottlingDate = date('Y-m-d', $ts);
+    $supplierCode = honey_supplier_code($supplierName, $bottlingDate);
+    $batchNo = honey_bottle_unique_batch_no($pdo, $supplierCode, $bottlingDate);
+
+    $ins = $pdo->prepare(
+        'INSERT INTO honey_packaging_rows (
+            production_row_id, supplier_code, batch_no, bottling_date, variant,
+            current_liter, initial_liter, current_250ml, initial_250ml,
+            current_350ml, initial_350ml, current_gallon, initial_gallon, created_by
+         ) VALUES (NULL, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?)'
+    );
+    $ins->execute([
+        $supplierCode,
+        $batchNo,
+        $bottlingDate,
+        $variant,
+        $userId,
+    ]);
+    $pack = honey_fetch_packaging($pdo, (int) $pdo->lastInsertId());
+    if ($pack === null) {
+        throw new RuntimeException('Could not create custom packaging batch.');
+    }
+
+    return $pack;
+}
+
+/** Unique batch_no — appends -2, -3… when the same supplier bottles twice on one day. */
+function honey_bottle_unique_batch_no(PDO $pdo, string $supplierCode, string $bottlingDate): string
+{
+    $base = honey_batch_no($supplierCode, $bottlingDate);
+    $candidate = $base;
+    $n = 2;
+    $st = $pdo->prepare('SELECT 1 FROM honey_packaging_rows WHERE batch_no = ? LIMIT 1');
+    while (true) {
+        $st->execute([$candidate]);
+        if ($st->fetchColumn() === false) {
+            return $candidate;
+        }
+        if ($n > 99) {
+            throw new RuntimeException('Could not allocate a unique batch number.');
+        }
+        $candidate = $base . '-' . $n;
+        $n++;
+    }
+}
+
+/**
  * @return array{id: int, batch_no: string, supplier_code: string, variant: string, bottling_date: string, label: string, created: bool}
  */
 function honey_bottle_serialize_packaging_option(array $pk, bool $created = false): array
 {
+    $custom = !isset($pk['production_row_id']) || $pk['production_row_id'] === null || (int) $pk['production_row_id'] < 1;
+    $label = $pk['batch_no'] . ' · ' . ucfirst((string) $pk['variant']);
+    if ($custom) {
+        $label .= ' · custom';
+    }
+
     return [
         'id' => (int) $pk['id'],
         'batch_no' => (string) $pk['batch_no'],
         'supplier_code' => (string) $pk['supplier_code'],
         'variant' => (string) $pk['variant'],
         'bottling_date' => (string) $pk['bottling_date'],
-        'label' => $pk['batch_no'] . ' · ' . ucfirst((string) $pk['variant']),
+        'label' => $label,
+        'custom' => $custom,
         'created' => $created,
     ];
 }
@@ -1597,7 +1672,7 @@ function honey_bottle_label_sheet_html(PDO $pdo, int $batchId): string
 function honey_bottle_packaging_options(PDO $pdo): array
 {
     $st = $pdo->query(
-        'SELECT id, batch_no, supplier_code, variant, bottling_date,
+        'SELECT id, production_row_id, batch_no, supplier_code, variant, bottling_date,
                 current_liter, current_250ml, current_350ml, current_gallon
          FROM honey_packaging_rows
          ORDER BY id DESC

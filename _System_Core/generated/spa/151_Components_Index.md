@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-08-14T10:21:58+02:00
+generated: 2026-08-14T10:58:41+02:00
 type: spa
 ---
 
@@ -39,6 +39,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/pos/POSReceiptView.tsx`
 - `app/src/app/components/pos/posMotion.tsx`
 - `app/src/app/components/requests/RequestsHubSection.tsx`
+- `app/src/app/components/scan/BarcodeCameraScannerModal.tsx`
 - `app/src/app/components/scan/TrackingQrScannerModal.tsx`
 - `app/src/app/pages/csr/OrderRemarksPage.tsx`
 - `app/src/app/pages/pos/POSCategoryPage.tsx`
@@ -167,6 +168,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/pos/POSGuideModal.tsx`
 - `app/src/app/components/pos/POSStockSourceModal.tsx`
 - `app/src/app/components/requests/InventoryRequestsGuideModal.tsx`
+- `app/src/app/components/scan/BarcodeCameraScannerModal.tsx`
 - `app/src/app/components/scan/TrackingQrScannerModal.tsx`
 - `app/src/app/components/suppliers/SupplierProfileModal.tsx`
 - `app/src/app/components/suppliers/SuppliersGuideModal.tsx`

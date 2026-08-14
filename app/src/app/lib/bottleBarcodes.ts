@@ -80,6 +80,7 @@ export interface HoneyPackagingOption {
   variant: string;
   bottling_date: string;
   label: string;
+  custom?: boolean;
 }
 
 export function bottlePrintSheetUrl(batchId: number): string {
@@ -121,6 +122,12 @@ export const bottleBarcodesApi = {
       "bottle_barcodes.php",
       "ensure_packaging_shell",
       { production_row_id: productionRowId },
+    ),
+  createCustomPackaging: (body: { supplier_name: string; variant: string; bottling_date: string }) =>
+    apiPost<{ packaging: HoneyPackagingOption & { created: boolean } }>(
+      "bottle_barcodes.php",
+      "create_custom_packaging",
+      body,
     ),
   batchList: () => apiGet<{ rows: HoneyBarcodeBatch[] }>("bottle_barcodes.php", "batch_list"),
   markPrinted: (batchId: number) =>

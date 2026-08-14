@@ -834,7 +834,8 @@ function honey_traceability(PDO $pdo, string $query): array
 /** @param array<string, mixed> $pk */
 function honey_build_trace_chain(PDO $pdo, array $pk): array
 {
-    $pr = honey_fetch_production($pdo, (int) $pk['production_row_id']);
+    $prodId = isset($pk['production_row_id']) ? (int) $pk['production_row_id'] : 0;
+    $pr = $prodId > 0 ? honey_fetch_production($pdo, $prodId) : null;
     $wh = $pr ? honey_fetch_warehouse($pdo, (int) $pr['warehouse_row_id']) : null;
     $st = $pdo->prepare('SELECT * FROM honey_sales_log WHERE packaging_row_id = ? ORDER BY created_at DESC');
     $st->execute([(int) $pk['id']]);
