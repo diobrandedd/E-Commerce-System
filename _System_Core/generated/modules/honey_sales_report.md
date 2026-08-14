@@ -1,7 +1,7 @@
 ---
 title: honey_sales_report
 source: includes/honey_sales_report.php
-generated: 2026-07-25T10:56:43+02:00
+generated: 2026-08-14T10:21:41+02:00
 type: module
 function_count: 8
 ---
@@ -21,32 +21,33 @@ function_count: 8
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:247 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
+- `includes/honey_sales_report.php`:255 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
 
 ## honey_sales_log_where_clause {#honey_sales_log_where_clause}
 
-**Callers (1):**
+**Callers (2):**
 
-- `includes/honey_sales_report.php`:256 — `[$logWhere, $logParams] = honey_sales_log_where_clause($range);`
+- `includes/honey_sales_report.php`:267 — `[$logWhere, $logParams] = honey_sales_log_where_clause($range, $channel);`
+- `includes/honey_sales_report.php`:347 — `[$shareWhere, $shareParams] = honey_sales_log_where_clause($range, 'all');`
 
 ## honey_sales_pos_checkout_where_clause {#honey_sales_pos_checkout_where_clause}
 
 **Callers (2):**
 
-- `includes/honey_sales_report.php`:112 — `[$where, $params] = honey_sales_pos_checkout_where_clause($range, $receiptSearch, $saleType);`
-- `includes/honey_sales_report.php`:311 — `[$salesWhere, $salesParams] = honey_sales_pos_checkout_where_clause($range, null, 'all');`
+- `includes/honey_sales_report.php`:119 — `[$where, $params] = honey_sales_pos_checkout_where_clause($range, $receiptSearch, $saleType);`
+- `includes/honey_sales_report.php`:322 — `[$salesWhere, $salesParams] = honey_sales_pos_checkout_where_clause($range, null, 'all');`
 
 ## honey_sales_size_label {#honey_sales_size_label}
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:85 — `'size_label' => honey_sales_size_label($size),`
+- `includes/honey_sales_report.php`:92 — `'size_label' => honey_sales_size_label($size),`
 
 ## honey_sales_serialize_receipt_item {#honey_sales_serialize_receipt_item}
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:164 — `$itemsBySale[$sid][] = honey_sales_serialize_receipt_item($item);`
+- `includes/honey_sales_report.php`:171 — `$itemsBySale[$sid][] = honey_sales_serialize_receipt_item($item);`
 
 ## honey_sales_fetch_checkouts {#honey_sales_fetch_checkouts}
 
@@ -54,16 +55,16 @@ function_count: 8
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:327 — `$checkouts = honey_sales_fetch_checkouts($pdo, $range, $page, $receiptSearch, $saleType);`
+- `includes/honey_sales_report.php`:338 — `$checkouts = honey_sales_fetch_checkouts($pdo, $range, $page, $receiptSearch, $saleType);`
 
 ## honey_sales_variant_breakdown {#honey_sales_variant_breakdown}
 
 **Callers (4):**
 
-- `includes/honey_sales_report.php`:269 — `$all = honey_sales_variant_breakdown($stAll->fetchAll(PDO::FETCH_ASSOC));`
-- `includes/honey_sales_report.php`:282 — `$regular = honey_sales_variant_breakdown($stRegular->fetchAll(PDO::FETCH_ASSOC));`
-- `includes/honey_sales_report.php`:295 — `$discount10 = honey_sales_variant_breakdown($stDiscount10->fetchAll(PDO::FETCH_ASSOC));`
-- `includes/honey_sales_report.php`:308 — `$discount20 = honey_sales_variant_breakdown($stDiscount20->fetchAll(PDO::FETCH_ASSOC));`
+- `includes/honey_sales_report.php`:280 — `$all = honey_sales_variant_breakdown($stAll->fetchAll(PDO::FETCH_ASSOC));`
+- `includes/honey_sales_report.php`:293 — `$regular = honey_sales_variant_breakdown($stRegular->fetchAll(PDO::FETCH_ASSOC));`
+- `includes/honey_sales_report.php`:306 — `$discount10 = honey_sales_variant_breakdown($stDiscount10->fetchAll(PDO::FETCH_ASSOC));`
+- `includes/honey_sales_report.php`:319 — `$discount20 = honey_sales_variant_breakdown($stDiscount20->fetchAll(PDO::FETCH_ASSOC));`
 
 ## honey_sales_sold_snapshot {#honey_sales_sold_snapshot}
 
@@ -71,5 +72,5 @@ function_count: 8
 
 **Callers (1):**
 
-- `api/v1/sales.php`:39 — `$data = honey_sales_sold_snapshot(`
+- `api/v1/sales.php`:40 — `$data = honey_sales_sold_snapshot(`
 

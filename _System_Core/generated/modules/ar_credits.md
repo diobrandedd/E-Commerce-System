@@ -1,7 +1,7 @@
 ---
 title: ar_credits
 source: includes/ar_credits.php
-generated: 2026-07-25T10:56:27+02:00
+generated: 2026-08-14T10:21:25+02:00
 type: module
 function_count: 9
 ---
@@ -50,7 +50,7 @@ function_count: 9
 
 - `includes/ar_credits.php`:203 — `$ids = ar_credits_record_lines($pdo, [`
 - `includes/dept_pos.php`:364 — `$arCreditIds = ar_credits_record_lines($pdo, [`
-- `includes/honey_pos.php`:641 — `$arCreditIds = ar_credits_record_lines($pdo, [`
+- `includes/honey_pos.php`:683 — `$arCreditIds = ar_credits_record_lines($pdo, [`
 
 ## ar_credits_mark_paid {#ar_credits_mark_paid}
 

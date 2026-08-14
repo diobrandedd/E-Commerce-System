@@ -1,7 +1,7 @@
 ---
 title: material_inventory
 source: includes/material_inventory.php
-generated: 2026-07-25T10:56:44+02:00
+generated: 2026-08-14T10:21:42+02:00
 type: module
 function_count: 64
 ---
@@ -135,7 +135,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (4):**
 
 - `includes/fulfillment_packing.php`:712 — `$poolCol = material_inventory_has_pool_columns($pdo) ? ', s.pool_yield_qty, s.pool_yield_unit' : '';`
-- `includes/honey_inventory.php`:473 — `if (!material_inventory_has_pool_columns($pdo)) {`
+- `includes/honey_inventory.php`:461 — `if (!material_inventory_has_pool_columns($pdo)) {`
 - `includes/material_inventory.php`:196 — `$poolCols = material_inventory_has_pool_columns($pdo)`
 - `includes/material_inventory.php`:461 — `if (!material_inventory_has_pool_columns($pdo)) {`
 
@@ -391,10 +391,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `online_parcel_fulfillment_deduct_lines`
 
-**Callers (2):**
+**Callers (1):**
 
 - `includes/material_inventory.php`:1122 — `if (parcel_fulfillment_already_deducted($pdo, $parcelId)) {`
-- `includes/online_order_parcels.php`:1080 — `|| parcel_fulfillment_already_deducted($pdo, $parcelId);`
 
 ## parcel_fulfillment_apply_deduct {#parcel_fulfillment_apply_deduct}
 
@@ -402,7 +401,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/honey_parcel_inventory.php`:90 — `$fulfillmentDeducted = parcel_fulfillment_apply_deduct($pdo, $parcelId, $userId, $itemsRaw);`
+- `includes/honey_parcel_inventory.php`:97 — `$fulfillmentDeducted = parcel_fulfillment_apply_deduct($pdo, $parcelId, $userId, $itemsRaw);`
 
 ## parcel_fulfillment_revert_deduct {#parcel_fulfillment_revert_deduct}
 
@@ -410,7 +409,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/honey_parcel_inventory.php`:160 — `parcel_fulfillment_revert_deduct($pdo, $parcelId);`
+- `includes/honey_parcel_inventory.php`:167 — `parcel_fulfillment_revert_deduct($pdo, $parcelId);`
 
 ## material_pool_recent_entries {#material_pool_recent_entries}
 
@@ -503,7 +502,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/honey.php`:488 — `$count += material_adjustment_pending_count($pdo);`
+- `api/v1/honey.php`:489 — `$count += material_adjustment_pending_count($pdo);`
 - `api/v1/materials.php`:279 — `api_ok(['count' => material_adjustment_pending_count(ims_pdo())]);`
 
 ## material_adjustment_mark_viewed {#material_adjustment_mark_viewed}

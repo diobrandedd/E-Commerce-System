@@ -19,6 +19,7 @@ import {
 import type { OnlineParcel } from "@/app/lib/parcelsApi";
 import { ApiError } from "@/app/lib/api";
 import { compressDeliveryPhoto } from "@/app/lib/compressDeliveryPhoto";
+import { playScanBeep } from "@/app/lib/scanBeep";
 
 type OpsMode = "hold" | "rewaybill";
 type ScanIntent = "hold" | "rewaybill_old" | "rewaybill_new";
@@ -158,6 +159,7 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
     try {
       const res = await deliveriesParcelByTracking(tn);
       if (!res.parcel) {
+        playScanBeep("bad");
         setError("No parcel found for this tracking.");
         setParcel(null);
         return;
@@ -166,14 +168,17 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
       setOldTracking(normalized);
       setParcel(res.parcel);
       if (res.parcel.status !== "on_hold" && res.parcel.status !== "cancelled") {
+        playScanBeep("bad");
         setError(
           `Parcel is "${res.parcel.status}" — mark on hold or scan as courier cancelled first, then re-waybill.`,
         );
         return;
       }
+      playScanBeep("ok");
       setRewaybillStep("scan_new");
       flash("Old label OK — scan the new waybill.");
     } catch (e) {
+      playScanBeep("bad");
       setError(e instanceof ApiError ? e.message : "Lookup failed.");
       setParcel(null);
     } finally {
@@ -185,6 +190,7 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
     const newTn = raw.trim();
     const oldTn = oldTracking.trim();
     if (!newTn || !oldTn) {
+      playScanBeep("bad");
       setError("Scan the old waybill first.");
       return;
     }
@@ -194,9 +200,11 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
       const res = await deliveriesRewaybill(oldTn, newTn);
       setParcel(res.parcel);
       setNewTracking(res.parcel.tracking_number);
+      playScanBeep("ok");
       setRewaybillStep("photo");
       flash("New label linked — take a photo, then ship.");
     } catch (e) {
+      playScanBeep("bad");
       setError(e instanceof ApiError ? e.message : "Re-waybill failed.");
     } finally {
       setBusy(false);
@@ -212,8 +220,10 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
       const res = await deliveriesHoldParcel(tn);
       setParcel(res.parcel);
       setOldTracking(res.parcel.tracking_number);
+      playScanBeep("ok");
       flash(res.message ?? "On hold.");
     } catch (e) {
+      playScanBeep("bad");
       setError(e instanceof ApiError ? e.message : "Hold failed.");
     } finally {
       setBusy(false);

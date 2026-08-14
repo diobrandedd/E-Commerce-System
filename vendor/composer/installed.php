@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'pyxfood/rts-system',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => '4.0.0.x-dev',
+        'version' => '4.0.0.9999999-dev',
+        'reference' => '9235f2414fb21f2f4ed7408dde471ab654006a37',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -73,6 +73,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'picqer/php-barcode-generator' => array(
+            'pretty_version' => 'v2.4.2',
+            'version' => '2.4.2.0',
+            'reference' => 'e9d39681f617705492b609fc3fc58465ef88e8fd',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../picqer/php-barcode-generator',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'psr/simple-cache' => array(
             'pretty_version' => '3.0.0',
             'version' => '3.0.0.0',
@@ -83,9 +92,9 @@
             'dev_requirement' => false,
         ),
         'pyxfood/rts-system' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => '4.0.0.x-dev',
+            'version' => '4.0.0.9999999-dev',
+            'reference' => '9235f2414fb21f2f4ed7408dde471ab654006a37',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

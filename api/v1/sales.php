@@ -34,6 +34,7 @@ function api_sales_honey_sold(): void
     $page = max(1, (int) ($_GET['page'] ?? 1));
     $receipt = trim((string) ($_GET['receipt'] ?? ''));
     $saleType = trim((string) ($_GET['sale_type'] ?? 'all'));
+    $channel = trim((string) ($_GET['channel'] ?? 'all'));
 
     try {
         $data = honey_sales_sold_snapshot(
@@ -43,7 +44,8 @@ function api_sales_honey_sold(): void
             $to !== '' ? $to : null,
             $page,
             $receipt !== '' ? $receipt : null,
-            $saleType !== '' ? $saleType : 'all'
+            $saleType !== '' ? $saleType : 'all',
+            $channel !== '' ? $channel : 'all'
         );
     } catch (InvalidArgumentException $e) {
         api_fail($e->getMessage(), 422);

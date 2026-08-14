@@ -27,6 +27,7 @@ export interface HoneyCartLine {
   productId: number;
   unitPrice: number;
   qty: number;
+  bottleUnitIds?: number[];
 }
 
 export interface HoneyCheckoutResult {

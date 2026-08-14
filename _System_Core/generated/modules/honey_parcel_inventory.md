@@ -1,9 +1,9 @@
 ---
 title: honey_parcel_inventory
 source: includes/honey_parcel_inventory.php
-generated: 2026-07-25T10:56:41+02:00
+generated: 2026-08-14T10:21:39+02:00
 type: module
-function_count: 3
+function_count: 4
 ---
 
 
@@ -21,13 +21,20 @@ function_count: 3
 - `includes/parcel_pack_costing.php`
 - `includes/rts_schema.php`
 
+## honey_parcel_assert_items_ok {#honey_parcel_assert_items_ok}
+
+**Callers (2):**
+
+- `includes/honey_parcel_inventory.php`:33 — `$parsed = honey_parcel_assert_items_ok($itemsRaw);`
+- `includes/online_order_parcels.php`:1079 — `honey_parcel_assert_items_ok((string) $locked['items_raw']);`
+
 ## honey_parcel_apply_deduct {#honey_parcel_apply_deduct}
 
 **Tables:** `online_parcel_deduct_lines`, `online_parcel_dept_deduct_lines`
 
-**Callers (1):**
+**Callers (0):**
 
-- `includes/online_order_parcels.php`:1087 — `honey_parcel_apply_deduct($pdo, $parcelId, $userId, (string) $locked['items_raw']);`
+_No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_parcel_revert_deduct {#honey_parcel_revert_deduct}
 
@@ -43,5 +50,5 @@ function_count: 3
 
 **Callers (1):**
 
-- `includes/honey_parcel_inventory.php`:77 — `honey_parcel_log_sale($pdo, $parcelId, $userId, $variant, $size, $qty, $hasParcelCol);`
+- `includes/honey_parcel_inventory.php`:84 — `honey_parcel_log_sale($pdo, $parcelId, $userId, $variant, $size, $qty, $hasParcelCol);`
 

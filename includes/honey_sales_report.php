@@ -25,9 +25,16 @@ function honey_sales_resolve_filters(?string $period, ?string $from, ?string $to
 }
 
 /** @param array<string, mixed>|null $range */
-function honey_sales_log_where_clause(?array $range): array
+function honey_sales_log_where_clause(?array $range, string $channel = 'all'): array
 {
-    $where = ' WHERE h.source = "packaging" AND h.sale_type = "walk_in"';
+    $where = ' WHERE h.source = "packaging"';
+    if ($channel === 'walk_in') {
+        $where .= ' AND h.sale_type = "walk_in"';
+    } elseif ($channel === 'online') {
+        $where .= ' AND h.sale_type = "parcel"';
+    } else {
+        $where .= ' AND h.sale_type IN ("walk_in","parcel")';
+    }
     $params = [];
     if ($range !== null) {
         $where .= ' AND h.created_at >= ? AND h.created_at <= ?';
@@ -242,7 +249,8 @@ function honey_sales_sold_snapshot(
     ?string $to,
     int $page = 1,
     ?string $receiptSearch = null,
-    string $saleType = 'all'
+    string $saleType = 'all',
+    string $channel = 'all'
 ): array {
     $filters = honey_sales_resolve_filters($period, $from, $to);
     $range = $filters['range'];
@@ -253,7 +261,10 @@ function honey_sales_sold_snapshot(
     if (!in_array($saleType, ['all', 'regular', 'discount', 'ar'], true)) {
         $saleType = 'all';
     }
-    [$logWhere, $logParams] = honey_sales_log_where_clause($range);
+    if (!in_array($channel, ['all', 'walk_in', 'online'], true)) {
+        $channel = 'all';
+    }
+    [$logWhere, $logParams] = honey_sales_log_where_clause($range, $channel);
 
     $sqlAll = "SELECT h.variant,
                       COALESCE(SUM(h.qty_liter), 0) AS liter,
@@ -331,10 +342,37 @@ function honey_sales_sold_snapshot(
         : ['period' => 'all', 'from' => null, 'to' => null, 'label' => 'All time'];
     $filterMeta['receipt'] = $receiptSearch;
     $filterMeta['sale_type'] = $saleType;
+    $filterMeta['channel'] = $channel;
+
+    [$shareWhere, $shareParams] = honey_sales_log_where_clause($range, 'all');
+    $shareSql = "SELECT h.sale_type,
+                        COALESCE(SUM(h.qty_liter + h.qty_250ml + h.qty_350ml + h.qty_gallon), 0) AS qty
+                 FROM honey_sales_log h
+                 {$shareWhere}
+                 GROUP BY h.sale_type";
+    $shareSt = $pdo->prepare($shareSql);
+    $shareSt->execute($shareParams);
+    $walkInQty = 0.0;
+    $onlineQty = 0.0;
+    foreach ($shareSt->fetchAll(PDO::FETCH_ASSOC) as $sr) {
+        if ((string) $sr['sale_type'] === 'walk_in') {
+            $walkInQty = (float) $sr['qty'];
+        } elseif ((string) $sr['sale_type'] === 'parcel') {
+            $onlineQty = (float) $sr['qty'];
+        }
+    }
+    $shareTotal = $walkInQty + $onlineQty;
 
     return [
         'filter' => $filterMeta,
         'total_bottles_sold' => $all['total'],
+        'channel_share' => [
+            'walk_in' => $walkInQty,
+            'online' => $onlineQty,
+            'total' => $shareTotal,
+            'walk_in_pct' => $shareTotal > 0 ? round(($walkInQty / $shareTotal) * 100, 1) : 0.0,
+            'online_pct' => $shareTotal > 0 ? round(($onlineQty / $shareTotal) * 100, 1) : 0.0,
+        ],
         'summary' => [
             'total_bottles_regular' => $regular['total'],
             'total_bottles_discounted' => $discountedTotal,

@@ -42,6 +42,7 @@ import { OnlineOrdersGeneratorPage } from "./pages/csr/OnlineOrdersGeneratorPage
 import { DeliveriesPage } from "./pages/deliveries/DeliveriesPage";
 import { DeliveriesReviewPage } from "./pages/deliveries/DeliveriesReviewPage";
 import { DeliveriesCancelledPage } from "./pages/deliveries/DeliveriesCancelledPage";
+import { HoneyPackScanPage } from "./pages/deliveries/HoneyPackScanPage";
 import { OnlineParcelsPage } from "./pages/fulfillment/OnlineParcelsPage";
 import { PartnerSoldReconcilePage } from "./pages/fulfillment/PartnerSoldReconcilePage";
 import { CourierSoaReconcilePage } from "./pages/fulfillment/CourierSoaReconcilePage";
@@ -66,6 +67,9 @@ const invGuard = (Component: React.ComponentType) => guarded(Component, { roles:
 // honey.php). Packaging + Supplies stay invRoles-only.
 const invViewRoles: Role[] = ["executive", "prod_manager", "hr", "staff", "team_leader"];
 const invViewGuard = (Component: React.ComponentType) => guarded(Component, { roles: invViewRoles });
+const honeyProductionRoles: Role[] = [...invViewRoles, "csr_tl", "csr_staff"];
+const honeyProductionGuard = (Component: React.ComponentType) =>
+  guarded(Component, { roles: honeyProductionRoles });
 
 // In production we ship under Apache at /rts/app/dist/ so React Router
 // needs a basename matching that path.  During `vite dev` we run at
@@ -94,8 +98,9 @@ export const router = createBrowserRouter(
         { path: "inventory/raw-materials", element: invGuard(RawMaterialsHubPage) },
         { path: "inventory/raw-materials/honey", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
         { path: "inventory/raw-materials/honey/warehouse", element: invViewGuard(HoneyWarehousePage) },
-        { path: "inventory/raw-materials/honey/production", element: invViewGuard(HoneyProductionPage) },
+        { path: "inventory/raw-materials/honey/production", element: honeyProductionGuard(HoneyProductionPage) },
         { path: "inventory/raw-materials/honey/packaging", element: invViewGuard(HoneyPackagingPage) },
+        { path: "inventory/raw-materials/honey/bottles", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/production", replace: true }) },
         { path: "inventory/raw-materials/:slug", element: invViewGuard(RawMaterialDetailPage) },
         { path: "inventory/packaging-materials", element: invGuard(PackagingMaterialsPage) },
         { path: "inventory/supplies", element: invGuard(SuppliesMaterialsPage) },
@@ -151,6 +156,7 @@ export const router = createBrowserRouter(
         { path: "account", element: guarded(AccountSettingsPage) },
 
         { path: "deliveries", element: guarded(DeliveriesPage, { roles: ["executive", "prod_manager", "staff"] }) },
+        { path: "deliveries/pack-scan", element: guarded(HoneyPackScanPage, { roles: ["executive", "prod_manager", "staff"] }) },
         { path: "deliveries/review", element: guarded(DeliveriesReviewPage, { roles: ["executive", "prod_manager", "staff"] }) },
         { path: "deliveries/cancelled", element: guarded(DeliveriesCancelledPage, { roles: ["executive", "prod_manager", "staff"] }) },
         {

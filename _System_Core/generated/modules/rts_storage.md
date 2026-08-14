@@ -1,7 +1,7 @@
 ---
 title: rts_storage
 source: includes/rts_storage.php
-generated: 2026-07-25T10:56:57+02:00
+generated: 2026-08-14T10:21:55+02:00
 type: module
 function_count: 16
 ---
@@ -114,7 +114,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:1004 — `'doc_url_base' => rts_storage_public_prefix_for_app(RTS_STORAGE_BUCKET_RTS),`
+- `includes/rts_case_handlers.php`:1012 — `'doc_url_base' => rts_storage_public_prefix_for_app(RTS_STORAGE_BUCKET_RTS),`
 
 ## rts_storage_public_url_for_app {#rts_storage_public_url_for_app}
 

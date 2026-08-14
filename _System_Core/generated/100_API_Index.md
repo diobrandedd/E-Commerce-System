@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-07-25T10:56:26+02:00
+generated: 2026-08-14T10:21:25+02:00
 type: memory-bank
 ---
 
@@ -48,6 +48,43 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pos_login` | `api_auth_pos_login()` | `ims_login_pos()`, `rts_forwarding_api_payload()` |
 | `logout` | `api_auth_logout()` | `ims_logout()` |
 | `change_password` | `api_auth_change_password()` | `ims_change_password()` |
+
+### `bottle_barcodes.php`
+
+- **Path:** `api/v1/bottle_barcodes.php`
+- **URL:** `/rts/api/v1/bottle_barcodes.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `meta` | `api_bottle_meta()` | `honey_bottle_size_label()` |
+| `request_create` | `api_bottle_request_create()` | `honey_bottle_request_create()`, `ims_pdo()` |
+| `request_list` | `api_bottle_request_list()` | `honey_bottle_request_list()`, `ims_pdo()` |
+| `request_get` | `api_bottle_request_get()` | `honey_bottle_request_get()`, `ims_pdo()` |
+| `request_cancel` | `api_bottle_request_cancel()` | `honey_bottle_request_cancel()`, `ims_pdo()`, `honey_bottle_user_dept_key()` |
+| `pending_count` | `api_bottle_pending_count()` | `honey_bottle_pending_request_count()`, `ims_pdo()` |
+| `generate` | `api_bottle_generate()` | `honey_bottle_generate_for_request()`, `ims_pdo()` |
+| `batch_list` | `api_bottle_batch_list()` | `honey_bottle_batch_list()`, `ims_pdo()` |
+| `batch_get` | `api_bottle_batch_get()` | `honey_bottle_batch_get()`, `ims_pdo()` |
+| `mark_printed` | `api_bottle_mark_printed()` | `honey_bottle_mark_printed()`, `ims_pdo()` |
+| `print_sheet` | `api_bottle_print_sheet()` | `honey_bottle_label_sheet_html()`, `ims_pdo()` |
+| `void` | `api_bottle_void()` | `honey_bottle_void_code()`, `ims_pdo()` |
+| `lookup` | `api_bottle_lookup()` | `honey_bottle_lookup()`, `ims_pdo()` |
+| `scan_stock_in` | `api_bottle_scan_stock_in()` | `honey_bottle_scan_stock_in()`, `ims_pdo()` |
+| `pack_start` | `api_bottle_pack_start()` | `honey_bottle_pack_session_start()`, `ims_pdo()` |
+| `pack_get` | `api_bottle_pack_get()` | `honey_bottle_pack_session_get()`, `ims_pdo()` |
+| `pack_scan` | `api_bottle_pack_scan()` | `honey_bottle_pack_session_scan()`, `ims_pdo()` |
+| `pack_confirm` | `api_bottle_pack_confirm()` | `honey_bottle_pack_session_confirm()`, `ims_pdo()` |
+| `pack_discard` | `api_bottle_pack_discard()` | `honey_bottle_pack_session_discard()`, `ims_pdo()` |
+| `pos_lookup` | `api_bottle_pos_lookup()` | `honey_bottle_pos_lookup()`, `ims_pdo()` |
+| `opened_return_scan` | `api_bottle_opened_return_scan()` | `honey_bottle_opened_return_scan()`, `ims_pdo()` |
+| `rts_receive` | `api_bottle_rts_receive()` | `honey_bottle_rts_receive()`, `ims_pdo()` |
+| `backfill_preview` | `api_bottle_backfill_preview()` | `honey_bottle_backfill_preview()`, `ims_pdo()` |
+| `backfill_generate` | `api_bottle_backfill_generate()` | `honey_bottle_backfill_generate()`, `ims_pdo()` |
+| `reconcile` | `api_bottle_reconcile()` | `honey_bottle_reconcile()`, `ims_pdo()` |
+| `stock_summary` | `api_bottle_stock_summary()` | `honey_bottle_stock_summary()`, `ims_pdo()` |
+| `packaging_options` | `api_bottle_packaging_options()` | `honey_bottle_packaging_options()`, `ims_pdo()` |
+| `ensure_packaging_shell` | `api_bottle_ensure_packaging_shell()` | `honey_fetch_packaging_by_production()`, `ims_pdo()`, `honey_bottle_ensure_packaging_shell()`, `honey_bottle_serialize_packaging_option()` |
 
 ### `bulk_orders.php`
 

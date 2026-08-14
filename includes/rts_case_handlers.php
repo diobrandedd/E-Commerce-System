@@ -501,6 +501,14 @@ function rts_case_handler_create(PDO $pdo, array $data): array
             'before_shipment_photo_filename' => $fields['before_shipment_photo_filename'],
         ]);
         rts_line_items_insert_batch($pdo, $caseId, $fields['lines']);
+        $bottleCodes = $data['bottle_codes'] ?? [];
+        if (is_array($bottleCodes) && $bottleCodes !== []) {
+            require_once __DIR__ . '/honey_bottle_barcodes.php';
+            $pool = (($fields['damaged_reason'] ?? null) !== null && (string) $fields['damaged_reason'] !== '')
+                ? 'rts_damaged'
+                : 'rts_sellable';
+            honey_bottle_rts_receive($pdo, 0, $bottleCodes, $pool);
+        }
         online_parcels_mark_rts($pdo, $tracking, $caseId);
         $pdo->commit();
     } catch (RtsCaseException $e) {

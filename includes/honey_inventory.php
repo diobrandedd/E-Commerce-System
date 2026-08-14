@@ -413,7 +413,7 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
                     production_row_id, supplier_code, batch_no, bottling_date, variant,
                     current_liter, initial_liter, current_250ml, initial_250ml,
                     current_350ml, initial_350ml, current_gallon, initial_gallon, created_by
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                 ) VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?)'
             );
             $ins->execute([
                 $productionRowId,
@@ -421,23 +421,11 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
                 $batchNo,
                 $bottlingDate,
                 $pr['variant'],
-                $liter, $liter,
-                $ml250, $ml250,
-                $ml350, $ml350,
-                $gallon, $gallon,
                 $userId,
             ]);
             $packId = (int) $pdo->lastInsertId();
         } else {
             $packId = (int) $existing['id'];
-            $pdo->prepare(
-                'UPDATE honey_packaging_rows SET
-                    current_liter = current_liter + ?, initial_liter = initial_liter + ?,
-                    current_250ml = current_250ml + ?, initial_250ml = initial_250ml + ?,
-                    current_350ml = current_350ml + ?, initial_350ml = initial_350ml + ?,
-                    current_gallon = current_gallon + ?, initial_gallon = initial_gallon + ?
-                 WHERE id = ?'
-            )->execute([$liter, $liter, $ml250, $ml250, $ml350, $ml350, $gallon, $gallon, $packId]);
         }
 
         $packagingDeduct = honey_bottling_deduct_packaging_stocks($pdo, $userId, $sizeQtys, $batchNo);
@@ -790,6 +778,25 @@ function honey_traceability(PDO $pdo, string $query): array
     }
 
     $matches = [];
+    if (preg_match('/^([A-Z0-9]{6}|[A-Z]{2,10}\d{6}-\d{6}-\d{5})$/i', $query)) {
+        require_once __DIR__ . '/honey_bottle_barcodes.php';
+        try {
+            $lookup = honey_bottle_lookup($pdo, strtoupper($query));
+            $packId = (int) ($lookup['packaging_row_id'] ?? 0);
+            if ($packId > 0) {
+                $pk = honey_fetch_packaging($pdo, $packId);
+                if ($pk) {
+                    $chain = honey_build_trace_chain($pdo, $pk);
+                    $chain['bottle'] = $lookup;
+                    $matches[] = $chain;
+                }
+            }
+        } catch (Throwable) {
+            /* fall through */
+        }
+
+        return ['matches' => $matches];
+    }
     if (preg_match('/^[A-Z]{2,10}\d{6}-\d{6}$/i', $query)) {
         $st = $pdo->prepare('SELECT * FROM honey_packaging_rows WHERE batch_no = ? LIMIT 20');
         $st->execute([strtoupper($query)]);

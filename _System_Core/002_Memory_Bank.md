@@ -4,6 +4,39 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-14 — Camera could not read 1D bottle barcodes (QR-shaped scan config)
+**Change:** `TrackingQrScannerModal` takes `scanMode="barcode"`; `buildScanConfig` uses a wide qrbox, Code 128 format list, native `BarcodeDetector` when available, and continuous autofocus. The old square 240×240 qrbox cropped the ends off linear barcodes so they never decoded. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — Scan success/error beeps across bottle + tracking scanners
+**Change:** Shared `playScanBeep` (ok / dup / bad) on honey pack, stock-in, honey POS, deliveries ship/hold/rewaybill/cancel, and RTS tracking + bottle barcode entry. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — Continuous bottle camera scanning
+**Change:** Camera mode stays open for pack scan, stock-in, and honey POS. Each decode shows animated success/duplicate/failure feedback; in-flight locking plus a 2.5-second same-code cooldown prevents repeated submissions from one camera frame. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — Bottle scan: 2D imager + camera fallback + printed code text
+**Change:** Three scan surfaces (pack scan, stock-in, honey POS) now accept a 2D-imager wedge (types into the field), a camera scan via shared `TrackingQrScannerModal`, or manual entry. Printed labels show the code text under the barcode for manual fallback. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — Bottle label sheet sized for camera scanning (68/A4)
+**Change:** Label grid is 4×17 (68/A4), barcode 40mm wide with 5mm quiet zones — ~0.4mm bars. Denser grids (6×20) printed bars too thin for phone cameras. Print at 100% scale. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — Bottle codes never reused (issued ledger)
+**Change:** `honey_bottle_codes_issued` is append-only; generate claims a code there before printing. Void does not free the sticker. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — Random 6-char bottle barcodes (letters + digits)
+**Change:** Stickers are unique 6-character codes (letters + digits, no 0/O/1/I/L). Supplier + bottling date stay in DB. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — Short 6-digit bottle barcodes (supplier + date in DB)
+**Change:** Printed Code128 is a global 6-digit lookup (`000042`), not `batch_no-seq`. Supplier code and bottling date stay on the barcode batch / packaging row. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — Bottle label generate: exec + CSR only; sidebar badge
+**Change:** Generate/print gated to executive and CSR (not honey staff/PM). Red pending-count badge on Inventory → Production (exec) and Honey labels (CSR). → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — Honey Production hosts bottle request/scan/print (no Bottles tab)
+**UX:** Removed Edit/To packaging from Production; request + scan + generate/print are header modals. A4 print 24/page (3×8). Packaging shell from production lot without gallon deduct. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
+
+### 2026-08-14 — [[problems/records/2026-08-14_honey-bottle-barcode-inventory|Honey bottle barcode inventory]]
+**Shipped:** Per-bottle Code128 units (`migration_phase54`). Request → generate/print → scan stock-in. Pack scan deducts honey; waybill scan is ship-only. POS/RTS scan bottles. Sales report walk-in vs online from `honey_sales_log`.
+
 ### 2026-07-25 — Partner June/July seeds use Excel Tracking Number (col H)
 **Redo:** `sql/seed_{ian,joven,jono}_{june|july}_2026_partner_orders.sql` — `tracking_number` = waybill from column H when present; `order_no` = Order No. Jan–May unchanged (no TN column).
 

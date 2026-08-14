@@ -1076,16 +1076,7 @@ function online_parcels_ship(
         }
 
         $parcelId = (int) $locked['id'];
-        $alreadyDeducted = ($locked['deducted_at'] ?? null) !== null
-            || parcel_fulfillment_already_deducted($pdo, $parcelId);
-        if (!$alreadyDeducted) {
-            $stHoney = $pdo->prepare('SELECT 1 FROM online_parcel_deduct_lines WHERE parcel_id = ? LIMIT 1');
-            $stHoney->execute([$parcelId]);
-            $alreadyDeducted = (bool) $stHoney->fetchColumn();
-        }
-        if (!$alreadyDeducted) {
-            honey_parcel_apply_deduct($pdo, $parcelId, $userId, (string) $locked['items_raw']);
-        }
+        honey_parcel_assert_items_ok((string) $locked['items_raw']);
 
         $upd = $pdo->prepare(
             'UPDATE online_order_parcels

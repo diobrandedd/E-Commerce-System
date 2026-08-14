@@ -8,6 +8,7 @@ import { peso, variantLabel } from "@/app/lib/posHoney";
 
 type PeriodFilter = "all" | "day" | "week" | "month" | "year" | "custom";
 type SaleTypeFilter = "all" | "regular" | "discount" | "ar";
+type ChannelFilter = "all" | "walk_in" | "online";
 
 interface CheckoutItem {
   variant: string;
@@ -45,8 +46,15 @@ interface CheckoutsPage {
 }
 
 interface SalesSnapshot {
-  filter: { period: string; from: string | null; to: string | null; label: string; receipt?: string | null; sale_type?: SaleTypeFilter };
+  filter: { period: string; from: string | null; to: string | null; label: string; receipt?: string | null; sale_type?: SaleTypeFilter; channel?: ChannelFilter };
   total_bottles_sold: number;
+  channel_share?: {
+    walk_in: number;
+    online: number;
+    total: number;
+    walk_in_pct: number;
+    online_pct: number;
+  };
   summary?: {
     total_bottles_regular: number;
     total_bottles_discounted: number;
@@ -89,6 +97,7 @@ function itemSummary(items: CheckoutItem[]): string {
 export function SalesPage() {
   const [period, setPeriod] = useState<PeriodFilter>("day");
   const [saleType, setSaleType] = useState<SaleTypeFilter>("all");
+  const [channel, setChannel] = useState<ChannelFilter>("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
@@ -108,7 +117,7 @@ export function SalesPage() {
       setLoading(true);
       setError(null);
       try {
-        const params: Record<string, string> = { period, page: String(pageNum), sale_type: saleTypeQ };
+        const params: Record<string, string> = { period, page: String(pageNum), sale_type: saleTypeQ, channel };
         if (period === "custom") {
           if (!from || !to) {
             setError("Choose both start and end dates for a custom range.");
@@ -134,7 +143,7 @@ export function SalesPage() {
         setLoading(false);
       }
     },
-    [period, from, to, page, appliedReceipt, saleType],
+    [period, from, to, page, appliedReceipt, saleType, channel],
   );
 
   useEffect(() => {
@@ -144,7 +153,7 @@ export function SalesPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [period, from, to, appliedReceipt, saleType]);
+  }, [period, from, to, appliedReceipt, saleType, channel]);
 
   const applyFilters = () => {
     const next = receipt.trim();
@@ -180,7 +189,7 @@ export function SalesPage() {
   }, [data]);
 
   return (
-    <PageLayout title="Sales" subtitle="Walk-in honey sold (POS)">
+    <PageLayout title="Sales" subtitle="Honey sold from POS scans and pack scans">
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
@@ -237,8 +246,36 @@ export function SalesPage() {
               Apply
             </button>
           </div>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {([
+              ["all", "All"],
+              ["walk_in", "Walk-in"],
+              ["online", "Online"],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setChannel(id)}
+                className={`rounded-md border px-3 py-1.5 text-[11px] font-medium ${
+                  channel === id
+                    ? "border-[#C8900A] bg-[#C8900A]/10 text-[#8a6506]"
+                    : "border-border text-muted-foreground hover:bg-secondary/50"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {data?.channel_share && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Walk-in {fmtQty(data.channel_share.walk_in)} ({data.channel_share.walk_in_pct}%)
+              {" · "}
+              Online {fmtQty(data.channel_share.online)} ({data.channel_share.online_pct}%)
+            </p>
+          )}
         </div>
 
+        {channel !== "online" && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Regular sales</p>
@@ -259,6 +296,7 @@ export function SalesPage() {
             <p className="text-xl font-bold mt-1">{peso(summary.discounts_given)}</p>
           </div>
         </div>
+        )}
 
         <div className="flex flex-col sm:flex-row sm:items-end gap-2">
           <label className="flex-1 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">

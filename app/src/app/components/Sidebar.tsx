@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
   Truck, DollarSign, RotateCcw, ClipboardList, Factory,
-  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, UserCog,
+  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, UserCog, Tag,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import {
@@ -14,17 +14,22 @@ import {
 } from "@/app/components/layout/sidebarNavMotion";
 import { useAuth, Role } from "@/app/context/AuthContext";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
+import { canGenerateHoneyBottleLabels } from "@/app/lib/honeyPermissions";
+import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
+import { onLiveRefresh } from "@/app/lib/liveRefresh";
 
 interface NavLinkChild {
   label: string;
   to: string;
   /** When true, only highlight on exact path match (not child routes). */
   end?: boolean;
+  badge?: number;
 }
 
 interface NavGroupChild {
   label: string;
   children: NavChild[];
+  badge?: number;
 }
 
 type NavChild = NavLinkChild | NavGroupChild;
@@ -50,18 +55,26 @@ function isNavSeparator(entry: NavEntry): entry is NavSeparator {
   return "kind" in entry && entry.kind === "separator";
 }
 
-const HONEY_STAGE_CHILDREN: NavLinkChild[] = [
-  { label: "Warehouse", to: "/inventory/raw-materials/honey/warehouse" },
-  { label: "Production", to: "/inventory/raw-materials/honey/production" },
-  { label: "Packaging", to: "/inventory/raw-materials/honey/packaging" },
-];
+function honeyStageChildren(pendingLabels = 0): NavLinkChild[] {
+  return [
+    { label: "Warehouse", to: "/inventory/raw-materials/honey/warehouse" },
+    {
+      label: "Production",
+      to: "/inventory/raw-materials/honey/production",
+      badge: pendingLabels > 0 ? pendingLabels : undefined,
+    },
+    { label: "Packaging", to: "/inventory/raw-materials/honey/packaging" },
+  ];
+}
 
-const RAW_MATERIALS_CHILDREN: NavChild[] = [
-  { label: "Raw Honey", children: HONEY_STAGE_CHILDREN },
-  { label: "Dried Paragis", to: "/inventory/raw-materials/paragis" },
-  { label: "Black Rice", to: "/inventory/raw-materials/black-rice" },
-  { label: "Cacao", to: "/inventory/raw-materials/cacao" },
-];
+function rawMaterialsChildren(pendingLabels = 0): NavChild[] {
+  return [
+    { label: "Raw Honey", children: honeyStageChildren(pendingLabels), badge: pendingLabels > 0 ? pendingLabels : undefined },
+    { label: "Dried Paragis", to: "/inventory/raw-materials/paragis" },
+    { label: "Black Rice", to: "/inventory/raw-materials/black-rice" },
+    { label: "Cacao", to: "/inventory/raw-materials/cacao" },
+  ];
+}
 
 const PRODUCTS_CHILDREN: NavChild[] = [
   { label: "Honey", to: "/inventory/products/honey" },
@@ -71,9 +84,10 @@ const PRODUCTS_CHILDREN: NavChild[] = [
   { label: "Cacao Tablets", to: "/inventory/products/cacao-tablets" },
 ];
 
-function getNavItems(role: Role, dept: string, pendingCorrections: number): NavEntry[] {
+function getNavItems(role: Role, dept: string, pendingCorrections: number, pendingBottleLabels: number): NavEntry[] {
+  const labelBadge = pendingBottleLabels > 0 ? pendingBottleLabels : undefined;
   const inventoryChildren: NavChild[] = [
-    { label: "Raw Materials", children: RAW_MATERIALS_CHILDREN },
+    { label: "Raw Materials", children: rawMaterialsChildren(pendingBottleLabels), badge: labelBadge },
     { label: "Packaging Materials", to: "/inventory/packaging-materials" },
     { label: "Supplies", to: "/inventory/supplies" },
     { label: "Products", children: PRODUCTS_CHILDREN },
@@ -88,6 +102,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     icon: Package,
     label: "Inventory",
     to: "/inventory/raw-materials",
+    badge: labelBadge,
     children: inventoryChildren,
   };
 
@@ -95,7 +110,15 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     icon: Package,
     label: "Inventory",
     to: "/inventory/raw-materials",
+    badge: labelBadge,
     children: inventoryChildrenExec,
+  };
+
+  const honeyLabelsNav: NavItem = {
+    icon: Tag,
+    label: "Honey labels",
+    to: "/inventory/raw-materials/honey/production?labels=1",
+    badge: labelBadge,
   };
 
   const inventoryNavHr: NavItem = {
@@ -154,6 +177,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     to: "/deliveries",
     children: [
       { label: "Add deliveries", to: "/deliveries", end: true },
+      { label: "Pack scan", to: "/deliveries/pack-scan" },
       { label: "Review batches", to: "/deliveries/review" },
       { label: "Cancelled", to: "/deliveries/cancelled" },
     ],
@@ -192,7 +216,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
   // (read-only — server enforces dept scope + hides pricing).
   const staffInventoryChildrenByDept: Record<string, NavChild[]> = {
     honey: [
-      { label: "Raw Honey", children: HONEY_STAGE_CHILDREN },
+      { label: "Raw Honey", children: honeyStageChildren(pendingBottleLabels), badge: labelBadge },
       { label: "Honey (products)", to: "/inventory/products/honey" },
     ],
     paragis: [
@@ -266,6 +290,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     case "csr_tl":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        honeyLabelsNav,
         orderManagementNav(role),
         rtsNavFull,
       ];
@@ -284,6 +309,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number): NavE
     case "csr_staff":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        honeyLabelsNav,
         orderManagementNav(role),
         rtsNavFull,
       ];
@@ -356,6 +382,12 @@ function SidebarNestedChildren({
               ? "text-white/80 hover:text-white hover:bg-white/8 font-medium"
               : "text-white/50 hover:text-white hover:bg-white/8"
           }`;
+          const groupBadge =
+            child.badge != null && child.badge > 0 ? (
+              <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
+                {child.badge > 99 ? "99+" : child.badge}
+              </span>
+            ) : null;
           return (
             <div key={key}>
               {isRawHoney ? (
@@ -370,6 +402,7 @@ function SidebarNestedChildren({
                   className={toggleClass}
                 >
                   <span className="flex-1 text-left">{child.label}</span>
+                  {groupBadge}
                   <SidebarNavChevron expanded={subExpanded} size={12} />
                 </motion.button>
               ) : (
@@ -378,6 +411,7 @@ function SidebarNestedChildren({
                   className={toggleClass}
                 >
                   <span className="flex-1 text-left">{child.label}</span>
+                  {groupBadge}
                   <SidebarNavChevron expanded={subExpanded} size={12} />
                 </SidebarNavToggleButton>
               )}
@@ -404,12 +438,17 @@ function SidebarNestedChildren({
             end={child.end}
             onClick={onClose}
             className={({ isActive }) =>
-              `block px-3 py-2 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
+              `flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all duration-150 cursor-pointer ${
                 isActive ? "bg-[#C8900A] text-white font-semibold" : "text-white/50 hover:text-white hover:bg-white/8"
               }`
             }
           >
-            {child.label}
+            <span className="flex-1">{child.label}</span>
+            {child.badge != null && child.badge > 0 && (
+              <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
+                {child.badge > 99 ? "99+" : child.badge}
+              </span>
+            )}
           </NavLink>
         );
       })}
@@ -439,6 +478,32 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   });
   const [signingOut, setSigningOut] = useState(false);
   const { unreadCount: pendingCorrections } = useCorrectionNotifications();
+  const [pendingBottleLabels, setPendingBottleLabels] = useState(0);
+  const canSeeLabelBadge = canGenerateHoneyBottleLabels(user?.role, user?.dept);
+
+  useEffect(() => {
+    if (!canSeeLabelBadge) {
+      setPendingBottleLabels(0);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await bottleBarcodesApi.pendingCount();
+        if (!cancelled) setPendingBottleLabels(res.count);
+      } catch {
+        if (!cancelled) setPendingBottleLabels(0);
+      }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 15000);
+    const off = onLiveRefresh(() => void load());
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      off();
+    };
+  }, [canSeeLabelBadge, location.pathname]);
 
   useEffect(() => {
     if (location.pathname.includes("/inventory") && !location.pathname.startsWith("/inventory/requests")) {
@@ -513,7 +578,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   };
 
   if (!user) return null;
-  const navItems = getNavItems(user.role, user.dept, pendingCorrections);
+  const navItems = getNavItems(user.role, user.dept, pendingCorrections, pendingBottleLabels);
   const initials = user.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
   const handleLogout = async () => {
@@ -572,6 +637,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   >
                     <Icon size={17} />
                     <span className="flex-1 text-left">{label}</span>
+                    {badge != null && badge > 0 && (
+                      <span className="min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
+                        {badge > 99 ? "99+" : badge}
+                      </span>
+                    )}
                     <SidebarNavChevron expanded={isExpanded} size={14} />
                   </SidebarNavToggleButton>
                   <SidebarNavCollapse open={isExpanded} className="ml-8 mt-0.5">

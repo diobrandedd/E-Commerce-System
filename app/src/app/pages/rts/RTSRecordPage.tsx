@@ -15,6 +15,7 @@ import {
 } from "@/app/components/csr/onlineFulfillmentMotion";
 import { ApiError } from "@/app/lib/api";
 import { compressDeliveryPhoto } from "@/app/lib/compressDeliveryPhoto";
+import { playScanBeep } from "@/app/lib/scanBeep";
 import {
   rtsAppendLines,
   rtsCreateCase,
@@ -124,6 +125,8 @@ export function RTSRecordPage() {
   const [attachments, setAttachments] = useState<DocAttachment[]>([]);
   const [lines, setLines] = useState<RtsLineItem[]>([]);
   const [damagedLines, setDamagedLines] = useState<RtsLineItem[]>([]);
+  const [bottleCodes, setBottleCodes] = useState<string[]>([]);
+  const [bottleScan, setBottleScan] = useState("");
   const [caseId, setCaseId] = useState(0);
   const [mode, setMode] = useState<"create" | "append" | "edit">("create");
   const [prefill, setPrefill] = useState<RtsTrackingPrefill | null>(null);
@@ -159,6 +162,8 @@ export function RTSRecordPage() {
     });
     setLines([]);
     setDamagedLines([]);
+    setBottleCodes([]);
+    setBottleScan("");
     setCaseId(0);
     setMode("create");
     setPrefill(null);
@@ -211,6 +216,7 @@ export function RTSRecordPage() {
   const beginLookup = useCallback(async (rawTn: string, opts?: { isEdit?: boolean; skipReset?: boolean }) => {
     const tn = normalizeTracking(rawTn);
     if (!tn) {
+      playScanBeep("bad");
       setLandingError("Enter or scan a tracking number first.");
       return;
     }
@@ -231,6 +237,7 @@ export function RTSRecordPage() {
         const disp = dispositionFromCase(probe.case);
         if (disp === "swapped" || disp === "leak") {
           const tab = disp === "swapped" ? "Swapped parcels" : "Leaks";
+          playScanBeep("dup");
           setLandingError(
             `Tracking ${tn} is already recorded (${tab}). Open ${tab} or RTS Records — you cannot create a second case for the same TN.`,
           );
@@ -238,7 +245,10 @@ export function RTSRecordPage() {
         }
         const loaded = await loadCase(tn, false, docBase);
         if (loaded) {
+          playScanBeep("ok");
           setCaseModalOpen(true);
+        } else {
+          playScanBeep("bad");
         }
         return;
       }
@@ -249,8 +259,10 @@ export function RTSRecordPage() {
         const data = await rtsTrackingPrefill(tn);
         applyPrefill(data);
       }
+      if (!isEdit) playScanBeep("ok");
       setCaseModalOpen(true);
     } catch (e) {
+      if (!opts?.isEdit) playScanBeep("bad");
       setLandingError(e instanceof ApiError ? e.message : "Lookup failed.");
     } finally {
       setLookupBusy(false);
@@ -397,6 +409,7 @@ export function RTSRecordPage() {
     documentation_attachments: readyAtt,
     lines: disposition === "swapped" ? [] : lines,
     damaged_lines: disposition === "leak" ? damagedLines : undefined,
+    bottle_codes: bottleCodes,
     case_id: caseId,
   });
 
@@ -648,6 +661,44 @@ export function RTSRecordPage() {
 
           {showLines && disposition !== "leak" && (
             <RtsLineBuilder catalog={catalog} lines={lines} onChange={setLines} />
+          )}
+
+          {mode !== "append" && (
+            <div className="rounded-xl border border-border p-4 space-y-2">
+              <p className="text-sm font-semibold">Bottle barcodes</p>
+              <p className="text-xs text-muted-foreground">Scan honey bottles on this return before submit. Unreadable stickers can be skipped with a note in the product lines.</p>
+              <input
+                className="w-full border rounded-lg px-2 py-2 text-sm"
+                placeholder="Scan bottle barcode and press Enter"
+                value={bottleScan}
+                onChange={e => setBottleScan(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  const v = bottleScan.trim().toUpperCase();
+                  if (!v) return;
+                  setBottleCodes(prev => {
+                    if (prev.includes(v)) {
+                      playScanBeep("dup");
+                      return prev;
+                    }
+                    playScanBeep("ok");
+                    return [...prev, v];
+                  });
+                  setBottleScan("");
+                }}
+              />
+              {bottleCodes.length > 0 && (
+                <ul className="text-xs space-y-1">
+                  {bottleCodes.map(c => (
+                    <li key={c} className="flex justify-between gap-2">
+                      <span className="font-mono">{c}</span>
+                      <button type="button" className="text-muted-foreground" onClick={() => setBottleCodes(prev => prev.filter(x => x !== c))}>Remove</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
 
           {mode !== "append" && (

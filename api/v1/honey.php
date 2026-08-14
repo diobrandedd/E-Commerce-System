@@ -135,11 +135,12 @@ function honey_assert_staff_dept_scope(array $user): void
     if ($userDept === null) {
         api_fail('Your account has no department assigned.', 403);
     }
-    // Honey-stage views carry no dept parameter — restrict them to honey staff.
+    // Honey-stage views carry no dept parameter — restrict them to honey staff
+    // (and CSR, who generate bottle barcodes from production lots).
     $honeyOnly = ['warehouse_list', 'production_list', 'packaging_list', 'packaging_total_inventory', 'traceability'];
     $action = (string) ($_GET['action'] ?? '');
     if (in_array($action, $honeyOnly, true)) {
-        if ($userDept !== 'honey') {
+        if ($userDept !== 'honey' && $userDept !== 'csr') {
             api_fail('Out of scope for your department.', 403);
         }
 

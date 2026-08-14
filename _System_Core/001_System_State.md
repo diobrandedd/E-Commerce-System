@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-07-14_rts-use-and-pos-source]] |
-| **Active Plan** | [[plans/archive/2026-07-14_rts-use-and-pos-source_plan]] |
-| **Status** | `shipped` — Use RTS + POS stock source (2026-07-14) |
+| **Active Spec** | [[specs/2026-08-14_honey-bottle-barcode-inventory]] |
+| **Active Plan** | [[plans/active/2026-08-14_honey-bottle-barcode-inventory_plan]] |
+| **Status** | `in progress` — Honey bottle barcode inventory (2026-08-14) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

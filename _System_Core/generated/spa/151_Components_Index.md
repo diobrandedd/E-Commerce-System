@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-07-25T10:57:00+02:00
+generated: 2026-08-14T10:21:58+02:00
 type: spa
 ---
 
@@ -39,6 +39,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/pos/POSReceiptView.tsx`
 - `app/src/app/components/pos/posMotion.tsx`
 - `app/src/app/components/requests/RequestsHubSection.tsx`
+- `app/src/app/components/scan/TrackingQrScannerModal.tsx`
 - `app/src/app/pages/csr/OrderRemarksPage.tsx`
 - `app/src/app/pages/pos/POSCategoryPage.tsx`
 
@@ -60,6 +61,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/deliveries/DeliveriesCancelledPage.tsx`
 - `app/src/app/pages/deliveries/DeliveriesPage.tsx`
 - `app/src/app/pages/deliveries/DeliveriesReviewPage.tsx`
+- `app/src/app/pages/deliveries/HoneyPackScanPage.tsx`
 - `app/src/app/pages/dept/DeptInventoryPage.tsx`
 - `app/src/app/pages/exec/ARCreditsPage.tsx`
 - `app/src/app/pages/exec/CostingPage.tsx`
@@ -120,7 +122,6 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 ## ModalShell
 
 - `app/src/app/pages/exec/CostingPage.tsx`
-- `app/src/app/pages/honey/HoneyProductionPage.tsx`
 
 ## Dedicated modal/drawer components
 

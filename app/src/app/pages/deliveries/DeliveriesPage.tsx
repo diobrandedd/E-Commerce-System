@@ -28,6 +28,7 @@ import {
 import type { OnlineParcel } from "@/app/lib/parcelsApi";
 import { ApiError } from "@/app/lib/api";
 import { compressDeliveryPhoto } from "@/app/lib/compressDeliveryPhoto";
+import { playScanBeep } from "@/app/lib/scanBeep";
 import { useAuth } from "@/app/context/AuthContext";
 
 type Step = "idle" | "preview" | "saving" | "done";
@@ -147,21 +148,27 @@ export function DeliveriesPage() {
       setTracking(res.tracking_normalized);
       setParcel(res.parcel);
       if (!res.parcel) {
+        playScanBeep("bad");
         setError("No online order parcel for this tracking. Finalize CSR batch first.");
         setStep("idle");
         return;
       }
       if (res.already_recorded && res.existing_recordings.length > 0 && res.parcel.status === "packing") {
+        playScanBeep("dup");
         setDuplicateRecordings(res.existing_recordings);
         setDuplicateOpen(true);
         setStep("idle");
         return;
       }
       if (res.parcel.status === "shipped") {
+        playScanBeep("dup");
         setError("This parcel is already shipped.");
+      } else {
+        playScanBeep("ok");
       }
       setStep("preview");
     } catch (e) {
+      playScanBeep("bad");
       setError(e instanceof ApiError ? e.message : "Lookup failed.");
       setParcel(null);
       setStep("idle");

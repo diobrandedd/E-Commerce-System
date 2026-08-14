@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Camera, FlipHorizontal, ImageUp, Loader2, ScanLine, Zap, ZapOff } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { AppErrorBanner } from "@/app/components/layout/appFeedbackMotion";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/app/components/ui/utils";
 import {
+  applyContinuousFocus,
+  buildScanConfig,
   forceReleaseAllScannerResources,
   loadHtml5Qrcode,
   pickPreferredCameraIndex,
@@ -19,9 +22,13 @@ import {
 } from "@/app/lib/html5QrcodeLoader";
 
 type ScanPhase = "idle" | "starting" | "scanning" | "error";
+export type ScannerDecodeFeedback = {
+  kind: "success" | "duplicate" | "error";
+  message: string;
+};
 
-const SCAN_CONFIG = { fps: 12, qrbox: { width: 240, height: 240 }, aspectRatio: 1 };
 const STOP_TIMEOUT_MS = 500;
+const SAME_CODE_COOLDOWN_MS = 2500;
 
 export function TrackingQrScannerModal({
   onClose,
@@ -31,28 +38,42 @@ export function TrackingQrScannerModal({
   manualEntryLabel = "Or enter tracking manually",
   showManualEntry = true,
   autoStart = true,
+  continuous = false,
+  scanMode = "qr",
+  scanPrompt = "Point at the tracking barcode or QR label",
   zIndex,
 }: {
   onClose: () => void;
   title: string;
   titleId: string;
-  onDecoded: (decoded: string) => void;
+  onDecoded: (decoded: string) => void | ScannerDecodeFeedback | Promise<void | ScannerDecodeFeedback>;
   manualEntryLabel?: string;
   showManualEntry?: boolean;
   autoStart?: boolean;
+  continuous?: boolean;
+  scanMode?: "qr" | "barcode";
+  scanPrompt?: string;
   zIndex?: string;
 }) {
+  const reduceMotion = useReducedMotion();
+  const scanConfig = useMemo(() => buildScanConfig(scanMode), [scanMode]);
   const reactId = useId();
   const readerId = `qr-reader-${reactId.replace(/[^a-zA-Z0-9]/g, "")}`;
   const scannerRef = useRef<Html5QrcodeInstance | null>(null);
   const decodedRef = useRef(false);
+  const onDecodedRef = useRef(onDecoded);
+  onDecodedRef.current = onDecoded;
   const cameraIndexRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const manualRef = useRef<HTMLInputElement>(null);
   const aliveRef = useRef(true);
+  const processingRef = useRef(false);
+  const lastDecodeRef = useRef<{ code: string; at: number } | null>(null);
 
   const [phase, setPhase] = useState<ScanPhase>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [decodeFeedback, setDecodeFeedback] = useState<ScannerDecodeFeedback | null>(null);
+  const [processing, setProcessing] = useState(false);
   const [cameras, setCameras] = useState<Html5QrcodeCamera[]>([]);
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
@@ -99,14 +120,38 @@ export function TrackingQrScannerModal({
   const handleDecoded = useCallback(
     (decoded: string) => {
       const text = decoded.trim();
-      if (!text || decodedRef.current) return;
+      if (!text) return;
+
+      if (continuous) {
+        const now = Date.now();
+        const last = lastDecodeRef.current;
+        if (processingRef.current || (last?.code === text && now - last.at < SAME_CODE_COOLDOWN_MS)) return;
+
+        processingRef.current = true;
+        lastDecodeRef.current = { code: text, at: now };
+        setProcessing(true);
+        void Promise.resolve(onDecodedRef.current(text))
+          .then(result => {
+            if (aliveRef.current && result) setDecodeFeedback(result);
+          })
+          .catch(() => {
+            if (aliveRef.current) setDecodeFeedback({ kind: "error", message: "Scan failed. Try again." });
+          })
+          .finally(() => {
+            processingRef.current = false;
+            if (aliveRef.current) setProcessing(false);
+          });
+        return;
+      }
+
+      if (decodedRef.current) return;
       decodedRef.current = true;
       void stopScanner().then(() => {
         onClose();
-        onDecoded(text);
+        onDecodedRef.current(text);
       });
     },
-    [onClose, onDecoded, stopScanner],
+    [continuous, onClose, stopScanner],
   );
 
   const refreshTorchSupport = useCallback((instance: Html5QrcodeInstance) => {
@@ -152,7 +197,7 @@ export function TrackingQrScannerModal({
         }
         await scannerRef.current.start(
           list[safeIndex].id,
-          SCAN_CONFIG,
+          scanConfig,
           handleDecoded,
           () => {},
         );
@@ -160,6 +205,7 @@ export function TrackingQrScannerModal({
           await stopScanner();
           return;
         }
+        await applyContinuousFocus(scannerRef.current);
         refreshTorchSupport(scannerRef.current);
         safeSetPhase("scanning");
       } catch (e) {
@@ -168,7 +214,7 @@ export function TrackingQrScannerModal({
         safeSetPhase("error");
       }
     },
-    [cameras, handleDecoded, readerId, refreshTorchSupport, safeSetError, safeSetPhase, stopScanner],
+    [cameras, handleDecoded, readerId, refreshTorchSupport, safeSetError, safeSetPhase, scanConfig, stopScanner],
   );
 
   const phaseRef = useRef<ScanPhase>("idle");
@@ -199,9 +245,9 @@ export function TrackingQrScannerModal({
       if (rear) {
         const rearIndex = list.findIndex(c => c.id === rear.id);
         cameraIndexRef.current = rearIndex >= 0 ? rearIndex : pickPreferredCameraIndex(list);
-        await scannerRef.current.start(rear.id, SCAN_CONFIG, handleDecoded, () => {});
+        await scannerRef.current.start(rear.id, scanConfig, handleDecoded, () => {});
       } else {
-        await scannerRef.current.start(PREFERRED_REAR_CAMERA, SCAN_CONFIG, handleDecoded, () => {});
+        await scannerRef.current.start(PREFERRED_REAR_CAMERA, scanConfig, handleDecoded, () => {});
         cameraIndexRef.current = 0;
       }
       if (!aliveRef.current) {
@@ -217,6 +263,7 @@ export function TrackingQrScannerModal({
         return;
       }
 
+      await applyContinuousFocus(scannerRef.current);
       refreshTorchSupport(scannerRef.current);
       safeSetPhase("scanning");
     } catch (e) {
@@ -224,7 +271,7 @@ export function TrackingQrScannerModal({
       safeSetError(e instanceof Error ? e.message : "Could not start camera.");
       safeSetPhase("error");
     }
-  }, [handleDecoded, readerId, refreshTorchSupport, safeSetError, safeSetPhase, startCameraAt, stopScanner]);
+  }, [handleDecoded, readerId, refreshTorchSupport, safeSetError, safeSetPhase, scanConfig, startCameraAt, stopScanner]);
 
   const handleClose = useCallback(() => {
     teardown();
@@ -315,6 +362,24 @@ export function TrackingQrScannerModal({
       <AppModalHeader title={title} titleId={titleId} onClose={handleClose} />
       <AppModalBody className="space-y-4">
         <AppErrorBanner message={error} />
+        <AnimatePresence mode="wait">
+          {decodeFeedback ? (
+            <motion.div
+              key={`${decodeFeedback.kind}-${decodeFeedback.message}`}
+              initial={reduceMotion ? false : { opacity: 0, y: -8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -5 }}
+              className={cn(
+                "rounded-xl border px-4 py-3 text-sm font-semibold",
+                decodeFeedback.kind === "success" && "border-green-300 bg-green-100 text-green-800",
+                decodeFeedback.kind === "duplicate" && "border-amber-300 bg-amber-100 text-amber-800",
+                decodeFeedback.kind === "error" && "border-red-300 bg-red-100 text-red-800",
+              )}
+            >
+              {decodeFeedback.message}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         <div
           className={cn(
@@ -325,16 +390,17 @@ export function TrackingQrScannerModal({
           <div
             id={readerId}
             className={cn(
-              "w-full [&_video]:!w-full [&_video]:!max-h-[320px] [&_video]:object-cover",
+              "w-full [&_video]:!w-full [&_video]:!max-h-[320px]",
+              // A cropped preview hides the ends of a wide 1D barcode, so users
+              // aim at a symbol the decoder is only seeing part of.
+              scanMode === "barcode" ? "[&_video]:object-contain" : "[&_video]:object-cover",
               phase !== "scanning" && phase !== "starting" && "hidden",
             )}
           />
           {phase !== "scanning" && phase !== "starting" && (
             <div className="flex flex-col items-center gap-2 px-6 py-8 text-center">
               <ScanLine className="h-10 w-10 text-white/70" strokeWidth={1.5} />
-              <p className="text-sm text-white/80">
-                {phase === "starting" ? "Starting camera…" : "Point at the tracking barcode or QR label"}
-              </p>
+              <p className="text-sm text-white/80">{scanPrompt}</p>
             </div>
           )}
           {phase === "starting" && (
@@ -342,6 +408,12 @@ export function TrackingQrScannerModal({
               <Loader2 className="h-8 w-8 animate-spin text-white" />
             </div>
           )}
+          {continuous && processing && phase === "scanning" ? (
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/65 px-3 py-2 text-xs font-medium text-white">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Checking bottle…
+            </div>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -383,23 +455,27 @@ export function TrackingQrScannerModal({
               ) : null}
             </>
           ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <ImageUp size={15} />
-            Upload image
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={e => void onFilePicked(e.target.files?.[0] ?? null)}
-          />
+          {!continuous ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <ImageUp size={15} />
+                Upload image
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e => void onFilePicked(e.target.files?.[0] ?? null)}
+              />
+            </>
+          ) : null}
         </div>
 
         {showManualEntry ? (

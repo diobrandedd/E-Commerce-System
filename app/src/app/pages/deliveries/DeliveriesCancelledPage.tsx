@@ -14,6 +14,7 @@ import {
   type DeliveryCancelLogRow,
 } from "@/app/lib/deliveriesApi";
 import { ApiError } from "@/app/lib/api";
+import { playScanBeep } from "@/app/lib/scanBeep";
 import { AppErrorBanner, AppSuccessNotice, appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
 import { useAuth } from "@/app/context/AuthContext";
 
@@ -80,6 +81,7 @@ export function DeliveriesCancelledPage() {
       try {
         const lookup = await deliveriesParcelByTracking(input);
         if (!lookup.parcel) {
+          playScanBeep("bad");
           setError("No parcel found for this tracking.");
           return;
         }
@@ -92,10 +94,12 @@ export function DeliveriesCancelledPage() {
         if (!window.confirm(prompt)) return;
 
         const result = await deliveriesCancelParcelScan(tracking);
+        playScanBeep("ok");
         flash(result.message || "Parcel cancelled.");
         setTrackingInput("");
         await loadCancelLogs();
       } catch (e) {
+        playScanBeep("bad");
         setError(e instanceof ApiError ? e.message : "Cancel failed.");
       } finally {
         setCancelActionBusy(false);

@@ -15,6 +15,7 @@ export interface POSARLineItem {
   variant?: string;
   size?: string;
   productKey?: string;
+  bottleUnitIds?: number[];
 }
 
 export interface POSARCheckoutResult {
@@ -74,6 +75,7 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
               qty: l.qty,
               variant: l.variant,
               size: l.size,
+              bottle_unit_ids: l.bottleUnitIds ?? [],
             }))
           : lines.map(l => ({
               product_key: l.productKey,

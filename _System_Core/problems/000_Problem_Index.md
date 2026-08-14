@@ -50,6 +50,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-08-14_honey-bottle-barcode-inventory]] — per-bottle barcodes; pack scan deducts; ship is confirm-only
 - [[records/2026-06-19_waybill-stamp-text-only]] — stamp text-only, no border box
 - [[records/2026-06-19_vip-spx-parser-pitfalls]] — **⭐** VIP/SPX parser + builder session hub
 - [[records/2026-06-19_vip-spx-order-interpretation]] — VIP/SPX column detect + ItemLineBuilder initial ship

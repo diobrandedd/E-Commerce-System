@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { AnimatePresence } from "motion/react";
-import { AlertCircle, Loader2, Minus, Plus, Trash2, X } from "lucide-react";
+import { AlertCircle, Camera, Loader2, Minus, Plus, Trash2, X } from "lucide-react";
 import { POSHeader } from "@/app/components/pos/POSHeader";
+import {
+  TrackingQrScannerModal,
+  type ScannerDecodeFeedback,
+} from "@/app/components/scan/TrackingQrScannerModal";
 import { POSGuideModal } from "@/app/components/pos/POSGuideModal";
 import { POSReceiptView } from "@/app/components/pos/POSReceiptView";
 import { runPosProductTour } from "@/app/components/tour/guides/posTour";
@@ -21,6 +25,8 @@ import { POSARCheckoutPanel, type POSARCheckoutResult } from "@/app/components/p
 import { POSStockSourceModal, type PosStockSource } from "@/app/components/pos/POSStockSourceModal";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
+import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
+import { playScanBeep } from "@/app/lib/scanBeep";
 import { loadPosCatalogCached, prefetchPosImages, readPosCache } from "@/app/lib/posCache";
 import type { HoneyBottleSize } from "@/app/lib/honey";
 import {
@@ -32,6 +38,7 @@ import {
   type HoneyCheckoutResult,
   type HoneyDiscountRequestResult,
   type HoneyDiscountRequestStatus,
+  type HoneyPosVariant,
 } from "@/app/lib/posHoney";
 
 export function POSHoneyPage() {
@@ -57,6 +64,10 @@ export function POSHoneyPage() {
   const [feedback, setFeedback] = useState<"success" | "error" | null>(null);
   const [cartPulse, setCartPulse] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [scanCode, setScanCode] = useState("");
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const scanRef = useRef<HTMLInputElement>(null);
+  const cameraTitleId = useId();
 
   const loadCatalog = useCallback(async () => {
     setError(null);
@@ -133,10 +144,10 @@ export function POSHoneyPage() {
 
     const key = cartLineKey(activeVariant.variant, selectedSize);
     setCart(prev => {
-      const existing = prev.find(l => l.key === key);
+      const existing = prev.find(l => l.key === key && !l.bottleUnitIds?.length);
       if (existing) {
         return prev.map(l =>
-          l.key === key ? { ...l, qty: l.qty + qty } : l,
+          l.key === key && !l.bottleUnitIds?.length ? { ...l, qty: l.qty + qty } : l,
         );
       }
       return [
@@ -191,9 +202,76 @@ export function POSHoneyPage() {
         productId: l.productId,
         variant: l.variant,
         size: l.size,
+        bottleUnitIds: l.bottleUnitIds,
       })),
     [cart],
   );
+
+  const addScannedBottle = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
+    const value = (raw ?? scanCode).trim();
+    if (!value) return;
+    setScanCode("");
+    setError(null);
+    try {
+      const res = await bottleBarcodesApi.posLookup(value);
+      const barcode = res.barcode;
+      const variant = barcode.variant as HoneyPosVariant;
+      const catalogVar = variants.find(v => v.variant === variant);
+      const sizeInfo = catalogVar?.sizes.find(s => s.size === barcode.size);
+      if (!catalogVar || !sizeInfo?.product_id || !sizeInfo.sellable) {
+        const reason = "Scanned bottle has no POS product.";
+        playScanBeep("bad");
+        setError(reason);
+        setFeedback("error");
+        return { kind: "error", message: reason };
+      }
+      if (!barcode.unit_id) {
+        const reason = "Bottle is not in stock.";
+        playScanBeep("bad");
+        setError(reason);
+        setFeedback("error");
+        return { kind: "error", message: reason };
+      }
+      if (cart.some(l => l.bottleUnitIds?.includes(barcode.unit_id!))) {
+        const reason = "That bottle is already in the cart.";
+        playScanBeep("dup");
+        setError(reason);
+        setFeedback("error");
+        return { kind: "duplicate", message: reason };
+      }
+      const key = `${cartLineKey(variant, barcode.size)}|u${barcode.unit_id}`;
+      setCart(prev => [
+        ...prev,
+        {
+          key,
+          variant,
+          size: barcode.size,
+          sizeLabel: sizeInfo.label,
+          productId: sizeInfo.product_id,
+          unitPrice: sizeInfo.unit_price ?? 0,
+          qty: 1,
+          bottleUnitIds: [barcode.unit_id],
+        },
+      ]);
+      setCartPulse(true);
+      setTimeout(() => setCartPulse(false), 500);
+      playScanBeep("ok");
+      setFeedback("success");
+      scanRef.current?.focus();
+      return { kind: "success", message: `Added: ${variantLabel(variant)} · ${sizeInfo.label}` };
+    } catch (e) {
+      const reason = e instanceof ApiError ? e.message : "Scan failed.";
+      const isDup = /already|duplicate/i.test(reason);
+      playScanBeep(isDup ? "dup" : "bad");
+      setError(reason);
+      setFeedback("error");
+      scanRef.current?.focus();
+      return {
+        kind: isDup ? "duplicate" : "error",
+        message: reason,
+      };
+    }
+  };
 
   const handleCheckout = async (stockSource: PosStockSource) => {
     if (cart.length === 0) return;
@@ -206,6 +284,7 @@ export function POSHoneyPage() {
           variant: l.variant,
           size: l.size,
           qty: l.qty,
+          bottle_unit_ids: l.bottleUnitIds ?? [],
         })),
         buyer_name: buyerName.trim() || "Walk-in",
         buyer_credentials: buyerCreds.trim(),
@@ -318,6 +397,32 @@ export function POSHoneyPage() {
             onExit={handleExit}
             onGuide={() => setGuideOpen(true)}
           />
+
+          <div className="px-4 pt-2">
+            <div className="w-full max-w-xl mx-auto flex gap-2">
+              <input
+                ref={scanRef}
+                className="flex-1 border rounded-lg px-3 py-2 text-sm"
+                placeholder="Scan bottle barcode or type it to add to cart"
+                value={scanCode}
+                onChange={e => setScanCode(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void addScannedBottle();
+                  }
+                }}
+              />
+              <ActionFeedbackButton
+                variant="cancel"
+                flashOnClick={false}
+                onClick={() => setCameraOpen(true)}
+                className="shrink-0 px-3 py-2 text-sm flex items-center gap-1.5"
+              >
+                <Camera size={16} /> Camera
+              </ActionFeedbackButton>
+            </div>
+          </div>
 
           {error && (
             <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-sm text-red-700 flex items-center gap-2">
@@ -688,6 +793,19 @@ export function POSHoneyPage() {
               startPageTourAfterModalClose(() => runPosProductTour());
             }}
           />
+
+          {cameraOpen ? (
+            <TrackingQrScannerModal
+              title="Scan bottle barcode"
+              titleId={cameraTitleId}
+              showManualEntry={false}
+              continuous
+              scanMode="barcode"
+              scanPrompt="Point at each bottle barcode to add it to the cart."
+              onClose={() => setCameraOpen(false)}
+              onDecoded={decoded => addScannedBottle(decoded)}
+            />
+          ) : null}
         </POSPageTransition>
       )}
     </AnimatePresence>

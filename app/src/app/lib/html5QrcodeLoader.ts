@@ -2,10 +2,21 @@
 
 export type Html5QrcodeCamera = { id: string; label: string };
 
+export type Html5QrcodeBoxSize = { width: number; height: number };
+
+export type Html5QrcodeScanConfig = {
+  fps?: number;
+  qrbox?: number | Html5QrcodeBoxSize | ((viewfinderWidth: number, viewfinderHeight: number) => Html5QrcodeBoxSize);
+  aspectRatio?: number;
+  disableFlip?: boolean;
+  formatsToSupport?: number[];
+  experimentalFeatures?: { useBarCodeDetectorIfSupported?: boolean };
+};
+
 export type Html5QrcodeInstance = {
   start: (
     cameraIdOrConfig: string | MediaTrackConstraints,
-    configuration: { fps?: number; qrbox?: number | { width: number; height: number }; aspectRatio?: number },
+    configuration: Html5QrcodeScanConfig,
     qrCodeSuccessCallback: (decodedText: string) => void,
     qrCodeErrorCallback?: (errorMessage: string) => void,
   ) => Promise<void>;
@@ -17,13 +28,77 @@ export type Html5QrcodeInstance = {
 };
 
 type Html5QrcodeCtor = {
-  new (elementId: string): Html5QrcodeInstance;
+  new (elementId: string, config?: { formatsToSupport?: number[]; verbose?: boolean }): Html5QrcodeInstance;
   getCameras: () => Promise<Html5QrcodeCamera[]>;
 };
 
 declare global {
   interface Window {
     Html5Qrcode?: Html5QrcodeCtor;
+    Html5QrcodeSupportedFormats?: Record<string, number>;
+  }
+}
+
+/** Numeric fallbacks match html5-qrcode's Html5QrcodeSupportedFormats enum. */
+const FORMAT_FALLBACK: Record<string, number> = {
+  QR_CODE: 0,
+  CODE_39: 3,
+  CODE_93: 4,
+  CODE_128: 5,
+  DATA_MATRIX: 6,
+  ITF: 8,
+  EAN_13: 9,
+  EAN_8: 10,
+  UPC_A: 14,
+  UPC_E: 15,
+};
+
+function formatIds(names: string[]): number[] {
+  const table = window.Html5QrcodeSupportedFormats ?? FORMAT_FALLBACK;
+  return names
+    .map(name => (typeof table[name] === "number" ? table[name] : FORMAT_FALLBACK[name]))
+    .filter((v): v is number => typeof v === "number");
+}
+
+/**
+ * Scan tuning. `barcode` targets wide 1D symbols (honey bottle Code 128):
+ * a square QR-shaped box crops the ends off a linear barcode, so the decoder
+ * never sees a complete symbol. Restricting formats and using the browser's
+ * native BarcodeDetector (when present) is far faster than the ZXing fallback.
+ */
+export function buildScanConfig(mode: "qr" | "barcode"): Html5QrcodeScanConfig {
+  const experimentalFeatures = { useBarCodeDetectorIfSupported: true };
+
+  if (mode === "barcode") {
+    return {
+      fps: 15,
+      experimentalFeatures,
+      formatsToSupport: formatIds(["CODE_128", "CODE_39", "CODE_93", "ITF", "EAN_13", "UPC_A", "QR_CODE"]),
+      qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+        const width = Math.max(120, Math.floor(Math.min(viewfinderWidth * 0.94, viewfinderWidth - 2)));
+        const tall = Math.max(96, Math.floor(width * 0.45));
+        const height = Math.max(72, Math.floor(Math.min(tall, viewfinderHeight * 0.75, viewfinderHeight - 2)));
+        return { width, height };
+      },
+    };
+  }
+
+  return {
+    fps: 12,
+    aspectRatio: 1,
+    experimentalFeatures,
+    qrbox: { width: 240, height: 240 },
+  };
+}
+
+/** Best-effort continuous autofocus — narrow bars blur badly on fixed focus. */
+export async function applyContinuousFocus(instance: Html5QrcodeInstance): Promise<void> {
+  try {
+    await instance.applyVideoConstraints({
+      advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
+    } as MediaTrackConstraints);
+  } catch {
+    /* Focus control is unsupported on most desktop webcams. */
   }
 }
 

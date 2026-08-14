@@ -18,12 +18,19 @@ require_once __DIR__ . '/rts_schema.php';
  *   fulfillment_deducted: list<array{stock_id: int, qty: float, unit: string}>
  * }
  */
-function honey_parcel_apply_deduct(PDO $pdo, int $parcelId, int $userId, string $itemsRaw): array
+function honey_parcel_assert_items_ok(string $itemsRaw): array
 {
     $parsed = honey_parcel_parse_items_string($itemsRaw);
     if ($parsed['errors'] !== []) {
         throw new RuntimeException(implode(' ', $parsed['errors']));
     }
+
+    return $parsed;
+}
+
+function honey_parcel_apply_deduct(PDO $pdo, int $parcelId, int $userId, string $itemsRaw): array
+{
+    $parsed = honey_parcel_assert_items_ok($itemsRaw);
 
     $deptItems = [];
     foreach ($parsed['other_items'] as $other) {
