@@ -1,7 +1,7 @@
 ---
 title: rts_attachments
 source: includes/rts_attachments.php
-generated: 2026-08-15T08:14:46+02:00
+generated: 2026-08-15T09:10:49+02:00
 type: module
 function_count: 6
 ---
@@ -38,8 +38,8 @@ function_count: 6
 **Callers (4):**
 
 - `includes/rts_case_handlers.php`:187 — `$case['documentation_attachments'] = rts_attachments_decode(`
-- `includes/rts_case_handlers.php`:809 — `$row['documentation_attachments'] = rts_attachments_decode(`
-- `includes/rts_case_handlers.php`:877 — `$row['documentation_attachments'] = rts_attachments_decode(`
+- `includes/rts_case_handlers.php`:824 — `$row['documentation_attachments'] = rts_attachments_decode(`
+- `includes/rts_case_handlers.php`:892 — `$row['documentation_attachments'] = rts_attachments_decode(`
 - `records.php`:676 — `$docAttachments = rts_attachments_decode(`
 
 ## rts_attachments_first_image {#rts_attachments_first_image}
@@ -59,5 +59,5 @@ function_count: 6
 **Callers (2):**
 
 - `api/upload_documentation.php`:53 — `$saved = rts_documentation_save_upload(`
-- `includes/rts_case_handlers.php`:1054 — `return rts_documentation_save_upload(`
+- `includes/rts_case_handlers.php`:1069 — `return rts_documentation_save_upload(`
 

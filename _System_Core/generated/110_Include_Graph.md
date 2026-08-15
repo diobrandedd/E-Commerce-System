@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-08-15T08:14:18+02:00
+generated: 2026-08-15T09:10:21+02:00
 type: memory-bank
-edge_count: 294
+edge_count: 301
 ---
 
 
@@ -58,6 +58,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/online_orders.php` | `includes/shopee_spx_packing_list.php` |
 | `api/v1/order_remarks.php` | `api/v1/_bootstrap.php` |
 | `api/v1/order_remarks.php` | `includes/order_remarks.php` |
+| `api/v1/pack_cancel_restock.php` | `api/v1/_bootstrap.php` |
 | `api/v1/parcels.php` | `api/v1/_bootstrap.php` |
 | `api/v1/parcels.php` | `includes/honey_parcel_item_parser.php` |
 | `api/v1/parcels.php` | `includes/online_order_parcels.php` |
@@ -141,11 +142,13 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_inventory.php` | `includes/inventory_edit_log.php` |
 | `includes/dept_pos.php` | `includes/ar_credits.php` |
 | `includes/dept_pos.php` | `includes/dept_inventory.php` |
+| `includes/dept_pos.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/dept_pos.php` | `includes/dept_products.php` |
 | `includes/dept_pos.php` | `includes/honey_pos.php` |
 | `includes/dept_pos.php` | `includes/rts_inventory_sync.php` |
 | `includes/dept_pos.php` | `includes/rts_inventory_sync.php` |
 | `includes/dept_pos.php` | `includes/rts_inventory_sync.php` |
+| `includes/dept_pouch_barcodes.php` | `includes/dept_inventory.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/dept_inventory.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/dept_production.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/honey_bottle_barcodes.php` |
@@ -217,6 +220,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/online_orders_generator.php` | `includes/qr_decode.php` |
 | `includes/online_orders_generator.php` | `includes/waybill_stamper.php` |
 | `includes/order_remarks.php` | `includes/waybill_stamper.php` |
+| `includes/pack_cancel_restock.php` | `includes/dept_inventory.php` |
+| `includes/pack_cancel_restock.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/pack_cancel_restock.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/parcel_pack_costing.php` | `includes/dept_inventory.php` |
 | `includes/parcel_pack_costing.php` | `includes/dept_products.php` |
 | `includes/parcel_pack_costing.php` | `includes/honey_parcel_item_parser.php` |
@@ -229,6 +235,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_discount_requests.php` | `includes/honey_pos.php` |
 | `includes/rts_attachments.php` | `includes/rts_storage.php` |
 | `includes/rts_case_handlers.php` | `includes/courier_detect.php` |
+| `includes/rts_case_handlers.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/rts_case_handlers.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/rts_case_handlers.php` | `includes/online_order_parcels.php` |
 | `includes/rts_case_handlers.php` | `includes/rts_attachments.php` |

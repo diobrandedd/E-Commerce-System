@@ -11,11 +11,15 @@ export interface DeptPosProduct {
 }
 
 export interface DeptCartLine {
+  key: string;
   product_key: string;
   product_id: number;
   label: string;
   qty: number;
   unit_price: number;
+  pouch_unit_ids?: number[];
+  code?: string;
+  batch_no?: string;
 }
 
 export interface DeptCheckoutResult {

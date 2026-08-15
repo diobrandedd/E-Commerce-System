@@ -6,6 +6,29 @@ require_once __DIR__ . '/dept_inventory.php';
 require_once __DIR__ . '/dept_products.php';
 require_once __DIR__ . '/ar_credits.php';
 require_once __DIR__ . '/honey_pos.php';
+require_once __DIR__ . '/dept_pouch_barcodes.php';
+
+/**
+ * @param array<string, mixed> $entry
+ * @return list<int>
+ */
+function dept_pos_pouch_unit_ids_from_entry(array $entry): array
+{
+    $ids = [];
+    if (isset($entry['pouch_unit_id']) && (int) $entry['pouch_unit_id'] > 0) {
+        $ids[] = (int) $entry['pouch_unit_id'];
+    }
+    if (isset($entry['pouch_unit_ids']) && is_array($entry['pouch_unit_ids'])) {
+        foreach ($entry['pouch_unit_ids'] as $id) {
+            $id = (int) $id;
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+    }
+
+    return array_values(array_unique($ids));
+}
 
 /** @return array{products: list<array<string, mixed>>} */
 function dept_pos_catalog(PDO $pdo, ?string $deptKey = null): array
@@ -58,6 +81,34 @@ function dept_pos_build_cart_lines(PDO $pdo, array $items, float $discountFactor
         $expectedProductId = isset($entry['product_id']) ? (int) $entry['product_id'] : 0;
         if (!dept_product_key_valid($productKey) || $qty <= 0) {
             throw new RuntimeException('Invalid cart line.');
+        }
+
+        $unitIds = dept_pos_pouch_unit_ids_from_entry($entry);
+        if (dept_pouch_supports($productKey) && $stockSource === 'packaging') {
+            if ($unitIds === []) {
+                throw new RuntimeException('Scan each sticker into the cart — quantity-only sell is disabled.');
+            }
+            if (count($unitIds) !== (int) round($qty)) {
+                throw new RuntimeException('Scanned unit count must match quantity.');
+            }
+            foreach ($unitIds as $uid) {
+                $ust = $pdo->prepare(
+                    'SELECT product_key, status FROM dept_pouch_units WHERE id = ? LIMIT 1'
+                );
+                $ust->execute([$uid]);
+                $urow = $ust->fetch(PDO::FETCH_ASSOC);
+                if ($urow === false) {
+                    throw new RuntimeException('Scanned unit not found.');
+                }
+                if ((string) $urow['product_key'] !== $productKey) {
+                    throw new RuntimeException('Scanned unit product mismatch.');
+                }
+                if ((string) $urow['status'] !== 'in_stock') {
+                    throw new RuntimeException('A scanned unit is not available (' . (string) $urow['status'] . ').');
+                }
+            }
+        } elseif (dept_pouch_supports($productKey) && $stockSource === 'rts' && $unitIds === []) {
+            // Qty RTS sell still allowed without stickers (RTS pool has no pouch unit link yet).
         }
 
         $st = $pdo->prepare(
@@ -114,6 +165,7 @@ function dept_pos_build_cart_lines(PDO $pdo, array $items, float $discountFactor
             'line_total' => $lineTotal,
             'name' => (string) $prod['name'],
             'rts_label' => $stockSource === 'rts' ? rts_other_label_for_dept_key($productKey) : null,
+            'pouch_unit_ids' => $unitIds,
         ];
     }
 
@@ -200,7 +252,12 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
                     ]
                 );
             } else {
-                dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);
+                $unitIds = $line['pouch_unit_ids'] ?? [];
+                if (is_array($unitIds) && $unitIds !== []) {
+                    dept_pouch_pos_consume($pdo, $unitIds, $saleId);
+                } else {
+                    dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);
+                }
             }
             $insLine->execute([
                 $saleId,
@@ -344,7 +401,12 @@ function dept_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debt
                     ]
                 );
             } else {
-                dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);
+                $unitIds = $line['pouch_unit_ids'] ?? [];
+                if (is_array($unitIds) && $unitIds !== []) {
+                    dept_pouch_pos_consume($pdo, $unitIds, $saleId);
+                } else {
+                    dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);
+                }
             }
             $insLine->execute([
                 $saleId,

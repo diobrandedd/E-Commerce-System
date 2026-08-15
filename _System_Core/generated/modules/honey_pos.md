@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-08-15T08:14:34+02:00
+generated: 2026-08-15T09:10:38+02:00
 type: module
 function_count: 12
 ---
@@ -104,7 +104,7 @@ function_count: 12
 
 **Callers (6):**
 
-- `includes/dept_pos.php`:273 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
+- `includes/dept_pos.php`:330 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
 - `includes/honey_pos.php`:218 — `$hasPinCol = honey_pos_column_exists($pdo, 'honey_sales_log', 'sold_by_pin_id');`
 - `includes/honey_pos.php`:219 — `$hasSaleCol = honey_pos_column_exists($pdo, 'honey_sales_log', 'pos_sale_id');`
 - `includes/honey_pos.php`:398 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`

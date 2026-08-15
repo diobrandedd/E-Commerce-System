@@ -1,7 +1,7 @@
 ---
 title: delivery_edit_requests
 source: includes/delivery_edit_requests.php
-generated: 2026-08-15T08:14:23+02:00
+generated: 2026-08-15T09:10:25+02:00
 type: module
 function_count: 15
 ---
@@ -82,7 +82,7 @@ function_count: 15
 **Callers (4):**
 
 - `api/delivery_resolve.php`:53 — `$deleted = deliveries_delete_item_by_id($pdo, $itemId);`
-- `api/v1/deliveries.php`:416 — `api_ok(['deleted' => deliveries_delete_item_by_id($pdo, $itemId)]);`
+- `api/v1/deliveries.php`:389 — `api_ok(['deleted' => deliveries_delete_item_by_id($pdo, $itemId)]);`
 - `includes/delivery_edit_requests.php`:251 — `return deliveries_delete_item_by_id($pdo, $itemId);`
 - `includes/delivery_edit_requests.php`:389 — `if (!deliveries_delete_item_by_id($pdo, $itemId)) {`
 
@@ -98,7 +98,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/deliveries.php`:437 — `deliveries_resolve_item_by_id($pdo, $itemId, $tracking);`
+- `api/v1/deliveries.php`:410 — `deliveries_resolve_item_by_id($pdo, $itemId, $tracking);`
 - `includes/delivery_edit_requests.php`:397 — `deliveries_resolve_item_by_id($pdo, $itemId, (string) ($req['new_value'] ?? ''));`
 
 ## delivery_edit_request_normalize_values {#delivery_edit_request_normalize_values}
@@ -137,5 +137,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:397 — `$rows = deliveries_enrich_review_rows($pdo, $rows);`
+- `api/v1/deliveries.php`:370 — `$rows = deliveries_enrich_review_rows($pdo, $rows);`
 

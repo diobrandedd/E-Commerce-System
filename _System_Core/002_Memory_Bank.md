@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — POS barcode dept + cancel restock + RTS barcodes
+**Change:** Dept POS sells by sticker only (reject packed/sold; cart remove). Deliveries Cancelled restocks packed honey/dept barcodes with History (phase 61); tracking cancel API → 410. RTS Record optional product barcodes for honey + dept into sellable/damaged pools. → [[problems/records/2026-08-15_pos-barcode-dept-and-cancel-restock]]
+
 ### 2026-08-15 — Mixed pack scan (honey + dept products)
 **Change:** Pack scan sessions accept honey bottles mixed with Paragis / BRC / Cacao / Honey Comb stickers in any order. Confirm deducts honey packaging and finished dept stock. New table `honey_bottle_pack_session_dept_items` (phase 60). History gains a product filter. → [[problems/records/2026-08-15_mixed-pack-scan-dept]]
 

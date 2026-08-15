@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-08-15T08:14:48+02:00
+generated: 2026-08-15T09:10:51+02:00
 type: module
 function_count: 22
 ---
@@ -58,7 +58,7 @@ function_count: 22
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:575 — `rts_case_replace_line_items($pdo, $caseId, $fields['lines']);`
+- `includes/rts_case_handlers.php`:590 — `rts_case_replace_line_items($pdo, $caseId, $fields['lines']);`
 
 ## rts_inventory_sync_status {#rts_inventory_sync_status}
 
@@ -118,8 +118,8 @@ function_count: 22
 **Callers (3):**
 
 - `api/v1/rts.php`:243 — `rts_inventory_deduct_sell_other_label(`
-- `includes/dept_pos.php`:189 — `rts_inventory_deduct_sell_other_label(`
-- `includes/dept_pos.php`:333 — `rts_inventory_deduct_sell_other_label(`
+- `includes/dept_pos.php`:241 — `rts_inventory_deduct_sell_other_label(`
+- `includes/dept_pos.php`:390 — `rts_inventory_deduct_sell_other_label(`
 
 ## rts_inventory_deduct_sell {#rts_inventory_deduct_sell}
 
@@ -193,14 +193,14 @@ function_count: 22
 
 **Callers (1):**
 
-- `includes/dept_pos.php`:88 — `$onHand = rts_inventory_available_other($pdo, $rtsLabel, 'sellable');`
+- `includes/dept_pos.php`:139 — `$onHand = rts_inventory_available_other($pdo, $rtsLabel, 'sellable');`
 
 ## rts_other_label_for_dept_key {#rts_other_label_for_dept_key}
 
 **Callers (2):**
 
-- `includes/dept_pos.php`:84 — `$rtsLabel = rts_other_label_for_dept_key($productKey);`
-- `includes/dept_pos.php`:116 — `'rts_label' => $stockSource === 'rts' ? rts_other_label_for_dept_key($productKey) : null,`
+- `includes/dept_pos.php`:135 — `$rtsLabel = rts_other_label_for_dept_key($productKey);`
+- `includes/dept_pos.php`:167 — `'rts_label' => $stockSource === 'rts' ? rts_other_label_for_dept_key($productKey) : null,`
 
 ## rts_pool_use_log_list {#rts_pool_use_log_list}
 

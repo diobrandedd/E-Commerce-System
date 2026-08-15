@@ -665,11 +665,14 @@ export function RTSRecordPage() {
 
           {mode !== "append" && (
             <div className="rounded-xl border border-border p-4 space-y-2">
-              <p className="text-sm font-semibold">Bottle barcodes</p>
-              <p className="text-xs text-muted-foreground">Scan honey bottles on this return before submit. Unreadable stickers can be skipped with a note in the product lines.</p>
+              <p className="text-sm font-semibold">Product barcodes (optional)</p>
+              <p className="text-xs text-muted-foreground">
+                Scan honey or Paragis / BRC / Cacao / Comb stickers on this return. Units go to RTS sellable or
+                damaged/leaked from the case disposition. Unreadable stickers can be skipped with a note in the product lines.
+              </p>
               <input
                 className="w-full border rounded-lg px-2 py-2 text-sm"
-                placeholder="Scan bottle barcode and press Enter"
+                placeholder="Scan product barcode and press Enter"
                 value={bottleScan}
                 onChange={e => setBottleScan(e.target.value)}
                 onKeyDown={e => {

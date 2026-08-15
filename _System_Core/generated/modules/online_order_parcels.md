@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-08-15T08:14:39+02:00
+generated: 2026-08-15T09:10:42+02:00
 type: module
 function_count: 29
 ---
@@ -164,7 +164,7 @@ function_count: 29
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:512 — `online_parcels_mark_rts($pdo, $tracking, $caseId);`
+- `includes/rts_case_handlers.php`:527 — `online_parcels_mark_rts($pdo, $tracking, $caseId);`
 
 ## online_parcels_revert_rts_by_case {#online_parcels_revert_rts_by_case}
 
@@ -172,7 +172,7 @@ function_count: 29
 
 **Callers (1):**
 
-- `includes/rts_case_handlers.php`:667 — `online_parcels_revert_rts_by_case($pdo, $caseId);`
+- `includes/rts_case_handlers.php`:682 — `online_parcels_revert_rts_by_case($pdo, $caseId);`
 
 ## online_parcels_get_by_id {#online_parcels_get_by_id}
 
@@ -206,7 +206,7 @@ function_count: 29
 
 **Callers (5):**
 
-- `api/v1/deliveries.php`:389 — `$photo = online_parcels_format_packing_photo([`
+- `api/v1/deliveries.php`:362 — `$photo = online_parcels_format_packing_photo([`
 - `includes/online_order_parcels.php`:525 — `return online_parcels_format_packing_photo($row);`
 - `includes/online_order_parcels.php`:549 — `return online_parcels_format_packing_photo($row);`
 - `includes/online_order_parcels.php`:624 — `$formatted = online_parcels_format_packing_photo($photoRow);`
@@ -287,9 +287,9 @@ function_count: 29
 
 **Tables:** `online_order_parcels`, `delivery_cancel_events`
 
-**Callers (1):**
+**Callers (0):**
 
-- `api/v1/deliveries.php`:204 — `$result = online_parcels_cancel($pdo, (int) $user['id'], $tracking, $source, $note);`
+_No direct callers detected (may be entry point or dynamic call)._
 
 ## online_parcels_hold {#online_parcels_hold}
 
@@ -297,7 +297,7 @@ function_count: 29
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:260 — `$result = online_parcels_hold($pdo, (int) $user['id'], $tracking, $note);`
+- `api/v1/deliveries.php`:233 — `$result = online_parcels_hold($pdo, (int) $user['id'], $tracking, $note);`
 
 ## online_parcels_rewaybill {#online_parcels_rewaybill}
 
@@ -305,7 +305,7 @@ function_count: 29
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:292 — `$result = online_parcels_rewaybill($pdo, (int) $user['id'], $oldTracking, $newTracking);`
+- `api/v1/deliveries.php`:265 — `$result = online_parcels_rewaybill($pdo, (int) $user['id'], $oldTracking, $newTracking);`
 
 ## online_parcels_cancel_log_list {#online_parcels_cancel_log_list}
 
@@ -313,5 +313,5 @@ function_count: 29
 
 **Callers (1):**
 
-- `api/v1/deliveries.php`:233 — `$result = online_parcels_cancel_log_list($pdo, $q, $from, $to, $page, $perPage);`
+- `api/v1/deliveries.php`:206 — `$result = online_parcels_cancel_log_list($pdo, $q, $from, $to, $page, $perPage);`
 

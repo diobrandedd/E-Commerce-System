@@ -688,3 +688,146 @@ function dept_pouch_label_sheet_html(PDO $pdo, int $batchId): string
         ' . $pagesHtml . '
         </body></html>';
 }
+
+/**
+ * @return array<string, mixed>
+ */
+function dept_pouch_pos_lookup(PDO $pdo, string $code): array
+{
+    $code = dept_pouch_normalize_code($code);
+    if ($code === '') {
+        throw new RuntimeException('Scan a barcode.');
+    }
+    $st = $pdo->prepare(
+        'SELECT c.id AS barcode_id, c.code, c.status AS barcode_status,
+                b.product_key, b.batch_no,
+                un.id AS unit_id, un.status AS unit_status
+         FROM dept_pouch_barcodes c
+         INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
+         LEFT JOIN dept_pouch_units un ON un.barcode_id = c.id
+         WHERE c.code = ?
+         LIMIT 1'
+    );
+    $st->execute([$code]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        throw new RuntimeException('Unknown barcode.');
+    }
+    if ((string) $row['barcode_status'] === 'void') {
+        throw new RuntimeException('This barcode is void.');
+    }
+    if ($row['unit_id'] === null) {
+        throw new RuntimeException('This unit is not in inventory yet.');
+    }
+    $unitStatus = (string) ($row['unit_status'] ?? '');
+    if ($unitStatus !== 'in_stock') {
+        throw new RuntimeException('This unit is not available (' . $unitStatus . ').');
+    }
+    $productKey = (string) $row['product_key'];
+
+    return [
+        'kind' => 'dept',
+        'barcode_id' => (int) $row['barcode_id'],
+        'code' => (string) $row['code'],
+        'product_key' => $productKey,
+        'product_label' => dept_pouch_product_label($productKey),
+        'batch_no' => (string) $row['batch_no'],
+        'unit_id' => (int) $row['unit_id'],
+        'unit_status' => $unitStatus,
+        'unit_noun' => dept_pouch_unit_singular($productKey),
+    ];
+}
+
+/**
+ * @param list<int> $unitIds
+ */
+function dept_pouch_pos_consume(PDO $pdo, array $unitIds, int $saleId): void
+{
+    if ($unitIds === []) {
+        return;
+    }
+    require_once __DIR__ . '/dept_inventory.php';
+    foreach ($unitIds as $unitId) {
+        $unitId = (int) $unitId;
+        if ($unitId < 1) {
+            throw new RuntimeException('Invalid pouch/jar unit.');
+        }
+        $st = $pdo->prepare('SELECT * FROM dept_pouch_units WHERE id = ? FOR UPDATE');
+        $st->execute([$unitId]);
+        $unit = $st->fetch(PDO::FETCH_ASSOC);
+        if ($unit === false) {
+            throw new RuntimeException('Pouch/jar unit not found.');
+        }
+        if ((string) $unit['status'] !== 'in_stock') {
+            throw new RuntimeException('A scanned unit is no longer in stock.');
+        }
+        $productKey = (string) $unit['product_key'];
+        $upd = $pdo->prepare(
+            'UPDATE dept_pouch_units
+             SET status = "sold", consumed_at = NOW(), consumed_ref_type = "pos_sale", consumed_ref_id = ?
+             WHERE id = ? AND status = "in_stock"'
+        );
+        $upd->execute([$saleId, $unitId]);
+        if ($upd->rowCount() < 1) {
+            throw new RuntimeException('Could not mark unit as sold.');
+        }
+        dept_inventory_deduct($pdo, $productKey, 1.0);
+    }
+}
+
+/**
+ * @param list<string|int> $codes
+ * @return array{received: list<array<string,mixed>>, warnings: list<string>}
+ */
+function dept_pouch_rts_receive(PDO $pdo, array $codes, string $pool): array
+{
+    if (!in_array($pool, ['rts_sellable', 'rts_damaged'], true)) {
+        throw new RuntimeException('Invalid RTS pool.');
+    }
+    $targetStatus = $pool === 'rts_damaged' ? 'damaged' : 'rts';
+    $received = [];
+    $warnings = [];
+    foreach ($codes as $raw) {
+        $code = dept_pouch_normalize_code((string) $raw);
+        if ($code === '') {
+            continue;
+        }
+        $st = $pdo->prepare(
+            'SELECT c.id AS barcode_id, c.code, un.id AS unit_id, un.status AS unit_status, b.product_key
+             FROM dept_pouch_barcodes c
+             INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
+             LEFT JOIN dept_pouch_units un ON un.barcode_id = c.id
+             WHERE c.code = ?
+             LIMIT 1'
+        );
+        $st->execute([$code]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row === false) {
+            $warnings[] = $code . ': unknown barcode (unreadable sticker fallback needed).';
+            continue;
+        }
+        if ($row['unit_id'] === null) {
+            $warnings[] = $code . ': never stocked in — skipped.';
+            continue;
+        }
+        $unitStatus = (string) ($row['unit_status'] ?? '');
+        if ($unitStatus === 'in_stock') {
+            $warnings[] = $code . ': still in stock — pack scan was missed.';
+        }
+        $pdo->prepare(
+            'UPDATE dept_pouch_units
+             SET status = ?, consumed_at = NOW(), consumed_ref_type = "rts_case", consumed_ref_id = NULL
+             WHERE id = ?'
+        )->execute([$targetStatus, (int) $row['unit_id']]);
+        $productKey = (string) $row['product_key'];
+        $received[] = [
+            'code' => (string) $row['code'],
+            'product_key' => $productKey,
+            'product_label' => dept_pouch_product_label($productKey),
+            'unit_id' => (int) $row['unit_id'],
+            'pool' => $pool,
+        ];
+    }
+
+    return ['received' => $received, 'warnings' => $warnings];
+}

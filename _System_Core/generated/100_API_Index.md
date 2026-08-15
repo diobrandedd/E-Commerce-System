@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-15T08:14:18+02:00
+generated: 2026-08-15T09:10:21+02:00
 type: memory-bank
 ---
 
@@ -177,7 +177,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `upload_photo` | `api_deliveries_upload_photo()` | `ims_pdo()`, `deliveries_ims_submitter_app_user_id()`, `deliveries_upload_photos()` |
 | `parcel_by_tracking` | `api_deliveries_parcel_by_tracking()` | `ims_pdo()`, `online_parcels_ensure_schema()`, `online_parcels_normalize_tracking()`, `online_parcels_get_by_tracking()`, `deliveries_repair_orphaned_shipped_parcel()`, `deliveries_find_existing_recordings()` |
 | `ship_parcel` | `api_deliveries_ship_parcel()` | `ims_pdo()`, `online_parcels_ship()` |
-| `cancel_parcel_scan` | `api_deliveries_cancel_parcel_scan()` | `ims_pdo()`, `online_parcels_cancel()` |
+| `cancel_parcel_scan` | `api_deliveries_cancel_parcel_scan()` | — |
 | `cancel_log_list` | `api_deliveries_cancel_log_list()` | `ims_pdo()`, `online_parcels_cancel_log_list()` |
 | `hold_parcel` | `api_deliveries_hold_parcel()` | `ims_pdo()`, `online_parcels_hold()` |
 | `rewaybill` | `api_deliveries_rewaybill()` | `ims_pdo()`, `online_parcels_rewaybill()` |
@@ -205,6 +205,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `print_sheet` | `api_dept_pouch_print_sheet()` | `dept_pouch_label_sheet_html()`, `ims_pdo()` |
 | `scan_stock_in` | `api_dept_pouch_scan_stock_in()` | `dept_pouch_scan_stock_in()`, `ims_pdo()` |
 | `request_scan_log` | `api_dept_pouch_request_scan_log()` | `dept_pouch_request_scan_log()`, `ims_pdo()` |
+| `pos_lookup` | `api_dept_pouch_pos_lookup()` | `dept_pouch_pos_lookup()`, `ims_pdo()` |
 
 ### `edit_requests.php`
 
@@ -375,6 +376,21 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `parse` | `api_order_remarks_parse()` | `order_remarks_parse_workbook()` |
 | `export` | `api_order_remarks_export()` | `order_remarks_export_workbook()` |
 | `profiles` | `api_order_remarks_profiles()` | `order_remarks_profile_labels()` |
+
+### `pack_cancel_restock.php`
+
+- **Path:** `api/v1/pack_cancel_restock.php`
+- **URL:** `/rts/api/v1/pack_cancel_restock.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `start` | `api_pack_cancel_start()` | `pack_cancel_restock_start()`, `ims_pdo()` |
+| `get` | `api_pack_cancel_get()` | `pack_cancel_restock_get()`, `ims_pdo()` |
+| `scan` | `api_pack_cancel_scan()` | `pack_cancel_restock_scan()`, `ims_pdo()` |
+| `confirm` | `api_pack_cancel_confirm()` | `pack_cancel_restock_confirm()`, `ims_pdo()` |
+| `discard` | `api_pack_cancel_discard()` | `pack_cancel_restock_discard()`, `ims_pdo()` |
+| `list` | `api_pack_cancel_list()` | `pack_cancel_restock_list()`, `ims_pdo()` |
 
 ### `parcels.php`
 

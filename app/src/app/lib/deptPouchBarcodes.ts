@@ -107,4 +107,18 @@ export const deptPouchBarcodesApi = {
       page: number;
       per_page: number;
     }>(ENDPOINT, "request_scan_log", { request_id: requestId, page }),
+  posLookup: (code: string) =>
+    apiGet<{
+      barcode: {
+        kind: "dept";
+        barcode_id: number;
+        code: string;
+        product_key: string;
+        product_label: string;
+        batch_no: string;
+        unit_id: number;
+        unit_status: string;
+        unit_noun: string;
+      };
+    }>(ENDPOINT, "pos_lookup", { code }),
 };

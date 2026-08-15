@@ -1,287 +1,450 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
-import { BookOpen, Loader2, ScanLine } from "lucide-react";
-import { TrackingQrScannerModal } from "@/app/components/scan/TrackingQrScannerModal";
-import { usePreloadQrScanner } from "@/app/hooks/usePreloadQrScanner";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { BookOpen, Camera, CheckCircle2, ChevronDown, ChevronRight, Loader2, XCircle } from "lucide-react";
+import { PageLayout } from "@/app/components/PageLayout";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
+import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
+import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
+import { Button } from "@/app/components/ui/button";
+import {
+  AppErrorBanner,
+  AppSectionEnter,
+  AppSuccessNotice,
+  AppStepSwitch,
+  appHeaderActionClass,
+  appHoverRow,
+} from "@/app/components/layout/appFeedbackMotion";
+import { ApiError } from "@/app/lib/api";
+import { packCancelRestockApi, type PackCancelRestockSession } from "@/app/lib/packCancelRestock";
+import { playScanBeep } from "@/app/lib/scanBeep";
 import { DeliveriesCancelledGuideModal } from "@/app/components/fulfillment/DeliveriesCancelledGuideModal";
 import { runDeliveriesCancelledTour } from "@/app/components/fulfillment/deliveriesCancelledTour";
-import { PageLayout } from "@/app/components/PageLayout";
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
-import {
-  deliveriesCancelLogList,
-  deliveriesCancelParcelScan,
-  deliveriesParcelByTracking,
-  type DeliveryCancelLogRow,
-} from "@/app/lib/deliveriesApi";
-import { ApiError } from "@/app/lib/api";
-import { playScanBeep } from "@/app/lib/scanBeep";
-import { AppErrorBanner, AppSuccessNotice, appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
-import { useAuth } from "@/app/context/AuthContext";
 
-function ParcelStatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    packing: "bg-amber-100 text-amber-900",
-    shipped: "bg-green-100 text-green-900",
-    cancelled: "bg-red-100 text-red-900",
-    returned: "bg-muted text-muted-foreground",
-  };
-  return (
-    <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded capitalize ${styles[status] ?? "bg-muted text-muted-foreground"}`}>
-      {status}
-    </span>
-  );
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
 }
 
+function daysAgoIso(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatWhen(raw: string | null | undefined) {
+  if (!raw) return "—";
+  return new Date(raw.replace(" ", "T")).toLocaleString();
+}
+
+function itemLabel(g: { kind?: string; product_label?: string; variant: string; size_label: string }) {
+  if (g.kind === "dept") return g.product_label || g.variant;
+  return `${g.variant} ${g.size_label}`.trim();
+}
+
+const PRODUCT_FILTERS = [
+  { value: "all", label: "All products" },
+  { value: "honey", label: "Honey" },
+  { value: "pt", label: "Paragis" },
+  { value: "brc", label: "Black Rice" },
+  { value: "jar_cacao", label: "Cacao" },
+  { value: "honey_comb", label: "Honey Comb" },
+];
+
 export function DeliveriesCancelledPage() {
-  usePreloadQrScanner();
-  const { user } = useAuth();
-  const isExecutive = user?.role === "executive";
-  const [q, setQ] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [cancelRows, setCancelRows] = useState<DeliveryCancelLogRow[]>([]);
-  const [cancelTotal, setCancelTotal] = useState(0);
-  const [cancelPage, setCancelPage] = useState(1);
-  const [busy, setBusy] = useState(false);
-  const [cancelActionBusy, setCancelActionBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [trackingInput, setTrackingInput] = useState("");
-  const [scannerOpen, setScannerOpen] = useState(false);
+  const [tab, setTab] = useState<"restock" | "history">("restock");
   const [guideOpen, setGuideOpen] = useState(false);
-  const loadCancelLogs = useCallback(async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await deliveriesCancelLogList({ q, from, to, page: cancelPage, per_page: 10 });
-      setCancelRows(res.rows);
-      setCancelTotal(res.total);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Cancelled log load failed.");
-    } finally {
-      setBusy(false);
-    }
-  }, [q, from, to, cancelPage]);
-
-  useEffect(() => {
-    void loadCancelLogs();
-  }, [loadCancelLogs]);
-
-  const flash = (msg: string) => {
-    setNotice(msg);
-    window.setTimeout(() => setNotice(null), 3200);
-  };
-
-  const runCancelByTracking = useCallback(
-    async (rawTracking: string) => {
-      const input = rawTracking.trim();
-      if (!input) return;
-      setCancelActionBusy(true);
-      setError(null);
-      try {
-        const lookup = await deliveriesParcelByTracking(input);
-        if (!lookup.parcel) {
-          playScanBeep("bad");
-          setError("No parcel found for this tracking.");
-          return;
-        }
-        const tracking = lookup.parcel.tracking_number;
-        const status = lookup.parcel.status;
-        const prompt =
-          status === "shipped"
-            ? `Mark ${tracking} as courier cancelled? The sealed box can be re-waybilled — inventory will not be restored.`
-            : `Mark ${tracking} as courier cancelled? Box can be re-waybilled later.`;
-        if (!window.confirm(prompt)) return;
-
-        const result = await deliveriesCancelParcelScan(tracking);
-        playScanBeep("ok");
-        flash(result.message || "Parcel cancelled.");
-        setTrackingInput("");
-        await loadCancelLogs();
-      } catch (e) {
-        playScanBeep("bad");
-        setError(e instanceof ApiError ? e.message : "Cancel failed.");
-      } finally {
-        setCancelActionBusy(false);
-      }
-    },
-    [loadCancelLogs],
-  );
 
   return (
     <PageLayout
-      title="Deliveries cancelled"
-      subtitle="Courier-cancelled orders — sealed boxes stay packed; re-waybill on Add deliveries"
+      title="Cancelled restock"
+      subtitle="Scan packed stickers back to finished stock after courier cancel. Sealed-box re-waybill stays on Hold."
       actions={
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
-            <BookOpen size={13} /> Guide
-          </button>
-          <Link to="/deliveries/review" className="sm:hidden text-xs font-semibold rounded-lg border border-border px-2.5 py-1.5 text-muted-foreground">
-            Review
-          </Link>
-          <div className="hidden sm:flex items-center gap-3">
-            <Link to="/deliveries/review" className="text-xs font-semibold rounded-lg border border-border px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40">
-              Review batches
-            </Link>
-            <Link to="/deliveries" className="text-sm font-semibold text-[#C8900A]">
-              ← Add deliveries
-            </Link>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          className={appHeaderActionClass}
+        >
+          <BookOpen size={13} /> Guide
+        </button>
       }
     >
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3 mb-6" data-tour="deliveries-cancel-scanner">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-foreground">Cancel parcel scanner</h2>
-          <button
-            type="button"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-            onClick={() => {
-              setError(null);
-              setScannerOpen(true);
-            }}
-            disabled={cancelActionBusy}
-          >
-            <ScanLine size={13} />
-            Scan parcel
-          </button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Use after courier cancel feedback. Inventory stays deducted — re-waybill the sealed box on Add deliveries.
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            className="min-w-[14rem] flex-1 rounded-lg border border-border px-3 py-2 text-sm font-mono"
-            placeholder="Scan or type tracking number"
-            value={trackingInput}
-            onChange={(e) => setTrackingInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void runCancelByTracking(trackingInput);
-              }
-            }}
-          />
-          <button
-            type="button"
-            className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            onClick={() => void runCancelByTracking(trackingInput)}
-            disabled={cancelActionBusy || !trackingInput.trim()}
-          >
-            {cancelActionBusy ? "Cancelling..." : "Cancel parcel"}
-          </button>
-        </div>
-      </div>
-
-      <AppSuccessNotice message={notice} />
-      <AppErrorBanner message={error} />
-
-      <div className="flex flex-wrap gap-2 mb-4" data-tour="deliveries-cancel-filters">
-        <input
-          className="rounded-lg border border-border px-3 py-2 text-sm"
-          placeholder="Search tracking, name, items…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <input type="date" className="rounded-lg border border-border px-2 py-2 text-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
-        <input type="date" className="rounded-lg border border-border px-2 py-2 text-sm" value={to} onChange={(e) => setTo(e.target.value)} />
-        <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground" onClick={() => void loadCancelLogs()}>
-          Search
-        </button>
-      </div>
-
-      {busy ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mb-2" /> : null}
-      <div className="overflow-x-auto rounded-xl border border-border" data-tour="deliveries-cancel-table">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/40">
-            <tr>
-              <th className="px-3 py-2 text-left">When</th>
-              <th className="px-3 py-2 text-left">Tracking</th>
-              <th className="px-3 py-2 text-left">Prev status</th>
-              <th className="px-3 py-2 text-left">Box</th>
-              <th className="px-3 py-2 text-left">Cancelled by</th>
-              <th className="px-3 py-2 text-left">Order</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cancelRows.map((r) => (
-              <tr key={r.id} className="border-t border-border align-top">
-                <td className="px-3 py-2 whitespace-nowrap">{r.created_at.replace("T", " ")}</td>
-                <td className="px-3 py-2">
-                  <p className="font-mono">{r.tracking_number}</p>
-                  {r.items_raw ? <p className="text-xs text-muted-foreground max-w-72 truncate">{r.items_raw}</p> : null}
-                </td>
-                <td className="px-3 py-2">
-                  <ParcelStatusBadge status={r.previous_status} />
-                </td>
-                <td className="px-3 py-2">
-                  <span className="text-xs text-muted-foreground">Sealed — re-waybill</span>
-                </td>
-                <td className="px-3 py-2">
-                  {r.cancelled_by_name || r.cancelled_by_username ? (
-                    <span>{r.cancelled_by_name ?? r.cancelled_by_username}</span>
-                  ) : r.cancelled_by_user_id ? (
-                    <span>User #{r.cancelled_by_user_id}</span>
-                  ) : (
-                    <span className="text-muted-foreground">System</span>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  {r.order_no ? <p>{r.order_no}</p> : <p className="text-muted-foreground">—</p>}
-                  {r.recipient_name ? <p className="text-xs text-muted-foreground">{r.recipient_name}</p> : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {!busy && cancelRows.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">No cancelled deliveries yet.</p>
-      ) : null}
-
-      <p className="text-xs text-muted-foreground mt-2">
-        {cancelTotal} cancelled order{cancelTotal === 1 ? "" : "s"} · page {cancelPage}
-      </p>
-      <div className="flex gap-2 mt-2" data-tour="deliveries-cancel-pagination">
+      <div className="flex gap-1 mb-4 p-1 rounded-xl bg-secondary/40 w-fit max-w-full">
         <button
           type="button"
-          disabled={cancelPage <= 1}
-          className="text-sm"
-          onClick={() => setCancelPage((p) => Math.max(1, p - 1))}
+          onClick={() => setTab("restock")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            tab === "restock" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
         >
-          Prev
+          Restock
         </button>
         <button
           type="button"
-          disabled={cancelRows.length < 10}
-          className="text-sm"
-          onClick={() => setCancelPage((p) => p + 1)}
+          onClick={() => setTab("history")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            tab === "history" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
         >
-          Next
+          History
         </button>
       </div>
 
-      {scannerOpen ? (
-        <TrackingQrScannerModal
-          onClose={() => setScannerOpen(false)}
-          title="Scan parcel to cancel"
-          titleId="deliveries-cancel-scan-modal-title"
-          onDecoded={decoded => void runCancelByTracking(decoded)}
-          manualEntryLabel="Or type tracking to cancel"
-        />
-      ) : null}
+      <AppStepSwitch stepKey={tab}>
+        {tab === "restock" ? <RestockLivePanel /> : <RestockHistoryPanel />}
+      </AppStepSwitch>
 
       <DeliveriesCancelledGuideModal
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
-        isExecutive={isExecutive}
         onStartTour={() => {
           setGuideOpen(false);
-          startPageTourAfterModalClose(() => runDeliveriesCancelledTour({ isExecutive }));
+          startPageTourAfterModalClose(() => runDeliveriesCancelledTour());
         }}
       />
     </PageLayout>
+  );
+}
+
+function RestockLivePanel() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [session, setSession] = useState<PackCancelRestockSession | null>(null);
+  const [code, setCode] = useState("");
+  const [flash, setFlash] = useState<"ok" | "dup" | "bad" | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const cameraTitleId = useId();
+
+  const start = useCallback(async () => {
+    setError(null);
+    try {
+      const res = await packCancelRestockApi.start();
+      setSession(res.session);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not start restock session.");
+    }
+  }, []);
+
+  useEffect(() => {
+    void start();
+  }, [start]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [session?.id]);
+
+  const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
+    if (!session) return { kind: "error", message: "Session not ready." };
+    const value = (raw ?? code).trim();
+    if (!value) return;
+    setCode("");
+    try {
+      const res = await packCancelRestockApi.scan(session.id, value);
+      setSession(res.session);
+      if (res.result === "ok") {
+        playScanBeep("ok");
+        setFlash("ok");
+        const label =
+          res.lookup?.kind === "dept"
+            ? res.lookup.product_label || "Dept"
+            : `${res.lookup?.variant ?? ""} ${res.lookup?.size_label ?? ""}`.trim() || "Honey";
+        setMsg(label);
+        window.setTimeout(() => setFlash(null), 650);
+        inputRef.current?.focus();
+        return { kind: "success", message: `Restock queued: ${label}` };
+      }
+      if (res.result === "duplicate_session") {
+        playScanBeep("dup");
+        setFlash("dup");
+        setMsg("Already in this session");
+        window.setTimeout(() => setFlash(null), 650);
+        return { kind: "duplicate", message: "Already in this session." };
+      }
+      playScanBeep("bad");
+      setFlash("bad");
+      const reason = res.result.replace(/_/g, " ");
+      setMsg(reason);
+      window.setTimeout(() => setFlash(null), 650);
+      return { kind: "error", message: reason };
+    } catch (e) {
+      playScanBeep("bad");
+      setFlash("bad");
+      const reason = e instanceof ApiError ? e.message : "Scan failed.";
+      setMsg(reason);
+      window.setTimeout(() => setFlash(null), 650);
+      return { kind: "error", message: reason };
+    }
+  };
+
+  const confirm = async () => {
+    if (!session) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await packCancelRestockApi.confirm(session.id);
+      setOk(`Restored ${res.session.item_count} item${res.session.item_count === 1 ? "" : "s"} to finished stock.`);
+      setConfirmOpen(false);
+      await start();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Confirm failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const discard = async () => {
+    if (!session) return;
+    await packCancelRestockApi.discard(session.id);
+    setOk("Session discarded.");
+    await start();
+  };
+
+  const flashClass =
+    flash === "ok"
+      ? "bg-green-100 border-green-300 text-green-800"
+      : flash === "dup"
+        ? "bg-amber-100 border-amber-300 text-amber-800"
+        : flash === "bad"
+          ? "bg-red-100 border-red-300 text-red-800"
+          : "bg-secondary/30 border-border text-muted-foreground";
+
+  return (
+    <AppSectionEnter className="space-y-4">
+      {error && <AppErrorBanner message={error} />}
+      {ok && <AppSuccessNotice message={ok} />}
+      <p className="text-xs text-muted-foreground">
+        Only stickers marked <strong className="text-foreground">packed</strong> (from Pack scan) can be returned.
+        Confirm restores finished inventory.
+      </p>
+      <div className="flex gap-2">
+        <input
+          ref={inputRef}
+          className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide font-mono"
+          placeholder="Scan packed barcode…"
+          value={code}
+          onChange={e => setCode(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void onScan();
+            }
+          }}
+        />
+        <Button type="button" variant="outline" className="gap-1.5 shrink-0" onClick={() => setCameraOpen(true)}>
+          <Camera size={16} /> Camera
+        </Button>
+      </div>
+      <div className={`h-20 rounded-xl border flex items-center justify-center gap-2 text-sm font-semibold ${flashClass}`}>
+        {flash === "ok" && <CheckCircle2 size={22} />}
+        {flash === "bad" && <XCircle size={22} />}
+        {flash === "ok" ? "Queued" : flash === "dup" ? "Already in session" : flash === "bad" ? "Not accepted" : "Ready"}
+      </div>
+      {msg && <p className="text-sm">{msg}</p>}
+      <p className="text-xl font-bold">{session?.item_count ?? 0} items to restore</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {(session?.grouped ?? []).map(g => (
+          <div key={`${g.kind}-${g.product_key}-${g.size_label}`} className="bg-card border rounded-xl px-3 py-2">
+            <p className="text-xs text-muted-foreground capitalize">{itemLabel(g)}</p>
+            <p className="text-lg font-bold">{g.qty}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" onClick={() => setConfirmOpen(true)} disabled={!session || session.item_count < 1}>
+          Confirm restock
+        </Button>
+        <Button type="button" variant="outline" onClick={() => void discard()} disabled={!session || session.item_count < 1}>
+          Discard session
+        </Button>
+      </div>
+      <AppModal open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <AppModalHeader title="Confirm inventory restore" onClose={() => setConfirmOpen(false)} />
+        <AppModalBody className="space-y-2">
+          <p className="text-sm text-muted-foreground">These return to finished stock now.</p>
+          {(session?.grouped ?? []).map(g => (
+            <p key={`${g.kind}-${g.product_key}`} className="text-sm font-medium capitalize">
+              {g.qty} × {itemLabel(g)}
+            </p>
+          ))}
+        </AppModalBody>
+        <AppModalFooter>
+          <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>
+            Keep scanning
+          </Button>
+          <Button type="button" onClick={() => void confirm()} disabled={busy}>
+            {busy ? <Loader2 className="animate-spin" size={16} /> : null}
+            Confirm
+          </Button>
+        </AppModalFooter>
+      </AppModal>
+      {cameraOpen ? (
+        <BarcodeCameraScannerModal
+          title="Scan packed barcode"
+          titleId={cameraTitleId}
+          continuous
+          scanPrompt="Scan each packed sticker returning from courier cancel."
+          onClose={() => setCameraOpen(false)}
+          onDecoded={decoded => onScan(decoded)}
+        />
+      ) : null}
+    </AppSectionEnter>
+  );
+}
+
+function RestockHistoryPanel() {
+  const [from, setFrom] = useState(() => daysAgoIso(13));
+  const [to, setTo] = useState(() => todayIso());
+  const [productKey, setProductKey] = useState("all");
+  const [applied, setApplied] = useState({ from: daysAgoIso(13), to: todayIso(), product_key: "all" });
+  const [page, setPage] = useState(1);
+  const [rows, setRows] = useState<PackCancelRestockSession[]>([]);
+  const [total, setTotal] = useState(0);
+  const [perPage, setPerPage] = useState(30);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await packCancelRestockApi.list({
+        from: applied.from,
+        to: applied.to,
+        product_key: applied.product_key !== "all" ? applied.product_key : undefined,
+        page,
+      });
+      setRows(res.rows);
+      setTotal(res.total);
+      setPerPage(res.per_page);
+    } catch (e) {
+      setRows([]);
+      setError(e instanceof ApiError ? e.message : "Could not load restock history.");
+    } finally {
+      setLoading(false);
+    }
+  }, [applied, page]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+  return (
+    <AppSectionEnter className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        Confirmed restock sessions — how many units returned to inventory after courier cancel.
+      </p>
+      <div className="flex flex-wrap gap-2 items-end bg-card border rounded-xl p-3">
+        <label className="text-xs text-muted-foreground">
+          From
+          <input type="date" className="mt-1 block border rounded-lg px-2 py-1.5 text-sm" value={from} onChange={e => setFrom(e.target.value)} />
+        </label>
+        <label className="text-xs text-muted-foreground">
+          To
+          <input type="date" className="mt-1 block border rounded-lg px-2 py-1.5 text-sm" value={to} onChange={e => setTo(e.target.value)} />
+        </label>
+        <label className="text-xs text-muted-foreground">
+          Product
+          <select
+            className="mt-1 block border rounded-lg px-2 py-1.5 text-sm bg-background min-w-[9rem]"
+            value={productKey}
+            onChange={e => setProductKey(e.target.value)}
+          >
+            {PRODUCT_FILTERS.map(opt => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => {
+            setPage(1);
+            setExpanded(null);
+            setApplied({ from: from || daysAgoIso(13), to: to || todayIso(), product_key: productKey });
+          }}
+        >
+          Apply
+        </Button>
+      </div>
+      {error && <AppErrorBanner message={error} />}
+      {loading ? (
+        <p className="text-sm text-muted-foreground py-8 text-center">
+          <Loader2 className="inline animate-spin" size={16} /> Loading…
+        </p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-8 text-center">No confirmed restocks in this range.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map(r => {
+            const open = expanded === r.id;
+            const summary = (r.grouped ?? []).map(g => `${g.qty}× ${itemLabel(g)}`).join(" · ");
+            return (
+              <div key={r.id} className="bg-card border rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  className={`w-full text-left px-3 py-3 flex gap-2 items-start ${appHoverRow}`}
+                  onClick={() => setExpanded(open ? null : r.id)}
+                >
+                  <span className="mt-0.5 text-muted-foreground shrink-0">
+                    {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </span>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <p className="text-sm font-semibold">{formatWhen(r.confirmed_at)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.confirmed_by_name || "—"} · {r.item_count} returned
+                    </p>
+                    {summary ? <p className="text-xs capitalize text-muted-foreground truncate">{summary}</p> : null}
+                  </div>
+                </button>
+                {open ? (
+                  <div className="border-t px-3 py-3 space-y-2 bg-secondary/20 max-h-56 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="text-xs uppercase text-muted-foreground">
+                        <tr>
+                          <th className="text-left px-2 py-1">Code</th>
+                          <th className="text-left px-2 py-1">Item</th>
+                          <th className="text-left px-2 py-1">Batch</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {r.items.map(it => (
+                          <tr key={`${it.kind}-${it.id}`} className="border-t">
+                            <td className="px-2 py-1 font-mono text-xs">{it.code}</td>
+                            <td className="px-2 py-1 capitalize">{itemLabel(it)}</td>
+                            <td className="px-2 py-1 font-mono text-xs">{it.batch_no || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {!loading && total > 0 && (
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            {total} session{total === 1 ? "" : "s"} · page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+              Previous
+            </Button>
+            <Button type="button" size="sm" variant="outline" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </AppSectionEnter>
   );
 }

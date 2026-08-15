@@ -185,37 +185,10 @@ function api_deliveries_ship_parcel(): void
 
 function api_deliveries_cancel_parcel_scan(): void
 {
-    api_method_allowed(['POST']);
-    $user = api_deliveries_assert_access();
-    api_deliveries_require_csrf();
-
-    $input = api_input();
-    $tracking = trim((string) ($input['tracking_number'] ?? $input['tracking'] ?? ''));
-    $source = trim((string) ($input['cancel_source'] ?? 'scanner'));
-    $noteRaw = isset($input['note']) ? trim((string) $input['note']) : '';
-    $note = $noteRaw !== '' ? $noteRaw : null;
-
-    if ($tracking === '') {
-        api_fail('tracking_number required.', 400);
-    }
-
-    $pdo = ims_pdo();
-    try {
-        $result = online_parcels_cancel($pdo, (int) $user['id'], $tracking, $source, $note);
-        $message = $result['already_cancelled']
-            ? 'Parcel already cancelled.'
-            : 'Courier cancelled — sealed box kept for re-waybill (inventory unchanged).';
-        api_ok([
-            'parcel' => $result['parcel'],
-            'already_cancelled' => (bool) ($result['already_cancelled'] ?? false),
-            'previous_status' => (string) ($result['previous_status'] ?? ''),
-            'inventory_reverted' => (bool) ($result['inventory_reverted'] ?? false),
-            'cancel_event_id' => isset($result['event_id']) ? (int) $result['event_id'] : null,
-            'message' => $message,
-        ]);
-    } catch (RuntimeException $e) {
-        api_fail($e->getMessage(), 400);
-    }
+    api_fail(
+        'Tracking cancel is retired. Use Deliveries → Cancelled barcode restock to return packed stickers to inventory.',
+        410
+    );
 }
 
 function api_deliveries_cancel_log_list(): void

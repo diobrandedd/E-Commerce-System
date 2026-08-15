@@ -16,6 +16,7 @@ export interface POSARLineItem {
   size?: string;
   productKey?: string;
   bottleUnitIds?: number[];
+  pouchUnitIds?: number[];
 }
 
 export interface POSARCheckoutResult {
@@ -81,6 +82,7 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
               product_key: l.productKey,
               product_id: l.productId,
               qty: l.qty,
+              pouch_unit_ids: l.pouchUnitIds ?? [],
             }));
 
       const result = await apiPost<POSARCheckoutResult>("pos.php", action, {
@@ -88,7 +90,7 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
         debtor_user_id: debtor.debtor_user_id,
         debtor_name: debtorName,
         debtor_mobile: mobile.trim(),
-        stock_source: stockSource,
+        stock_source: mode === "dept" && lines.some(l => (l.pouchUnitIds?.length ?? 0) > 0) ? "packaging" : stockSource,
       });
       onSuccess(result);
     } catch (e) {

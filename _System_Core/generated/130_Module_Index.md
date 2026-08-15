@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-08-15T08:14:18+02:00
+generated: 2026-08-15T09:10:21+02:00
 type: memory-bank
 ---
 
@@ -29,8 +29,8 @@ type: memory-bank
 | [[modules/delivery_duplicates]] | 1 |
 | [[modules/delivery_edit_requests]] | 15 |
 | [[modules/dept_inventory]] | 17 |
-| [[modules/dept_pos]] | 4 |
-| [[modules/dept_pouch_barcodes]] | 24 |
+| [[modules/dept_pos]] | 5 |
+| [[modules/dept_pouch_barcodes]] | 27 |
 | [[modules/dept_pricing]] | 8 |
 | [[modules/dept_production]] | 29 |
 | [[modules/dept_products]] | 23 |
@@ -53,6 +53,7 @@ type: memory-bank
 | [[modules/online_order_parcels]] | 29 |
 | [[modules/online_orders_generator]] | 44 |
 | [[modules/order_remarks]] | 19 |
+| [[modules/pack_cancel_restock]] | 8 |
 | [[modules/parcel_pack_costing]] | 37 |
 | [[modules/partner_sold_reconcile]] | 16 |
 | [[modules/pdf_to_excel]] | 15 |

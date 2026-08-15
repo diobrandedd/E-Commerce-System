@@ -1,7 +1,7 @@
 ---
 title: tracking_search
 source: includes/tracking_search.php
-generated: 2026-08-15T08:14:53+02:00
+generated: 2026-08-15T09:10:56+02:00
 type: module
 function_count: 4
 ---
@@ -17,10 +17,10 @@ function_count: 4
 
 **Callers (4):**
 
-- `api/v1/deliveries.php`:327 — `if (tracking_search_is_tn_shaped($q)) {`
+- `api/v1/deliveries.php`:300 — `if (tracking_search_is_tn_shaped($q)) {`
 - `includes/online_order_parcels.php`:750 — `if (tracking_search_is_tn_shaped($q)) {`
-- `includes/rts_case_handlers.php`:732 — `if (tracking_search_is_tn_shaped($q)) {`
-- `includes/rts_case_handlers.php`:848 — `if (tracking_search_is_tn_shaped($q)) {`
+- `includes/rts_case_handlers.php`:747 — `if (tracking_search_is_tn_shaped($q)) {`
+- `includes/rts_case_handlers.php`:863 — `if (tracking_search_is_tn_shaped($q)) {`
 
 ## tracking_search_escape_like {#tracking_search_escape_like}
 
@@ -33,18 +33,18 @@ function_count: 4
 
 **Callers (5):**
 
-- `api/v1/deliveries.php`:328 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('i.tracking_number', $q);`
+- `api/v1/deliveries.php`:301 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('i.tracking_number', $q);`
 - `includes/online_order_parcels.php`:752 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('tracking_number', $q);`
 - `includes/online_order_parcels.php`:753 — `[$onoSql, $onoParams] = tracking_search_tn_column_sql('order_no', $q);`
-- `includes/rts_case_handlers.php`:733 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('c.tracking_number', $q);`
-- `includes/rts_case_handlers.php`:849 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('c.tracking_number', $q);`
+- `includes/rts_case_handlers.php`:748 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('c.tracking_number', $q);`
+- `includes/rts_case_handlers.php`:864 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('c.tracking_number', $q);`
 
 ## tracking_search_contains_like {#tracking_search_contains_like}
 
 **Callers (4):**
 
-- `api/v1/deliveries.php`:334 — `$like = tracking_search_contains_like($q);`
+- `api/v1/deliveries.php`:307 — `$like = tracking_search_contains_like($q);`
 - `includes/online_order_parcels.php`:760 — `$like = tracking_search_contains_like($q);`
-- `includes/rts_case_handlers.php`:740 — `$params[] = tracking_search_contains_like($q);`
-- `includes/rts_case_handlers.php`:856 — `$params[] = tracking_search_contains_like($q);`
+- `includes/rts_case_handlers.php`:755 — `$params[] = tracking_search_contains_like($q);`
+- `includes/rts_case_handlers.php`:871 — `$params[] = tracking_search_contains_like($q);`
 

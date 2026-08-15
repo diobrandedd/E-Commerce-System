@@ -14,18 +14,14 @@ function GuideSection({ title, children }: { title: string; children: React.Reac
 interface DeliveriesCancelledGuideModalProps {
   open: boolean;
   onClose: () => void;
-  isExecutive: boolean;
   onStartTour: () => void;
 }
 
 export function DeliveriesCancelledGuideModal({
   open,
   onClose,
-  isExecutive,
   onStartTour,
 }: DeliveriesCancelledGuideModalProps) {
-  const roleLabel = isExecutive ? "Executive" : "Production Manager";
-
   return (
     <AppModal
       open={open}
@@ -37,10 +33,7 @@ export function DeliveriesCancelledGuideModal({
         title={
           <span className="flex items-center gap-2 flex-wrap">
             <BookOpen size={18} className="text-[#C8900A] flex-shrink-0" />
-            Deliveries cancelled guide
-            <span className="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
-              {roleLabel}
-            </span>
+            Cancelled restock guide
           </span>
         }
         titleId="deliveries-cancelled-guide-title"
@@ -49,44 +42,34 @@ export function DeliveriesCancelledGuideModal({
       <AppModalBody className="flex flex-col min-h-0 overflow-y-auto overscroll-contain gap-5 py-4">
         <GuideSection title="What this page is for">
           <p>
-            Record courier-cancelled orders after you get void feedback. The physical box is usually still{" "}
-            <strong className="text-foreground">sealed and packed</strong> — inventory stays deducted so you can
-            re-waybill and re-ship on Add deliveries.
+            When a courier cancel means the <strong className="text-foreground">box was opened</strong> and products
+            come back, scan each packed sticker to restore finished inventory. History shows how many units returned.
           </p>
         </GuideSection>
 
-        <GuideSection title={`Your workflow (${roleLabel})`}>
+        <GuideSection title="Workflow">
           <ol className="list-decimal pl-4 space-y-1.5">
-            <li>Scan or type the old tracking number when the courier marks the order cancelled.</li>
-            <li>Confirm the prompt — status becomes <strong className="text-foreground">cancelled</strong>.</li>
-            <li>CSR prints a replacement waybill if needed (Online Orders).</li>
+            <li>Open <strong className="text-foreground">Restock</strong> and scan each packed honey or dept sticker.</li>
+            <li>Confirm — units become in stock again and finished qty goes up.</li>
+            <li>Use <strong className="text-foreground">History</strong> to audit returns by date or product.</li>
             <li>
-              Go to <strong className="text-foreground">Add deliveries → Re-waybill</strong>: old TN → new TN → photo →
-              ship.
+              Sealed box still reusable? Use <strong className="text-foreground">Hold / Re-waybill</strong> on Add
+              deliveries — that path does not restock.
             </li>
-            <li>Use the log table below to audit who cancelled and when.</li>
           </ol>
         </GuideSection>
 
-        <GuideSection title="What does not happen">
+        <GuideSection title="What this is not">
           <ul className="list-disc pl-4 space-y-1">
-            <li>Inventory is <strong className="text-foreground">not</strong> restored — the box is still packed</li>
-            <li>This is not an opened return (RTS handles opened returns separately)</li>
-            <li>Do not use this for wrong-label only — use On hold on Add deliveries instead</li>
+            <li>Not tracking-QR parcel cancel (retired)</li>
+            <li>Not RTS case recording (that still uses tracking + optional barcodes on RTS Record)</li>
+            <li>Only accepts stickers already marked packed from Pack scan</li>
           </ul>
         </GuideSection>
 
-        <GuideSection title="Allowed parcel status">
-          <p>
-            Cancel scan works from <strong className="text-foreground">packing</strong> or{" "}
-            <strong className="text-foreground">shipped</strong>. Already-cancelled parcels show a friendly message if
-            scanned again.
-          </p>
-        </GuideSection>
-
         <GuideWalkthroughSection />
+        <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />
       </AppModalBody>
-      <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />
     </AppModal>
   );
 }

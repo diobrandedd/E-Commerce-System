@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-08-15T08:14:23+02:00
+generated: 2026-08-15T09:10:26+02:00
 type: module
 function_count: 17
 ---
@@ -40,7 +40,7 @@ function_count: 17
 
 **Tables:** `dept_inventory_rows`
 
-**Callers (7):**
+**Callers (8):**
 
 - `includes/dept_inventory.php`:406 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/dept_inventory.php`:449 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
@@ -49,6 +49,7 @@ function_count: 17
 - `includes/dept_production.php`:954 — `$row = dept_inventory_ensure_row($pdo, $userId, 'brc');`
 - `includes/dept_production.php`:1007 — `$row = dept_inventory_ensure_row($pdo, $userId, 'jar_cacao');`
 - `includes/dept_production.php`:1037 — `$row = dept_inventory_ensure_row($pdo, $userId, 'honey_comb');`
+- `includes/pack_cancel_restock.php`:354 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 
 ## dept_inventory_stock_in {#dept_inventory_stock_in}
 
@@ -146,10 +147,11 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `dept_inventory_rows`
 
-**Callers (4):**
+**Callers (5):**
 
-- `includes/dept_pos.php`:203 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
-- `includes/dept_pos.php`:347 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
+- `includes/dept_pos.php`:259 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
+- `includes/dept_pos.php`:408 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
+- `includes/dept_pouch_barcodes.php`:774 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
 - `includes/honey_bottle_barcodes.php`:1402 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
 - `includes/honey_parcel_inventory.php`:88 — `$deducted = dept_inventory_deduct($pdo, $productKey, (float) $qty);`
 
@@ -168,8 +170,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/honey.php`:624 — `$catalog = dept_inventory_catalog_snapshot(`
 - `api/v1/honey.php`:663 — `api_ok(['products' => dept_inventory_catalog_snapshot($pdo, $deptKey !== '' ? $deptKey : null)]);`
-- `includes/dept_pos.php`:14 — `foreach (dept_inventory_catalog_snapshot($pdo, $deptKey) as $item) {`
-- `includes/dept_pos.php`:48 — `$snapshot = dept_inventory_catalog_snapshot($pdo);`
+- `includes/dept_pos.php`:37 — `foreach (dept_inventory_catalog_snapshot($pdo, $deptKey) as $item) {`
+- `includes/dept_pos.php`:71 — `$snapshot = dept_inventory_catalog_snapshot($pdo);`
 
 ## dept_raw_set_bags_on_hand {#dept_raw_set_bags_on_hand}
 

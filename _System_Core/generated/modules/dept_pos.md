@@ -1,9 +1,9 @@
 ---
 title: dept_pos
 source: includes/dept_pos.php
-generated: 2026-08-15T08:14:24+02:00
+generated: 2026-08-15T09:10:27+02:00
 type: module
-function_count: 4
+function_count: 5
 ---
 
 
@@ -19,9 +19,16 @@ function_count: 4
 - `includes/dept_products.php`
 - `includes/ar_credits.php`
 - `includes/honey_pos.php`
+- `includes/dept_pouch_barcodes.php`
 - `includes/rts_inventory_sync.php`
 - `includes/rts_inventory_sync.php`
 - `includes/rts_inventory_sync.php`
+
+## dept_pos_pouch_unit_ids_from_entry {#dept_pos_pouch_unit_ids_from_entry}
+
+**Callers (1):**
+
+- `includes/dept_pos.php`:86 — `$unitIds = dept_pos_pouch_unit_ids_from_entry($entry);`
 
 ## dept_pos_catalog {#dept_pos_catalog}
 
@@ -35,8 +42,8 @@ function_count: 4
 
 **Callers (3):**
 
-- `includes/dept_pos.php`:148 — `$cleanLines = dept_pos_build_cart_lines($pdo, $items, $discountFactor, $stockSource);`
-- `includes/dept_pos.php`:294 — `$cleanLines = dept_pos_build_cart_lines($pdo, $items, 1.0, $stockSource);`
+- `includes/dept_pos.php`:200 — `$cleanLines = dept_pos_build_cart_lines($pdo, $items, $discountFactor, $stockSource);`
+- `includes/dept_pos.php`:351 — `$cleanLines = dept_pos_build_cart_lines($pdo, $items, 1.0, $stockSource);`
 - `includes/pos_discount_requests.php`:37 — `$clean = dept_pos_build_cart_lines($pdo, $items, $discountFactor);`
 
 ## dept_pos_checkout {#dept_pos_checkout}

@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-08-15_mixed-pack-scan-dept]] |
-| **Active Plan** | [[plans/archive/2026-08-15_mixed-pack-scan-dept_plan]] |
-| **Status** | `shipped` - Mixed pack scan honey + dept (2026-08-15) |
+| **Active Spec** | [[specs/2026-08-15_pos-barcode-dept-and-cancel-restock]] |
+| **Active Plan** | [[plans/archive/2026-08-15_pos-barcode-dept-and-cancel-restock_plan]] |
+| **Status** | `shipped` - POS barcode + cancel restock + RTS barcodes (2026-08-15) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

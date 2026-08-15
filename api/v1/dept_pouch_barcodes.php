@@ -56,6 +56,7 @@ api_dispatch([
     'print_sheet' => 'api_dept_pouch_print_sheet',
     'scan_stock_in' => 'api_dept_pouch_scan_stock_in',
     'request_scan_log' => 'api_dept_pouch_request_scan_log',
+    'pos_lookup' => 'api_dept_pouch_pos_lookup',
 ]);
 
 function api_dept_pouch_request_create(): void
@@ -177,6 +178,18 @@ function api_dept_pouch_request_scan_log(): void
     $page = max(1, (int) ($_GET['page'] ?? 1));
     try {
         api_ok(dept_pouch_request_scan_log(ims_pdo(), $id, $page));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_dept_pouch_pos_lookup(): void
+{
+    api_method_allowed(['GET']);
+    api_require_ims_user();
+    $code = (string) ($_GET['code'] ?? '');
+    try {
+        api_ok(['barcode' => dept_pouch_pos_lookup(ims_pdo(), $code)]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

@@ -1,20 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { AnimatePresence } from "motion/react";
-import { AlertCircle, Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, Camera, Loader2, Trash2 } from "lucide-react";
 import { POSHeader } from "@/app/components/pos/POSHeader";
 import { POSGuideModal } from "@/app/components/pos/POSGuideModal";
 import { POSReceiptView } from "@/app/components/pos/POSReceiptView";
+import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
+import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
 import { runPosProductTour } from "@/app/components/tour/guides/posTour";
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import type { HoneyCheckoutResult } from "@/app/lib/posHoney";
 import {
   ActionFeedbackButton,
-  AnimatedQuantity,
   FeedbackBurst,
   POSModal,
   POSPageTransition,
-  PressableRoundButton,
   CartLineMotion,
 } from "@/app/components/pos/posMotion";
 import { POSARCheckoutPanel, type POSARCheckoutResult } from "@/app/components/pos/POSARCheckoutPanel";
@@ -22,6 +22,8 @@ import { POSStockSourceModal, type PosStockSource } from "@/app/components/pos/P
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { loadPosCatalogCached, readPosCache } from "@/app/lib/posCache";
+import { deptPouchBarcodesApi } from "@/app/lib/deptPouchBarcodes";
+import { playScanBeep } from "@/app/lib/scanBeep";
 import {
   POS_DEPT_LABELS,
   posDeptProductKeyFromRoute,
@@ -39,6 +41,8 @@ export function POSDeptPage() {
   const title = POS_DEPT_LABELS[productKey] ?? "Product";
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const scanRef = useRef<HTMLInputElement>(null);
+  const cameraTitleId = useId();
 
   useEffect(() => {
     if (routeKey && !productKey) {
@@ -49,7 +53,8 @@ export function POSDeptPage() {
   const [product, setProduct] = useState<DeptPosProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [qty, setQty] = useState(1);
+  const [scanCode, setScanCode] = useState("");
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [cart, setCart] = useState<DeptCartLine[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showStockSource, setShowStockSource] = useState(false);
@@ -99,51 +104,16 @@ export function POSDeptPage() {
     void loadCatalog();
   }, [loadCatalog]);
 
-  const cartQty = useMemo(
-    () => cart.filter(l => l.product_key === productKey).reduce((s, l) => s + l.qty, 0),
-    [cart, productKey],
-  );
-
-  const maxQty = useMemo(() => {
-    if (!product) return 0;
-    return Math.max(0, Math.floor(product.available_qty - cartQty));
-  }, [product, cartQty]);
+  useEffect(() => {
+    scanRef.current?.focus();
+  }, [productKey]);
 
   const unitPrice = product?.selling_price ?? 0;
   const sellable = product?.sellable ?? false;
-  const lineTotal = unitPrice * qty;
   const subtotal = cart.reduce((s, l) => s + l.unit_price * l.qty, 0);
   const itemCount = cart.reduce((s, l) => s + l.qty, 0);
 
-  const addToCart = () => {
-    if (!product || !sellable || product.product_id == null || qty < 1 || qty > maxQty) return;
-    const productId = product.product_id;
-    setCart(prev => {
-      const existing = prev.find(l => l.product_key === productKey);
-      if (existing) {
-        return prev.map(l =>
-          l.product_key === productKey ? { ...l, qty: l.qty + qty } : l,
-        );
-      }
-      return [
-        ...prev,
-        {
-          product_key: productKey,
-          product_id: productId,
-          label: product.label,
-          qty,
-          unit_price: unitPrice,
-        },
-      ];
-    });
-    setQty(1);
-    setCartPulse(true);
-    setTimeout(() => setCartPulse(false), 500);
-    setFeedback("success");
-    setTimeout(() => setFeedback(null), 600);
-  };
-
-  const removeLine = (key: string) => setCart(prev => prev.filter(l => l.product_key !== key));
+  const removeLine = (key: string) => setCart(prev => prev.filter(l => l.key !== key));
 
   const handleARSuccess = (result: POSARCheckoutResult) => {
     setShowARCheckout(false);
@@ -160,12 +130,13 @@ export function POSDeptPage() {
   const arLines = useMemo(
     () =>
       cart.map(l => ({
-        key: l.product_key,
+        key: l.key,
         label: l.label,
         qty: l.qty,
         unitPrice: l.unit_price,
         productId: l.product_id,
         productKey: l.product_key,
+        pouchUnitIds: l.pouch_unit_ids,
       })),
     [cart],
   );
@@ -174,6 +145,7 @@ export function POSDeptPage() {
     product_key: l.product_key,
     product_id: l.product_id,
     qty: l.qty,
+    pouch_unit_ids: l.pouch_unit_ids ?? [],
   }));
 
   const mapReceipt = (result: DeptCheckoutResult): HoneyCheckoutResult => ({
@@ -200,8 +172,74 @@ export function POSDeptPage() {
     navigate("/", { replace: true });
   };
 
+  const addScannedUnit = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
+    const value = (raw ?? scanCode).trim();
+    if (!value) return;
+    setScanCode("");
+    setError(null);
+    if (!product || !sellable || product.product_id == null) {
+      const reason = "Product is not sellable yet.";
+      playScanBeep("bad");
+      setError(reason);
+      setFeedback("error");
+      return { kind: "error", message: reason };
+    }
+    try {
+      const res = await deptPouchBarcodesApi.posLookup(value);
+      const barcode = res.barcode;
+      if (barcode.product_key !== productKey) {
+        const reason = `This sticker is ${barcode.product_label}, not ${title}.`;
+        playScanBeep("bad");
+        setError(reason);
+        setFeedback("error");
+        return { kind: "error", message: reason };
+      }
+      if (cart.some(l => l.pouch_unit_ids?.includes(barcode.unit_id))) {
+        const reason = "That sticker is already in the cart.";
+        playScanBeep("dup");
+        setError(reason);
+        setFeedback("error");
+        return { kind: "duplicate", message: reason };
+      }
+      const key = `u${barcode.unit_id}`;
+      setCart(prev => [
+        ...prev,
+        {
+          key,
+          product_key: productKey,
+          product_id: product.product_id!,
+          label: product.label,
+          qty: 1,
+          unit_price: unitPrice,
+          pouch_unit_ids: [barcode.unit_id],
+          code: barcode.code,
+          batch_no: barcode.batch_no,
+        },
+      ]);
+      setCartPulse(true);
+      setTimeout(() => setCartPulse(false), 500);
+      playScanBeep("ok");
+      setFeedback("success");
+      scanRef.current?.focus();
+      return { kind: "success", message: `Added ${barcode.code}` };
+    } catch (e) {
+      const reason = e instanceof ApiError ? e.message : "Scan failed.";
+      const isDup = /already|duplicate/i.test(reason);
+      playScanBeep(isDup ? "dup" : "bad");
+      setError(reason);
+      setFeedback("error");
+      scanRef.current?.focus();
+      return { kind: isDup ? "duplicate" : "error", message: reason };
+    }
+  };
+
   const checkout = async (stockSource: PosStockSource) => {
     if (cart.length === 0) return;
+    if (stockSource === "rts") {
+      setError("Scan packaging stickers for walk-in sell. Use RTS stock source only for non-barcode RTS qty sales.");
+      setShowStockSource(false);
+      return;
+    }
     setCheckingOut(true);
     setError(null);
     try {
@@ -307,11 +345,39 @@ export function POSDeptPage() {
     <POSPageTransition className="min-h-screen bg-background flex flex-col pb-24 [font-family:'DM_Sans',sans-serif]">
       <POSHeader
         title={title}
-        subtitle="Walk-in sale"
+        subtitle="Walk-in sale — scan stickers"
         onExit={handleExit}
         onBack={() => navigate("/pos")}
         onGuide={() => setGuideOpen(true)}
       />
+
+      <div className="px-4 pt-2">
+        <div className="w-full max-w-xl mx-auto flex gap-2">
+          <input
+            ref={scanRef}
+            className="flex-1 border rounded-lg px-3 py-2 text-sm font-mono"
+            placeholder="Scan sticker barcode to add to cart"
+            value={scanCode}
+            onChange={e => setScanCode(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void addScannedUnit();
+              }
+            }}
+            disabled={!sellable}
+          />
+          <ActionFeedbackButton
+            variant="cancel"
+            flashOnClick={false}
+            onClick={() => setCameraOpen(true)}
+            disabled={!sellable}
+            className="shrink-0 px-3 py-2 text-sm flex items-center gap-1.5"
+          >
+            <Camera size={16} /> Camera
+          </ActionFeedbackButton>
+        </div>
+      </div>
 
       {error && (
         <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-sm text-red-700 flex items-center gap-2">
@@ -325,7 +391,6 @@ export function POSDeptPage() {
         </div>
       )}
 
-      {/* Compact centered cart */}
       <section
         data-tour="pos-cart"
         className={`border-b border-border px-4 py-2 transition-colors duration-300 ${cartPulse ? "bg-[#C8900A]/10" : "bg-card"}`}
@@ -333,20 +398,18 @@ export function POSDeptPage() {
         <div className="max-w-xs mx-auto text-center">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Cart</p>
           {cart.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No items yet</p>
+            <p className="text-xs text-muted-foreground">Scan each sticker — remove if customer changes mind</p>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1 max-h-36 overflow-y-auto">
               <AnimatePresence initial={false}>
                 {cart.map(line => (
-                  <CartLineMotion key={line.product_key}>
+                  <CartLineMotion key={line.key}>
                     <div className="flex items-center justify-center gap-2 text-xs bg-secondary/40 rounded-lg px-2 py-1.5">
-                      <span className="font-medium">
-                        {line.label} ×{line.qty}
-                      </span>
+                      <span className="font-medium font-mono">{line.code ?? line.label}</span>
                       <span className="font-semibold text-[#C8900A]">{peso(line.unit_price * line.qty)}</span>
                       <button
                         type="button"
-                        onClick={() => removeLine(line.product_key)}
+                        onClick={() => removeLine(line.key)}
                         className="text-red-400 hover:text-red-600 p-0.5 transition-colors active:scale-90"
                         aria-label="Remove"
                       >
@@ -387,33 +450,10 @@ export function POSDeptPage() {
                   Not sellable — executive must set selling price in Costing.
                 </p>
               )}
+              <p className="text-xs text-muted-foreground mt-3">
+                Packed or already sold stickers are rejected. Tap trash on a cart line to remove it.
+              </p>
             </div>
-
-            {sellable && maxQty > 0 && (
-              <div className="flex items-center justify-center gap-4">
-                <PressableRoundButton onClick={() => setQty(q => Math.max(1, q - 1))} disabled={qty <= 1}>
-                  <Minus size={20} />
-                </PressableRoundButton>
-                <AnimatedQuantity value={qty} className="text-3xl font-bold w-12 text-center" />
-                <PressableRoundButton
-                  onClick={() => setQty(q => Math.min(maxQty, q + 1))}
-                  disabled={qty >= maxQty}
-                >
-                  <Plus size={20} />
-                </PressableRoundButton>
-              </div>
-            )}
-
-            {sellable && (
-              <ActionFeedbackButton
-                variant="primary"
-                disabled={maxQty < 1}
-                onClick={addToCart}
-                className="w-full py-4 rounded-2xl font-bold text-lg disabled:opacity-40"
-              >
-                Add {qty} to cart · {peso(lineTotal)}
-              </ActionFeedbackButton>
-            )}
           </div>
         )}
       </main>
@@ -459,12 +499,10 @@ export function POSDeptPage() {
               />
             </label>
           </div>
-          <div className="space-y-2 text-sm mb-4 text-center">
+          <div className="space-y-2 text-sm mb-4 text-center max-h-32 overflow-y-auto">
             {cart.map(line => (
-              <div key={line.product_key} className="flex justify-center gap-2">
-                <span>
-                  {line.label} ×{line.qty}
-                </span>
+              <div key={line.key} className="flex justify-center gap-2">
+                <span className="font-mono text-xs">{line.code}</span>
                 <span className="font-semibold">{peso(line.unit_price * line.qty)}</span>
               </div>
             ))}
@@ -550,24 +588,6 @@ export function POSDeptPage() {
               <span className="font-semibold text-foreground">{pendingRequest.discount_percent}%</span> discount is
               pending executive review.
             </p>
-            <div className="mt-4 space-y-1 text-sm max-w-xs mx-auto">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Customer</span>
-                <span className="font-medium">{pendingRequest.buyer_name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium">{peso(pendingRequest.subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Discount</span>
-                <span className="font-medium text-red-600">-{peso(pendingRequest.discount_amount)}</span>
-              </div>
-              <div className="flex justify-between border-t pt-2 font-semibold">
-                <span>Total after discount</span>
-                <span style={{ color: "#C8900A" }}>{peso(pendingRequest.total)}</span>
-              </div>
-            </div>
             <div className="mt-4 text-xs text-muted-foreground flex items-center justify-center gap-2">
               <Loader2 size={14} className="animate-spin" />
               Checking status every 3 seconds...
@@ -575,6 +595,17 @@ export function POSDeptPage() {
           </div>
         )}
       </POSModal>
+
+      {cameraOpen ? (
+        <BarcodeCameraScannerModal
+          title={`Scan ${title} barcode`}
+          titleId={cameraTitleId}
+          continuous
+          scanPrompt="Point at each sticker. Packed or sold codes are rejected."
+          onClose={() => setCameraOpen(false)}
+          onDecoded={decoded => addScannedUnit(decoded)}
+        />
+      ) : null}
 
       <FeedbackBurst show={feedback === "success"} kind="success" />
       <FeedbackBurst show={feedback === "error"} kind="error" />

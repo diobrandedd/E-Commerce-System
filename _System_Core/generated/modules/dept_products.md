@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-08-15T08:14:26+02:00
+generated: 2026-08-15T09:10:29+02:00
 type: module
 function_count: 23
 ---
@@ -141,8 +141,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_inventory.php`:390 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:505 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:626 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_pos.php`:72 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_pos.php`:81 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_pos.php`:123 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_pos.php`:132 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pouch_barcodes.php`:36 — `$product = dept_product_by_key($productKey);`
 - `includes/dept_pricing.php`:49 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pricing.php`:234 — `$def = dept_product_by_key($productKey);`
@@ -164,7 +164,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `api/v1/honey.php`:758 — `if (!dept_product_key_valid($productKey)) {`
 - `api/v1/honey.php`:898 — `if (!dept_product_key_valid($productKey)) {`
 - `api/v1/honey.php`:917 — `if (!dept_product_key_valid($productKey)) {`
-- `includes/dept_pos.php`:59 — `if (!dept_product_key_valid($productKey) || $qty <= 0) {`
+- `includes/dept_pos.php`:82 — `if (!dept_product_key_valid($productKey) || $qty <= 0) {`
 - `includes/honey_parcel_inventory.php`:41 — `if ($key === '' || !dept_product_key_valid($key)) {`
 - `includes/pos_discount_requests.php`:17 — `return $productKey !== '' && dept_product_key_valid($productKey);`
 
