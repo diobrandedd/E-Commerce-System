@@ -111,10 +111,10 @@ export function HoneyProductionPage() {
           {showHoneyOps && (
             <>
               <Button type="button" size="sm" variant="outline" onClick={() => setModal("request")}>
-                <Tag size={14} /> Request barcodes
+                <Tag size={14} /> Request<span className="hidden sm:inline">&nbsp;barcodes</span>
               </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => setModal("scan")}>
-                <ScanLine size={14} /> Scan to inventory
+                <ScanLine size={14} /> Scan<span className="hidden sm:inline">&nbsp;to inventory</span>
               </Button>
             </>
           )}
@@ -125,7 +125,9 @@ export function HoneyProductionPage() {
               className="relative overflow-visible"
               onClick={() => setModal("admin")}
             >
-              <Printer size={14} /> Generate / print requests
+              <Printer size={14} />
+              <span className="sm:hidden">Print</span>
+              <span className="hidden sm:inline">Generate / print requests</span>
               {pendingLabels > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center leading-none">
                   {pendingLabels > 99 ? "99+" : pendingLabels}

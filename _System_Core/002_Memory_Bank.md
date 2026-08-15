@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Mobile header actions no longer clipped
+**Change:** `PageLayout` header is now `flex-wrap` with CSS `order` — below `lg` the actions block goes `w-full` onto its own row (title + bell stay on row one) and returns inline at `lg`. Title/subtitle `truncate` inside `min-w-0`. Raw Honey header labels shorten on phones ("Request", "Scan", "Print"). Applies to every page using `PageLayout`. → [[problems/records/2026-08-15_mobile-header-actions-overflow]]
+
 ### 2026-08-15 — Honey batch label unique per variant
 **Change:** Same human batch code (e.g. `JR063026`) may exist on dark and amber separately. Migration phase59 replaces global `uq_honey_pk_batch_no` with `uq_honey_pk_batch_variant` `(batch_no, variant)`. `honey_unique_packaging_batch_no()` and custom packaging create only collide within the same variant; sticker codes remain globally unique. Inventory still only moves on scan. → [[problems/records/2026-08-15_honey-batch-label-per-variant]]
 

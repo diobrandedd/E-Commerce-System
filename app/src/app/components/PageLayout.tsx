@@ -87,23 +87,28 @@ function AppShellFrame() {
           className="shrink-0 z-10 bg-card border-b border-border"
           style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
         >
-          <div className={cn(contentChromeClass, "flex items-center justify-between py-4")}>
-            <div className="flex items-center gap-3 min-w-0">
+          <div className={cn(contentChromeClass, "flex flex-wrap items-center gap-x-3 gap-y-2 py-3 sm:py-4")}>
+            <div className="order-1 flex flex-1 items-center gap-3 min-w-0">
               <button
                 type="button"
-                className="lg:hidden text-muted-foreground hover:text-foreground"
+                className="lg:hidden text-muted-foreground hover:text-foreground shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu size={20} />
               </button>
-              <div>
-                <h2 className="text-base font-semibold text-foreground">{title}</h2>
-                {subtitle && <p className="text-xs text-muted-foreground hidden sm:block">{subtitle}</p>}
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-foreground truncate">{title}</h2>
+                {subtitle && (
+                  <p className="text-xs text-muted-foreground hidden sm:block truncate">{subtitle}</p>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
-              {actions}
-              <div className="relative" ref={bellRef}>
+            {/* Below lg the actions drop to their own full-width row so they wrap instead of
+                overflowing past the viewport edge. */}
+            {actions && (
+              <div className="order-3 w-full min-w-0 lg:order-2 lg:w-auto lg:shrink-0">{actions}</div>
+            )}
+            <div className="relative order-2 shrink-0 lg:order-3" ref={bellRef}>
                 <button
                   type="button"
                   onClick={() => {
@@ -227,7 +232,6 @@ function AppShellFrame() {
                     )}
                   </div>
                 )}
-              </div>
             </div>
           </div>
         </header>
