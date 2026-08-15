@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-08-15T09:53:33+02:00
+generated: 2026-08-15T10:19:20+02:00
 type: memory-bank
-table_count: 78
+table_count: 79
 ---
 
 
@@ -199,6 +199,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_batch_get]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_batch_list]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_request_scan_log]] |
+| `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_defect_history]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_list_entries]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
@@ -887,6 +888,13 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_scan_dept]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_list]] |
+
+## `dept_pouch_defect_log`
+
+| File | Function |
+|------|----------|
+| `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_defect_scan]] |
+| `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_defect_history]] |
 
 ## `honey_warehouse_rows`
 

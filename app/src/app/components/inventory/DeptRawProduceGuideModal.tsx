@@ -14,7 +14,7 @@ import {
   jarCacaoJarsPerBag,
   type DeptProductKey,
 } from "@/app/lib/deptProducts";
-import { deptPouchBarcodesEnabled } from "@/app/lib/deptPouchBarcodes";
+import { deptPouchBarcodesEnabled, deptPouchDefectEnabled } from "@/app/lib/deptPouchBarcodes";
 
 const ROLE_LABELS: Partial<Record<Role, string>> = {
   executive: "Executive",
@@ -171,6 +171,11 @@ export function DeptRawProduceGuideModal({
                 <li>
                   <strong className="text-foreground">Scan history</strong> — open from the header or tap the Finished card to see who scanned each sticker and when.
                 </li>
+                {deptPouchDefectEnabled(productKey) && (
+                  <li>
+                    <strong className="text-foreground">Defect</strong> — scan a finished {meta.sellUnit} that is still in stock to remove it (damaged). Codes not in inventory show <strong className="text-foreground">Not in inventory</strong>. History tab lists who scanned each defect.
+                  </li>
+                )}
               </ol>
               <p>
                 Each sticker is unique and can only be scanned once, so the finished count matches the {meta.sellUnit}s that physically exist. Scanning does not deduct raw bags or packaging.

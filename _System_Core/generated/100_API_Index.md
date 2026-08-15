@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-15T09:53:33+02:00
+generated: 2026-08-15T10:19:19+02:00
 type: memory-bank
 ---
 
@@ -206,6 +206,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `scan_stock_in` | `api_dept_pouch_scan_stock_in()` | `dept_pouch_scan_stock_in()`, `ims_pdo()` |
 | `request_scan_log` | `api_dept_pouch_request_scan_log()` | `dept_pouch_request_scan_log()`, `ims_pdo()` |
 | `pos_lookup` | `api_dept_pouch_pos_lookup()` | `dept_pouch_pos_lookup()`, `ims_pdo()` |
+| `defect_scan` | `api_dept_pouch_defect_scan()` | `dept_pouch_supports_defect()`, `dept_pouch_defect_scan()`, `ims_pdo()` |
+| `defect_history` | `api_dept_pouch_defect_history()` | `dept_pouch_supports_defect()`, `dept_pouch_defect_history()`, `ims_pdo()` |
 
 ### `edit_requests.php`
 

@@ -11,9 +11,17 @@ const DEPT_POUCH_CODE_LENGTH = 6;
 /** Dept products that use the barcode stock-in flow (pouches or jars). */
 const DEPT_POUCH_BARCODE_KEYS = ['pt', 'brc', 'jar_cacao', 'honey_comb'];
 
+/** Products that support finished-unit defect barcode scan (MVP: Jar Cacao). */
+const DEPT_POUCH_DEFECT_KEYS = ['jar_cacao'];
+
 function dept_pouch_can_ops(string $role): bool
 {
     return in_array($role, ['executive', 'prod_manager', 'tl', 'staff', 'admin'], true);
+}
+
+function dept_pouch_supports_defect(string $productKey): bool
+{
+    return in_array(strtolower(trim($productKey)), DEPT_POUCH_DEFECT_KEYS, true);
 }
 
 function dept_pouch_supports(string $productKey): bool
@@ -830,4 +838,161 @@ function dept_pouch_rts_receive(PDO $pdo, array $codes, string $pool): array
     }
 
     return ['received' => $received, 'warnings' => $warnings];
+}
+
+/**
+ * Mark an in-stock finished unit as defective: remove from inventory + history row.
+ * Does not touch the RTS damaged pool.
+ *
+ * @return array<string, mixed>
+ */
+function dept_pouch_defect_scan(PDO $pdo, int $userId, string $productKey, string $code, ?string $note = null): array
+{
+    $productKey = dept_pouch_normalize_product_key($productKey);
+    if (!dept_pouch_supports_defect($productKey)) {
+        throw new RuntimeException('Defect scan is not enabled for this product.');
+    }
+    $code = dept_pouch_normalize_code($code);
+    if ($code === '') {
+        throw new RuntimeException('Scan a barcode.');
+    }
+    $note = $note !== null ? trim($note) : '';
+    if ($note === '') {
+        $note = null;
+    } else {
+        $note = substr($note, 0, 255);
+    }
+
+    $owns = !$pdo->inTransaction();
+    if ($owns) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT c.id AS barcode_id, c.code, c.status AS barcode_status,
+                    b.product_key, b.batch_no,
+                    un.id AS unit_id, un.status AS unit_status
+             FROM dept_pouch_barcodes c
+             INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
+             LEFT JOIN dept_pouch_units un ON un.barcode_id = c.id
+             WHERE c.code = ?
+             LIMIT 1
+             FOR UPDATE'
+        );
+        $st->execute([$code]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row === false) {
+            throw new RuntimeException('Unknown barcode.');
+        }
+        $codeProduct = (string) ($row['product_key'] ?? '');
+        if ($codeProduct !== $productKey) {
+            throw new RuntimeException(
+                'This barcode belongs to ' . dept_pouch_product_label($codeProduct) . '.'
+            );
+        }
+        if ((string) $row['barcode_status'] === 'void') {
+            throw new RuntimeException('Not in inventory.');
+        }
+        if ($row['unit_id'] === null || (string) ($row['unit_status'] ?? '') !== 'in_stock') {
+            throw new RuntimeException('Not in inventory.');
+        }
+
+        $unitId = (int) $row['unit_id'];
+        $barcodeId = (int) $row['barcode_id'];
+        $batchNo = (string) ($row['batch_no'] ?? '');
+
+        $upd = $pdo->prepare(
+            'UPDATE dept_pouch_units
+             SET status = "damaged", consumed_at = NOW(), consumed_ref_type = "defect", consumed_ref_id = NULL
+             WHERE id = ? AND status = "in_stock"'
+        );
+        $upd->execute([$unitId]);
+        if ($upd->rowCount() < 1) {
+            throw new RuntimeException('Not in inventory.');
+        }
+
+        dept_inventory_deduct($pdo, $productKey, 1.0);
+
+        $ins = $pdo->prepare(
+            'INSERT INTO dept_pouch_defect_log
+                (product_key, barcode_id, unit_id, code, batch_no, scanned_by, note)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+        $ins->execute([$productKey, $barcodeId, $unitId, $code, $batchNo, $userId, $note]);
+        $logId = (int) $pdo->lastInsertId();
+        $pdo->prepare(
+            'UPDATE dept_pouch_units SET consumed_ref_id = ? WHERE id = ?'
+        )->execute([$logId, $unitId]);
+
+        if ($owns) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($owns && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    $finished = dept_inventory_fetch_row($pdo, $productKey);
+
+    return [
+        'log_id' => $logId,
+        'code' => $code,
+        'product_key' => $productKey,
+        'product_label' => dept_pouch_product_label($productKey),
+        'batch_no' => $batchNo,
+        'unit_id' => $unitId,
+        'finished_on_hand' => $finished !== null ? (float) $finished['current_qty'] : null,
+    ];
+}
+
+/**
+ * @return array{rows: list<array<string,mixed>>, total: int, page: int, per_page: int}
+ */
+function dept_pouch_defect_history(PDO $pdo, string $productKey, int $page = 1, int $perPage = 25): array
+{
+    $productKey = dept_pouch_normalize_product_key($productKey);
+    if (!dept_pouch_supports_defect($productKey)) {
+        throw new RuntimeException('Defect scan is not enabled for this product.');
+    }
+    $page = max(1, $page);
+    $perPage = max(1, min(100, $perPage));
+
+    $cst = $pdo->prepare('SELECT COUNT(*) FROM dept_pouch_defect_log WHERE product_key = ?');
+    $cst->execute([$productKey]);
+    $total = (int) $cst->fetchColumn();
+    $offset = ($page - 1) * $perPage;
+
+    $st = $pdo->prepare(
+        'SELECT d.id, d.product_key, d.code, d.batch_no, d.unit_id, d.scanned_at, d.note,
+                d.scanned_by, COALESCE(u.name, CONCAT("User #", d.scanned_by)) AS scanned_by_name
+         FROM dept_pouch_defect_log d
+         LEFT JOIN users u ON u.id = d.scanned_by
+         WHERE d.product_key = ?
+         ORDER BY d.scanned_at DESC, d.id DESC
+         LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset
+    );
+    $st->execute([$productKey]);
+    $rows = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $rows[] = [
+            'id' => (int) $row['id'],
+            'product_key' => (string) $row['product_key'],
+            'code' => (string) $row['code'],
+            'batch_no' => (string) $row['batch_no'],
+            'unit_id' => (int) $row['unit_id'],
+            'scanned_at' => (string) $row['scanned_at'],
+            'scanned_by' => (int) $row['scanned_by'],
+            'scanned_by_name' => (string) $row['scanned_by_name'],
+            'note' => $row['note'] !== null ? (string) $row['note'] : null,
+        ];
+    }
+
+    return [
+        'rows' => $rows,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+    ];
 }

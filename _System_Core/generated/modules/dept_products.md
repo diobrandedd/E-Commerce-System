@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-08-15T09:53:44+02:00
+generated: 2026-08-15T10:19:30+02:00
 type: module
 function_count: 23
 ---
@@ -144,7 +144,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_inventory.php`:626 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pos.php`:123 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pos.php`:132 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_pouch_barcodes.php`:36 — `$product = dept_product_by_key($productKey);`
+- `includes/dept_pouch_barcodes.php`:44 — `$product = dept_product_by_key($productKey);`
 - `includes/dept_pricing.php`:49 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pricing.php`:234 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_production.php`:393 — `$def = dept_product_by_key($productKey);`

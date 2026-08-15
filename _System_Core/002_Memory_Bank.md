@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Jar Cacao finished-jar defect scan + history
+**Change:** On Jar Cacao inventory, **Defect** opens a scan + history modal. In-stock stickers → `damaged` + finished qty −1 + `dept_pouch_defect_log` (phase 62). Otherwise **Not in inventory**. Does not touch RTS pools. → [[problems/records/2026-08-15_cacao-defect-scan]]
+
 ### 2026-08-15 — Sales page: Shipped channel + dept product units
 **Change:** Pack-scan output is labelled **Shipped** (packed for a parcel) instead of "Online sold", and the headline counts total units. New **By product** cards cover honey plus Paragis / BRC / Jar Cacao / Honey Comb — walk-in from POS receipt lines, shipped from `dept_pouch_units` consumed by a pack session (units only, no dept revenue). Checkout list now includes dept-only receipts. No schema change. → [[problems/records/2026-08-15_sales-shipped-and-dept-products]]
 

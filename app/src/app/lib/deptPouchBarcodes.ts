@@ -121,4 +121,44 @@ export const deptPouchBarcodesApi = {
         unit_noun: string;
       };
     }>(ENDPOINT, "pos_lookup", { code }),
+  defectScan: (productKey: string, code: string, note?: string) =>
+    apiPost<{
+      log_id: number;
+      code: string;
+      product_key: string;
+      product_label: string;
+      batch_no: string;
+      unit_id: number;
+      finished_on_hand: number | null;
+    }>(ENDPOINT, "defect_scan", {
+      product_key: productKey,
+      code,
+      ...(note ? { note } : {}),
+    }),
+  defectHistory: (productKey: string, page = 1) =>
+    apiGet<{
+      rows: DeptPouchDefectRow[];
+      total: number;
+      page: number;
+      per_page: number;
+    }>(ENDPOINT, "defect_history", { product_key: productKey, page }),
 };
+
+export interface DeptPouchDefectRow {
+  id: number;
+  product_key: string;
+  code: string;
+  batch_no: string;
+  unit_id: number;
+  scanned_at: string;
+  scanned_by: number;
+  scanned_by_name: string;
+  note: string | null;
+}
+
+/** Products with finished-unit defect scan (MVP: Jar Cacao). */
+export const DEPT_POUCH_DEFECT_KEYS = ["jar_cacao"] as const;
+
+export function deptPouchDefectEnabled(productKey: string): boolean {
+  return (DEPT_POUCH_DEFECT_KEYS as readonly string[]).includes(productKey);
+}

@@ -57,6 +57,8 @@ api_dispatch([
     'scan_stock_in' => 'api_dept_pouch_scan_stock_in',
     'request_scan_log' => 'api_dept_pouch_request_scan_log',
     'pos_lookup' => 'api_dept_pouch_pos_lookup',
+    'defect_scan' => 'api_dept_pouch_defect_scan',
+    'defect_history' => 'api_dept_pouch_defect_history',
 ]);
 
 function api_dept_pouch_request_create(): void
@@ -190,6 +192,46 @@ function api_dept_pouch_pos_lookup(): void
     $code = (string) ($_GET['code'] ?? '');
     try {
         api_ok(['barcode' => dept_pouch_pos_lookup(ims_pdo(), $code)]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_dept_pouch_defect_scan(): void
+{
+    api_method_allowed(['POST']);
+    api_dept_pouch_require_csrf();
+    $user = api_dept_pouch_require_ops();
+    $in = api_input();
+    $productKey = api_dept_pouch_product_key($in);
+    if (!dept_pouch_supports_defect($productKey)) {
+        api_fail('Defect scan is not enabled for this product.', 422);
+    }
+    try {
+        $result = dept_pouch_defect_scan(
+            ims_pdo(),
+            (int) $user['id'],
+            $productKey,
+            (string) ($in['code'] ?? ''),
+            isset($in['note']) ? (string) $in['note'] : null
+        );
+        api_ok($result);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_dept_pouch_defect_history(): void
+{
+    api_method_allowed(['GET']);
+    api_dept_pouch_require_ops();
+    $productKey = api_dept_pouch_product_key();
+    if (!dept_pouch_supports_defect($productKey)) {
+        api_fail('Defect scan is not enabled for this product.', 422);
+    }
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    try {
+        api_ok(dept_pouch_defect_history(ims_pdo(), $productKey, $page));
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }
