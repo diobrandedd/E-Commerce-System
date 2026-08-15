@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Label sheets no longer drop/overlap rows across page breaks
+**Change:** Printing a batch over 68 labels lost row 17 of each page and stacked it onto row 1 of the next (two barcodes in one cut box). Both label sheets used `grid-template-rows: repeat(17, 1fr)` inside a box pinned to exactly `287mm`; fractional rows get re-solved when a grid fragments, and the exact height left no rounding slack. Now `grid-auto-rows: 16.8mm` with matching `.label` height — 17 rows = 285.6mm, safely under 287mm. Same 68-per-A4 layout. Affects `honey_bottle_label_sheet_html()` and `dept_pouch_label_sheet_html()`. → [[problems/records/2026-08-15_label-sheet-page-break-overlap]]
+
 ### 2026-08-15 — Sticker batch date is the day it was generated
 **Change:** `honey_bottle_generate_batch()` stamps `date('Y-m-d')` instead of inheriting the packaging row's `bottling_date`, so labels made today no longer verify as a months-old lot date; the packaging row keeps its own date and past batches are unchanged. Custom batch creation no longer lets a trailing MMDDYY in the code override the Bottling date field — the field wins, and the generator's inline date input stays enabled. Dept pouches still parse MMDDYY from `batch_no` (no date field there). → [[problems/records/2026-08-15_honey-batch-date-generation-day]]
 

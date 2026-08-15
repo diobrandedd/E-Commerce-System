@@ -1705,18 +1705,23 @@ function honey_bottle_label_sheet_html(PDO $pdo, int $batchId): string
         .toolbar { margin: 10px 12px 0; }
         .toolbar button { font-size: 14px; padding: 8px 14px; cursor: pointer; }
         .toolbar .hint { font-size: 12px; color: #666; margin-left: 10px; }
-        .page { width: 200mm; min-height: 287mm; margin: 0 auto; padding: 0; }
+        .page { width: 200mm; margin: 0 auto; padding: 0; }
+        /* Rows are a fixed physical height, never 1fr: fractional rows have no
+           intrinsic size, so when a grid crosses a page boundary the engine
+           re-solves them and stacks cells on top of each other (two barcodes in
+           one box on page 2). 17 x 16.8mm = 285.6mm, just under the 287mm
+           printable height, so a page never spills a phantom row either. */
         .sheet {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          grid-template-rows: repeat(17, 1fr);
+          grid-auto-rows: 16.8mm;
           gap: 0;
           width: 100%;
-          height: 287mm;
           border-top: 0.35pt dashed #999;
           border-left: 0.35pt dashed #999;
         }
         .label {
+          height: 16.8mm;
           border: none;
           border-right: 0.35pt dashed #999;
           border-bottom: 0.35pt dashed #999;
@@ -1747,9 +1752,8 @@ function honey_bottle_label_sheet_html(PDO $pdo, int $batchId): string
         @media print {
           .toolbar { display: none; }
           body { margin: 0; }
-          .page { width: auto; min-height: auto; margin: 0; }
+          .page { width: auto; margin: 0; }
           .sheet {
-            height: 287mm;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
