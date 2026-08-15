@@ -24,10 +24,13 @@ import { DeptPouchScanLogModal } from "@/app/components/dept/DeptPouchScanLogMod
 interface DeptPouchPanelProps {
   productKey: string;
   productLabel: string;
+  /** history = list only (no new-request form) for staff discoverability */
+  mode?: "full" | "history";
 }
 
-export function DeptPouchRequestsPanel({ productKey }: DeptPouchPanelProps) {
+export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchPanelProps) {
   const unit = deptPouchUnitLabel(productKey);
+  const historyOnly = mode === "history";
   const [batchNo, setBatchNo] = useState("");
   const [qty, setQty] = useState("50");
   const [notes, setNotes] = useState("");
@@ -79,47 +82,53 @@ export function DeptPouchRequestsPanel({ productKey }: DeptPouchPanelProps) {
     <AppSectionEnter className="space-y-4">
       {error && <AppErrorBanner message={error} />}
       {ok && <AppSuccessNotice message={ok} />}
-      <div className="bg-card rounded-xl border border-border p-4 space-y-3">
-        <h3 className="text-sm font-semibold">New {unit.singular} label request</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label className="text-xs text-muted-foreground">
-            Batch code
-            <input
-              className="mt-1 w-full border rounded-lg px-2 py-2 font-mono text-sm uppercase"
-              placeholder="e.g. JR073026"
-              value={batchNo}
-              onChange={e => setBatchNo(e.target.value.toUpperCase())}
-            />
-          </label>
-          <label className="text-xs text-muted-foreground">
-            Quantity ({unit.plural})
-            <input
-              className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
-              type="number"
-              min={1}
-              value={qty}
-              onChange={e => setQty(e.target.value)}
-            />
-          </label>
+      {!historyOnly && (
+        <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+          <h3 className="text-sm font-semibold">New {unit.singular} label request</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="text-xs text-muted-foreground">
+              Batch code
+              <input
+                className="mt-1 w-full border rounded-lg px-2 py-2 font-mono text-sm uppercase"
+                placeholder="e.g. JR073026"
+                value={batchNo}
+                onChange={e => setBatchNo(e.target.value.toUpperCase())}
+              />
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Quantity ({unit.plural})
+              <input
+                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                type="number"
+                min={1}
+                value={qty}
+                onChange={e => setQty(e.target.value)}
+              />
+            </label>
+          </div>
+          <textarea
+            className="w-full border rounded-lg px-2 py-2 text-sm"
+            rows={2}
+            placeholder="Notes"
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+          />
+          <Button type="button" onClick={() => void submit()} disabled={saving || !batchNo.trim()}>
+            {saving ? <Loader2 className="animate-spin" size={16} /> : null}
+            Submit request
+          </Button>
         </div>
-        <textarea
-          className="w-full border rounded-lg px-2 py-2 text-sm"
-          rows={2}
-          placeholder="Notes"
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-        />
-        <Button type="button" onClick={() => void submit()} disabled={saving || !batchNo.trim()}>
-          {saving ? <Loader2 className="animate-spin" size={16} /> : null}
-          Submit request
-        </Button>
-      </div>
+      )}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-6 text-center">
+          No barcode requests yet. Use Request barcodes first, then Scan to inventory.
+        </p>
       ) : (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            Tap a row to see who scanned each sticker into stock and when.
+            Tap a batch to see who scanned each sticker into finished stock and when.
           </p>
           <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-sm">
@@ -131,7 +140,7 @@ export function DeptPouchRequestsPanel({ productKey }: DeptPouchPanelProps) {
                   <th className="text-left px-3 py-2">Qty</th>
                   <th className="text-left px-3 py-2">Scanned</th>
                   <th className="text-left px-3 py-2">Status</th>
-                  <th className="px-3 py-2" />
+                  {!historyOnly && <th className="px-3 py-2" />}
                 </tr>
               </thead>
               <tbody>
@@ -149,21 +158,23 @@ export function DeptPouchRequestsPanel({ productKey }: DeptPouchPanelProps) {
                       {r.scanned_count}/{r.generated_count || r.quantity}
                     </td>
                     <td className="px-3 py-2">{r.status.replace(/_/g, " ")}</td>
-                    <td className="px-3 py-2">
-                      {r.status === "pending" && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={e => {
-                            e.stopPropagation();
-                            void deptPouchBarcodesApi.requestCancel(r.id).then(refresh);
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      )}
-                    </td>
+                    {!historyOnly && (
+                      <td className="px-3 py-2">
+                        {r.status === "pending" && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={e => {
+                              e.stopPropagation();
+                              void deptPouchBarcodesApi.requestCancel(r.id).then(refresh);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

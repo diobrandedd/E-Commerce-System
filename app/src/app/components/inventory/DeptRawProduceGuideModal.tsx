@@ -168,6 +168,9 @@ export function DeptRawProduceGuideModal({
                 <li>
                   <strong className="text-foreground">Scan to inventory</strong> — scan each sticker. Every scan adds one to <strong className="text-foreground">Finished {meta.sellUnit}s</strong>.
                 </li>
+                <li>
+                  <strong className="text-foreground">Scan history</strong> — open from the header or tap the Finished card to see who scanned each sticker and when.
+                </li>
               </ol>
               <p>
                 Each sticker is unique and can only be scanned once, so the finished count matches the {meta.sellUnit}s that physically exist. Scanning does not deduct raw bags or packaging.

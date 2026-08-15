@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, Loader2, Minus, Plus, Factory, Package, Printer, ScanLine, Tag } from "lucide-react";
+import { BookOpen, History, Loader2, Minus, Plus, Factory, Package, Printer, ScanLine, Tag } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
@@ -37,6 +37,7 @@ import {
   AppErrorBanner,
   AppPressable,
   AppSuccessNotice,
+  appHoverCard,
   appHoverRow,
   appHeaderActionClass,
 } from "@/app/components/layout/appFeedbackMotion";
@@ -131,11 +132,12 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const [showWipWaste, setShowWipWaste] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [pouchLogTick, setPouchLogTick] = useState(0);
-  const [pouchModal, setPouchModal] = useState<"request" | "scan" | "admin" | null>(null);
+  const [pouchModal, setPouchModal] = useState<"request" | "scan" | "admin" | "history" | null>(null);
   const [pendingPouchLabels, setPendingPouchLabels] = useState(0);
   const pouchRequestTitleId = useId();
   const pouchScanTitleId = useId();
   const pouchAdminTitleId = useId();
+  const pouchHistoryTitleId = useId();
 
   const refreshPendingPouchLabels = useCallback(async () => {
     if (!showPouchBarcodes) {
@@ -275,6 +277,15 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 type="button"
                 size="sm"
                 variant="outline"
+                className={`${appHeaderActionClass} gap-1.5`}
+                onClick={() => setPouchModal("history")}
+              >
+                <History size={13} /> Scan history
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
                 className={`${appHeaderActionClass} relative gap-1.5`}
                 onClick={() => setPouchModal("admin")}
               >
@@ -326,11 +337,29 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 </p>
               </div>
             )}
-            <div className="rounded-xl border bg-card px-4 py-3">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Finished {data.inventory_unit}s</p>
-              <p className="text-2xl font-semibold mt-1">{data.finished_on_hand.toLocaleString()}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{data.finished_label}</p>
-            </div>
+            {showPouchBarcodes ? (
+              <button
+                type="button"
+                onClick={() => setPouchModal("history")}
+                className={`rounded-xl border bg-card px-4 py-3 text-left w-full ${appHoverCard}`}
+              >
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Finished {data.inventory_unit}s
+                </p>
+                <p className="text-2xl font-semibold mt-1">{data.finished_on_hand.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {data.finished_label} · tap for scan history
+                </p>
+              </button>
+            ) : (
+              <div className="rounded-xl border bg-card px-4 py-3">
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Finished {data.inventory_unit}s
+                </p>
+                <p className="text-2xl font-semibold mt-1">{data.finished_on_hand.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{data.finished_label}</p>
+              </div>
+            )}
             <div className="rounded-xl border bg-card px-4 py-3 col-span-2 lg:col-span-1">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Costing stock</p>
               <p className="text-sm font-semibold mt-1 leading-snug">{data.stock_name ?? "—"}</p>
@@ -354,6 +383,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 onUseRawBags={() => setShowUseRawBags(true)}
                 onRequestBarcodes={() => setPouchModal("request")}
                 onScanPouches={() => setPouchModal("scan")}
+                onScanHistory={() => setPouchModal("history")}
                 onGeneratePrint={() => setPouchModal("admin")}
                 pendingPouchLabels={pendingPouchLabels}
                 onWipWaste={() => setShowWipWaste(true)}
@@ -569,6 +599,22 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           </AppModalBody>
         </AppModal>
       )}
+      {pouchModal === "history" && (
+        <AppModal open onClose={() => setPouchModal(null)} panelClassName="max-w-2xl w-full" labelledBy={pouchHistoryTitleId}>
+          <AppModalHeader
+            title={`Scan history — finished ${pouchUnit.plural}`}
+            titleId={pouchHistoryTitleId}
+            onClose={() => setPouchModal(null)}
+          />
+          <AppModalBody>
+            <DeptPouchRequestsPanel
+              productKey={productKey}
+              productLabel={route.finishedTitle}
+              mode="history"
+            />
+          </AppModalBody>
+        </AppModal>
+      )}
       {showWipWaste && data && (
         <WipWasteModal
           maxQty={wipTeaBags}
@@ -595,6 +641,7 @@ function RawDeptInlineActions({
   onUseRawBags,
   onRequestBarcodes,
   onScanPouches,
+  onScanHistory,
   onGeneratePrint,
   pendingPouchLabels,
   onWipWaste,
@@ -615,6 +662,7 @@ function RawDeptInlineActions({
   onUseRawBags: () => void;
   onRequestBarcodes: () => void;
   onScanPouches: () => void;
+  onScanHistory: () => void;
   onGeneratePrint: () => void;
   pendingPouchLabels: number;
   onWipWaste: () => void;
@@ -687,6 +735,13 @@ function RawDeptInlineActions({
               className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
             >
               <ScanLine size={16} /> Scan {unitPlural} to inventory
+            </AppPressable>
+            <AppPressable
+              variant="outline"
+              onClick={onScanHistory}
+              className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
+            >
+              <History size={16} /> Scan history
             </AppPressable>
             <AppPressable
               variant="outline"
