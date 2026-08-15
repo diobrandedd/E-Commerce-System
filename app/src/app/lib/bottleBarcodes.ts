@@ -280,6 +280,17 @@ export const bottleBarcodesApi = {
       dates: string[];
       rows: HoneyPackagingScanReportRow[];
       scan_date: string | null;
+      totals: {
+        total: number;
+        by_variant: {
+          variant: string;
+          total: number;
+          liter: number;
+          "250ml": number;
+          "350ml": number;
+          gallon: number;
+        }[];
+      };
     }>("bottle_barcodes.php", "packaging_scan_report", {
       scan_date: scanDate,
     }),

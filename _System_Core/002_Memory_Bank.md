@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Day total counters on scan-in reports
+**Change:** Selected-day scan reports show a total counter — one scanned total for Paragis / BRC / Cacao / Comb, and a per-variant list (with size breakdown) for liquid honey. Hidden on All dates. API fields `scanned_total` / `totals.by_variant`. → [[problems/records/2026-08-15_daily-scan-in-report]]
+
 ### 2026-08-15 — Daily gross scan-to-inventory reports
 **Change:** Raw Honey → Packaging and the shared Paragis / BRC / Jar Cacao / Honey Comb barcode panels now default to today's gross scan-in report, with historical date and All dates options. Counts come from barcode `scanned_at` and never decrease after pack, POS, defect, RTS, or other deductions; row drilldowns use the same selected date. No schema change. → [[problems/records/2026-08-15_daily-scan-in-report]]
 

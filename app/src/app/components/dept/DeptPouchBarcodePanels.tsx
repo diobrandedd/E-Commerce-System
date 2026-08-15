@@ -53,6 +53,7 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
   const [scanDates, setScanDates] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [scannedTotal, setScannedTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +67,7 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
       setRows(list.rows);
       setScanDates(list.dates);
       setTotal(list.total);
+      setScannedTotal(list.scanned_total ?? 0);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load requests.");
     } finally {
@@ -169,6 +171,19 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
           </select>
         </label>
       </div>
+      {scanDate !== "all" && !loading && (
+        <div className="rounded-xl border border-border bg-card px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+            Total scanned · {scanDate === localToday() ? "Today" : scanDateLabel(scanDate)}
+          </p>
+          <p className="text-2xl font-bold mt-1">
+            {scannedTotal.toLocaleString()}{" "}
+            <span className="text-sm font-medium text-muted-foreground">
+              {scannedTotal === 1 ? unit.singular : unit.plural}
+            </span>
+          </p>
+        </div>
+      )}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : rows.length === 0 ? (

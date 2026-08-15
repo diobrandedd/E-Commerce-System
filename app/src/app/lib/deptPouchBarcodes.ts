@@ -100,6 +100,7 @@ export const deptPouchBarcodesApi = {
       page: number;
       per_page: number;
       scan_date: string | null;
+      scanned_total: number;
     }>(ENDPOINT, "scan_report", {
       product_key: productKey,
       scan_date: scanDate,

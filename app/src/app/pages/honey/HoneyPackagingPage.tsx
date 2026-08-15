@@ -25,6 +25,7 @@ import { HONEY_SIZES } from "@/app/lib/honey";
 import { canDeptPouchBarcodeOps, canExecutiveDirectEdit, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
 import { deptPouchBarcodesApi } from "@/app/lib/deptPouchBarcodes";
 import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
+import { variantLabel } from "@/app/lib/posHoney";
 
 const HONEY_COMB_KEY = "honey_comb";
 const HONEY_COMB_LABEL = "Honey Comb";
@@ -76,6 +77,10 @@ export function HoneyPackagingPage() {
   const [rows, setRows] = useState<PkRow[]>([]);
   const [scanDate, setScanDate] = useState(localToday);
   const [scanDates, setScanDates] = useState<string[]>([]);
+  const [variantTotals, setVariantTotals] = useState<
+    { variant: string; total: number; liter: number; "250ml": number; "350ml": number; gallon: number }[]
+  >([]);
+  const [scannedGrandTotal, setScannedGrandTotal] = useState(0);
   const [page, setPage] = useState(1);
   const perPage = 12;
   const [loading, setLoading] = useState(true);
@@ -107,6 +112,8 @@ export function HoneyPackagingPage() {
       const data = await bottleBarcodesApi.packagingScanReport(scanDate);
       setRows(data.rows);
       setScanDates(data.dates);
+      setVariantTotals(data.totals?.by_variant ?? []);
+      setScannedGrandTotal(data.totals?.total ?? 0);
       setPage(1);
       await refreshPendingComb();
     } finally {
@@ -179,6 +186,34 @@ export function HoneyPackagingPage() {
           </select>
         </label>
       </div>
+      {scanDate !== "all" && !loading && (
+        <div className="mb-3 rounded-xl border border-border bg-card px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+            Total scanned · {scanDate === localToday() ? "Today" : scanDateLabel(scanDate)}
+          </p>
+          {variantTotals.length === 0 ? (
+            <p className="text-sm text-muted-foreground mt-1">0 bottles</p>
+          ) : (
+            <ul className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {variantTotals.map(v => (
+                <li key={v.variant} className="rounded-lg border border-border/70 bg-secondary/20 px-3 py-2">
+                  <p className="text-xs text-muted-foreground capitalize">{variantLabel(v.variant)}</p>
+                  <p className="text-xl font-bold mt-0.5">{grossQty(v.total)}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {grossQty(v.liter)} L · {grossQty(v["250ml"])} 250ml · {grossQty(v["350ml"])} 350ml ·{" "}
+                    {grossQty(v.gallon)} gal
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {scannedGrandTotal > 0 && (
+            <p className="text-xs text-muted-foreground mt-2">
+              All variants · {grossQty(scannedGrandTotal)} bottle{scannedGrandTotal === 1 ? "" : "s"}
+            </p>
+          )}
+        </div>
+      )}
       <div className="bg-card rounded-xl border overflow-x-auto">
         <table className="w-full text-sm min-w-[36rem]">
           <thead>

@@ -611,6 +611,14 @@ function dept_pouch_scan_report(
         $rows[] = dept_pouch_serialize_request($row);
     }
 
+    $sumSt = $pdo->prepare(
+        "SELECT COUNT(*) FROM dept_pouch_barcodes c
+         INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
+         WHERE {$scanWhere}"
+    );
+    $sumSt->execute($scanParams);
+    $scannedTotal = (int) $sumSt->fetchColumn();
+
     return [
         'dates' => $dates,
         'rows' => $rows,
@@ -618,6 +626,7 @@ function dept_pouch_scan_report(
         'page' => $page,
         'per_page' => $perPage,
         'scan_date' => $scanDate,
+        'scanned_total' => $scannedTotal,
     ];
 }
 

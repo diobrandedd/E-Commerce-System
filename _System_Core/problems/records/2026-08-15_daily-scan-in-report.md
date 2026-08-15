@@ -30,6 +30,8 @@ request/batch drilldowns. The drilldowns also required barcode status
   regardless of later unit status.
 - Honey Packaging now displays gross scanned totals; current stock remains on
   Products → Honey. Shared dept panels use the same today-default selector.
+- Selected-day summaries: honey `totals.by_variant` + grand total; dept
+  `scanned_total`. Counters are hidden when All dates is selected.
 - No schema migration.
 
 ## Files

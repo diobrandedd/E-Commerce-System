@@ -723,11 +723,45 @@ function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null):
          ORDER BY pk.bottling_date DESC, pk.id DESC"
     );
     $st->execute($params);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    $variantSt = $pdo->prepare(
+        "SELECT LOWER(b.variant) AS variant,
+                COUNT(*) AS total,
+                SUM(CASE WHEN c.size = 'liter' THEN 1 ELSE 0 END) AS liter,
+                SUM(CASE WHEN c.size = '250ml' THEN 1 ELSE 0 END) AS ml250,
+                SUM(CASE WHEN c.size = '350ml' THEN 1 ELSE 0 END) AS ml350,
+                SUM(CASE WHEN c.size = 'gallon' THEN 1 ELSE 0 END) AS gallon
+         FROM honey_bottle_barcodes c
+         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
+         WHERE {$where}
+         GROUP BY LOWER(b.variant)
+         ORDER BY LOWER(b.variant)"
+    );
+    $variantSt->execute($params);
+    $byVariant = [];
+    $grandTotal = 0;
+    foreach ($variantSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $total = (int) $row['total'];
+        $grandTotal += $total;
+        $byVariant[] = [
+            'variant' => (string) $row['variant'],
+            'total' => $total,
+            'liter' => (int) $row['liter'],
+            '250ml' => (int) $row['ml250'],
+            '350ml' => (int) $row['ml350'],
+            'gallon' => (int) $row['gallon'],
+        ];
+    }
 
     return [
         'dates' => $dates,
-        'rows' => $st->fetchAll(PDO::FETCH_ASSOC) ?: [],
+        'rows' => $rows,
         'scan_date' => $scanDate,
+        'totals' => [
+            'total' => $grandTotal,
+            'by_variant' => $byVariant,
+        ],
     ];
 }
 
