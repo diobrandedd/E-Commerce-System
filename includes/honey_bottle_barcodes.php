@@ -392,7 +392,10 @@ function honey_bottle_generate_batch(
     $variant = honey_normalize_variant((string) $pk['variant']);
     $batchNo = (string) $pk['batch_no'];
     $supplier = (string) $pk['supplier_code'];
-    $batchDate = (string) $pk['bottling_date'];
+    // Stickers are made on the day the bottles are filled, so each generation run
+    // stamps its own date. The packaging row keeps the lot's original bottling_date —
+    // one lot bottled across several days yields several sticker batches with real dates.
+    $batchDate = date('Y-m-d');
 
     $owns = !$pdo->inTransaction();
     if ($owns) {
@@ -1534,6 +1537,10 @@ function honey_bottle_ensure_packaging_shell(PDO $pdo, int $userId, int $product
  * Create a packaging batch with a custom supplier (no production lot).
  * Used when older suppliers/lots are gone but bottles still need stickers.
  *
+ * A batch code is reused across sizes and re-counts, so typing one that already
+ * exists for this variant returns that row instead of failing — size lives on the
+ * label request, not on the packaging row.
+ *
  * @return array<string, mixed>
  */
 function honey_bottle_create_custom_packaging(
@@ -1542,8 +1549,10 @@ function honey_bottle_create_custom_packaging(
     string $supplierName,
     string $variant,
     string $bottlingDate,
-    ?string $manualCode = null
+    ?string $manualCode = null,
+    bool &$reused = false
 ): array {
+    $reused = false;
     $variant = honey_normalize_variant($variant);
     $ts = strtotime($bottlingDate);
     if ($ts === false) {
@@ -1558,23 +1567,17 @@ function honey_bottle_create_custom_packaging(
             throw new RuntimeException('Batch code must be 3–32 letters, digits or dashes (e.g. JR073026).');
         }
         $st = $pdo->prepare(
-            'SELECT 1 FROM honey_packaging_rows WHERE batch_no = ? AND variant = ? LIMIT 1'
+            'SELECT * FROM honey_packaging_rows WHERE batch_no = ? AND variant = ? LIMIT 1'
         );
         $st->execute([$manualCode, $variant]);
-        if ($st->fetchColumn() !== false) {
-            throw new RuntimeException(
-                "Batch {$manualCode} ({$variant}) already exists — pick it from the dropdown instead."
-            );
+        $existing = $st->fetch(PDO::FETCH_ASSOC);
+        if ($existing !== false) {
+            $reused = true;
+
+            return $existing;
         }
-        // Trailing MMDDYY in the code wins over the date field (JR073026 → 2026-07-30).
-        if (preg_match('/(\d{6})$/', $manualCode, $m)) {
-            $mm = (int) substr($m[1], 0, 2);
-            $dd = (int) substr($m[1], 2, 2);
-            $yy = (int) substr($m[1], 4, 2);
-            if (checkdate($mm, $dd, 2000 + $yy)) {
-                $bottlingDate = sprintf('%04d-%02d-%02d', 2000 + $yy, $mm, $dd);
-            }
-        }
+        // The Bottling date field is authoritative. A trailing MMDDYY in the code is
+        // just part of the human label — it used to silently override the picked date.
         $supplierCode = $manualCode;
         $batchNo = $manualCode;
     } else {
@@ -1584,7 +1587,18 @@ function honey_bottle_create_custom_packaging(
         }
         $supplierCode = honey_supplier_code($supplierName, $bottlingDate);
         // Custom batch code is just the supplier code (initials + MMDDYY), e.g. JR063026.
-        // Same label is allowed on another variant; only collide within this variant.
+        // Same supplier + date + variant means the same batch — reuse it rather than
+        // minting JR063026-2 behind the user's back.
+        $st = $pdo->prepare(
+            'SELECT * FROM honey_packaging_rows WHERE batch_no = ? AND variant = ? LIMIT 1'
+        );
+        $st->execute([$supplierCode, $variant]);
+        $existing = $st->fetch(PDO::FETCH_ASSOC);
+        if ($existing !== false) {
+            $reused = true;
+
+            return $existing;
+        }
         $batchNo = honey_unique_packaging_batch_no($pdo, $supplierCode, $variant);
     }
 

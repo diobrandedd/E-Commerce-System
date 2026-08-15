@@ -135,16 +135,19 @@ function api_bottle_create_custom_packaging(): void
         api_fail('Forbidden.', 403);
     }
     $in = api_input();
+    $reused = false;
     $pk = honey_bottle_create_custom_packaging(
         ims_pdo(),
         (int) $user['id'],
         (string) ($in['supplier_name'] ?? ''),
         (string) ($in['variant'] ?? ''),
         (string) ($in['bottling_date'] ?? date('Y-m-d')),
-        isset($in['code']) ? (string) $in['code'] : null
+        isset($in['code']) ? (string) $in['code'] : null,
+        $reused
     );
     api_ok([
-        'packaging' => honey_bottle_serialize_packaging_option($pk, true),
+        'packaging' => honey_bottle_serialize_packaging_option($pk, !$reused),
+        'reused' => $reused,
     ]);
 }
 

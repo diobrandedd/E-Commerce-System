@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-08-15T04:20:59+02:00
+generated: 2026-08-15T05:00:49+02:00
 type: module
 function_count: 13
 ---
@@ -43,12 +43,12 @@ function_count: 13
 - `includes/fulfillment_packing.php`:710 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
 - `includes/fulfillment_packing.php`:760 — `if (!rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {`
 - `includes/fulfillment_packing.php`:956 — `$hasBubbleCols = rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'bubble_width_cm');`
-- `includes/honey_bottle_barcodes.php`:967 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
-- `includes/honey_bottle_barcodes.php`:968 — `$hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
-- `includes/honey_bottle_barcodes.php`:1044 — `$hasUnit = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
-- `includes/honey_bottle_barcodes.php`:1045 — `$hasSess = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
-- `includes/honey_bottle_barcodes.php`:1046 — `$hasPos = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');`
-- `includes/honey_bottle_barcodes.php`:1112 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/honey_bottle_barcodes.php`:970 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/honey_bottle_barcodes.php`:971 — `$hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
+- `includes/honey_bottle_barcodes.php`:1047 — `$hasUnit = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/honey_bottle_barcodes.php`:1048 — `$hasSess = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
+- `includes/honey_bottle_barcodes.php`:1049 — `$hasPos = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');`
+- `includes/honey_bottle_barcodes.php`:1115 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
 - `includes/honey_parcel_inventory.php`:63 — `$hasParcelCol = rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id');`
 - `includes/honey_parcel_inventory.php`:169 — `if (rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id')) {`
 - `includes/online_order_parcels.php`:509 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`

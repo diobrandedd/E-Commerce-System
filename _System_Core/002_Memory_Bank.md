@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Sticker batch date is the day it was generated
+**Change:** `honey_bottle_generate_batch()` stamps `date('Y-m-d')` instead of inheriting the packaging row's `bottling_date`, so labels made today no longer verify as a months-old lot date; the packaging row keeps its own date and past batches are unchanged. Custom batch creation no longer lets a trailing MMDDYY in the code override the Bottling date field — the field wins, and the generator's inline date input stays enabled. Dept pouches still parse MMDDYY from `batch_no` (no date field there). → [[problems/records/2026-08-15_honey-batch-date-generation-day]]
+
+### 2026-08-15 — Custom honey batch reuses an existing row instead of erroring
+**Change:** Requesting a second size (or a recount) on a batch you already made no longer fails with "Batch … already exists". `honey_bottle_create_custom_packaging()` returns the matching `(batch_no, variant)` row and flags `reused` so the API/SPA say "added to existing batch". Packaging rows stay size-agnostic — one row covers 1L / 350ml / 250ml / gallon, size lives on the label request. Supplier+date path reuses too rather than silently minting `JR063026-2`. → [[problems/records/2026-08-15_honey-custom-batch-reuse]]
+
 ### 2026-08-15 — Universal barcode verify (all accounts)
 **Change:** New read-only `/verify-barcode` page + `api/v1/barcode_verify.php` lookup for any logged-in IMS user. Resolves honey bottles (supplier, variant, size, batch/scan dates) or dept pouches/jars (Paragis / Black Rice / Cacao). Sidebar link on all non-POS roles. → [[problems/records/2026-08-15_universal-barcode-verify]]
 

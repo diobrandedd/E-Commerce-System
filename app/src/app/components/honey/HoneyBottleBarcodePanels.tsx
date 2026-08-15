@@ -72,6 +72,8 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
     setSaving(true);
     try {
       let packagingRowId: number | null = packMode === "pick" && packId !== "" ? packId : null;
+      let packLabel = "";
+      let packReused = false;
       if (packMode === "custom") {
         const created = await bottleBarcodesApi.createCustomPackaging({
           code: customCode.trim() || undefined,
@@ -80,6 +82,8 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
           bottling_date: customBottlingDate,
         });
         packagingRowId = created.packaging.id;
+        packLabel = created.packaging.batch_no;
+        packReused = created.reused;
         setPacks(prev => [created.packaging, ...prev.filter(p => p.id !== created.packaging.id)]);
         setPackId(created.packaging.id);
         setPackMode("pick");
@@ -94,9 +98,11 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
         notes: notes.trim() || undefined,
       });
       setOk(
-        packagingRowId
-          ? "Request submitted with packaging batch."
-          : "Request submitted.",
+        packReused
+          ? `Request submitted — added to existing batch ${packLabel}.`
+          : packagingRowId
+            ? "Request submitted with packaging batch."
+            : "Request submitted.",
       );
       setNotes("");
       triggerLiveRefresh();
@@ -170,7 +176,7 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
                 onChange={e => setCustomCode(e.target.value.toUpperCase())}
               />
               <span className="mt-1 block text-[11px] text-muted-foreground">
-                Ends in MMDDYY? That becomes the bottling date (JR073026 → Jul 30 &rsquo;26). Or leave blank and fill supplier + date below.
+                Or leave blank and fill supplier + date below to build one (JR073026). The bottling date you pick is what gets recorded. Re-typing a batch you already have reuses it — one batch covers every size.
               </span>
             </label>
             <label className="text-xs text-muted-foreground">
@@ -442,7 +448,7 @@ export function HoneyBottleAdminPanel() {
       setCustomOpenFor(null);
       setCustomCode("");
       setCustomSupplier("");
-      setOk(`Created ${created.packaging.label}`);
+      setOk(created.reused ? `Using existing ${created.packaging.label}` : `Created ${created.packaging.label}`);
       triggerLiveRefresh();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not create custom batch.");
@@ -522,7 +528,7 @@ export function HoneyBottleAdminPanel() {
                         value={customCode}
                         onChange={e => setCustomCode(e.target.value.toUpperCase())}
                       />
-                      <p className="text-[11px] text-muted-foreground">…or build it from supplier + date:</p>
+                      <p className="text-[11px] text-muted-foreground">…or build it from a supplier name:</p>
                       <input
                         className="w-full border rounded-lg px-2 py-1 text-xs"
                         placeholder="Supplier name"
@@ -530,13 +536,15 @@ export function HoneyBottleAdminPanel() {
                         onChange={e => setCustomSupplier(e.target.value)}
                         disabled={customCode.trim() !== ""}
                       />
-                      <input
-                        className="w-full border rounded-lg px-2 py-1 text-xs"
-                        type="date"
-                        value={customBottlingDate}
-                        onChange={e => setCustomBottlingDate(e.target.value)}
-                        disabled={customCode.trim() !== ""}
-                      />
+                      <label className="block text-[11px] text-muted-foreground">
+                        Bottling date
+                        <input
+                          className="mt-0.5 w-full border rounded-lg px-2 py-1 text-xs"
+                          type="date"
+                          value={customBottlingDate}
+                          onChange={e => setCustomBottlingDate(e.target.value)}
+                        />
+                      </label>
                       <div className="flex gap-1">
                         <Button
                           type="button"
