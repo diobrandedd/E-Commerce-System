@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Sales page: Shipped channel + dept product units
+**Change:** Pack-scan output is labelled **Shipped** (packed for a parcel) instead of "Online sold", and the headline counts total units. New **By product** cards cover honey plus Paragis / BRC / Jar Cacao / Honey Comb — walk-in from POS receipt lines, shipped from `dept_pouch_units` consumed by a pack session (units only, no dept revenue). Checkout list now includes dept-only receipts. No schema change. → [[problems/records/2026-08-15_sales-shipped-and-dept-products]]
+
 ### 2026-08-15 — POS barcode dept + cancel restock + RTS barcodes
 **Change:** Dept POS sells by sticker only (reject packed/sold; cart remove). Deliveries Cancelled restocks packed honey/dept barcodes with History (phase 61); tracking cancel API → 410. RTS Record optional product barcodes for honey + dept into sellable/damaged pools. → [[problems/records/2026-08-15_pos-barcode-dept-and-cancel-restock]]
 

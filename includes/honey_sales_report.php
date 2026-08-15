@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/dashboard_inventory.php';
+require_once __DIR__ . '/dept_products.php';
 
 const HONEY_SALES_SIZE_LABELS = [
     '250ml' => '250ml',
@@ -73,6 +74,121 @@ function honey_sales_pos_checkout_where_clause(?array $range, ?string $receiptSe
     return [$where, $params];
 }
 
+/**
+ * Checkout list filter covering honey packaging walk-ins **and** dept product receipts
+ * (Paragis / BRC / Jar Cacao / Honey Comb), which never write to honey_sales_log.
+ *
+ * @param array<string, mixed>|null $range
+ * @return array{0: string, 1: list<mixed>}
+ */
+function honey_sales_checkout_where_clause(?array $range, ?string $receiptSearch = null, string $saleType = 'all'): array
+{
+    $where = ' WHERE (EXISTS (SELECT 1 FROM honey_sales_log h
+                              WHERE h.pos_sale_id = ps.id AND h.source = "packaging" AND h.sale_type = "walk_in")
+                      OR EXISTS (SELECT 1 FROM pos_receipt_items pri
+                                 INNER JOIN products p ON p.id = pri.product_id
+                                 WHERE pri.sale_id = ps.id
+                                   AND p.dept_product_key IS NOT NULL AND p.dept_product_key <> ""))';
+    $params = [];
+    if ($range !== null) {
+        $where .= ' AND ps.sale_date >= ? AND ps.sale_date <= ?';
+        $params = [$range['from'] . ' 00:00:00', $range['to'] . ' 23:59:59'];
+    }
+    $receiptSearch = trim((string) $receiptSearch);
+    if ($receiptSearch !== '') {
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], strtoupper($receiptSearch));
+        $where .= ' AND UPPER(ps.receipt_no) LIKE ?';
+        $params[] = '%' . $escaped . '%';
+    }
+    if ($saleType === 'regular') {
+        $where .= ' AND COALESCE(ps.is_ar, 0) = 0 AND (ps.discount_percent IS NULL OR ps.discount_percent = 0)';
+    } elseif ($saleType === 'discount') {
+        $where .= ' AND COALESCE(ps.is_ar, 0) = 0 AND ps.discount_percent IN (10, 20)';
+    } elseif ($saleType === 'ar') {
+        $where .= ' AND ps.is_ar = 1';
+    }
+
+    return [$where, $params];
+}
+
+/**
+ * Dept finished units moved in the period.
+ * Walk-in comes from POS receipt lines (covers sticker sells and older quantity sells);
+ * shipped comes from sticker units scanned in a confirmed pack session — packed for a parcel,
+ * not a register sale. Pack-cancel restock clears the unit, so returns drop out on their own.
+ *
+ * @param array<string, mixed>|null $range
+ * @return array{products: list<array<string, mixed>>, walk_in: float, shipped: float, total: float}
+ */
+function honey_sales_dept_breakdown(PDO $pdo, ?array $range, string $channel = 'all'): array
+{
+    $counts = [];
+
+    $soldWhere = ' WHERE p.dept_product_key IS NOT NULL AND p.dept_product_key <> ""';
+    $soldParams = [];
+    if ($range !== null) {
+        $soldWhere .= ' AND ps.sale_date >= ? AND ps.sale_date <= ?';
+        $soldParams = [$range['from'] . ' 00:00:00', $range['to'] . ' 23:59:59'];
+    }
+    $soldSql = "SELECT p.dept_product_key AS product_key, COALESCE(SUM(pri.qty), 0) AS qty
+                FROM pos_receipt_items pri
+                INNER JOIN products p ON p.id = pri.product_id
+                INNER JOIN pos_sales ps ON ps.id = pri.sale_id{$soldWhere}
+                GROUP BY p.dept_product_key";
+    $soldSt = $pdo->prepare($soldSql);
+    $soldSt->execute($soldParams);
+    foreach ($soldSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $counts[(string) $row['product_key']]['walk_in'] = (float) $row['qty'];
+    }
+
+    $packWhere = " WHERE u.consumed_at IS NOT NULL
+                     AND u.consumed_ref_type = 'pack_session'
+                     AND u.status IN ('packed','shipped')";
+    $packParams = [];
+    if ($range !== null) {
+        $packWhere .= ' AND u.consumed_at >= ? AND u.consumed_at <= ?';
+        $packParams = [$range['from'] . ' 00:00:00', $range['to'] . ' 23:59:59'];
+    }
+    try {
+        $packSql = "SELECT u.product_key, COUNT(*) AS qty
+                    FROM dept_pouch_units u{$packWhere}
+                    GROUP BY u.product_key";
+        $packSt = $pdo->prepare($packSql);
+        $packSt->execute($packParams);
+        foreach ($packSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $counts[(string) $row['product_key']]['shipped'] = (float) $row['qty'];
+        }
+    } catch (PDOException $e) {
+        // Sticker units table not migrated yet — report sold units only rather than breaking the page.
+    }
+
+    $products = [];
+    $walkInTotal = 0.0;
+    $shippedTotal = 0.0;
+    foreach (dept_product_catalog() as $product) {
+        $key = (string) $product['key'];
+        $walkIn = $channel === 'online' ? 0.0 : (float) ($counts[$key]['walk_in'] ?? 0);
+        $shipped = $channel === 'walk_in' ? 0.0 : (float) ($counts[$key]['shipped'] ?? 0);
+        $walkInTotal += $walkIn;
+        $shippedTotal += $shipped;
+        $products[] = [
+            'key' => $key,
+            'label' => (string) $product['label'],
+            'unit' => (string) ($product['inventory_unit'] ?? $product['unit'] ?? 'pcs'),
+            'walk_in' => $walkIn,
+            'shipped' => $shipped,
+            'total' => $walkIn + $shipped,
+        ];
+    }
+
+    return [
+        'products' => $products,
+        'walk_in' => $walkInTotal,
+        'shipped' => $shippedTotal,
+        'total' => $walkInTotal + $shippedTotal,
+    ];
+}
+
 function honey_sales_size_label(?string $size): string
 {
     $size = (string) $size;
@@ -85,11 +201,17 @@ function honey_sales_serialize_receipt_item(array $row): array
 {
     $variant = strtolower(trim((string) ($row['variant'] ?? $row['p_variant'] ?? '')));
     $size = trim((string) ($row['size'] ?? $row['p_size'] ?? ''));
+    $name = trim((string) ($row['product_name'] ?? ''));
+    $sizeLabel = honey_sales_size_label($size);
+    $label = $variant !== ''
+        ? trim(ucfirst($variant) . ($sizeLabel !== '' ? ' · ' . $sizeLabel : ''))
+        : ($name !== '' ? $name : 'Item');
 
     return [
         'variant' => $variant,
         'size' => $size,
-        'size_label' => honey_sales_size_label($size),
+        'size_label' => $sizeLabel,
+        'label' => $label,
         'qty' => (float) ($row['qty'] ?? 0),
         'list_unit_price' => round((float) ($row['list_unit_price'] ?? $row['unit_price'] ?? 0), 2),
         'unit_price' => round((float) ($row['unit_price'] ?? 0), 2),
@@ -116,11 +238,10 @@ function honey_sales_fetch_checkouts(
     if (!in_array($saleType, ['all', 'regular', 'discount', 'ar'], true)) {
         $saleType = 'all';
     }
-    [$where, $params] = honey_sales_pos_checkout_where_clause($range, $receiptSearch, $saleType);
+    [$where, $params] = honey_sales_checkout_where_clause($range, $receiptSearch, $saleType);
 
     $countSql = "SELECT COUNT(DISTINCT ps.id) AS cnt
-                 FROM pos_sales ps
-                 INNER JOIN honey_sales_log h ON h.pos_sale_id = ps.id{$where}";
+                 FROM pos_sales ps{$where}";
     $cst = $pdo->prepare($countSql);
     $cst->execute($params);
     $total = (int) ($cst->fetchColumn() ?: 0);
@@ -134,8 +255,7 @@ function honey_sales_fetch_checkouts(
     $listSql = "SELECT ps.id AS sale_id, ps.receipt_no, ps.sale_date AS sold_at,
                        ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount,
                        ps.buyer_name, ps.buyer_credentials, COALESCE(ps.is_ar, 0) AS is_ar
-                FROM pos_sales ps
-                INNER JOIN honey_sales_log h ON h.pos_sale_id = ps.id{$where}
+                FROM pos_sales ps{$where}
                 GROUP BY ps.id, ps.receipt_no, ps.sale_date, ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount, ps.buyer_name, ps.buyer_credentials, ps.is_ar
                 ORDER BY ps.sale_date DESC
                 LIMIT {$perPage} OFFSET {$offset}";
@@ -361,11 +481,27 @@ function honey_sales_sold_snapshot(
             $onlineQty = (float) $sr['qty'];
         }
     }
+    $honeyWalkIn = $channel === 'online' ? 0.0 : $walkInQty;
+    $honeyShipped = $channel === 'walk_in' ? 0.0 : $onlineQty;
+
+    $dept = honey_sales_dept_breakdown($pdo, $range, $channel);
+    $deptShare = $channel === 'all' ? $dept : honey_sales_dept_breakdown($pdo, $range, 'all');
+    $walkInQty += $deptShare['walk_in'];
+    $onlineQty += $deptShare['shipped'];
     $shareTotal = $walkInQty + $onlineQty;
 
     return [
         'filter' => $filterMeta,
         'total_bottles_sold' => $all['total'],
+        'total_units_sold' => $all['total'] + $dept['total'],
+        'honey' => [
+            'label' => 'Honey',
+            'unit' => 'bottle',
+            'walk_in' => $honeyWalkIn,
+            'shipped' => $honeyShipped,
+            'total' => $all['total'],
+        ],
+        'dept' => $dept,
         'channel_share' => [
             'walk_in' => $walkInQty,
             'online' => $onlineQty,

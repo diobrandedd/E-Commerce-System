@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { AlertCircle, ChevronDown, ChevronRight, Loader2, Package, Search, X } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { HoneyVariantPieGrid, type VariantChart } from "@/app/components/honey/HoneyVariantPieGrid";
+import { AppSectionEnter, appHoverCard } from "@/app/components/layout/appFeedbackMotion";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet, ApiError } from "@/app/lib/api";
 import { peso, variantLabel } from "@/app/lib/posHoney";
@@ -14,6 +15,7 @@ interface CheckoutItem {
   variant: string;
   size: string;
   size_label: string;
+  label?: string;
   qty: number;
   list_unit_price?: number;
   unit_price: number;
@@ -45,9 +47,26 @@ interface CheckoutsPage {
   rows: CheckoutRow[];
 }
 
+interface DeptProductUnits {
+  key: string;
+  label: string;
+  unit: string;
+  walk_in: number;
+  shipped: number;
+  total: number;
+}
+
 interface SalesSnapshot {
   filter: { period: string; from: string | null; to: string | null; label: string; receipt?: string | null; sale_type?: SaleTypeFilter; channel?: ChannelFilter };
   total_bottles_sold: number;
+  total_units_sold?: number;
+  honey?: { label: string; unit: string; walk_in: number; shipped: number; total: number };
+  dept?: {
+    products: DeptProductUnits[];
+    walk_in: number;
+    shipped: number;
+    total: number;
+  };
   channel_share?: {
     walk_in: number;
     online: number;
@@ -85,11 +104,16 @@ function fmtQty(n: number): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 }
 
+function itemLabel(item: CheckoutItem): string {
+  if (item.variant) return `${variantLabel(item.variant)} ${item.size_label}`.trim();
+  return item.label ?? item.name ?? "Item";
+}
+
 function itemSummary(items: CheckoutItem[]): string {
   if (items.length === 0) return "—";
   if (items.length === 1) {
     const i = items[0];
-    return `${variantLabel(i.variant)} ${i.size_label} ×${fmtQty(i.qty)}`;
+    return `${itemLabel(i)} ×${fmtQty(i.qty)}`;
   }
   return `${items.length} line items`;
 }
@@ -179,6 +203,14 @@ export function SalesPage() {
     setExpandedId(prev => (prev === saleId ? null : saleId));
   };
 
+  const productCards = useMemo<DeptProductUnits[]>(() => {
+    const honey = data?.honey;
+    const cards: DeptProductUnits[] = honey
+      ? [{ key: "honey", label: honey.label, unit: honey.unit, walk_in: honey.walk_in, shipped: honey.shipped, total: honey.total }]
+      : [];
+    return cards.concat(data?.dept?.products ?? []);
+  }, [data]);
+
   const summary = useMemo(() => data?.summary ?? {
     total_bottles_regular: 0,
     total_bottles_discounted: 0,
@@ -189,16 +221,16 @@ export function SalesPage() {
   }, [data]);
 
   return (
-    <PageLayout title="Sales" subtitle="Honey sold from POS scans and pack scans">
+    <PageLayout title="Sales" subtitle="All products — walk-in POS scans and pack scans for shipping">
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
             <p className="text-sm text-muted-foreground">
-              Bottles sold at the register
+              Sold at the register + packed for shipping
               {data?.filter.label ? ` · ${data.filter.label}` : ""}
             </p>
             <p className="text-2xl font-bold text-foreground mt-1">
-              {loading ? "…" : fmtQty(data?.total_bottles_sold ?? 0)} total bottles
+              {loading ? "…" : fmtQty(data?.total_units_sold ?? data?.total_bottles_sold ?? 0)} total units
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-2">
@@ -250,7 +282,7 @@ export function SalesPage() {
             {([
               ["all", "All"],
               ["walk_in", "Walk-in"],
-              ["online", "Online"],
+              ["online", "Shipped"],
             ] as const).map(([id, label]) => (
               <button
                 key={id}
@@ -268,22 +300,48 @@ export function SalesPage() {
           </div>
           {data?.channel_share && (
             <p className="text-sm text-muted-foreground mt-2">
-              Walk-in {fmtQty(data.channel_share.walk_in)} ({data.channel_share.walk_in_pct}%)
+              Walk-in sold {fmtQty(data.channel_share.walk_in)} ({data.channel_share.walk_in_pct}%)
               {" · "}
-              Online {fmtQty(data.channel_share.online)} ({data.channel_share.online_pct}%)
+              Shipped {fmtQty(data.channel_share.online)} ({data.channel_share.online_pct}%)
             </p>
           )}
         </div>
 
+        {productCards.length > 0 && (
+          <AppSectionEnter>
+            <h2 className="text-sm font-semibold mb-3">By product</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+              {productCards.map(p => (
+                <div key={p.key} className={`rounded-xl border border-border bg-card p-4 ${appHoverCard}`}>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground truncate">{p.label}</p>
+                  <p className="text-xl font-bold mt-1">
+                    {loading ? "…" : fmtQty(p.total)}{" "}
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {p.unit}
+                      {p.total === 1 ? "" : "s"}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Walk-in {fmtQty(p.walk_in)} · Shipped {fmtQty(p.shipped)}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Shipped units are stickers scanned in pack scan — packed for a parcel, not yet a register sale.
+            </p>
+          </AppSectionEnter>
+        )}
+
         {channel !== "online" && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Regular sales</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Honey regular sales</p>
             <p className="text-xl font-bold mt-1">{fmtQty(summary.total_bottles_regular)} bottles</p>
             <p className="text-sm text-muted-foreground mt-1">{peso(summary.revenue_regular)}</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Discounted sales</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Honey discounted sales</p>
             <p className="text-xl font-bold mt-1">{fmtQty(summary.total_bottles_discounted)} bottles</p>
             <p className="text-sm text-muted-foreground mt-1">{peso(summary.revenue_discounted)}</p>
           </div>
@@ -381,7 +439,7 @@ export function SalesPage() {
           <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Package size={16} className="text-[#C8900A]" />
-              <h2 className="text-sm font-semibold">Recent walk-in sales</h2>
+              <h2 className="text-sm font-semibold">Recent walk-in sales (all products)</h2>
             </div>
             {checkouts && checkouts.total > 0 && (
               <span className="text-xs text-muted-foreground">
@@ -480,8 +538,12 @@ export function SalesPage() {
                                       className="flex justify-between gap-3 text-sm py-1.5 px-3 rounded-lg bg-card border border-border/60"
                                     >
                                       <span>
-                                        <span className="capitalize font-medium">{variantLabel(item.variant)}</span>
-                                        <span className="text-muted-foreground"> · {item.size_label}</span>
+                                        <span className="capitalize font-medium">
+                                          {item.variant ? variantLabel(item.variant) : (item.label ?? item.name ?? "Item")}
+                                        </span>
+                                        {item.variant && item.size_label ? (
+                                          <span className="text-muted-foreground"> · {item.size_label}</span>
+                                        ) : null}
                                         <span className="text-muted-foreground"> × {fmtQty(item.qty)}</span>
                                       </span>
                                       <span className="font-semibold whitespace-nowrap">
@@ -536,7 +598,7 @@ export function SalesPage() {
         </div>
 
         <div>
-          <h2 className="text-sm font-semibold mb-3">Sold by variant and size</h2>
+          <h2 className="text-sm font-semibold mb-3">Honey by variant and size</h2>
           {loading ? (
             <div className="flex justify-center py-8 text-muted-foreground">
               <Loader2 className="animate-spin" size={20} />
