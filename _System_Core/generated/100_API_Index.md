@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-15T05:20:31+02:00
+generated: 2026-08-15T07:45:38+02:00
 type: memory-bank
 ---
 
@@ -83,6 +83,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `scan_stock_in` | `api_bottle_scan_stock_in()` | `honey_bottle_scan_stock_in()`, `ims_pdo()` |
 | `pack_start` | `api_bottle_pack_start()` | `honey_bottle_pack_session_start()`, `ims_pdo()` |
 | `pack_get` | `api_bottle_pack_get()` | `honey_bottle_pack_session_get()`, `ims_pdo()` |
+| `pack_session_list` | `api_bottle_pack_session_list()` | `honey_bottle_pack_session_list()`, `ims_pdo()` |
 | `pack_scan` | `api_bottle_pack_scan()` | `honey_bottle_pack_session_scan()`, `ims_pdo()` |
 | `pack_confirm` | `api_bottle_pack_confirm()` | `honey_bottle_pack_session_confirm()`, `ims_pdo()` |
 | `pack_discard` | `api_bottle_pack_discard()` | `honey_bottle_pack_session_discard()`, `ims_pdo()` |
@@ -284,7 +285,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `dept_pt_pouch` | `api_honey_dept_pt_pouch()` | — |
 | `dept_brc_produce` | `api_honey_dept_brc_produce()` | — |
 | `dept_jar_produce` | `api_honey_dept_jar_produce()` | — |
-| `dept_comb_produce` | `api_honey_dept_comb_produce()` | `ims_pdo()`, `dept_honey_comb_produce()` |
+| `dept_comb_produce` | `api_honey_dept_comb_produce()` | — |
 | `dept_wip_waste` | `api_honey_dept_wip_waste()` | `ims_pdo()`, `dept_wip_waste_tea_bags()` |
 | `dept_production_preview` | `api_honey_dept_production_preview()` | `dept_product_key_valid()`, `dept_production_preview_lines()`, `ims_pdo()` |
 | `dept_production_log` | `api_honey_dept_production_log()` | `dept_product_key_valid()`, `dept_production_daily_totals()`, `ims_pdo()`, `dept_production_list_entries()` |

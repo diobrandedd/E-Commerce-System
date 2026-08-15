@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { BookOpen, Camera, CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { BookOpen, Camera, CheckCircle2, ChevronDown, ChevronRight, Loader2, XCircle } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -9,13 +9,91 @@ import {
   AppErrorBanner,
   AppSectionEnter,
   AppSuccessNotice,
+  AppStepSwitch,
   appHeaderActionClass,
+  appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
 import { ApiError } from "@/app/lib/api";
-import { bottleBarcodesApi, type HoneyPackSession } from "@/app/lib/bottleBarcodes";
+import {
+  bottleBarcodesApi,
+  type HoneyPackSession,
+  type HoneyPackSessionListRow,
+} from "@/app/lib/bottleBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
 
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function daysAgoIso(days: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatWhen(raw: string | null | undefined) {
+  if (!raw) return "—";
+  return new Date(raw.replace(" ", "T")).toLocaleString();
+}
+
 export function HoneyPackScanPage() {
+  const [tab, setTab] = useState<"scan" | "history">("scan");
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  return (
+    <PageLayout
+      title="Pack scan"
+      subtitle="Scan bottles to deduct honey before wrapping, or review past pack sessions."
+      actions={
+        <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
+          <BookOpen size={13} /> Guide
+        </button>
+      }
+    >
+      <div className="flex gap-1 mb-4 p-1 rounded-xl bg-secondary/40 w-fit max-w-full">
+        <button
+          type="button"
+          onClick={() => setTab("scan")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            tab === "scan" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Scan
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("history")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            tab === "history" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          History
+        </button>
+      </div>
+
+      <AppStepSwitch stepKey={tab}>
+        {tab === "scan" ? <PackScanLivePanel /> : <PackScanHistoryPanel />}
+      </AppStepSwitch>
+
+      <AppModal open={guideOpen} onClose={() => setGuideOpen(false)}>
+        <AppModalHeader title="Pack scan" onClose={() => setGuideOpen(false)} />
+        <AppModalBody className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            <strong className="text-foreground">Scan</strong> — scan every honey bottle you are about to pack.
+            Duplicates in this session are ignored. Bottles already packed or sold show a distinct warning.
+          </p>
+          <p>
+            <strong className="text-foreground">History</strong> — read-only list of confirmed pack sessions.
+            Filter by date range or batch code. Expanding a row shows bottles grouped by packaging batch.
+            Existing live sessions are not changed.
+          </p>
+        </AppModalBody>
+      </AppModal>
+    </PageLayout>
+  );
+}
+
+function PackScanLivePanel() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [session, setSession] = useState<HoneyPackSession | null>(null);
   const [code, setCode] = useState("");
@@ -24,7 +102,6 @@ export function HoneyPackScanPage() {
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const cameraTitleId = useId();
@@ -130,63 +207,53 @@ export function HoneyPackScanPage() {
           : "bg-secondary/30 border-border text-muted-foreground";
 
   return (
-    <PageLayout
-      title="Pack scan"
-      subtitle="Batch-scan bottles to deduct honey before wrapping. Waybill scan no longer deducts stock."
-      actions={
-        <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
-          <BookOpen size={13} /> Guide
-        </button>
-      }
-    >
-      <AppSectionEnter className="space-y-4">
-        {error && <AppErrorBanner message={error} />}
-        {ok && <AppSuccessNotice message={ok} />}
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide"
-            placeholder="Scan bottle barcode or type it…"
-            value={code}
-            onChange={e => setCode(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void onScan();
-              }
-            }}
-          />
-          <Button type="button" variant="outline" className="gap-1.5 shrink-0" onClick={() => setCameraOpen(true)}>
-            <Camera size={16} /> Camera
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Use a 2D imager scanner, or tap Camera to scan with this device. You can also type the code printed under the barcode.
-        </p>
-        <div className={`h-20 rounded-xl border flex items-center justify-center gap-2 text-sm font-semibold ${flashClass}`}>
-          {flash === "ok" && <CheckCircle2 size={22} />}
-          {flash === "bad" && <XCircle size={22} />}
-          {flash === "ok" ? "Scanned" : flash === "dup" ? "Already in this session" : flash === "bad" ? "Not accepted" : "Ready"}
-        </div>
-        {msg && <p className="text-sm">{msg}</p>}
-        <p className="text-xl font-bold">{session?.item_count ?? 0} bottles in session</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {(session?.grouped ?? []).map(g => (
-            <div key={`${g.variant}-${g.size}`} className="bg-card border rounded-xl px-3 py-2">
-              <p className="text-xs text-muted-foreground capitalize">{g.variant} {g.size_label}</p>
-              <p className="text-lg font-bold">{g.qty}</p>
-            </div>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={() => setConfirmOpen(true)} disabled={!session || session.item_count < 1}>
-            Done scanning
-          </Button>
-          <Button type="button" variant="outline" onClick={() => void discard()} disabled={!session || session.item_count < 1}>
-            Discard session
-          </Button>
-        </div>
-      </AppSectionEnter>
+    <AppSectionEnter className="space-y-4">
+      {error && <AppErrorBanner message={error} />}
+      {ok && <AppSuccessNotice message={ok} />}
+      <div className="flex gap-2">
+        <input
+          ref={inputRef}
+          className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide"
+          placeholder="Scan bottle barcode or type it…"
+          value={code}
+          onChange={e => setCode(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void onScan();
+            }
+          }}
+        />
+        <Button type="button" variant="outline" className="gap-1.5 shrink-0" onClick={() => setCameraOpen(true)}>
+          <Camera size={16} /> Camera
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Use a 2D imager scanner, or tap Camera to scan with this device. You can also type the code printed under the barcode.
+      </p>
+      <div className={`h-20 rounded-xl border flex items-center justify-center gap-2 text-sm font-semibold ${flashClass}`}>
+        {flash === "ok" && <CheckCircle2 size={22} />}
+        {flash === "bad" && <XCircle size={22} />}
+        {flash === "ok" ? "Scanned" : flash === "dup" ? "Already in this session" : flash === "bad" ? "Not accepted" : "Ready"}
+      </div>
+      {msg && <p className="text-sm">{msg}</p>}
+      <p className="text-xl font-bold">{session?.item_count ?? 0} bottles in session</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {(session?.grouped ?? []).map(g => (
+          <div key={`${g.variant}-${g.size}`} className="bg-card border rounded-xl px-3 py-2">
+            <p className="text-xs text-muted-foreground capitalize">{g.variant} {g.size_label}</p>
+            <p className="text-lg font-bold">{g.qty}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" onClick={() => setConfirmOpen(true)} disabled={!session || session.item_count < 1}>
+          Done scanning
+        </Button>
+        <Button type="button" variant="outline" onClick={() => void discard()} disabled={!session || session.item_count < 1}>
+          Discard session
+        </Button>
+      </div>
       <AppModal open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <AppModalHeader title="Confirm pack deduction" onClose={() => setConfirmOpen(false)} />
         <AppModalBody className="space-y-2">
@@ -205,13 +272,6 @@ export function HoneyPackScanPage() {
           </Button>
         </AppModalFooter>
       </AppModal>
-      <AppModal open={guideOpen} onClose={() => setGuideOpen(false)}>
-        <AppModalHeader title="Pack scan" onClose={() => setGuideOpen(false)} />
-        <AppModalBody className="space-y-3 text-sm text-muted-foreground">
-          <p>Scan every honey bottle you are about to pack. Duplicates in this session are ignored. Bottles already packed or sold show a distinct warning.</p>
-          <p>Done scanning opens a grouped confirmation. Cancel keeps the draft so you can keep scanning.</p>
-        </AppModalBody>
-      </AppModal>
       {cameraOpen ? (
         <BarcodeCameraScannerModal
           title="Scan bottle barcode"
@@ -222,6 +282,215 @@ export function HoneyPackScanPage() {
           onDecoded={decoded => onScan(decoded)}
         />
       ) : null}
-    </PageLayout>
+    </AppSectionEnter>
+  );
+}
+
+function PackScanHistoryPanel() {
+  const [from, setFrom] = useState(() => daysAgoIso(13));
+  const [to, setTo] = useState(() => todayIso());
+  const [batchNo, setBatchNo] = useState("");
+  const [applied, setApplied] = useState({ from: daysAgoIso(13), to: todayIso(), batch_no: "" });
+  const [page, setPage] = useState(1);
+  const [rows, setRows] = useState<HoneyPackSessionListRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [perPage, setPerPage] = useState(30);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await bottleBarcodesApi.packSessionList({
+        from: applied.from,
+        to: applied.to,
+        batch_no: applied.batch_no || undefined,
+        page,
+      });
+      setRows(res.rows);
+      setTotal(res.total);
+      setPerPage(res.per_page);
+    } catch (e) {
+      setRows([]);
+      setError(e instanceof ApiError ? e.message : "Could not load pack history.");
+    } finally {
+      setLoading(false);
+    }
+  }, [applied, page]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const applyFilters = () => {
+    setPage(1);
+    setExpanded(null);
+    setApplied({
+      from: from || daysAgoIso(13),
+      to: to || todayIso(),
+      batch_no: batchNo.trim().toUpperCase(),
+    });
+  };
+
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+  return (
+    <AppSectionEnter className="space-y-4">
+      <p className="text-xs text-muted-foreground">
+        Confirmed pack sessions only. Read-only — does not change stock or past scans.
+      </p>
+      <div className="flex flex-wrap gap-2 items-end bg-card border rounded-xl p-3">
+        <label className="text-xs text-muted-foreground">
+          From
+          <input
+            type="date"
+            className="mt-1 block border rounded-lg px-2 py-1.5 text-sm"
+            value={from}
+            onChange={e => setFrom(e.target.value)}
+          />
+        </label>
+        <label className="text-xs text-muted-foreground">
+          To
+          <input
+            type="date"
+            className="mt-1 block border rounded-lg px-2 py-1.5 text-sm"
+            value={to}
+            onChange={e => setTo(e.target.value)}
+          />
+        </label>
+        <label className="text-xs text-muted-foreground flex-1 min-w-[10rem]">
+          Batch code
+          <input
+            className="mt-1 block w-full border rounded-lg px-2 py-1.5 font-mono text-sm uppercase"
+            placeholder="e.g. JR063026"
+            value={batchNo}
+            onChange={e => setBatchNo(e.target.value.toUpperCase())}
+            onKeyDown={e => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                applyFilters();
+              }
+            }}
+          />
+        </label>
+        <Button type="button" size="sm" onClick={applyFilters}>
+          Apply
+        </Button>
+      </div>
+
+      {error && <AppErrorBanner message={error} />}
+      {loading ? (
+        <p className="text-sm text-muted-foreground py-8 text-center">
+          <Loader2 className="inline animate-spin" size={16} /> Loading…
+        </p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-8 text-center">No confirmed pack sessions in this range.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map(r => {
+            const open = expanded === r.id;
+            const summary = (r.grouped ?? [])
+              .map(g => `${g.qty}× ${g.variant} ${g.size_label}`)
+              .join(" · ");
+            return (
+              <div key={r.id} className="bg-card border rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  className={`w-full text-left px-3 py-3 flex gap-2 items-start ${appHoverRow}`}
+                  onClick={() => setExpanded(open ? null : r.id)}
+                >
+                  <span className="mt-0.5 text-muted-foreground shrink-0">
+                    {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </span>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <p className="text-sm font-semibold">{formatWhen(r.confirmed_at)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {r.confirmed_by_name || "—"} · {r.item_count} bottle{r.item_count === 1 ? "" : "s"}
+                    </p>
+                    {summary ? <p className="text-xs capitalize text-muted-foreground truncate">{summary}</p> : null}
+                  </div>
+                </button>
+                {open ? (
+                  <div className="border-t px-3 py-3 space-y-3 bg-secondary/20">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">By batch</p>
+                      <div className="overflow-x-auto rounded-lg border bg-card">
+                        <table className="w-full text-sm">
+                          <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
+                            <tr>
+                              <th className="text-left px-2 py-1.5">Batch</th>
+                              <th className="text-left px-2 py-1.5">Item</th>
+                              <th className="text-right px-2 py-1.5">Qty</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(r.by_batch ?? []).map((b, i) => (
+                              <tr key={`${b.batch_no}-${b.variant}-${b.size}-${i}`} className="border-t">
+                                <td className="px-2 py-1.5 font-mono text-xs">{b.batch_no || "—"}</td>
+                                <td className="px-2 py-1.5 capitalize">{b.variant} {b.size_label}</td>
+                                <td className="px-2 py-1.5 text-right tabular-nums">{b.qty}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Bottles</p>
+                      <div className="overflow-x-auto rounded-lg border bg-card max-h-56 overflow-y-auto">
+                        <table className="w-full text-sm">
+                          <thead className="sticky top-0 bg-secondary/40 text-xs uppercase text-muted-foreground">
+                            <tr>
+                              <th className="text-left px-2 py-1.5">Code</th>
+                              <th className="text-left px-2 py-1.5">Batch</th>
+                              <th className="text-left px-2 py-1.5">Item</th>
+                              <th className="text-left px-2 py-1.5">Scanned</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {r.items.map(it => (
+                              <tr key={it.id} className="border-t">
+                                <td className="px-2 py-1.5 font-mono text-xs">{it.code}</td>
+                                <td className="px-2 py-1.5 font-mono text-xs">{it.batch_no || "—"}</td>
+                                <td className="px-2 py-1.5 capitalize">{it.variant} {it.size_label}</td>
+                                <td className="px-2 py-1.5 text-xs whitespace-nowrap">{formatWhen(it.scanned_at)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {!loading && total > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground">
+            {total} session{total === 1 ? "" : "s"} · page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+              Previous
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={page >= totalPages}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </AppSectionEnter>
   );
 }

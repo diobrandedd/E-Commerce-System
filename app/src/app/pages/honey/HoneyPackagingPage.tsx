@@ -1,18 +1,34 @@
-import { useCallback, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useCallback, useEffect, useId, useState } from "react";
+import { Link } from "react-router";
+import { Loader2, Printer, ScanLine, Tag } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
+import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
 import { BatchTraceabilityDrawer } from "@/app/components/honey/BatchTraceabilityDrawer";
 import { PackagingScanLogModal } from "@/app/components/honey/PackagingScanLogModal";
-import { appHoverRow } from "@/app/components/layout/appFeedbackMotion";
+import {
+  DeptPouchAdminPanel,
+  DeptPouchRequestsPanel,
+  DeptPouchScanInPanel,
+} from "@/app/components/dept/DeptPouchBarcodePanels";
+import {
+  AppPressable,
+  AppSectionEnter,
+  appHeaderActionClass,
+  appHoverRow,
+} from "@/app/components/layout/appFeedbackMotion";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet } from "@/app/lib/api";
 import { HONEY_SIZES } from "@/app/lib/honey";
-import { canExecutiveDirectEdit, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
+import { canDeptPouchBarcodeOps, canExecutiveDirectEdit, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
+import { deptPouchBarcodesApi } from "@/app/lib/deptPouchBarcodes";
+
+const HONEY_COMB_KEY = "honey_comb";
+const HONEY_COMB_LABEL = "Honey Comb";
 
 interface PkRow {
   id: number;
@@ -34,6 +50,7 @@ export function HoneyPackagingPage() {
   const { user } = useAuth();
   const canExecEdit = canExecutiveDirectEdit(user?.role);
   const showSupplierProfile = canViewSupplierProfile(user?.role);
+  const canCombBarcodes = canDeptPouchBarcodeOps(user?.role);
   const [rows, setRows] = useState<PkRow[]>([]);
   const [page, setPage] = useState(1);
   const perPage = 12;
@@ -42,6 +59,23 @@ export function HoneyPackagingPage() {
   const [scanLogRow, setScanLogRow] = useState<PkRow | null>(null);
   const [editRow, setEditRow] = useState<PkRow | null>(null);
   const [traceQ, setTraceQ] = useState("");
+  const [combModal, setCombModal] = useState<"scan" | "admin" | null>(null);
+  const [pendingCombLabels, setPendingCombLabels] = useState(0);
+  const combScanTitleId = useId();
+  const combAdminTitleId = useId();
+
+  const refreshPendingComb = useCallback(async () => {
+    if (!canCombBarcodes) {
+      setPendingCombLabels(0);
+      return;
+    }
+    try {
+      const res = await deptPouchBarcodesApi.pendingCount(HONEY_COMB_KEY);
+      setPendingCombLabels(res.count);
+    } catch {
+      setPendingCombLabels(0);
+    }
+  }, [canCombBarcodes]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -49,10 +83,11 @@ export function HoneyPackagingPage() {
       const data = await apiGet<{ rows: PkRow[] }>("honey.php", "packaging_list");
       setRows(data.rows);
       setPage(1);
+      await refreshPendingComb();
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshPendingComb]);
 
   useEffect(() => {
     void refresh();
@@ -192,6 +227,108 @@ export function HoneyPackagingPage() {
           </div>
         </div>
       )}
+
+      {canCombBarcodes ? (
+        <AppSectionEnter className="mt-8 space-y-3 border-t border-border pt-6">
+          <div
+            id="honey-comb-barcodes"
+            className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between scroll-mt-4"
+          >
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold">Honey Comb barcodes</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Request jar stickers by batch code (no variant or size). Scan each jar into finished{" "}
+                {HONEY_COMB_LABEL} stock. Raw bags and packaging are not deducted here.{" "}
+                <Link
+                  to="/inventory/raw-materials/honey-comb"
+                  className="underline hover:text-foreground"
+                >
+                  Stock in raw bags →
+                </Link>
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <AppPressable
+                type="button"
+                className={`${appHeaderActionClass} gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
+                onClick={() => {
+                  document.getElementById("honey-comb-barcodes")?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                <Tag size={13} /> Request
+              </AppPressable>
+              <AppPressable
+                type="button"
+                className={`${appHeaderActionClass} gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
+                onClick={() => setCombModal("scan")}
+              >
+                <ScanLine size={13} /> Scan
+              </AppPressable>
+              <AppPressable
+                type="button"
+                className={`${appHeaderActionClass} relative gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
+                onClick={() => setCombModal("admin")}
+              >
+                <Printer size={13} /> Generate / print
+                {pendingCombLabels > 0 ? (
+                  <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                    {pendingCombLabels > 99 ? "99+" : pendingCombLabels}
+                  </span>
+                ) : null}
+              </AppPressable>
+            </div>
+          </div>
+          <DeptPouchRequestsPanel productKey={HONEY_COMB_KEY} productLabel={HONEY_COMB_LABEL} />
+        </AppSectionEnter>
+      ) : null}
+
+      {combModal === "scan" && (
+        <AppModal
+          open
+          onClose={() => {
+            setCombModal(null);
+            void refresh();
+          }}
+          panelClassName="max-w-lg w-full"
+          labelledBy={combScanTitleId}
+        >
+          <AppModalHeader
+            title="Scan Honey Comb jars to inventory"
+            titleId={combScanTitleId}
+            onClose={() => {
+              setCombModal(null);
+              void refresh();
+            }}
+          />
+          <AppModalBody>
+            <DeptPouchScanInPanel productKey={HONEY_COMB_KEY} productLabel={HONEY_COMB_LABEL} />
+          </AppModalBody>
+        </AppModal>
+      )}
+      {combModal === "admin" && (
+        <AppModal
+          open
+          onClose={() => {
+            setCombModal(null);
+            void refresh();
+          }}
+          panelClassName="max-w-2xl w-full"
+          labelledBy={combAdminTitleId}
+        >
+          <AppModalHeader
+            title="Generate / print Honey Comb requests"
+            titleId={combAdminTitleId}
+            onClose={() => {
+              setCombModal(null);
+              void refresh();
+            }}
+          />
+          <AppModalBody>
+            <DeptPouchAdminPanel productKey={HONEY_COMB_KEY} productLabel={HONEY_COMB_LABEL} />
+          </AppModalBody>
+        </AppModal>
+      )}
+
       {scanLogRow && (
         <PackagingScanLogModal
           packagingRowId={scanLogRow.id}

@@ -65,6 +65,7 @@ api_dispatch([
     'scan_stock_in' => 'api_bottle_scan_stock_in',
     'pack_start' => 'api_bottle_pack_start',
     'pack_get' => 'api_bottle_pack_get',
+    'pack_session_list' => 'api_bottle_pack_session_list',
     'pack_scan' => 'api_bottle_pack_scan',
     'pack_confirm' => 'api_bottle_pack_confirm',
     'pack_discard' => 'api_bottle_pack_discard',
@@ -320,6 +321,23 @@ function api_bottle_pack_get(): void
     api_bottle_require_scan();
     $id = (int) ($_GET['id'] ?? 0);
     api_ok(['session' => honey_bottle_pack_session_get(ims_pdo(), $id)]);
+}
+
+function api_bottle_pack_session_list(): void
+{
+    api_method_allowed(['GET']);
+    api_bottle_require_scan();
+    try {
+        api_ok(honey_bottle_pack_session_list(
+            ims_pdo(),
+            isset($_GET['from']) ? (string) $_GET['from'] : null,
+            isset($_GET['to']) ? (string) $_GET['to'] : null,
+            isset($_GET['batch_no']) ? (string) $_GET['batch_no'] : null,
+            (int) ($_GET['page'] ?? 1)
+        ));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
 }
 
 function api_bottle_pack_scan(): void

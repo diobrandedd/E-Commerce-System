@@ -1,7 +1,7 @@
 import { apiGet, apiPost } from "@/app/lib/api";
 
 /** Dept products that use the barcode stock-in flow (pouches or jars). */
-export const DEPT_POUCH_BARCODE_KEYS = ["pt", "brc", "jar_cacao"] as const;
+export const DEPT_POUCH_BARCODE_KEYS = ["pt", "brc", "jar_cacao", "honey_comb"] as const;
 
 export type DeptPouchProductKey = (typeof DEPT_POUCH_BARCODE_KEYS)[number];
 
@@ -9,9 +9,11 @@ export function deptPouchBarcodesEnabled(productKey: string): productKey is Dept
   return (DEPT_POUCH_BARCODE_KEYS as readonly string[]).includes(productKey);
 }
 
-/** Sell-unit noun for UI copy (Cacao = jar; Paragis / Black Rice = pouch). */
+/** Sell-unit noun for UI copy (Cacao / Honey Comb = jar; Paragis / Black Rice = pouch). */
 export function deptPouchUnitLabel(productKey: string): { singular: string; plural: string } {
-  if (productKey === "jar_cacao") return { singular: "jar", plural: "jars" };
+  if (productKey === "jar_cacao" || productKey === "honey_comb") {
+    return { singular: "jar", plural: "jars" };
+  }
   return { singular: "pouch", plural: "pouches" };
 }
 

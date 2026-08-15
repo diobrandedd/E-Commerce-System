@@ -31,7 +31,8 @@ No CSR-only split for MVP.
 
 - WIP / packaging deduct on pouch barcode stock-in
 - Pack sessions, POS, RTS for dept pouches/jars
-- Honey Comb barcodes (keeps the Produce button)
+- Honey Comb barcodes — **superseded** by [[specs/2026-08-15_honey-comb-barcode-inventory]] (Produce retired; Packaging-page section)
+
 - Changing raw bag stock-in
 
 ## Links

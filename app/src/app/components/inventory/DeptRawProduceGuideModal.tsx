@@ -122,16 +122,38 @@ export function DeptRawProduceGuideModal({
             </p>
           ) : (
             <p>
-              <strong className="text-foreground">Raw bags</strong> — sealed 1 kg supplier bags of honey comb.
+              <strong className="text-foreground">Raw bags</strong> — sealed 1 kg supplier bags of honey comb (stocked on this page).
               {" "}
-              <strong className="text-foreground">Finished jars</strong> — retail jars with cap + sticker ({HONEY_COMB_GRAMS_PER_JAR} g comb per jar).
-              Production deducts jar packaging and sticker from Product Costing formula lines.
+              <strong className="text-foreground">Finished jars</strong> — retail jars ({HONEY_COMB_GRAMS_PER_JAR} g comb per jar) stocked by scanning stickers on{" "}
+              <strong className="text-foreground">Raw Honey → Packaging → Honey Comb barcodes</strong>.
             </p>
           )}
         </GuideSection>
 
         <GuideSection title="Production workflow">
-          {usesPouchBarcodes ? (
+          {productKey === "honey_comb" ? (
+            <>
+              <ol className="list-decimal pl-4 space-y-1.5">
+                <li>
+                  <strong className="text-foreground">Stock in raw bags</strong> — receive sealed 1 kg supplier bags on this page.
+                </li>
+                <li>
+                  Open <strong className="text-foreground">Raw Honey → Packaging</strong> and scroll to{" "}
+                  <strong className="text-foreground">Honey Comb barcodes</strong>.
+                </li>
+                <li>
+                  <strong className="text-foreground">Request</strong> jar stickers with a batch code and quantity (no variant or size).
+                </li>
+                <li>
+                  <strong className="text-foreground">Generate / print</strong>, stick one barcode on each jar, then{" "}
+                  <strong className="text-foreground">Scan</strong> into finished stock.
+                </li>
+              </ol>
+              <p>
+                The old Produce button is retired. Scanning adds finished jars only — raw bags and packaging are not deducted in this flow.
+              </p>
+            </>
+          ) : usesPouchBarcodes ? (
             <>
               <ol className="list-decimal pl-4 space-y-1.5">
                 <li>
@@ -208,7 +230,7 @@ export function DeptRawProduceGuideModal({
 
         <GuideWalkthroughSection />
       </AppModalBody>
-      <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />
+      {productKey === "honey_comb" ? null : <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />}
     </AppModal>
   );
 }

@@ -170,10 +170,6 @@ export function deptPtMakeTeaBags(payload: { qty: number; note?: string }) {
   return apiPost("honey.php", "dept_pt_make_tea_bags", payload);
 }
 
-export function deptCombProduce(payload: { qty: number; note?: string }) {
-  return apiPost("honey.php", "dept_comb_produce", payload);
-}
-
 export function deptWipWaste(payload: { qty: number; reason?: string }) {
   return apiPost("honey.php", "dept_wip_waste", payload);
 }

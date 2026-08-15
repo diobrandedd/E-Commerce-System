@@ -9,7 +9,7 @@ const DEPT_POUCH_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 const DEPT_POUCH_CODE_LENGTH = 6;
 
 /** Dept products that use the barcode stock-in flow (pouches or jars). */
-const DEPT_POUCH_BARCODE_KEYS = ['pt', 'brc', 'jar_cacao'];
+const DEPT_POUCH_BARCODE_KEYS = ['pt', 'brc', 'jar_cacao', 'honey_comb'];
 
 function dept_pouch_can_ops(string $role): bool
 {
@@ -41,7 +41,7 @@ function dept_pouch_product_label(string $productKey): string
 /** Sell-unit noun for labels / print sheet titles (pouch vs jar). */
 function dept_pouch_unit_singular(string $productKey): string
 {
-    return $productKey === 'jar_cacao' ? 'jar' : 'pouch';
+    return in_array($productKey, ['jar_cacao', 'honey_comb'], true) ? 'jar' : 'pouch';
 }
 
 function dept_pouch_normalize_code(string $code): string

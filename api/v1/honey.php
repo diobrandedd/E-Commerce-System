@@ -783,7 +783,7 @@ function api_honey_dept_raw_stock_out(): void
 function api_honey_dept_raw_produce(): void
 {
     api_method_allowed(['POST']);
-    api_fail('Use dept_pt_use_raw_bags or dept_comb_produce. Paragis Tea, Black Rice Coffee, and Jar Cacao stock in via dept_pouch_barcodes.php.', 410);
+    api_fail('Use dept_pt_use_raw_bags. Paragis Tea, Black Rice Coffee, Jar Cacao, and Honey Comb finished stock-in use dept_pouch_barcodes.php.', 410);
 }
 
 function api_honey_dept_pt_use_raw_bags(): void
@@ -860,23 +860,10 @@ function api_honey_dept_jar_produce(): void
 function api_honey_dept_comb_produce(): void
 {
     api_method_allowed(['POST']);
-    $input = api_input();
-    api_require_csrf($input);
-    $user = api_honey_require_dept_produce('honey_comb');
-    $qty = (float) ($input['qty'] ?? 0);
-    $note = trim((string) ($input['note'] ?? ''));
-    $pdo = ims_pdo();
-    $pdo->beginTransaction();
-    try {
-        $result = dept_honey_comb_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
-        $pdo->commit();
-    } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        api_fail($e->getMessage(), 400);
-    }
-    api_ok($result);
+    api_fail(
+        'Produce button is retired. Use Honey Comb jar barcodes on Raw Honey → Packaging (request → generate/print → scan stock-in).',
+        410
+    );
 }
 
 function api_honey_dept_wip_waste(): void

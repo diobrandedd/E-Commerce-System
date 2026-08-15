@@ -34,8 +34,9 @@ export function canMutateDeptRawProduction(role: Role | undefined): boolean {
 }
 
 /**
- * Dept unit barcodes (Paragis Tea, Black Rice Coffee, Jar Cacao) — request / generate-print / scan.
- * Staff included (API `dept_pouch_can_ops`); separate from bag stock-in mutate gate.
+ * Dept unit barcodes (Paragis Tea, Black Rice Coffee, Jar Cacao, Honey Comb) —
+ * request / generate-print / scan. Staff included (API `dept_pouch_can_ops`);
+ * separate from bag stock-in mutate gate.
  */
 export function canDeptPouchBarcodeOps(role: Role | undefined): boolean {
   return (

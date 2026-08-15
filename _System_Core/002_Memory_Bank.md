@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Pack scan History (who / when / batch)
+**Change:** Deliveries → Pack scan gains a **History** tab (read-only). Lists confirmed sessions with date range + batch code filters; expand for by-batch and per-bottle rows. API `pack_session_list` — SELECT only; existing live pack rows unchanged. → [[problems/records/2026-08-15_pack-scan-history]]
+
+### 2026-08-15 — Honey Comb jar barcodes (Packaging section)
+**Change:** Added `honey_comb` to `DEPT_POUCH_BARCODE_KEYS`. Finished jars stock in via request → generate/print → scan (no variant/size; scan = finished +1 only). UI lives below liquid-honey Packaging batches with its own request list. Produce retired (`dept_comb_produce` → 410). Raw honey-comb page keeps bag stock-in/waste and points to Packaging. No schema change. → [[problems/records/2026-08-15_honey-comb-barcode-inventory]]
+
 ### 2026-08-15 — Label sheets no longer drop/overlap rows across page breaks
 **Change:** Printing a batch over 68 labels lost row 17 of each page and stacked it onto row 1 of the next (two barcodes in one cut box). Both label sheets used `grid-template-rows: repeat(17, 1fr)` inside a box pinned to exactly `287mm`; fractional rows get re-solved when a grid fragments, and the exact height left no rounding slack. Now `grid-auto-rows: 16.8mm` with matching `.label` height — 17 rows = 285.6mm, safely under 287mm. Same 68-per-A4 layout. Affects `honey_bottle_label_sheet_html()` and `dept_pouch_label_sheet_html()`. → [[problems/records/2026-08-15_label-sheet-page-break-overlap]]
 

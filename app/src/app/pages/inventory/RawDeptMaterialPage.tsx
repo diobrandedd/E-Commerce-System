@@ -17,7 +17,6 @@ import {
 } from "@/app/lib/deptProducts";
 import { type RawMaterialRoute } from "@/app/lib/inventoryRoutes";
 import {
-  deptCombProduce,
   deptPtMakeTeaBags,
   deptPtUseRawBags,
   type DeptProductionEntry,
@@ -71,6 +70,7 @@ function productionActionLabel(action: string): string {
     pouch: "Pouch",
     produce_brc: "Produce pouches",
     produce_jar: "Produce jars",
+    produce_comb: "Produce jars (legacy)",
     wip_waste: "WIP waste",
   };
   return map[action] ?? action.replace(/_/g, " ");
@@ -107,7 +107,11 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const showGuide = isParagis || isSingleStageProduce;
   /** Products stocked in by scanning pouch stickers instead of a Produce/Pouch button. */
   const hasPouchBarcodes = deptPouchBarcodesEnabled(productKey);
-  const showPouchBarcodes = hasPouchBarcodes && canPouchBarcodes;
+  /**
+   * Honey Comb barcode UI lives on Raw Honey → Packaging (below bottle batches).
+   * Other dept products keep Request/Scan/Generate on this raw page.
+   */
+  const showPouchBarcodes = hasPouchBarcodes && canPouchBarcodes && productKey !== "honey_comb";
   const pouchUnit = deptPouchUnitLabel(productKey);
   const dailyProduce =
     productKey === "pt"
@@ -125,7 +129,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const [showUseRawBags, setShowUseRawBags] = useState(false);
   const [showMakeTeaBagsAdvanced, setShowMakeTeaBagsAdvanced] = useState(false);
   const [showWipWaste, setShowWipWaste] = useState(false);
-  const [showProduce, setShowProduce] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [pouchLogTick, setPouchLogTick] = useState(0);
   const [pouchModal, setPouchModal] = useState<"request" | "scan" | "admin" | null>(null);
@@ -296,6 +299,18 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
         <p className="text-sm text-red-600">{loadError ?? "Could not load raw inventory."}</p>
       ) : (
         <div className="space-y-5">
+          {productKey === "honey_comb" && (
+            <div className="rounded-xl border border-[#C8900A]/30 bg-[#C8900A]/5 px-4 py-3 text-sm text-[#8a6506]">
+              Finished Honey Comb jars are stocked in with barcodes on{" "}
+              <Link
+                to="/inventory/raw-materials/honey/packaging#honey-comb-barcodes"
+                className="font-semibold underline hover:text-foreground"
+              >
+                Raw Honey → Packaging
+              </Link>
+              . Use this page for stock-in raw bags and bag waste only.
+            </div>
+          )}
           <div className={`grid gap-3 ${isParagis ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`} data-tour="raw-dept-metrics">
             <div className="rounded-xl border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Raw bags</p>
@@ -342,7 +357,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 onGeneratePrint={() => setPouchModal("admin")}
                 pendingPouchLabels={pendingPouchLabels}
                 onWipWaste={() => setShowWipWaste(true)}
-                onProduce={() => setShowProduce(true)}
+                onProduce={() => undefined}
                 onBagWaste={() => setShowWarehouseWaste(true)}
               />
             </div>
@@ -470,7 +485,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           }}
         />
       )}
-      {isSingleStageProduce && (
+      {isSingleStageProduce && productKey !== "honey_comb" && (
         <DeptRawProduceGuideModal
           productKey={productKey}
           open={guideOpen}
@@ -479,6 +494,17 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           onStartTour={() => {
             setGuideOpen(false);
             startPageTourAfterModalClose(() => runDeptRawProduceTour(productKey));
+          }}
+        />
+      )}
+      {productKey === "honey_comb" && (
+        <DeptRawProduceGuideModal
+          productKey="honey_comb"
+          open={guideOpen}
+          onClose={() => setGuideOpen(false)}
+          role={user?.role}
+          onStartTour={() => {
+            setGuideOpen(false);
           }}
         />
       )}
@@ -548,22 +574,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           maxQty={wipTeaBags}
           onClose={() => setShowWipWaste(false)}
           onDone={() => { setShowWipWaste(false); void refresh(); }}
-        />
-      )}
-      {showProduce && data && (
-        <ProductionQtyModal
-          title="Produce finished product"
-          label={`${data.inventory_unit}s produced`}
-          unit={data.inventory_unit}
-          productKey={productKey}
-          action="produce"
-          onClose={() => setShowProduce(false)}
-          onSubmit={(qty, note) => deptCombProduce({ qty, note })}
-          onDone={() => {
-            setShowProduce(false);
-            setPouchLogTick((t) => t + 1);
-            void refresh();
-          }}
         />
       )}
     </PageLayout>

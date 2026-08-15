@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-08-15T05:20:02+02:00
+generated: 2026-08-15T07:46:14+02:00
 type: memory-bank
 ---
 
@@ -16,7 +16,6 @@ Backend index: [[100_API_Index]]
 | `app/src/app/lib/materials.ts` | `(action: add)` |
 | `app/src/app/lib/materials.ts` | `(action: issue)` |
 | `app/src/app/pages/inventory/RawDeptMaterialPage.tsx` | `(action: make_tea_bags)` |
-| `app/src/app/pages/inventory/RawDeptMaterialPage.tsx` | `(action: produce)` |
 | `app/src/app/lib/materials.ts` | `(action: set_on_hand)` |
 | `app/src/app/lib/api.ts` | `/${path.replace(/^\/+/, "")}` |
 | `app/src/app/lib/courierSoaReconcileApi.ts` | `/courier_soa_reconcile.php?action=download&token=${encodeURIComponent(token)}` |

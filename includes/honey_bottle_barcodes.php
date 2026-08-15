@@ -842,32 +842,45 @@ function honey_bottle_pack_session_start(PDO $pdo, int $userId): array
  */
 function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
 {
-    $st = $pdo->prepare('SELECT * FROM honey_bottle_pack_sessions WHERE id = ? LIMIT 1');
+    $st = $pdo->prepare(
+        'SELECT s.*,
+                u_start.name AS started_by_name,
+                u_conf.name AS confirmed_by_name
+         FROM honey_bottle_pack_sessions s
+         LEFT JOIN users u_start ON u_start.id = s.started_by
+         LEFT JOIN users u_conf ON u_conf.id = s.confirmed_by
+         WHERE s.id = ? LIMIT 1'
+    );
     $st->execute([$sessionId]);
     $sess = $st->fetch(PDO::FETCH_ASSOC);
     if ($sess === false) {
         throw new RuntimeException('Pack session not found.');
     }
     $itemsSt = $pdo->prepare(
-        'SELECT i.id, i.barcode_id, i.unit_id, i.scanned_at, c.code, u.variant, u.size
+        'SELECT i.id, i.barcode_id, i.unit_id, i.scanned_at, c.code, u.variant, u.size,
+                pk.batch_no
          FROM honey_bottle_pack_session_items i
          INNER JOIN honey_bottle_barcodes c ON c.id = i.barcode_id
          INNER JOIN honey_bottle_units u ON u.id = i.unit_id
+         LEFT JOIN honey_packaging_rows pk ON pk.id = u.packaging_row_id
          WHERE i.session_id = ?
          ORDER BY i.id ASC'
     );
     $itemsSt->execute([$sessionId]);
     $items = [];
     $grouped = [];
+    $byBatch = [];
     foreach ($itemsSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $variant = (string) $row['variant'];
         $size = (string) $row['size'];
+        $batchNo = $row['batch_no'] !== null ? (string) $row['batch_no'] : '';
         $items[] = [
             'id' => (int) $row['id'],
             'code' => (string) $row['code'],
             'variant' => $variant,
             'size' => $size,
             'size_label' => honey_bottle_size_label($size),
+            'batch_no' => $batchNo !== '' ? $batchNo : null,
             'scanned_at' => (string) $row['scanned_at'],
         ];
         $key = $variant . '|' . $size;
@@ -880,16 +893,140 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
             ];
         }
         $grouped[$key]['qty']++;
+        $bKey = $batchNo . '|' . $variant . '|' . $size;
+        if (!isset($byBatch[$bKey])) {
+            $byBatch[$bKey] = [
+                'batch_no' => $batchNo !== '' ? $batchNo : null,
+                'variant' => $variant,
+                'size' => $size,
+                'size_label' => honey_bottle_size_label($size),
+                'qty' => 0,
+            ];
+        }
+        $byBatch[$bKey]['qty']++;
     }
 
     return [
         'id' => (int) $sess['id'],
         'status' => (string) $sess['status'],
         'started_by' => (int) $sess['started_by'],
+        'started_by_name' => (string) ($sess['started_by_name'] ?? ''),
+        'confirmed_by' => $sess['confirmed_by'] !== null ? (int) $sess['confirmed_by'] : null,
+        'confirmed_by_name' => (string) ($sess['confirmed_by_name'] ?? ''),
+        'confirmed_at' => $sess['confirmed_at'] !== null ? (string) $sess['confirmed_at'] : null,
         'created_at' => (string) $sess['created_at'],
         'item_count' => count($items),
         'items' => $items,
         'grouped' => array_values($grouped),
+        'by_batch' => array_values($byBatch),
+    ];
+}
+
+/**
+ * Read-only list of confirmed pack sessions for History.
+ *
+ * @return array{rows: list<array<string,mixed>>, total: int, page: int, per_page: int, from: string, to: string}
+ */
+function honey_bottle_pack_session_list(
+    PDO $pdo,
+    ?string $from,
+    ?string $to,
+    ?string $batchNo,
+    int $page = 1
+): array {
+    $page = max(1, $page);
+    $perPage = 30;
+    $offset = ($page - 1) * $perPage;
+
+    if ($from === null || $from === '') {
+        $from = date('Y-m-d', strtotime('-13 days'));
+    }
+    if ($to === null || $to === '') {
+        $to = date('Y-m-d');
+    }
+    $fromTs = strtotime($from);
+    $toTs = strtotime($to);
+    if ($fromTs === false || $toTs === false) {
+        throw new RuntimeException('Invalid date range.');
+    }
+    if ($fromTs > $toTs) {
+        throw new RuntimeException('From date must be on or before To date.');
+    }
+    $from = date('Y-m-d', $fromTs);
+    $to = date('Y-m-d', $toTs);
+    $fromDt = $from . ' 00:00:00';
+    $toDt = $to . ' 23:59:59';
+
+    $batchNo = $batchNo !== null ? strtoupper(trim($batchNo)) : '';
+    $batchJoin = '';
+    if ($batchNo !== '') {
+        if (!preg_match('/^[A-Z0-9][A-Z0-9-]{0,31}$/', $batchNo)) {
+            throw new RuntimeException('Batch code search must be letters, digits or dashes.');
+        }
+        $batchJoin = ' INNER JOIN (
+            SELECT DISTINCT i.session_id
+            FROM honey_bottle_pack_session_items i
+            INNER JOIN honey_bottle_units u ON u.id = i.unit_id
+            INNER JOIN honey_packaging_rows pk ON pk.id = u.packaging_row_id
+            WHERE UPPER(pk.batch_no) LIKE ?
+        ) bb ON bb.session_id = s.id';
+    }
+
+    $params = [];
+    if ($batchNo !== '') {
+        $params[] = $batchNo . '%';
+    }
+    $params[] = $fromDt;
+    $params[] = $toDt;
+
+    $countSql = 'SELECT COUNT(*) FROM honey_bottle_pack_sessions s' . $batchJoin
+        . ' WHERE s.status = "confirmed" AND s.confirmed_at IS NOT NULL'
+        . ' AND s.confirmed_at BETWEEN ? AND ?';
+    $countSt = $pdo->prepare($countSql);
+    $countSt->execute($params);
+    $total = (int) $countSt->fetchColumn();
+
+    $listSql = 'SELECT s.id, s.status, s.started_by, s.confirmed_by, s.confirmed_at, s.created_at,
+                       u_start.name AS started_by_name,
+                       u_conf.name AS confirmed_by_name,
+                       (SELECT COUNT(*) FROM honey_bottle_pack_session_items i WHERE i.session_id = s.id) AS item_count
+                FROM honey_bottle_pack_sessions s'
+        . $batchJoin
+        . ' LEFT JOIN users u_start ON u_start.id = s.started_by
+           LEFT JOIN users u_conf ON u_conf.id = s.confirmed_by
+           WHERE s.status = "confirmed" AND s.confirmed_at IS NOT NULL
+             AND s.confirmed_at BETWEEN ? AND ?
+           ORDER BY s.confirmed_at DESC, s.id DESC
+           LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset;
+
+    $listSt = $pdo->prepare($listSql);
+    $listSt->execute($params);
+    $rows = [];
+    foreach ($listSt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $detail = honey_bottle_pack_session_get($pdo, (int) $r['id']);
+        $rows[] = [
+            'id' => (int) $r['id'],
+            'status' => (string) $r['status'],
+            'started_by' => (int) $r['started_by'],
+            'started_by_name' => (string) ($r['started_by_name'] ?? ''),
+            'confirmed_by' => $r['confirmed_by'] !== null ? (int) $r['confirmed_by'] : null,
+            'confirmed_by_name' => (string) ($r['confirmed_by_name'] ?? ''),
+            'confirmed_at' => (string) $r['confirmed_at'],
+            'created_at' => (string) $r['created_at'],
+            'item_count' => (int) $r['item_count'],
+            'grouped' => $detail['grouped'],
+            'by_batch' => $detail['by_batch'],
+            'items' => $detail['items'],
+        ];
+    }
+
+    return [
+        'rows' => $rows,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'from' => $from,
+        'to' => $to,
     ];
 }
 
