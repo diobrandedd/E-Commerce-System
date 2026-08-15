@@ -783,7 +783,7 @@ function api_honey_dept_raw_stock_out(): void
 function api_honey_dept_raw_produce(): void
 {
     api_method_allowed(['POST']);
-    api_fail('Use dept_pt_use_raw_bags / dept_pt_pouch or dept_brc_produce / dept_jar_produce.', 410);
+    api_fail('Use dept_pt_use_raw_bags or dept_comb_produce. Paragis Tea, Black Rice Coffee, and Jar Cacao stock in via dept_pouch_barcodes.php.', 410);
 }
 
 function api_honey_dept_pt_use_raw_bags(): void
@@ -833,67 +833,28 @@ function api_honey_dept_pt_make_tea_bags(): void
 function api_honey_dept_pt_pouch(): void
 {
     api_method_allowed(['POST']);
-    $input = api_input();
-    api_require_csrf($input);
-    $user = api_honey_require_dept_produce('pt');
-    $qty = (float) ($input['qty'] ?? 0);
-    $note = trim((string) ($input['note'] ?? ''));
-    $pdo = ims_pdo();
-    $pdo->beginTransaction();
-    try {
-        $result = dept_pt_pouch($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
-        $pdo->commit();
-    } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        api_fail($e->getMessage(), 400);
-    }
-    api_ok($result);
+    api_fail(
+        'Pouch button is retired. Use Paragis pouch barcodes (request → generate/print → scan stock-in).',
+        410
+    );
 }
 
 function api_honey_dept_brc_produce(): void
 {
     api_method_allowed(['POST']);
-    $input = api_input();
-    api_require_csrf($input);
-    $user = api_honey_require_dept_produce('brc');
-    $qty = (float) ($input['qty'] ?? 0);
-    $note = trim((string) ($input['note'] ?? ''));
-    $pdo = ims_pdo();
-    $pdo->beginTransaction();
-    try {
-        $result = dept_brc_produce_pouches($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
-        $pdo->commit();
-    } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        api_fail($e->getMessage(), 400);
-    }
-    api_ok($result);
+    api_fail(
+        'Produce button is retired. Use Black Rice Coffee pouch barcodes (request → generate/print → scan stock-in).',
+        410
+    );
 }
 
 function api_honey_dept_jar_produce(): void
 {
     api_method_allowed(['POST']);
-    $input = api_input();
-    api_require_csrf($input);
-    $user = api_honey_require_dept_produce('jar_cacao');
-    $qty = (float) ($input['qty'] ?? 0);
-    $note = trim((string) ($input['note'] ?? ''));
-    $pdo = ims_pdo();
-    $pdo->beginTransaction();
-    try {
-        $result = dept_jar_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);
-        $pdo->commit();
-    } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        api_fail($e->getMessage(), 400);
-    }
-    api_ok($result);
+    api_fail(
+        'Produce button is retired. Use Jar Cacao barcodes (request → generate/print → scan stock-in).',
+        410
+    );
 }
 
 function api_honey_dept_comb_produce(): void

@@ -170,18 +170,6 @@ export function deptPtMakeTeaBags(payload: { qty: number; note?: string }) {
   return apiPost("honey.php", "dept_pt_make_tea_bags", payload);
 }
 
-export function deptPtPouch(payload: { qty: number; note?: string }) {
-  return apiPost("honey.php", "dept_pt_pouch", payload);
-}
-
-export function deptBrcProduce(payload: { qty: number; note?: string }) {
-  return apiPost("honey.php", "dept_brc_produce", payload);
-}
-
-export function deptJarProduce(payload: { qty: number; note?: string }) {
-  return apiPost("honey.php", "dept_jar_produce", payload);
-}
-
 export function deptCombProduce(payload: { qty: number; note?: string }) {
   return apiPost("honey.php", "dept_comb_produce", payload);
 }

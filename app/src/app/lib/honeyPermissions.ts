@@ -28,9 +28,22 @@ export function canMutateHoneyPipeline(role: Role | undefined): boolean {
   return role === "executive" || role === "prod_manager" || role === "team_leader";
 }
 
-/** Dept raw Stock in / Use raw bags / Pouch / Produce (SPA maps IMS `tl` → team_leader). */
+/** Dept raw Stock in / Use raw bags / Produce (SPA maps IMS `tl` → team_leader). */
 export function canMutateDeptRawProduction(role: Role | undefined): boolean {
   return role === "executive" || role === "prod_manager" || role === "team_leader";
+}
+
+/**
+ * Dept unit barcodes (Paragis Tea, Black Rice Coffee, Jar Cacao) — request / generate-print / scan.
+ * Staff included (API `dept_pouch_can_ops`); separate from bag stock-in mutate gate.
+ */
+export function canDeptPouchBarcodeOps(role: Role | undefined): boolean {
+  return (
+    role === "executive" ||
+    role === "prod_manager" ||
+    role === "team_leader" ||
+    role === "staff"
+  );
 }
 
 export function canExecutiveDirectEdit(role: Role | undefined): boolean {

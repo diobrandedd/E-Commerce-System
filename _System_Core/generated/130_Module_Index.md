@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-08-14T11:25:14+02:00
+generated: 2026-08-15T03:08:15+02:00
 type: memory-bank
 ---
 
@@ -29,6 +29,7 @@ type: memory-bank
 | [[modules/delivery_edit_requests]] | 15 |
 | [[modules/dept_inventory]] | 17 |
 | [[modules/dept_pos]] | 4 |
+| [[modules/dept_pouch_barcodes]] | 23 |
 | [[modules/dept_pricing]] | 8 |
 | [[modules/dept_production]] | 29 |
 | [[modules/dept_products]] | 23 |

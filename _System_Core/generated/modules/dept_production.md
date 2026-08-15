@@ -1,7 +1,7 @@
 ---
 title: dept_production
 source: includes/dept_production.php
-generated: 2026-08-14T11:25:20+02:00
+generated: 2026-08-15T03:08:22+02:00
 type: module
 function_count: 29
 ---
@@ -183,7 +183,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:989 — `api_ok(dept_production_list_entries(ims_pdo(), $productKey, $action, $date, $page, $perPage));`
+- `api/v1/honey.php`:950 — `api_ok(dept_production_list_entries(ims_pdo(), $productKey, $action, $date, $page, $perPage));`
 
 ## dept_production_daily_totals {#dept_production_daily_totals}
 
@@ -191,13 +191,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:987 — `api_ok(dept_production_daily_totals(ims_pdo(), $productKey, $action, $date, $page, $perPage));`
+- `api/v1/honey.php`:948 — `api_ok(dept_production_daily_totals(ims_pdo(), $productKey, $action, $date, $page, $perPage));`
 
 ## dept_production_record_daily {#dept_production_record_daily}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1005 — `$result = dept_production_record_daily(`
+- `api/v1/honey.php`:966 — `$result = dept_production_record_daily(`
 
 ## dept_production_cost_only_lines {#dept_production_cost_only_lines}
 
@@ -209,7 +209,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:957 — `$preview = dept_production_preview_lines(ims_pdo(), $productKey, $action, $qty);`
+- `api/v1/honey.php`:918 — `$preview = dept_production_preview_lines(ims_pdo(), $productKey, $action, $qty);`
 
 ## dept_pt_use_raw_bags {#dept_pt_use_raw_bags}
 
@@ -227,23 +227,23 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `dept_inventory_rows`
 
-**Callers (1):**
+**Callers (0):**
 
-- `api/v1/honey.php`:844 — `$result = dept_pt_pouch($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+_No direct callers detected (may be entry point or dynamic call)._
 
 ## dept_wip_waste_tea_bags {#dept_wip_waste_tea_bags}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:932 — `$result = dept_wip_waste_tea_bags($pdo, (int) $user['id'], $qty, $reason !== '' ? $reason : null);`
+- `api/v1/honey.php`:893 — `$result = dept_wip_waste_tea_bags($pdo, (int) $user['id'], $qty, $reason !== '' ? $reason : null);`
 
 ## dept_brc_produce_pouches {#dept_brc_produce_pouches}
 
 **Tables:** `dept_inventory_rows`
 
-**Callers (1):**
+**Callers (0):**
 
-- `api/v1/honey.php`:866 — `$result = dept_brc_produce_pouches($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+_No direct callers detected (may be entry point or dynamic call)._
 
 ## dept_raw_detail_enriched {#dept_raw_detail_enriched}
 
@@ -255,9 +255,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `dept_inventory_rows`
 
-**Callers (1):**
+**Callers (0):**
 
-- `api/v1/honey.php`:888 — `$result = dept_jar_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+_No direct callers detected (may be entry point or dynamic call)._
 
 ## dept_honey_comb_produce {#dept_honey_comb_produce}
 
@@ -265,5 +265,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:910 — `$result = dept_honey_comb_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+- `api/v1/honey.php`:871 — `$result = dept_honey_comb_produce($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
 

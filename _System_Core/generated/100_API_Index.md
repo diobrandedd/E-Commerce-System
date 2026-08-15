@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-14T11:25:14+02:00
+generated: 2026-08-15T03:08:15+02:00
 type: memory-bank
 ---
 
@@ -174,6 +174,25 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `delete_item` | `api_deliveries_delete_item()` | `ims_pdo()`, `deliveries_delete_item_by_id()` |
 | `resolve_item` | `api_deliveries_resolve_item()` | `ims_pdo()`, `deliveries_resolve_item_by_id()` |
 
+### `dept_pouch_barcodes.php`
+
+- **Path:** `api/v1/dept_pouch_barcodes.php`
+- **URL:** `/rts/api/v1/dept_pouch_barcodes.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `request_create` | `api_dept_pouch_request_create()` | `dept_pouch_request_create()`, `ims_pdo()` |
+| `request_list` | `api_dept_pouch_request_list()` | `dept_pouch_request_list()`, `ims_pdo()` |
+| `request_get` | `api_dept_pouch_request_get()` | `dept_pouch_request_get()`, `ims_pdo()` |
+| `request_cancel` | `api_dept_pouch_request_cancel()` | `dept_pouch_request_cancel()`, `ims_pdo()` |
+| `pending_count` | `api_dept_pouch_pending_count()` | `dept_pouch_pending_request_count()`, `ims_pdo()` |
+| `generate` | `api_dept_pouch_generate()` | `dept_pouch_generate_for_request()`, `ims_pdo()` |
+| `batch_list` | `api_dept_pouch_batch_list()` | `dept_pouch_batch_list()`, `ims_pdo()` |
+| `mark_printed` | `api_dept_pouch_mark_printed()` | `dept_pouch_mark_printed()`, `ims_pdo()` |
+| `print_sheet` | `api_dept_pouch_print_sheet()` | `dept_pouch_label_sheet_html()`, `ims_pdo()` |
+| `scan_stock_in` | `api_dept_pouch_scan_stock_in()` | `dept_pouch_scan_stock_in()`, `ims_pdo()` |
+
 ### `edit_requests.php`
 
 - **Path:** `api/v1/edit_requests.php`
@@ -251,9 +270,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `dept_raw_produce` | `api_honey_dept_raw_produce()` | — |
 | `dept_pt_use_raw_bags` | `api_honey_dept_pt_use_raw_bags()` | `ims_pdo()`, `dept_pt_use_raw_bags()` |
 | `dept_pt_make_tea_bags` | `api_honey_dept_pt_make_tea_bags()` | `ims_pdo()`, `dept_pt_make_tea_bags()` |
-| `dept_pt_pouch` | `api_honey_dept_pt_pouch()` | `ims_pdo()`, `dept_pt_pouch()` |
-| `dept_brc_produce` | `api_honey_dept_brc_produce()` | `ims_pdo()`, `dept_brc_produce_pouches()` |
-| `dept_jar_produce` | `api_honey_dept_jar_produce()` | `ims_pdo()`, `dept_jar_produce()` |
+| `dept_pt_pouch` | `api_honey_dept_pt_pouch()` | — |
+| `dept_brc_produce` | `api_honey_dept_brc_produce()` | — |
+| `dept_jar_produce` | `api_honey_dept_jar_produce()` | — |
 | `dept_comb_produce` | `api_honey_dept_comb_produce()` | `ims_pdo()`, `dept_honey_comb_produce()` |
 | `dept_wip_waste` | `api_honey_dept_wip_waste()` | `ims_pdo()`, `dept_wip_waste_tea_bags()` |
 | `dept_production_preview` | `api_honey_dept_production_preview()` | `dept_product_key_valid()`, `dept_production_preview_lines()`, `ims_pdo()` |

@@ -14,6 +14,7 @@ import {
   jarCacaoJarsPerBag,
   type DeptProductKey,
 } from "@/app/lib/deptProducts";
+import { deptPouchBarcodesEnabled } from "@/app/lib/deptPouchBarcodes";
 
 const ROLE_LABELS: Partial<Record<Role, string>> = {
   executive: "Executive",
@@ -79,6 +80,7 @@ export function DeptRawProduceGuideModal({
   const meta = GUIDE_META[productKey];
   const roleLabel = role ? ROLE_LABELS[role] : undefined;
   const yieldHint = deptStockInYieldHint(productKey);
+  const usesPouchBarcodes = deptPouchBarcodesEnabled(productKey);
 
   return (
     <AppModal
@@ -129,17 +131,41 @@ export function DeptRawProduceGuideModal({
         </GuideSection>
 
         <GuideSection title="Production workflow">
-          <ol className="list-decimal pl-4 space-y-1.5">
-            <li>
-              <strong className="text-foreground">Stock in</strong> — receive sealed 1 kg supplier bags. This only increases <strong className="text-foreground">Raw bags</strong>.
-            </li>
-            <li>
-              <strong className="text-foreground">{meta.produceVerb}</strong> — enter how many {meta.sellUnit}s you made. Raw {meta.rawLabel.toLowerCase()} and packaging from the Product Costing formula deduct; <strong className="text-foreground">Finished {meta.sellUnit}s</strong> goes up.
-            </li>
-          </ol>
-          <p>
-            Materials come from Product Costing formula lines (stock-linked only). After stock-in, use <strong className="text-foreground">{meta.produceVerb}</strong> — not Stock in again.
-          </p>
+          {usesPouchBarcodes ? (
+            <>
+              <ol className="list-decimal pl-4 space-y-1.5">
+                <li>
+                  <strong className="text-foreground">Stock in raw bags</strong> — receive sealed 1 kg supplier bags. This only increases <strong className="text-foreground">Raw bags</strong>.
+                </li>
+                <li>
+                  <strong className="text-foreground">Request barcodes</strong> — give the batch code and how many {meta.sellUnit}s you are packing.
+                </li>
+                <li>
+                  <strong className="text-foreground">Generate / print</strong> — print the A4 sticker sheet (68 per page) and stick one on each {meta.sellUnit}.
+                </li>
+                <li>
+                  <strong className="text-foreground">Scan to inventory</strong> — scan each sticker. Every scan adds one to <strong className="text-foreground">Finished {meta.sellUnit}s</strong>.
+                </li>
+              </ol>
+              <p>
+                Each sticker is unique and can only be scanned once, so the finished count matches the {meta.sellUnit}s that physically exist. Scanning does not deduct raw bags or packaging.
+              </p>
+            </>
+          ) : (
+            <>
+              <ol className="list-decimal pl-4 space-y-1.5">
+                <li>
+                  <strong className="text-foreground">Stock in</strong> — receive sealed 1 kg supplier bags. This only increases <strong className="text-foreground">Raw bags</strong>.
+                </li>
+                <li>
+                  <strong className="text-foreground">{meta.produceVerb}</strong> — enter how many {meta.sellUnit}s you made. Raw {meta.rawLabel.toLowerCase()} and packaging from the Product Costing formula deduct; <strong className="text-foreground">Finished {meta.sellUnit}s</strong> goes up.
+                </li>
+              </ol>
+              <p>
+                Materials come from Product Costing formula lines (stock-linked only). After stock-in, use <strong className="text-foreground">{meta.produceVerb}</strong> — not Stock in again.
+              </p>
+            </>
+          )}
         </GuideSection>
 
         <GuideSection title="Production yield">
@@ -174,7 +200,9 @@ export function DeptRawProduceGuideModal({
             </li>
           </ul>
           <p>
-            The <strong className="text-foreground">Produce</strong> modal shows a preview of raw and packaging lines that will deduct before you confirm.
+            {usesPouchBarcodes
+              ? "A sticker that was never used is simply never scanned — it stays out of finished stock."
+              : "The Produce modal shows a preview of raw and packaging lines that will deduct before you confirm."}
           </p>
         </GuideSection>
 

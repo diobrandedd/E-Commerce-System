@@ -4,6 +4,18 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Jar Cacao on dept barcode stock-in
+**Change:** Added `jar_cacao` to `DEPT_POUCH_BARCODE_KEYS`. Cacao raw page gets Request / Scan / Generate-print (copy says jars); **Produce** retired (`dept_jar_produce` → 410). Honey Comb still uses Produce. No schema change — phase58 `product_key` already covers it. → [[problems/records/2026-08-15_dept-pouch-barcodes-cacao]]
+
+### 2026-08-15 — Pouch barcodes generalized to dept products (Black Rice Coffee)
+**Change:** The Paragis-only pipeline is now per-product. Migration phase58 renames `paragis_pouch_*` → `dept_pouch_*` (rows kept) and adds `product_key` defaulting to `pt`; `includes/dept_pouch_barcodes.php` + `api/v1/dept_pouch_barcodes.php` take a product key, gated by `DEPT_POUCH_BARCODE_KEYS = ['pt','brc']`. Black Rice Coffee gets Request / Scan / Generate-print and loses **Produce** (`dept_brc_produce` now 410); jar cacao and honey comb keep Produce. Codes stay unique across products via the shared `dept_pouch_codes_issued` ledger, and scanning a sticker on the wrong product's panel errors instead of crediting the wrong stock. Scan-in still adds finished pouches with no raw/packaging deduct. SPA renames: `paragisPouchBarcodes.ts` → `deptPouchBarcodes.ts`, `ParagisPouchBarcodePanels.tsx` → `dept/DeptPouchBarcodePanels.tsx`, `canParagisPouchBarcodeOps` → `canDeptPouchBarcodeOps`. → [[problems/records/2026-08-15_dept-pouch-barcodes-black-rice]]
+
+### 2026-08-15 — Staff can request Paragis pouch barcodes
+**Change:** SPA was gating pouch barcode buttons on `canMutateDeptRawProduction` (TL+ only). Added `canParagisPouchBarcodeOps` (staff + TL + PM + exec) so staff see Request / Scan / Generate-print; bag stock-in stays TL+. API already allowed `staff` via `paragis_pouch_can_ops`. → [[problems/records/2026-08-15_paragis-pouch-barcode-inventory]]
+
+### 2026-08-15 — Paragis Tea pouch barcodes (replace Pouch, no WIP deduct)
+**Change:** Dried Paragis uses request → generate/print → scan-in for finished pouches with custom batch codes (e.g. `JR073026`). Units live in `paragis_pouch_*`; scan bumps `dept_inventory_rows` for `pt` without WIP/packaging deducts. Pouch button removed; `dept_pt_pouch` API returns 410. → [[problems/records/2026-08-15_paragis-pouch-barcode-inventory]]
+
 ### 2026-08-14 — Custom packaging batch / supplier for bottle labels
 **Change:** Request barcodes and Generate/print can create a packaging batch from a free-text supplier name + bottling date (no production lot). Migration phase56 makes `honey_packaging_rows.production_row_id` nullable. API `create_custom_packaging` builds `supplier_code` like warehouse stock-in. Custom `batch_no` is the supplier code alone (initials + MMDDYY, e.g. `JR063026`) — not the doubled `supplier-bottling` form used by production lots. `honey_bottle_unique_batch_no()` now takes the base code and suffixes `-2`… so re-creating the same supplier+date no longer trips the generic SQLSTATE 23000 → "Duplicate value" handler in `_bootstrap.php`. The batch code can also be **typed directly** (`code` param, 3–32 chars A-Z/0-9/dash); a trailing MMDDYY in the typed code sets the bottling date, and an existing code returns a clear "pick it from the dropdown" error. → [[problems/records/2026-08-14_honey-bottle-barcode-inventory]]
 

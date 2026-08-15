@@ -50,6 +50,9 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-08-15_dept-pouch-barcodes-cacao]] — Jar Cacao on dept barcode stock-in; Produce retired
+- [[records/2026-08-15_dept-pouch-barcodes-black-rice]] — pouch barcodes generalized to `dept_pouch_*`; Black Rice replaces Produce
+- [[records/2026-08-15_paragis-pouch-barcode-inventory]] — Paragis pouch barcodes replace Pouch; scan-in no WIP deduct
 - [[records/2026-08-14_honey-bottle-barcode-inventory]] — per-bottle barcodes; pack scan deducts; ship is confirm-only
 - [[records/2026-06-19_waybill-stamp-text-only]] — stamp text-only, no border box
 - [[records/2026-06-19_vip-spx-parser-pitfalls]] — **⭐** VIP/SPX parser + builder session hub

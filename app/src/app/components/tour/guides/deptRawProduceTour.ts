@@ -1,6 +1,7 @@
 import type { DriveStep } from "driver.js";
 import type { DeptProductKey } from "@/app/lib/deptProducts";
 import { brcPouchesPerBag, jarCacaoJarsPerBag } from "@/app/lib/deptProducts";
+import { deptPouchBarcodesEnabled } from "@/app/lib/deptPouchBarcodes";
 import { runPageTour } from "@/app/components/tour/runPageTour";
 
 type DeptRawTourKey = Extract<DeptProductKey, "brc" | "jar_cacao">;
@@ -12,11 +13,15 @@ function buildSteps(productKey: DeptRawTourKey): DriveStep[] {
       ? `about ${brcPouchesPerBag()} pouches per full bag at yield.`
       : `about ${jarCacaoJarsPerBag().toFixed(2)} jars per full bag at yield.`;
 
+  const usesPouchBarcodes = deptPouchBarcodesEnabled(productKey);
+
   return [
     {
       popover: {
         title: productKey === "brc" ? "Black Rice Coffee — raw" : "Jar Cacao — raw",
-        description: `Two stages: sealed raw bags → finished ${sellUnit}s. No WIP step — Produce goes straight from raw to retail units.`,
+        description: usesPouchBarcodes
+          ? `Two stages: sealed raw bags → finished ${sellUnit}s. Finished stock comes from scanning a barcode sticker on each ${sellUnit}.`
+          : `Two stages: sealed raw bags → finished ${sellUnit}s. No WIP step — Produce goes straight from raw to retail units.`,
         side: "over",
         align: "center",
       },
@@ -34,7 +39,9 @@ function buildSteps(productKey: DeptRawTourKey): DriveStep[] {
       element: "[data-tour='raw-dept-production-log']",
       popover: {
         title: "Production activity",
-        description: "Log of Produce actions with quantities and notes.",
+        description: usesPouchBarcodes
+          ? "Historical log of Produce actions. New finished stock is recorded by scanning stickers instead."
+          : "Log of Produce actions with quantities and notes.",
         side: "top",
         align: "start",
       },
@@ -51,7 +58,9 @@ function buildSteps(productKey: DeptRawTourKey): DriveStep[] {
     {
       popover: {
         title: "Header actions",
-        description: `Stock in supplier bags, then Produce ${sellUnit}s (${yieldExample}). Produce preview shows formula deduct lines before you confirm. Bag waste removes sealed bags never opened.`,
+        description: usesPouchBarcodes
+          ? `Stock in supplier bags (${yieldExample}), request barcodes for the batch, print the A4 sticker sheet, then scan each sticker to add finished ${sellUnit}s. Bag waste removes sealed bags never opened.`
+          : `Stock in supplier bags, then Produce ${sellUnit}s (${yieldExample}). Produce preview shows formula deduct lines before you confirm. Bag waste removes sealed bags never opened.`,
         side: "over",
         align: "center",
       },

@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-08-14T11:25:22+02:00
+generated: 2026-08-15T03:08:23+02:00
 type: module
 function_count: 23
 ---
@@ -128,7 +128,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## dept_product_by_key {#dept_product_by_key}
 
-**Callers (28):**
+**Callers (29):**
 
 - `api/v1/honey.php`:720 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:12 — `$def = dept_product_by_key($productKey);`
@@ -143,6 +143,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_inventory.php`:626 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pos.php`:72 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pos.php`:81 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_pouch_barcodes.php`:36 — `$product = dept_product_by_key($productKey);`
 - `includes/dept_pricing.php`:49 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pricing.php`:234 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_production.php`:393 — `$def = dept_product_by_key($productKey);`
@@ -154,16 +155,15 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_products.php`:223 — `return dept_product_by_key($key) !== null;`
 - `includes/dept_products.php`:259 — `return dept_product_by_key('honey_comb');`
 - `includes/dept_products.php`:266 — `return dept_product_by_key('pt');`
-- `includes/dept_products.php`:269 — `return dept_product_by_key('brc');`
-- _… and 3 more (run impact.php for full list)_
+- _… and 4 more (run impact.php for full list)_
 
 ## dept_product_key_valid {#dept_product_key_valid}
 
 **Callers (6):**
 
 - `api/v1/honey.php`:758 — `if (!dept_product_key_valid($productKey)) {`
-- `api/v1/honey.php`:950 — `if (!dept_product_key_valid($productKey)) {`
-- `api/v1/honey.php`:969 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:911 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:930 — `if (!dept_product_key_valid($productKey)) {`
 - `includes/dept_pos.php`:59 — `if (!dept_product_key_valid($productKey) || $qty <= 0) {`
 - `includes/honey_parcel_inventory.php`:41 — `if ($key === '' || !dept_product_key_valid($key)) {`
 - `includes/pos_discount_requests.php`:17 — `return $productKey !== '' && dept_product_key_valid($productKey);`

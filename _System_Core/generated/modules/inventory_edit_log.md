@@ -1,7 +1,7 @@
 ---
 title: inventory_edit_log
 source: includes/inventory_edit_log.php
-generated: 2026-08-14T11:25:32+02:00
+generated: 2026-08-15T03:08:33+02:00
 type: module
 function_count: 3
 ---
@@ -48,5 +48,5 @@ function_count: 3
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1227 — `$result = inventory_edit_log_list(`
+- `api/v1/honey.php`:1188 — `$result = inventory_edit_log_list(`
 

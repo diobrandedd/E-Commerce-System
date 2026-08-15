@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, Loader2, Minus, Plus, Factory, Package } from "lucide-react";
+import { BookOpen, Loader2, Minus, Plus, Factory, Package, Printer, ScanLine, Tag } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { ApiError } from "@/app/lib/api";
-import { canMutateDeptRawProduction } from "@/app/lib/honeyPermissions";
+import { canMutateDeptRawProduction, canDeptPouchBarcodeOps } from "@/app/lib/honeyPermissions";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import {
   deptStockInYieldHint,
@@ -17,12 +17,9 @@ import {
 } from "@/app/lib/deptProducts";
 import { type RawMaterialRoute } from "@/app/lib/inventoryRoutes";
 import {
-  deptBrcProduce,
-  deptJarProduce,
   deptCombProduce,
   deptPtMakeTeaBags,
   deptPtUseRawBags,
-  deptPtPouch,
   type DeptProductionEntry,
   deptRawStockIn,
   deptRawStockOut,
@@ -36,12 +33,19 @@ import {
   type DeptRawSnapshot,
 } from "@/app/lib/deptRawInventory";
 import { listSuppliers, type Supplier } from "@/app/lib/suppliers";
+import { deptPouchBarcodesApi, deptPouchBarcodesEnabled, deptPouchUnitLabel } from "@/app/lib/deptPouchBarcodes";
 import {
   AppErrorBanner,
   AppPressable,
   AppSuccessNotice,
   appHoverRow,
+  appHeaderActionClass,
 } from "@/app/components/layout/appFeedbackMotion";
+import {
+  DeptPouchAdminPanel,
+  DeptPouchRequestsPanel,
+  DeptPouchScanInPanel,
+} from "@/app/components/dept/DeptPouchBarcodePanels";
 import { DeptRawProduceGuideModal } from "@/app/components/inventory/DeptRawProduceGuideModal";
 import { ParagisProductionGuideModal } from "@/app/components/inventory/ParagisProductionGuideModal";
 import { runDeptRawProduceTour } from "@/app/components/tour/guides/deptRawProduceTour";
@@ -96,10 +100,15 @@ interface RawDeptMaterialPageProps {
 export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const { user } = useAuth();
   const canMutate = canMutateDeptRawProduction(user?.role);
+  const canPouchBarcodes = canDeptPouchBarcodeOps(user?.role);
   const productKey = route.productKey;
   const isParagis = productKey === "pt";
   const isSingleStageProduce = productKey === "brc" || productKey === "jar_cacao" || productKey === "honey_comb";
   const showGuide = isParagis || isSingleStageProduce;
+  /** Products stocked in by scanning pouch stickers instead of a Produce/Pouch button. */
+  const hasPouchBarcodes = deptPouchBarcodesEnabled(productKey);
+  const showPouchBarcodes = hasPouchBarcodes && canPouchBarcodes;
+  const pouchUnit = deptPouchUnitLabel(productKey);
   const dailyProduce =
     productKey === "pt"
       ? { logAction: "pouch", title: "Pouch creation", unitPlural: "pouches", unitSingular: "pouch" }
@@ -115,24 +124,42 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const [showWarehouseWaste, setShowWarehouseWaste] = useState(false);
   const [showUseRawBags, setShowUseRawBags] = useState(false);
   const [showMakeTeaBagsAdvanced, setShowMakeTeaBagsAdvanced] = useState(false);
-  const [showPouch, setShowPouch] = useState(false);
   const [showWipWaste, setShowWipWaste] = useState(false);
   const [showProduce, setShowProduce] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [pouchLogTick, setPouchLogTick] = useState(0);
+  const [pouchModal, setPouchModal] = useState<"request" | "scan" | "admin" | null>(null);
+  const [pendingPouchLabels, setPendingPouchLabels] = useState(0);
+  const pouchRequestTitleId = useId();
+  const pouchScanTitleId = useId();
+  const pouchAdminTitleId = useId();
+
+  const refreshPendingPouchLabels = useCallback(async () => {
+    if (!showPouchBarcodes) {
+      setPendingPouchLabels(0);
+      return;
+    }
+    try {
+      const res = await deptPouchBarcodesApi.pendingCount(productKey);
+      setPendingPouchLabels(res.count);
+    } catch {
+      setPendingPouchLabels(0);
+    }
+  }, [productKey, showPouchBarcodes]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
       setData(await fetchDeptRawDetail(route.slug));
+      await refreshPendingPouchLabels();
     } catch (err) {
       setData(null);
       setLoadError(err instanceof ApiError ? err.message : "Could not load raw inventory.");
     } finally {
       setLoading(false);
     }
-  }, [route.slug]);
+  }, [refreshPendingPouchLabels, route.slug]);
 
   useEffect(() => { void refresh(); }, [refresh]);
   useLiveRefresh(refresh);
@@ -180,7 +207,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-1.5 rounded-lg"
                 style={{ background: "#C8900A" }}
               >
-                <Plus size={13} /> Stock in
+                <Plus size={13} /> Stock in raw bags
               </button>
               {isParagis ? (
                 <>
@@ -194,14 +221,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                   </button>
                   <button
                     type="button"
-                    disabled={maxPouchesFromWip <= 0 && wipTeaBags < PT_TEA_BAGS_PER_POUCH}
-                    onClick={() => setShowPouch(true)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#C8900A] text-[#8a6506] disabled:opacity-40"
-                  >
-                    <Package size={13} /> Pouch
-                  </button>
-                  <button
-                    type="button"
                     disabled={wipTeaBags <= 0}
                     onClick={() => setShowWipWaste(true)}
                     className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary disabled:opacity-40"
@@ -209,7 +228,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                     <Minus size={13} /> WIP waste
                   </button>
                 </>
-              ) : (
+              ) : hasPouchBarcodes ? null : (
                 <button
                   type="button"
                   disabled={(data?.bags_on_hand ?? 0) <= 0}
@@ -227,6 +246,42 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
               >
                 <Minus size={13} /> Bag waste
               </button>
+            </>
+          )}
+          {showPouchBarcodes && (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className={`${appHeaderActionClass} gap-1.5`}
+                onClick={() => setPouchModal("request")}
+              >
+                <Tag size={13} /> Request barcodes
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className={`${appHeaderActionClass} gap-1.5`}
+                onClick={() => setPouchModal("scan")}
+              >
+                <ScanLine size={13} /> Scan to inventory
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className={`${appHeaderActionClass} relative gap-1.5`}
+                onClick={() => setPouchModal("admin")}
+              >
+                <Printer size={13} /> Generate / print
+                {pendingPouchLabels > 0 ? (
+                  <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                    {pendingPouchLabels > 99 ? "99+" : pendingPouchLabels}
+                  </span>
+                ) : null}
+              </Button>
             </>
           )}
           </div>
@@ -267,7 +322,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             </div>
           </div>
 
-          {canMutate && (
+          {(canMutate || showPouchBarcodes) && (
             <div className="sm:hidden">
               <RawDeptInlineActions
                 isParagis={isParagis}
@@ -275,10 +330,17 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 finishedTitle={route.finishedTitle}
                 bagsOnHand={data.bags_on_hand}
                 wipTeaBags={wipTeaBags}
-                maxPouchesFromWip={maxPouchesFromWip}
+                canMutate={canMutate}
+                hasPouchBarcodes={hasPouchBarcodes}
+                showPouchBarcodes={showPouchBarcodes}
+                unitSingular={pouchUnit.singular}
+                unitPlural={pouchUnit.plural}
                 onStockIn={() => setShowStockIn(true)}
                 onUseRawBags={() => setShowUseRawBags(true)}
-                onPouch={() => setShowPouch(true)}
+                onRequestBarcodes={() => setPouchModal("request")}
+                onScanPouches={() => setPouchModal("scan")}
+                onGeneratePrint={() => setPouchModal("admin")}
+                pendingPouchLabels={pendingPouchLabels}
                 onWipWaste={() => setShowWipWaste(true)}
                 onProduce={() => setShowProduce(true)}
                 onBagWaste={() => setShowWarehouseWaste(true)}
@@ -457,23 +519,29 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           onDone={() => { setShowMakeTeaBagsAdvanced(false); void refresh(); }}
         />
       )}
-      {showPouch && data && (
-        <ProductionQtyModal
-          title="Pouch finished product"
-          label="Pouches packed"
-          unit="pouches"
-          productKey="pt"
-          action="pouch"
-          maxQty={maxPouchesFromWip}
-          hint={`Uses ${PT_TEA_BAGS_PER_POUCH} tea bags per pouch · ${wipTeaBags} WIP tea bags on hand`}
-          onClose={() => setShowPouch(false)}
-          onSubmit={(qty, note) => deptPtPouch({ qty, note })}
-          onDone={() => {
-            setShowPouch(false);
-            setPouchLogTick((t) => t + 1);
-            void refresh();
-          }}
-        />
+      {pouchModal === "request" && (
+        <AppModal open onClose={() => setPouchModal(null)} panelClassName="max-w-2xl w-full" labelledBy={pouchRequestTitleId}>
+          <AppModalHeader title={`Request ${pouchUnit.singular} barcodes`} titleId={pouchRequestTitleId} onClose={() => setPouchModal(null)} />
+          <AppModalBody>
+            <DeptPouchRequestsPanel productKey={productKey} productLabel={route.finishedTitle} />
+          </AppModalBody>
+        </AppModal>
+      )}
+      {pouchModal === "scan" && (
+        <AppModal open onClose={() => { setPouchModal(null); void refresh(); }} panelClassName="max-w-lg w-full" labelledBy={pouchScanTitleId}>
+          <AppModalHeader title={`Scan ${pouchUnit.plural} to inventory`} titleId={pouchScanTitleId} onClose={() => { setPouchModal(null); void refresh(); }} />
+          <AppModalBody>
+            <DeptPouchScanInPanel productKey={productKey} productLabel={route.finishedTitle} />
+          </AppModalBody>
+        </AppModal>
+      )}
+      {pouchModal === "admin" && (
+        <AppModal open onClose={() => { setPouchModal(null); void refresh(); }} panelClassName="max-w-2xl w-full" labelledBy={pouchAdminTitleId}>
+          <AppModalHeader title="Generate / print requests" titleId={pouchAdminTitleId} onClose={() => { setPouchModal(null); void refresh(); }} />
+          <AppModalBody>
+            <DeptPouchAdminPanel productKey={productKey} productLabel={route.finishedTitle} />
+          </AppModalBody>
+        </AppModal>
       )}
       {showWipWaste && data && (
         <WipWasteModal
@@ -488,13 +556,9 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           label={`${data.inventory_unit}s produced`}
           unit={data.inventory_unit}
           productKey={productKey}
-          action={productKey === "brc" ? "produce" : "produce"}
+          action="produce"
           onClose={() => setShowProduce(false)}
-          onSubmit={(qty, note) => {
-            if (productKey === "brc") return deptBrcProduce({ qty, note });
-            if (productKey === "honey_comb") return deptCombProduce({ qty, note });
-            return deptJarProduce({ qty, note });
-          }}
+          onSubmit={(qty, note) => deptCombProduce({ qty, note })}
           onDone={() => {
             setShowProduce(false);
             setPouchLogTick((t) => t + 1);
@@ -512,10 +576,17 @@ function RawDeptInlineActions({
   finishedTitle,
   bagsOnHand,
   wipTeaBags,
-  maxPouchesFromWip,
+  canMutate,
+  hasPouchBarcodes,
+  showPouchBarcodes,
+  unitSingular,
+  unitPlural,
   onStockIn,
   onUseRawBags,
-  onPouch,
+  onRequestBarcodes,
+  onScanPouches,
+  onGeneratePrint,
+  pendingPouchLabels,
   onWipWaste,
   onProduce,
   onBagWaste,
@@ -525,16 +596,22 @@ function RawDeptInlineActions({
   finishedTitle: string;
   bagsOnHand: number;
   wipTeaBags: number;
-  maxPouchesFromWip: number;
+  canMutate: boolean;
+  hasPouchBarcodes: boolean;
+  showPouchBarcodes: boolean;
+  unitSingular: string;
+  unitPlural: string;
   onStockIn: () => void;
   onUseRawBags: () => void;
-  onPouch: () => void;
+  onRequestBarcodes: () => void;
+  onScanPouches: () => void;
+  onGeneratePrint: () => void;
+  pendingPouchLabels: number;
   onWipWaste: () => void;
   onProduce: () => void;
   onBagWaste: () => void;
 }) {
   const canUseRaw = bagsOnHand > 0;
-  const canPouch = maxPouchesFromWip > 0 || wipTeaBags >= PT_TEA_BAGS_PER_POUCH;
   const canWip = wipTeaBags > 0;
   const canBags = bagsOnHand > 0;
 
@@ -550,63 +627,96 @@ function RawDeptInlineActions({
         </p>
       </div>
       <div className="p-3 grid grid-cols-1 gap-2">
-        <AppPressable
-          variant="primary"
-          onClick={onStockIn}
-          className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold"
-        >
-          <Plus size={16} /> Stock in raw bags
-        </AppPressable>
+        {canMutate && (
+          <AppPressable
+            variant="primary"
+            onClick={onStockIn}
+            className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold"
+          >
+            <Plus size={16} /> Stock in raw bags
+          </AppPressable>
+        )}
         {isParagis ? (
           <>
+            {canMutate && (
+              <AppPressable
+                variant="outline"
+                disabled={!canUseRaw}
+                onClick={onUseRawBags}
+                className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
+              >
+                <Factory size={16} /> Use raw bags → tea bags
+              </AppPressable>
+            )}
+          </>
+        ) : (
+          canMutate &&
+          !hasPouchBarcodes && (
             <AppPressable
               variant="outline"
               disabled={!canUseRaw}
-              onClick={onUseRawBags}
+              onClick={onProduce}
               className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
             >
-              <Factory size={16} /> Use raw bags → tea bags
+              <Factory size={16} /> Produce finished product
+            </AppPressable>
+          )
+        )}
+        {showPouchBarcodes && (
+          <>
+            <AppPressable
+              variant="outline"
+              onClick={onRequestBarcodes}
+              className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
+            >
+              <Tag size={16} /> Request {unitSingular} barcodes
             </AppPressable>
             <AppPressable
               variant="outline"
-              disabled={!canPouch}
-              onClick={onPouch}
+              onClick={onScanPouches}
               className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
             >
-              <Package size={16} /> Pouch finished product
+              <ScanLine size={16} /> Scan {unitPlural} to inventory
             </AppPressable>
             <AppPressable
               variant="outline"
-              disabled={!canWip}
-              onClick={onWipWaste}
-              className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-medium"
+              onClick={onGeneratePrint}
+              className="relative w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
             >
-              <Minus size={16} /> WIP tea bag waste
+              <Printer size={16} /> Generate / print
+              {pendingPouchLabels > 0 ? (
+                <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">
+                  {pendingPouchLabels > 99 ? "99+" : pendingPouchLabels}
+                </span>
+              ) : null}
             </AppPressable>
           </>
-        ) : (
+        )}
+        {isParagis && canMutate && (
+          <AppPressable
+            variant="outline"
+            disabled={!canWip}
+            onClick={onWipWaste}
+            className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold"
+          >
+            <Minus size={16} /> WIP waste
+          </AppPressable>
+        )}
+        {canMutate && (
           <AppPressable
             variant="outline"
             disabled={!canBags}
-            onClick={onProduce}
-            className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
+            onClick={onBagWaste}
+            className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold"
           >
-            <Factory size={16} /> Produce finished product
+            <Minus size={16} /> Bag waste
           </AppPressable>
         )}
-        <AppPressable
-          variant="outline"
-          disabled={!canBags}
-          onClick={onBagWaste}
-          className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-medium"
-        >
-          <Minus size={16} /> Bag waste
-        </AppPressable>
         <Link
           to={finishedProductPath}
-          className="block w-full text-center text-sm font-medium px-3 py-3 rounded-lg border border-border hover:bg-secondary"
+          className="w-full inline-flex items-center justify-start gap-2 py-3 px-3 text-sm font-semibold rounded-xl border border-border hover:bg-secondary"
         >
-          Open {finishedTitle} →
+          <Package size={16} /> {finishedTitle} →
         </Link>
       </div>
     </div>
@@ -980,7 +1090,7 @@ function RawStockInModal({
         <AppModalFooter>
           <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-border">Cancel</button>
           <button type="submit" disabled={saving || !supplierId} className="px-4 py-2 text-sm font-semibold rounded-lg text-white disabled:opacity-50" style={{ background: "#C8900A" }}>
-            {saving ? "Saving…" : "Stock in"}
+            {saving ? "Saving…" : "Stock in raw bags"}
           </button>
         </AppModalFooter>
       </form>

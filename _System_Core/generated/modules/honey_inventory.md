@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-08-14T11:25:27+02:00
+generated: 2026-08-15T03:08:29+02:00
 type: module
 function_count: 46
 ---
@@ -450,7 +450,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1249 — `$row = honey_executive_seed_production_row(`
+- `api/v1/honey.php`:1210 — `$row = honey_executive_seed_production_row(`
 
 ## honey_executive_seed_packaging_row {#honey_executive_seed_packaging_row}
 
@@ -458,5 +458,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1275 — `$row = honey_executive_seed_packaging_row(`
+- `api/v1/honey.php`:1236 — `$row = honey_executive_seed_packaging_row(`
 

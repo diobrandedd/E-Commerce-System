@@ -14,8 +14,8 @@ export const RAW_MATERIAL_ROUTES: Record<string, RawMaterialRoute> = {
   paragis: {
     slug: "paragis",
     productKey: "pt",
-    title: "Dried Paragis",
-    subtitle: "Raw bags, tea bag WIP, and production — stock in, make tea bags, pouch",
+    title: "",
+    subtitle: " ",
     finishedProductPath: "/inventory/products/paragis-tea",
     finishedTitle: "Paragis Tea",
   },

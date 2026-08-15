@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-08-14T11:25:14+02:00
+generated: 2026-08-15T03:08:15+02:00
 type: memory-bank
-table_count: 68
+table_count: 74
 ---
 
 
@@ -192,6 +192,10 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_take_for_user]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_change_password]] |
+| `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_request_get]] |
+| `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_request_list]] |
+| `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_batch_get]] |
+| `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_batch_list]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_list_entries]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
@@ -763,6 +767,30 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_random_code]] |
 
+## `paragis_pouch_requests`
+
+_No references detected in includes/api (may be legacy pages only)._
+
+## `paragis_pouch_barcode_batches`
+
+_No references detected in includes/api (may be legacy pages only)._
+
+## `paragis_pouch_barcodes`
+
+_No references detected in includes/api (may be legacy pages only)._
+
+## `paragis_pouch_codes_issued`
+
+_No references detected in includes/api (may be legacy pages only)._
+
+## `paragis_pouch_units`
+
+_No references detected in includes/api (may be legacy pages only)._
+
+## `paragis_pouch_barcode_seq`
+
+_No references detected in includes/api (may be legacy pages only)._
+
 ## `pos_sales`
 
 | File | Function |
@@ -910,6 +938,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_produce_from_bags]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_deduct]] |
+| `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_scan_stock_in]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_pt_pouch]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_brc_produce_pouches]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_jar_produce]] |
