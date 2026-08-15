@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-08-15T03:29:03+02:00
+generated: 2026-08-15T04:20:33+02:00
 type: module
 function_count: 23
 ---
@@ -45,16 +45,18 @@ function_count: 23
 
 ## dept_pouch_product_label {#dept_pouch_product_label}
 
-**Callers (3):**
+**Callers (4):**
 
+- `includes/barcode_verify.php`:100 — `$productLabel = dept_pouch_product_label($productKey);`
 - `includes/dept_pouch_barcodes.php`:437 — `'This barcode belongs to ' . dept_pouch_product_label($codeProduct) . '.'`
 - `includes/dept_pouch_barcodes.php`:463 — `)->execute([dept_pouch_product_label($productKey), (int) $fin['id']]);`
 - `includes/dept_pouch_barcodes.php`:531 — `$productLabel = dept_pouch_product_label((string) $batch['product_key']);`
 
 ## dept_pouch_unit_singular {#dept_pouch_unit_singular}
 
-**Callers (1):**
+**Callers (2):**
 
+- `includes/barcode_verify.php`:101 — `$unit = dept_pouch_unit_singular($productKey);`
 - `includes/dept_pouch_barcodes.php`:564 — `$unit = dept_pouch_unit_singular((string) $batch['product_key']);`
 
 ## dept_pouch_normalize_code {#dept_pouch_normalize_code}

@@ -176,4 +176,30 @@ export const bottleBarcodesApi = {
       "bottle_barcodes.php",
       "stock_summary",
     ),
+  packagingScanLog: (packagingRowId: number, page = 1) =>
+    apiGet<{
+      packaging: {
+        id: number;
+        batch_no: string;
+        supplier_code: string;
+        variant: string;
+        bottling_date: string;
+      };
+      rows: {
+        code: string;
+        size: string;
+        size_label: string;
+        scanned_at: string;
+        scanned_by: number | null;
+        scanned_by_name: string;
+        unit_status: string | null;
+        unit_pool: string | null;
+      }[];
+      total: number;
+      page: number;
+      per_page: number;
+    }>("bottle_barcodes.php", "packaging_scan_log", {
+      packaging_row_id: packagingRowId,
+      page,
+    }),
 };

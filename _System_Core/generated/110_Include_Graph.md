@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-08-15T03:28:57+02:00
+generated: 2026-08-15T04:20:27+02:00
 type: memory-bank
-edge_count: 289
+edge_count: 292
 ---
 
 
@@ -27,6 +27,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/ar.php` | `api/v1/_bootstrap.php` |
 | `api/v1/ar.php` | `includes/ar_credits.php` |
 | `api/v1/auth.php` | `api/v1/_bootstrap.php` |
+| `api/v1/barcode_verify.php` | `api/v1/_bootstrap.php` |
 | `api/v1/bottle_barcodes.php` | `api/v1/_bootstrap.php` |
 | `api/v1/bulk_orders.php` | `api/v1/_bootstrap.php` |
 | `api/v1/bulk_orders.php` | `includes/bulk_honey_orders.php` |
@@ -115,6 +116,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/admin_sidebar.php` | `includes/admin_nav.php` |
 | `includes/auth.php` | `includes/db.php` |
 | `includes/auth_check.php` | `includes/db.php` |
+| `includes/barcode_verify.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/barcode_verify.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/bulk_honey_orders.php` | `includes/honey_inventory.php` |
 | `includes/bulk_honey_orders.php` | `includes/honey_pricing.php` |
 | `includes/catalog_bootstrap.php` | `includes/honey_volume.php` |

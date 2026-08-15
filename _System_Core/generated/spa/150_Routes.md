@@ -1,6 +1,6 @@
 ---
 title: SPA Routes
-generated: 2026-08-15T03:29:33+02:00
+generated: 2026-08-15T04:21:03+02:00
 type: spa
 ---
 
@@ -14,6 +14,7 @@ Basename: `/rts/app/dist` (prod) · dev at `localhost:5173`
 | Path | Page component | Roles |
 |------|----------------|-------|
 | `/dashboard` | `DashboardPage` | any authenticated |
+| `/verify-barcode` | `BarcodeVerifyPage` | any authenticated |
 | `/inventory` | `InventoryPage` | any authenticated |
 | `/stock-input` | `InventoryPage` | any authenticated |
 | `/daily-count` | `InventoryPage` | any authenticated |

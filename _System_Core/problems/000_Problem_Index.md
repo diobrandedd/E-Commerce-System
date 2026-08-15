@@ -50,6 +50,8 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-08-15_universal-barcode-verify]] — Verify barcode page + API for all IMS roles
+- [[records/2026-08-15_packaging-scan-log-modal]] — Packaging row click shows who/when scanned stickers in
 - [[records/2026-08-15_mobile-header-actions-overflow]] — PageLayout header actions wrap to own row on mobile
 - [[records/2026-08-15_honey-batch-label-per-variant]] — honey `batch_no` unique per variant; stickers stay global-unique
 - [[records/2026-08-15_dept-pouch-barcodes-cacao]] — Jar Cacao on dept barcode stock-in; Produce retired

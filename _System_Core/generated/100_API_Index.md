@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-15T03:28:57+02:00
+generated: 2026-08-15T04:20:27+02:00
 type: memory-bank
 ---
 
@@ -49,6 +49,16 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `logout` | `api_auth_logout()` | `ims_logout()` |
 | `change_password` | `api_auth_change_password()` | `ims_change_password()` |
 
+### `barcode_verify.php`
+
+- **Path:** `api/v1/barcode_verify.php`
+- **URL:** `/rts/api/v1/barcode_verify.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `lookup` | `api_barcode_verify_lookup()` | `barcode_verify_lookup()`, `ims_pdo()` |
+
 ### `bottle_barcodes.php`
 
 - **Path:** `api/v1/bottle_barcodes.php`
@@ -84,6 +94,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `reconcile` | `api_bottle_reconcile()` | `honey_bottle_reconcile()`, `ims_pdo()` |
 | `stock_summary` | `api_bottle_stock_summary()` | `honey_bottle_stock_summary()`, `ims_pdo()` |
 | `packaging_options` | `api_bottle_packaging_options()` | `honey_bottle_packaging_options()`, `ims_pdo()` |
+| `packaging_scan_log` | `api_bottle_packaging_scan_log()` | `honey_bottle_packaging_scan_log()`, `ims_pdo()` |
 | `ensure_packaging_shell` | `api_bottle_ensure_packaging_shell()` | `honey_fetch_packaging_by_production()`, `ims_pdo()`, `honey_bottle_ensure_packaging_shell()`, `honey_bottle_serialize_packaging_option()` |
 | `create_custom_packaging` | `api_bottle_create_custom_packaging()` | `honey_bottle_can_request()`, `honey_bottle_user_can_generate()`, `honey_bottle_create_custom_packaging()`, `ims_pdo()`, `honey_bottle_serialize_packaging_option()` |
 

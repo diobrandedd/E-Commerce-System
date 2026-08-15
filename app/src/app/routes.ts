@@ -18,6 +18,7 @@ import { RTSDamagedInventoryPage } from "./pages/rts/RTSDamagedInventoryPage";
 import { HoneyWarehousePage } from "./pages/honey/HoneyWarehousePage";
 import { HoneyProductionPage } from "./pages/honey/HoneyProductionPage";
 import { HoneyPackagingPage } from "./pages/honey/HoneyPackagingPage";
+import { BarcodeVerifyPage } from "./pages/BarcodeVerifyPage";
 import { HoneyProductInventoryPage } from "./pages/products/HoneyProductInventoryPage";
 import { ProductInventoryEntry } from "./pages/products/ProductInventoryEntry";
 import { RawMaterialsHubPage } from "./pages/inventory/RawMaterialsHubPage";
@@ -88,6 +89,7 @@ export const router = createBrowserRouter(
           element: createElement(RequireAuth, {}, createElement(AppShell)),
           children: [
         { path: "dashboard", element: guarded(DashboardPage) },
+        { path: "verify-barcode", element: guarded(BarcodeVerifyPage) },
         { path: "inventory", element: guarded(InventoryPage) },
         { path: "stock-input", element: guarded(InventoryPage) },
         { path: "daily-count", element: guarded(InventoryPage) },

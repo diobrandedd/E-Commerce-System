@@ -651,6 +651,73 @@ function honey_bottle_serialize_lookup(array $row): array
 }
 
 /**
+ * Scanned stickers for a packaging row — who stocked them in and when.
+ *
+ * @return array{rows: list<array<string, mixed>>, total: int, page: int, per_page: int, packaging: array<string, mixed>|null}
+ */
+function honey_bottle_packaging_scan_log(PDO $pdo, int $packagingRowId, int $page = 1, int $perPage = 50): array
+{
+    if ($packagingRowId < 1) {
+        throw new RuntimeException('packaging_row_id is required.');
+    }
+    $pk = honey_fetch_packaging($pdo, $packagingRowId);
+    if ($pk === null) {
+        throw new RuntimeException('Packaging row not found.');
+    }
+    $page = max(1, $page);
+    $perPage = max(1, min(200, $perPage));
+    $cst = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM honey_bottle_barcodes c
+         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
+         WHERE b.packaging_row_id = ? AND c.status = "scanned" AND c.scanned_at IS NOT NULL'
+    );
+    $cst->execute([$packagingRowId]);
+    $total = (int) $cst->fetchColumn();
+    $offset = ($page - 1) * $perPage;
+    $st = $pdo->prepare(
+        'SELECT c.code, c.size, c.scanned_at, c.scanned_by,
+                u.name AS scanned_by_name,
+                un.status AS unit_status, un.pool AS unit_pool
+         FROM honey_bottle_barcodes c
+         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
+         LEFT JOIN users u ON u.id = c.scanned_by
+         LEFT JOIN honey_bottle_units un ON un.barcode_id = c.id
+         WHERE b.packaging_row_id = ? AND c.status = "scanned" AND c.scanned_at IS NOT NULL
+         ORDER BY c.scanned_at DESC, c.id DESC
+         LIMIT ' . $perPage . ' OFFSET ' . $offset
+    );
+    $st->execute([$packagingRowId]);
+    $rows = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $rows[] = [
+            'code' => (string) $row['code'],
+            'size' => (string) $row['size'],
+            'size_label' => honey_bottle_size_label((string) $row['size']),
+            'scanned_at' => (string) $row['scanned_at'],
+            'scanned_by' => $row['scanned_by'] !== null ? (int) $row['scanned_by'] : null,
+            'scanned_by_name' => (string) ($row['scanned_by_name'] ?? ''),
+            'unit_status' => $row['unit_status'] !== null ? (string) $row['unit_status'] : null,
+            'unit_pool' => $row['unit_pool'] !== null ? (string) $row['unit_pool'] : null,
+        ];
+    }
+
+    return [
+        'packaging' => [
+            'id' => (int) $pk['id'],
+            'batch_no' => (string) $pk['batch_no'],
+            'supplier_code' => (string) $pk['supplier_code'],
+            'variant' => (string) $pk['variant'],
+            'bottling_date' => (string) $pk['bottling_date'],
+        ],
+        'rows' => $rows,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+    ];
+}
+
+/**
  * @return array<string, mixed>
  */
 function honey_bottle_scan_stock_in(PDO $pdo, int $userId, string $code, bool $adoptOnly = false): array

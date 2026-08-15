@@ -6,6 +6,8 @@ import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditMo
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
 import { BatchTraceabilityDrawer } from "@/app/components/honey/BatchTraceabilityDrawer";
+import { PackagingScanLogModal } from "@/app/components/honey/PackagingScanLogModal";
+import { appHoverRow } from "@/app/components/layout/appFeedbackMotion";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet } from "@/app/lib/api";
@@ -37,6 +39,7 @@ export function HoneyPackagingPage() {
   const perPage = 12;
   const [loading, setLoading] = useState(true);
   const [traceBatch, setTraceBatch] = useState<string | null>(null);
+  const [scanLogRow, setScanLogRow] = useState<PkRow | null>(null);
   const [editRow, setEditRow] = useState<PkRow | null>(null);
   const [traceQ, setTraceQ] = useState("");
 
@@ -66,54 +69,92 @@ export function HoneyPackagingPage() {
   return (
     <PageLayout
       title="Raw Honey"
-      subtitle="Packaging — batch rows and traceability (sales via POS)"
+      subtitle="Packaging — batch rows and scan-in history"
       actions={
-        <input value={traceQ} onChange={e => setTraceQ(e.target.value)} placeholder="Trace batch / supplier…" className="text-xs border rounded-lg px-2 py-1.5" />
+        <input
+          value={traceQ}
+          onChange={e => setTraceQ(e.target.value)}
+          placeholder="Trace batch / supplier…"
+          className="text-xs border rounded-lg px-2 py-1.5 w-full max-w-[11rem] sm:max-w-none"
+        />
       }
     >
       <div className="space-y-4 mb-6">
         <HoneyStageTabs />
       </div>
       {traceQ && (
-        <button onClick={() => setTraceBatch(traceQ)} className="text-xs text-blue-600 underline mb-3">Search traceability</button>
+        <button
+          type="button"
+          onClick={() => setTraceBatch(traceQ)}
+          className="text-xs text-blue-600 underline mb-3"
+        >
+          Search traceability
+        </button>
       )}
 
-      <h2 className="text-sm font-semibold mb-3">Batch rows</h2>
+      <h2 className="text-sm font-semibold mb-1">Batch rows</h2>
+      <p className="text-xs text-muted-foreground mb-3">
+        Tap a row to see who scanned stickers into inventory.
+      </p>
       <div className="bg-card rounded-xl border overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm min-w-[36rem]">
           <thead>
             <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
               <th className="px-3 py-2 text-left">Supplier</th>
               <th className="px-3 py-2 text-left">Batch</th>
               <th className="px-3 py-2 text-left">Date</th>
               <th className="px-3 py-2 text-left">Variant</th>
-              {HONEY_SIZES.map(s => <th key={s} className="px-3 py-2 text-left">{s}</th>)}
+              {HONEY_SIZES.map(s => (
+                <th key={s} className="px-3 py-2 text-left whitespace-nowrap">
+                  {s}
+                </th>
+              ))}
               {canExecEdit && <th className="px-3 py-2">Actions</th>}
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={colCount} className="py-8 text-center"><Loader2 className="inline animate-spin" size={14} /></td></tr>}
+            {loading && (
+              <tr>
+                <td colSpan={colCount} className="py-8 text-center">
+                  <Loader2 className="inline animate-spin" size={14} />
+                </td>
+              </tr>
+            )}
             {pagedRows.map(r => (
-              <tr key={r.id} className="border-b">
-                <td className="px-3 py-2">
+              <tr
+                key={r.id}
+                className={`border-b cursor-pointer ${appHoverRow}`}
+                onClick={() => setScanLogRow(r)}
+              >
+                <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                   {showSupplierProfile ? (
                     <SupplierCodeButton code={r.supplier_code} className="text-xs" />
                   ) : (
                     <span className="font-mono text-xs">{r.supplier_code}</span>
                   )}
                 </td>
-                <td className="px-3 py-2">
-                  <button type="button" onClick={() => setTraceBatch(r.batch_no)} className="text-blue-600 underline font-medium">{r.batch_no}</button>
-                </td>
-                <td className="px-3 py-2">{r.bottling_date}</td>
+                <td className="px-3 py-2 font-medium whitespace-nowrap">{r.batch_no}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{r.bottling_date}</td>
                 <td className="px-3 py-2 capitalize">{r.variant}</td>
-                <td className="px-3 py-2"><QtyCounter current={r.current_liter} initial={r.initial_liter} /></td>
-                <td className="px-3 py-2"><QtyCounter current={r.current_250ml} initial={r.initial_250ml} /></td>
-                <td className="px-3 py-2"><QtyCounter current={r.current_350ml} initial={r.initial_350ml} /></td>
-                <td className="px-3 py-2"><QtyCounter current={r.current_gallon} initial={r.initial_gallon} /></td>
+                <td className="px-3 py-2">
+                  <QtyCounter current={r.current_liter} initial={r.initial_liter} />
+                </td>
+                <td className="px-3 py-2">
+                  <QtyCounter current={r.current_250ml} initial={r.initial_250ml} />
+                </td>
+                <td className="px-3 py-2">
+                  <QtyCounter current={r.current_350ml} initial={r.initial_350ml} />
+                </td>
+                <td className="px-3 py-2">
+                  <QtyCounter current={r.current_gallon} initial={r.initial_gallon} />
+                </td>
                 {canExecEdit && (
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <button type="button" onClick={() => setEditRow(r)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+                  <td className="px-3 py-2 whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setEditRow(r)}
+                      className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+                    >
                       Edit
                     </button>
                   </td>
@@ -137,7 +178,9 @@ export function HoneyPackagingPage() {
             >
               Previous
             </button>
-            <span className="text-xs text-muted-foreground">Page {safePage} of {totalPages}</span>
+            <span className="text-xs text-muted-foreground">
+              Page {safePage} of {totalPages}
+            </span>
             <button
               type="button"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
@@ -149,13 +192,26 @@ export function HoneyPackagingPage() {
           </div>
         </div>
       )}
-      {traceBatch && <BatchTraceabilityDrawer query={traceBatch} onClose={() => setTraceBatch(null)} />}
+      {scanLogRow && (
+        <PackagingScanLogModal
+          packagingRowId={scanLogRow.id}
+          batchNo={scanLogRow.batch_no}
+          variant={scanLogRow.variant}
+          onClose={() => setScanLogRow(null)}
+        />
+      )}
+      {traceBatch && (
+        <BatchTraceabilityDrawer query={traceBatch} onClose={() => setTraceBatch(null)} />
+      )}
       {editRow && (
         <ExecutiveRowEditModal
           stage="packaging"
           row={editRow}
           onClose={() => setEditRow(null)}
-          onDone={() => { setEditRow(null); void refresh(); }}
+          onDone={() => {
+            setEditRow(null);
+            void refresh();
+          }}
         />
       )}
     </PageLayout>

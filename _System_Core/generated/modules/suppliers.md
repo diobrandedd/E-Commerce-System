@@ -1,7 +1,7 @@
 ---
 title: suppliers
 source: includes/suppliers.php
-generated: 2026-08-15T03:29:32+02:00
+generated: 2026-08-15T04:21:02+02:00
 type: module
 function_count: 12
 ---
@@ -30,8 +30,8 @@ function_count: 12
 - `includes/honey_inventory.php`:197 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:732 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:772 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
-- `includes/honey_inventory.php`:934 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
-- `includes/honey_inventory.php`:1201 — `? supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name'])`
+- `includes/honey_inventory.php`:938 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
+- `includes/honey_inventory.php`:1205 — `? supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name'])`
 - `includes/honey_pricing.php`:133 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/suppliers.php`:74 — `'display_name' => supplier_display_name((string) $row['first_name'], (string) $row['last_name']),`
 
@@ -59,7 +59,7 @@ function_count: 12
 - `includes/dept_pricing.php`:87 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/dept_pricing.php`:151 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_inventory.php`:770 — `$supplier = supplier_fetch($pdo, $supplierId);`
-- `includes/honey_inventory.php`:1199 — `$supplier = supplier_fetch($pdo, $supplierId);`
+- `includes/honey_inventory.php`:1203 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_pricing.php`:128 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_pricing.php`:249 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/suppliers.php`:175 — `$row = supplier_fetch($pdo, (int) $pdo->lastInsertId());`
@@ -133,5 +133,5 @@ function_count: 12
 
 - `includes/honey_inventory.php`:196 — `$supplier = supplier_require_honey_active($pdo, $supplierId);`
 - `includes/honey_inventory.php`:727 — `$supplier = supplier_require_honey_active($pdo, $supplierId);`
-- `includes/honey_inventory.php`:933 — `$supplier = supplier_require_honey_active($pdo, $supplierId);`
+- `includes/honey_inventory.php`:937 — `$supplier = supplier_require_honey_active($pdo, $supplierId);`
 

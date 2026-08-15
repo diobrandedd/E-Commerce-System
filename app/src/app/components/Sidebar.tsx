@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
   Truck, DollarSign, RotateCcw, ClipboardList, Factory,
-  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, UserCog, Tag,
+  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, UserCog, Tag, ScanLine,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import {
@@ -239,10 +239,17 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
     ],
   };
 
+  const barcodeVerifyNav: NavItem = {
+    icon: ScanLine,
+    label: "Verify barcode",
+    to: "/verify-barcode",
+  };
+
   switch (role) {
     case "executive":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        barcodeVerifyNav,
         inventoryNavExec,
         { icon: ShoppingBag, label: "Sales", to: "/sales", end: true },
         orderManagementNav(role),
@@ -259,6 +266,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
     case "prod_manager":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        barcodeVerifyNav,
         inventoryNav,
         requestsNav(),
         { icon: BarChart2, label: "Reports", to: "/reports" },
@@ -271,6 +279,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
     case "hr":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        barcodeVerifyNav,
         inventoryNavHr,
         requestsNav(),
         rtsNavReadOnly,
@@ -278,6 +287,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
     case "team_leader":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        barcodeVerifyNav,
         { icon: PlusCircle, label: "Stock Input", to: "/stock-input" },
         staffInventoryNav,
         { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
@@ -290,6 +300,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
     case "csr_tl":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        barcodeVerifyNav,
         honeyLabelsNav,
         orderManagementNav(role),
         rtsNavFull,
@@ -297,6 +308,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
     case "staff":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        barcodeVerifyNav,
         { icon: PlusCircle, label: "Stock Input", to: "/stock-input" },
         { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
         staffInventoryNav,
@@ -309,6 +321,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
     case "csr_staff":
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+        barcodeVerifyNav,
         honeyLabelsNav,
         orderManagementNav(role),
         rtsNavFull,

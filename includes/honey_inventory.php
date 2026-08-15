@@ -838,8 +838,12 @@ function honey_traceability(PDO $pdo, string $query): array
     }
     if (preg_match('/^[A-Z]{2,10}\d{6}$/i', $query)) {
         $code = strtoupper($query);
-        $st = $pdo->prepare('SELECT * FROM honey_packaging_rows WHERE supplier_code = ? OR batch_no LIKE ? LIMIT 50');
-        $st->execute([$code, $code . '-%']);
+        $st = $pdo->prepare(
+            'SELECT * FROM honey_packaging_rows
+             WHERE supplier_code = ? OR batch_no = ? OR batch_no LIKE ?
+             LIMIT 50'
+        );
+        $st->execute([$code, $code, $code . '-%']);
         foreach ($st->fetchAll() as $pk) {
             $matches[] = honey_build_trace_chain($pdo, $pk);
         }

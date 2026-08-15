@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-08-15T03:28:57+02:00
+generated: 2026-08-15T04:20:27+02:00
 type: memory-bank
 ---
 
@@ -17,6 +17,7 @@ type: memory-bank
 | [[modules/ar_credits]] | 9 |
 | [[modules/auth]] | 22 |
 | [[modules/auth_check]] | 14 |
+| [[modules/barcode_verify]] | 3 |
 | [[modules/bulk_honey_orders]] | 21 |
 | [[modules/catalog_bootstrap]] | 8 |
 | [[modules/courier_detect]] | 2 |
@@ -37,7 +38,7 @@ type: memory-bank
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 33 |
 | [[modules/historical_orders_import]] | 25 |
-| [[modules/honey_bottle_barcodes]] | 49 |
+| [[modules/honey_bottle_barcodes]] | 50 |
 | [[modules/honey_inventory]] | 47 |
 | [[modules/honey_parcel_inventory]] | 4 |
 | [[modules/honey_parcel_item_parser]] | 17 |

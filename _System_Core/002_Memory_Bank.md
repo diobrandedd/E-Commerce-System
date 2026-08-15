@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Universal barcode verify (all accounts)
+**Change:** New read-only `/verify-barcode` page + `api/v1/barcode_verify.php` lookup for any logged-in IMS user. Resolves honey bottles (supplier, variant, size, batch/scan dates) or dept pouches/jars (Paragis / Black Rice / Cacao). Sidebar link on all non-POS roles. → [[problems/records/2026-08-15_universal-barcode-verify]]
+
+### 2026-08-15 — Packaging row scan-in history
+**Change:** Tap a packaging batch row to open a modal listing each scanned sticker with scanner name + `scanned_at` (API `packaging_scan_log` by `packaging_row_id`). Trace search also matches exact custom `batch_no` (e.g. `JR063026`). → [[problems/records/2026-08-15_packaging-scan-log-modal]]
+
 ### 2026-08-15 — Mobile header actions no longer clipped
 **Change:** `PageLayout` header is now `flex-wrap` with CSS `order` — below `lg` the actions block goes `w-full` onto its own row (title + bell stay on row one) and returns inline at `lg`. Title/subtitle `truncate` inside `min-w-0`. Raw Honey header labels shorten on phones ("Request", "Scan", "Print"). Applies to every page using `PageLayout`. → [[problems/records/2026-08-15_mobile-header-actions-overflow]]
 
