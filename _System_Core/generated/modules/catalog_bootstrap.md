@@ -1,7 +1,7 @@
 ---
 title: catalog_bootstrap
 source: includes/catalog_bootstrap.php
-generated: 2026-08-15T07:45:41+02:00
+generated: 2026-08-15T08:02:39+02:00
 type: module
 function_count: 8
 ---

@@ -1,7 +1,7 @@
 ---
 title: fulfillment_packing
 source: includes/fulfillment_packing.php
-generated: 2026-08-15T07:45:48+02:00
+generated: 2026-08-15T08:02:46+02:00
 type: module
 function_count: 33
 ---

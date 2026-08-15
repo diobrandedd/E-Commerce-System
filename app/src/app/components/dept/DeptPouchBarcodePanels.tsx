@@ -19,6 +19,7 @@ import {
   type DeptPouchRequest,
 } from "@/app/lib/deptPouchBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
+import { DeptPouchScanLogModal } from "@/app/components/dept/DeptPouchScanLogModal";
 
 interface DeptPouchPanelProps {
   productKey: string;
@@ -35,6 +36,7 @@ export function DeptPouchRequestsPanel({ productKey }: DeptPouchPanelProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
+  const [logRequest, setLogRequest] = useState<DeptPouchRequest | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -115,47 +117,67 @@ export function DeptPouchRequestsPanel({ productKey }: DeptPouchPanelProps) {
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="text-left px-3 py-2">When</th>
-                <th className="text-left px-3 py-2">Who</th>
-                <th className="text-left px-3 py-2">Batch</th>
-                <th className="text-left px-3 py-2">Qty</th>
-                <th className="text-left px-3 py-2">Scanned</th>
-                <th className="text-left px-3 py-2">Status</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(r => (
-                <tr key={r.id} className={appHoverRow}>
-                  <td className="px-3 py-2 whitespace-nowrap">{r.created_at.slice(0, 16)}</td>
-                  <td className="px-3 py-2">{r.requested_by_name}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{r.batch_no}</td>
-                  <td className="px-3 py-2">{r.quantity}</td>
-                  <td className="px-3 py-2">
-                    {r.scanned_count}/{r.generated_count || r.quantity}
-                  </td>
-                  <td className="px-3 py-2">{r.status.replace(/_/g, " ")}</td>
-                  <td className="px-3 py-2">
-                    {r.status === "pending" && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void deptPouchBarcodesApi.requestCancel(r.id).then(refresh)}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </td>
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Tap a row to see who scanned each sticker into stock and when.
+          </p>
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="text-left px-3 py-2">When</th>
+                  <th className="text-left px-3 py-2">Who</th>
+                  <th className="text-left px-3 py-2">Batch</th>
+                  <th className="text-left px-3 py-2">Qty</th>
+                  <th className="text-left px-3 py-2">Scanned</th>
+                  <th className="text-left px-3 py-2">Status</th>
+                  <th className="px-3 py-2" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map(r => (
+                  <tr
+                    key={r.id}
+                    className={`${appHoverRow} cursor-pointer`}
+                    onClick={() => setLogRequest(r)}
+                  >
+                    <td className="px-3 py-2 whitespace-nowrap">{r.created_at.slice(0, 16)}</td>
+                    <td className="px-3 py-2">{r.requested_by_name}</td>
+                    <td className="px-3 py-2 font-mono text-xs">{r.batch_no}</td>
+                    <td className="px-3 py-2">{r.quantity}</td>
+                    <td className="px-3 py-2">
+                      {r.scanned_count}/{r.generated_count || r.quantity}
+                    </td>
+                    <td className="px-3 py-2">{r.status.replace(/_/g, " ")}</td>
+                    <td className="px-3 py-2">
+                      {r.status === "pending" && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={e => {
+                            e.stopPropagation();
+                            void deptPouchBarcodesApi.requestCancel(r.id).then(refresh);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+      )}
+      {logRequest && (
+        <DeptPouchScanLogModal
+          requestId={logRequest.id}
+          batchNo={logRequest.batch_no}
+          productKey={productKey}
+          onClose={() => setLogRequest(null)}
+        />
       )}
     </AppSectionEnter>
   );

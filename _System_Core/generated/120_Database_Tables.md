@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-08-15T07:45:38+02:00
+generated: 2026-08-15T08:02:36+02:00
 type: memory-bank
-table_count: 74
+table_count: 75
 ---
 
 
@@ -198,6 +198,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_request_list]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_batch_get]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_batch_list]] |
+| `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_request_scan_log]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_list_entries]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
@@ -772,7 +773,7 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_list]] |
-| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_scan]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_scan_honey]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 
 ## `honey_bottle_codes_issued`
@@ -839,6 +840,15 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_record_lines]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_mark_paid]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_mark_unpaid]] |
+
+## `honey_bottle_pack_session_dept_items`
+
+| File | Function |
+|------|----------|
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_get]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_list]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_scan_dept]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 
 ## `honey_warehouse_rows`
 

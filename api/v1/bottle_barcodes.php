@@ -333,7 +333,8 @@ function api_bottle_pack_session_list(): void
             isset($_GET['from']) ? (string) $_GET['from'] : null,
             isset($_GET['to']) ? (string) $_GET['to'] : null,
             isset($_GET['batch_no']) ? (string) $_GET['batch_no'] : null,
-            (int) ($_GET['page'] ?? 1)
+            (int) ($_GET['page'] ?? 1),
+            isset($_GET['product_key']) ? (string) $_GET['product_key'] : null
         ));
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);

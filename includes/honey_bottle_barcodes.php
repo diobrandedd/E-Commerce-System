@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/honey_inventory.php';
 require_once __DIR__ . '/rts_schema.php';
+require_once __DIR__ . '/dept_pouch_barcodes.php';
+require_once __DIR__ . '/dept_inventory.php';
 
 const HONEY_BOTTLE_SIZE_LABELS = [
     '250ml' => '250ml',
@@ -856,6 +858,7 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
     if ($sess === false) {
         throw new RuntimeException('Pack session not found.');
     }
+
     $itemsSt = $pdo->prepare(
         'SELECT i.id, i.barcode_id, i.unit_id, i.scanned_at, c.code, u.variant, u.size,
                 pk.batch_no
@@ -867,44 +870,125 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
          ORDER BY i.id ASC'
     );
     $itemsSt->execute([$sessionId]);
+
+    $deptSt = $pdo->prepare(
+        'SELECT i.id, i.product_key, i.barcode_id, i.unit_id, i.scanned_at,
+                c.code, un.batch_no, un.status AS unit_status
+         FROM honey_bottle_pack_session_dept_items i
+         INNER JOIN dept_pouch_barcodes c ON c.id = i.barcode_id
+         INNER JOIN dept_pouch_units un ON un.id = i.unit_id
+         WHERE i.session_id = ?
+         ORDER BY i.id ASC'
+    );
+    $deptSt->execute([$sessionId]);
+
     $items = [];
     $grouped = [];
     $byBatch = [];
+
     foreach ($itemsSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $variant = (string) $row['variant'];
         $size = (string) $row['size'];
         $batchNo = $row['batch_no'] !== null ? (string) $row['batch_no'] : '';
+        $sizeLabel = honey_bottle_size_label($size);
         $items[] = [
             'id' => (int) $row['id'],
+            'kind' => 'honey',
+            'product_key' => 'honey',
+            'product_label' => 'Honey',
             'code' => (string) $row['code'],
             'variant' => $variant,
             'size' => $size,
-            'size_label' => honey_bottle_size_label($size),
+            'size_label' => $sizeLabel,
             'batch_no' => $batchNo !== '' ? $batchNo : null,
             'scanned_at' => (string) $row['scanned_at'],
         ];
-        $key = $variant . '|' . $size;
+        $key = 'honey|' . $variant . '|' . $size;
         if (!isset($grouped[$key])) {
             $grouped[$key] = [
+                'kind' => 'honey',
+                'product_key' => 'honey',
+                'product_label' => 'Honey',
                 'variant' => $variant,
                 'size' => $size,
-                'size_label' => honey_bottle_size_label($size),
+                'size_label' => $sizeLabel,
                 'qty' => 0,
             ];
         }
         $grouped[$key]['qty']++;
-        $bKey = $batchNo . '|' . $variant . '|' . $size;
+        $bKey = 'honey|' . $batchNo . '|' . $variant . '|' . $size;
         if (!isset($byBatch[$bKey])) {
             $byBatch[$bKey] = [
+                'kind' => 'honey',
+                'product_key' => 'honey',
+                'product_label' => 'Honey',
                 'batch_no' => $batchNo !== '' ? $batchNo : null,
                 'variant' => $variant,
                 'size' => $size,
-                'size_label' => honey_bottle_size_label($size),
+                'size_label' => $sizeLabel,
                 'qty' => 0,
             ];
         }
         $byBatch[$bKey]['qty']++;
     }
+
+    foreach ($deptSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $productKey = (string) $row['product_key'];
+        $productLabel = dept_pouch_product_label($productKey);
+        $unitNoun = dept_pouch_unit_singular($productKey);
+        $batchNo = (string) $row['batch_no'];
+        $items[] = [
+            'id' => (int) $row['id'],
+            'kind' => 'dept',
+            'product_key' => $productKey,
+            'product_label' => $productLabel,
+            'code' => (string) $row['code'],
+            'variant' => $productLabel,
+            'size' => $unitNoun,
+            'size_label' => $unitNoun,
+            'batch_no' => $batchNo !== '' ? $batchNo : null,
+            'scanned_at' => (string) $row['scanned_at'],
+        ];
+        $key = 'dept|' . $productKey;
+        if (!isset($grouped[$key])) {
+            $grouped[$key] = [
+                'kind' => 'dept',
+                'product_key' => $productKey,
+                'product_label' => $productLabel,
+                'variant' => $productLabel,
+                'size' => $unitNoun,
+                'size_label' => $unitNoun,
+                'qty' => 0,
+            ];
+        }
+        $grouped[$key]['qty']++;
+        $bKey = 'dept|' . $batchNo . '|' . $productKey;
+        if (!isset($byBatch[$bKey])) {
+            $byBatch[$bKey] = [
+                'kind' => 'dept',
+                'product_key' => $productKey,
+                'product_label' => $productLabel,
+                'batch_no' => $batchNo !== '' ? $batchNo : null,
+                'variant' => $productLabel,
+                'size' => $unitNoun,
+                'size_label' => $unitNoun,
+                'qty' => 0,
+            ];
+        }
+        $byBatch[$bKey]['qty']++;
+    }
+
+    usort($items, static function (array $a, array $b): int {
+        $cmp = strcmp((string) $a['scanned_at'], (string) $b['scanned_at']);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+        if ($a['kind'] !== $b['kind']) {
+            return $a['kind'] === 'honey' ? -1 : 1;
+        }
+
+        return ((int) $a['id']) <=> ((int) $b['id']);
+    });
 
     return [
         'id' => (int) $sess['id'],
@@ -932,7 +1016,8 @@ function honey_bottle_pack_session_list(
     ?string $from,
     ?string $to,
     ?string $batchNo,
-    int $page = 1
+    int $page = 1,
+    ?string $productKey = null
 ): array {
     $page = max(1, $page);
     $perPage = 30;
@@ -958,28 +1043,57 @@ function honey_bottle_pack_session_list(
     $toDt = $to . ' 23:59:59';
 
     $batchNo = $batchNo !== null ? strtoupper(trim($batchNo)) : '';
-    $batchJoin = '';
+    $productKey = $productKey !== null ? strtolower(trim($productKey)) : '';
+    if ($productKey === 'all') {
+        $productKey = '';
+    }
+    if ($productKey !== '' && $productKey !== 'honey' && !dept_pouch_supports($productKey)) {
+        throw new RuntimeException('Unknown product filter.');
+    }
+
+    $joins = [];
+    $params = [];
+
     if ($batchNo !== '') {
         if (!preg_match('/^[A-Z0-9][A-Z0-9-]{0,31}$/', $batchNo)) {
             throw new RuntimeException('Batch code search must be letters, digits or dashes.');
         }
-        $batchJoin = ' INNER JOIN (
-            SELECT DISTINCT i.session_id
-            FROM honey_bottle_pack_session_items i
-            INNER JOIN honey_bottle_units u ON u.id = i.unit_id
-            INNER JOIN honey_packaging_rows pk ON pk.id = u.packaging_row_id
-            WHERE UPPER(pk.batch_no) LIKE ?
+        $joins[] = ' INNER JOIN (
+            SELECT session_id FROM (
+                SELECT DISTINCT i.session_id
+                FROM honey_bottle_pack_session_items i
+                INNER JOIN honey_bottle_units u ON u.id = i.unit_id
+                INNER JOIN honey_packaging_rows pk ON pk.id = u.packaging_row_id
+                WHERE UPPER(pk.batch_no) LIKE ?
+                UNION
+                SELECT DISTINCT di.session_id
+                FROM honey_bottle_pack_session_dept_items di
+                INNER JOIN dept_pouch_units du ON du.id = di.unit_id
+                WHERE UPPER(du.batch_no) LIKE ?
+            ) bx
         ) bb ON bb.session_id = s.id';
-    }
-
-    $params = [];
-    if ($batchNo !== '') {
+        $params[] = $batchNo . '%';
         $params[] = $batchNo . '%';
     }
+
+    if ($productKey === 'honey') {
+        $joins[] = ' INNER JOIN (
+            SELECT DISTINCT session_id FROM honey_bottle_pack_session_items
+        ) ph ON ph.session_id = s.id';
+    } elseif ($productKey !== '') {
+        $joins[] = ' INNER JOIN (
+            SELECT DISTINCT session_id
+            FROM honey_bottle_pack_session_dept_items
+            WHERE product_key = ?
+        ) pd ON pd.session_id = s.id';
+        $params[] = $productKey;
+    }
+
+    $joinSql = implode('', $joins);
     $params[] = $fromDt;
     $params[] = $toDt;
 
-    $countSql = 'SELECT COUNT(*) FROM honey_bottle_pack_sessions s' . $batchJoin
+    $countSql = 'SELECT COUNT(*) FROM honey_bottle_pack_sessions s' . $joinSql
         . ' WHERE s.status = "confirmed" AND s.confirmed_at IS NOT NULL'
         . ' AND s.confirmed_at BETWEEN ? AND ?';
     $countSt = $pdo->prepare($countSql);
@@ -989,9 +1103,12 @@ function honey_bottle_pack_session_list(
     $listSql = 'SELECT s.id, s.status, s.started_by, s.confirmed_by, s.confirmed_at, s.created_at,
                        u_start.name AS started_by_name,
                        u_conf.name AS confirmed_by_name,
-                       (SELECT COUNT(*) FROM honey_bottle_pack_session_items i WHERE i.session_id = s.id) AS item_count
+                       (
+                         (SELECT COUNT(*) FROM honey_bottle_pack_session_items i WHERE i.session_id = s.id)
+                         + (SELECT COUNT(*) FROM honey_bottle_pack_session_dept_items d WHERE d.session_id = s.id)
+                       ) AS item_count
                 FROM honey_bottle_pack_sessions s'
-        . $batchJoin
+        . $joinSql
         . ' LEFT JOIN users u_start ON u_start.id = s.started_by
            LEFT JOIN users u_conf ON u_conf.id = s.confirmed_by
            WHERE s.status = "confirmed" AND s.confirmed_at IS NOT NULL
@@ -1027,11 +1144,12 @@ function honey_bottle_pack_session_list(
         'per_page' => $perPage,
         'from' => $from,
         'to' => $to,
+        'product_key' => $productKey !== '' ? $productKey : 'all',
     ];
 }
 
 /**
- * @return array{result: string, session: array<string, mixed>, lookup?: array<string, mixed>}
+ * @return array{result: string, session: array<string, mixed>, lookup?: array<string, mixed>|null}
  */
 function honey_bottle_pack_session_scan(PDO $pdo, int $sessionId, string $code): array
 {
@@ -1041,25 +1159,51 @@ function honey_bottle_pack_session_scan(PDO $pdo, int $sessionId, string $code):
         throw new RuntimeException('This pack session is already closed.');
     }
     $row = honey_bottle_fetch_code_row($pdo, $code);
-    if ($row === null) {
-        return ['result' => 'unknown', 'session' => $sess, 'lookup' => null];
+    if ($row !== null) {
+        return honey_bottle_pack_session_scan_honey($pdo, $sessionId, $row);
     }
+
+    return honey_bottle_pack_session_scan_dept($pdo, $sessionId, $code);
+}
+
+/**
+ * @param array<string, mixed> $row
+ * @return array{result: string, session: array<string, mixed>, lookup?: array<string, mixed>|null}
+ */
+function honey_bottle_pack_session_scan_honey(PDO $pdo, int $sessionId, array $row): array
+{
     if ((string) $row['status'] === 'void') {
-        return ['result' => 'void', 'session' => $sess, 'lookup' => honey_bottle_serialize_lookup($row)];
+        return [
+            'result' => 'void',
+            'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+            'lookup' => honey_bottle_serialize_lookup($row),
+        ];
     }
     $dup = $pdo->prepare(
         'SELECT 1 FROM honey_bottle_pack_session_items WHERE session_id = ? AND barcode_id = ? LIMIT 1'
     );
     $dup->execute([$sessionId, (int) $row['id']]);
     if ($dup->fetchColumn()) {
-        return ['result' => 'duplicate_session', 'session' => $sess, 'lookup' => honey_bottle_serialize_lookup($row)];
+        return [
+            'result' => 'duplicate_session',
+            'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+            'lookup' => honey_bottle_serialize_lookup($row),
+        ];
     }
     $unitStatus = $row['unit_status'] !== null ? (string) $row['unit_status'] : '';
     if ($unitStatus === 'sold' || $unitStatus === 'shipped' || $unitStatus === 'packed') {
-        return ['result' => 'already_consumed', 'session' => $sess, 'lookup' => honey_bottle_serialize_lookup($row)];
+        return [
+            'result' => 'already_consumed',
+            'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+            'lookup' => honey_bottle_serialize_lookup($row),
+        ];
     }
     if ($row['unit_id'] === null || $unitStatus !== 'in_stock') {
-        return ['result' => 'not_in_stock', 'session' => $sess, 'lookup' => honey_bottle_serialize_lookup($row)];
+        return [
+            'result' => 'not_in_stock',
+            'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+            'lookup' => honey_bottle_serialize_lookup($row),
+        ];
     }
     $pdo->prepare(
         'INSERT INTO honey_bottle_pack_session_items (session_id, barcode_id, unit_id) VALUES (?, ?, ?)'
@@ -1069,6 +1213,98 @@ function honey_bottle_pack_session_scan(PDO $pdo, int $sessionId, string $code):
         'result' => 'ok',
         'session' => honey_bottle_pack_session_get($pdo, $sessionId),
         'lookup' => honey_bottle_serialize_lookup($row),
+    ];
+}
+
+/**
+ * @return array{result: string, session: array<string, mixed>, lookup?: array<string, mixed>|null}
+ */
+function honey_bottle_pack_session_scan_dept(PDO $pdo, int $sessionId, string $code): array
+{
+    $code = dept_pouch_normalize_code($code);
+    $st = $pdo->prepare(
+        'SELECT c.id AS barcode_id, c.code, c.status AS barcode_status,
+                b.product_key, b.batch_no,
+                un.id AS unit_id, un.status AS unit_status
+         FROM dept_pouch_barcodes c
+         INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
+         LEFT JOIN dept_pouch_units un ON un.barcode_id = c.id
+         WHERE c.code = ?
+         LIMIT 1'
+    );
+    $st->execute([$code]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        return [
+            'result' => 'unknown',
+            'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+            'lookup' => null,
+        ];
+    }
+
+    $productKey = (string) $row['product_key'];
+    $productLabel = dept_pouch_product_label($productKey);
+    $unitNoun = dept_pouch_unit_singular($productKey);
+    $lookup = [
+        'kind' => 'dept',
+        'product_key' => $productKey,
+        'product_label' => $productLabel,
+        'barcode_id' => (int) $row['barcode_id'],
+        'code' => (string) $row['code'],
+        'barcode_status' => (string) $row['barcode_status'],
+        'batch_no' => (string) $row['batch_no'],
+        'variant' => $productLabel,
+        'size' => $unitNoun,
+        'size_label' => $unitNoun,
+        'unit_id' => $row['unit_id'] !== null ? (int) $row['unit_id'] : null,
+        'unit_status' => $row['unit_status'] !== null ? (string) $row['unit_status'] : null,
+    ];
+
+    if ((string) $row['barcode_status'] === 'void') {
+        return [
+            'result' => 'void',
+            'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+            'lookup' => $lookup,
+        ];
+    }
+
+    $dup = $pdo->prepare(
+        'SELECT 1 FROM honey_bottle_pack_session_dept_items WHERE session_id = ? AND barcode_id = ? LIMIT 1'
+    );
+    $dup->execute([$sessionId, (int) $row['barcode_id']]);
+    if ($dup->fetchColumn()) {
+        return [
+            'result' => 'duplicate_session',
+            'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+            'lookup' => $lookup,
+        ];
+    }
+
+    $unitStatus = $row['unit_status'] !== null ? (string) $row['unit_status'] : '';
+    if ($unitStatus === 'sold' || $unitStatus === 'shipped' || $unitStatus === 'packed') {
+        return [
+            'result' => 'already_consumed',
+            'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+            'lookup' => $lookup,
+        ];
+    }
+    if ($row['unit_id'] === null || $unitStatus !== 'in_stock') {
+        return [
+            'result' => 'not_in_stock',
+            'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+            'lookup' => $lookup,
+        ];
+    }
+
+    $pdo->prepare(
+        'INSERT INTO honey_bottle_pack_session_dept_items (session_id, product_key, barcode_id, unit_id)
+         VALUES (?, ?, ?, ?)'
+    )->execute([$sessionId, $productKey, (int) $row['barcode_id'], (int) $row['unit_id']]);
+
+    return [
+        'result' => 'ok',
+        'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+        'lookup' => $lookup,
     ];
 }
 
@@ -1101,9 +1337,21 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
         );
         $itemsSt->execute([$sessionId]);
         $items = $itemsSt->fetchAll(PDO::FETCH_ASSOC);
-        if ($items === []) {
-            throw new RuntimeException('Scan at least one bottle before confirming.');
+
+        $deptSt = $pdo->prepare(
+            'SELECT i.unit_id, i.product_key, un.status, un.batch_no
+             FROM honey_bottle_pack_session_dept_items i
+             INNER JOIN dept_pouch_units un ON un.id = i.unit_id
+             WHERE i.session_id = ?
+             FOR UPDATE'
+        );
+        $deptSt->execute([$sessionId]);
+        $deptItems = $deptSt->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($items === [] && $deptItems === []) {
+            throw new RuntimeException('Scan at least one barcode before confirming.');
         }
+
         $hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');
         $hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');
         foreach ($items as $item) {
@@ -1135,6 +1383,25 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
                 'pack_session_id' => $hasSessCol ? $sessionId : null,
             ]);
         }
+
+        foreach ($deptItems as $item) {
+            if ((string) $item['status'] !== 'in_stock') {
+                throw new RuntimeException('A pouch/jar in this session is no longer in stock. Discard and rescan.');
+            }
+            $unitId = (int) $item['unit_id'];
+            $productKey = (string) $item['product_key'];
+            $upd = $pdo->prepare(
+                'UPDATE dept_pouch_units
+                 SET status = "packed", consumed_at = NOW(), consumed_ref_type = "pack_session", consumed_ref_id = ?
+                 WHERE id = ? AND status = "in_stock"'
+            );
+            $upd->execute([$sessionId, $unitId]);
+            if ($upd->rowCount() < 1) {
+                throw new RuntimeException('Could not mark a pouch/jar as packed. Discard and rescan.');
+            }
+            dept_inventory_deduct($pdo, $productKey, 1.0);
+        }
+
         $pdo->prepare(
             'UPDATE honey_bottle_pack_sessions SET status = "confirmed", confirmed_at = NOW(), confirmed_by = ? WHERE id = ?'
         )->execute([$userId, $sessionId]);

@@ -63,6 +63,29 @@ export interface HoneyBottleLookup {
   scanned_at: string | null;
 }
 
+export interface HoneyPackSessionItem {
+  id: number;
+  kind?: "honey" | "dept";
+  product_key?: string;
+  product_label?: string;
+  code: string;
+  variant: string;
+  size: string;
+  size_label: string;
+  batch_no?: string | null;
+  scanned_at: string;
+}
+
+export interface HoneyPackSessionGroup {
+  kind?: "honey" | "dept";
+  product_key?: string;
+  product_label?: string;
+  variant: string;
+  size: string;
+  size_label: string;
+  qty: number;
+}
+
 export interface HoneyPackSession {
   id: number;
   status: "draft" | "confirmed" | "discarded";
@@ -73,17 +96,12 @@ export interface HoneyPackSession {
   confirmed_at?: string | null;
   created_at: string;
   item_count: number;
-  items: {
-    id: number;
-    code: string;
-    variant: string;
-    size: string;
-    size_label: string;
-    batch_no?: string | null;
-    scanned_at: string;
-  }[];
-  grouped: { variant: string; size: string; size_label: string; qty: number }[];
+  items: HoneyPackSessionItem[];
+  grouped: HoneyPackSessionGroup[];
   by_batch?: {
+    kind?: "honey" | "dept";
+    product_key?: string;
+    product_label?: string;
     batch_no: string | null;
     variant: string;
     size: string;
@@ -177,7 +195,13 @@ export const bottleBarcodesApi = {
   packStart: () => apiPost<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_start", {}),
   packGet: (id: number) =>
     apiGet<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_get", { id }),
-  packSessionList: (params: { from?: string; to?: string; batch_no?: string; page?: number } = {}) =>
+  packSessionList: (params: {
+    from?: string;
+    to?: string;
+    batch_no?: string;
+    product_key?: string;
+    page?: number;
+  } = {}) =>
     apiGet<{
       rows: HoneyPackSessionListRow[];
       total: number;
@@ -185,18 +209,24 @@ export const bottleBarcodesApi = {
       per_page: number;
       from: string;
       to: string;
+      product_key?: string;
     }>("bottle_barcodes.php", "pack_session_list", {
       from: params.from,
       to: params.to,
       batch_no: params.batch_no || undefined,
+      product_key: params.product_key || undefined,
       page: params.page ?? 1,
     }),
   packScan: (sessionId: number, code: string) =>
-    apiPost<{ result: string; session: HoneyPackSession; lookup: HoneyBottleLookup | null }>(
-      "bottle_barcodes.php",
-      "pack_scan",
-      { session_id: sessionId, code },
-    ),
+    apiPost<{
+      result: string;
+      session: HoneyPackSession;
+      lookup: (HoneyBottleLookup & {
+        kind?: "honey" | "dept";
+        product_key?: string;
+        product_label?: string;
+      }) | null;
+    }>("bottle_barcodes.php", "pack_scan", { session_id: sessionId, code }),
   packConfirm: (sessionId: number) =>
     apiPost<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_confirm", { session_id: sessionId }),
   packDiscard: (sessionId: number) =>

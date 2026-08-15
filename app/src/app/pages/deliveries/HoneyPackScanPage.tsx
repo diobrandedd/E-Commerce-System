@@ -36,6 +36,27 @@ function formatWhen(raw: string | null | undefined) {
   return new Date(raw.replace(" ", "T")).toLocaleString();
 }
 
+function packItemLabel(item: {
+  kind?: string;
+  product_label?: string;
+  variant: string;
+  size_label: string;
+}) {
+  if (item.kind === "dept") {
+    return item.product_label || item.variant;
+  }
+  return `${item.variant} ${item.size_label}`.trim();
+}
+
+const PACK_PRODUCT_FILTERS: { value: string; label: string }[] = [
+  { value: "all", label: "All products" },
+  { value: "honey", label: "Honey" },
+  { value: "pt", label: "Paragis" },
+  { value: "brc", label: "Black Rice" },
+  { value: "jar_cacao", label: "Cacao" },
+  { value: "honey_comb", label: "Honey Comb" },
+];
+
 export function HoneyPackScanPage() {
   const [tab, setTab] = useState<"scan" | "history">("scan");
   const [guideOpen, setGuideOpen] = useState(false);
@@ -43,7 +64,7 @@ export function HoneyPackScanPage() {
   return (
     <PageLayout
       title="Pack scan"
-      subtitle="Scan bottles to deduct honey before wrapping, or review past pack sessions."
+      subtitle="Scan honey and dept barcodes to deduct stock before wrapping, or review past pack sessions."
       actions={
         <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
           <BookOpen size={13} /> Guide
@@ -79,13 +100,18 @@ export function HoneyPackScanPage() {
         <AppModalHeader title="Pack scan" onClose={() => setGuideOpen(false)} />
         <AppModalBody className="space-y-3 text-sm text-muted-foreground">
           <p>
-            <strong className="text-foreground">Scan</strong> — scan every honey bottle you are about to pack.
-            Duplicates in this session are ignored. Bottles already packed or sold show a distinct warning.
+            <strong className="text-foreground">Scan</strong> — scan every sticker going into the parcel:
+            honey bottles plus Paragis, Black Rice, Cacao, or Honey Comb. Mix them in one session in any
+            order. Duplicates in this session are ignored. Units already packed or sold show a distinct
+            warning.
+          </p>
+          <p>
+            <strong className="text-foreground">Confirm</strong> deducts honey packaging stock and finished
+            dept stock for each scanned unit.
           </p>
           <p>
             <strong className="text-foreground">History</strong> — read-only list of confirmed pack sessions.
-            Filter by date range or batch code. Expanding a row shows bottles grouped by packaging batch.
-            Existing live sessions are not changed.
+            Filter by date, product, or batch code. Expanding a row shows items grouped by batch.
           </p>
         </AppModalBody>
       </AppModal>
@@ -135,7 +161,10 @@ function PackScanLivePanel() {
       if (res.result === "ok") {
         playScanBeep("ok");
         setFlash("ok");
-        const label = `${res.lookup?.variant} ${res.lookup?.size_label}`;
+        const label =
+          res.lookup?.kind === "dept"
+            ? res.lookup.product_label || res.lookup.variant || "Dept item"
+            : `${res.lookup?.variant ?? ""} ${res.lookup?.size_label ?? ""}`.trim() || "Honey";
         setMsg(label);
         window.setTimeout(() => setFlash(null), 650);
         inputRef.current?.focus();
@@ -180,7 +209,7 @@ function PackScanLivePanel() {
     setError(null);
     try {
       const res = await bottleBarcodesApi.packConfirm(session.id);
-      setOk(`Packed ${res.session.item_count} bottles.`);
+      setOk(`Packed ${res.session.item_count} item${res.session.item_count === 1 ? "" : "s"}.`);
       setConfirmOpen(false);
       await start();
     } catch (e) {
@@ -214,7 +243,7 @@ function PackScanLivePanel() {
         <input
           ref={inputRef}
           className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide"
-          placeholder="Scan bottle barcode or type it…"
+          placeholder="Scan barcode or type it…"
           value={code}
           onChange={e => setCode(e.target.value)}
           onKeyDown={e => {
@@ -229,7 +258,7 @@ function PackScanLivePanel() {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Use a 2D imager scanner, or tap Camera to scan with this device. You can also type the code printed under the barcode.
+        Honey bottles and Paragis / Black Rice / Cacao / Honey Comb stickers can be mixed in one session.
       </p>
       <div className={`h-20 rounded-xl border flex items-center justify-center gap-2 text-sm font-semibold ${flashClass}`}>
         {flash === "ok" && <CheckCircle2 size={22} />}
@@ -237,11 +266,14 @@ function PackScanLivePanel() {
         {flash === "ok" ? "Scanned" : flash === "dup" ? "Already in this session" : flash === "bad" ? "Not accepted" : "Ready"}
       </div>
       {msg && <p className="text-sm">{msg}</p>}
-      <p className="text-xl font-bold">{session?.item_count ?? 0} bottles in session</p>
+      <p className="text-xl font-bold">{session?.item_count ?? 0} items in session</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {(session?.grouped ?? []).map(g => (
-          <div key={`${g.variant}-${g.size}`} className="bg-card border rounded-xl px-3 py-2">
-            <p className="text-xs text-muted-foreground capitalize">{g.variant} {g.size_label}</p>
+          <div
+            key={`${g.kind ?? "honey"}-${g.product_key ?? g.variant}-${g.size}`}
+            className="bg-card border rounded-xl px-3 py-2"
+          >
+            <p className="text-xs text-muted-foreground capitalize">{packItemLabel(g)}</p>
             <p className="text-lg font-bold">{g.qty}</p>
           </div>
         ))}
@@ -257,10 +289,15 @@ function PackScanLivePanel() {
       <AppModal open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <AppModalHeader title="Confirm pack deduction" onClose={() => setConfirmOpen(false)} />
         <AppModalBody className="space-y-2">
-          <p className="text-sm text-muted-foreground">These bottles leave packaging stock now.</p>
+          <p className="text-sm text-muted-foreground">
+            These leave finished stock now (honey packaging and/or dept finished qty).
+          </p>
           {(session?.grouped ?? []).map(g => (
-            <p key={`${g.variant}-${g.size}`} className="text-sm font-medium capitalize">
-              {g.qty} × {g.variant} {g.size_label}
+            <p
+              key={`${g.kind ?? "honey"}-${g.product_key ?? g.variant}-${g.size}`}
+              className="text-sm font-medium capitalize"
+            >
+              {g.qty} × {packItemLabel(g)}
             </p>
           ))}
         </AppModalBody>
@@ -274,10 +311,10 @@ function PackScanLivePanel() {
       </AppModal>
       {cameraOpen ? (
         <BarcodeCameraScannerModal
-          title="Scan bottle barcode"
+          title="Scan pack barcode"
           titleId={cameraTitleId}
           continuous
-          scanPrompt="Point at each bottle barcode. Keep scanning until the batch is complete."
+          scanPrompt="Point at each barcode. Mix honey and dept stickers until the parcel is complete."
           onClose={() => setCameraOpen(false)}
           onDecoded={decoded => onScan(decoded)}
         />
@@ -290,7 +327,13 @@ function PackScanHistoryPanel() {
   const [from, setFrom] = useState(() => daysAgoIso(13));
   const [to, setTo] = useState(() => todayIso());
   const [batchNo, setBatchNo] = useState("");
-  const [applied, setApplied] = useState({ from: daysAgoIso(13), to: todayIso(), batch_no: "" });
+  const [productKey, setProductKey] = useState("all");
+  const [applied, setApplied] = useState({
+    from: daysAgoIso(13),
+    to: todayIso(),
+    batch_no: "",
+    product_key: "all",
+  });
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<HoneyPackSessionListRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -307,6 +350,7 @@ function PackScanHistoryPanel() {
         from: applied.from,
         to: applied.to,
         batch_no: applied.batch_no || undefined,
+        product_key: applied.product_key !== "all" ? applied.product_key : undefined,
         page,
       });
       setRows(res.rows);
@@ -331,6 +375,7 @@ function PackScanHistoryPanel() {
       from: from || daysAgoIso(13),
       to: to || todayIso(),
       batch_no: batchNo.trim().toUpperCase(),
+      product_key: productKey,
     });
   };
 
@@ -359,6 +404,20 @@ function PackScanHistoryPanel() {
             value={to}
             onChange={e => setTo(e.target.value)}
           />
+        </label>
+        <label className="text-xs text-muted-foreground">
+          Product
+          <select
+            className="mt-1 block border rounded-lg px-2 py-1.5 text-sm bg-background min-w-[9rem]"
+            value={productKey}
+            onChange={e => setProductKey(e.target.value)}
+          >
+            {PACK_PRODUCT_FILTERS.map(opt => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="text-xs text-muted-foreground flex-1 min-w-[10rem]">
           Batch code
@@ -391,9 +450,7 @@ function PackScanHistoryPanel() {
         <div className="space-y-2">
           {rows.map(r => {
             const open = expanded === r.id;
-            const summary = (r.grouped ?? [])
-              .map(g => `${g.qty}× ${g.variant} ${g.size_label}`)
-              .join(" · ");
+            const summary = (r.grouped ?? []).map(g => `${g.qty}× ${packItemLabel(g)}`).join(" · ");
             return (
               <div key={r.id} className="bg-card border rounded-xl overflow-hidden">
                 <button
@@ -407,7 +464,7 @@ function PackScanHistoryPanel() {
                   <div className="min-w-0 flex-1 space-y-0.5">
                     <p className="text-sm font-semibold">{formatWhen(r.confirmed_at)}</p>
                     <p className="text-xs text-muted-foreground">
-                      {r.confirmed_by_name || "—"} · {r.item_count} bottle{r.item_count === 1 ? "" : "s"}
+                      {r.confirmed_by_name || "—"} · {r.item_count} item{r.item_count === 1 ? "" : "s"}
                     </p>
                     {summary ? <p className="text-xs capitalize text-muted-foreground truncate">{summary}</p> : null}
                   </div>
@@ -427,9 +484,12 @@ function PackScanHistoryPanel() {
                           </thead>
                           <tbody>
                             {(r.by_batch ?? []).map((b, i) => (
-                              <tr key={`${b.batch_no}-${b.variant}-${b.size}-${i}`} className="border-t">
+                              <tr
+                                key={`${b.kind ?? "honey"}-${b.batch_no}-${b.product_key ?? b.variant}-${b.size}-${i}`}
+                                className="border-t"
+                              >
                                 <td className="px-2 py-1.5 font-mono text-xs">{b.batch_no || "—"}</td>
-                                <td className="px-2 py-1.5 capitalize">{b.variant} {b.size_label}</td>
+                                <td className="px-2 py-1.5 capitalize">{packItemLabel(b)}</td>
                                 <td className="px-2 py-1.5 text-right tabular-nums">{b.qty}</td>
                               </tr>
                             ))}
@@ -438,7 +498,7 @@ function PackScanHistoryPanel() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Bottles</p>
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Items</p>
                       <div className="overflow-x-auto rounded-lg border bg-card max-h-56 overflow-y-auto">
                         <table className="w-full text-sm">
                           <thead className="sticky top-0 bg-secondary/40 text-xs uppercase text-muted-foreground">
@@ -451,10 +511,10 @@ function PackScanHistoryPanel() {
                           </thead>
                           <tbody>
                             {r.items.map(it => (
-                              <tr key={it.id} className="border-t">
+                              <tr key={`${it.kind ?? "honey"}-${it.id}`} className="border-t">
                                 <td className="px-2 py-1.5 font-mono text-xs">{it.code}</td>
                                 <td className="px-2 py-1.5 font-mono text-xs">{it.batch_no || "—"}</td>
-                                <td className="px-2 py-1.5 capitalize">{it.variant} {it.size_label}</td>
+                                <td className="px-2 py-1.5 capitalize">{packItemLabel(it)}</td>
                                 <td className="px-2 py-1.5 text-xs whitespace-nowrap">{formatWhen(it.scanned_at)}</td>
                               </tr>
                             ))}

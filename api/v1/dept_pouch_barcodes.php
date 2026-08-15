@@ -55,6 +55,7 @@ api_dispatch([
     'mark_printed' => 'api_dept_pouch_mark_printed',
     'print_sheet' => 'api_dept_pouch_print_sheet',
     'scan_stock_in' => 'api_dept_pouch_scan_stock_in',
+    'request_scan_log' => 'api_dept_pouch_request_scan_log',
 ]);
 
 function api_dept_pouch_request_create(): void
@@ -166,4 +167,17 @@ function api_dept_pouch_scan_stock_in(): void
         (string) ($in['code'] ?? '')
     );
     api_ok($result);
+}
+
+function api_dept_pouch_request_scan_log(): void
+{
+    api_method_allowed(['GET']);
+    api_dept_pouch_require_ops();
+    $id = (int) ($_GET['request_id'] ?? $_GET['id'] ?? 0);
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    try {
+        api_ok(dept_pouch_request_scan_log(ims_pdo(), $id, $page));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
 }

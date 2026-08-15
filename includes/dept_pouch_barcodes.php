@@ -506,6 +506,62 @@ function dept_pouch_scan_stock_in(PDO $pdo, int $userId, string $productKey, str
 }
 
 /**
+ * Scanned stickers for a label request — who stocked them in and when (read-only).
+ *
+ * @return array{request: array<string,mixed>, rows: list<array<string,mixed>>, total: int, page: int, per_page: int}
+ */
+function dept_pouch_request_scan_log(PDO $pdo, int $requestId, int $page = 1, int $perPage = 50): array
+{
+    $req = dept_pouch_request_get($pdo, $requestId);
+    $page = max(1, $page);
+    $perPage = max(1, min(200, $perPage));
+    $offset = ($page - 1) * $perPage;
+
+    $cst = $pdo->prepare(
+        'SELECT COUNT(*)
+         FROM dept_pouch_barcodes c
+         INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
+         WHERE b.request_id = ? AND c.status = "scanned" AND c.scanned_at IS NOT NULL'
+    );
+    $cst->execute([$requestId]);
+    $total = (int) $cst->fetchColumn();
+
+    $st = $pdo->prepare(
+        'SELECT c.code, c.scanned_at, c.scanned_by,
+                u.name AS scanned_by_name,
+                b.batch_no,
+                un.status AS unit_status
+         FROM dept_pouch_barcodes c
+         INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
+         LEFT JOIN users u ON u.id = c.scanned_by
+         LEFT JOIN dept_pouch_units un ON un.barcode_id = c.id
+         WHERE b.request_id = ? AND c.status = "scanned" AND c.scanned_at IS NOT NULL
+         ORDER BY c.scanned_at DESC, c.id DESC
+         LIMIT ' . $perPage . ' OFFSET ' . $offset
+    );
+    $st->execute([$requestId]);
+    $rows = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $rows[] = [
+            'code' => (string) $row['code'],
+            'batch_no' => (string) $row['batch_no'],
+            'scanned_at' => (string) $row['scanned_at'],
+            'scanned_by' => $row['scanned_by'] !== null ? (int) $row['scanned_by'] : null,
+            'scanned_by_name' => (string) ($row['scanned_by_name'] ?? ''),
+            'unit_status' => $row['unit_status'] !== null ? (string) $row['unit_status'] : null,
+        ];
+    }
+
+    return [
+        'request' => $req,
+        'rows' => $rows,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+    ];
+}
+
+/**
  * @return list<array<string, mixed>>
  */
 function dept_pouch_batch_codes(PDO $pdo, int $batchId): array

@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Mixed pack scan (honey + dept products)
+**Change:** Pack scan sessions accept honey bottles mixed with Paragis / BRC / Cacao / Honey Comb stickers in any order. Confirm deducts honey packaging and finished dept stock. New table `honey_bottle_pack_session_dept_items` (phase 60). History gains a product filter. → [[problems/records/2026-08-15_mixed-pack-scan-dept]]
+
+### 2026-08-15 — Dept pouch request scan-in history
+**Change:** Tap a Paragis / BRC / Cacao / Honey Comb label **request** row to open a modal of each sticker scanned into finished stock (scanner name + time). Read-only API `request_scan_log` by `request_id`; shared `DeptPouchRequestsPanel` so all four products get it. No schema change. → [[problems/records/2026-08-15_dept-pouch-request-scan-log]]
+
 ### 2026-08-15 — Pack scan History (who / when / batch)
 **Change:** Deliveries → Pack scan gains a **History** tab (read-only). Lists confirmed sessions with date range + batch code filters; expand for by-batch and per-bottle rows. API `pack_session_list` — SELECT only; existing live pack rows unchanged. → [[problems/records/2026-08-15_pack-scan-history]]
 
