@@ -13,6 +13,7 @@ interface PackagingScanLogModalProps {
   packagingRowId: number;
   batchNo: string;
   variant: string;
+  scanDate: string;
   onClose: () => void;
 }
 
@@ -24,6 +25,7 @@ export function PackagingScanLogModal({
   packagingRowId,
   batchNo,
   variant,
+  scanDate,
   onClose,
 }: PackagingScanLogModalProps) {
   const titleId = useId();
@@ -46,7 +48,7 @@ export function PackagingScanLogModal({
       setLoading(true);
       setError(null);
       try {
-        const res = await bottleBarcodesApi.packagingScanLog(packagingRowId, p);
+        const res = await bottleBarcodesApi.packagingScanLog(packagingRowId, p, scanDate);
         setRows(res.rows);
         setTotal(res.total);
         setPage(res.page);
@@ -58,7 +60,7 @@ export function PackagingScanLogModal({
         setLoading(false);
       }
     },
-    [packagingRowId],
+    [packagingRowId, scanDate],
   );
 
   useEffect(() => {
@@ -78,7 +80,8 @@ export function PackagingScanLogModal({
       <AppModalBody className="space-y-3 max-h-[75vh] overflow-y-auto">
         <AppSectionEnter>
           <p className="text-sm text-muted-foreground">
-            Bottles scanned into packaging inventory — who scanned and when.
+            Bottles scanned into packaging inventory
+            {scanDate === "all" ? " across all dates" : ` on ${scanDate}`} — who scanned and when.
           </p>
           {error && <AppErrorBanner message={error} />}
           {loading ? (
@@ -87,7 +90,8 @@ export function PackagingScanLogModal({
             </div>
           ) : total === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              No stickers scanned into this batch yet.
+              No stickers scanned into this batch
+              {scanDate === "all" ? " yet." : ` on ${scanDate}.`}
             </p>
           ) : (
             <>

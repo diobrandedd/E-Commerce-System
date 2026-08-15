@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-08-15_cacao-defect-scan]] |
-| **Active Plan** | [[plans/archive/2026-08-15_cacao-defect-scan_plan]] |
-| **Status** | `shipped` - Jar Cacao defect scan + history (2026-08-15) |
+| **Active Spec** | [[specs/2026-08-15_daily-scan-in-report]] |
+| **Active Plan** | [[plans/archive/2026-08-15_daily-scan-in-report_plan]] |
+| **Status** | `shipped` - Daily gross scan-to-inventory reports (2026-08-15) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

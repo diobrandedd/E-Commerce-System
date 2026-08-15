@@ -655,12 +655,94 @@ function honey_bottle_serialize_lookup(array $row): array
     ];
 }
 
+function honey_bottle_scan_report_date(?string $scanDate): ?string
+{
+    $scanDate = trim((string) $scanDate);
+    if ($scanDate === '' || strtolower($scanDate) === 'all') {
+        return null;
+    }
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $scanDate);
+    if ($date === false || $date->format('Y-m-d') !== $scanDate) {
+        throw new RuntimeException('Invalid scan date.');
+    }
+
+    return $scanDate;
+}
+
+/**
+ * Gross bottle stock-in events grouped by packaging row and size.
+ * Later unit deductions never alter these counts.
+ *
+ * @return array{dates: list<string>, rows: list<array<string,mixed>>, scan_date: ?string}
+ */
+function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null): array
+{
+    $scanDate = honey_bottle_scan_report_date($scanDate);
+    $datesSt = $pdo->query(
+        'SELECT DISTINCT DATE(c.scanned_at) AS scan_date
+         FROM honey_bottle_barcodes c
+         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
+         WHERE c.scanned_at IS NOT NULL AND b.packaging_row_id IS NOT NULL
+         ORDER BY scan_date DESC'
+    );
+    $dates = [];
+    foreach (($datesSt ? $datesSt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+        $dates[] = (string) $row['scan_date'];
+    }
+
+    $where = 'c.scanned_at IS NOT NULL AND b.packaging_row_id IS NOT NULL';
+    $params = [];
+    if ($scanDate !== null) {
+        $from = $scanDate . ' 00:00:00';
+        $to = (new DateTimeImmutable($scanDate))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
+        $where .= ' AND c.scanned_at >= ? AND c.scanned_at < ?';
+        $params = [$from, $to];
+    }
+
+    $st = $pdo->prepare(
+        "SELECT pk.id, pk.production_row_id, pk.supplier_code, pk.batch_no,
+                pk.bottling_date, pk.variant, pk.created_at,
+                pk.current_liter, pk.initial_liter,
+                pk.current_250ml, pk.initial_250ml,
+                pk.current_350ml, pk.initial_350ml,
+                pk.current_gallon, pk.initial_gallon,
+                SUM(CASE WHEN c.size = 'liter' THEN 1 ELSE 0 END) AS scanned_liter,
+                SUM(CASE WHEN c.size = '250ml' THEN 1 ELSE 0 END) AS scanned_250ml,
+                SUM(CASE WHEN c.size = '350ml' THEN 1 ELSE 0 END) AS scanned_350ml,
+                SUM(CASE WHEN c.size = 'gallon' THEN 1 ELSE 0 END) AS scanned_gallon
+         FROM honey_bottle_barcodes c
+         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
+         INNER JOIN honey_packaging_rows pk ON pk.id = b.packaging_row_id
+         WHERE {$where}
+         GROUP BY pk.id, pk.production_row_id, pk.supplier_code, pk.batch_no,
+                  pk.bottling_date, pk.variant, pk.created_at,
+                  pk.current_liter, pk.initial_liter,
+                  pk.current_250ml, pk.initial_250ml,
+                  pk.current_350ml, pk.initial_350ml,
+                  pk.current_gallon, pk.initial_gallon
+         ORDER BY pk.bottling_date DESC, pk.id DESC"
+    );
+    $st->execute($params);
+
+    return [
+        'dates' => $dates,
+        'rows' => $st->fetchAll(PDO::FETCH_ASSOC) ?: [],
+        'scan_date' => $scanDate,
+    ];
+}
+
 /**
  * Scanned stickers for a packaging row — who stocked them in and when.
  *
  * @return array{rows: list<array<string, mixed>>, total: int, page: int, per_page: int, packaging: array<string, mixed>|null}
  */
-function honey_bottle_packaging_scan_log(PDO $pdo, int $packagingRowId, int $page = 1, int $perPage = 50): array
+function honey_bottle_packaging_scan_log(
+    PDO $pdo,
+    int $packagingRowId,
+    int $page = 1,
+    int $perPage = 50,
+    ?string $scanDate = null
+): array
 {
     if ($packagingRowId < 1) {
         throw new RuntimeException('packaging_row_id is required.');
@@ -671,13 +753,23 @@ function honey_bottle_packaging_scan_log(PDO $pdo, int $packagingRowId, int $pag
     }
     $page = max(1, $page);
     $perPage = max(1, min(200, $perPage));
+    $scanDate = honey_bottle_scan_report_date($scanDate);
+    $dateSql = '';
+    $params = [$packagingRowId];
+    if ($scanDate !== null) {
+        $from = $scanDate . ' 00:00:00';
+        $to = (new DateTimeImmutable($scanDate))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
+        $dateSql = ' AND c.scanned_at >= ? AND c.scanned_at < ?';
+        $params[] = $from;
+        $params[] = $to;
+    }
     $cst = $pdo->prepare(
         'SELECT COUNT(*)
          FROM honey_bottle_barcodes c
          INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
-         WHERE b.packaging_row_id = ? AND c.status = "scanned" AND c.scanned_at IS NOT NULL'
+         WHERE b.packaging_row_id = ? AND c.scanned_at IS NOT NULL' . $dateSql
     );
-    $cst->execute([$packagingRowId]);
+    $cst->execute($params);
     $total = (int) $cst->fetchColumn();
     $offset = ($page - 1) * $perPage;
     $st = $pdo->prepare(
@@ -688,11 +780,11 @@ function honey_bottle_packaging_scan_log(PDO $pdo, int $packagingRowId, int $pag
          INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
          LEFT JOIN users u ON u.id = c.scanned_by
          LEFT JOIN honey_bottle_units un ON un.barcode_id = c.id
-         WHERE b.packaging_row_id = ? AND c.status = "scanned" AND c.scanned_at IS NOT NULL
+         WHERE b.packaging_row_id = ? AND c.scanned_at IS NOT NULL' . $dateSql . '
          ORDER BY c.scanned_at DESC, c.id DESC
          LIMIT ' . $perPage . ' OFFSET ' . $offset
     );
-    $st->execute([$packagingRowId]);
+    $st->execute($params);
     $rows = [];
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $rows[] = [
@@ -719,6 +811,7 @@ function honey_bottle_packaging_scan_log(PDO $pdo, int $packagingRowId, int $pag
         'total' => $total,
         'page' => $page,
         'per_page' => $perPage,
+        'scan_date' => $scanDate,
     ];
 }
 

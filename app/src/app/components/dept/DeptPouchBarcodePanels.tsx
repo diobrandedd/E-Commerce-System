@@ -28,6 +28,20 @@ interface DeptPouchPanelProps {
   mode?: "full" | "history";
 }
 
+function localToday(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function scanDateLabel(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchPanelProps) {
   const unit = deptPouchUnitLabel(productKey);
   const historyOnly = mode === "history";
@@ -35,6 +49,10 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
   const [qty, setQty] = useState("50");
   const [notes, setNotes] = useState("");
   const [rows, setRows] = useState<DeptPouchRequest[]>([]);
+  const [scanDate, setScanDate] = useState(localToday);
+  const [scanDates, setScanDates] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,14 +62,16 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await deptPouchBarcodesApi.requestList(productKey, { status: "all", page: 1 });
+      const list = await deptPouchBarcodesApi.scanReport(productKey, scanDate, page);
       setRows(list.rows);
+      setScanDates(list.dates);
+      setTotal(list.total);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load requests.");
     } finally {
       setLoading(false);
     }
-  }, [productKey]);
+  }, [page, productKey, scanDate]);
 
   useEffect(() => {
     void refresh();
@@ -119,11 +139,41 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
           </Button>
         </div>
       )}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Scanned into inventory</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Gross scans only — later packing, sales, or defects do not reduce these totals.
+          </p>
+        </div>
+        <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold shrink-0">
+          Scan date
+          <select
+            value={scanDate}
+            onChange={e => {
+              setScanDate(e.target.value);
+              setPage(1);
+              setLogRequest(null);
+            }}
+            className="mt-1 block min-w-[10.5rem] rounded-lg border border-border bg-card px-2.5 py-2 text-sm normal-case"
+          >
+            <option value={localToday()}>Today · {scanDateLabel(localToday())}</option>
+            {scanDates
+              .filter(date => date !== localToday())
+              .map(date => (
+                <option key={date} value={date}>
+                  {scanDateLabel(date)}
+                </option>
+              ))}
+            <option value="all">All dates</option>
+          </select>
+        </label>
+      </div>
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-muted-foreground py-6 text-center">
-          No barcode requests yet. Use Request barcodes first, then Scan to inventory.
+          No {unit.plural} scanned into inventory {scanDate === "all" ? "yet." : `on ${scanDate}.`}
         </p>
       ) : (
         <div className="space-y-2">
@@ -180,6 +230,33 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
               </tbody>
             </table>
           </div>
+          {total > 25 && (
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <p className="text-xs text-muted-foreground">
+                Page {page} of {Math.ceil(total / 25)}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={page <= 1 || loading}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                >
+                  Previous
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={page >= Math.ceil(total / 25) || loading}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
       {logRequest && (
@@ -187,6 +264,7 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
           requestId={logRequest.id}
           batchNo={logRequest.batch_no}
           productKey={productKey}
+          scanDate={scanDate}
           onClose={() => setLogRequest(null)}
         />
       )}

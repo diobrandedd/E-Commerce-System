@@ -139,6 +139,27 @@ export function bottlePrintSheetUrl(batchId: number): string {
   return `/rts/api/v1/bottle_barcodes.php?action=print_sheet&id=${batchId}`;
 }
 
+export interface HoneyPackagingScanReportRow {
+  id: number;
+  production_row_id: number | null;
+  supplier_code: string;
+  batch_no: string;
+  bottling_date: string;
+  variant: string;
+  current_liter: string;
+  initial_liter: string;
+  current_250ml: string;
+  initial_250ml: string;
+  current_350ml: string;
+  initial_350ml: string;
+  current_gallon: string;
+  initial_gallon: string;
+  scanned_liter: string;
+  scanned_250ml: string;
+  scanned_350ml: string;
+  scanned_gallon: string;
+}
+
 export const bottleBarcodesApi = {
   meta: () =>
     apiGet<{ variants: string[]; sizes: { value: string; label: string }[] }>("bottle_barcodes.php", "meta"),
@@ -254,7 +275,15 @@ export const bottleBarcodesApi = {
       "bottle_barcodes.php",
       "stock_summary",
     ),
-  packagingScanLog: (packagingRowId: number, page = 1) =>
+  packagingScanReport: (scanDate: string) =>
+    apiGet<{
+      dates: string[];
+      rows: HoneyPackagingScanReportRow[];
+      scan_date: string | null;
+    }>("bottle_barcodes.php", "packaging_scan_report", {
+      scan_date: scanDate,
+    }),
+  packagingScanLog: (packagingRowId: number, page = 1, scanDate = "all") =>
     apiGet<{
       packaging: {
         id: number;
@@ -276,8 +305,10 @@ export const bottleBarcodesApi = {
       total: number;
       page: number;
       per_page: number;
+      scan_date: string | null;
     }>("bottle_barcodes.php", "packaging_scan_log", {
       packaging_row_id: packagingRowId,
       page,
+      scan_date: scanDate,
     }),
 };

@@ -92,7 +92,20 @@ export const deptPouchBarcodesApi = {
       finished_on_hand: number | null;
       request?: DeptPouchRequest;
     }>(ENDPOINT, "scan_stock_in", { product_key: productKey, code }),
-  requestScanLog: (requestId: number, page = 1) =>
+  scanReport: (productKey: string, scanDate: string, page = 1) =>
+    apiGet<{
+      dates: string[];
+      rows: DeptPouchRequest[];
+      total: number;
+      page: number;
+      per_page: number;
+      scan_date: string | null;
+    }>(ENDPOINT, "scan_report", {
+      product_key: productKey,
+      scan_date: scanDate,
+      page,
+    }),
+  requestScanLog: (requestId: number, page = 1, scanDate = "all") =>
     apiGet<{
       request: DeptPouchRequest;
       rows: {
@@ -106,7 +119,8 @@ export const deptPouchBarcodesApi = {
       total: number;
       page: number;
       per_page: number;
-    }>(ENDPOINT, "request_scan_log", { request_id: requestId, page }),
+      scan_date: string | null;
+    }>(ENDPOINT, "request_scan_log", { request_id: requestId, page, scan_date: scanDate }),
   posLookup: (code: string) =>
     apiGet<{
       barcode: {

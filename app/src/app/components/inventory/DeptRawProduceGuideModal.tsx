@@ -169,7 +169,7 @@ export function DeptRawProduceGuideModal({
                   <strong className="text-foreground">Scan to inventory</strong> — scan each sticker. Every scan adds one to <strong className="text-foreground">Finished {meta.sellUnit}s</strong>.
                 </li>
                 <li>
-                  <strong className="text-foreground">Scan history</strong> — open from the header or tap the Finished card to see who scanned each sticker and when.
+                  <strong className="text-foreground">Scan history</strong> — open from the header or tap the Finished card. The report defaults to today; choose another scan date or All dates to see gross stock-in counts, then tap a batch for each sticker and scanner.
                 </li>
                 {deptPouchDefectEnabled(productKey) && (
                   <li>

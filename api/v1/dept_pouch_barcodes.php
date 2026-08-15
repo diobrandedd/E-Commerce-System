@@ -55,6 +55,7 @@ api_dispatch([
     'mark_printed' => 'api_dept_pouch_mark_printed',
     'print_sheet' => 'api_dept_pouch_print_sheet',
     'scan_stock_in' => 'api_dept_pouch_scan_stock_in',
+    'scan_report' => 'api_dept_pouch_scan_report',
     'request_scan_log' => 'api_dept_pouch_request_scan_log',
     'pos_lookup' => 'api_dept_pouch_pos_lookup',
     'defect_scan' => 'api_dept_pouch_defect_scan',
@@ -178,8 +179,34 @@ function api_dept_pouch_request_scan_log(): void
     api_dept_pouch_require_ops();
     $id = (int) ($_GET['request_id'] ?? $_GET['id'] ?? 0);
     $page = max(1, (int) ($_GET['page'] ?? 1));
+    $scanDate = trim((string) ($_GET['scan_date'] ?? ''));
     try {
-        api_ok(dept_pouch_request_scan_log(ims_pdo(), $id, $page));
+        api_ok(dept_pouch_request_scan_log(
+            ims_pdo(),
+            $id,
+            $page,
+            50,
+            $scanDate !== '' ? $scanDate : null
+        ));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_dept_pouch_scan_report(): void
+{
+    api_method_allowed(['GET']);
+    api_dept_pouch_require_ops();
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $scanDate = trim((string) ($_GET['scan_date'] ?? ''));
+    try {
+        api_ok(dept_pouch_scan_report(
+            ims_pdo(),
+            api_dept_pouch_product_key(),
+            $scanDate !== '' ? $scanDate : null,
+            $page,
+            25
+        ));
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

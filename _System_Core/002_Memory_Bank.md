@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Daily gross scan-to-inventory reports
+**Change:** Raw Honey → Packaging and the shared Paragis / BRC / Jar Cacao / Honey Comb barcode panels now default to today's gross scan-in report, with historical date and All dates options. Counts come from barcode `scanned_at` and never decrease after pack, POS, defect, RTS, or other deductions; row drilldowns use the same selected date. No schema change. → [[problems/records/2026-08-15_daily-scan-in-report]]
+
 ### 2026-08-15 — Jar Cacao finished-jar defect scan + history
 **Change:** On Jar Cacao inventory, **Defect** opens a scan + history modal. In-stock stickers → `damaged` + finished qty −1 + `dept_pouch_defect_log` (phase 62). Otherwise **Not in inventory**. Does not touch RTS pools. → [[problems/records/2026-08-15_cacao-defect-scan]]
 

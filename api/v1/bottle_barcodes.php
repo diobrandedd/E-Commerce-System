@@ -77,6 +77,7 @@ api_dispatch([
     'reconcile' => 'api_bottle_reconcile',
     'stock_summary' => 'api_bottle_stock_summary',
     'packaging_options' => 'api_bottle_packaging_options',
+    'packaging_scan_report' => 'api_bottle_packaging_scan_report',
     'packaging_scan_log' => 'api_bottle_packaging_scan_log',
     'ensure_packaging_shell' => 'api_bottle_ensure_packaging_shell',
     'create_custom_packaging' => 'api_bottle_create_custom_packaging',
@@ -108,7 +109,25 @@ function api_bottle_packaging_scan_log(): void
     api_bottle_require_request();
     $packId = (int) ($_GET['packaging_row_id'] ?? 0);
     $page = max(1, (int) ($_GET['page'] ?? 1));
-    api_ok(honey_bottle_packaging_scan_log(ims_pdo(), $packId, $page, 50));
+    $scanDate = trim((string) ($_GET['scan_date'] ?? ''));
+    api_ok(honey_bottle_packaging_scan_log(
+        ims_pdo(),
+        $packId,
+        $page,
+        50,
+        $scanDate !== '' ? $scanDate : null
+    ));
+}
+
+function api_bottle_packaging_scan_report(): void
+{
+    api_method_allowed(['GET']);
+    api_bottle_require_request();
+    $scanDate = trim((string) ($_GET['scan_date'] ?? ''));
+    api_ok(honey_bottle_packaging_scan_report(
+        ims_pdo(),
+        $scanDate !== '' ? $scanDate : null
+    ));
 }
 
 function api_bottle_ensure_packaging_shell(): void

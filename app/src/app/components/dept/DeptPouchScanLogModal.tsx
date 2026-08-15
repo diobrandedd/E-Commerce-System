@@ -13,6 +13,7 @@ interface DeptPouchScanLogModalProps {
   requestId: number;
   batchNo: string;
   productKey: string;
+  scanDate: string;
   onClose: () => void;
 }
 
@@ -24,6 +25,7 @@ export function DeptPouchScanLogModal({
   requestId,
   batchNo,
   productKey,
+  scanDate,
   onClose,
 }: DeptPouchScanLogModalProps) {
   const titleId = useId();
@@ -47,7 +49,7 @@ export function DeptPouchScanLogModal({
       setLoading(true);
       setError(null);
       try {
-        const res = await deptPouchBarcodesApi.requestScanLog(requestId, p);
+        const res = await deptPouchBarcodesApi.requestScanLog(requestId, p, scanDate);
         setRows(res.rows);
         setTotal(res.total);
         setPage(res.page);
@@ -59,7 +61,7 @@ export function DeptPouchScanLogModal({
         setLoading(false);
       }
     },
-    [requestId],
+    [requestId, scanDate],
   );
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export function DeptPouchScanLogModal({
         <AppSectionEnter>
           <p className="text-sm text-muted-foreground">
             {unit.plural.charAt(0).toUpperCase() + unit.plural.slice(1)} scanned into finished stock — who
-            scanned and when.
+            scanned and when{scanDate === "all" ? " across all dates" : ` on ${scanDate}`}.
           </p>
           {error && <AppErrorBanner message={error} />}
           {loading ? (
@@ -85,7 +87,8 @@ export function DeptPouchScanLogModal({
             </div>
           ) : total === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              No {unit.plural} scanned into this request yet.
+              No {unit.plural} scanned into this request
+              {scanDate === "all" ? " yet." : ` on ${scanDate}.`}
             </p>
           ) : (
             <>

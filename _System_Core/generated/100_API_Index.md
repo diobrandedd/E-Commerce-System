@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-15T10:19:19+02:00
+generated: 2026-08-15T10:43:42+02:00
 type: memory-bank
 ---
 
@@ -95,6 +95,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `reconcile` | `api_bottle_reconcile()` | `honey_bottle_reconcile()`, `ims_pdo()` |
 | `stock_summary` | `api_bottle_stock_summary()` | `honey_bottle_stock_summary()`, `ims_pdo()` |
 | `packaging_options` | `api_bottle_packaging_options()` | `honey_bottle_packaging_options()`, `ims_pdo()` |
+| `packaging_scan_report` | `api_bottle_packaging_scan_report()` | `honey_bottle_packaging_scan_report()`, `ims_pdo()` |
 | `packaging_scan_log` | `api_bottle_packaging_scan_log()` | `honey_bottle_packaging_scan_log()`, `ims_pdo()` |
 | `ensure_packaging_shell` | `api_bottle_ensure_packaging_shell()` | `honey_fetch_packaging_by_production()`, `ims_pdo()`, `honey_bottle_ensure_packaging_shell()`, `honey_bottle_serialize_packaging_option()` |
 | `create_custom_packaging` | `api_bottle_create_custom_packaging()` | `honey_bottle_can_request()`, `honey_bottle_user_can_generate()`, `honey_bottle_create_custom_packaging()`, `ims_pdo()`, `honey_bottle_serialize_packaging_option()` |
@@ -204,6 +205,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `mark_printed` | `api_dept_pouch_mark_printed()` | `dept_pouch_mark_printed()`, `ims_pdo()` |
 | `print_sheet` | `api_dept_pouch_print_sheet()` | `dept_pouch_label_sheet_html()`, `ims_pdo()` |
 | `scan_stock_in` | `api_dept_pouch_scan_stock_in()` | `dept_pouch_scan_stock_in()`, `ims_pdo()` |
+| `scan_report` | `api_dept_pouch_scan_report()` | `dept_pouch_scan_report()`, `ims_pdo()` |
 | `request_scan_log` | `api_dept_pouch_request_scan_log()` | `dept_pouch_request_scan_log()`, `ims_pdo()` |
 | `pos_lookup` | `api_dept_pouch_pos_lookup()` | `dept_pouch_pos_lookup()`, `ims_pdo()` |
 | `defect_scan` | `api_dept_pouch_defect_scan()` | `dept_pouch_supports_defect()`, `dept_pouch_defect_scan()`, `ims_pdo()` |

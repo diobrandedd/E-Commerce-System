@@ -5,7 +5,6 @@ import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
-import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
 import { BatchTraceabilityDrawer } from "@/app/components/honey/BatchTraceabilityDrawer";
 import { PackagingScanLogModal } from "@/app/components/honey/PackagingScanLogModal";
@@ -22,10 +21,10 @@ import {
 } from "@/app/components/layout/appFeedbackMotion";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
-import { apiGet } from "@/app/lib/api";
 import { HONEY_SIZES } from "@/app/lib/honey";
 import { canDeptPouchBarcodeOps, canExecutiveDirectEdit, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
 import { deptPouchBarcodesApi } from "@/app/lib/deptPouchBarcodes";
+import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
 
 const HONEY_COMB_KEY = "honey_comb";
 const HONEY_COMB_LABEL = "Honey Comb";
@@ -44,6 +43,29 @@ interface PkRow {
   initial_350ml: string;
   current_gallon: string;
   initial_gallon: string;
+  scanned_liter: string;
+  scanned_250ml: string;
+  scanned_350ml: string;
+  scanned_gallon: string;
+}
+
+function localToday(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function scanDateLabel(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function grossQty(value: string | number): string {
+  const qty = Number(value);
+  return Number.isFinite(qty) ? qty.toLocaleString() : String(value);
 }
 
 export function HoneyPackagingPage() {
@@ -52,6 +74,8 @@ export function HoneyPackagingPage() {
   const showSupplierProfile = canViewSupplierProfile(user?.role);
   const canCombBarcodes = canDeptPouchBarcodeOps(user?.role);
   const [rows, setRows] = useState<PkRow[]>([]);
+  const [scanDate, setScanDate] = useState(localToday);
+  const [scanDates, setScanDates] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const perPage = 12;
   const [loading, setLoading] = useState(true);
@@ -80,14 +104,15 @@ export function HoneyPackagingPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiGet<{ rows: PkRow[] }>("honey.php", "packaging_list");
+      const data = await bottleBarcodesApi.packagingScanReport(scanDate);
       setRows(data.rows);
+      setScanDates(data.dates);
       setPage(1);
       await refreshPendingComb();
     } finally {
       setLoading(false);
     }
-  }, [refreshPendingComb]);
+  }, [refreshPendingComb, scanDate]);
 
   useEffect(() => {
     void refresh();
@@ -127,10 +152,33 @@ export function HoneyPackagingPage() {
         </button>
       )}
 
-      <h2 className="text-sm font-semibold mb-1">Batch rows</h2>
-      <p className="text-xs text-muted-foreground mb-3">
-        Tap a row to see who scanned stickers into inventory.
-      </p>
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold mb-1">Scanned into inventory</h2>
+          <p className="text-xs text-muted-foreground">
+            Gross bottle scans only — packing, sales, defects, and other deductions do not reduce these totals.
+            Tap a row for sticker details.
+          </p>
+        </div>
+        <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold shrink-0">
+          Scan date
+          <select
+            value={scanDate}
+            onChange={e => setScanDate(e.target.value)}
+            className="mt-1 block min-w-[10.5rem] rounded-lg border border-border bg-card px-2.5 py-2 text-sm normal-case"
+          >
+            <option value={localToday()}>Today · {scanDateLabel(localToday())}</option>
+            {scanDates
+              .filter(date => date !== localToday())
+              .map(date => (
+                <option key={date} value={date}>
+                  {scanDateLabel(date)}
+                </option>
+              ))}
+            <option value="all">All dates</option>
+          </select>
+        </label>
+      </div>
       <div className="bg-card rounded-xl border overflow-x-auto">
         <table className="w-full text-sm min-w-[36rem]">
           <thead>
@@ -171,18 +219,10 @@ export function HoneyPackagingPage() {
                 <td className="px-3 py-2 font-medium whitespace-nowrap">{r.batch_no}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{r.bottling_date}</td>
                 <td className="px-3 py-2 capitalize">{r.variant}</td>
-                <td className="px-3 py-2">
-                  <QtyCounter current={r.current_liter} initial={r.initial_liter} />
-                </td>
-                <td className="px-3 py-2">
-                  <QtyCounter current={r.current_250ml} initial={r.initial_250ml} />
-                </td>
-                <td className="px-3 py-2">
-                  <QtyCounter current={r.current_350ml} initial={r.initial_350ml} />
-                </td>
-                <td className="px-3 py-2">
-                  <QtyCounter current={r.current_gallon} initial={r.initial_gallon} />
-                </td>
+                <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_liter)}</td>
+                <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_250ml)}</td>
+                <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_350ml)}</td>
+                <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_gallon)}</td>
                 {canExecEdit && (
                   <td className="px-3 py-2 whitespace-nowrap" onClick={e => e.stopPropagation()}>
                     <button
@@ -196,6 +236,13 @@ export function HoneyPackagingPage() {
                 )}
               </tr>
             ))}
+            {!loading && pagedRows.length === 0 && (
+              <tr>
+                <td colSpan={colCount} className="py-10 text-center text-sm text-muted-foreground">
+                  No bottles scanned into inventory {scanDate === "all" ? "yet." : `on ${scanDate}.`}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -334,6 +381,7 @@ export function HoneyPackagingPage() {
           packagingRowId={scanLogRow.id}
           batchNo={scanLogRow.batch_no}
           variant={scanLogRow.variant}
+          scanDate={scanDate}
           onClose={() => setScanLogRow(null)}
         />
       )}
