@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-15 — Honey batch label unique per variant
+**Change:** Same human batch code (e.g. `JR063026`) may exist on dark and amber separately. Migration phase59 replaces global `uq_honey_pk_batch_no` with `uq_honey_pk_batch_variant` `(batch_no, variant)`. `honey_unique_packaging_batch_no()` and custom packaging create only collide within the same variant; sticker codes remain globally unique. Inventory still only moves on scan. → [[problems/records/2026-08-15_honey-batch-label-per-variant]]
+
 ### 2026-08-15 — Jar Cacao on dept barcode stock-in
 **Change:** Added `jar_cacao` to `DEPT_POUCH_BARCODE_KEYS`. Cacao raw page gets Request / Scan / Generate-print (copy says jars); **Produce** retired (`dept_jar_produce` → 410). Honey Comb still uses Produce. No schema change — phase58 `product_key` already covers it. → [[problems/records/2026-08-15_dept-pouch-barcodes-cacao]]
 

@@ -8,7 +8,7 @@
 |-------|------|
 | **Active Spec** | [[specs/2026-08-15_paragis-pouch-barcode-inventory]] |
 | **Active Plan** | [[plans/archive/2026-08-15_paragis-pouch-barcode-inventory_plan]] |
-| **Status** | `shipped` - Jar Cacao on dept barcode stock-in (2026-08-15). Prior: dept pouch barcodes for Black Rice + Paragis; run phase58 on prod |
+| **Status** | `shipped` - honey batch_no unique per variant (phase59, 2026-08-15). Prior: Jar Cacao / dept pouch barcodes; run phase58–59 on prod |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

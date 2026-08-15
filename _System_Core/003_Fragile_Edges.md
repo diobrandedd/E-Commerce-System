@@ -195,6 +195,10 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 
 `packaging_total_inventory` counts **`honey_packaging_rows.current_*`** where `batch_no` is non-empty. Do not sum warehouse or production for this dashboard — those stages use gallons, not per-bottle SKUs. Sales charts use `honey_sales_log`; inventory charts use packaging current columns.
 
+## Honey packaging `batch_no` uniqueness
+
+`honey_packaging_rows` uniqueness is **`(batch_no, variant)`** (phase59), not `batch_no` alone. The same label (e.g. `JR063026`) may exist on dark and amber. Sticker codes in `honey_bottle_codes_issued` stay globally unique. Do not restore a global unique on `batch_no`. Use `honey_unique_packaging_batch_no($pdo, $base, $variant)` when allocating.
+
 ## Online Orders duplicate tracking
 
 - **When it runs:** Before any insert via `online_orders_lines_append()` inside **`online_orders_run_unified_stamp()`** (and manual `lines_append` API). Prep tools (`tool_vip_prepare`, `tool_spx_prepare`, `tool_excel_register`) **do not** append lines — single append point at unified stamp avoids VIP/SPX double-save.

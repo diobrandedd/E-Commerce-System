@@ -1,9 +1,9 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-08-15T03:08:27+02:00
+generated: 2026-08-15T03:29:09+02:00
 type: module
-function_count: 50
+function_count: 49
 ---
 
 
@@ -188,7 +188,7 @@ function_count: 50
 - `api/v1/bottle_barcodes.php`:237 — `api_ok(['batch' => honey_bottle_batch_get(ims_pdo(), $id)]);`
 - `includes/honey_bottle_barcodes.php`:447 — `return honey_bottle_batch_get($pdo, $batchId);`
 - `includes/honey_bottle_barcodes.php`:545 — `return honey_bottle_batch_get($pdo, $batchId);`
-- `includes/honey_bottle_barcodes.php`:1582 — `$batch = honey_bottle_batch_get($pdo, $batchId);`
+- `includes/honey_bottle_barcodes.php`:1571 — `$batch = honey_bottle_batch_get($pdo, $batchId);`
 
 ## honey_bottle_batch_list {#honey_bottle_batch_list}
 
@@ -232,7 +232,7 @@ function_count: 50
 
 - `api/v1/bottle_barcodes.php`:283 — `api_ok(['barcode' => honey_bottle_lookup(ims_pdo(), $code)]);`
 - `includes/honey_bottle_barcodes.php`:1166 — `return honey_bottle_lookup($pdo, $code);`
-- `includes/honey_inventory.php`:784 — `$lookup = honey_bottle_lookup($pdo, strtoupper($query));`
+- `includes/honey_inventory.php`:814 — `$lookup = honey_bottle_lookup($pdo, strtoupper($query));`
 
 ## honey_bottle_serialize_lookup {#honey_bottle_serialize_lookup}
 
@@ -387,7 +387,7 @@ function_count: 50
 **Callers (2):**
 
 - `includes/dept_pouch_barcodes.php`:539 — `$svg = honey_bottle_code128_svg($code);`
-- `includes/honey_bottle_barcodes.php`:1594 — `$svg = honey_bottle_code128_svg($code);`
+- `includes/honey_bottle_barcodes.php`:1583 — `$svg = honey_bottle_code128_svg($code);`
 
 ## honey_bottle_batch_codes {#honey_bottle_batch_codes}
 
@@ -395,7 +395,7 @@ function_count: 50
 
 **Callers (1):**
 
-- `includes/honey_bottle_barcodes.php`:1583 — `$codes = honey_bottle_batch_codes($pdo, $batchId);`
+- `includes/honey_bottle_barcodes.php`:1572 — `$codes = honey_bottle_batch_codes($pdo, $batchId);`
 
 ## honey_bottle_ensure_packaging_shell {#honey_bottle_ensure_packaging_shell}
 
@@ -414,22 +414,13 @@ function_count: 50
 
 - `api/v1/bottle_barcodes.php`:128 — `$pk = honey_bottle_create_custom_packaging(`
 
-## honey_bottle_unique_batch_no {#honey_bottle_unique_batch_no}
-
-**Tables:** `honey_packaging_rows`
-
-**Callers (2):**
-
-- `includes/honey_bottle_barcodes.php`:1438 — `$batchNo = honey_bottle_unique_batch_no($pdo, honey_batch_no((string) $pr['supplier_code'], $bottlingDate));`
-- `includes/honey_bottle_barcodes.php`:1513 — `$batchNo = honey_bottle_unique_batch_no($pdo, $supplierCode);`
-
 ## honey_bottle_serialize_packaging_option {#honey_bottle_serialize_packaging_option}
 
 **Callers (3):**
 
 - `api/v1/bottle_barcodes.php`:113 — `'packaging' => honey_bottle_serialize_packaging_option($pk, $before === null),`
 - `api/v1/bottle_barcodes.php`:137 — `'packaging' => honey_bottle_serialize_packaging_option($pk, true),`
-- `includes/honey_bottle_barcodes.php`:1710 — `$rows[] = honey_bottle_serialize_packaging_option($r, false);`
+- `includes/honey_bottle_barcodes.php`:1699 — `$rows[] = honey_bottle_serialize_packaging_option($r, false);`
 
 ## honey_bottle_label_sheet_html {#honey_bottle_label_sheet_html}
 

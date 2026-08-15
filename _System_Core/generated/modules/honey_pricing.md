@@ -1,7 +1,7 @@
 ---
 title: honey_pricing
 source: includes/honey_pricing.php
-generated: 2026-08-15T03:08:32+02:00
+generated: 2026-08-15T03:29:14+02:00
 type: module
 function_count: 19
 ---
@@ -56,7 +56,7 @@ function_count: 19
 
 **Callers (2):**
 
-- `includes/honey_inventory.php`:201 — `$pricing = honey_pricing_snapshot_warehouse_row($pdo, $wid);`
+- `includes/honey_inventory.php`:227 — `$pricing = honey_pricing_snapshot_warehouse_row($pdo, $wid);`
 - `includes/honey_pricing.php`:308 — `$result = honey_pricing_snapshot_warehouse_row($pdo, (int) $wid);`
 
 ## honey_pricing_stocks_has_supplier_id {#honey_pricing_stocks_has_supplier_id}
@@ -71,7 +71,7 @@ function_count: 19
 
 **Callers (4):**
 
-- `includes/honey_inventory.php`:219 — `honey_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`
+- `includes/honey_inventory.php`:245 — `honey_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`
 - `includes/honey_pricing.php`:211 — `$variants = honey_pricing_upsert_supplier_costing_stocks($pdo, (int) $supplierId, $userId);`
 - `includes/honey_pricing.php`:293 — `honey_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`
 - `includes/honey_pricing.php`:313 — `honey_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`

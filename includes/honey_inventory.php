@@ -108,6 +108,32 @@ function honey_normalize_variant(string $v): string
     return $v;
 }
 
+/**
+ * Allocate a packaging batch_no that is unique for this variant only.
+ * The same human label (e.g. JR063026) may exist on dark and amber separately.
+ * Appends -2, -3… only when the same base already exists for that variant.
+ */
+function honey_unique_packaging_batch_no(PDO $pdo, string $base, string $variant): string
+{
+    $variant = honey_normalize_variant($variant);
+    $candidate = $base;
+    $n = 2;
+    $st = $pdo->prepare(
+        'SELECT 1 FROM honey_packaging_rows WHERE batch_no = ? AND variant = ? LIMIT 1'
+    );
+    while (true) {
+        $st->execute([$candidate, $variant]);
+        if ($st->fetchColumn() === false) {
+            return $candidate;
+        }
+        if ($n > 99) {
+            throw new RuntimeException('Could not allocate a unique batch number.');
+        }
+        $candidate = $base . '-' . $n;
+        $n++;
+    }
+}
+
 function honey_packaging_size_columns(string $size): array
 {
     return match ($size) {
@@ -390,7 +416,11 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
     $isNew = $existing === null;
     if ($isNew) {
         $bottlingDate = date('Y-m-d');
-        $batchNo = honey_batch_no((string) $pr['supplier_code'], $bottlingDate);
+        $batchNo = honey_unique_packaging_batch_no(
+            $pdo,
+            honey_batch_no((string) $pr['supplier_code'], $bottlingDate),
+            (string) $pr['variant']
+        );
     } else {
         $bottlingDate = (string) $existing['bottling_date'];
         $batchNo = (string) $existing['batch_no'];
@@ -1513,7 +1543,11 @@ function honey_executive_seed_packaging_row(
         throw new RuntimeException('Enter quantity for at least one size.');
     }
 
-    $batchNo = honey_batch_no((string) $pr['supplier_code'], $bottlingDate);
+    $batchNo = honey_unique_packaging_batch_no(
+        $pdo,
+        honey_batch_no((string) $pr['supplier_code'], $bottlingDate),
+        (string) $pr['variant']
+    );
     $ins = $pdo->prepare(
         'INSERT INTO honey_packaging_rows (
             production_row_id, supplier_code, batch_no, bottling_date, variant,

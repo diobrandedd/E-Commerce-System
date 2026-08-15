@@ -1435,7 +1435,11 @@ function honey_bottle_ensure_packaging_shell(PDO $pdo, int $userId, int $product
         throw new RuntimeException('Production row not found.');
     }
     $bottlingDate = date('Y-m-d');
-    $batchNo = honey_bottle_unique_batch_no($pdo, honey_batch_no((string) $pr['supplier_code'], $bottlingDate));
+    $batchNo = honey_unique_packaging_batch_no(
+        $pdo,
+        honey_batch_no((string) $pr['supplier_code'], $bottlingDate),
+        (string) $pr['variant']
+    );
     $ins = $pdo->prepare(
         'INSERT INTO honey_packaging_rows (
             production_row_id, supplier_code, batch_no, bottling_date, variant,
@@ -1486,10 +1490,14 @@ function honey_bottle_create_custom_packaging(
         if (!preg_match('/^[A-Z0-9][A-Z0-9-]{2,31}$/', $manualCode)) {
             throw new RuntimeException('Batch code must be 3–32 letters, digits or dashes (e.g. JR073026).');
         }
-        $st = $pdo->prepare('SELECT 1 FROM honey_packaging_rows WHERE batch_no = ? LIMIT 1');
-        $st->execute([$manualCode]);
+        $st = $pdo->prepare(
+            'SELECT 1 FROM honey_packaging_rows WHERE batch_no = ? AND variant = ? LIMIT 1'
+        );
+        $st->execute([$manualCode, $variant]);
         if ($st->fetchColumn() !== false) {
-            throw new RuntimeException("Batch {$manualCode} already exists — pick it from the dropdown instead.");
+            throw new RuntimeException(
+                "Batch {$manualCode} ({$variant}) already exists — pick it from the dropdown instead."
+            );
         }
         // Trailing MMDDYY in the code wins over the date field (JR073026 → 2026-07-30).
         if (preg_match('/(\d{6})$/', $manualCode, $m)) {
@@ -1509,8 +1517,8 @@ function honey_bottle_create_custom_packaging(
         }
         $supplierCode = honey_supplier_code($supplierName, $bottlingDate);
         // Custom batch code is just the supplier code (initials + MMDDYY), e.g. JR063026.
-        // Production lots keep the two-part supplier-bottling form via honey_batch_no().
-        $batchNo = honey_bottle_unique_batch_no($pdo, $supplierCode);
+        // Same label is allowed on another variant; only collide within this variant.
+        $batchNo = honey_unique_packaging_batch_no($pdo, $supplierCode, $variant);
     }
 
     $ins = $pdo->prepare(
@@ -1533,25 +1541,6 @@ function honey_bottle_create_custom_packaging(
     }
 
     return $pack;
-}
-
-/** Unique batch_no — appends -2, -3… when the same base code already exists. */
-function honey_bottle_unique_batch_no(PDO $pdo, string $base): string
-{
-    $candidate = $base;
-    $n = 2;
-    $st = $pdo->prepare('SELECT 1 FROM honey_packaging_rows WHERE batch_no = ? LIMIT 1');
-    while (true) {
-        $st->execute([$candidate]);
-        if ($st->fetchColumn() === false) {
-            return $candidate;
-        }
-        if ($n > 99) {
-            throw new RuntimeException('Could not allocate a unique batch number.');
-        }
-        $candidate = $base . '-' . $n;
-        $n++;
-    }
 }
 
 /**

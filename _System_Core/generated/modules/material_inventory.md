@@ -1,7 +1,7 @@
 ---
 title: material_inventory
 source: includes/material_inventory.php
-generated: 2026-08-15T03:08:33+02:00
+generated: 2026-08-15T03:29:16+02:00
 type: module
 function_count: 64
 ---
@@ -135,7 +135,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (4):**
 
 - `includes/fulfillment_packing.php`:712 — `$poolCol = material_inventory_has_pool_columns($pdo) ? ', s.pool_yield_qty, s.pool_yield_unit' : '';`
-- `includes/honey_inventory.php`:461 — `if (!material_inventory_has_pool_columns($pdo)) {`
+- `includes/honey_inventory.php`:491 — `if (!material_inventory_has_pool_columns($pdo)) {`
 - `includes/material_inventory.php`:196 — `$poolCols = material_inventory_has_pool_columns($pdo)`
 - `includes/material_inventory.php`:461 — `if (!material_inventory_has_pool_columns($pdo)) {`
 
