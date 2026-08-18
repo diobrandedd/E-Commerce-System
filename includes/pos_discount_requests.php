@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/honey_pos.php';
 require_once __DIR__ . '/dept_pos.php';
+require_once __DIR__ . '/pos_unified.php';
 
 /** @param list<array<string,mixed>> $items */
 function pos_discount_cart_is_dept(array $items): bool
@@ -134,6 +135,10 @@ function pos_discount_quote(PDO $pdo, array $items, int $discountPercent): array
         throw new RuntimeException('Cart is empty.');
     }
 
+    if (pos_discount_cart_is_unified($items)) {
+        return pos_unified_discount_quote($pdo, $items, $discountPercent);
+    }
+
     return pos_discount_cart_is_dept($items)
         ? pos_discount_quote_dept($pdo, $items, $discountPercent)
         : pos_discount_quote_honey($pdo, $items, $discountPercent);
@@ -231,7 +236,16 @@ function pos_discount_request_approve(PDO $pdo, int $requestId, int $reviewerId)
             'discount_request_id' => $requestId,
         ];
 
-        if (pos_discount_cart_is_dept($items)) {
+        if (pos_discount_cart_is_unified($items)) {
+            $result = pos_unified_checkout(
+                $pdo,
+                ['pin_id' => (int) $row['sold_by_pin_id'], 'user_id' => null],
+                $items,
+                (string) $row['buyer_name'],
+                (string) ($row['buyer_credentials'] ?? ''),
+                $checkoutOpts
+            );
+        } elseif (pos_discount_cart_is_dept($items)) {
             $result = dept_pos_checkout(
                 $pdo,
                 (int) $row['sold_by_pin_id'],

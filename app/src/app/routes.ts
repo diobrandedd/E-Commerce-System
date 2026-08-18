@@ -26,6 +26,7 @@ import { RawMaterialDetailPage } from "./pages/inventory/RawMaterialDetailPage";
 import { PackagingMaterialsPage } from "./pages/inventory/PackagingMaterialsPage";
 import { SuppliesMaterialsPage } from "./pages/inventory/SuppliesMaterialsPage";
 import { CacaoBrcHubPage } from "./pages/inventory/CacaoBrcHubPage";
+import { FinishedLeakDamagePage } from "./pages/inventory/FinishedLeakDamagePage";
 import { StaffManagementPage } from "./pages/exec/StaffManagementPage";
 import { CostingPage } from "./pages/exec/CostingPage";
 import { ARCreditsPage } from "./pages/exec/ARCreditsPage";
@@ -33,9 +34,7 @@ import { ReportsPage } from "./pages/exec/ReportsPage";
 import { SuppliersPage } from "./pages/exec/SuppliersPage";
 import { SettingsPage } from "./pages/exec/SettingsPage";
 import { MonthlyInventoryPage } from "./pages/exec/MonthlyInventoryPage";
-import { POSCategoryPage } from "./pages/pos/POSCategoryPage";
-import { POSDeptPage } from "./pages/pos/POSDeptPage";
-import { POSHoneyPage } from "./pages/pos/POSHoneyPage";
+import { POSUnifiedPage } from "./pages/pos/POSUnifiedPage";
 import { POSLayout } from "./components/pos/POSLayout";
 import { SalesPage } from "./pages/exec/SalesPage";
 import { BulkHoneyOrdersPage } from "./pages/sales/BulkHoneyOrdersPage";
@@ -52,25 +51,42 @@ import { PackingMaterialsStagingPage } from "./pages/fulfillment/PackingMaterial
 import { PackingMaterialsLogPage } from "./pages/fulfillment/PackingMaterialsLogPage";
 import { AccountSettingsPage } from "./pages/AccountSettingsPage";
 import type { Role } from "./context/AuthContext";
+import type { PermissionKey } from "./lib/permissions";
 
 // Wrap a page component in RequireAuth.  Using createElement to keep this
 // file pure .ts (no JSX) like the original Figma export.
 const guarded = (
   Component: React.ComponentType,
-  opts: { roles?: Role[]; allowPOS?: boolean } = {}
+  opts: { roles?: Role[]; permission?: PermissionKey | PermissionKey[]; allowPOS?: boolean } = {}
 ) => createElement(RequireAuth, opts, createElement(Component));
 
-const invRoles: Role[] = ["executive", "prod_manager", "hr"];
-const invGuard = (Component: React.ComponentType) => guarded(Component, { roles: invRoles });
+const permGuard = (Component: React.ComponentType, permission: PermissionKey | PermissionKey[]) =>
+  guarded(Component, { permission });
 
-// Raw materials + finished products are also readable by staff (scoped to their
-// own department, read-only, no pricing — enforced server-side in materials.php /
-// honey.php). Packaging + Supplies stay invRoles-only.
-const invViewRoles: Role[] = ["executive", "prod_manager", "hr", "staff", "team_leader"];
-const invViewGuard = (Component: React.ComponentType) => guarded(Component, { roles: invViewRoles });
-const honeyProductionRoles: Role[] = [...invViewRoles, "csr_tl", "csr_staff"];
+const invPerm: PermissionKey[] = ["packaging.view", "supplies.view"];
+const invGuard = (Component: React.ComponentType) => guarded(Component, { permission: invPerm });
+
+const invViewPerm: PermissionKey[] = [
+  "inventory.raw.view",
+  "inventory.products.view",
+  "honey.view",
+  "dept.paragis.view",
+  "dept.brc.view",
+  "dept.cacao.view",
+  "dept.comb.view",
+];
+const invViewGuard = (Component: React.ComponentType) => guarded(Component, { permission: invViewPerm });
+
+const honeyProductionPerm: PermissionKey[] = [
+  "honey.ops",
+  "honey.dept_produce",
+  "honey.bottle.request",
+  "honey.bottle.scan",
+  "honey.bottle.generate",
+  "honey.view",
+];
 const honeyProductionGuard = (Component: React.ComponentType) =>
-  guarded(Component, { roles: honeyProductionRoles });
+  guarded(Component, { permission: honeyProductionPerm });
 
 // In production we ship under Apache at /rts/app/dist/ so React Router
 // needs a basename matching that path.  During `vite dev` we run at
@@ -95,14 +111,18 @@ export const router = createBrowserRouter(
         { path: "daily-count", element: guarded(InventoryPage) },
         { path: "beginning-inventory", element: guarded(InventoryPage) },
         { path: "edit-requests", element: guarded(EditRequestsPage) },
-        { path: "inventory/requests", element: guarded(InventoryRequestsPage, { roles: invRoles }) },
-        { path: "inventory/monthly-count", element: guarded(MonthlyInventoryPage, { roles: ["executive"] }) },
-        { path: "inventory/raw-materials", element: invGuard(RawMaterialsHubPage) },
+        { path: "inventory/requests", element: permGuard(InventoryRequestsPage, "inventory.requests.view") },
+        { path: "inventory/monthly-count", element: permGuard(MonthlyInventoryPage, "inventory.monthly_count") },
+        { path: "inventory/raw-materials", element: invViewGuard(RawMaterialsHubPage) },
         { path: "inventory/raw-materials/honey", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
         { path: "inventory/raw-materials/honey/warehouse", element: invViewGuard(HoneyWarehousePage) },
         { path: "inventory/raw-materials/honey/production", element: honeyProductionGuard(HoneyProductionPage) },
         { path: "inventory/raw-materials/honey/packaging", element: invViewGuard(HoneyPackagingPage) },
         { path: "inventory/raw-materials/honey/bottles", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/production", replace: true }) },
+        { path: "inventory/raw-materials/paragis", element: permGuard(RawMaterialDetailPage, "dept.paragis.view") },
+        { path: "inventory/raw-materials/black-rice", element: permGuard(RawMaterialDetailPage, "dept.brc.view") },
+        { path: "inventory/raw-materials/cacao", element: permGuard(RawMaterialDetailPage, "dept.cacao.view") },
+        { path: "inventory/raw-materials/honey-comb", element: permGuard(RawMaterialDetailPage, "dept.comb.view") },
         { path: "inventory/raw-materials/:slug", element: invViewGuard(RawMaterialDetailPage) },
         { path: "inventory/packaging-materials", element: invGuard(PackagingMaterialsPage) },
         { path: "inventory/supplies", element: invGuard(SuppliesMaterialsPage) },
@@ -110,26 +130,29 @@ export const router = createBrowserRouter(
         { path: "inventory/products/honey/warehouse", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
         { path: "inventory/products/honey/production", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/production", replace: true }) },
         { path: "inventory/products/honey/packaging", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/packaging", replace: true }) },
+        { path: "inventory/products/paragis-tea", element: permGuard(ProductInventoryEntry, "dept.paragis.view") },
+        { path: "inventory/products/black-rice-coffee", element: permGuard(ProductInventoryEntry, "dept.brc.view") },
+        { path: "inventory/products/cacao-tablets", element: permGuard(ProductInventoryEntry, "dept.cacao.view") },
+        { path: "inventory/products/honey-comb", element: permGuard(ProductInventoryEntry, "dept.comb.view") },
         { path: "inventory/products/:productSlug", element: invViewGuard(ProductInventoryEntry) },
         { path: "inventory/honey/warehouse", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
         { path: "inventory/honey/production", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/production", replace: true }) },
         { path: "inventory/honey/packaging", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/packaging", replace: true }) },
         { path: "inventory/paragis", element: createElement(Navigate, { to: "/inventory/products/paragis-tea", replace: true }) },
-        { path: "inventory/cacao-brc", element: invGuard(CacaoBrcHubPage) },
+        { path: "inventory/cacao-brc", element: permGuard(CacaoBrcHubPage, ["dept.brc.view", "dept.cacao.view"]) },
+        { path: "inventory/leak-damage", element: permGuard(FinishedLeakDamagePage, "inventory.leak_damage.view") },
         { path: "inventory/:dept", element: guarded(InventoryPage) },
 
-        { path: "staff", element: guarded(StaffManagementPage, { roles: ["executive"] }) },
-        { path: "reports", element: guarded(ReportsPage, { roles: ["executive", "prod_manager"] }) },
-        { path: "sales", element: guarded(SalesPage, { roles: ["executive", "prod_manager"] }) },
-        { path: "sales/bulk-orders", element: guarded(BulkHoneyOrdersPage, { roles: ["executive"] }) },
-        { path: "suppliers", element: guarded(SuppliersPage, { roles: ["executive"] }) },
-        { path: "costing", element: guarded(CostingPage, { roles: ["executive"] }) },
-        { path: "ar", element: guarded(ARCreditsPage) },
+        { path: "staff", element: permGuard(StaffManagementPage, "staff.manage") },
+        { path: "reports", element: permGuard(ReportsPage, "reports.view") },
+        { path: "sales", element: permGuard(SalesPage, "sales.view") },
+        { path: "sales/bulk-orders", element: permGuard(BulkHoneyOrdersPage, "sales.bulk_orders") },
+        { path: "suppliers", element: permGuard(SuppliersPage, "suppliers.view") },
+        { path: "costing", element: permGuard(CostingPage, "costing.view") },
+        { path: "ar", element: permGuard(ARCreditsPage, "ar.take") },
         {
           path: "waybill/online-orders",
-          element: guarded(OnlineOrdersGeneratorPage, {
-            roles: ["executive", "csr_tl", "csr_staff"],
-          }),
+          element: permGuard(OnlineOrdersGeneratorPage, "csr.online_orders"),
         },
         {
           path: "waybill/stamper",
@@ -147,55 +170,43 @@ export const router = createBrowserRouter(
           path: "waybill-stamper",
           element: createElement(Navigate, { to: "/waybill/online-orders", replace: true }),
         },
-        { path: "rts", element: guarded(RTSPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
-        { path: "rts/record", element: guarded(RTSRecordPage, { roles: ["executive", "prod_manager", "csr_tl", "csr_staff"] }) },
-        { path: "rts/records", element: guarded(RTSRecordsPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
-        { path: "rts/swapped", element: guarded(RTSSwappedPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
-        { path: "rts/leaks", element: guarded(RTSLeaksPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
-        { path: "rts/damaged", element: guarded(RTSDamagedInventoryPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
-        { path: "rts/dashboard", element: guarded(RTSDashboardPage, { roles: ["executive", "prod_manager", "hr", "staff", "csr_tl", "csr_staff", "team_leader"] }) },
-        { path: "settings", element: guarded(SettingsPage, { roles: ["executive"] }) },
+        { path: "rts", element: permGuard(RTSPage, "rts.view") },
+        { path: "rts/record", element: permGuard(RTSRecordPage, "rts.record") },
+        { path: "rts/records", element: permGuard(RTSRecordsPage, "rts.view") },
+        { path: "rts/swapped", element: permGuard(RTSSwappedPage, "rts.view") },
+        { path: "rts/leaks", element: permGuard(RTSLeaksPage, "rts.view") },
+        { path: "rts/damaged", element: permGuard(RTSDamagedInventoryPage, "rts.view") },
+        { path: "rts/dashboard", element: permGuard(RTSDashboardPage, "rts.view") },
+        { path: "settings", element: permGuard(SettingsPage, "settings.manage") },
         { path: "account", element: guarded(AccountSettingsPage) },
 
-        { path: "deliveries", element: guarded(DeliveriesPage, { roles: ["executive", "prod_manager", "staff"] }) },
-        { path: "deliveries/pack-scan", element: guarded(HoneyPackScanPage, { roles: ["executive", "prod_manager", "staff"] }) },
-        { path: "deliveries/review", element: guarded(DeliveriesReviewPage, { roles: ["executive", "prod_manager", "staff"] }) },
-        { path: "deliveries/cancelled", element: guarded(DeliveriesCancelledPage, { roles: ["executive", "prod_manager", "staff"] }) },
+        { path: "deliveries", element: permGuard(DeliveriesPage, "deliveries.view") },
+        { path: "deliveries/pack-scan", element: permGuard(HoneyPackScanPage, "deliveries.pack_scan") },
+        { path: "deliveries/review", element: permGuard(DeliveriesReviewPage, "deliveries.review") },
+        { path: "deliveries/cancelled", element: permGuard(DeliveriesCancelledPage, "deliveries.view") },
         {
           path: "fulfillment/partner-sold-reconcile",
-          element: guarded(PartnerSoldReconcilePage, {
-            roles: ["executive", "prod_manager", "staff", "csr_tl", "csr_staff"],
-          }),
+          element: permGuard(PartnerSoldReconcilePage, "csr.reconcile.partner_sold"),
         },
         {
           path: "fulfillment/courier-soa-reconcile",
-          element: guarded(CourierSoaReconcilePage, {
-            roles: ["executive", "prod_manager", "staff", "csr_tl", "csr_staff"],
-          }),
+          element: permGuard(CourierSoaReconcilePage, "csr.reconcile.courier_soa"),
         },
         {
           path: "fulfillment/historical-orders-import",
-          element: guarded(HistoricalOrdersImportPage, {
-            roles: ["executive", "prod_manager", "staff", "csr_tl", "csr_staff"],
-          }),
+          element: permGuard(HistoricalOrdersImportPage, "csr.historical_import"),
         },
         {
           path: "fulfillment/online-parcels",
-          element: guarded(OnlineParcelsPage, {
-            roles: ["executive", "prod_manager", "staff", "csr_tl", "csr_staff"],
-          }),
+          element: permGuard(OnlineParcelsPage, "csr.parcels.view"),
         },
         {
           path: "fulfillment/packing-materials/log",
-          element: guarded(PackingMaterialsLogPage, {
-            roles: ["executive", "prod_manager", "team_leader", "staff", "csr_tl"],
-          }),
+          element: permGuard(PackingMaterialsLogPage, "packing.materials.view"),
         },
         {
           path: "fulfillment/packing-materials",
-          element: guarded(PackingMaterialsStagingPage, {
-            roles: ["executive", "prod_manager", "team_leader", "staff", "csr_tl"],
-          }),
+          element: permGuard(PackingMaterialsStagingPage, "packing.materials.view"),
         },
           ],
         },
@@ -204,13 +215,13 @@ export const router = createBrowserRouter(
           path: "pos",
           element: createElement(
             RequireAuth,
-            { allowPOS: true, roles: ["pos"] },
+            { allowPOS: true, permission: "pos.sell" },
             createElement(POSLayout)
           ),
           children: [
-            { index: true, Component: POSCategoryPage },
-            { path: "honey", Component: POSHoneyPage },
-            { path: ":deptKey", Component: POSDeptPage },
+            { index: true, Component: POSUnifiedPage },
+            { path: "honey", element: createElement(Navigate, { to: "/pos", replace: true }) },
+            { path: ":deptKey", element: createElement(Navigate, { to: "/pos", replace: true }) },
           ],
         },
       ],

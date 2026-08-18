@@ -35,7 +35,7 @@ api_dispatch([
 function api_materials_require_view(): array
 {
     $user = api_require_ims_user();
-    if (!material_inventory_role_can_view((string) $user['role'])) {
+    if (!material_inventory_role_can_view($user)) {
         api_fail('Forbidden.', 403);
     }
 
@@ -48,9 +48,9 @@ function api_materials_catalog_list(): void
     $category = trim((string) ($_GET['category'] ?? ''));
     $user = api_require_ims_user();
     $role = (string) $user['role'];
-    if (!material_inventory_role_can_view($role)) {
+    if (!material_inventory_role_can_view($user)) {
         // For packing issuers (staff, TL, PM) need packaging catalog only — not full materials hub.
-        if ($category !== 'packaging' || !material_inventory_role_can_issue_packing($role)) {
+        if ($category !== 'packaging' || !material_inventory_role_can_issue_packing($user)) {
             api_fail('Forbidden.', 403);
         }
     }
@@ -60,7 +60,7 @@ function api_materials_catalog_list(): void
         $category !== '' ? $category : null,
         !isset($_GET['include_inactive']) || (string) $_GET['include_inactive'] !== '1'
     );
-    if ($role === 'staff') {
+    if (!ims_user_can($user, 'honey.pricing.view_cost')) {
         foreach ($items as &$row) {
             unset($row['current_price'], $row['supplier_id'], $row['supplier_name'], $row['supplier_code']);
         }
@@ -86,10 +86,10 @@ function api_materials_catalog_create(): void
     $category = trim((string) ($input['category'] ?? ''));
     $unit = trim((string) ($input['unit'] ?? 'pcs'));
     if ($category === 'supply') {
-        if (!material_inventory_role_can_create_supply_catalog($role)) {
+        if (!material_inventory_role_can_create_supply_catalog($user)) {
             api_fail('Forbidden.', 403);
         }
-    } elseif ($role !== 'executive') {
+    } elseif (!ims_user_can($user, 'packaging.catalog')) {
         api_fail('Forbidden.', 403);
     }
     $pdo = ims_pdo();
@@ -106,7 +106,7 @@ function api_materials_catalog_update(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('packaging.catalog');
     $stockId = (int) ($input['stock_id'] ?? 0);
     $name = isset($input['name']) ? trim((string) $input['name']) : null;
     $unit = isset($input['unit']) ? trim((string) $input['unit']) : null;
@@ -128,7 +128,7 @@ function api_materials_adjust(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('packaging.adjust');
     $stockId = (int) ($input['stock_id'] ?? 0);
     $action = trim((string) ($input['action'] ?? ''));
     $amount = (float) ($input['amount'] ?? 0);
@@ -174,14 +174,14 @@ function api_materials_request_submit(): void
     }
     $category = (string) $row['category'];
     if ($category === 'packaging') {
-        if ($role !== 'hr') {
+        if (!material_inventory_role_can_request_packaging($user)) {
             api_fail('Only HR can request packaging count corrections.', 403);
         }
         if ($action !== 'set_on_hand') {
             api_fail('Packaging requests must set a target on-hand count.', 422);
         }
     } elseif ($category === 'supply') {
-        if (!material_inventory_role_can_request_supply($role)) {
+        if (!material_inventory_role_can_request_supply($user)) {
             api_fail('Only HR can submit supply issue or count requests.', 403);
         }
         if (!in_array($action, ['issue', 'set_on_hand'], true)) {
@@ -223,9 +223,9 @@ function api_materials_request_list(): void
     api_ok([
         'requests' => $requests,
         'readonly' => false,
-        'can_approve' => $role === 'executive',
-        'can_submit_packaging' => material_inventory_role_can_request_packaging($role),
-        'can_submit_supply' => material_inventory_role_can_request_supply($role),
+        'can_approve' => ims_user_can($user, 'inventory.requests.approve'),
+        'can_submit_packaging' => material_inventory_role_can_request_packaging($user),
+        'can_submit_supply' => material_inventory_role_can_request_supply($user),
     ]);
 }
 
@@ -234,7 +234,7 @@ function api_materials_request_approve(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('inventory.requests.approve');
     $id = (int) ($input['id'] ?? 0);
     $pdo = ims_pdo();
     $pdo->beginTransaction();
@@ -255,7 +255,7 @@ function api_materials_request_reject(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('inventory.requests.approve');
     $id = (int) ($input['id'] ?? 0);
     $note = trim((string) ($input['rejection_note'] ?? ''));
     $pdo = ims_pdo();
@@ -271,7 +271,7 @@ function api_materials_request_pending_count(): void
 {
     api_method_allowed(['GET']);
     $user = api_require_ims_user();
-    if ((string) $user['role'] !== 'executive') {
+    if (!ims_user_can($user, 'inventory.requests.approve')) {
         api_ok(['count' => 0]);
 
         return;
@@ -284,7 +284,7 @@ function api_materials_request_mark_viewed(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('inventory.requests.approve');
     $id = (int) ($input['id'] ?? 0);
     material_adjustment_mark_viewed(ims_pdo(), $id);
     api_ok(['viewed' => true]);
@@ -293,7 +293,7 @@ function api_materials_request_mark_viewed(): void
 function api_materials_request_unread_list(): void
 {
     api_method_allowed(['GET']);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('inventory.requests.approve');
     unset($user);
     $limit = (int) ($_GET['limit'] ?? 10);
     $requests = material_adjustment_unread_list(ims_pdo(), $limit);
@@ -342,20 +342,20 @@ function api_materials_packaging_detail(): void
         api_fail('Packaging stock not found.', 404);
     }
     $row = material_inventory_enrich_packaging_row($row);
-    $logLimit = $role === 'executive' ? 100 : 25;
+    $logLimit = ims_user_can($user, 'packaging.set_on_hand') ? 100 : 25;
     $entries = material_packaging_recent_entries($pdo, $stockId, $logLimit);
     $isGenericFoam = material_packaging_is_generic_foam_roll_name((string) $row['name']);
     $payload = [
         'stock' => $row,
         'entries' => $entries,
         'permissions' => [
-            'can_stock_in' => material_inventory_role_can_stock_in_packaging($role),
-            'can_edit_price' => material_inventory_role_can_edit_packaging_price($role),
-            'can_deduct' => material_inventory_role_can_deduct_packaging($role),
-            'can_set_on_hand' => material_inventory_role_can_set_packaging_on_hand($role),
-            'can_set_pool_yield' => $role === 'executive' && !$isGenericFoam,
-            'can_set_foam_cacao_cut_yields' => $role === 'executive' && $isGenericFoam,
-            'can_view_extended_log' => $role === 'executive',
+            'can_stock_in' => material_inventory_role_can_stock_in_packaging($user),
+            'can_edit_price' => material_inventory_role_can_edit_packaging_price($user),
+            'can_deduct' => material_inventory_role_can_deduct_packaging($user),
+            'can_set_on_hand' => material_inventory_role_can_set_packaging_on_hand($user),
+            'can_set_pool_yield' => ims_user_can($user, 'packaging.set_on_hand') && !$isGenericFoam,
+            'can_set_foam_cacao_cut_yields' => ims_user_can($user, 'packaging.set_on_hand') && $isGenericFoam,
+            'can_view_extended_log' => ims_user_can($user, 'packaging.set_on_hand'),
         ],
     ];
     if ($isGenericFoam) {
@@ -369,7 +369,7 @@ function api_materials_set_foam_cacao_cut_yields(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('packaging.set_on_hand');
     $stockId = (int) ($input['stock_id'] ?? 0);
     $nineRaw = trim((string) ($input['cuts_9x12'] ?? ''));
     $twelveRaw = trim((string) ($input['cuts_12_5x12'] ?? ''));
@@ -412,7 +412,7 @@ function api_materials_packaging_deduct(): void
     api_require_csrf($input);
     $user = api_require_ims_user();
     $role = (string) $user['role'];
-    if (!material_inventory_role_can_deduct_packaging($role)) {
+    if (!material_inventory_role_can_deduct_packaging($user)) {
         api_fail('Forbidden.', 403);
     }
     $stockId = (int) ($input['stock_id'] ?? 0);
@@ -452,7 +452,7 @@ function api_materials_set_pool_yield(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('packaging.set_on_hand');
     $stockId = (int) ($input['stock_id'] ?? 0);
     $yieldRaw = trim((string) ($input['pool_yield_qty'] ?? ''));
     $yieldUnit = isset($input['pool_yield_unit']) ? trim((string) $input['pool_yield_unit']) : null;
@@ -509,12 +509,12 @@ function api_materials_supply_detail(): void
     }
     $row['on_hand'] = round((float) ($row['on_hand'] ?? 0), 2);
     $row['current_price'] = round((float) ($row['current_price'] ?? 0), 2);
-    $logLimit = $role === 'executive' ? 100 : 25;
+    $logLimit = ims_user_can($user, 'packaging.set_on_hand') ? 100 : 25;
     $entries = material_supply_recent_entries($pdo, $stockId, $logLimit);
     api_ok([
         'stock' => $row,
         'entries' => $entries,
-        'permissions' => material_supply_detail_permissions($role),
+        'permissions' => material_supply_detail_permissions($user),
     ]);
 }
 
@@ -523,7 +523,7 @@ function api_materials_set_on_hand(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('packaging.set_on_hand');
     $stockId = (int) ($input['stock_id'] ?? 0);
     $onHandRaw = trim((string) ($input['on_hand'] ?? ''));
     $note = isset($input['note']) ? trim((string) $input['note']) : null;
@@ -612,7 +612,7 @@ function api_materials_stock_in_lot(): void
     if (!in_array($category, ['packaging', 'supply'], true)) {
         api_fail('Only packaging or supply items support lot stock-in.', 422);
     }
-    if ($category === 'packaging' && !material_inventory_role_can_stock_in_packaging($role)) {
+    if ($category === 'packaging' && !material_inventory_role_can_stock_in_packaging($user)) {
         api_fail('Forbidden.', 403);
     }
     if ($category === 'supply' && !in_array($role, ['executive', 'hr'], true)) {
@@ -657,7 +657,7 @@ function api_materials_packaging_price_lot(): void
     api_require_csrf($input);
     $user = api_require_ims_user();
     $role = (string) $user['role'];
-    if (!material_inventory_role_can_edit_packaging_price($role)) {
+    if (!material_inventory_role_can_edit_packaging_price($user)) {
         api_fail('Forbidden.', 403);
     }
     $stockId = (int) ($input['stock_id'] ?? 0);

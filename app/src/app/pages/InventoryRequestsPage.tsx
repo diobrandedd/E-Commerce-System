@@ -91,10 +91,13 @@ function TablePagination({
 }
 
 export function InventoryRequestsPage() {
-  const { user } = useAuth();
-  const isExec = user?.role === "executive";
-  const isPm = user?.role === "prod_manager";
-  const isHr = user?.role === "hr";
+  const { user, can } = useAuth();
+  const canApproveCorrections = can("inventory.requests.approve");
+  const canApproveEditRequests = can("inventory.edit_requests.approve");
+  const canApproveDiscounts = can("pos.discounts.approve");
+  const isExec = canApproveCorrections;
+  const isPm = can("inventory.edit_requests.submit") && can("inventory.daily_count");
+  const isHr = can("inventory.requests.view") && !canApproveCorrections;
   const readonly = isHr;
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -407,7 +410,7 @@ export function InventoryRequestsPage() {
   const supplyColSpan = isExec && !readonly ? 7 : 6;
   const packagingColSpan = isExec && !readonly ? 6 : 5;
 
-  const showEditRequests = isExec || isPm;
+  const showEditRequests = canApproveEditRequests || isPm;
 
   const pageTitle = "Requests";
   const pageSubtitle = isExec
@@ -718,7 +721,7 @@ export function InventoryRequestsPage() {
 
         {showEditRequests && (
           <EditRequestsSection
-            isReviewer={isExec}
+            isReviewer={canApproveEditRequests}
             readonly={readonly}
             onChanged={() => void refreshNotifications()}
             open={sectionOpen["edit-requests-section"]}
@@ -726,7 +729,7 @@ export function InventoryRequestsPage() {
           />
         )}
 
-        {isExec && (
+        {canApproveDiscounts && (
           <RequestsHubSection
             id="discount-approvals-section"
             title="POS discount approvals"

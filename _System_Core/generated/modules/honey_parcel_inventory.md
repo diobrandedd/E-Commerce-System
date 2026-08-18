@@ -1,7 +1,7 @@
 ---
 title: honey_parcel_inventory
 source: includes/honey_parcel_inventory.php
-generated: 2026-08-15T10:54:24+02:00
+generated: 2026-08-18T09:59:12+02:00
 type: module
 function_count: 4
 ---
@@ -26,7 +26,7 @@ function_count: 4
 **Callers (2):**
 
 - `includes/honey_parcel_inventory.php`:33 — `$parsed = honey_parcel_assert_items_ok($itemsRaw);`
-- `includes/online_order_parcels.php`:1079 — `honey_parcel_assert_items_ok((string) $locked['items_raw']);`
+- `includes/online_order_parcels.php`:1078 — `honey_parcel_assert_items_ok((string) $locked['items_raw']);`
 
 ## honey_parcel_apply_deduct {#honey_parcel_apply_deduct}
 

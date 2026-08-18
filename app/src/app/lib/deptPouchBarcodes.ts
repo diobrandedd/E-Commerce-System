@@ -77,6 +77,8 @@ export const deptPouchBarcodesApi = {
   requestCancel: (id: number) => apiPost<{ ok: boolean }>(ENDPOINT, "request_cancel", { id }),
   pendingCount: (productKey: string) =>
     apiGet<{ count: number }>(ENDPOINT, "pending_count", { product_key: productKey }),
+  pendingCounts: () =>
+    apiGet<{ counts: Partial<Record<DeptPouchProductKey, number>> }>(ENDPOINT, "pending_counts"),
   generate: (requestId: number) =>
     apiPost<{ batch: DeptPouchBatch }>(ENDPOINT, "generate", { request_id: requestId }),
   batchList: (productKey: string) =>

@@ -4,6 +4,36 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-18 — Account POS, discounts at checkout, Sales seller log
+**Change:** POS is permission `pos.sell` (sidebar). 10%/20% complete the sale immediately with the cashier recorded. Sales Recent walk-in sales shows Sold by / Sold to and filters by product. Run phase 65. → [[problems/records/2026-08-18_pos-account-discount-sales-log]]
+
+### 2026-08-18 — Phone keyboard during camera scan
+**Change:** Camera scan no longer opens Android Gboard. Scan fields stay `inputMode=none` unless tapped to type; camera modals blur the wedge input. → [[problems/records/2026-08-18_scan-camera-software-keyboard]]
+
+### 2026-08-18 — Windows toast on barcode requests
+**Change:** Open Pyx tab sends a Windows notification when pending honey bottle or pouch/jar barcode requests increase. Turn on via banner or My Account. → [[problems/records/2026-08-18_barcode-request-desktop-notify]]
+
+### 2026-08-18 — Product-line view checkboxes stick after save
+**Change:** Unchecking View Paragis / BRC / Cacao / Honey Comb is no longer undone by “View finished products” / “View raw materials”. Those hub keys no longer imply every product line. → [[problems/records/2026-08-18_granular-user-permissions]]
+
+### 2026-08-18 — Permissions actually show in the sidebar
+**Change:** Sidebar no longer uses a fixed CSR/staff menu. Granted permission keys appear as nav items (e.g. Leak / damage for CSR TL). Must **Save permissions**, then that user hard-refreshes. → [[problems/records/2026-08-18_granular-user-permissions]]
+
+### 2026-08-18 — Leak/damage camera modal close
+**Change:** Camera scanner honors close (unmount + Close button). Leak/damage and unified POS were leaving it mounted. → [[problems/records/2026-08-18_leak-damage-unified-pos-sales-dates]]
+
+### 2026-08-18 — Leak/damage in Inventory sidebar
+**Change:** `Leak / damage` is an Inventory nav item (`/inventory/leak-damage`) plus a Honey Packaging shortcut. → [[problems/records/2026-08-18_leak-damage-unified-pos-sales-dates]]
+
+### 2026-08-18 — Sidebar barcode request badges
+**Change:** Red count pills on Inventory / Raw Materials for pending bottle and pouch/jar barcode requests (Paragis, BRC, Cacao, Honey Comb). Requests nav badge for PM/HR. → [[problems/records/2026-08-18_sidebar-barcode-request-badges]]
+
+### 2026-08-18 — Granular user permissions
+**Change:** Per-user permission checkboxes in Staff Management (collapsible groups, shield icon). Product lines are separate groups: Honey, Paragis, Black Rice Coffee, Jar Cacao, Honey Comb. PHP API + SPA routes/sidebar enforce `can()`/`ims_user_can()`. New accounts default to zero permissions; backfill preserves existing staff. → [[problems/records/2026-08-18_granular-user-permissions]]
+
+### 2026-08-18 — Leak/damage scan, Sales dates, unified POS
+**Change:** Unified leak/damage scan for all sticker products (Leaked/Damaged reason, phase 63 log). Sales page adds Pick date + Custom range. POS at `/pos` is scan-first with auto product detect and manual line prices; mixed honey/dept checkout. → [[problems/records/2026-08-18_leak-damage-unified-pos-sales-dates]]
+
 ### 2026-08-15 — Day total counters on scan-in reports
 **Change:** Selected-day scan reports show a total counter — one scanned total for Paragis / BRC / Cacao / Comb, and a per-variant list (with size breakdown) for liquid honey. Hidden on All dates. API fields `scanned_total` / `totals.by_variant`. → [[problems/records/2026-08-15_daily-scan-in-report]]
 

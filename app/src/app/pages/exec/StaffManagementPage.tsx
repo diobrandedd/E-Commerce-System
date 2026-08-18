@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, BookOpen, Plus, Search, Edit2, ToggleLeft, ToggleRight, KeyRound, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, BookOpen, Plus, Search, Edit2, ToggleLeft, ToggleRight, KeyRound, AlertCircle, Loader2, Shield } from "lucide-react";
+import { StaffPermissionsModal } from "@/app/components/exec/StaffPermissionsModal";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { StaffManagementGuideModal } from "@/app/components/exec/StaffManagementGuideModal";
@@ -32,6 +33,7 @@ interface StaffUser {
   dept_name: string | null;
   is_active: boolean;
   created_at: string;
+  permission_count?: number;
 }
 
 interface StaffOption { id: number; name: string }
@@ -112,6 +114,8 @@ export function StaffManagementPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const [sortKey, setSortKey] = useState<StaffSortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [permUser, setPermUser] = useState<StaffUser | null>(null);
+  const [pendingPermUserId, setPendingPermUserId] = useState<number | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -323,6 +327,11 @@ export function StaffManagementPage() {
                     <td className="px-6 py-3.5">
                       <p className="font-medium text-foreground">{s.name}</p>
                       <p className="text-xs text-muted-foreground">{s.username}</p>
+                      {s.role !== "executive" && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {s.permission_count ?? 0} permission{(s.permission_count ?? 0) === 1 ? "" : "s"}
+                        </p>
+                      )}
                     </td>
                     <td className="px-5 py-3.5">
                       <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${ROLE_COLORS[s.role] ?? "bg-gray-100 text-gray-700"}`}>
@@ -338,6 +347,13 @@ export function StaffManagementPage() {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setPermUser(s)}
+                          className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                          title="Permissions"
+                        >
+                          <Shield size={14} />
+                        </button>
                         <button
                           onClick={() => setEditing(s)}
                           className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
@@ -385,6 +401,37 @@ export function StaffManagementPage() {
             await refresh();
             setTimeout(() => setNotice(null), 3500);
           }}
+          onCreated={(id) => setPendingPermUserId(id)}
+        />
+      )}
+
+      {permUser && (
+        <StaffPermissionsModal
+          userId={permUser.id}
+          userName={permUser.name}
+          userRole={permUser.role}
+          onClose={() => setPermUser(null)}
+          onSaved={async (msg) => {
+            setNotice(msg);
+            setPermUser(null);
+            await refresh();
+            setTimeout(() => setNotice(null), 3500);
+          }}
+        />
+      )}
+
+      {pendingPermUserId !== null && !creating && !editing && (
+        <StaffPermissionsModal
+          userId={pendingPermUserId}
+          userName={users.find(u => u.id === pendingPermUserId)?.name ?? "New user"}
+          userRole={users.find(u => u.id === pendingPermUserId)?.role ?? "staff"}
+          onClose={() => setPendingPermUserId(null)}
+          onSaved={async (msg) => {
+            setNotice(msg);
+            setPendingPermUserId(null);
+            await refresh();
+            setTimeout(() => setNotice(null), 3500);
+          }}
         />
       )}
 
@@ -407,6 +454,7 @@ function StaffModal({
   departments,
   onClose,
   onSaved,
+  onCreated,
 }: {
   mode: "create" | "edit";
   user: StaffUser | null;
@@ -414,6 +462,7 @@ function StaffModal({
   departments: StaffOption[];
   onClose: () => void;
   onSaved: (msg: string) => void;
+  onCreated?: (userId: number) => void;
 }) {
   const [form, setForm] = useState<FormState>(
     user
@@ -447,8 +496,9 @@ function StaffModal({
         is_active: Number(form.is_active),
       };
       if (mode === "create") {
-        await apiPost("staff.php", "create", payload);
-        onSaved("User created. Default password is the employee ID.");
+        const res = await apiPost<{ id: number }>("staff.php", "create", payload);
+        onSaved("User created with no permissions. Grant access in Permissions.");
+        if (res?.id) onCreated?.(res.id);
       } else {
         await apiPost("staff.php", "update", payload);
         onSaved("User updated.");
@@ -498,6 +548,11 @@ function StaffModal({
               ))}
             </select>
             {!needsDept(form.role) && <p className="text-[11px] text-muted-foreground mt-1">Only required for Team Leader / Staff.</p>}
+            {mode === "create" && (
+              <p className="text-[11px] text-amber-700 mt-2">
+                New users start with zero permissions. After create, the permissions editor opens so you can grant access.
+              </p>
+            )}
           </Field>
           <Field label="Status">
             <select value={form.is_active} onChange={e => set("is_active", e.target.value)} className={inputCls}>

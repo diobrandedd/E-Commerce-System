@@ -29,11 +29,11 @@ const FILTER_CHIPS: { id: StockFilter; label: string }[] = [
 ];
 
 export function SuppliesMaterialsPage() {
-  const { user } = useAuth();
-  const isExec = user?.role === "executive";
-  const isHr = user?.role === "hr";
-  const canCreateCatalog = isExec || isHr;
-  const canIssueRequest = isExec || isHr;
+  const { user, can } = useAuth();
+  const isExec = can("supplies.catalog");
+  const isHr = can("supplies.request") && !can("supplies.catalog");
+  const canCreateCatalog = can("supplies.catalog");
+  const canIssueRequest = can("supplies.issue") || can("supplies.request");
   const { refresh: refreshNotifications } = useCorrectionNotifications();
   const [items, setItems] = useState<MaterialStockRow[]>([]);
   const [loading, setLoading] = useState(true);

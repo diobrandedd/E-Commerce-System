@@ -1,7 +1,7 @@
 ---
 title: honey_parcel_item_parser
 source: includes/honey_parcel_item_parser.php
-generated: 2026-08-15T10:54:24+02:00
+generated: 2026-08-18T09:59:12+02:00
 type: module
 function_count: 17
 ---
@@ -42,8 +42,8 @@ function_count: 17
 - `api/v1/parcels.php`:166 — `$parsed = honey_parcel_parse_items_string($items);`
 - `includes/historical_orders_import.php`:325 — `$parsed = honey_parcel_parse_items_string($raw);`
 - `includes/honey_parcel_inventory.php`:23 — `$parsed = honey_parcel_parse_items_string($itemsRaw);`
-- `includes/online_order_parcels.php`:279 — `$parsed = honey_parcel_parse_items_string($itemsRaw);`
-- `includes/online_order_parcels.php`:949 — `$parsed = honey_parcel_parse_items_string($itemsRaw);`
+- `includes/online_order_parcels.php`:278 — `$parsed = honey_parcel_parse_items_string($itemsRaw);`
+- `includes/online_order_parcels.php`:948 — `$parsed = honey_parcel_parse_items_string($itemsRaw);`
 - `includes/parcel_pack_costing.php`:380 — `$parsed = honey_parcel_parse_items_string($itemsRaw);`
 - `includes/parcel_pack_costing.php`:638 — `$parsed = honey_parcel_parse_items_string($itemsRaw);`
 - `includes/rts_prefill.php`:88 — `$parsed = honey_parcel_parse_items_string($itemsRaw);`

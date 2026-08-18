@@ -36,20 +36,19 @@ api_dispatch([
     'sync_status' => 'api_rts_sync_status_action',
 ]);
 
-function api_rts_role_allowed(string $role): bool
+function api_rts_role_allowed(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'tl', 'team_leader', 'staff', 'hr', 'csr_tl', 'csr_staff'], true);
+    return ims_user_can($user, 'rts.view');
 }
 
-function api_rts_role_can_mutate(string $role): bool
+function api_rts_role_can_mutate(array $user): bool
 {
-    // Use RTS (packing-area deduct) — floor + exec oversight
-    return in_array($role, ['executive', 'prod_manager', 'tl', 'team_leader', 'staff'], true);
+    return ims_user_can($user, 'rts.record');
 }
 
-function api_rts_role_can_use_damaged(string $role): bool
+function api_rts_role_can_use_damaged(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'tl', 'team_leader'], true);
+    return ims_user_can($user, 'rts.damaged.use');
 }
 
 function rts_inventory_pool_sql(PDO $pdo, string $pool): string
@@ -61,7 +60,7 @@ function api_rts_pool(): void
 {
     api_method_allowed(['GET']);
     $user = api_require_ims_user();
-    if (!api_rts_role_allowed((string) $user['role'])) {
+    if (!api_rts_role_allowed($user)) {
         api_fail('Forbidden.', 403);
     }
     $pdo = ims_pdo();
@@ -91,7 +90,7 @@ function api_rts_recent(): void
 {
     api_method_allowed(['GET']);
     $user = api_require_ims_user();
-    if (!api_rts_role_allowed((string) $user['role'])) {
+    if (!api_rts_role_allowed($user)) {
         api_fail('Forbidden.', 403);
     }
     $pdo = ims_pdo();
@@ -129,7 +128,7 @@ function api_rts_inventory_list(): void
 {
     api_method_allowed(['GET']);
     $user = api_require_ims_user();
-    if (!api_rts_role_allowed((string) $user['role'])) {
+    if (!api_rts_role_allowed($user)) {
         api_fail('Forbidden.', 403);
     }
     $pdo = ims_pdo();
@@ -162,10 +161,10 @@ function api_rts_inventory_list(): void
             'inventory_row_count' => $lineRowCount,
             'inventory_line_count' => $lineRowCount,
         ],
-        'readonly' => !api_rts_role_can_mutate((string) $user['role']) && (string) $user['role'] !== 'executive',
-        'can_mutate' => api_rts_role_can_mutate((string) $user['role']),
-        'can_use_damaged' => api_rts_role_can_use_damaged((string) $user['role']),
-        'can_executive_edit' => (string) $user['role'] === 'executive',
+        'readonly' => !api_rts_role_can_mutate($user) && !ims_user_can($user, 'rts.admin'),
+        'can_mutate' => api_rts_role_can_mutate($user),
+        'can_use_damaged' => api_rts_role_can_use_damaged($user),
+        'can_executive_edit' => ims_user_can($user, 'honey.executive_edit'),
         'pool' => $pool,
     ]);
 }
@@ -176,7 +175,7 @@ function api_rts_use_damaged(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_ims_user();
-    if (!api_rts_role_can_use_damaged((string) $user['role'])) {
+    if (!api_rts_role_can_use_damaged($user)) {
         api_fail('Forbidden.', 403);
     }
     try {
@@ -197,7 +196,7 @@ function api_rts_damaged_use_log(): void
 {
     api_method_allowed(['GET']);
     $user = api_require_ims_user();
-    if (!api_rts_role_allowed((string) $user['role'])) {
+    if (!api_rts_role_allowed($user)) {
         api_fail('Forbidden.', 403);
     }
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 100;
@@ -210,7 +209,7 @@ function api_rts_inventory_deduct_sell(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_ims_user();
-    if (!api_rts_role_can_mutate((string) $user['role'])) {
+    if (!api_rts_role_can_mutate($user)) {
         api_fail('Forbidden.', 403);
     }
     try {
@@ -270,7 +269,7 @@ function api_rts_inventory_use_log(): void
 {
     api_method_allowed(['GET']);
     $user = api_require_ims_user();
-    if (!api_rts_role_allowed((string) $user['role'])) {
+    if (!api_rts_role_allowed($user)) {
         api_fail('Forbidden.', 403);
     }
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 100;
@@ -289,7 +288,7 @@ function api_rts_inventory_set_honey(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('rts.inventory.set');
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
@@ -315,7 +314,7 @@ function api_rts_inventory_set_other(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('rts.inventory.set');
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {

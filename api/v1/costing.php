@@ -48,10 +48,10 @@ api_dispatch([
 function api_costing_stocks_list(): void
 {
     api_method_allowed(['GET']);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('costing.manage');
     $role = (string) $user['role'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-    $canViewAll = api_costing_can_view_all($role);
+    $canViewAll = api_costing_can_view_all($user);
     if (!$canViewAll && $userDeptId < 1) {
         api_fail('Your account has no department assigned.', 400);
     }
@@ -104,18 +104,18 @@ function api_costing_stocks_list(): void
     }
     api_ok([
         'stocks' => $rows,
-        'show_pricing' => api_costing_show_pricing($role),
-        'can_edit_stocks' => api_costing_can_edit_stocks($role),
+        'show_pricing' => api_costing_show_pricing($user),
+        'can_edit_stocks' => api_costing_can_edit_stocks($user),
     ]);
 }
 
 function api_costing_products_list(): void
 {
     api_method_allowed(['GET']);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('costing.manage');
     $role = (string) $user['role'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-    $canViewAll = api_costing_can_view_all($role);
+    $canViewAll = api_costing_can_view_all($user);
     if (!$canViewAll && $userDeptId < 1) {
         api_fail('Your account has no department assigned.', 400);
     }
@@ -167,8 +167,8 @@ function api_costing_products_list(): void
     }
     api_ok([
         'products' => $products,
-        'show_pricing' => api_costing_show_pricing($role),
-        'can_manage_products' => api_costing_can_manage_products($role),
+        'show_pricing' => api_costing_show_pricing($user),
+        'can_manage_products' => api_costing_can_manage_products($user),
         'parcel_ready' => parcel_pack_tables_ready($pdo),
     ]);
 }
@@ -176,10 +176,10 @@ function api_costing_products_list(): void
 function api_costing_product_view(): void
 {
     api_method_allowed(['GET', 'POST']);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('costing.manage');
     $role = (string) $user['role'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-    $canViewAll = api_costing_can_view_all($role);
+    $canViewAll = api_costing_can_view_all($user);
     if (!$canViewAll && $userDeptId < 1) {
         api_fail('Your account has no department assigned.', 400);
     }
@@ -190,7 +190,7 @@ function api_costing_product_view(): void
     }
 
     $pdo = ims_pdo();
-    $detail = api_costing_build_product_detail($pdo, $productId, $canViewAll, $userDeptId, api_costing_show_pricing($role));
+    $detail = api_costing_build_product_detail($pdo, $productId, $canViewAll, $userDeptId, api_costing_show_pricing($user));
     api_ok($detail);
 }
 
@@ -199,7 +199,7 @@ function api_costing_stock_update_price(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('costing.manage');
 
     $stockId = (int) ($input['stock_id'] ?? 0);
     $stockName = trim((string) ($input['name'] ?? ''));
@@ -262,10 +262,10 @@ function api_costing_product_create(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('costing.manage');
     $role = (string) $user['role'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-    $canViewAll = api_costing_can_view_all($role);
+    $canViewAll = api_costing_can_view_all($user);
     $canEditPricing = true;
 
     $name = trim((string) ($input['name'] ?? ''));
@@ -315,7 +315,7 @@ function api_costing_product_update_selling_price(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('costing.manage');
 
     $productId = (int) ($input['product_id'] ?? 0);
     $sellingRaw = trim((string) ($input['selling_price'] ?? ''));
@@ -350,10 +350,10 @@ function api_costing_formula_mutate(string $action): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('costing.manage');
     $role = (string) $user['role'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-    $canViewAll = api_costing_can_view_all($role);
+    $canViewAll = api_costing_can_view_all($user);
 
     $productId = (int) ($input['product_id'] ?? 0);
     if ($productId < 1) {
@@ -463,7 +463,7 @@ function api_costing_formula_mutate(string $action): void
         api_fail($e->getMessage(), 400);
     }
 
-    $detail = api_costing_build_product_detail($pdo, $productId, $canViewAll, $userDeptId, api_costing_show_pricing($role));
+    $detail = api_costing_build_product_detail($pdo, $productId, $canViewAll, $userDeptId, api_costing_show_pricing($user));
     api_ok($detail);
 }
 
@@ -485,7 +485,7 @@ function api_costing_formula_delete(): void
 function api_costing_parcel_tiers_list(): void
 {
     api_method_allowed(['GET']);
-    api_require_role(['executive']);
+    api_require_permission('costing.manage');
     $pdo = ims_pdo();
     if (!parcel_pack_tables_ready($pdo)) {
         api_ok(['tiers' => [], 'ready' => false]);
@@ -501,7 +501,7 @@ function api_costing_parcel_tier_line_save(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('costing.manage');
     $pdo = ims_pdo();
     if (!parcel_pack_tables_ready($pdo)) {
         api_fail('Parcel pack costing tables are not installed.', 503);
@@ -559,7 +559,7 @@ function api_costing_parcel_tier_line_delete(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('costing.manage');
     $pdo = ims_pdo();
     if (!parcel_pack_tables_ready($pdo)) {
         api_fail('Parcel pack costing tables are not installed.', 503);
@@ -581,7 +581,7 @@ function api_costing_parcel_tier_line_delete(): void
 function api_costing_parcel_cost_preview(): void
 {
     api_method_allowed(['GET', 'POST']);
-    api_require_role(['executive']);
+    api_require_permission('costing.manage');
     $pdo = ims_pdo();
     if (!parcel_pack_tables_ready($pdo)) {
         api_fail('Parcel pack costing tables are not installed.', 503);

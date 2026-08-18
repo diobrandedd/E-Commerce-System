@@ -13,7 +13,7 @@ api_dispatch([
 
 function api_pos_discounts_require_exec(): array
 {
-    return api_require_role(['executive']);
+    return api_require_permission('pos.discounts.approve');
 }
 
 function api_pos_discounts_list(): void

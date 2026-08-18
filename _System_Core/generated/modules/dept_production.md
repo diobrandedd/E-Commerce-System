@@ -1,7 +1,7 @@
 ---
 title: dept_production
 source: includes/dept_production.php
-generated: 2026-08-15T10:54:14+02:00
+generated: 2026-08-18T09:59:03+02:00
 type: module
 function_count: 29
 ---
@@ -101,8 +101,8 @@ function_count: 29
 **Callers (4):**
 
 - `includes/dept_production.php`:375 — `$res = dept_packaging_deduct($pdo, $stockId, (float) $line['qty'], $userId, $label);`
-- `includes/honey_inventory.php`:518 — `$res = dept_packaging_deduct($pdo, $stockId, $qty, $userId, 'bottling: ' . substr($label, 0, 100));`
-- `includes/honey_inventory.php`:533 — `$res = dept_packaging_deduct($pdo, $stickerId, $totalBottles, $userId, 'bottling: ' . substr($label, 0, 100));`
+- `includes/honey_inventory.php`:517 — `$res = dept_packaging_deduct($pdo, $stockId, $qty, $userId, 'bottling: ' . substr($label, 0, 100));`
+- `includes/honey_inventory.php`:532 — `$res = dept_packaging_deduct($pdo, $stickerId, $totalBottles, $userId, 'bottling: ' . substr($label, 0, 100));`
 - `includes/rts_damaged_use.php`:140 — `$res = dept_packaging_deduct($pdo, $stockId, $bottleCount, $userId, $label);`
 
 ## dept_production_apply_deduct_lines {#dept_production_apply_deduct_lines}
@@ -183,7 +183,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:937 — `api_ok(dept_production_list_entries(ims_pdo(), $productKey, $action, $date, $page, $perPage));`
+- `api/v1/honey.php`:941 — `api_ok(dept_production_list_entries(ims_pdo(), $productKey, $action, $date, $page, $perPage));`
 
 ## dept_production_daily_totals {#dept_production_daily_totals}
 
@@ -191,13 +191,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:935 — `api_ok(dept_production_daily_totals(ims_pdo(), $productKey, $action, $date, $page, $perPage));`
+- `api/v1/honey.php`:939 — `api_ok(dept_production_daily_totals(ims_pdo(), $productKey, $action, $date, $page, $perPage));`
 
 ## dept_production_record_daily {#dept_production_record_daily}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:953 — `$result = dept_production_record_daily(`
+- `api/v1/honey.php`:957 — `$result = dept_production_record_daily(`
 
 ## dept_production_cost_only_lines {#dept_production_cost_only_lines}
 
@@ -209,19 +209,19 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:905 — `$preview = dept_production_preview_lines(ims_pdo(), $productKey, $action, $qty);`
+- `api/v1/honey.php`:909 — `$preview = dept_production_preview_lines(ims_pdo(), $productKey, $action, $qty);`
 
 ## dept_pt_use_raw_bags {#dept_pt_use_raw_bags}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:800 — `$result = dept_pt_use_raw_bags($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+- `api/v1/honey.php`:804 — `$result = dept_pt_use_raw_bags($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
 
 ## dept_pt_make_tea_bags {#dept_pt_make_tea_bags}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:822 — `$result = dept_pt_make_tea_bags($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
+- `api/v1/honey.php`:826 — `$result = dept_pt_make_tea_bags($pdo, (int) $user['id'], $qty, $note !== '' ? $note : null);`
 
 ## dept_pt_pouch {#dept_pt_pouch}
 
@@ -235,7 +235,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:880 — `$result = dept_wip_waste_tea_bags($pdo, (int) $user['id'], $qty, $reason !== '' ? $reason : null);`
+- `api/v1/honey.php`:884 — `$result = dept_wip_waste_tea_bags($pdo, (int) $user['id'], $qty, $reason !== '' ? $reason : null);`
 
 ## dept_brc_produce_pouches {#dept_brc_produce_pouches}
 
@@ -249,7 +249,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:706 — `$snapshot = dept_raw_detail_enriched(ims_pdo(), $slug);`
+- `api/v1/honey.php`:710 — `$snapshot = dept_raw_detail_enriched(ims_pdo(), $slug);`
 
 ## dept_jar_produce {#dept_jar_produce}
 

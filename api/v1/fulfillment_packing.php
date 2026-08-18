@@ -9,7 +9,7 @@ function api_fulfillment_packing_assert_issue(): array
 {
     $user = api_require_ims_user();
     $role = (string) $user['role'];
-    if (!material_inventory_role_can_issue_packing($role)) {
+    if (!material_inventory_role_can_issue_packing($user)) {
         api_fail('Forbidden.', 403);
     }
 

@@ -23,9 +23,9 @@ const peso = (n: number) =>
 
 export function HoneyWarehousePage() {
   const { user } = useAuth();
-  const canMutate = canMutateHoneyPipeline(user?.role);
-  const canExecEdit = canExecutiveDirectEdit(user?.role);
-  const showSupplierProfile = canViewSupplierProfile(user?.role);
+  const canMutate = canMutateHoneyPipeline(user);
+  const canExecEdit = canExecutiveDirectEdit(user);
+  const showSupplierProfile = canViewSupplierProfile(user);
   const [rows, setRows] = useState<WhRow[]>([]);
   const [page, setPage] = useState(1);
   const perPage = 12;

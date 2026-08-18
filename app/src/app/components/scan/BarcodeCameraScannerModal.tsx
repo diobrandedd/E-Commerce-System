@@ -7,6 +7,7 @@ import { AppErrorBanner } from "@/app/components/layout/appFeedbackMotion";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/app/components/ui/utils";
 import { decodeBarcodeFrame, preloadBarcodeDecoder } from "@/app/lib/barcodeDecoder";
+import { useDismissSoftwareKeyboard } from "@/app/lib/scanWedgeField";
 import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
 
 type ScanPhase = "idle" | "starting" | "scanning" | "error";
@@ -35,22 +36,28 @@ function describeCameraError(e: unknown): string {
  * Code 128 on iOS Safari where html5-qrcode's JS decoder does not.
  */
 export function BarcodeCameraScannerModal({
+  open = true,
   onClose,
   title,
   titleId,
   onDecoded,
+  onDecode,
   continuous = false,
   scanPrompt = "Point at one barcode",
   zIndex,
 }: {
+  open?: boolean;
   onClose: () => void;
   title: string;
   titleId: string;
-  onDecoded: (decoded: string) => void | ScannerDecodeFeedback | Promise<void | ScannerDecodeFeedback>;
+  onDecoded?: (decoded: string) => void | ScannerDecodeFeedback | Promise<void | ScannerDecodeFeedback>;
+  /** @deprecated use `onDecoded` */
+  onDecode?: (decoded: string) => void | ScannerDecodeFeedback | Promise<void | ScannerDecodeFeedback>;
   continuous?: boolean;
   scanPrompt?: string;
   zIndex?: string;
 }) {
+  const decodeHandler = onDecoded ?? onDecode;
   const reduceMotion = useReducedMotion();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -62,8 +69,8 @@ export function BarcodeCameraScannerModal({
   const decodingRef = useRef(false);
   const lastDecodeRef = useRef<{ code: string; at: number } | null>(null);
   const facingRef = useRef<"environment" | "user">("environment");
-  const onDecodedRef = useRef(onDecoded);
-  onDecodedRef.current = onDecoded;
+  const onDecodedRef = useRef(decodeHandler);
+  onDecodedRef.current = decodeHandler;
 
   const [phase, setPhase] = useState<ScanPhase>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +79,8 @@ export function BarcodeCameraScannerModal({
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
   const [multiCamera, setMultiCamera] = useState(false);
+  const focusSinkRef = useRef<HTMLDivElement>(null);
+  useDismissSoftwareKeyboard(open, focusSinkRef);
 
   const stopStream = useCallback(() => {
     if (timerRef.current !== null) {
@@ -115,7 +124,7 @@ export function BarcodeCameraScannerModal({
         processingRef.current = true;
         lastDecodeRef.current = { code: text, at: now };
         setProcessing(true);
-        void Promise.resolve(onDecodedRef.current(text))
+        void Promise.resolve(onDecodedRef.current?.(text))
           .then(result => {
             if (aliveRef.current && result) setDecodeFeedback(result);
           })
@@ -133,7 +142,7 @@ export function BarcodeCameraScannerModal({
       decodedRef.current = true;
       stopStream();
       onClose();
-      void onDecodedRef.current(text);
+      void onDecodedRef.current?.(text);
     },
     [continuous, onClose, stopStream],
   );
@@ -260,15 +269,21 @@ export function BarcodeCameraScannerModal({
   }, [onClose, stopStream]);
 
   useEffect(() => {
+    if (!open) {
+      aliveRef.current = false;
+      stopStream();
+      return;
+    }
     aliveRef.current = true;
     decodedRef.current = false;
+    lastDecodeRef.current = null;
     void start("environment");
     return () => {
       aliveRef.current = false;
       stopStream();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [open]);
 
   const flipCamera = () => {
     void start(facingRef.current === "environment" ? "user" : "environment");
@@ -288,6 +303,8 @@ export function BarcodeCameraScannerModal({
 
   const live = phase === "scanning" || phase === "starting";
 
+  if (!open) return null;
+
   return createPortal(
     <AppModal
       open
@@ -300,6 +317,7 @@ export function BarcodeCameraScannerModal({
     >
       <AppModalHeader title={title} titleId={titleId} onClose={handleClose} />
       <AppModalBody className="space-y-4">
+        <div ref={focusSinkRef} tabIndex={-1} className="h-0 w-0 overflow-hidden outline-none" />
         <AppErrorBanner message={error} />
         <AnimatePresence mode="wait">
           {decodeFeedback ? (
@@ -366,14 +384,19 @@ export function BarcodeCameraScannerModal({
 
         <div className="flex flex-wrap gap-2">
           {phase === "idle" || phase === "error" ? (
-            <Button
-              type="button"
-              className="flex-1 min-w-[10rem] gap-2"
-              onClick={() => void start(facingRef.current)}
-            >
-              <Camera size={16} />
-              {phase === "error" ? "Retry camera" : "Start camera"}
-            </Button>
+            <>
+              <Button
+                type="button"
+                className="flex-1 min-w-[10rem] gap-2"
+                onClick={() => void start(facingRef.current)}
+              >
+                <Camera size={16} />
+                {phase === "error" ? "Retry camera" : "Start camera"}
+              </Button>
+              <Button type="button" variant="outline" className="min-w-[6rem]" onClick={handleClose}>
+                Close
+              </Button>
+            </>
           ) : null}
           {phase === "scanning" ? (
             <>

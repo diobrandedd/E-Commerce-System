@@ -21,7 +21,7 @@ function api_bottle_require_csrf(): void
 function api_bottle_require_request(): array
 {
     $user = api_bottle_require_user();
-    if (!honey_bottle_can_request((string) $user['role'])) {
+    if (!honey_bottle_can_request($user)) {
         api_fail('Forbidden.', 403);
     }
 
@@ -41,7 +41,7 @@ function api_bottle_require_generate(): array
 function api_bottle_require_scan(): array
 {
     $user = api_bottle_require_user();
-    if (!honey_bottle_can_scan((string) $user['role'])) {
+    if (!honey_bottle_can_scan($user)) {
         api_fail('Forbidden.', 403);
     }
 
@@ -151,7 +151,7 @@ function api_bottle_create_custom_packaging(): void
     // Honey staff (request) and CSR/exec (generate) both need this when old lots are gone.
     $user = api_bottle_require_user();
     $role = (string) $user['role'];
-    if (!honey_bottle_can_request($role) && !honey_bottle_user_can_generate($user)) {
+    if (!honey_bottle_can_request($user) && !honey_bottle_user_can_generate($user)) {
         api_fail('Forbidden.', 403);
     }
     $in = api_input();
@@ -228,7 +228,10 @@ function api_bottle_request_cancel(): void
 function api_bottle_pending_count(): void
 {
     api_method_allowed(['GET']);
-    api_bottle_require_generate();
+    $user = api_bottle_require_user();
+    if (!honey_bottle_can_generate($user) && !honey_bottle_can_request($user)) {
+        api_fail('Forbidden.', 403);
+    }
     api_ok(['count' => honey_bottle_pending_request_count(ims_pdo())]);
 }
 

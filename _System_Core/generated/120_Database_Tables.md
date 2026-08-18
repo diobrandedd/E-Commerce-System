@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-08-15T10:54:05+02:00
+generated: 2026-08-18T09:58:55+02:00
 type: memory-bank
-table_count: 79
+table_count: 81
 ---
 
 
@@ -130,6 +130,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/staff.php` | [[modules/staff#api_staff_list]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_create]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_update]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_permissions_get]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_permissions_set]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 
@@ -150,6 +152,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/reports.php` | [[modules/reports#api_reports_stock_movement]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_list]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_permissions_get]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_departments]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
@@ -168,6 +171,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_user_is_csr_dept]] |
+| `includes/permissions.php` | [[modules/permissions#ims_user_dept_key]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_deduct_cap_seals]] |
 | `includes/waybill_stamper.php` | [[modules/waybill_stamper#waybill_stamper_user_is_csr_dept]] |
 
@@ -186,6 +190,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/staff.php` | [[modules/staff#api_staff_create]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_update]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_reset_password]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_permissions_get]] |
+| `api/v1/staff.php` | [[modules/staff#api_staff_permissions_set]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_list]] |
@@ -203,6 +209,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_defect_history]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_list_entries]] |
+| `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_history]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_get]] |
@@ -213,6 +220,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_list]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
@@ -231,6 +239,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/settings.php` | [[modules/settings#api_settings_pos_pin_update]] |
 | `api/v1/settings.php` | [[modules/settings#api_settings_pos_pin_create]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_pos]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
 
 ## `stocks`
@@ -368,11 +377,14 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_build_cart_lines]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_product_map]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_product_exists_clause]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_checkout_where_clause]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_product_unit_cogs]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
+| `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_resolve_honey_product]] |
+| `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_resolve_dept_product]] |
 
 ## `product_formula`
 
@@ -449,6 +461,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_decline]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_fetch_for_pin]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
+| `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_checkout]] |
 
 ## `csr_online_batches`
 
@@ -714,6 +727,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/barcode_verify.php` | [[modules/barcode_verify#barcode_verify_lookup_honey]] |
+| `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_scan_honey]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_list]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_generate_batch]] |
@@ -731,6 +745,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/barcode_verify.php` | [[modules/barcode_verify#barcode_verify_lookup_honey]] |
+| `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_scan_honey]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_list]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_generate_batch]] |
@@ -752,6 +767,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/barcode_verify.php` | [[modules/barcode_verify#barcode_verify_lookup_honey]] |
+| `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_scan_honey]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_void_code]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_fetch_code_row]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_log]] |
@@ -767,6 +783,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_stock_summary]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
+| `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_build_cart_lines]] |
 
 ## `honey_bottle_pack_sessions`
 
@@ -831,6 +848,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
+| `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_checkout]] |
+| `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_ar_checkout]] |
 
 ## `pos_receipt_items`
 
@@ -841,10 +860,13 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_ar_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_ar_checkout]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_product_exists_clause]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_checkout_where_clause]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
+| `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_checkout]] |
+| `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_ar_checkout]] |
 
 ## `ar_credits`
 
@@ -896,8 +918,22 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
-| `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_defect_scan]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_defect_history]] |
+
+## `finished_unit_leak_damage_log`
+
+| File | Function |
+|------|----------|
+| `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_scan_honey]] |
+| `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_scan_dept]] |
+| `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_history]] |
+
+## `user_permissions`
+
+| File | Function |
+|------|----------|
+| `includes/permissions.php` | [[modules/permissions#ims_user_permissions]] |
+| `includes/permissions.php` | [[modules/permissions#ims_user_permissions_set]] |
 
 ## `honey_warehouse_rows`
 

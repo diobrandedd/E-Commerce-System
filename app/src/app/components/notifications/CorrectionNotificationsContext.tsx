@@ -59,9 +59,9 @@ const POLL_MS = 15000;
 const CorrectionNotificationsContext = createContext<CorrectionNotificationsContextValue | null>(null);
 
 export function CorrectionNotificationsProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { can } = useAuth();
   const location = useLocation();
-  const isExec = user?.role === "executive";
+  const isExec = can("inventory.requests.approve") || can("honey.executive_edit");
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadList, setUnreadList] = useState<NotificationItem[]>([]);
 
@@ -71,36 +71,50 @@ export function CorrectionNotificationsProvider({ children }: { children: ReactN
       setUnreadList([]);
       return;
     }
-    try {
-      const [countRes, listRes, pendingDiscounts, pendingEdits, supplyUnread] = await Promise.all([
-        apiGet<{ count: number }>("honey.php", "correction_unread_count"),
-        apiGet<{ requests: UnreadCorrection[] }>("honey.php", "correction_unread_list", { limit: 10 }),
+    const settled = async <T,>(promise: Promise<T>, fallback: T): Promise<T> => {
+      try {
+        return await promise;
+      } catch {
+        return fallback;
+      }
+    };
+    const [countRes, listRes, pendingDiscounts, pendingEdits, supplyUnread] = await Promise.all([
+      settled(apiGet<{ count: number }>("honey.php", "correction_unread_count"), { count: 0 }),
+      settled(apiGet<{ requests: UnreadCorrection[] }>("honey.php", "correction_unread_list", { limit: 10 }), {
+        requests: [],
+      }),
+      settled(
         apiGet<{ rows: UnreadDiscountApproval[]; pending_count: number }>("pos_discounts.php", "list", {
           status: "pending",
           limit: "10",
         }),
-        apiGet<{ requests: UnreadEditRequest[] }>("edit_requests.php", "list", { status: "pending" }),
-        listUnreadMaterialRequests(10),
-      ]);
+        { rows: [], pending_count: 0 },
+      ),
+      settled(apiGet<{ requests: UnreadEditRequest[] }>("edit_requests.php", "list", { status: "pending" }), {
+        requests: [],
+      }),
+      settled(listUnreadMaterialRequests(10), { requests: [] }),
+    ]);
 
-      const correctionItems: NotificationItem[] = listRes.requests.map(r => ({ kind: "correction", ...r }));
-      const discountItems: NotificationItem[] = pendingDiscounts.rows.map(r => ({ kind: "discount_approval", ...r }));
-      const editItems: NotificationItem[] = pendingEdits.requests
-        .filter(r => r.status === "pending")
-        .slice(0, 10)
-        .map(r => ({ kind: "edit_request", ...r }));
-      const supplyItems: NotificationItem[] = supplyUnread.requests.map(r => ({ kind: "supply_request", ...r }));
-      const merged = [...correctionItems, ...supplyItems, ...discountItems, ...editItems].sort((a, b) =>
-        String(b.created_at).localeCompare(String(a.created_at)),
-      );
+    const correctionItems: NotificationItem[] = listRes.requests.map(r => ({ kind: "correction", ...r }));
+    const discountItems: NotificationItem[] = pendingDiscounts.rows.map(r => ({ kind: "discount_approval", ...r }));
+    const editItems: NotificationItem[] = pendingEdits.requests
+      .filter(r => r.status === "pending")
+      .slice(0, 10)
+      .map(r => ({ kind: "edit_request", ...r }));
+    const supplyItems: NotificationItem[] = supplyUnread.requests.map(r => ({ kind: "supply_request", ...r }));
+    const merged = [...correctionItems, ...supplyItems, ...discountItems, ...editItems].sort((a, b) =>
+      String(b.created_at).localeCompare(String(a.created_at)),
+    );
 
-      const editPendingCount = pendingEdits.requests.filter(r => r.status === "pending").length;
-      setUnreadCount((countRes.count ?? 0) + (pendingDiscounts.pending_count ?? 0) + editPendingCount);
-      setUnreadList(merged);
-    } catch {
-      setUnreadCount(0);
-      setUnreadList([]);
-    }
+    const editPendingCount = pendingEdits.requests.filter(r => r.status === "pending").length;
+    setUnreadCount(
+      (countRes.count ?? 0) +
+        (pendingDiscounts.pending_count ?? 0) +
+        editPendingCount +
+        supplyItems.length,
+    );
+    setUnreadList(merged);
   }, [isExec]);
 
   useEffect(() => {

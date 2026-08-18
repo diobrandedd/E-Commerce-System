@@ -15,17 +15,16 @@ api_dispatch([
     'deactivate' => 'api_suppliers_deactivate',
 ]);
 
-function api_suppliers_can_list(string $role): bool
+function api_suppliers_can_list(array $user): bool
 {
-    // Exec + PM manage and pick; dept TL picks for stock-in (honey pipeline / dept raw).
-    return in_array($role, ['executive', 'prod_manager', 'tl'], true);
+    return ims_user_can($user, 'suppliers.view');
 }
 
 function api_suppliers_list(): void
 {
     api_method_allowed(['GET']);
     $user = api_require_ims_user();
-    if (!api_suppliers_can_list((string) $user['role'])) {
+    if (!api_suppliers_can_list($user)) {
         api_fail('Forbidden.', 403);
     }
 
@@ -33,7 +32,7 @@ function api_suppliers_list(): void
     $active = isset($_GET['active']) ? ((string) $_GET['active'] === '1' || (string) $_GET['active'] === 'true') : null;
     $q = isset($_GET['q']) ? trim((string) $_GET['q']) : null;
 
-    $includePayment = (string) $user['role'] === 'executive';
+    $includePayment = ims_user_can($user, 'suppliers.manage');
     $rows = supplier_list(
         ims_pdo(),
         $category !== '' ? $category : null,
@@ -48,7 +47,7 @@ function api_suppliers_list(): void
 function api_suppliers_get(): void
 {
     api_method_allowed(['GET']);
-    api_require_role(['executive']);
+    api_require_permission('suppliers.manage');
     $id = (int) ($_GET['id'] ?? 0);
     $row = supplier_fetch(ims_pdo(), $id);
     if (!$row) {
@@ -60,7 +59,7 @@ function api_suppliers_get(): void
 function api_suppliers_get_by_code(): void
 {
     api_method_allowed(['GET']);
-    api_require_role(['executive']);
+    api_require_permission('suppliers.manage');
     $code = trim((string) ($_GET['code'] ?? ''));
     if ($code === '') {
         api_fail('Supplier code is required.', 422);
@@ -75,7 +74,7 @@ function api_suppliers_get_by_code(): void
 function api_suppliers_create(): void
 {
     api_method_allowed(['POST']);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('suppliers.manage');
     api_require_csrf($_POST);
     $file = $_FILES['valid_id'] ?? $_FILES['valid_id_photo'] ?? null;
     if (!is_array($file)) {
@@ -92,7 +91,7 @@ function api_suppliers_create(): void
 function api_suppliers_update(): void
 {
     api_method_allowed(['POST']);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('suppliers.manage');
     api_require_csrf($_POST);
     $id = (int) ($_POST['id'] ?? 0);
     $file = $_FILES['valid_id'] ?? $_FILES['valid_id_photo'] ?? null;
@@ -112,7 +111,7 @@ function api_suppliers_update(): void
 function api_suppliers_activate(): void
 {
     api_method_allowed(['POST']);
-    api_require_role(['executive']);
+    api_require_permission('suppliers.manage');
     $input = api_input();
     api_require_csrf($input);
     try {
@@ -126,7 +125,7 @@ function api_suppliers_activate(): void
 function api_suppliers_deactivate(): void
 {
     api_method_allowed(['POST']);
-    api_require_role(['executive']);
+    api_require_permission('suppliers.manage');
     $input = api_input();
     api_require_csrf($input);
     try {

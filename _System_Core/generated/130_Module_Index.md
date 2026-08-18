@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-08-15T10:53:39+02:00
+generated: 2026-08-18T09:58:55+02:00
 type: memory-bank
 ---
 
@@ -30,10 +30,11 @@ type: memory-bank
 | [[modules/delivery_edit_requests]] | 15 |
 | [[modules/dept_inventory]] | 17 |
 | [[modules/dept_pos]] | 5 |
-| [[modules/dept_pouch_barcodes]] | 32 |
+| [[modules/dept_pouch_barcodes]] | 33 |
 | [[modules/dept_pricing]] | 8 |
 | [[modules/dept_production]] | 29 |
 | [[modules/dept_products]] | 23 |
+| [[modules/finished_leak_damage]] | 8 |
 | [[modules/forwarding]] | 15 |
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 33 |
@@ -44,7 +45,7 @@ type: memory-bank
 | [[modules/honey_parcel_item_parser]] | 17 |
 | [[modules/honey_pos]] | 12 |
 | [[modules/honey_pricing]] | 19 |
-| [[modules/honey_sales_report]] | 10 |
+| [[modules/honey_sales_report]] | 13 |
 | [[modules/honey_volume]] | 8 |
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/inventory_edit_log]] | 3 |
@@ -57,7 +58,9 @@ type: memory-bank
 | [[modules/parcel_pack_costing]] | 37 |
 | [[modules/partner_sold_reconcile]] | 16 |
 | [[modules/pdf_to_excel]] | 15 |
+| [[modules/permissions]] | 18 |
 | [[modules/pos_discount_requests]] | 10 |
+| [[modules/pos_unified]] | 10 |
 | [[modules/qr_decode]] | 13 |
 | [[modules/rts_attachments]] | 6 |
 | [[modules/rts_case_handlers]] | 28 |

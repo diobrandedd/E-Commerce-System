@@ -22,12 +22,9 @@ api_dispatch([
     'pipeline_summary' => 'api_reports_pipeline_summary',
 ]);
 
-function api_reports_require(): void
+function api_reports_require(): array
 {
-    $user = api_require_ims_user();
-    if (!in_array((string) $user['role'], ['executive', 'prod_manager'], true)) {
-        api_fail('Forbidden.', 403);
-    }
+    return api_require_permission('reports.view');
 }
 
 function api_reports_stock_movement(): void

@@ -53,8 +53,8 @@ function applyBatchCountFromUpload(
 
 export function DeliveriesPage() {
   usePreloadQrScanner();
-  const { user } = useAuth();
-  const isExecutive = user?.role === "executive";
+  const { can } = useAuth();
+  const isExecutive = can("deliveries.delete");
   const today = new Date().toISOString().slice(0, 10);
   const [mode, setMode] = useState<DeliveryMode>("ship");
   const [deliveryDate, setDeliveryDate] = useState(today);

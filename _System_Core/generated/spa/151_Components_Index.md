@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-08-15T10:54:27+02:00
+generated: 2026-08-18T09:59:35+02:00
 type: spa
 ---
 
@@ -34,8 +34,10 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/csr/onlineOrders/ItemResolverCarousel.tsx`
 - `app/src/app/components/csr/orderRemarksMotion.tsx`
 - `app/src/app/components/dashboard/DashboardShippedSection.tsx`
+- `app/src/app/components/exec/StaffPermissionsModal.tsx`
 - `app/src/app/components/layout/appFeedbackMotion.tsx`
 - `app/src/app/components/layout/sidebarNavMotion.tsx`
+- `app/src/app/components/notifications/BarcodeDesktopAlertBanner.tsx`
 - `app/src/app/components/pos/POSReceiptView.tsx`
 - `app/src/app/components/pos/posMotion.tsx`
 - `app/src/app/components/requests/RequestsHubSection.tsx`
@@ -82,6 +84,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/honey/HoneyProductionPage.tsx`
 - `app/src/app/pages/honey/HoneyWarehousePage.tsx`
 - `app/src/app/pages/inventory/CacaoBrcHubPage.tsx`
+- `app/src/app/pages/inventory/FinishedLeakDamagePage.tsx`
 - `app/src/app/pages/inventory/MaterialsCategoryPage.tsx`
 - `app/src/app/pages/inventory/PackagingMaterialsPage.tsx`
 - `app/src/app/pages/inventory/RawDeptMaterialPage.tsx`
@@ -114,12 +117,14 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/pos/posMotion.tsx`
 - `app/src/app/pages/pos/POSDeptPage.tsx`
 - `app/src/app/pages/pos/POSHoneyPage.tsx`
+- `app/src/app/pages/pos/POSUnifiedPage.tsx`
 
 ## FeedbackBurst
 
 - `app/src/app/components/pos/posMotion.tsx`
 - `app/src/app/pages/pos/POSDeptPage.tsx`
 - `app/src/app/pages/pos/POSHoneyPage.tsx`
+- `app/src/app/pages/pos/POSUnifiedPage.tsx`
 
 ## ModalShell
 
@@ -138,6 +143,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/dept/DeptPouchScanLogModal.tsx`
 - `app/src/app/components/dept/DeptStockInModal.tsx`
 - `app/src/app/components/exec/StaffManagementGuideModal.tsx`
+- `app/src/app/components/exec/StaffPermissionsModal.tsx`
 - `app/src/app/components/fulfillment/CourierSoaGuideModal.tsx`
 - `app/src/app/components/fulfillment/DeliveriesAddGuideModal.tsx`
 - `app/src/app/components/fulfillment/DeliveriesCancelledGuideModal.tsx`

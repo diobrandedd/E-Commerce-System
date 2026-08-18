@@ -4,85 +4,98 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/dept_products.php';
 require_once __DIR__ . '/catalog_bootstrap.php';
+require_once __DIR__ . '/permissions.php';
 
 const MATERIAL_CATEGORIES = ['raw_material', 'packaging', 'supply', 'costing_only'];
 
-function material_inventory_role_can_view(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_view(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'hr'], true);
+    return ims_user_can($user, 'packaging.view') || ims_user_can($user, 'supplies.view');
 }
 
-function material_inventory_role_can_catalog(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_catalog(array $user): bool
 {
-    return $role === 'executive';
+    return ims_user_can($user, 'packaging.catalog');
 }
 
-function material_inventory_role_can_adjust(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_adjust(array $user): bool
 {
-    return $role === 'executive';
+    return ims_user_can($user, 'packaging.adjust');
 }
 
-function material_inventory_role_can_request(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_request(array $user): bool
 {
-    return $role === 'prod_manager' || $role === 'hr';
+    return ims_user_can($user, 'packaging.request') || ims_user_can($user, 'supplies.request');
 }
 
-function material_inventory_role_can_request_packaging(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_request_packaging(array $user): bool
 {
-    return $role === 'hr';
+    return ims_user_can($user, 'packaging.request');
 }
 
-function material_inventory_role_can_stock_in_packaging(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_stock_in_packaging(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'hr'], true);
+    return ims_user_can($user, 'packaging.stock_in');
 }
 
-function material_inventory_role_can_deduct_packaging(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_deduct_packaging(array $user): bool
 {
-    return $role === 'executive' || $role === 'prod_manager';
+    return ims_user_can($user, 'packaging.deduct');
 }
 
-function material_inventory_role_can_set_packaging_on_hand(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_set_packaging_on_hand(array $user): bool
 {
-    return $role === 'executive';
+    return ims_user_can($user, 'packaging.set_on_hand');
 }
 
 /** @deprecated use material_inventory_role_can_set_packaging_on_hand */
-function material_inventory_role_can_set_packaging(string $role): bool
+function material_inventory_role_can_set_packaging(array $user): bool
 {
-    return material_inventory_role_can_set_packaging_on_hand($role);
+    return material_inventory_role_can_set_packaging_on_hand($user);
 }
 
-function material_inventory_role_can_stock_in_supply(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_stock_in_supply(array $user): bool
 {
-    return $role === 'executive' || $role === 'hr';
+    return ims_user_can($user, 'supplies.stock_in');
 }
 
-function material_inventory_role_can_request_supply(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_request_supply(array $user): bool
 {
-    return material_inventory_role_can_issue_supply($role);
+    return material_inventory_role_can_issue_supply($user);
 }
 
-function material_inventory_role_can_issue_supply(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_issue_supply(array $user): bool
 {
-    return $role === 'hr' || $role === 'executive';
+    return ims_user_can($user, 'supplies.issue');
 }
 
 /** @return array{can_stock_in: bool, can_issue_request: bool, can_set_on_hand: bool, can_create_catalog: bool, can_view_extended_log: bool} */
-function material_supply_detail_permissions(string $role): array
+function material_supply_detail_permissions(array $user): array
 {
     return [
-        'can_stock_in' => material_inventory_role_can_stock_in_supply($role),
-        'can_issue_request' => material_inventory_role_can_issue_supply($role),
-        'can_set_on_hand' => $role === 'executive',
-        'can_create_catalog' => material_inventory_role_can_create_supply_catalog($role),
-        'can_view_extended_log' => $role === 'executive',
+        'can_stock_in' => material_inventory_role_can_stock_in_supply($user),
+        'can_issue_request' => material_inventory_role_can_issue_supply($user),
+        'can_set_on_hand' => ims_user_can($user, 'packaging.set_on_hand'),
+        'can_create_catalog' => material_inventory_role_can_create_supply_catalog($user),
+        'can_view_extended_log' => ims_user_can($user, 'packaging.set_on_hand'),
     ];
 }
 
-function material_inventory_role_can_create_supply_catalog(string $role): bool
+/** @param array{id:int,role:string,dept_id:?int} $user */
+function material_inventory_role_can_create_supply_catalog(array $user): bool
 {
-    return $role === 'executive' || $role === 'hr';
+    return ims_user_can($user, 'supplies.catalog');
 }
 
 function material_supply_canonical_dept_id(PDO $pdo): int

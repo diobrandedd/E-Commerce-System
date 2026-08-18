@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-08-15T10:54:22+02:00
+generated: 2026-08-18T09:59:31+02:00
 type: module
 function_count: 13
 ---
@@ -36,22 +36,22 @@ function_count: 13
 - `includes/delivery_edit_requests.php`:264 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
 - `includes/delivery_edit_requests.php`:363 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
 - `includes/delivery_edit_requests.php`:418 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
-- `includes/fulfillment_packing.php`:241 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
-- `includes/fulfillment_packing.php`:551 — `if (rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {`
-- `includes/fulfillment_packing.php`:580 — `if (rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'source_stock_id')) {`
-- `includes/fulfillment_packing.php`:665 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
-- `includes/fulfillment_packing.php`:710 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
-- `includes/fulfillment_packing.php`:760 — `if (!rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {`
-- `includes/fulfillment_packing.php`:956 — `$hasBubbleCols = rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'bubble_width_cm');`
-- `includes/honey_bottle_barcodes.php`:1482 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
-- `includes/honey_bottle_barcodes.php`:1483 — `$hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
-- `includes/honey_bottle_barcodes.php`:1578 — `$hasUnit = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
-- `includes/honey_bottle_barcodes.php`:1579 — `$hasSess = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
-- `includes/honey_bottle_barcodes.php`:1580 — `$hasPos = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');`
-- `includes/honey_bottle_barcodes.php`:1646 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/fulfillment_packing.php`:242 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
+- `includes/fulfillment_packing.php`:552 — `if (rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {`
+- `includes/fulfillment_packing.php`:581 — `if (rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'source_stock_id')) {`
+- `includes/fulfillment_packing.php`:666 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
+- `includes/fulfillment_packing.php`:711 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
+- `includes/fulfillment_packing.php`:761 — `if (!rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {`
+- `includes/fulfillment_packing.php`:957 — `$hasBubbleCols = rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'bubble_width_cm');`
+- `includes/honey_bottle_barcodes.php`:1467 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/honey_bottle_barcodes.php`:1468 — `$hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
+- `includes/honey_bottle_barcodes.php`:1563 — `$hasUnit = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/honey_bottle_barcodes.php`:1564 — `$hasSess = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
+- `includes/honey_bottle_barcodes.php`:1565 — `$hasPos = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');`
+- `includes/honey_bottle_barcodes.php`:1631 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
 - `includes/honey_parcel_inventory.php`:63 — `$hasParcelCol = rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id');`
 - `includes/honey_parcel_inventory.php`:169 — `if (rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id')) {`
-- `includes/online_order_parcels.php`:509 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
+- `includes/online_order_parcels.php`:508 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - _… and 30 more (run impact.php for full list)_
 
 ## rts_cases_void_sql {#rts_cases_void_sql}

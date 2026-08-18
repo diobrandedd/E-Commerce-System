@@ -20,7 +20,7 @@ api_dispatch([
 
 function api_settings_require_executive(): void
 {
-    api_require_role(['executive']);
+    api_require_permission('settings.manage');
 }
 
 function api_settings_pos_pin_valid(string $pin): bool

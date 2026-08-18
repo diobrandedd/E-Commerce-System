@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { AnimatePresence } from "motion/react";
 import { AlertCircle, Camera, Loader2, Minus, Plus, Trash2, X } from "lucide-react";
@@ -25,6 +25,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
+import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 import { loadPosCatalogCached, prefetchPosImages, readPosCache } from "@/app/lib/posCache";
 import type { HoneyBottleSize } from "@/app/lib/honey";
 import {
@@ -64,7 +65,7 @@ export function POSHoneyPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const [scanCode, setScanCode] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
-  const scanRef = useRef<HTMLInputElement>(null);
+  const { inputRef: scanRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
   const cameraTitleId = useId();
 
   const loadCatalog = useCallback(async () => {
@@ -255,7 +256,7 @@ export function POSHoneyPage() {
       setTimeout(() => setCartPulse(false), 500);
       playScanBeep("ok");
       setFeedback("success");
-      scanRef.current?.focus();
+      refocus();
       return { kind: "success", message: `Added: ${variantLabel(variant)} · ${sizeInfo.label}` };
     } catch (e) {
       const reason = e instanceof ApiError ? e.message : "Scan failed.";
@@ -263,7 +264,7 @@ export function POSHoneyPage() {
       playScanBeep(isDup ? "dup" : "bad");
       setError(reason);
       setFeedback("error");
-      scanRef.current?.focus();
+      refocus();
       return {
         kind: isDup ? "duplicate" : "error",
         message: reason,
@@ -400,6 +401,7 @@ export function POSHoneyPage() {
             <div className="w-full max-w-xl mx-auto flex gap-2">
               <input
                 ref={scanRef}
+                {...inputProps}
                 className="flex-1 border rounded-lg px-3 py-2 text-sm"
                 placeholder="Scan bottle barcode or type it to add to cart"
                 value={scanCode}

@@ -66,7 +66,7 @@ function api_honey_require_view(): array
 {
     $user = api_require_ims_user();
     $role = (string) $user['role'];
-    if (!honey_role_can_view($role) && !honey_role_can_mutate($role)) {
+    if (!honey_role_can_view($user) && !honey_role_can_mutate($user)) {
         api_fail('Forbidden.', 403);
     }
     // Operations staff and dept team leaders are read-only and limited to their own
@@ -155,7 +155,7 @@ function honey_assert_staff_dept_scope(array $user): void
 function api_honey_require_mutate(): array
 {
     $user = api_require_ims_user();
-    if (!honey_role_can_mutate((string) $user['role'])) {
+    if (!honey_role_can_mutate($user)) {
         api_fail('Forbidden.', 403);
     }
 
@@ -172,7 +172,7 @@ function api_honey_require_honey_ops(): array
 {
     $user = api_require_ims_user();
     $role = (string) $user['role'];
-    if (!honey_role_can_honey_ops($role)) {
+    if (!honey_role_can_honey_ops($user)) {
         api_fail('Forbidden.', 403);
     }
     if ($role === 'tl') {
@@ -198,21 +198,8 @@ function api_honey_require_honey_ops(): array
 function api_honey_require_dept_produce(?string $productKey = null): array
 {
     $user = api_require_ims_user();
-    $role = (string) $user['role'];
-    if (!honey_role_can_dept_produce($role)) {
+    if (!honey_role_can_dept_produce($user, $productKey)) {
         api_fail('Forbidden.', 403);
-    }
-    if ($role === 'tl') {
-        $userDept = honey_resolve_user_dept_key($user);
-        if ($userDept === null) {
-            api_fail('Your account has no department assigned.', 403);
-        }
-        if ($productKey !== null && trim($productKey) !== '') {
-            $target = honey_dept_key_for_product_key($productKey);
-            if ($target !== null && $target !== $userDept) {
-                api_fail('Out of scope for your department.', 403);
-            }
-        }
     }
 
     return $user;
@@ -241,7 +228,7 @@ function api_honey_warehouse_list(): void
     }
     api_ok([
         'rows' => $rows,
-        'can_view_cost' => honey_pricing_role_can_view_cost($role),
+        'can_view_cost' => honey_pricing_role_can_view_cost($user),
         'pending_count' => honey_warehouse_has_pricing_columns($pdo) ? honey_pricing_pending_count($pdo) : 0,
     ]);
 }
@@ -434,18 +421,16 @@ function api_honey_correction_submit(): void
 function api_honey_correction_list(): void
 {
     api_method_allowed(['GET']);
-    $user = api_require_ims_user();
-    $role = (string) $user['role'];
-    if (!in_array($role, ['executive', 'prod_manager', 'hr'], true)) {
-        api_fail('Forbidden.', 403);
-    }
+    $user = api_require_permission('inventory.requests.view', 'inventory.requests.approve');
+    $canApprove = ims_user_can($user, 'inventory.requests.approve');
+    $canViewAllReadonly = ims_user_can($user, 'inventory.requests.view') && !$canApprove;
     $pdo = ims_pdo();
     $sql = 'SELECT icr.*, u.name AS requested_by_name, r.name AS reviewed_by_name
             FROM inventory_correction_requests icr
             INNER JOIN users u ON u.id = icr.requested_by
             LEFT JOIN users r ON r.id = icr.reviewed_by';
     $params = [];
-    if ($role === 'prod_manager') {
+    if (!$canApprove && !$canViewAllReadonly) {
         $sql .= ' WHERE icr.requested_by = ?';
         $params[] = (int) $user['id'];
     }
@@ -456,7 +441,7 @@ function api_honey_correction_list(): void
     foreach ($rows as &$row) {
         honey_correction_enrich($pdo, $row);
     }
-    api_ok(['requests' => $rows, 'readonly' => $role === 'hr']);
+    api_ok(['requests' => $rows, 'readonly' => $canViewAllReadonly]);
 }
 
 function api_honey_correction_row_options(): void
@@ -477,7 +462,7 @@ function api_honey_correction_unread_count(): void
 {
     api_method_allowed(['GET']);
     $user = api_require_ims_user();
-    if ((string) $user['role'] !== 'executive') {
+    if (!ims_user_can($user, 'inventory.requests.approve') && !ims_user_can($user, 'honey.executive_edit')) {
         api_ok(['count' => 0]);
 
         return;
@@ -494,7 +479,12 @@ function api_honey_correction_unread_count(): void
 function api_honey_correction_unread_list(): void
 {
     api_method_allowed(['GET']);
-    api_require_role(['executive']);
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'inventory.requests.approve') && !ims_user_can($user, 'honey.executive_edit')) {
+        api_ok(['requests' => []]);
+
+        return;
+    }
     $limit = (int) ($_GET['limit'] ?? 10);
     $rows = honey_correction_unread_list(ims_pdo(), $limit);
     api_ok(['requests' => $rows]);
@@ -505,7 +495,7 @@ function api_honey_correction_mark_viewed(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('honey.executive_edit');
     $id = (int) ($input['id'] ?? 0);
     if ($id < 1) {
         api_fail('Invalid request id.', 422);
@@ -519,7 +509,7 @@ function api_honey_correction_approve(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('honey.executive_edit');
     $id = (int) ($input['id'] ?? 0);
     $pdo = ims_pdo();
     $st = $pdo->prepare('SELECT * FROM inventory_correction_requests WHERE id = ? AND status = "pending" LIMIT 1');
@@ -549,7 +539,7 @@ function api_honey_correction_reject(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('honey.executive_edit');
     $id = (int) ($input['id'] ?? 0);
     $note = trim((string) ($input['rejection_note'] ?? ''));
     if ($note === '') {
@@ -571,7 +561,7 @@ function api_honey_executive_adjust(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('honey.executive_edit');
     try {
         honey_executive_adjust(
             ims_pdo(),
@@ -592,7 +582,7 @@ function api_honey_executive_edit(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('honey.executive_edit');
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
@@ -617,15 +607,22 @@ function api_honey_executive_edit(): void
 function api_honey_dept_list(): void
 {
     api_method_allowed(['GET']);
-    api_honey_require_view();
+    $user = api_require_ims_user();
     $deptKey = trim((string) ($_GET['dept'] ?? ''));
     $productKey = trim((string) ($_GET['product_key'] ?? ''));
+    if ($productKey !== '' && !ims_user_can_dept_line($user, $productKey, 'view')) {
+        api_fail('Forbidden.', 403);
+    }
     $pdo = ims_pdo();
     $catalog = dept_inventory_catalog_snapshot(
         $pdo,
         $deptKey !== '' ? $deptKey : null,
         $productKey !== '' ? $productKey : null
     );
+    $catalog = array_values(array_filter(
+        $catalog,
+        static fn(array $item): bool => ims_user_can_dept_line($user, (string) $item['key'], 'view')
+    ));
     $rows = array_map(static function (array $item): array {
         return [
             'id' => $item['dept_row_id'],
@@ -701,8 +698,15 @@ function api_honey_dept_stock_in(): void
 function api_honey_dept_raw_detail(): void
 {
     api_method_allowed(['GET']);
-    api_honey_require_view();
+    $user = api_require_ims_user();
     $slug = trim((string) ($_GET['slug'] ?? ''));
+    $productKey = dept_raw_material_slug_to_product_key($slug);
+    if ($productKey === null) {
+        api_fail('Unknown raw material.', 404);
+    }
+    if (!ims_user_can_dept_line($user, $productKey, 'view')) {
+        api_fail('Forbidden.', 403);
+    }
     $snapshot = dept_raw_detail_enriched(ims_pdo(), $slug);
     if ($snapshot === null) {
         api_fail('Unknown raw material.', 404);
@@ -977,7 +981,7 @@ function api_honey_dept_add_row(): void
 function api_honey_supplier_dept_prices(): void
 {
     api_method_allowed(['GET']);
-    api_require_role(['executive']);
+    api_require_permission('honey.executive_edit');
     $supplierId = isset($_GET['supplier_id']) ? (int) $_GET['supplier_id'] : 0;
     $productKey = trim((string) ($_GET['product_key'] ?? ''));
     $pdo = ims_pdo();
@@ -1021,7 +1025,7 @@ function api_honey_supplier_dept_prices_save(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('honey.executive_edit');
     $supplierId = (int) ($input['supplier_id'] ?? 0);
     $effectiveFrom = trim((string) ($input['effective_from'] ?? date('Y-m-d')));
     $products = is_array($input['products'] ?? null) ? $input['products'] : [];
@@ -1044,7 +1048,7 @@ function api_honey_supplier_dept_prices_save(): void
 function api_honey_supplier_honey_prices(): void
 {
     api_method_allowed(['GET']);
-    api_require_role(['executive']);
+    api_require_permission('honey.executive_edit');
     $supplierId = isset($_GET['supplier_id']) ? (int) $_GET['supplier_id'] : 0;
     $pdo = ims_pdo();
     $prices = honey_pricing_list_supplier_prices($pdo, $supplierId > 0 ? $supplierId : null);
@@ -1084,7 +1088,7 @@ function api_honey_supplier_honey_prices_save(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('honey.executive_edit');
     $supplierId = (int) ($input['supplier_id'] ?? 0);
     $effectiveFrom = trim((string) ($input['effective_from'] ?? date('Y-m-d')));
     $variants = is_array($input['variants'] ?? null) ? $input['variants'] : [];
@@ -1112,7 +1116,7 @@ function api_honey_supplier_honey_prices_save(): void
 function api_honey_warehouse_pending_prices(): void
 {
     api_method_allowed(['GET']);
-    api_require_role(['executive']);
+    api_require_permission('honey.executive_edit');
     $pdo = ims_pdo();
     api_ok([
         'rows' => honey_pricing_pending_warehouse_rows($pdo),
@@ -1125,7 +1129,7 @@ function api_honey_warehouse_set_unit_cost(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('honey.executive_edit');
     $warehouseRowId = (int) ($input['warehouse_row_id'] ?? 0);
     $raw = trim((string) ($input['unit_cost_per_gallon'] ?? ''));
     if ($warehouseRowId < 1) {
@@ -1152,7 +1156,7 @@ function api_honey_pricing_sync_stocks(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('honey.executive_edit');
     try {
         $synced = honey_pricing_sync_all_variant_stocks(ims_pdo(), (int) $user['id']);
     } catch (Throwable $e) {
@@ -1164,7 +1168,7 @@ function api_honey_pricing_sync_stocks(): void
 function api_honey_edit_log_list(): void
 {
     api_method_allowed(['GET']);
-    api_require_role(['executive']);
+    api_require_permission('honey.executive_edit');
     $limit = (int) ($_GET['limit'] ?? 50);
     $offset = (int) ($_GET['offset'] ?? 0);
     $rowTable = isset($_GET['row_table']) ? trim((string) $_GET['row_table']) : null;
@@ -1190,7 +1194,7 @@ function api_honey_seed_production_row(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('honey.executive_edit');
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
@@ -1216,7 +1220,7 @@ function api_honey_seed_packaging_row(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('honey.executive_edit');
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
@@ -1242,7 +1246,7 @@ function api_honey_dept_raw_set_bags(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('honey.executive_edit');
     $productKey = trim((string) ($input['product_key'] ?? ''));
     $pdo = ims_pdo();
     $pdo->beginTransaction();

@@ -11,7 +11,7 @@ function GuideSection({ title, children }: { title: string; children: React.Reac
   );
 }
 
-export type POSGuideContext = "category" | "product";
+export type POSGuideContext = "category" | "product" | "unified";
 
 export function POSGuideModal({
   open,
@@ -48,8 +48,8 @@ export function POSGuideModal({
       <AppModalBody className="flex flex-col min-h-0 overflow-y-auto overscroll-contain gap-5 py-4">
         <GuideSection title="What POS is for">
           <p>
-            Walk-in sales at the warehouse — tap products, build a cart, checkout, print receipt. Honey uses variant +
-            bottle size; dept products use single-SKU qty.
+            Walk-in sales — scan product stickers, enter prices per line, checkout, print receipt. Honey and department
+            products (Paragis, BRC, Cacao, Honey Comb) are detected automatically from the barcode.
           </p>
         </GuideSection>
         {context === "category" ? (
@@ -58,6 +58,17 @@ export function POSGuideModal({
               <li>Pick a product category (Honey, Paragis, BRC, Jar Cacao).</li>
               <li>Add items to cart, then Checkout at the bottom.</li>
               <li>Enter buyer name if needed; complete sale for receipt.</li>
+            </ol>
+          </GuideSection>
+        ) : context === "unified" ? (
+          <GuideSection title="Scan-first POS">
+            <ol className="list-decimal pl-4 space-y-1.5">
+              <li>Scan any in-stock sticker — product type is detected automatically.</li>
+              <li>Enter the sale price on each cart line (required before checkout).</li>
+              <li>
+                <strong className="text-foreground">Checkout</strong> — buyer name, full price, or 10%/20% off. Discounted sales are recorded immediately with your name.
+              </li>
+              <li>Remove a line with trash if the customer changes their mind.</li>
             </ol>
           </GuideSection>
         ) : (
@@ -70,14 +81,14 @@ export function POSGuideModal({
               <li>
                 <strong className="text-foreground">Checkout</strong> — fixed bar at bottom when cart has items.
               </li>
-              <li>Honey: large discounts may need executive approval before receipt prints.</li>
+              <li>Honey: 10%/20% off applies at checkout and is stored on the receipt.</li>
             </ol>
           </GuideSection>
         )}
         <GuideSection title="Exit">
           <p>
-            Use <strong className="text-foreground">Exit</strong> in the header to log out of POS and return to the login
-            screen. Use <strong className="text-foreground">Back</strong> on product pages to change category.
+            Use <strong className="text-foreground">Exit</strong> in the header to leave POS. PIN cashiers log out to the
+            login screen. Staff accounts return to the dashboard.
           </p>
         </GuideSection>
         <GuideWalkthroughSection />

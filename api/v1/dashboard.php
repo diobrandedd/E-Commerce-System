@@ -17,12 +17,12 @@ api_dispatch([
     'shipped_summary' => 'api_dashboard_shipped_summary',
 ]);
 
-function api_dashboard_view_for_role(string $role): string
+function api_dashboard_view_for_user(array $user): string
 {
-    if (in_array($role, ['csr_tl', 'csr_staff'], true)) {
+    if (ims_user_can($user, 'csr.parcels.view') || ims_user_can($user, 'csr.online_orders')) {
         return 'csr';
     }
-    if ($role === 'staff') {
+    if ((string) $user['role'] === 'staff' && !ims_user_can($user, 'inventory.entries.view')) {
         return 'staff';
     }
 
@@ -107,15 +107,13 @@ function api_dashboard_index(): void
 
     $role = (string) $user['role'];
     $deptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-    $isExec = $role === 'executive';
-    $isProdMgr = $role === 'prod_manager';
-    $isHr = $role === 'hr';
-    $isCrossDept = $isExec || $isProdMgr || $isHr;
-    $view = api_dashboard_view_for_role($role);
+    $canApproveEditRequests = ims_user_can($user, 'inventory.edit_requests.approve');
+    $isCrossDept = ims_user_can($user, 'inventory.entries.view');
+    $view = api_dashboard_view_for_user($user);
 
     $payload = [
         'view' => $view,
-        'can_view_financials' => $isExec,
+        'can_view_financials' => ims_user_can($user, 'reports.view'),
         'role' => $role,
         'name' => (string) $user['name'],
         'dept_id' => $deptId > 0 ? $deptId : null,
@@ -135,7 +133,7 @@ function api_dashboard_index(): void
     }
 
     if ($view === 'staff') {
-        api_dashboard_populate_edit_requests($pdo, $user, $isExec, $payload);
+        api_dashboard_populate_edit_requests($pdo, $user, $canApproveEditRequests, $payload);
         api_ok($payload);
 
         return;
@@ -175,9 +173,9 @@ function api_dashboard_index(): void
 
     $payload['stats'] = $stats;
 
-    api_dashboard_populate_edit_requests($pdo, $user, $isExec, $payload);
+    api_dashboard_populate_edit_requests($pdo, $user, $canApproveEditRequests, $payload);
 
-    if ($isExec) {
+    if (ims_user_can($user, 'reports.view')) {
         api_dashboard_populate_financials($pdo, $payload);
     }
 
@@ -187,9 +185,9 @@ function api_dashboard_index(): void
 /**
  * @param array<string, mixed> $payload
  */
-function api_dashboard_populate_edit_requests(PDO $pdo, array $user, bool $isExec, array &$payload): void
+function api_dashboard_populate_edit_requests(PDO $pdo, array $user, bool $canApprove, array &$payload): void
 {
-    if ($isExec) {
+    if ($canApprove) {
         $st = $pdo->query("SELECT COUNT(*) FROM edit_requests WHERE status = 'pending'");
         $payload['pending_edit_requests_count'] = $st ? (int) $st->fetchColumn() : 0;
 

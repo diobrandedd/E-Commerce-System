@@ -10,9 +10,11 @@ import {
   type PageLayoutContentWidth,
 } from "@/app/context/PageChromeContext";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
+import { BarcodeDesktopAlertBanner } from "@/app/components/notifications/BarcodeDesktopAlertBanner";
 import { formatEditRequestCategory, formatEditRequestField } from "@/app/lib/editRequestsApi";
 import { cn } from "@/app/components/ui/utils";
 import { forceReleaseAllScannerResources } from "@/app/lib/html5QrcodeLoader";
+import { PYX_NAVIGATE_EVENT } from "@/app/lib/desktopBarcodeAlerts";
 
 export type { PageLayoutContentWidth } from "@/app/context/PageChromeContext";
 
@@ -40,10 +42,10 @@ function AppShellFrame() {
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
-  const { user } = useAuth();
   const navigate = useNavigate();
   const { chrome } = usePageChrome();
-  const isExec = user?.role === "executive";
+  const { can } = useAuth();
+  const isExec = can("inventory.requests.approve") || can("honey.executive_edit");
   const { unreadCount, unreadList, refresh: refreshNotifications } = useCorrectionNotifications();
 
   const { title, subtitle, actions, contentWidth = "default", notificationCount = 0 } = chrome;
@@ -64,6 +66,17 @@ function AppShellFrame() {
   useLayoutEffect(() => {
     forceReleaseAllScannerResources();
   }, [location.pathname]);
+
+  useEffect(() => {
+    const onNavigate = (e: Event) => {
+      const href = (e as CustomEvent<string>).detail;
+      if (typeof href === "string" && href.startsWith("/")) {
+        navigate(href);
+      }
+    };
+    window.addEventListener(PYX_NAVIGATE_EVENT, onNavigate);
+    return () => window.removeEventListener(PYX_NAVIGATE_EVENT, onNavigate);
+  }, [navigate]);
 
   const openCorrectionRequest = (id: number) => {
     setBellOpen(false);
@@ -235,6 +248,8 @@ function AppShellFrame() {
             </div>
           </div>
         </header>
+
+        <BarcodeDesktopAlertBanner />
 
         <main className="pyx-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain min-w-0 overflow-x-hidden">
           <div className={cn(contentChromeClass, "py-4 sm:py-6")}>

@@ -21,14 +21,14 @@ api_dispatch([
     'add_entry' => 'api_stocks_add_entry',
 ]);
 
-function api_stocks_can_view_all(string $role): bool
+function api_stocks_can_view_all(array $user): bool
 {
-    return $role === 'executive' || $role === 'prod_manager';
+    return ims_user_can($user, 'reports.view');
 }
 
-function api_stocks_can_add(string $role): bool
+function api_stocks_can_add(array $user): bool
 {
-    return $role === 'executive';
+    return ims_user_can($user, 'inventory.entries.add');
 }
 
 function api_stocks_entries_list(): void
@@ -38,7 +38,7 @@ function api_stocks_entries_list(): void
     $role = (string) $user['role'];
     $userId = (int) $user['id'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-    $canViewAll = api_stocks_can_view_all($role);
+    $canViewAll = api_stocks_can_view_all($user);
     $requestedDept = isset($_GET['dept_id']) ? (int) $_GET['dept_id'] : 0;
 
     if (!$canViewAll && $userDeptId < 1) {
@@ -81,9 +81,9 @@ function api_stocks_entries_list(): void
 
     api_ok([
         'entries' => $rows,
-        'can_view_supplier' => $role === 'executive' || $role === 'prod_manager',
-        'can_view_pricing' => $role === 'executive',
-        'can_add' => api_stocks_can_add($role),
+        'can_view_supplier' => ims_user_can($user, 'suppliers.view'),
+        'can_view_pricing' => ims_user_can($user, 'honey.pricing.view_cost'),
+        'can_add' => api_stocks_can_add($user),
         'can_view_all' => $canViewAll,
     ]);
 }
@@ -94,7 +94,7 @@ function api_stocks_for_dept(): void
     $user = api_require_ims_user();
     $role = (string) $user['role'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-    $canViewAll = api_stocks_can_view_all($role);
+    $canViewAll = api_stocks_can_view_all($user);
     $deptId = isset($_GET['dept_id']) ? (int) $_GET['dept_id'] : ($canViewAll ? 0 : $userDeptId);
     if (!$canViewAll && $deptId !== $userDeptId) {
         api_fail('Out of scope.', 403);
@@ -122,10 +122,10 @@ function api_stocks_add_entry(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('inventory.entries.add');
     $userId = (int) $user['id'];
     $userDeptId = isset($user['dept_id']) ? (int) $user['dept_id'] : 0;
-    $canViewAll = api_stocks_can_view_all((string) $user['role']);
+    $canViewAll = api_stocks_can_view_all($user);
 
     $stockName = trim((string) ($input['stock_name'] ?? ''));
     $unit = trim((string) ($input['unit'] ?? 'pcs'));

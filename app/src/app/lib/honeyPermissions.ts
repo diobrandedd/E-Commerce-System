@@ -1,56 +1,82 @@
-import type { Department, Role } from "@/app/context/AuthContext";
+import type { DeptProductKey } from "@/app/lib/deptProducts";
+import type { AuthUser, Department, Role } from "@/app/context/AuthContext";
+import { hasPermission, type PermissionKey } from "@/app/lib/permissions";
+
+function perms(user: AuthUser | null | undefined): string[] {
+  return user?.permissions ?? [];
+}
+
+const DEPT_LINE_PERM: Record<DeptProductKey, { view: PermissionKey; produce: PermissionKey; barcodes: PermissionKey }> = {
+  pt: { view: "dept.paragis.view", produce: "dept.paragis.produce", barcodes: "dept.paragis.barcodes" },
+  brc: { view: "dept.brc.view", produce: "dept.brc.produce", barcodes: "dept.brc.barcodes" },
+  jar_cacao: { view: "dept.cacao.view", produce: "dept.cacao.produce", barcodes: "dept.cacao.barcodes" },
+  honey_comb: { view: "dept.comb.view", produce: "dept.comb.produce", barcodes: "dept.comb.barcodes" },
+};
 
 /** Finished dept stock-in and other exec/PM-only honey inventory mutations. */
-export function canMutateHoneyInventory(role: Role | undefined): boolean {
-  return role === "executive" || role === "prod_manager";
+export function canMutateHoneyInventory(user: AuthUser | null | undefined): boolean {
+  return hasPermission(perms(user), user?.role, "honey.mutate");
 }
 
-/**
- * Generate / print honey bottle barcodes — executive or CSR only.
- * Honey staff / TL / prod_manager request and scan, but do not generate.
- */
 export function canGenerateHoneyBottleLabels(
-  role: Role | undefined,
-  dept?: Department | undefined,
+  user: AuthUser | null | undefined,
+  _dept?: Department | undefined,
 ): boolean {
-  if (role === "executive") return true;
-  if (role === "csr_tl" || role === "csr_staff") return true;
-  if (dept === "csr" && (role === "staff" || role === "team_leader")) return true;
-  return false;
+  return hasPermission(perms(user), user?.role, "honey.bottle.generate");
 }
 
-/**
- * Honey gallon pipeline UI (warehouse / production → packaging).
- * SPA maps IMS `tl` → team_leader; API still scopes TL to honey dept.
- * Packaging Sell was removed — use POS.
- */
-export function canMutateHoneyPipeline(role: Role | undefined): boolean {
-  return role === "executive" || role === "prod_manager" || role === "team_leader";
+export function canMutateHoneyPipeline(user: AuthUser | null | undefined): boolean {
+  return hasPermission(perms(user), user?.role, "honey.ops");
 }
 
-/** Dept raw Stock in / Use raw bags / Produce (SPA maps IMS `tl` → team_leader). */
-export function canMutateDeptRawProduction(role: Role | undefined): boolean {
-  return role === "executive" || role === "prod_manager" || role === "team_leader";
+export function canMutateDeptRawProduction(
+  user: AuthUser | null | undefined,
+  productKey?: DeptProductKey,
+): boolean {
+  if (productKey) {
+    return hasPermission(perms(user), user?.role, DEPT_LINE_PERM[productKey].produce);
+  }
+  return hasPermission(perms(user), user?.role, [
+    "dept.paragis.produce",
+    "dept.brc.produce",
+    "dept.cacao.produce",
+    "dept.comb.produce",
+    "honey.dept_produce",
+  ]);
 }
 
-/**
- * Dept unit barcodes (Paragis Tea, Black Rice Coffee, Jar Cacao, Honey Comb) —
- * request / generate-print / scan. Staff included (API `dept_pouch_can_ops`);
- * separate from bag stock-in mutate gate.
- */
-export function canDeptPouchBarcodeOps(role: Role | undefined): boolean {
-  return (
-    role === "executive" ||
-    role === "prod_manager" ||
-    role === "team_leader" ||
-    role === "staff"
-  );
+export function canDeptPouchBarcodeOps(
+  user: AuthUser | null | undefined,
+  productKey?: DeptProductKey,
+): boolean {
+  if (productKey) {
+    return hasPermission(perms(user), user?.role, DEPT_LINE_PERM[productKey].barcodes);
+  }
+  return hasPermission(perms(user), user?.role, [
+    "dept.paragis.barcodes",
+    "dept.brc.barcodes",
+    "dept.cacao.barcodes",
+    "dept.comb.barcodes",
+    "dept.pouch_barcodes",
+  ]);
 }
 
-export function canExecutiveDirectEdit(role: Role | undefined): boolean {
-  return role === "executive";
+export function canViewDeptLine(
+  user: AuthUser | null | undefined,
+  productKey: DeptProductKey,
+): boolean {
+  return hasPermission(perms(user), user?.role, DEPT_LINE_PERM[productKey].view);
 }
 
-export function canViewSupplierProfile(role: Role | undefined): boolean {
-  return role === "executive";
+export function canExecutiveDirectEdit(user: AuthUser | null | undefined): boolean {
+  return hasPermission(perms(user), user?.role, "honey.executive_edit");
+}
+
+export function canViewSupplierProfile(user: AuthUser | null | undefined): boolean {
+  return hasPermission(perms(user), user?.role, "suppliers.view");
+}
+
+/** @deprecated use AuthUser overload — role-only checks ignore granular permissions */
+export function canMutateHoneyInventoryRole(role: Role | undefined): boolean {
+  return role === "executive" || role === "prod_manager";
 }

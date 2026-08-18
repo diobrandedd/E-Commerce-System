@@ -15,8 +15,8 @@ const peso = (n: number) =>
   `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export function PackagingStockInLotModal({ stock, onClose, onDone }: PackagingStockInLotModalProps) {
-  const { user } = useAuth();
-  const canEditYield = user?.role === "executive" || user?.role === "hr";
+  const { can } = useAuth();
+  const canEditYield = can("packaging.set_on_hand");
   const [totalPrice, setTotalPrice] = useState("");
   const [qty, setQty] = useState("");
   const [note, setNote] = useState("");

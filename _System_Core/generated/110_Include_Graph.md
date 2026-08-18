@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-08-15T10:54:04+02:00
+generated: 2026-08-18T09:58:55+02:00
 type: memory-bank
-edge_count: 302
+edge_count: 321
 ---
 
 
@@ -23,6 +23,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/_bootstrap.php` | `includes/auth.php` |
 | `api/v1/_bootstrap.php` | `includes/auth_check.php` |
 | `api/v1/_bootstrap.php` | `includes/db.php` |
+| `api/v1/_bootstrap.php` | `includes/permissions.php` |
 | `api/v1/_costing_helpers.php` | `api/v1/_bootstrap.php` |
 | `api/v1/ar.php` | `api/v1/_bootstrap.php` |
 | `api/v1/ar.php` | `includes/ar_credits.php` |
@@ -48,6 +49,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/dept_pouch_barcodes.php` | `api/v1/_bootstrap.php` |
 | `api/v1/edit_requests.php` | `api/v1/_bootstrap.php` |
 | `api/v1/edit_requests.php` | `includes/delivery_edit_requests.php` |
+| `api/v1/finished_leak_damage.php` | `api/v1/_bootstrap.php` |
 | `api/v1/fulfillment_packing.php` | `api/v1/_bootstrap.php` |
 | `api/v1/historical_orders.php` | `api/v1/_bootstrap.php` |
 | `api/v1/historical_orders.php` | `includes/historical_orders_import.php` |
@@ -73,6 +75,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/pos.php` | `includes/dept_pos.php` |
 | `api/v1/pos.php` | `includes/honey_pos.php` |
 | `api/v1/pos.php` | `includes/pos_discount_requests.php` |
+| `api/v1/pos.php` | `includes/pos_unified.php` |
 | `api/v1/pos_discounts.php` | `api/v1/_bootstrap.php` |
 | `api/v1/pos_discounts.php` | `includes/pos_discount_requests.php` |
 | `api/v1/reports.php` | `api/v1/_bootstrap.php` |
@@ -151,6 +154,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_pouch_barcodes.php` | `includes/dept_inventory.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/dept_inventory.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/dept_production.php` |
+| `includes/dept_pouch_barcodes.php` | `includes/finished_leak_damage.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/dept_pricing.php` | `includes/dept_products.php` |
 | `includes/dept_pricing.php` | `includes/honey_inventory.php` |
@@ -158,8 +162,13 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_production.php` | `includes/catalog_bootstrap.php` |
 | `includes/dept_production.php` | `includes/dept_inventory.php` |
 | `includes/dept_production.php` | `includes/material_inventory.php` |
+| `includes/finished_leak_damage.php` | `includes/dept_inventory.php` |
+| `includes/finished_leak_damage.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/finished_leak_damage.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/finished_leak_damage.php` | `includes/honey_pos.php` |
 | `includes/fulfillment_packing.php` | `includes/material_inventory.php` |
 | `includes/fulfillment_packing.php` | `includes/parcel_pack_costing.php` |
+| `includes/fulfillment_packing.php` | `includes/permissions.php` |
 | `includes/fulfillment_packing.php` | `includes/rts_schema.php` |
 | `includes/historical_orders_import.php` | `includes/honey_parcel_item_parser.php` |
 | `includes/historical_orders_import.php` | `includes/online_order_parcels.php` |
@@ -206,10 +215,12 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/material_inventory.php` | `includes/fulfillment_packing.php` |
 | `includes/material_inventory.php` | `includes/inventory_edit_log.php` |
 | `includes/material_inventory.php` | `includes/inventory_edit_log.php` |
+| `includes/material_inventory.php` | `includes/permissions.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_inventory.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_item_parser.php` |
 | `includes/online_order_parcels.php` | `includes/online_orders_generator.php` |
 | `includes/online_order_parcels.php` | `includes/online_orders_generator.php` |
+| `includes/online_order_parcels.php` | `includes/permissions.php` |
 | `includes/online_order_parcels.php` | `includes/qr_decode.php` |
 | `includes/online_order_parcels.php` | `includes/rts_schema.php` |
 | `includes/online_order_parcels.php` | `includes/rts_storage.php` |
@@ -232,8 +243,15 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/partner_sold_reconcile.php` | `includes/online_orders_generator.php` |
 | `includes/partner_sold_reconcile.php` | `includes/waybill_stamper.php` |
 | `includes/pdf_to_excel.php` | `includes/waybill_stamper.php` |
+| `includes/permissions.php` | `includes/auth_check.php` |
+| `includes/permissions.php` | `includes/db.php` |
 | `includes/pos_discount_requests.php` | `includes/dept_pos.php` |
 | `includes/pos_discount_requests.php` | `includes/honey_pos.php` |
+| `includes/pos_discount_requests.php` | `includes/pos_unified.php` |
+| `includes/pos_unified.php` | `includes/dept_pos.php` |
+| `includes/pos_unified.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/pos_unified.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/pos_unified.php` | `includes/honey_pos.php` |
 | `includes/rts_attachments.php` | `includes/rts_storage.php` |
 | `includes/rts_case_handlers.php` | `includes/courier_detect.php` |
 | `includes/rts_case_handlers.php` | `includes/dept_pouch_barcodes.php` |
@@ -279,6 +297,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/sp_sort_service.php` | `includes/rts_storage.php` |
 | `includes/suppliers.php` | `includes/db.php` |
 | `includes/suppliers.php` | `includes/rts_storage.php` |
+| `includes/waybill_stamper.php` | `includes/permissions.php` |
 | `includes/waybill_stamper.php` | `includes/rts_storage.php` |
 | `index.php` | `includes/auth.php` |
 | `index.php` | `includes/auth_check.php` |

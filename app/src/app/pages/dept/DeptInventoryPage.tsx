@@ -29,8 +29,8 @@ export function DeptInventoryPage() {
   const productKeyFilter = routeConfig?.productKey;
   const title = routeConfig?.title ?? deptKey.replace("_", " / ");
   const { user } = useAuth();
-  const canMutate = canMutateHoneyInventory(user?.role);
-  const canExecEdit = canExecutiveDirectEdit(user?.role);
+  const canMutate = canMutateHoneyInventory(user);
+  const canExecEdit = canExecutiveDirectEdit(user);
   const [rows, setRows] = useState<DeptInventoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editRow, setEditRow] = useState<DeptInventoryRow | null>(null);

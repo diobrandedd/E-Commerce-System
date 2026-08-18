@@ -6,6 +6,7 @@ import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModa
 import { AppErrorBanner } from "@/app/components/layout/appFeedbackMotion";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/app/components/ui/utils";
+import { useDismissSoftwareKeyboard } from "@/app/lib/scanWedgeField";
 import {
   applyContinuousFocus,
   buildScanConfig,
@@ -85,6 +86,9 @@ export function TrackingQrScannerModal({
   const [cameras, setCameras] = useState<Html5QrcodeCamera[]>([]);
   const [torchOn, setTorchOn] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
+  const [manualTypeMode, setManualTypeMode] = useState(false);
+  const focusSinkRef = useRef<HTMLDivElement>(null);
+  useDismissSoftwareKeyboard(true, focusSinkRef);
 
   const stopScanner = useCallback(async () => {
     const instance = scannerRef.current;
@@ -389,6 +393,7 @@ export function TrackingQrScannerModal({
     >
       <AppModalHeader title={title} titleId={titleId} onClose={handleClose} />
       <AppModalBody className="space-y-4">
+        <div ref={focusSinkRef} tabIndex={-1} className="h-0 w-0 overflow-hidden outline-none" />
         <AppErrorBanner message={error} />
         <AnimatePresence mode="wait">
           {decodeFeedback ? (
@@ -503,6 +508,7 @@ export function TrackingQrScannerModal({
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
+                tabIndex={-1}
                 className="hidden"
                 onChange={e => void onFilePicked(e.target.files?.[0] ?? null)}
               />
@@ -515,8 +521,16 @@ export function TrackingQrScannerModal({
             {manualEntryLabel}
             <input
               ref={manualRef}
+              inputMode={manualTypeMode ? "text" : "none"}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm focus:border-[#C8900A] focus:ring-4 focus:ring-[#C8900A]/10 outline-none"
               placeholder="Tracking number"
+              onPointerDown={e => {
+                if (e.pointerType === "touch" || e.pointerType === "pen") setManualTypeMode(true);
+              }}
+              onBlur={() => setManualTypeMode(false)}
               onKeyDown={e => {
                 if (e.key === "Enter") {
                   e.preventDefault();

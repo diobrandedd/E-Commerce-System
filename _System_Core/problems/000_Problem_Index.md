@@ -50,6 +50,11 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-08-18_pos-account-discount-sales-log]] — Account POS (`pos.sell`), checkout discounts, Sales seller + product filter
+- [[records/2026-08-18_scan-camera-software-keyboard]] — Phone Gboard no longer opens during camera scan
+- [[records/2026-08-18_barcode-request-desktop-notify]] — Windows toast when barcode requests increase
+- [[records/2026-08-18_sidebar-barcode-request-badges]] — Red sidebar counts for pending barcode/label requests
+- [[records/2026-08-18_granular-user-permissions]] — Per-user permission checkboxes; product-line keys
 - [[records/2026-08-15_universal-barcode-verify]] — Verify barcode page + API for all IMS roles
 - [[records/2026-08-15_packaging-scan-log-modal]] — Packaging row click shows who/when scanned stickers in
 - [[records/2026-08-15_mobile-header-actions-overflow]] — PageLayout header actions wrap to own row on mobile

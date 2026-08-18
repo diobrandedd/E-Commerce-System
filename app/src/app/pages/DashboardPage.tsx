@@ -14,7 +14,7 @@ import { apiGet, ApiError } from "@/app/lib/api";
 import type { DashboardData } from "@/app/components/dashboard/dashboardTypes";
 
 export function DashboardPage() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export function DashboardPage() {
     refresh();
   }, []);
 
-  const isExec = user?.role === "executive";
+  const isExec = can("reports.view");
 
   if (isExec) {
     return (
@@ -50,9 +50,8 @@ export function DashboardPage() {
     );
   }
 
-  const isCrossDept = user?.role === "prod_manager" || user?.role === "hr";
-  const showPackagingInventory =
-    user?.role === "prod_manager" || user?.role === "hr";
+  const isCrossDept = can("inventory.entries.view");
+  const showPackagingInventory = can("packaging.view") && isCrossDept;
   const view = data?.view ?? "inventory";
 
   return (
@@ -81,7 +80,7 @@ export function DashboardPage() {
           <DashboardCsrSection
             csr={data.csr}
             loading={loading}
-            isTl={user?.role === "csr_tl"}
+            isTl={can("csr.parcels.edit_items")}
           />
         )}
 

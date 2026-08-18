@@ -1,7 +1,7 @@
 ---
 title: ar_credits
 source: includes/ar_credits.php
-generated: 2026-08-15T10:54:05+02:00
+generated: 2026-08-18T09:58:55+02:00
 type: module
 function_count: 9
 ---
@@ -26,7 +26,7 @@ function_count: 9
 **Callers (2):**
 
 - `api/v1/ar.php`:44 — `api_ok(['staff' => ar_staff_picker_list(ims_pdo())]);`
-- `api/v1/pos.php`:234 — `api_ok(['staff' => ar_staff_picker_list(ims_pdo())]);`
+- `api/v1/pos.php`:239 — `api_ok(['staff' => ar_staff_picker_list(ims_pdo())]);`
 
 ## ar_credits_list_scope {#ar_credits_list_scope}
 
@@ -46,11 +46,12 @@ function_count: 9
 
 **Tables:** `ar_credits`
 
-**Callers (3):**
+**Callers (4):**
 
 - `includes/ar_credits.php`:203 — `$ids = ar_credits_record_lines($pdo, [`
 - `includes/dept_pos.php`:426 — `$arCreditIds = ar_credits_record_lines($pdo, [`
 - `includes/honey_pos.php`:683 — `$arCreditIds = ar_credits_record_lines($pdo, [`
+- `includes/pos_unified.php`:520 — `$creditIds = ar_credits_record_lines($pdo, [`
 
 ## ar_credits_mark_paid {#ar_credits_mark_paid}
 

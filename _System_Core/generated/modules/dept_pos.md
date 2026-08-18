@@ -1,7 +1,7 @@
 ---
 title: dept_pos
 source: includes/dept_pos.php
-generated: 2026-08-15T10:54:11+02:00
+generated: 2026-08-18T09:59:01+02:00
 type: module
 function_count: 5
 ---
@@ -26,15 +26,16 @@ function_count: 5
 
 ## dept_pos_pouch_unit_ids_from_entry {#dept_pos_pouch_unit_ids_from_entry}
 
-**Callers (1):**
+**Callers (2):**
 
 - `includes/dept_pos.php`:86 — `$unitIds = dept_pos_pouch_unit_ids_from_entry($entry);`
+- `includes/pos_unified.php`:254 — `$unitIds = dept_pos_pouch_unit_ids_from_entry($entry);`
 
 ## dept_pos_catalog {#dept_pos_catalog}
 
 **Callers (1):**
 
-- `api/v1/pos.php`:75 — `api_ok(dept_pos_catalog(ims_pdo(), $deptKey !== '' ? $deptKey : null));`
+- `api/v1/pos.php`:80 — `api_ok(dept_pos_catalog(ims_pdo(), $deptKey !== '' ? $deptKey : null));`
 
 ## dept_pos_build_cart_lines {#dept_pos_build_cart_lines}
 
@@ -44,7 +45,7 @@ function_count: 5
 
 - `includes/dept_pos.php`:200 — `$cleanLines = dept_pos_build_cart_lines($pdo, $items, $discountFactor, $stockSource);`
 - `includes/dept_pos.php`:351 — `$cleanLines = dept_pos_build_cart_lines($pdo, $items, 1.0, $stockSource);`
-- `includes/pos_discount_requests.php`:37 — `$clean = dept_pos_build_cart_lines($pdo, $items, $discountFactor);`
+- `includes/pos_discount_requests.php`:38 — `$clean = dept_pos_build_cart_lines($pdo, $items, $discountFactor);`
 
 ## dept_pos_checkout {#dept_pos_checkout}
 
@@ -52,8 +53,8 @@ function_count: 5
 
 **Callers (2):**
 
-- `api/v1/pos.php`:95 — `$result = dept_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds, [`
-- `includes/pos_discount_requests.php`:235 — `$result = dept_pos_checkout(`
+- `api/v1/pos.php`:100 — `$result = dept_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds, [`
+- `includes/pos_discount_requests.php`:249 — `$result = dept_pos_checkout(`
 
 ## dept_pos_ar_checkout {#dept_pos_ar_checkout}
 
@@ -61,5 +62,5 @@ function_count: 5
 
 **Callers (1):**
 
-- `api/v1/pos.php`:288 — `$result = dept_pos_ar_checkout(ims_pdo(), $pinId, $items, [`
+- `api/v1/pos.php`:293 — `$result = dept_pos_ar_checkout(ims_pdo(), $pinId, $items, [`
 

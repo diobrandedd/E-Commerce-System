@@ -86,6 +86,7 @@ function api_auth_me(): void
         'employee_id' => $user['employee_id'],
         'role' => $user['role'],
     ], $dept);
+    $payload['permissions'] = ims_user_permissions((int) $user['id']);
 
     api_ok([
         'authenticated' => true,
@@ -115,19 +116,22 @@ function api_auth_login(): void
         api_fail('Login session could not be created.', 500);
     }
     $dept = api_dept_lookup($user['dept_id'] ?? null);
+    $serialized = api_auth_serialize_user([
+        'id' => $user['id'],
+        'username' => $user['username'],
+        'name' => $user['name'],
+        'email' => $user['email'],
+        'employee_id' => $user['employee_id'],
+        'role' => $user['role'],
+    ], $dept);
+    $serialized['permissions'] = ims_user_permissions((int) $user['id']);
+
     api_ok([
         'authenticated' => true,
         'mode' => 'user',
         'csrf' => api_csrf_token(),
         'forwarding' => rts_forwarding_api_payload(),
-        'user' => api_auth_serialize_user([
-            'id' => $user['id'],
-            'username' => $user['username'],
-            'name' => $user['name'],
-            'email' => $user['email'],
-            'employee_id' => $user['employee_id'],
-            'role' => $user['role'],
-        ], $dept),
+        'user' => $serialized,
     ]);
 }
 

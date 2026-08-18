@@ -97,7 +97,7 @@ function api_ar_mark_paid(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('ar.mark_paid');
     $id = (int) ($input['id'] ?? 0);
     if ($id < 1) {
         api_fail('Invalid id.', 422);
@@ -117,7 +117,7 @@ function api_ar_mark_unpaid(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('ar.mark_paid');
     $id = (int) ($input['id'] ?? 0);
     if ($id < 1) {
         api_fail('Invalid id.', 422);

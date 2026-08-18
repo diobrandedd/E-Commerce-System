@@ -13,10 +13,10 @@ import {
   SidebarNavToggleButton,
 } from "@/app/components/layout/sidebarNavMotion";
 import { useAuth, Role } from "@/app/context/AuthContext";
+import { canAccessRoute } from "@/app/lib/permissions";
 import { useCorrectionNotifications } from "@/app/components/notifications/CorrectionNotificationsContext";
-import { canGenerateHoneyBottleLabels } from "@/app/lib/honeyPermissions";
-import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
-import { onLiveRefresh } from "@/app/lib/liveRefresh";
+import { useBarcodePending } from "@/app/components/notifications/BarcodePendingContext";
+import { labelCountSum, type LabelPendingCounts } from "@/app/lib/barcodePendingCounts";
 
 interface NavLinkChild {
   label: string;
@@ -55,24 +55,33 @@ function isNavSeparator(entry: NavEntry): entry is NavSeparator {
   return "kind" in entry && entry.kind === "separator";
 }
 
-function honeyStageChildren(pendingLabels = 0): NavLinkChild[] {
+function navBadge(n: number): number | undefined {
+  return n > 0 ? n : undefined;
+}
+
+function honeyStageChildren(counts: LabelPendingCounts): NavLinkChild[] {
   return [
     { label: "Warehouse", to: "/inventory/raw-materials/honey/warehouse" },
     {
       label: "Production",
       to: "/inventory/raw-materials/honey/production",
-      badge: pendingLabels > 0 ? pendingLabels : undefined,
+      badge: navBadge(counts.bottles),
     },
-    { label: "Packaging", to: "/inventory/raw-materials/honey/packaging" },
+    {
+      label: "Packaging",
+      to: "/inventory/raw-materials/honey/packaging",
+      badge: navBadge(counts.honey_comb),
+    },
   ];
 }
 
-function rawMaterialsChildren(pendingLabels = 0): NavChild[] {
+function rawMaterialsChildren(counts: LabelPendingCounts): NavChild[] {
+  const honeyPending = counts.bottles + counts.honey_comb;
   return [
-    { label: "Raw Honey", children: honeyStageChildren(pendingLabels), badge: pendingLabels > 0 ? pendingLabels : undefined },
-    { label: "Dried Paragis", to: "/inventory/raw-materials/paragis" },
-    { label: "Black Rice", to: "/inventory/raw-materials/black-rice" },
-    { label: "Cacao", to: "/inventory/raw-materials/cacao" },
+    { label: "Raw Honey", children: honeyStageChildren(counts), badge: navBadge(honeyPending) },
+    { label: "Dried Paragis", to: "/inventory/raw-materials/paragis", badge: navBadge(counts.pt) },
+    { label: "Black Rice", to: "/inventory/raw-materials/black-rice", badge: navBadge(counts.brc) },
+    { label: "Cacao", to: "/inventory/raw-materials/cacao", badge: navBadge(counts.jar_cacao) },
   ];
 }
 
@@ -84,27 +93,57 @@ const PRODUCTS_CHILDREN: NavChild[] = [
   { label: "Cacao Tablets", to: "/inventory/products/cacao-tablets" },
 ];
 
-function getNavItems(role: Role, dept: string, pendingCorrections: number, pendingBottleLabels: number): NavEntry[] {
-  const labelBadge = pendingBottleLabels > 0 ? pendingBottleLabels : undefined;
+function filterNavChild(child: NavChild, permissions: string[], role: Role): NavChild | null {
+  if (isNavGroup(child)) {
+    const children = child.children
+      .map(c => filterNavChild(c, permissions, role))
+      .filter((c): c is NavChild => c !== null);
+    if (children.length === 0) return null;
+    return { ...child, children };
+  }
+  if (!canAccessRoute(permissions, role, child.to)) return null;
+  return child;
+}
+
+function filterNavEntries(entries: NavEntry[], permissions: string[], role: Role): NavEntry[] {
+  const out: NavEntry[] = [];
+  for (const entry of entries) {
+    if (isNavSeparator(entry)) {
+      if (out.length > 0 && !isNavSeparator(out[out.length - 1]!)) {
+        out.push(entry);
+      }
+      continue;
+    }
+    if (entry.children) {
+      const children = entry.children
+        .map(c => filterNavChild(c, permissions, role))
+        .filter((c): c is NavChild => c !== null);
+      if (children.length === 0) continue;
+      out.push({ ...entry, children });
+    } else {
+      if (!canAccessRoute(permissions, role, entry.to)) continue;
+      out.push(entry);
+    }
+  }
+  return out.filter((e, i, arr) => !(isNavSeparator(e) && (i === arr.length - 1 || isNavSeparator(arr[i + 1]!))));
+}
+
+function getNavItems(role: Role, _dept: string, pendingCorrections: number, labels: LabelPendingCounts): NavEntry[] {
+  const labelBadge = navBadge(labelCountSum(labels));
+  const honeyLabelBadge = navBadge(labels.bottles);
+  const leakDamageNav: NavLinkChild = { label: "Leak / damage", to: "/inventory/leak-damage" };
   const inventoryChildren: NavChild[] = [
-    { label: "Raw Materials", children: rawMaterialsChildren(pendingBottleLabels), badge: labelBadge },
+    { label: "Raw Materials", children: rawMaterialsChildren(labels), badge: labelBadge },
     { label: "Packaging Materials", to: "/inventory/packaging-materials" },
     { label: "Supplies", to: "/inventory/supplies" },
     { label: "Products", children: PRODUCTS_CHILDREN },
+    leakDamageNav,
   ];
 
   const inventoryChildrenExec: NavChild[] = [
     ...inventoryChildren,
     { label: "Monthly inventory", to: "/inventory/monthly-count" },
   ];
-
-  const inventoryNav: NavItem = {
-    icon: Package,
-    label: "Inventory",
-    to: "/inventory/raw-materials",
-    badge: labelBadge,
-    children: inventoryChildren,
-  };
 
   const inventoryNavExec: NavItem = {
     icon: Package,
@@ -118,14 +157,7 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
     icon: Tag,
     label: "Honey labels",
     to: "/inventory/raw-materials/honey/production?labels=1",
-    badge: labelBadge,
-  };
-
-  const inventoryNavHr: NavItem = {
-    icon: Package,
-    label: "Inventory",
-    to: "/inventory/raw-materials",
-    children: inventoryChildren,
+    badge: honeyLabelBadge,
   };
 
   const requestsNav = (badge?: number): NavItem => ({
@@ -135,41 +167,20 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
     badge: badge && badge > 0 ? badge : undefined,
   });
 
-  const orderManagementNav = (navRole: Role): NavItem => ({
+  const orderManagementNav: NavItem = {
     icon: ClipboardList,
     label: "Order management",
     to: "/fulfillment/online-parcels",
-    children: orderManagementChildren(navRole),
-  });
-
-  function orderManagementChildren(navRole: Role): NavChild[] {
-    const onlineOrders: NavLinkChild = { label: "Online Orders", to: "/waybill/online-orders" };
-    const bulkOrders: NavLinkChild = { label: "Bulk orders", to: "/sales/bulk-orders" };
-    const forPacking: NavLinkChild = { label: "For packing", to: "/fulfillment/packing-materials" };
-    const onlineParcels: NavLinkChild = { label: "Online parcels", to: "/fulfillment/online-parcels" };
-    const partnerSold: NavLinkChild = { label: "Partner sold list", to: "/fulfillment/partner-sold-reconcile" };
-    const courierSoa: NavLinkChild = { label: "Courier SOA", to: "/fulfillment/courier-soa-reconcile" };
-    const historicalImport: NavLinkChild = {
-      label: "Import historical orders",
-      to: "/fulfillment/historical-orders-import",
-    };
-
-    switch (navRole) {
-      case "executive":
-        return [onlineOrders, bulkOrders, forPacking, onlineParcels, partnerSold, courierSoa, historicalImport];
-      case "csr_tl":
-        return [onlineOrders, onlineParcels, partnerSold, courierSoa, historicalImport, forPacking];
-      case "csr_staff":
-        return [onlineOrders, onlineParcels, partnerSold, courierSoa, historicalImport];
-      case "prod_manager":
-      case "staff":
-        return [forPacking, onlineParcels, partnerSold, courierSoa, historicalImport];
-      case "team_leader":
-        return [forPacking];
-      default:
-        return [];
-    }
-  }
+    children: [
+      { label: "Online Orders", to: "/waybill/online-orders" },
+      { label: "Bulk orders", to: "/sales/bulk-orders" },
+      { label: "For packing", to: "/fulfillment/packing-materials" },
+      { label: "Online parcels", to: "/fulfillment/online-parcels" },
+      { label: "Partner sold list", to: "/fulfillment/partner-sold-reconcile" },
+      { label: "Courier SOA", to: "/fulfillment/courier-soa-reconcile" },
+      { label: "Import historical orders", to: "/fulfillment/historical-orders-import" },
+    ],
+  };
 
   const deliveriesItem: NavItem = {
     icon: Truck,
@@ -200,7 +211,6 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
   });
 
   const rtsNavFull = rtsNav([rtsInventory, rtsDamaged, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard, rtsRecord]);
-  const rtsNavReadOnly = rtsNav([rtsInventory, rtsDamaged, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard]);
 
   const productSetupNav: NavItem = {
     icon: Factory,
@@ -212,123 +222,48 @@ function getNavItems(role: Role, dept: string, pendingCorrections: number, pendi
     ],
   };
 
-  // Staff see raw materials + finished products for their own department only
-  // (read-only — server enforces dept scope + hides pricing).
-  const staffInventoryChildrenByDept: Record<string, NavChild[]> = {
-    honey: [
-      { label: "Raw Honey", children: honeyStageChildren(pendingBottleLabels), badge: labelBadge },
-      { label: "Honey (products)", to: "/inventory/products/honey" },
-    ],
-    paragis: [
-      { label: "Dried Paragis", to: "/inventory/raw-materials/paragis" },
-      { label: "Paragis Tea (products)", to: "/inventory/products/paragis-tea" },
-    ],
-    cacao_brc: [
-      { label: "Black Rice", to: "/inventory/raw-materials/black-rice" },
-      { label: "Cacao", to: "/inventory/raw-materials/cacao" },
-      { label: "Black Rice Coffee", to: "/inventory/products/black-rice-coffee" },
-      { label: "Cacao Tablets", to: "/inventory/products/cacao-tablets" },
-    ],
-  };
-  const staffInventoryNav: NavItem = {
-    icon: Package,
-    label: "Inventory",
-    to: "/inventory/raw-materials",
-    children: staffInventoryChildrenByDept[dept] ?? [
-      { label: "Raw Materials", to: "/inventory/raw-materials" },
-    ],
-  };
-
   const barcodeVerifyNav: NavItem = {
     icon: ScanLine,
     label: "Verify barcode",
     to: "/verify-barcode",
   };
 
-  switch (role) {
-    case "executive":
-      return [
-        { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        barcodeVerifyNav,
-        inventoryNavExec,
-        { icon: ShoppingBag, label: "Sales", to: "/sales", end: true },
-        orderManagementNav(role),
-        deliveriesItem,
-        rtsNavFull,
-        productSetupNav,
-        { kind: "separator" },
-        { icon: BarChart2, label: "Reports", to: "/reports" },
-        requestsNav(pendingCorrections),
-        { icon: DollarSign, label: "AR Credits", to: "/ar" },
-        { icon: Users, label: "Staff Management", to: "/staff" },
-        { icon: Settings, label: "System Settings", to: "/settings" },
-      ];
-    case "prod_manager":
-      return [
-        { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        barcodeVerifyNav,
-        inventoryNav,
-        requestsNav(),
-        { icon: BarChart2, label: "Reports", to: "/reports" },
-        { icon: ShoppingBag, label: "Sales", to: "/sales", end: true },
-        { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
-        orderManagementNav(role),
-        deliveriesItem,
-        rtsNavFull,
-      ];
-    case "hr":
-      return [
-        { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        barcodeVerifyNav,
-        inventoryNavHr,
-        requestsNav(),
-        rtsNavReadOnly,
-      ];
-    case "team_leader":
-      return [
-        { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        barcodeVerifyNav,
-        { icon: PlusCircle, label: "Stock Input", to: "/stock-input" },
-        staffInventoryNav,
-        { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
-        { icon: ClipboardList, label: "Beginning Inventory", to: "/beginning-inventory" },
-        { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
-        { icon: ShoppingCart, label: "My AR Credits", to: "/ar" },
-        orderManagementNav(role),
-        rtsNavReadOnly,
-      ];
-    case "csr_tl":
-      return [
-        { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        barcodeVerifyNav,
-        honeyLabelsNav,
-        orderManagementNav(role),
-        rtsNavFull,
-      ];
-    case "staff":
-      return [
-        { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        barcodeVerifyNav,
-        { icon: PlusCircle, label: "Stock Input", to: "/stock-input" },
-        { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
-        staffInventoryNav,
-        deliveriesItem,
-        orderManagementNav(role),
-        rtsNavReadOnly,
-        { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
-        { icon: ClipboardList, label: "My AR Credits", to: "/ar" },
-      ];
-    case "csr_staff":
-      return [
-        { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-        barcodeVerifyNav,
-        honeyLabelsNav,
-        orderManagementNav(role),
-        rtsNavFull,
-      ];
-    default:
-      return [];
+  const isCsr = role === "csr_tl" || role === "csr_staff";
+  const arNav: NavItem = {
+    icon: role === "executive" ? DollarSign : ShoppingCart,
+    label: role === "executive" ? "AR Credits" : "My AR Credits",
+    to: "/ar",
+  };
+
+  const items: NavEntry[] = [
+    { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+    barcodeVerifyNav,
+  ];
+  if (isCsr) items.push(honeyLabelsNav);
+  items.push(inventoryNavExec);
+  if (role !== "executive") {
+    items.push(
+      { icon: PlusCircle, label: "Stock Input", to: "/stock-input" },
+      { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
+      { icon: ClipboardList, label: "Beginning Inventory", to: "/beginning-inventory" },
+      { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
+    );
   }
+  items.push(
+    { icon: ShoppingBag, label: "Sales", to: "/sales", end: true },
+    { icon: ShoppingCart, label: "POS", to: "/pos" },
+    orderManagementNav,
+    deliveriesItem,
+    rtsNavFull,
+    productSetupNav,
+    { kind: "separator" },
+    { icon: BarChart2, label: "Reports", to: "/reports" },
+    requestsNav(pendingCorrections),
+    arNav,
+    { icon: Users, label: "Staff Management", to: "/staff" },
+    { icon: Settings, label: "System Settings", to: "/settings" },
+  );
+  return items;
 }
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -470,7 +405,7 @@ function SidebarNestedChildren({
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
-  const { user, logout } = useAuth();
+  const { user, permissions, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
@@ -491,33 +426,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   });
   const [signingOut, setSigningOut] = useState(false);
   const { unreadCount: pendingCorrections } = useCorrectionNotifications();
-  const [pendingBottleLabels, setPendingBottleLabels] = useState(0);
-  const canSeeLabelBadge = canGenerateHoneyBottleLabels(user?.role, user?.dept);
-
-  useEffect(() => {
-    if (!canSeeLabelBadge) {
-      setPendingBottleLabels(0);
-      return;
-    }
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await bottleBarcodesApi.pendingCount();
-        if (!cancelled) setPendingBottleLabels(res.count);
-      } catch {
-        if (!cancelled) setPendingBottleLabels(0);
-      }
-    };
-    void load();
-    const timer = window.setInterval(() => void load(), 15000);
-    const off = onLiveRefresh(() => void load());
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-      off();
-    };
-  }, [canSeeLabelBadge, location.pathname]);
-
+  const { pendingLabels } = useBarcodePending();
   useEffect(() => {
     if (location.pathname.includes("/inventory") && !location.pathname.startsWith("/inventory/requests")) {
       setExpandedGroups(prev => {
@@ -591,7 +500,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   };
 
   if (!user) return null;
-  const navItems = getNavItems(user.role, user.dept, pendingCorrections, pendingBottleLabels);
+  const navItems = filterNavEntries(
+    getNavItems(user.role, user.dept, pendingCorrections, pendingLabels),
+    permissions,
+    user.role,
+  );
   const initials = user.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
   const handleLogout = async () => {

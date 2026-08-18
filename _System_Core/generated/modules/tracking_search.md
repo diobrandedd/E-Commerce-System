@@ -1,7 +1,7 @@
 ---
 title: tracking_search
 source: includes/tracking_search.php
-generated: 2026-08-15T10:54:26+02:00
+generated: 2026-08-18T09:59:34+02:00
 type: module
 function_count: 4
 ---
@@ -18,7 +18,7 @@ function_count: 4
 **Callers (4):**
 
 - `api/v1/deliveries.php`:300 — `if (tracking_search_is_tn_shaped($q)) {`
-- `includes/online_order_parcels.php`:750 — `if (tracking_search_is_tn_shaped($q)) {`
+- `includes/online_order_parcels.php`:749 — `if (tracking_search_is_tn_shaped($q)) {`
 - `includes/rts_case_handlers.php`:747 — `if (tracking_search_is_tn_shaped($q)) {`
 - `includes/rts_case_handlers.php`:863 — `if (tracking_search_is_tn_shaped($q)) {`
 
@@ -34,8 +34,8 @@ function_count: 4
 **Callers (5):**
 
 - `api/v1/deliveries.php`:301 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('i.tracking_number', $q);`
-- `includes/online_order_parcels.php`:752 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('tracking_number', $q);`
-- `includes/online_order_parcels.php`:753 — `[$onoSql, $onoParams] = tracking_search_tn_column_sql('order_no', $q);`
+- `includes/online_order_parcels.php`:751 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('tracking_number', $q);`
+- `includes/online_order_parcels.php`:752 — `[$onoSql, $onoParams] = tracking_search_tn_column_sql('order_no', $q);`
 - `includes/rts_case_handlers.php`:748 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('c.tracking_number', $q);`
 - `includes/rts_case_handlers.php`:864 — `[$tnSql, $tnParams] = tracking_search_tn_column_sql('c.tracking_number', $q);`
 
@@ -44,7 +44,7 @@ function_count: 4
 **Callers (4):**
 
 - `api/v1/deliveries.php`:307 — `$like = tracking_search_contains_like($q);`
-- `includes/online_order_parcels.php`:760 — `$like = tracking_search_contains_like($q);`
+- `includes/online_order_parcels.php`:759 — `$like = tracking_search_contains_like($q);`
 - `includes/rts_case_handlers.php`:755 — `$params[] = tracking_search_contains_like($q);`
 - `includes/rts_case_handlers.php`:871 — `$params[] = tracking_search_contains_like($q);`
 

@@ -1,7 +1,7 @@
 ---
 title: rts_case_handlers
 source: includes/rts_case_handlers.php
-generated: 2026-08-15T10:54:39+02:00
+generated: 2026-08-18T09:59:28+02:00
 type: module
 function_count: 28
 ---
@@ -92,7 +92,7 @@ function_count: 28
 **Callers (2):**
 
 - `api/case.php`:35 — `$result = rts_case_handler_get_by_tracking($pdo, $tracking);`
-- `api/v1/rts_cases.php`:85 — `api_ok(rts_case_handler_get_by_tracking(ims_pdo(), $tracking));`
+- `api/v1/rts_cases.php`:90 — `api_ok(rts_case_handler_get_by_tracking(ims_pdo(), $tracking));`
 
 ## rts_case_handler_find_delivery_match_item_id {#rts_case_handler_find_delivery_match_item_id}
 
@@ -108,7 +108,7 @@ function_count: 28
 
 **Callers (1):**
 
-- `api/v1/rts_cases.php`:253 — `api_ok(rts_case_handler_delivery_match(ims_pdo(), $tracking));`
+- `api/v1/rts_cases.php`:258 — `api_ok(rts_case_handler_delivery_match(ims_pdo(), $tracking));`
 
 ## rts_case_parse_product_lines {#rts_case_parse_product_lines}
 
@@ -136,7 +136,7 @@ function_count: 28
 **Callers (2):**
 
 - `api/case.php`:86 — `$result = rts_case_handler_create($pdo, $data);`
-- `api/v1/rts_cases.php`:102 — `$result = rts_case_handler_create($pdo, $input);`
+- `api/v1/rts_cases.php`:107 — `$result = rts_case_handler_create($pdo, $input);`
 
 ## rts_case_handler_update {#rts_case_handler_update}
 
@@ -145,7 +145,7 @@ function_count: 28
 **Callers (2):**
 
 - `api/case.php`:81 — `$result = rts_case_handler_update($pdo, (int) ($data['case_id'] ?? 0), $data);`
-- `api/v1/rts_cases.php`:141 — `$result = rts_case_handler_update($pdo, (int) ($input['case_id'] ?? 0), $input);`
+- `api/v1/rts_cases.php`:146 — `$result = rts_case_handler_update($pdo, (int) ($input['case_id'] ?? 0), $input);`
 
 ## rts_case_handler_append_lines {#rts_case_handler_append_lines}
 
@@ -154,7 +154,7 @@ function_count: 28
 **Callers (2):**
 
 - `api/case.php`:91 — `$result = rts_case_handler_append_lines($pdo, $tracking, $data);`
-- `api/v1/rts_cases.php`:122 — `$result = rts_case_handler_append_lines($pdo, $tracking, $input);`
+- `api/v1/rts_cases.php`:127 — `$result = rts_case_handler_append_lines($pdo, $tracking, $input);`
 
 ## rts_case_handler_void {#rts_case_handler_void}
 
@@ -163,7 +163,7 @@ function_count: 28
 **Callers (2):**
 
 - `api/case.php`:76 — `rts_case_handler_void($pdo, (int) ($data['case_id'] ?? 0), (int) $authUser['id']);`
-- `api/v1/rts_cases.php`:159 — `rts_case_handler_void(ims_pdo(), (int) ($input['case_id'] ?? 0), (int) $user['id']);`
+- `api/v1/rts_cases.php`:164 — `rts_case_handler_void(ims_pdo(), (int) ($input['case_id'] ?? 0), (int) $user['id']);`
 
 ## rts_case_handler_update_claim {#rts_case_handler_update_claim}
 
@@ -172,7 +172,7 @@ function_count: 28
 **Callers (2):**
 
 - `api/case.php`:66 — `$result = rts_case_handler_update_claim(`
-- `api/v1/rts_cases.php`:176 — `$result = rts_case_handler_update_claim(`
+- `api/v1/rts_cases.php`:181 — `$result = rts_case_handler_update_claim(`
 
 ## rts_case_handler_list {#rts_case_handler_list}
 
@@ -180,7 +180,7 @@ function_count: 28
 
 **Callers (1):**
 
-- `api/v1/rts_cases.php`:193 — `api_ok(rts_case_handler_list(ims_pdo(), $_GET));`
+- `api/v1/rts_cases.php`:198 — `api_ok(rts_case_handler_list(ims_pdo(), $_GET));`
 
 ## rts_case_handler_list_by_disposition {#rts_case_handler_list_by_disposition}
 
@@ -195,19 +195,19 @@ function_count: 28
 
 **Callers (1):**
 
-- `api/v1/rts_cases.php`:204 — `api_ok(rts_case_handler_list_swapped(ims_pdo(), $_GET));`
+- `api/v1/rts_cases.php`:209 — `api_ok(rts_case_handler_list_swapped(ims_pdo(), $_GET));`
 
 ## rts_case_handler_list_leaks {#rts_case_handler_list_leaks}
 
 **Callers (1):**
 
-- `api/v1/rts_cases.php`:215 — `api_ok(rts_case_handler_list_leaks(ims_pdo(), $_GET));`
+- `api/v1/rts_cases.php`:220 — `api_ok(rts_case_handler_list_leaks(ims_pdo(), $_GET));`
 
 ## rts_case_handler_tracking_prefill_api {#rts_case_handler_tracking_prefill_api}
 
 **Callers (1):**
 
-- `api/v1/rts_cases.php`:227 — `api_ok(rts_case_handler_tracking_prefill_api(ims_pdo(), $tracking));`
+- `api/v1/rts_cases.php`:232 — `api_ok(rts_case_handler_tracking_prefill_api(ims_pdo(), $tracking));`
 
 ## rts_case_handler_dashboard {#rts_case_handler_dashboard}
 
@@ -215,13 +215,13 @@ function_count: 28
 
 **Callers (1):**
 
-- `api/v1/rts_cases.php`:237 — `api_ok(rts_case_handler_dashboard(ims_pdo()));`
+- `api/v1/rts_cases.php`:242 — `api_ok(rts_case_handler_dashboard(ims_pdo()));`
 
 ## rts_case_handler_product_catalog {#rts_case_handler_product_catalog}
 
 **Callers (1):**
 
-- `api/v1/rts_cases.php`:244 — `api_ok(rts_case_handler_product_catalog());`
+- `api/v1/rts_cases.php`:249 — `api_ok(rts_case_handler_product_catalog());`
 
 ## rts_case_handler_upload_error_message {#rts_case_handler_upload_error_message}
 
@@ -233,5 +233,5 @@ function_count: 28
 
 **Callers (1):**
 
-- `api/v1/rts_cases.php`:272 — `api_ok(rts_case_handler_upload_documentation(is_array($file) ? $file : null));`
+- `api/v1/rts_cases.php`:277 — `api_ok(rts_case_handler_upload_documentation(is_array($file) ? $file : null));`
 

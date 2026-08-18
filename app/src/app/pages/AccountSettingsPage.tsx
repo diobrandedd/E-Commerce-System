@@ -1,15 +1,23 @@
 import { useState } from "react";
-import { KeyRound, Loader2, ShieldCheck } from "lucide-react";
+import { Bell, KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
+import { Switch } from "@/app/components/ui/switch";
 import {
   AppErrorBanner,
   AppSectionEnter,
   AppSuccessNotice,
 } from "@/app/components/layout/appFeedbackMotion";
+import { useBarcodePending } from "@/app/components/notifications/BarcodePendingContext";
 import { useAuth } from "@/app/context/AuthContext";
 import { changePassword } from "@/app/lib/account";
 import { ApiError } from "@/app/lib/api";
+import {
+  desktopBarcodeAlertsWanted,
+  desktopNotificationsSupported,
+  requestDesktopBarcodeAlerts,
+  setDesktopBarcodeAlertsWanted,
+} from "@/app/lib/desktopBarcodeAlerts";
 
 const FIELD_CLASS =
   "rounded-lg border-2 border-border bg-card text-sm px-3 py-2.5 w-full " +
@@ -18,12 +26,17 @@ const LABEL_CLASS = "text-xs font-medium text-muted-foreground uppercase trackin
 
 export function AccountSettingsPage() {
   const { user } = useAuth();
+  const { canWatchBarcodes } = useBarcodePending();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [alertsOn, setAlertsOn] = useState(() => desktopBarcodeAlertsWanted());
+  const [notifyPerm, setNotifyPerm] = useState<NotificationPermission | "unsupported">(() =>
+    desktopNotificationsSupported() ? Notification.permission : "unsupported",
+  );
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +74,28 @@ export function AccountSettingsPage() {
     }
   };
 
+  const toggleDesktopAlerts = async (on: boolean) => {
+    if (!on) {
+      setDesktopBarcodeAlertsWanted(false);
+      setAlertsOn(false);
+      return;
+    }
+    if (!desktopNotificationsSupported()) {
+      setNotifyPerm("unsupported");
+      setAlertsOn(false);
+      return;
+    }
+    if (Notification.permission === "granted") {
+      setDesktopBarcodeAlertsWanted(true);
+      setNotifyPerm("granted");
+      setAlertsOn(true);
+      return;
+    }
+    const perm = await requestDesktopBarcodeAlerts();
+    setNotifyPerm(perm);
+    setAlertsOn(perm === "granted");
+  };
+
   return (
     <PageLayout title="My Account" subtitle="Manage your sign-in details">
       <div className="max-w-xl mx-auto space-y-5">
@@ -86,7 +121,41 @@ export function AccountSettingsPage() {
           </div>
         </AppSectionEnter>
 
-        <AppSectionEnter index={1}>
+        {canWatchBarcodes && (
+          <AppSectionEnter index={1}>
+            <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <Bell size={18} className="text-primary" />
+                <h2 className="text-sm font-semibold text-foreground">Barcode request alerts</h2>
+              </div>
+              <div className="flex items-start justify-between gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Send a Windows notification when someone requests honey bottle or pouch/jar
+                  barcodes. Keep this tab open (minimized is fine).
+                </p>
+                <Switch
+                  checked={alertsOn && notifyPerm === "granted"}
+                  onCheckedChange={checked => void toggleDesktopAlerts(checked)}
+                  disabled={notifyPerm === "unsupported"}
+                  aria-label="Windows notifications for barcode requests"
+                />
+              </div>
+              {notifyPerm === "unsupported" && (
+                <p className="text-xs text-muted-foreground">
+                  This browser does not support desktop notifications.
+                </p>
+              )}
+              {notifyPerm === "denied" && (
+                <p className="text-xs text-destructive">
+                  Notifications are blocked for this site. Allow them in Edge or Chrome settings,
+                  then refresh.
+                </p>
+              )}
+            </div>
+          </AppSectionEnter>
+        )}
+
+        <AppSectionEnter index={canWatchBarcodes ? 2 : 1}>
           <form onSubmit={submit} className="rounded-2xl border border-border bg-card p-5 space-y-4">
             <div className="flex items-center gap-2">
               <KeyRound size={18} className="text-[#C8900A]" />

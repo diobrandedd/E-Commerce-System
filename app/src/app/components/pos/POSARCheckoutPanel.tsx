@@ -11,6 +11,7 @@ export interface POSARLineItem {
   label: string;
   qty: number;
   unitPrice: number;
+  kind?: "honey" | "dept";
   productId?: number;
   variant?: string;
   size?: string;
@@ -29,7 +30,7 @@ export interface POSARCheckoutResult {
 }
 
 interface POSARCheckoutPanelProps {
-  mode: "honey" | "dept";
+  mode: "honey" | "dept" | "unified";
   lines: POSARLineItem[];
   onCancel: () => void;
   onSuccess: (result: POSARCheckoutResult) => void;
@@ -68,9 +69,22 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
     setSubmitting(true);
     setError(null);
     try {
-      const action = mode === "honey" ? "honey_ar_checkout" : "dept_ar_checkout";
+      const action =
+        mode === "honey" ? "honey_ar_checkout" : mode === "dept" ? "dept_ar_checkout" : "unified_ar_checkout";
       const items =
-        mode === "honey"
+        mode === "unified"
+          ? lines.map(l => ({
+              kind: l.kind ?? (l.bottleUnitIds?.length ? "honey" : "dept"),
+              product_id: l.productId,
+              list_unit_price: l.unitPrice,
+              qty: l.qty,
+              variant: l.variant,
+              size: l.size,
+              product_key: l.productKey,
+              bottle_unit_ids: l.bottleUnitIds ?? [],
+              pouch_unit_ids: l.pouchUnitIds ?? [],
+            }))
+          : mode === "honey"
           ? lines.map(l => ({
               product_id: l.productId,
               qty: l.qty,
@@ -90,7 +104,10 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
         debtor_user_id: debtor.debtor_user_id,
         debtor_name: debtorName,
         debtor_mobile: mobile.trim(),
-        stock_source: mode === "dept" && lines.some(l => (l.pouchUnitIds?.length ?? 0) > 0) ? "packaging" : stockSource,
+        stock_source:
+          mode === "unified" || (mode === "dept" && lines.some(l => (l.pouchUnitIds?.length ?? 0) > 0))
+            ? "packaging"
+            : stockSource,
       });
       onSuccess(result);
     } catch (e) {

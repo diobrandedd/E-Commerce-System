@@ -56,6 +56,7 @@ Code adapts SQL when columns are missing. Changing schema without updating probe
 - `rts_cases_void_sql()` — void column handling
 - `honey_warehouse_has_pricing_columns()` / `honey_warehouse_unit_cost_column()` — pricing columns
 - `honey_pos_column_exists()` — POS schema variants
+- **Phase 65:** `pos_sales.sold_by_pin_id` is **nullable**. Account POS (`pos.sell`) writes `sold_by_user_id` instead. Do not INSERT PIN-only after this migration for IMS cashiers. Probe `sold_by_user_id` before joining `users` on the Sales list.
 
 After any migration, grep for these helpers and update callers.
 
@@ -145,9 +146,9 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 - **`online_order_parcels`** — created on `batch_finalize` from `csr_online_order_lines`; UNIQUE `tracking_number`; parser must pass before insert.
 - **Ship** — `api/v1/deliveries.php` `ship_parcel` requires `delivery_item_id` (photo uploaded first); **phase 54:** parse `items_raw` only (`honey_parcel_assert_items_ok`). Honey **and** dept finished stock (Paragis / BRC / Cacao / Comb) are deducted at pack scan (`honey_bottle_pack_session_confirm` + `honey_bottle_pack_session_dept_items`). Fulfillment packaging is **not** deducted at ship. Keep `honey_parcel_apply_deduct()` / `honey_parcel_revert_deduct()` for legacy parcels. Idempotent if already `shipped`.
 - **Pack cancel restock** — Deliveries → Cancelled uses product barcode sessions (`pack_cancel_restock_*`, phase 61) to restore `packed` units to `in_stock` + finished qty. Tracking `cancel_parcel_scan` returns **410**. Sealed-box re-waybill remains Hold / Re-waybill (no restock).
-- **POS** — Honey and dept barcode products require sticker scan (`in_stock` only; `packed`/`sold` rejected). Dept qty-only packaging sell disabled when pouch barcodes exist.
-- **Sales report** — `sale_type = 'parcel'` rows are pack-scan output, reported as **Shipped** (packed for a parcel), never as register revenue. Dept walk-in units come from POS receipt lines via `products.dept_product_key` (so RTS-pool dept sells count); dept shipped units come from `dept_pouch_units` with `consumed_ref_type = 'pack_session'`. Never count both dept units and dept receipt lines for the same channel — sticker sells write to both.
-- **Dept defect scan** — Jar Cacao (`jar_cacao`) finished jars: scan → `damaged` + finished qty −1 + `dept_pouch_defect_log` row. Non-`in_stock` → **Not in inventory**. Does **not** write RTS pools.
+- **POS** — Single scan-first terminal at `/pos`: `unified_lookup` detects honey or dept stickers; manual `list_unit_price` per line required; mixed cart checkout via `pos_unified_checkout`. Legacy `/pos/honey` and `/pos/:deptKey` redirect to `/pos`. Honey and dept barcode products require sticker scan (`in_stock` only; `packed`/`sold` rejected).
+- **Sales report** — `sale_type = 'parcel'` rows are pack-scan output, reported as **Shipped** (packed for a parcel), never as register revenue. Period filter supports **Pick date** (single day) and **Custom range** via `period=custom` + `from`/`to`. Dept walk-in units come from POS receipt lines via `products.dept_product_key` (so RTS-pool dept sells count); dept shipped units come from `dept_pouch_units` with `consumed_ref_type = 'pack_session'`. Never count both dept units and dept receipt lines for the same channel — sticker sells write to both.
+- **Leak / damage scan** — Unified page `/inventory/leak-damage`: staff pick **Leaked** or **Damaged**, scan any honey or dept sticker → unit `damaged`, finished aggregate −1, row in `finished_unit_leak_damage_log` (phase 63). Non-`in_stock` → **Not in inventory**. Does **not** write RTS pools. Legacy `dept_pouch_defect_scan` delegates here.
 - **Daily scan-in reports** — gross historical stock-in is barcode `scanned_at IS NOT NULL`, never `honey_packaging_rows.current_*`, `dept_inventory_rows.current_qty`, or current unit status. Honey groups by packaging row + size; dept groups by request for `pt` / `brc` / `jar_cacao` / `honey_comb`. Do not restore `barcode.status = "scanned"` filters in history queries: a later void/status transition must not erase that the unit was scanned into the system.
 - **RTS Record** — Tracking QR/manual first; optional product barcodes (`bottle_codes`) → honey + dept RTS sellable/damaged pools. Not finished packaging stock.
 - **Nested transactions trap:** `online_parcels_ship()` wraps ship + deduct in one transaction. `honey_parcel_apply_deduct()` must use **`$ownsTransaction = !$pdo->inTransaction()`** (same as `honey_pos_checkout`) — inner `commit()` otherwise ends the outer transaction and `ship_parcel` fails with **“There is no active transaction”**.
@@ -255,6 +256,22 @@ Resolved via `rts_storage_csr_tool_root()` in `includes/rts_storage.php`. If `st
 - `PageLayout` header is one row — too many page `actions` buttons will crush title/subtitle on narrow widths. Use compact mobile actions + modal sheet pattern.
 - Dense tables (activity logs, stock entries) must have a mobile stacked-card fallback; horizontal 4-column tables are unreadable on 360px screens.
 - After mobile-sensitive edits, smoke test at ~360x800 in browser responsive mode before ship.
+
+## Desktop barcode request notifications
+
+Windows toasts use the **browser Notification API** from the open SPA tab (poll every 15s). They do **not** fire if Pyx is fully closed.
+
+- Requires **https** or **localhost**. Plain `http://192.168.x.x` is often blocked.
+- User must click **Allow** on the browser prompt (or My Account toggle). `Notification.requestPermission()` needs a click in Chromium.
+- Preference is local (`pyx.desktopBarcodeAlerts`); turning the toggle off does not revoke site permission.
+- Clicking the toast dispatches `pyx:navigate` — `PageLayout` must listen and `navigate()`.
+
+## Scan fields vs phone software keyboard
+
+Stock-in / pack / POS scan boxes stay focused for USB/Bluetooth **keyboard-wedge** scanners. On Android Chrome, focusing a text input opens Gboard — including **behind** a camera modal, and again after each decode when the page called `.focus()`.
+
+- Camera modals must `blur()` the active field and park focus on a non-input sink (`useDismissSoftwareKeyboard`).
+- Scan inputs use `useScanWedgeField`: `inputMode="none"` unless the user taps to type; do **not** refocus while the camera is open.
 
 ## Before you edit shared code
 

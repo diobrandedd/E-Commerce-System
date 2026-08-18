@@ -19,34 +19,19 @@ function honey_bottle_size_label(string $size): string
     return HONEY_BOTTLE_SIZE_LABELS[$size] ?? $size;
 }
 
-function honey_bottle_can_request(string $role): bool
+function honey_bottle_can_request(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'tl', 'staff'], true);
+    return ims_user_can($user, 'honey.bottle.request');
 }
 
-/**
- * Generate / print / void / backfill — executives and CSR (tl/staff in csr dept) only.
- * Honey department staff / TL / prod_manager cannot generate.
- */
-function honey_bottle_can_generate(string $role, ?string $deptKey = null): bool
+function honey_bottle_can_generate(array $user): bool
 {
-    if ($role === 'executive' || $role === 'admin') {
-        return true;
-    }
-    if (in_array($role, ['csr_tl', 'csr_staff'], true)) {
-        return true;
-    }
-    $dept = $deptKey !== null ? strtolower($deptKey) : null;
-    if ($dept === 'csr' && in_array($role, ['tl', 'staff'], true)) {
-        return true;
-    }
-
-    return false;
+    return ims_user_can($user, 'honey.bottle.generate');
 }
 
-function honey_bottle_can_scan(string $role): bool
+function honey_bottle_can_scan(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'tl', 'staff'], true);
+    return ims_user_can($user, 'honey.bottle.scan');
 }
 
 /** Resolve IMS department key for a session user (honey, csr, …). */
@@ -69,7 +54,7 @@ function honey_bottle_user_dept_key(array $user): ?string
 
 function honey_bottle_user_can_generate(array $user): bool
 {
-    return honey_bottle_can_generate((string) ($user['role'] ?? ''), honey_bottle_user_dept_key($user));
+    return honey_bottle_can_generate($user);
 }
 
 function honey_bottle_normalize_code(string $raw): string

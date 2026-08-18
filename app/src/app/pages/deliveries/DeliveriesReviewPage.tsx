@@ -39,8 +39,8 @@ function displayTracking(row: DeliveryReviewRow): string {
 }
 
 export function DeliveriesReviewPage() {
-  const { user } = useAuth();
-  const isExecutive = user?.role === "executive";
+  const { can } = useAuth();
+  const isExecutive = can("deliveries.review");
   const [q, setQ] = useState("");
   const debouncedQ = useDebouncedValue(q, 300);
   const [from, setFrom] = useState("");

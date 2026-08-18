@@ -128,8 +128,8 @@ function LineCountBadge({ count }: { count: number }) {
 }
 
 export function RTSRecordsPage() {
-  const { user } = useAuth();
-  const canAdmin = user?.role === "executive" || user?.role === "prod_manager";
+  const { can } = useAuth();
+  const canAdmin = can("rts.admin");
   const [searchParams] = useSearchParams();
 
   const [catalog, setCatalog] = useState<RtsProductCatalog | null>(null);

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
-import { Loader2, Printer, ScanLine, Tag } from "lucide-react";
+import { AlertTriangle, Loader2, Printer, ScanLine, Tag } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
@@ -70,10 +70,11 @@ function grossQty(value: string | number): string {
 }
 
 export function HoneyPackagingPage() {
-  const { user } = useAuth();
-  const canExecEdit = canExecutiveDirectEdit(user?.role);
-  const showSupplierProfile = canViewSupplierProfile(user?.role);
-  const canCombBarcodes = canDeptPouchBarcodeOps(user?.role);
+  const { user, can } = useAuth();
+  const canExecEdit = canExecutiveDirectEdit(user);
+  const canLeakDamage = can("inventory.leak_damage.view");
+  const showSupplierProfile = canViewSupplierProfile(user);
+  const canCombBarcodes = canDeptPouchBarcodeOps(user, "honey_comb");
   const [rows, setRows] = useState<PkRow[]>([]);
   const [scanDate, setScanDate] = useState(localToday);
   const [scanDates, setScanDates] = useState<string[]>([]);
@@ -148,6 +149,14 @@ export function HoneyPackagingPage() {
     >
       <div className="space-y-4 mb-6">
         <HoneyStageTabs />
+        {canLeakDamage && (
+          <Link
+            to="/inventory/leak-damage"
+            className="inline-flex items-center gap-2 py-2 px-3 text-sm font-semibold border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors w-fit"
+          >
+            <AlertTriangle size={16} /> Leak / damage scan
+          </Link>
+        )}
       </div>
       {traceQ && (
         <button

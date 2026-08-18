@@ -375,9 +375,9 @@ function honey_pricing_enrich_warehouse_row(array $row): array
     ]);
 }
 
-function honey_pricing_role_can_view_cost(string $role): bool
+function honey_pricing_role_can_view_cost(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager'], true);
+    return ims_user_can($user, 'honey.pricing.view_cost');
 }
 
 function honey_pricing_pending_count(PDO $pdo): int

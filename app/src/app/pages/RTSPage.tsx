@@ -62,12 +62,12 @@ function whereLabel(w: string): string {
 }
 
 export function RTSPage() {
-  const { user } = useAuth();
-  const canRecord = user?.role === "csr_staff" || user?.role === "csr_tl" || user?.role === "executive" || user?.role === "prod_manager";
+  const { user, can } = useAuth();
+  const canRecord = can("rts.record");
   const [canMutate, setCanMutate] = useState(false);
   const [canExecutiveEdit, setCanExecutiveEdit] = useState(false);
-  const canViewOps = user?.role === "executive" || user?.role === "prod_manager" || user?.role === "hr";
-  const readonly = user?.role === "hr" || user?.role === "csr_tl" || user?.role === "csr_staff";
+  const canViewOps = can("rts.admin");
+  const readonly = can("rts.view") && !can("rts.record");
 
   const [honey, setHoney] = useState<RtsInvRow[]>([]);
   const [other, setOther] = useState<RtsInvRow[]>([]);
@@ -89,8 +89,7 @@ export function RTSPage() {
   const [addHoneyOpen, setAddHoneyOpen] = useState(false);
   const [addOtherOpen, setAddOtherOpen] = useState(false);
 
-  const canSync = user?.role === "executive" || user?.role === "prod_manager" || user?.role === "hr"
-    || user?.role === "csr_tl" || user?.role === "csr_staff";
+  const canSync = can("rts.sync.run");
 
   const loadUseLog = useCallback(async () => {
     try {

@@ -36,11 +36,12 @@ function finishedSummary(row: DeptInventoryRow): string {
   return `Finished ${sellUnit} count — stock in and produce from Raw Materials`;
 }
 
-export function DeptProductFinishedPage() {
-  const { productSlug = "" } = useParams();
+export function DeptProductFinishedPage({ productSlug: productSlugProp }: { productSlug?: string } = {}) {
+  const { productSlug: paramSlug = "" } = useParams();
+  const productSlug = productSlugProp || paramSlug;
   const config = PRODUCT_INVENTORY_ROUTES[productSlug];
   const { user } = useAuth();
-  const canExecEdit = canExecutiveDirectEdit(user?.role);
+  const canExecEdit = canExecutiveDirectEdit(user);
   const [rows, setRows] = useState<DeptInventoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [editRow, setEditRow] = useState<DeptInventoryRow | null>(null);

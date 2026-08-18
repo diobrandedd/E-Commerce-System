@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -18,6 +18,7 @@ import {
   type DeptPouchDefectRow,
 } from "@/app/lib/deptPouchBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
+import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 
 interface Props {
   productKey: string;
@@ -28,7 +29,6 @@ type Tab = "scan" | "history";
 
 export function DeptPouchDefectPanel({ productKey, productLabel }: Props) {
   const unit = deptPouchUnitLabel(productKey);
-  const inputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>("scan");
   const [code, setCode] = useState("");
   const [flash, setFlash] = useState<"ok" | "err" | null>(null);
@@ -41,6 +41,7 @@ export function DeptPouchDefectPanel({ productKey, productLabel }: Props) {
   const [page, setPage] = useState(1);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const cameraTitleId = useId();
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen && tab === "scan", tab);
 
   const loadHistory = useCallback(
     async (pageNum = 1) => {
@@ -65,12 +66,6 @@ export function DeptPouchDefectPanel({ productKey, productLabel }: Props) {
       void loadHistory(page);
     }
   }, [tab, page, loadHistory]);
-
-  useEffect(() => {
-    if (tab === "scan") {
-      inputRef.current?.focus();
-    }
-  }, [tab]);
 
   const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     const value = (raw ?? code).trim();
@@ -98,7 +93,7 @@ export function DeptPouchDefectPanel({ productKey, productLabel }: Props) {
       window.setTimeout(() => setFlash(null), 1200);
       return { kind: notInStock ? "duplicate" : "error", message };
     } finally {
-      inputRef.current?.focus();
+      refocus();
     }
   };
 
@@ -141,6 +136,7 @@ export function DeptPouchDefectPanel({ productKey, productLabel }: Props) {
             <div className="flex flex-wrap gap-2">
               <input
                 ref={inputRef}
+                {...inputProps}
                 className={`flex-1 min-w-[12rem] border rounded-lg px-3 py-2 font-mono text-sm outline-none focus:ring-4 focus:ring-red-200/60 ${
                   flash === "ok"
                     ? "border-green-500"

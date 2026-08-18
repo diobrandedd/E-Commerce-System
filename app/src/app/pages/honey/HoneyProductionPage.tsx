@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
-import { BookOpen, Loader2, Printer, ScanLine, Tag } from "lucide-react";
+import { useSearchParams, Link } from "react-router";
+import { BookOpen, Loader2, Printer, ScanLine, Tag, AlertTriangle } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { HoneyStockStatusBadge } from "@/app/components/honey/HoneyStockStatusBadge";
 import {
@@ -32,12 +32,14 @@ interface PrRow {
 type ModalKind = "request" | "scan" | "admin" | "guide" | null;
 
 export function HoneyProductionPage() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const canGenerate = canGenerateHoneyBottleLabels(user?.role, user?.dept);
+  const canRequest = can("honey.bottle.request");
+  const canScan = can("honey.bottle.scan");
+  const canGenerate = can("honey.bottle.generate") || canGenerateHoneyBottleLabels(user);
   const isCsrOnly = user?.role === "csr_tl" || user?.role === "csr_staff";
-  const showHoneyOps = !isCsrOnly;
-  const showSupplierProfile = canViewSupplierProfile(user?.role);
+  const canLeakDamage = can("inventory.leak_damage.view");
+  const showSupplierProfile = canViewSupplierProfile(user);
   const [rows, setRows] = useState<PrRow[]>([]);
   const [page, setPage] = useState(1);
   const perPage = 12;
@@ -95,6 +97,37 @@ export function HoneyProductionPage() {
 
   const closeModal = () => setModal(null);
 
+  const barcodeButtons = (
+    <div className="flex flex-wrap items-center gap-2">
+      {canRequest && (
+        <Button type="button" size="sm" variant="outline" onClick={() => setModal("request")}>
+          <Tag size={14} /> Request barcodes
+        </Button>
+      )}
+      {canScan && (
+        <Button type="button" size="sm" variant="outline" onClick={() => setModal("scan")}>
+          <ScanLine size={14} /> Scan to inventory
+        </Button>
+      )}
+      {canGenerate && (
+        <Button
+          type="button"
+          size="sm"
+          className="relative overflow-visible"
+          onClick={() => setModal("admin")}
+        >
+          <Printer size={14} />
+          Generate / print requests
+          {pendingLabels > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center leading-none">
+              {pendingLabels > 99 ? "99+" : pendingLabels}
+            </span>
+          )}
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <PageLayout
       title="Raw Honey"
@@ -104,42 +137,24 @@ export function HoneyProductionPage() {
           : "Production — request bottle labels, scan stock-in, and review lot history"
       }
       actions={
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => setModal("guide")} className={appHeaderActionClass}>
-            <BookOpen size={13} /> Guide
-          </button>
-          {showHoneyOps && (
-            <>
-              <Button type="button" size="sm" variant="outline" onClick={() => setModal("request")}>
-                <Tag size={14} /> Request<span className="hidden sm:inline">&nbsp;barcodes</span>
-              </Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => setModal("scan")}>
-                <ScanLine size={14} /> Scan<span className="hidden sm:inline">&nbsp;to inventory</span>
-              </Button>
-            </>
-          )}
-          {canGenerate && (
-            <Button
-              type="button"
-              size="sm"
-              className="relative overflow-visible"
-              onClick={() => setModal("admin")}
-            >
-              <Printer size={14} />
-              <span className="sm:hidden">Print</span>
-              <span className="hidden sm:inline">Generate / print requests</span>
-              {pendingLabels > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center leading-none">
-                  {pendingLabels > 99 ? "99+" : pendingLabels}
-                </span>
-              )}
-            </Button>
-          )}
-        </div>
+        <button type="button" onClick={() => setModal("guide")} className={appHeaderActionClass}>
+          <BookOpen size={13} /> Guide
+        </button>
       }
     >
       <div className="space-y-4">
-        {!isCsrOnly && <HoneyStageTabs />}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          {!isCsrOnly && <HoneyStageTabs />}
+          {barcodeButtons}
+        </div>
+        {canLeakDamage && (
+          <Link
+            to="/inventory/leak-damage"
+            className="inline-flex items-center gap-2 py-2 px-3 text-sm font-semibold border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors w-fit"
+          >
+            <AlertTriangle size={16} /> Leak / damage scan
+          </Link>
+        )}
         <div className="bg-card rounded-xl border overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

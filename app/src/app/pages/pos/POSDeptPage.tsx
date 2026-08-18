@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { AnimatePresence } from "motion/react";
 import { AlertCircle, Camera, Loader2, Trash2 } from "lucide-react";
@@ -24,6 +24,7 @@ import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { loadPosCatalogCached, readPosCache } from "@/app/lib/posCache";
 import { deptPouchBarcodesApi } from "@/app/lib/deptPouchBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
+import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 import {
   POS_DEPT_LABELS,
   posDeptProductKeyFromRoute,
@@ -41,7 +42,6 @@ export function POSDeptPage() {
   const title = POS_DEPT_LABELS[productKey] ?? "Product";
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const scanRef = useRef<HTMLInputElement>(null);
   const cameraTitleId = useId();
 
   useEffect(() => {
@@ -55,6 +55,7 @@ export function POSDeptPage() {
   const [error, setError] = useState<string | null>(null);
   const [scanCode, setScanCode] = useState("");
   const [cameraOpen, setCameraOpen] = useState(false);
+  const { inputRef: scanRef, refocus, inputProps } = useScanWedgeField(cameraOpen, productKey);
   const [cart, setCart] = useState<DeptCartLine[]>([]);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showStockSource, setShowStockSource] = useState(false);
@@ -103,10 +104,6 @@ export function POSDeptPage() {
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
-
-  useEffect(() => {
-    scanRef.current?.focus();
-  }, [productKey]);
 
   const unitPrice = product?.selling_price ?? 0;
   const sellable = product?.sellable ?? false;
@@ -220,7 +217,7 @@ export function POSDeptPage() {
       setTimeout(() => setCartPulse(false), 500);
       playScanBeep("ok");
       setFeedback("success");
-      scanRef.current?.focus();
+      refocus();
       return { kind: "success", message: `Added ${barcode.code}` };
     } catch (e) {
       const reason = e instanceof ApiError ? e.message : "Scan failed.";
@@ -228,7 +225,7 @@ export function POSDeptPage() {
       playScanBeep(isDup ? "dup" : "bad");
       setError(reason);
       setFeedback("error");
-      scanRef.current?.focus();
+      refocus();
       return { kind: isDup ? "duplicate" : "error", message: reason };
     }
   };
@@ -355,6 +352,7 @@ export function POSDeptPage() {
         <div className="w-full max-w-xl mx-auto flex gap-2">
           <input
             ref={scanRef}
+            {...inputProps}
             className="flex-1 border rounded-lg px-3 py-2 text-sm font-mono"
             placeholder="Scan sticker barcode to add to cart"
             value={scanCode}

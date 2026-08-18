@@ -75,13 +75,54 @@ function honey_sales_pos_checkout_where_clause(?array $range, ?string $receiptSe
 }
 
 /**
- * Checkout list filter covering honey packaging walk-ins **and** dept product receipts
- * (Paragis / BRC / Jar Cacao / Honey Comb), which never write to honey_sales_log.
+ * Product key for recent walk-in list: all | honey | pt | brc | jar_cacao | honey_comb.
+ */
+function honey_sales_normalize_product_filter(string $product): string
+{
+    $product = strtolower(trim($product));
+    $allowed = ['all', 'honey', 'pt', 'brc', 'jar_cacao', 'honey_comb'];
+
+    return in_array($product, $allowed, true) ? $product : 'all';
+}
+
+/**
+ * Restrict receipts to those with at least one matching product line.
  *
+ * @return array{0: string, 1: list<mixed>}
+ */
+function honey_sales_product_exists_clause(string $product): array
+{
+    $product = honey_sales_normalize_product_filter($product);
+    if ($product === 'all') {
+        return ['', []];
+    }
+    if ($product === 'honey') {
+        return [
+            ' AND EXISTS (
+                SELECT 1 FROM pos_receipt_items pri_f
+                INNER JOIN products p_f ON p_f.id = pri_f.product_id
+                WHERE pri_f.sale_id = ps.id
+                  AND (p_f.dept_product_key IS NULL OR p_f.dept_product_key = "")
+              )',
+            [],
+        ];
+    }
+
+    return [
+        ' AND EXISTS (
+            SELECT 1 FROM pos_receipt_items pri_f
+            INNER JOIN products p_f ON p_f.id = pri_f.product_id
+            WHERE pri_f.sale_id = ps.id AND p_f.dept_product_key = ?
+          )',
+        [$product],
+    ];
+}
+
+/**
  * @param array<string, mixed>|null $range
  * @return array{0: string, 1: list<mixed>}
  */
-function honey_sales_checkout_where_clause(?array $range, ?string $receiptSearch = null, string $saleType = 'all'): array
+function honey_sales_checkout_where_clause(?array $range, ?string $receiptSearch = null, string $saleType = 'all', string $product = 'all'): array
 {
     $where = ' WHERE (EXISTS (SELECT 1 FROM honey_sales_log h
                               WHERE h.pos_sale_id = ps.id AND h.source = "packaging" AND h.sale_type = "walk_in")
@@ -107,6 +148,9 @@ function honey_sales_checkout_where_clause(?array $range, ?string $receiptSearch
     } elseif ($saleType === 'ar') {
         $where .= ' AND ps.is_ar = 1';
     }
+    [$productSql, $productParams] = honey_sales_product_exists_clause($product);
+    $where .= $productSql;
+    $params = array_merge($params, $productParams);
 
     return [$where, $params];
 }
@@ -221,6 +265,22 @@ function honey_sales_serialize_receipt_item(array $row): array
     ];
 }
 
+function honey_sales_pos_has_sold_by_user(PDO $pdo): bool
+{
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+    $st = $pdo->prepare(
+        'SELECT 1 FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1'
+    );
+    $st->execute(['pos_sales', 'sold_by_user_id']);
+    $cached = (bool) $st->fetchColumn();
+
+    return $cached;
+}
+
 /**
  * @param array<string, mixed>|null $range
  * @return array{page: int, per_page: int, total: int, total_pages: int, rows: list<array<string, mixed>>}
@@ -230,7 +290,8 @@ function honey_sales_fetch_checkouts(
     ?array $range,
     int $page,
     ?string $receiptSearch = null,
-    string $saleType = 'all'
+    string $saleType = 'all',
+    string $product = 'all'
 ): array
 {
     $perPage = HONEY_SALES_CHECKOUTS_PER_PAGE;
@@ -238,7 +299,8 @@ function honey_sales_fetch_checkouts(
     if (!in_array($saleType, ['all', 'regular', 'discount', 'ar'], true)) {
         $saleType = 'all';
     }
-    [$where, $params] = honey_sales_checkout_where_clause($range, $receiptSearch, $saleType);
+    $product = honey_sales_normalize_product_filter($product);
+    [$where, $params] = honey_sales_checkout_where_clause($range, $receiptSearch, $saleType, $product);
 
     $countSql = "SELECT COUNT(DISTINCT ps.id) AS cnt
                  FROM pos_sales ps{$where}";
@@ -252,11 +314,20 @@ function honey_sales_fetch_checkouts(
     }
 
     $offset = ($page - 1) * $perPage;
+    $hasUserSeller = honey_sales_pos_has_sold_by_user($pdo);
+    $sellerJoin = $hasUserSeller
+        ? ' LEFT JOIN users su ON su.id = ps.sold_by_user_id LEFT JOIN pos_pins sp ON sp.id = ps.sold_by_pin_id'
+        : ' LEFT JOIN pos_pins sp ON sp.id = ps.sold_by_pin_id';
+    $sellerSelect = $hasUserSeller
+        ? "COALESCE(NULLIF(TRIM(su.name), ''), NULLIF(TRIM(sp.label), ''), 'POS') AS sold_by_name"
+        : "COALESCE(NULLIF(TRIM(sp.label), ''), 'POS') AS sold_by_name";
+    $sellerGroup = $hasUserSeller ? ', su.name, sp.label' : ', sp.label';
     $listSql = "SELECT ps.id AS sale_id, ps.receipt_no, ps.sale_date AS sold_at,
                        ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount,
-                       ps.buyer_name, ps.buyer_credentials, COALESCE(ps.is_ar, 0) AS is_ar
-                FROM pos_sales ps{$where}
-                GROUP BY ps.id, ps.receipt_no, ps.sale_date, ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount, ps.buyer_name, ps.buyer_credentials, ps.is_ar
+                       ps.buyer_name, ps.buyer_credentials, COALESCE(ps.is_ar, 0) AS is_ar,
+                       {$sellerSelect}
+                FROM pos_sales ps{$sellerJoin}{$where}
+                GROUP BY ps.id, ps.receipt_no, ps.sale_date, ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount, ps.buyer_name, ps.buyer_credentials, ps.is_ar{$sellerGroup}
                 ORDER BY ps.sale_date DESC
                 LIMIT {$perPage} OFFSET {$offset}";
     $lst = $pdo->prepare($listSql);
@@ -305,6 +376,7 @@ function honey_sales_fetch_checkouts(
             'total_amount' => round((float) $s['total_amount'], 2),
             'buyer_name' => (string) $s['buyer_name'],
             'buyer_credentials' => $s['buyer_credentials'] !== null ? (string) $s['buyer_credentials'] : null,
+            'sold_by_name' => trim((string) ($s['sold_by_name'] ?? '')) !== '' ? (string) $s['sold_by_name'] : 'POS',
             'is_ar' => (int) ($s['is_ar'] ?? 0) === 1,
             'item_count' => count($items),
             'items' => $items,
@@ -370,7 +442,8 @@ function honey_sales_sold_snapshot(
     int $page = 1,
     ?string $receiptSearch = null,
     string $saleType = 'all',
-    string $channel = 'all'
+    string $channel = 'all',
+    string $product = 'all'
 ): array {
     $filters = honey_sales_resolve_filters($period, $from, $to);
     $range = $filters['range'];
@@ -384,6 +457,7 @@ function honey_sales_sold_snapshot(
     if (!in_array($channel, ['all', 'walk_in', 'online'], true)) {
         $channel = 'all';
     }
+    $product = honey_sales_normalize_product_filter($product);
     [$logWhere, $logParams] = honey_sales_log_where_clause($range, $channel);
 
     $sqlAll = "SELECT h.variant,
@@ -455,7 +529,7 @@ function honey_sales_sold_snapshot(
     $sst->execute($salesParams);
     $summaryRow = $sst->fetch(PDO::FETCH_ASSOC) ?: [];
 
-    $checkouts = honey_sales_fetch_checkouts($pdo, $range, $page, $receiptSearch, $saleType);
+    $checkouts = honey_sales_fetch_checkouts($pdo, $range, $page, $receiptSearch, $saleType, $product);
 
     $filterMeta = $range !== null
         ? ['period' => $range['period'], 'from' => $range['from'], 'to' => $range['to'], 'label' => $range['label']]
@@ -463,6 +537,7 @@ function honey_sales_sold_snapshot(
     $filterMeta['receipt'] = $receiptSearch;
     $filterMeta['sale_type'] = $saleType;
     $filterMeta['channel'] = $channel;
+    $filterMeta['product'] = $product;
 
     [$shareWhere, $shareParams] = honey_sales_log_where_clause($range, 'all');
     $shareSql = "SELECT h.sale_type,

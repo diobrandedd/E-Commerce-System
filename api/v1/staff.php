@@ -11,6 +11,9 @@ require_once __DIR__ . '/_bootstrap.php';
  *   POST ?action=create
  *   POST ?action=update
  *   POST ?action=reset_password
+ *   GET  ?action=permission_catalog
+ *   GET  ?action=permissions_get
+ *   POST ?action=permissions_set
  */
 
 api_dispatch([
@@ -18,6 +21,9 @@ api_dispatch([
     'create' => 'api_staff_create',
     'update' => 'api_staff_update',
     'reset_password' => 'api_staff_reset_password',
+    'permission_catalog' => 'api_staff_permission_catalog',
+    'permissions_get' => 'api_staff_permissions_get',
+    'permissions_set' => 'api_staff_permissions_set',
 ]);
 
 function api_staff_username_valid(string $username): bool
@@ -37,8 +43,10 @@ function api_staff_role_needs_dept(string $role): bool
 
 function api_staff_serialize_user(array $row): array
 {
+    $id = (int) $row['id'];
+
     return [
-        'id' => (int) $row['id'],
+        'id' => $id,
         'username' => (string) $row['username'],
         'name' => (string) $row['name'],
         'email' => (string) $row['email'],
@@ -49,13 +57,14 @@ function api_staff_serialize_user(array $row): array
         'dept_name' => $row['dept_name'] ?? null,
         'is_active' => (int) $row['is_active'] === 1,
         'created_at' => (string) $row['created_at'],
+        'permission_count' => ims_user_permission_count($id),
     ];
 }
 
 function api_staff_list(): void
 {
     api_method_allowed(['GET']);
-    api_require_role(['executive']);
+    api_require_permission('staff.manage');
     $pdo = ims_pdo();
 
     $st = $pdo->query(
@@ -129,7 +138,7 @@ function api_staff_create(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('staff.manage');
 
     $pdo = ims_pdo();
     $roleIdByName = [];
@@ -160,7 +169,7 @@ function api_staff_create(): void
         $data['is_active'],
     ]);
 
-    api_ok(['id' => (int) $pdo->lastInsertId(), 'message' => 'User created. Default password is the employee ID.']);
+    api_ok(['id' => (int) $pdo->lastInsertId(), 'message' => 'User created with no permissions. Open Permissions to grant access.']);
 }
 
 function api_staff_update(): void
@@ -168,7 +177,7 @@ function api_staff_update(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('staff.manage');
 
     $userId = (int) ($input['user_id'] ?? 0);
     if ($userId < 1) {
@@ -208,7 +217,7 @@ function api_staff_reset_password(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_role(['executive']);
+    api_require_permission('staff.manage');
 
     $userId = (int) ($input['user_id'] ?? 0);
     if ($userId < 1) {
@@ -232,4 +241,78 @@ function api_staff_reset_password(): void
     $upd = $pdo->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
     $upd->execute([$hash, $userId]);
     api_ok(['reset' => true]);
+}
+
+function api_staff_permission_catalog(): void
+{
+    api_method_allowed(['GET']);
+    api_require_permission('staff.manage');
+    api_ok(['groups' => ims_permission_catalog_grouped(), 'presets' => array_keys(array_filter([
+        'executive' => true,
+        'prod_manager' => true,
+        'hr' => true,
+        'tl' => true,
+        'staff' => true,
+    ]))]);
+}
+
+function api_staff_permissions_get(): void
+{
+    api_method_allowed(['GET']);
+    api_require_permission('staff.manage');
+    $userId = (int) ($_GET['user_id'] ?? 0);
+    if ($userId < 1) {
+        api_fail('Invalid user id.', 422);
+    }
+    $pdo = ims_pdo();
+    $st = $pdo->prepare(
+        "SELECT u.id, r.name AS role_name, d.name AS dept_name
+         FROM users u
+         INNER JOIN roles r ON r.id = u.role_id
+         LEFT JOIN departments d ON d.id = u.dept_id
+         WHERE u.id = ? LIMIT 1"
+    );
+    $st->execute([$userId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        api_fail('User not found.', 404);
+    }
+    $role = (string) $row['role_name'];
+    $deptKey = isset($row['dept_name']) ? strtolower((string) $row['dept_name']) : null;
+    api_ok([
+        'user_id' => $userId,
+        'role' => $role,
+        'dept_name' => $row['dept_name'],
+        'permissions' => ims_user_permissions_expanded($userId),
+        'preset' => ims_permission_preset_for_role($role, $deptKey),
+        'read_only' => $role === 'executive',
+    ]);
+}
+
+function api_staff_permissions_set(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $actor = api_require_permission('staff.manage');
+    $userId = (int) ($input['user_id'] ?? 0);
+    if ($userId < 1) {
+        api_fail('Invalid user id.', 422);
+    }
+    $pdo = ims_pdo();
+    $st = $pdo->prepare('SELECT r.name AS role_name FROM users u INNER JOIN roles r ON r.id = u.role_id WHERE u.id = ? LIMIT 1');
+    $st->execute([$userId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        api_fail('User not found.', 404);
+    }
+    if ((string) $row['role_name'] === 'executive') {
+        api_fail('Executive accounts have full access and cannot be edited.', 422);
+    }
+    $keys = $input['keys'] ?? $input['permissions'] ?? [];
+    if (!is_array($keys)) {
+        api_fail('permissions must be an array.', 422);
+    }
+    ims_user_permissions_set($userId, array_map('strval', $keys), (int) $actor['id']);
+    api_ok(['updated' => true, 'permission_count' => ims_user_permission_count($userId)]);
 }

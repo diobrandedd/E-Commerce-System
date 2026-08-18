@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Camera, Loader2, Printer } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -20,6 +20,7 @@ import {
   type HoneyPackagingOption,
 } from "@/app/lib/bottleBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
+import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 
 interface ProductionLotOption {
   id: number;
@@ -251,17 +252,13 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
 }
 
 export function HoneyBottleScanInPanel() {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [code, setCode] = useState("");
   const [flash, setFlash] = useState<"ok" | "err" | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const cameraTitleId = useId();
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
 
   const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     const value = (raw ?? code).trim();
@@ -276,7 +273,7 @@ export function HoneyBottleScanInPanel() {
         setProgress(`${res.request.scanned_count} / ${res.request.generated_count || res.request.quantity} scanned`);
       }
       window.setTimeout(() => setFlash(null), 700);
-      inputRef.current?.focus();
+      refocus();
       return { kind: "success", message: `Stocked in: ${res.variant} ${res.size_label} · ${res.code}` };
     } catch (e) {
       const reason = e instanceof ApiError ? e.message : "Scan failed.";
@@ -285,7 +282,7 @@ export function HoneyBottleScanInPanel() {
       setFlash("err");
       setMsg(reason);
       window.setTimeout(() => setFlash(null), 700);
-      inputRef.current?.focus();
+      refocus();
       return {
         kind: isDup ? "duplicate" : "error",
         message: reason,
@@ -300,6 +297,7 @@ export function HoneyBottleScanInPanel() {
         <div className="flex gap-2">
           <input
             ref={inputRef}
+            {...inputProps}
             className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide"
             placeholder="Scan barcode or type it…"
             value={code}

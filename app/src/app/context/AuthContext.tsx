@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { apiGet, apiPost, setCsrfToken, setForwardingFetchHeaders, ApiError } from "@/app/lib/api";
+import type { PermissionKey } from "@/app/lib/permissions";
+import { hasPermission } from "@/app/lib/permissions";
 
 export interface ForwardingInfo {
   enabled: boolean;
@@ -48,6 +50,7 @@ export interface AuthUser {
   dept: Department;
   dept_id: number | null;
   dept_name: string;
+  permissions?: string[];
 }
 
 export interface MePayload {
@@ -60,9 +63,11 @@ export interface MePayload {
 
 interface AuthContextType {
   user: AuthUser | null;
+  permissions: string[];
   mode: "user" | "pos" | null;
   loading: boolean;
   error: string | null;
+  can: (key: PermissionKey | PermissionKey[]) => boolean;
   login: (username: string, password: string) => Promise<AuthUser>;
   posLogin: (pin: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -73,6 +78,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [mode, setMode] = useState<"user" | "pos" | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,8 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCsrfToken(payload.csrf ?? null);
     setForwardingFetchHeaders(payload.forwarding?.fetch_headers);
     setUser(payload.user);
+    setPermissions(payload.user?.permissions ?? []);
     setMode(payload.mode);
   }, []);
+
+  const can = useCallback(
+    (key: PermissionKey | PermissionKey[]) => hasPermission(permissions, user?.role, key),
+    [permissions, user?.role],
+  );
 
   const refresh = useCallback(async () => {
     try {
@@ -128,13 +140,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // ignore network errors on logout; we still clear local state
     }
     setUser(null);
+    setPermissions([]);
     setMode(null);
     setCsrfToken(null);
     setForwardingFetchHeaders(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, mode, loading, error, login, posLogin, logout, refresh }}>
+    <AuthContext.Provider value={{ user, permissions, mode, loading, error, can, login, posLogin, logout, refresh }}>
       {children}
     </AuthContext.Provider>
   );

@@ -14,9 +14,17 @@ const DEPT_POUCH_BARCODE_KEYS = ['pt', 'brc', 'jar_cacao', 'honey_comb'];
 /** Products that support finished-unit defect barcode scan (MVP: Jar Cacao). */
 const DEPT_POUCH_DEFECT_KEYS = ['jar_cacao'];
 
-function dept_pouch_can_ops(string $role): bool
+function dept_pouch_can_ops(array $user, ?string $productKey = null): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'tl', 'staff', 'admin'], true);
+    if ($productKey !== null && trim($productKey) !== '') {
+        return ims_user_can_dept_line($user, $productKey, 'barcodes');
+    }
+
+    return ims_user_can($user, 'dept.pouch_barcodes')
+        || ims_user_can($user, 'dept.paragis.barcodes')
+        || ims_user_can($user, 'dept.brc.barcodes')
+        || ims_user_can($user, 'dept.cacao.barcodes')
+        || ims_user_can($user, 'dept.comb.barcodes');
 }
 
 function dept_pouch_supports_defect(string $productKey): bool
@@ -288,6 +296,24 @@ function dept_pouch_pending_request_count(PDO $pdo, string $productKey): int
     $st->execute([$productKey]);
 
     return (int) $st->fetchColumn();
+}
+
+/**
+ * Pending barcode-request counts for product lines the user can operate.
+ *
+ * @return array<string, int>
+ */
+function dept_pouch_pending_request_counts_for_user(PDO $pdo, array $user): array
+{
+    $counts = [];
+    foreach (DEPT_POUCH_BARCODE_KEYS as $key) {
+        if (!dept_pouch_can_ops($user, $key)) {
+            continue;
+        }
+        $counts[$key] = dept_pouch_pending_request_count($pdo, $key);
+    }
+
+    return $counts;
 }
 
 /**
@@ -982,103 +1008,10 @@ function dept_pouch_rts_receive(PDO $pdo, array $codes, string $pool): array
  */
 function dept_pouch_defect_scan(PDO $pdo, int $userId, string $productKey, string $code, ?string $note = null): array
 {
-    $productKey = dept_pouch_normalize_product_key($productKey);
-    if (!dept_pouch_supports_defect($productKey)) {
-        throw new RuntimeException('Defect scan is not enabled for this product.');
-    }
-    $code = dept_pouch_normalize_code($code);
-    if ($code === '') {
-        throw new RuntimeException('Scan a barcode.');
-    }
-    $note = $note !== null ? trim($note) : '';
-    if ($note === '') {
-        $note = null;
-    } else {
-        $note = substr($note, 0, 255);
-    }
+    require_once __DIR__ . '/finished_leak_damage.php';
+    unset($productKey);
 
-    $owns = !$pdo->inTransaction();
-    if ($owns) {
-        $pdo->beginTransaction();
-    }
-    try {
-        $st = $pdo->prepare(
-            'SELECT c.id AS barcode_id, c.code, c.status AS barcode_status,
-                    b.product_key, b.batch_no,
-                    un.id AS unit_id, un.status AS unit_status
-             FROM dept_pouch_barcodes c
-             INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
-             LEFT JOIN dept_pouch_units un ON un.barcode_id = c.id
-             WHERE c.code = ?
-             LIMIT 1
-             FOR UPDATE'
-        );
-        $st->execute([$code]);
-        $row = $st->fetch(PDO::FETCH_ASSOC);
-        if ($row === false) {
-            throw new RuntimeException('Unknown barcode.');
-        }
-        $codeProduct = (string) ($row['product_key'] ?? '');
-        if ($codeProduct !== $productKey) {
-            throw new RuntimeException(
-                'This barcode belongs to ' . dept_pouch_product_label($codeProduct) . '.'
-            );
-        }
-        if ((string) $row['barcode_status'] === 'void') {
-            throw new RuntimeException('Not in inventory.');
-        }
-        if ($row['unit_id'] === null || (string) ($row['unit_status'] ?? '') !== 'in_stock') {
-            throw new RuntimeException('Not in inventory.');
-        }
-
-        $unitId = (int) $row['unit_id'];
-        $barcodeId = (int) $row['barcode_id'];
-        $batchNo = (string) ($row['batch_no'] ?? '');
-
-        $upd = $pdo->prepare(
-            'UPDATE dept_pouch_units
-             SET status = "damaged", consumed_at = NOW(), consumed_ref_type = "defect", consumed_ref_id = NULL
-             WHERE id = ? AND status = "in_stock"'
-        );
-        $upd->execute([$unitId]);
-        if ($upd->rowCount() < 1) {
-            throw new RuntimeException('Not in inventory.');
-        }
-
-        dept_inventory_deduct($pdo, $productKey, 1.0);
-
-        $ins = $pdo->prepare(
-            'INSERT INTO dept_pouch_defect_log
-                (product_key, barcode_id, unit_id, code, batch_no, scanned_by, note)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
-        );
-        $ins->execute([$productKey, $barcodeId, $unitId, $code, $batchNo, $userId, $note]);
-        $logId = (int) $pdo->lastInsertId();
-        $pdo->prepare(
-            'UPDATE dept_pouch_units SET consumed_ref_id = ? WHERE id = ?'
-        )->execute([$logId, $unitId]);
-
-        if ($owns) {
-            $pdo->commit();
-        }
-    } catch (Throwable $e) {
-        if ($owns && $pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        throw $e;
-    }
-
-    $finished = dept_inventory_fetch_row($pdo, $productKey);
-
-    return [
-        'log_id' => $logId,
-        'code' => $code,
-        'product_key' => $productKey,
-        'product_label' => dept_pouch_product_label($productKey),
-        'batch_no' => $batchNo,
-        'unit_id' => $unitId,
-        'finished_on_hand' => $finished !== null ? (float) $finished['current_qty'] : null,
-    ];
+    return finished_leak_damage_scan($pdo, $userId, $code, 'damaged', $note);
 }
 
 /**

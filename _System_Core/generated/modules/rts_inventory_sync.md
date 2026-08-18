@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-08-15T10:54:20+02:00
+generated: 2026-08-18T09:59:29+02:00
 type: module
 function_count: 22
 ---
@@ -43,7 +43,7 @@ function_count: 22
 
 **Callers (2):**
 
-- `api/v1/rts_cases.php`:73 — `rts_inventory_sync_run($pdo);`
+- `api/v1/rts_cases.php`:78 — `rts_inventory_sync_run($pdo);`
 - `api/v1/rts_sync.php`:28 — `$result = rts_inventory_sync_run(ims_pdo());`
 
 ## rts_inventory_row_is_untouched {#rts_inventory_row_is_untouched}
@@ -66,15 +66,15 @@ function_count: 22
 
 **Callers (3):**
 
-- `api/v1/rts.php`:146 — `$sync = rts_inventory_sync_status($pdo);`
-- `api/v1/rts.php`:284 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
+- `api/v1/rts.php`:145 — `$sync = rts_inventory_sync_status($pdo);`
+- `api/v1/rts.php`:283 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
 - `api/v1/rts_sync.php`:39 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
 
 ## rts_inventory_pool_filter_sql {#rts_inventory_pool_filter_sql}
 
 **Callers (9):**
 
-- `api/v1/rts.php`:57 — `return rts_inventory_pool_filter_sql($pdo, $pool);`
+- `api/v1/rts.php`:56 — `return rts_inventory_pool_filter_sql($pdo, $pool);`
 - `includes/rts_inventory_sync.php`:260 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
 - `includes/rts_inventory_sync.php`:290 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
 - `includes/rts_inventory_sync.php`:346 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
@@ -90,7 +90,7 @@ function_count: 22
 
 **Callers (1):**
 
-- `api/v1/rts.php`:141 — `$honey = rts_inventory_list_honey_aggregated($pdo, $pool);`
+- `api/v1/rts.php`:140 — `$honey = rts_inventory_list_honey_aggregated($pdo, $pool);`
 
 ## rts_inventory_list_other_aggregated {#rts_inventory_list_other_aggregated}
 
@@ -98,7 +98,7 @@ function_count: 22
 
 **Callers (1):**
 
-- `api/v1/rts.php`:142 — `$other = rts_inventory_list_other_aggregated($pdo, $pool);`
+- `api/v1/rts.php`:141 — `$other = rts_inventory_list_other_aggregated($pdo, $pool);`
 
 ## rts_inventory_deduct_sell_honey_variant {#rts_inventory_deduct_sell_honey_variant}
 
@@ -106,8 +106,8 @@ function_count: 22
 
 **Callers (4):**
 
-- `api/v1/rts.php`:233 — `rts_inventory_deduct_sell_honey_variant(`
-- `includes/honey_bottle_barcodes.php`:1676 — `rts_inventory_deduct_sell_honey_variant(`
+- `api/v1/rts.php`:232 — `rts_inventory_deduct_sell_honey_variant(`
+- `includes/honey_bottle_barcodes.php`:1661 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_pos.php`:406 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_pos.php`:625 — `rts_inventory_deduct_sell_honey_variant(`
 
@@ -117,7 +117,7 @@ function_count: 22
 
 **Callers (3):**
 
-- `api/v1/rts.php`:243 — `rts_inventory_deduct_sell_other_label(`
+- `api/v1/rts.php`:242 — `rts_inventory_deduct_sell_other_label(`
 - `includes/dept_pos.php`:241 — `rts_inventory_deduct_sell_other_label(`
 - `includes/dept_pos.php`:390 — `rts_inventory_deduct_sell_other_label(`
 
@@ -127,7 +127,7 @@ function_count: 22
 
 **Callers (1):**
 
-- `api/v1/rts.php`:253 — `rts_inventory_deduct_sell(`
+- `api/v1/rts.php`:252 — `rts_inventory_deduct_sell(`
 
 ## rts_inventory_set_honey_variant_totals {#rts_inventory_set_honey_variant_totals}
 
@@ -135,7 +135,7 @@ function_count: 22
 
 **Callers (1):**
 
-- `api/v1/rts.php`:296 — `$result = rts_inventory_set_honey_variant_totals(`
+- `api/v1/rts.php`:295 — `$result = rts_inventory_set_honey_variant_totals(`
 
 ## rts_inventory_set_other_label_total {#rts_inventory_set_other_label_total}
 
@@ -143,7 +143,7 @@ function_count: 22
 
 **Callers (1):**
 
-- `api/v1/rts.php`:322 — `$result = rts_inventory_set_other_label_total(`
+- `api/v1/rts.php`:321 — `$result = rts_inventory_set_other_label_total(`
 
 ## rts_inventory_seed_honey_row {#rts_inventory_seed_honey_row}
 
@@ -208,5 +208,5 @@ function_count: 22
 
 **Callers (1):**
 
-- `api/v1/rts.php`:277 — `api_ok(['rows' => rts_pool_use_log_list(ims_pdo(), $limit)]);`
+- `api/v1/rts.php`:276 — `api_ok(['rows' => rts_pool_use_log_list(ims_pdo(), $limit)]);`
 

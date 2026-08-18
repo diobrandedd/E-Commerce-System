@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { Camera, Loader2, ScanLine } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
@@ -14,6 +14,7 @@ import {
   type BarcodeVerifyResult,
 } from "@/app/lib/barcodeVerify";
 import { playScanBeep } from "@/app/lib/scanBeep";
+import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 
 function formatWhen(raw: string | null | undefined) {
   if (!raw) return "—";
@@ -25,13 +26,13 @@ function statusLabel(status: string) {
 }
 
 export function BarcodeVerifyPage() {
-  const inputRef = useRef<HTMLInputElement>(null);
   const cameraTitleId = useId();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BarcodeVerifyResult | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
 
   const lookup = async (raw?: string) => {
     const value = (raw ?? code).trim();
@@ -53,7 +54,7 @@ export function BarcodeVerifyPage() {
       playScanBeep(/unknown/i.test(message) ? "bad" : "bad");
     } finally {
       setLoading(false);
-      inputRef.current?.focus();
+      refocus();
     }
   };
 
@@ -71,10 +72,10 @@ export function BarcodeVerifyPage() {
         <div className="flex flex-wrap gap-2">
           <input
             ref={inputRef}
+            {...inputProps}
             className="flex-1 min-w-[12rem] border rounded-lg px-3 py-2 font-mono text-sm outline-none focus:ring-4 focus:ring-[#C8900A]/15"
             placeholder="Scan or type barcode"
             value={code}
-            autoFocus
             onChange={e => setCode(e.target.value.toUpperCase())}
             onKeyDown={e => {
               if (e.key === "Enter") {

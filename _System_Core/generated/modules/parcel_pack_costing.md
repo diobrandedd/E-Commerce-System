@@ -1,7 +1,7 @@
 ---
 title: parcel_pack_costing
 source: includes/parcel_pack_costing.php
-generated: 2026-08-15T10:54:35+02:00
+generated: 2026-08-18T09:59:22+02:00
 type: module
 function_count: 37
 ---
@@ -33,8 +33,8 @@ function_count: 37
 - `api/v1/costing.php`:564 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `api/v1/costing.php`:586 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/fulfillment_pack_tier_seed.php`:428 — `if (!parcel_pack_tables_ready($pdo)) {`
-- `includes/fulfillment_packing.php`:311 — `if ($lines === [] || !parcel_pack_tables_ready($pdo)) {`
-- `includes/material_inventory.php`:1119 — `if (!parcel_pack_tables_ready($pdo)) {`
+- `includes/fulfillment_packing.php`:312 — `if ($lines === [] || !parcel_pack_tables_ready($pdo)) {`
+- `includes/material_inventory.php`:1132 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/parcel_pack_costing.php`:310 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/parcel_pack_costing.php`:377 — `if (!parcel_pack_tables_ready($pdo)) {`
 - `includes/parcel_pack_costing.php`:595 — `if (!parcel_pack_tables_ready($pdo)) {`
@@ -158,7 +158,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/fulfillment_packing.php`:341 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, true);`
+- `includes/fulfillment_packing.php`:342 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, true);`
 - `includes/parcel_pack_costing.php`:532 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, $activeOnly);`
 - `includes/parcel_pack_costing.php`:559 — `$tier = parcel_pack_fetch_tier_by_key($pdo, $tierKey, false);`
 - `includes/parcel_pack_costing.php`:654 — `$tierRow = parcel_pack_fetch_tier_by_key($pdo, $tierKey, false);`
@@ -169,7 +169,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/fulfillment_packing.php`:345 — `$tierLines = parcel_pack_fetch_tier_lines($pdo, (int) $tier['id']);`
+- `includes/fulfillment_packing.php`:346 — `$tierLines = parcel_pack_fetch_tier_lines($pdo, (int) $tier['id']);`
 - `includes/parcel_pack_costing.php`:514 — `$lines = parcel_pack_fetch_tier_lines($pdo, $tierId);`
 - `includes/parcel_pack_costing.php`:773 — `$lines = parcel_pack_fetch_tier_lines($pdo, $tierId);`
 
@@ -235,7 +235,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/material_inventory.php`:1130 — `$lines = parcel_pack_fulfillment_lines_for_items_raw($pdo, $itemsRaw);`
+- `includes/material_inventory.php`:1143 — `$lines = parcel_pack_fulfillment_lines_for_items_raw($pdo, $itemsRaw);`
 
 ## parcel_pack_save_tier_line {#parcel_pack_save_tier_line}
 

@@ -46,6 +46,7 @@ register_shutdown_function('api_shutdown_guard');
 require_once __DIR__ . '/../../includes/auth_check.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../includes/permissions.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     ims_session_start();
@@ -142,6 +143,20 @@ function api_require_role(array $allowed): array
         api_fail('Forbidden.', 403);
     }
     return $u;
+}
+
+function api_require_permission(string ...$keys): array
+{
+    $u = api_require_ims_user();
+    if ($keys === []) {
+        return $u;
+    }
+    foreach ($keys as $key) {
+        if (ims_user_can($u, $key)) {
+            return $u;
+        }
+    }
+    api_fail('Forbidden.', 403);
 }
 
 /**

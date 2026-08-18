@@ -130,8 +130,8 @@ interface ProductDetail {
 }
 
 export function CostingPage() {
-  const { user } = useAuth();
-  const isExec = user?.role === "executive";
+  const { can } = useAuth();
+  const isExec = can("honey.pricing.view_cost");
 
   const [stocks, setStocks] = useState<StockRow[]>([]);
   const [products, setProducts] = useState<ProductRow[]>([]);

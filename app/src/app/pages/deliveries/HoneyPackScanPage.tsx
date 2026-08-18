@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { BookOpen, Camera, CheckCircle2, ChevronDown, ChevronRight, Loader2, XCircle } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
@@ -20,6 +20,7 @@ import {
   type HoneyPackSessionListRow,
 } from "@/app/lib/bottleBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
+import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -120,7 +121,6 @@ export function HoneyPackScanPage() {
 }
 
 function PackScanLivePanel() {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [session, setSession] = useState<HoneyPackSession | null>(null);
   const [code, setCode] = useState("");
   const [flash, setFlash] = useState<"ok" | "dup" | "bad" | null>(null);
@@ -131,6 +131,7 @@ function PackScanLivePanel() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const cameraTitleId = useId();
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, session?.id);
 
   const start = useCallback(async () => {
     setError(null);
@@ -145,10 +146,6 @@ function PackScanLivePanel() {
   useEffect(() => {
     void start();
   }, [start]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [session?.id]);
 
   const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     if (!session) return { kind: "error", message: "Pack session is not ready." };
@@ -167,21 +164,21 @@ function PackScanLivePanel() {
             : `${res.lookup?.variant ?? ""} ${res.lookup?.size_label ?? ""}`.trim() || "Honey";
         setMsg(label);
         window.setTimeout(() => setFlash(null), 650);
-        inputRef.current?.focus();
+        refocus();
         return { kind: "success", message: `Scanned: ${label}` };
       } else if (res.result === "duplicate_session") {
         playScanBeep("dup");
         setFlash("dup");
         setMsg("Already scanned in this session");
         window.setTimeout(() => setFlash(null), 650);
-        inputRef.current?.focus();
+        refocus();
         return { kind: "duplicate", message: "Duplicate: already scanned in this session." };
       } else if (res.result === "already_consumed") {
         playScanBeep("bad");
         setFlash("bad");
         setMsg("Already packed or sold earlier");
         window.setTimeout(() => setFlash(null), 650);
-        inputRef.current?.focus();
+        refocus();
         return { kind: "error", message: "Failed: bottle was already packed or sold." };
       } else {
         playScanBeep("bad");
@@ -189,7 +186,7 @@ function PackScanLivePanel() {
         const reason = res.result === "unknown" ? "Unknown barcode" : res.result.replace(/_/g, " ");
         setMsg(reason);
         window.setTimeout(() => setFlash(null), 650);
-        inputRef.current?.focus();
+        refocus();
         return { kind: "error", message: `Failed: ${reason}.` };
       }
     } catch (e) {
@@ -198,7 +195,7 @@ function PackScanLivePanel() {
       const reason = e instanceof ApiError ? e.message : "Scan failed.";
       setMsg(reason);
       window.setTimeout(() => setFlash(null), 650);
-      inputRef.current?.focus();
+      refocus();
       return { kind: "error", message: reason };
     }
   };
@@ -242,6 +239,7 @@ function PackScanLivePanel() {
       <div className="flex gap-2">
         <input
           ref={inputRef}
+          {...inputProps}
           className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide"
           placeholder="Scan barcode or type it…"
           value={code}

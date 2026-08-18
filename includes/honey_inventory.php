@@ -23,33 +23,37 @@ function honey_inventory_pricing(): void
 const HONEY_VARIANTS = ['light', 'amber', 'dark', 'other'];
 const HONEY_SIZES = ['liter', '250ml', '350ml', 'gallon'];
 
-function honey_role_can_view(string $role): bool
+function honey_role_can_view(array $user): bool
 {
-    // `staff` is read-only and additionally scoped to their own department
-    // (enforced in honey.php api_honey_require_view); pricing stays hidden via
-    // honey_pricing_role_can_view_cost.
-    return in_array($role, ['executive', 'prod_manager', 'hr', 'staff', 'tl'], true);
+    return ims_user_can($user, 'honey.view');
 }
 
-function honey_role_can_mutate(string $role): bool
+function honey_role_can_mutate(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager'], true);
+    return ims_user_can($user, 'honey.mutate');
 }
 
-/**
- * Honey gallon pipeline: warehouse stock in/out, production → packaging,
- * and submit correction requests. Exec, prod manager, and Honey dept TL.
- * Packaging Sell UI removed — sales go through POS.
- */
-function honey_role_can_honey_ops(string $role): bool
+function honey_role_can_honey_ops(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'tl'], true);
+    return ims_user_can($user, 'honey.ops');
 }
 
-/** Dept raw stock-in / produce / pouch — exec, prod manager, and dept TL. */
-function honey_role_can_dept_produce(string $role): bool
+function honey_role_can_dept_produce(array $user, ?string $productKey = null): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'tl'], true);
+    if ($productKey !== null && trim($productKey) !== '') {
+        return ims_user_can_dept_line($user, $productKey, 'produce');
+    }
+
+    return ims_user_can($user, 'honey.dept_produce')
+        || ims_user_can($user, 'dept.paragis.produce')
+        || ims_user_can($user, 'dept.brc.produce')
+        || ims_user_can($user, 'dept.cacao.produce')
+        || ims_user_can($user, 'dept.comb.produce');
+}
+
+function honey_role_can_executive_edit(array $user): bool
+{
+    return ims_user_can($user, 'honey.executive_edit');
 }
 
 /**
@@ -65,11 +69,6 @@ function honey_dept_key_for_product_key(string $productKey): ?string
         'honey_comb' => 'honey',
         default => null,
     };
-}
-
-function honey_role_can_executive_edit(string $role): bool
-{
-    return $role === 'executive';
 }
 
 function honey_supplier_code(string $supplierName, string $arrivalDate): string

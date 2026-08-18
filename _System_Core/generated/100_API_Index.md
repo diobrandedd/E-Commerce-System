@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-15T10:54:04+02:00
+generated: 2026-08-18T09:58:55+02:00
 type: memory-bank
 ---
 
@@ -43,8 +43,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `me` | `api_auth_me()` | `ims_pos_authenticated()`, `rts_forwarding_api_payload()`, `ims_current_user()` |
-| `login` | `api_auth_login()` | `ims_login_user()`, `ims_current_user()`, `rts_forwarding_api_payload()` |
+| `me` | `api_auth_me()` | `ims_pos_authenticated()`, `rts_forwarding_api_payload()`, `ims_current_user()`, `ims_user_permissions()` |
+| `login` | `api_auth_login()` | `ims_login_user()`, `ims_current_user()`, `ims_user_permissions()`, `rts_forwarding_api_payload()` |
 | `pos_login` | `api_auth_pos_login()` | `ims_login_pos()`, `rts_forwarding_api_payload()` |
 | `logout` | `api_auth_logout()` | `ims_logout()` |
 | `change_password` | `api_auth_change_password()` | `ims_change_password()` |
@@ -72,7 +72,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `request_list` | `api_bottle_request_list()` | `honey_bottle_request_list()`, `ims_pdo()` |
 | `request_get` | `api_bottle_request_get()` | `honey_bottle_request_get()`, `ims_pdo()` |
 | `request_cancel` | `api_bottle_request_cancel()` | `honey_bottle_request_cancel()`, `ims_pdo()`, `honey_bottle_user_dept_key()` |
-| `pending_count` | `api_bottle_pending_count()` | `honey_bottle_pending_request_count()`, `ims_pdo()` |
+| `pending_count` | `api_bottle_pending_count()` | `honey_bottle_can_generate()`, `honey_bottle_can_request()`, `honey_bottle_pending_request_count()`, `ims_pdo()` |
 | `generate` | `api_bottle_generate()` | `honey_bottle_generate_for_request()`, `ims_pdo()` |
 | `batch_list` | `api_bottle_batch_list()` | `honey_bottle_batch_list()`, `ims_pdo()` |
 | `batch_get` | `api_bottle_batch_get()` | `honey_bottle_batch_get()`, `ims_pdo()` |
@@ -161,8 +161,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `index` | `api_dashboard_index()` | `ims_pdo()` |
-| `summary` | `api_dashboard_index()` | `ims_pdo()` |
+| `index` | `api_dashboard_index()` | `ims_pdo()`, `ims_user_can()` |
+| `summary` | `api_dashboard_index()` | `ims_pdo()`, `ims_user_can()` |
 | `inventory_snapshot` | `api_dashboard_inventory_snapshot()` | `dashboard_inventory_snapshot()`, `ims_pdo()` |
 | `shipped_summary` | `api_dashboard_shipped_summary()` | `dashboard_inventory_resolve_range()`, `ims_pdo()` |
 
@@ -200,6 +200,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `request_get` | `api_dept_pouch_request_get()` | `dept_pouch_request_get()`, `ims_pdo()` |
 | `request_cancel` | `api_dept_pouch_request_cancel()` | `dept_pouch_request_cancel()`, `ims_pdo()` |
 | `pending_count` | `api_dept_pouch_pending_count()` | `dept_pouch_pending_request_count()`, `ims_pdo()` |
+| `pending_counts` | `api_dept_pouch_pending_counts()` | `dept_pouch_pending_request_counts_for_user()`, `ims_pdo()` |
 | `generate` | `api_dept_pouch_generate()` | `dept_pouch_generate_for_request()`, `ims_pdo()` |
 | `batch_list` | `api_dept_pouch_batch_list()` | `dept_pouch_batch_list()`, `ims_pdo()` |
 | `mark_printed` | `api_dept_pouch_mark_printed()` | `dept_pouch_mark_printed()`, `ims_pdo()` |
@@ -219,10 +220,21 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `list` | `api_er_list()` | `ims_pdo()` |
+| `list` | `api_er_list()` | `ims_pdo()`, `ims_user_can()` |
 | `submit` | `api_er_submit()` | `ims_pdo()`, `delivery_edit_request_validate_submit()`, `delivery_edit_request_normalize_values()` |
 | `approve` | `api_er_approve()` | `ims_pdo()`, `delivery_edit_request_apply()` |
 | `reject` | `api_er_reject()` | `ims_pdo()` |
+
+### `finished_leak_damage.php`
+
+- **Path:** `api/v1/finished_leak_damage.php`
+- **URL:** `/rts/api/v1/finished_leak_damage.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `scan` | `api_finished_leak_damage_scan()` | `ims_user_can()`, `finished_leak_damage_scan()`, `ims_pdo()` |
+| `history` | `api_finished_leak_damage_history()` | `finished_leak_damage_history()`, `ims_pdo()` |
 
 ### `fulfillment_packing.php`
 
@@ -269,20 +281,20 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `packaging_stock_out` | `api_honey_packaging_stock_out()` | `honey_packaging_stock_out_sold()`, `ims_pdo()` |
 | `traceability` | `api_honey_traceability()` | `honey_traceability()`, `ims_pdo()` |
 | `correction_submit` | `api_honey_correction_submit()` | `ims_pdo()` |
-| `correction_list` | `api_honey_correction_list()` | `ims_pdo()`, `honey_correction_enrich()` |
+| `correction_list` | `api_honey_correction_list()` | `ims_user_can()`, `ims_pdo()`, `honey_correction_enrich()` |
 | `correction_row_options` | `api_honey_correction_row_options()` | `honey_correction_row_options()`, `ims_pdo()` |
 | `correction_approve` | `api_honey_correction_approve()` | `ims_pdo()`, `honey_apply_correction_request()` |
 | `correction_reject` | `api_honey_correction_reject()` | `ims_pdo()` |
 | `correction_pending_count` | `api_honey_correction_pending_count()` | — |
 | `executive_adjust` | `api_honey_executive_adjust()` | `honey_executive_adjust()`, `ims_pdo()` |
 | `executive_edit` | `api_honey_executive_edit()` | `ims_pdo()`, `honey_executive_edit_row()` |
-| `correction_unread_count` | `api_honey_correction_unread_count()` | `ims_pdo()`, `honey_correction_unread_count()`, `material_adjustment_pending_count()` |
-| `correction_unread_list` | `api_honey_correction_unread_list()` | `honey_correction_unread_list()`, `ims_pdo()` |
+| `correction_unread_count` | `api_honey_correction_unread_count()` | `ims_user_can()`, `ims_pdo()`, `honey_correction_unread_count()`, `material_adjustment_pending_count()` |
+| `correction_unread_list` | `api_honey_correction_unread_list()` | `ims_user_can()`, `honey_correction_unread_list()`, `ims_pdo()` |
 | `correction_mark_viewed` | `api_honey_correction_mark_viewed()` | `honey_correction_mark_viewed()`, `ims_pdo()` |
-| `dept_list` | `api_honey_dept_list()` | `ims_pdo()`, `dept_inventory_catalog_snapshot()` |
+| `dept_list` | `api_honey_dept_list()` | `ims_user_can_dept_line()`, `ims_pdo()`, `dept_inventory_catalog_snapshot()` |
 | `dept_catalog` | `api_honey_dept_catalog()` | `ims_pdo()`, `dept_inventory_catalog_snapshot()` |
 | `dept_stock_in` | `api_honey_dept_stock_in()` | `ims_pdo()`, `dept_inventory_stock_in()` |
-| `dept_raw_detail` | `api_honey_dept_raw_detail()` | `dept_raw_detail_enriched()`, `ims_pdo()` |
+| `dept_raw_detail` | `api_honey_dept_raw_detail()` | `dept_raw_material_slug_to_product_key()`, `ims_user_can_dept_line()`, `dept_raw_detail_enriched()`, `ims_pdo()` |
 | `dept_raw_stock_in` | `api_honey_dept_raw_stock_in()` | `dept_product_by_key()`, `ims_pdo()`, `dept_raw_stock_in_bags()` |
 | `dept_raw_stock_out` | `api_honey_dept_raw_stock_out()` | `dept_product_key_valid()`, `ims_pdo()`, `dept_raw_stock_out_bags()` |
 | `dept_raw_produce` | `api_honey_dept_raw_produce()` | — |
@@ -317,24 +329,24 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `catalog_list` | `api_materials_catalog_list()` | `material_inventory_role_can_view()`, `material_inventory_role_can_issue_packing()`, `ims_pdo()`, `material_inventory_list()` |
-| `catalog_create` | `api_materials_catalog_create()` | `material_inventory_role_can_create_supply_catalog()`, `ims_pdo()`, `material_inventory_create()` |
+| `catalog_list` | `api_materials_catalog_list()` | `material_inventory_role_can_view()`, `material_inventory_role_can_issue_packing()`, `ims_pdo()`, `material_inventory_list()`, `ims_user_can()` |
+| `catalog_create` | `api_materials_catalog_create()` | `material_inventory_role_can_create_supply_catalog()`, `ims_user_can()`, `ims_pdo()`, `material_inventory_create()` |
 | `catalog_update` | `api_materials_catalog_update()` | `ims_pdo()`, `material_inventory_update()` |
 | `on_hand_list` | `api_materials_on_hand_list()` | — |
 | `adjust` | `api_materials_adjust()` | `ims_pdo()`, `material_inventory_adjust()` |
-| `request_submit` | `api_materials_request_submit()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_role_can_request_supply()`, `material_adjustment_submit()` |
-| `request_list` | `api_materials_request_list()` | `ims_pdo()`, `material_adjustment_list()`, `material_inventory_role_can_request_packaging()`, `material_inventory_role_can_request_supply()` |
+| `request_submit` | `api_materials_request_submit()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_role_can_request_packaging()`, `material_inventory_role_can_request_supply()`, `material_adjustment_submit()` |
+| `request_list` | `api_materials_request_list()` | `ims_pdo()`, `material_adjustment_list()`, `ims_user_can()`, `material_inventory_role_can_request_packaging()`, `material_inventory_role_can_request_supply()` |
 | `request_approve` | `api_materials_request_approve()` | `ims_pdo()`, `material_adjustment_approve()` |
 | `request_reject` | `api_materials_request_reject()` | `ims_pdo()`, `material_adjustment_reject()` |
-| `request_pending_count` | `api_materials_request_pending_count()` | `material_adjustment_pending_count()`, `ims_pdo()` |
+| `request_pending_count` | `api_materials_request_pending_count()` | `ims_user_can()`, `material_adjustment_pending_count()`, `ims_pdo()` |
 | `request_mark_viewed` | `api_materials_request_mark_viewed()` | `material_adjustment_mark_viewed()`, `ims_pdo()` |
 | `request_unread_list` | `api_materials_request_unread_list()` | `material_adjustment_unread_list()`, `ims_pdo()` |
 | `raw_snapshot` | `api_materials_raw_snapshot()` | `material_raw_snapshot()`, `ims_pdo()` |
 | `raw_detail` | `api_materials_raw_detail()` | `material_inventory_raw_stock_by_slug()`, `ims_pdo()` |
 | `departments` | `api_materials_departments()` | `ims_pdo()` |
 | `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_role_can_stock_in_packaging()`, `material_packaging_stock_in_lot()`, `material_supply_stock_in_lot()` |
-| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()`, `material_packaging_recent_entries()`, `material_packaging_is_generic_foam_roll_name()`, `material_inventory_role_can_stock_in_packaging()`, `material_inventory_role_can_edit_packaging_price()`, `material_inventory_role_can_deduct_packaging()`, … |
-| `supply_detail` | `api_materials_supply_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_supply_recent_entries()`, `material_supply_detail_permissions()` |
+| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()`, `ims_user_can()`, `material_packaging_recent_entries()`, `material_packaging_is_generic_foam_roll_name()`, `material_inventory_role_can_stock_in_packaging()`, `material_inventory_role_can_edit_packaging_price()`, … |
+| `supply_detail` | `api_materials_supply_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `ims_user_can()`, `material_supply_recent_entries()`, `material_supply_detail_permissions()` |
 | `set_on_hand` | `api_materials_set_on_hand()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_set_on_hand()`, `material_supply_set_on_hand()` |
 | `set_pool_yield` | `api_materials_set_pool_yield()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_pool_yield()`, `material_inventory_enrich_packaging_row()` |
 | `set_foam_cacao_cut_yields` | `api_materials_set_foam_cacao_cut_yields()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_foam_cacao_cut_yields()`, `material_packaging_foam_cacao_cut_yields()` |
@@ -441,7 +453,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/pos.php`
 - **URL:** `/rts/api/v1/pos.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_unified.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
@@ -453,6 +465,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `honey_ar_checkout` | `api_pos_honey_ar_checkout()` | `honey_pos_ar_checkout()`, `ims_pdo()` |
 | `dept_checkout` | `api_pos_dept_checkout()` | `dept_pos_checkout()`, `ims_pdo()` |
 | `dept_ar_checkout` | `api_pos_dept_ar_checkout()` | `dept_pos_ar_checkout()`, `ims_pdo()` |
+| `unified_lookup` | `api_pos_unified_lookup()` | `pos_unified_lookup()`, `ims_pdo()` |
+| `unified_checkout` | `api_pos_unified_checkout()` | `pos_unified_checkout()`, `ims_pdo()`, `pos_session_actor()` |
+| `unified_ar_checkout` | `api_pos_unified_ar_checkout()` | `pos_unified_ar_checkout()`, `ims_pdo()`, `pos_session_actor()` |
 | `staff_picker` | `api_pos_staff_picker()` | `ar_staff_picker_list()`, `ims_pdo()` |
 | `discount_request_create` | `api_pos_discount_request_create()` | `pos_discount_request_create()`, `ims_pdo()` |
 | `discount_request_status` | `api_pos_discount_request_status()` | `pos_discount_request_fetch_for_pin()`, `ims_pdo()` |
@@ -493,7 +508,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pool` | `api_rts_pool()` | `ims_pdo()` |
 | `recent` | `api_rts_recent()` | `ims_pdo()` |
 | `legacy_urls` | `api_rts_legacy_urls()` | — |
-| `inventory_list` | `api_rts_inventory_list()` | `ims_pdo()`, `rts_inventory_list_honey_aggregated()`, `rts_inventory_list_other_aggregated()`, `rts_inventory_sync_status()` |
+| `inventory_list` | `api_rts_inventory_list()` | `ims_pdo()`, `rts_inventory_list_honey_aggregated()`, `rts_inventory_list_other_aggregated()`, `rts_inventory_sync_status()`, `ims_user_can()` |
 | `inventory_deduct_sell` | `api_rts_inventory_deduct_sell()` | `rts_inventory_deduct_sell_honey_variant()`, `ims_pdo()`, `rts_inventory_deduct_sell_other_label()`, `rts_inventory_deduct_sell()` |
 | `inventory_use_rts` | `api_rts_inventory_deduct_sell()` | `rts_inventory_deduct_sell_honey_variant()`, `ims_pdo()`, `rts_inventory_deduct_sell_other_label()`, `rts_inventory_deduct_sell()` |
 | `inventory_use_log` | `api_rts_inventory_use_log()` | `rts_pool_use_log_list()`, `ims_pdo()` |
@@ -571,6 +586,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `create` | `api_staff_create()` | `ims_pdo()` |
 | `update` | `api_staff_update()` | `ims_pdo()` |
 | `reset_password` | `api_staff_reset_password()` | `ims_pdo()` |
+| `permission_catalog` | `api_staff_permission_catalog()` | `ims_permission_catalog_grouped()` |
+| `permissions_get` | `api_staff_permissions_get()` | `ims_pdo()`, `ims_user_permissions_expanded()`, `ims_permission_preset_for_role()` |
+| `permissions_set` | `api_staff_permissions_set()` | `ims_pdo()`, `ims_user_permissions_set()`, `ims_user_permission_count()` |
 
 ### `stocks.php`
 
@@ -580,7 +598,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `entries_list` | `api_stocks_entries_list()` | `ims_pdo()` |
+| `entries_list` | `api_stocks_entries_list()` | `ims_pdo()`, `ims_user_can()` |
 | `stocks_for_dept` | `api_stocks_for_dept()` | `ims_pdo()` |
 | `departments` | `api_stocks_departments()` | `ims_pdo()` |
 | `add_entry` | `api_stocks_add_entry()` | `ims_pdo()` |
@@ -593,7 +611,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `list` | `api_suppliers_list()` | `supplier_list()`, `ims_pdo()` |
+| `list` | `api_suppliers_list()` | `ims_user_can()`, `supplier_list()`, `ims_pdo()` |
 | `get` | `api_suppliers_get()` | `supplier_fetch()`, `ims_pdo()`, `supplier_serialize()` |
 | `get_by_code` | `api_suppliers_get_by_code()` | `supplier_fetch_by_honey_code()`, `ims_pdo()`, `supplier_serialize()` |
 | `create` | `api_suppliers_create()` | `supplier_create()`, `ims_pdo()` |

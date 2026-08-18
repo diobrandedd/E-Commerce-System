@@ -1,7 +1,7 @@
 ---
 title: courier_detect
 source: includes/courier_detect.php
-generated: 2026-08-15T10:54:08+02:00
+generated: 2026-08-18T09:58:58+02:00
 type: module
 function_count: 2
 ---
@@ -27,6 +27,6 @@ function_count: 2
 
 **Callers (2):**
 
-- `api/v1/reports.php`:374 — `return rts_courier_label_bucket($courier);`
+- `api/v1/reports.php`:371 — `return rts_courier_label_bucket($courier);`
 - `includes/courier_soa_reconcile.php`:354 — `$bucket = rts_courier_label_bucket((string) ($row['courier'] ?? ''));`
 

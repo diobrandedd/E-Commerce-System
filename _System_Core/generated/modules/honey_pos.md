@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-08-15T10:54:25+02:00
+generated: 2026-08-18T09:59:13+02:00
 type: module
 function_count: 12
 ---
@@ -32,10 +32,11 @@ function_count: 12
 
 **Tables:** `departments`
 
-**Callers (2):**
+**Callers (3):**
 
 - `includes/honey_pos.php`:83 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
 - `includes/honey_pricing.php`:135 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
+- `includes/pos_unified.php`:69 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
 
 ## honey_pos_packaging_availability {#honey_pos_packaging_availability}
 
@@ -54,13 +55,13 @@ function_count: 12
 - `includes/honey_pos.php`:108 — `$products = honey_pos_product_map($pdo);`
 - `includes/honey_pos.php`:316 — `$productMap = honey_pos_product_map($pdo);`
 - `includes/honey_pos.php`:539 — `$productMap = honey_pos_product_map($pdo);`
-- `includes/pos_discount_requests.php`:70 — `$productMap = honey_pos_product_map($pdo);`
+- `includes/pos_discount_requests.php`:71 — `$productMap = honey_pos_product_map($pdo);`
 
 ## honey_pos_honey_catalog {#honey_pos_honey_catalog}
 
 **Callers (1):**
 
-- `api/v1/pos.php`:63 — `api_ok(honey_pos_honey_catalog(ims_pdo()));`
+- `api/v1/pos.php`:68 — `api_ok(honey_pos_honey_catalog(ims_pdo()));`
 
 ## honey_pos_available_qty {#honey_pos_available_qty}
 
@@ -95,14 +96,15 @@ function_count: 12
 
 ## honey_pos_line_unit_ids {#honey_pos_line_unit_ids}
 
-**Callers (2):**
+**Callers (3):**
 
 - `includes/honey_pos.php`:325 — `$unitIds = honey_pos_line_unit_ids($entry);`
 - `includes/honey_pos.php`:548 — `$unitIds = honey_pos_line_unit_ids($entry);`
+- `includes/pos_unified.php`:213 — `$unitIds = honey_pos_line_unit_ids($entry);`
 
 ## honey_pos_column_exists {#honey_pos_column_exists}
 
-**Callers (6):**
+**Callers (10):**
 
 - `includes/dept_pos.php`:330 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
 - `includes/honey_pos.php`:218 — `$hasPinCol = honey_pos_column_exists($pdo, 'honey_sales_log', 'sold_by_pin_id');`
@@ -110,6 +112,10 @@ function_count: 12
 - `includes/honey_pos.php`:398 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
 - `includes/honey_pos.php`:518 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
 - `includes/honey_pos.php`:616 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
+- `includes/pos_unified.php`:46 — `if (honey_pos_column_exists($pdo, 'pos_sales', 'sold_by_user_id')) {`
+- `includes/pos_unified.php`:343 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
+- `includes/pos_unified.php`:437 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
+- `includes/pos_unified.php`:474 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
 
 ## honey_pos_checkout {#honey_pos_checkout}
 
@@ -117,8 +123,8 @@ function_count: 12
 
 **Callers (2):**
 
-- `api/v1/pos.php`:219 — `$result = honey_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds, [`
-- `includes/pos_discount_requests.php`:244 — `$result = honey_pos_checkout(`
+- `api/v1/pos.php`:224 — `$result = honey_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds, [`
+- `includes/pos_discount_requests.php`:258 — `$result = honey_pos_checkout(`
 
 ## honey_pos_ar_checkout {#honey_pos_ar_checkout}
 
@@ -126,5 +132,5 @@ function_count: 12
 
 **Callers (1):**
 
-- `api/v1/pos.php`:257 — `$result = honey_pos_ar_checkout(ims_pdo(), $pinId, $items, [`
+- `api/v1/pos.php`:262 — `$result = honey_pos_ar_checkout(ims_pdo(), $pinId, $items, [`
 

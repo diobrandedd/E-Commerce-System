@@ -1,15 +1,16 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, ChevronDown, ChevronRight, Loader2, Package, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, Package, Search, X } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { HoneyVariantPieGrid, type VariantChart } from "@/app/components/honey/HoneyVariantPieGrid";
-import { AppSectionEnter, appHoverCard } from "@/app/components/layout/appFeedbackMotion";
+import { AppSectionEnter, AppErrorBanner, appHoverCard, appHoverRow } from "@/app/components/layout/appFeedbackMotion";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet, ApiError } from "@/app/lib/api";
 import { peso, variantLabel } from "@/app/lib/posHoney";
 
-type PeriodFilter = "all" | "day" | "week" | "month" | "year" | "custom";
+type PeriodFilter = "all" | "day" | "date" | "week" | "month" | "year" | "custom";
 type SaleTypeFilter = "all" | "regular" | "discount" | "ar";
 type ChannelFilter = "all" | "walk_in" | "online";
+type ProductFilter = "all" | "honey" | "pt" | "brc" | "jar_cacao" | "honey_comb";
 
 interface CheckoutItem {
   variant: string;
@@ -34,6 +35,7 @@ interface CheckoutRow {
   total_amount: number;
   buyer_name: string;
   buyer_credentials?: string | null;
+  sold_by_name?: string | null;
   is_ar?: boolean;
   item_count: number;
   items: CheckoutItem[];
@@ -57,7 +59,7 @@ interface DeptProductUnits {
 }
 
 interface SalesSnapshot {
-  filter: { period: string; from: string | null; to: string | null; label: string; receipt?: string | null; sale_type?: SaleTypeFilter; channel?: ChannelFilter };
+  filter: { period: string; from: string | null; to: string | null; label: string; receipt?: string | null; sale_type?: SaleTypeFilter; channel?: ChannelFilter; product?: ProductFilter };
   total_bottles_sold: number;
   total_units_sold?: number;
   honey?: { label: string; unit: string; walk_in: number; shipped: number; total: number };
@@ -91,12 +93,18 @@ interface SalesSnapshot {
 
 const PERIOD_OPTIONS: { value: PeriodFilter; label: string }[] = [
   { value: "day", label: "Today" },
+  { value: "date", label: "Pick date" },
+  { value: "custom", label: "Custom range" },
   { value: "week", label: "This week" },
   { value: "month", label: "This month" },
   { value: "year", label: "This year" },
   { value: "all", label: "All time" },
-  { value: "custom", label: "Custom range" },
 ];
+
+function localToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 function fmtQty(n: number): string {
   if (!Number.isFinite(n)) return "0";
@@ -122,8 +130,10 @@ export function SalesPage() {
   const [period, setPeriod] = useState<PeriodFilter>("day");
   const [saleType, setSaleType] = useState<SaleTypeFilter>("all");
   const [channel, setChannel] = useState<ChannelFilter>("all");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [productFilter, setProductFilter] = useState<ProductFilter>("all");
+  const [from, setFrom] = useState(localToday());
+  const [to, setTo] = useState(localToday());
+  const [pickDate, setPickDate] = useState(localToday());
   const [page, setPage] = useState(1);
   const [receipt, setReceipt] = useState("");
   const [appliedReceipt, setAppliedReceipt] = useState("");
@@ -133,23 +143,36 @@ export function SalesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(
-    async (opts?: { receipt?: string; page?: number; saleType?: SaleTypeFilter }) => {
+    async (opts?: { receipt?: string; page?: number; saleType?: SaleTypeFilter; product?: ProductFilter }) => {
       const receiptQ = opts?.receipt !== undefined ? opts.receipt : appliedReceipt;
       const pageNum = opts?.page ?? page;
       const saleTypeQ = opts?.saleType ?? saleType;
+      const productQ = opts?.product ?? productFilter;
 
       setLoading(true);
       setError(null);
       try {
-        const params: Record<string, string> = { period, page: String(pageNum), sale_type: saleTypeQ, channel };
+        const params: Record<string, string> = { page: String(pageNum), sale_type: saleTypeQ, channel, product: productQ };
         if (period === "custom") {
           if (!from || !to) {
             setError("Choose both start and end dates for a custom range.");
             setLoading(false);
             return;
           }
+          params.period = "custom";
           params.from = from;
           params.to = to;
+        } else if (period === "date") {
+          if (!pickDate) {
+            setError("Choose a date.");
+            setLoading(false);
+            return;
+          }
+          params.period = "custom";
+          params.from = pickDate;
+          params.to = pickDate;
+        } else {
+          params.period = period;
         }
         if (receiptQ.trim()) {
           params.receipt = receiptQ.trim();
@@ -167,17 +190,17 @@ export function SalesPage() {
         setLoading(false);
       }
     },
-    [period, from, to, page, appliedReceipt, saleType, channel],
+    [period, from, to, pickDate, page, appliedReceipt, saleType, channel, productFilter],
   );
 
   useEffect(() => {
-    if (period === "custom" && (!from || !to)) return;
+    if ((period === "custom" && (!from || !to)) || (period === "date" && !pickDate)) return;
     void load();
-  }, [load, period, from, to, page, appliedReceipt]);
+  }, [load, period, from, to, pickDate, page, appliedReceipt]);
 
   useEffect(() => {
     setPage(1);
-  }, [period, from, to, appliedReceipt, saleType, channel]);
+  }, [period, from, to, pickDate, appliedReceipt, saleType, channel, productFilter]);
 
   const applyFilters = () => {
     const next = receipt.trim();
@@ -220,6 +243,17 @@ export function SalesPage() {
     revenue_ar: 0,
   }, [data]);
 
+  const applyProductFilter = (next: ProductFilter) => {
+    setProductFilter(next);
+    setPage(1);
+  };
+
+  const productFilterLabel = (key: ProductFilter): string => {
+    if (key === "all") return "All products";
+    const match = productCards.find(p => p.key === key);
+    return match?.label ?? key;
+  };
+
   return (
     <PageLayout title="Sales" subtitle="All products — walk-in POS scans and pack scans for shipping">
       <div className="space-y-6">
@@ -248,6 +282,17 @@ export function SalesPage() {
                 ))}
               </select>
             </label>
+            {period === "date" && (
+              <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                Date
+                <input
+                  type="date"
+                  value={pickDate}
+                  onChange={e => setPickDate(e.target.value)}
+                  className="mt-1 block text-sm border rounded-lg px-2 py-1.5 bg-card"
+                />
+              </label>
+            )}
             {period === "custom" && (
               <>
                 <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
@@ -309,10 +354,39 @@ export function SalesPage() {
 
         {productCards.length > 0 && (
           <AppSectionEnter>
-            <h2 className="text-sm font-semibold mb-3">By product</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
-              {productCards.map(p => (
-                <div key={p.key} className={`rounded-xl border border-border bg-card p-4 ${appHoverCard}`}>
+            <h2 className="text-sm font-semibold mb-1">By product</h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              Tap a product to filter recent walk-in sales, or All products to show every receipt.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+              <button
+                type="button"
+                onClick={() => applyProductFilter("all")}
+                className={`rounded-xl border bg-card p-4 text-left ${appHoverCard} ${
+                  productFilter === "all" ? "border-[#C8900A] bg-[#C8900A]/10" : "border-border"
+                }`}
+              >
+                <p className="text-xs uppercase tracking-wide text-muted-foreground truncate">All products</p>
+                <p className="text-xl font-bold mt-1">
+                  {loading ? "…" : fmtQty(data?.total_units_sold ?? data?.total_bottles_sold ?? 0)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1.5">Select all receipts</p>
+              </button>
+              {productCards.map(p => {
+                const active = productFilter === p.key;
+                return (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => {
+                    if (p.key === "honey" || p.key === "pt" || p.key === "brc" || p.key === "jar_cacao" || p.key === "honey_comb") {
+                      applyProductFilter(p.key);
+                    }
+                  }}
+                  className={`rounded-xl border bg-card p-4 text-left ${appHoverCard} ${
+                    active ? "border-[#C8900A] bg-[#C8900A]/10" : "border-border"
+                  }`}
+                >
                   <p className="text-xs uppercase tracking-wide text-muted-foreground truncate">{p.label}</p>
                   <p className="text-xl font-bold mt-1">
                     {loading ? "…" : fmtQty(p.total)}{" "}
@@ -324,8 +398,9 @@ export function SalesPage() {
                   <p className="text-xs text-muted-foreground mt-1.5">
                     Walk-in {fmtQty(p.walk_in)} · Shipped {fmtQty(p.shipped)}
                   </p>
-                </div>
-              ))}
+                </button>
+                );
+              })}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               Shipped units are stickers scanned in pack scan — packed for a parcel, not yet a register sale.
@@ -428,18 +503,15 @@ export function SalesPage() {
           })}
         </div>
 
-        {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
-            <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+        {error && <AppErrorBanner message={error} />}
 
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
           <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Package size={16} className="text-[#C8900A]" />
-              <h2 className="text-sm font-semibold">Recent walk-in sales (all products)</h2>
+              <h2 className="text-sm font-semibold">
+                Recent walk-in sales · {productFilterLabel(productFilter)}
+              </h2>
             </div>
             {checkouts && checkouts.total > 0 && (
               <span className="text-xs text-muted-foreground">
@@ -467,6 +539,8 @@ export function SalesPage() {
                       <th className="w-8 px-2 py-2" aria-label="Expand" />
                       <th className="px-3 py-2 font-semibold">When sold</th>
                       <th className="px-3 py-2 font-semibold">Receipt</th>
+                      <th className="px-3 py-2 font-semibold">Sold by</th>
+                      <th className="px-3 py-2 font-semibold">Sold to</th>
                       <th className="px-3 py-2 font-semibold">Items</th>
                       <th className="px-3 py-2 font-semibold">Type</th>
                       <th className="px-3 py-2 font-semibold text-right">Total</th>
@@ -478,7 +552,7 @@ export function SalesPage() {
                       return (
                         <Fragment key={row.sale_id}>
                           <tr
-                            className={`border-b border-border/60 cursor-pointer transition-colors hover:bg-secondary/40 ${expanded ? "bg-secondary/30" : ""}`}
+                            className={`border-b border-border/60 cursor-pointer ${appHoverRow} ${expanded ? "bg-secondary/30" : ""}`}
                             onClick={() => toggleExpand(row.sale_id)}
                           >
                             <td className="px-2 py-2.5 text-muted-foreground">
@@ -494,6 +568,8 @@ export function SalesPage() {
                               })}
                             </td>
                             <td className="px-3 py-2.5 font-mono text-xs">{row.receipt_no}</td>
+                            <td className="px-3 py-2.5">{row.sold_by_name || "POS"}</td>
+                            <td className="px-3 py-2.5">{row.buyer_name || "Walk-in"}</td>
                             <td className="px-3 py-2.5 text-muted-foreground">{itemSummary(row.items)}</td>
                             <td className="px-3 py-2.5">
                               {row.is_ar ? (
@@ -516,9 +592,11 @@ export function SalesPage() {
                           </tr>
                           {expanded && (
                             <tr key={`${row.sale_id}-detail`} className="border-b border-border/60 bg-secondary/10">
-                              <td colSpan={6} className="px-4 py-3">
+                              <td colSpan={8} className="px-4 py-3">
                                 <p className="text-xs text-muted-foreground mb-2">
-                                  Buyer: <span className="text-foreground font-medium">{row.buyer_name}</span>
+                                  Sold by: <span className="text-foreground font-medium">{row.sold_by_name || "POS"}</span>
+                                  {" · "}
+                                  Sold to: <span className="text-foreground font-medium">{row.buyer_name}</span>
                                   {row.is_ar && row.buyer_credentials ? (
                                     <span className="ml-2">
                                       · Mobile: <span className="text-foreground font-medium">{row.buyer_credentials}</span>

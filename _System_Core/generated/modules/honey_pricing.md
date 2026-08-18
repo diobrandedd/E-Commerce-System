@@ -1,7 +1,7 @@
 ---
 title: honey_pricing
 source: includes/honey_pricing.php
-generated: 2026-08-15T10:54:26+02:00
+generated: 2026-08-18T09:59:13+02:00
 type: module
 function_count: 19
 ---
@@ -56,7 +56,7 @@ function_count: 19
 
 **Callers (2):**
 
-- `includes/honey_inventory.php`:227 — `$pricing = honey_pricing_snapshot_warehouse_row($pdo, $wid);`
+- `includes/honey_inventory.php`:226 — `$pricing = honey_pricing_snapshot_warehouse_row($pdo, $wid);`
 - `includes/honey_pricing.php`:308 — `$result = honey_pricing_snapshot_warehouse_row($pdo, (int) $wid);`
 
 ## honey_pricing_stocks_has_supplier_id {#honey_pricing_stocks_has_supplier_id}
@@ -71,7 +71,7 @@ function_count: 19
 
 **Callers (4):**
 
-- `includes/honey_inventory.php`:245 — `honey_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`
+- `includes/honey_inventory.php`:244 — `honey_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`
 - `includes/honey_pricing.php`:211 — `$variants = honey_pricing_upsert_supplier_costing_stocks($pdo, (int) $supplierId, $userId);`
 - `includes/honey_pricing.php`:293 — `honey_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`
 - `includes/honey_pricing.php`:313 — `honey_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`
@@ -94,7 +94,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1157 — `$synced = honey_pricing_sync_all_variant_stocks(ims_pdo(), (int) $user['id']);`
+- `api/v1/honey.php`:1161 — `$synced = honey_pricing_sync_all_variant_stocks(ims_pdo(), (int) $user['id']);`
 
 ## honey_pricing_list_supplier_prices {#honey_pricing_list_supplier_prices}
 
@@ -102,7 +102,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1050 — `$prices = honey_pricing_list_supplier_prices($pdo, $supplierId > 0 ? $supplierId : null);`
+- `api/v1/honey.php`:1054 — `$prices = honey_pricing_list_supplier_prices($pdo, $supplierId > 0 ? $supplierId : null);`
 
 ## honey_pricing_save_supplier_prices {#honey_pricing_save_supplier_prices}
 
@@ -110,7 +110,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1095 — `$saved = honey_pricing_save_supplier_prices($pdo, $supplierId, $variants, $effectiveFrom, (int) $user['id']);`
+- `api/v1/honey.php`:1099 — `$saved = honey_pricing_save_supplier_prices($pdo, $supplierId, $variants, $effectiveFrom, (int) $user['id']);`
 
 ## honey_pricing_reprice_pending_for_supplier {#honey_pricing_reprice_pending_for_supplier}
 
@@ -118,7 +118,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1096 — `$repriced = honey_pricing_reprice_pending_for_supplier($pdo, $supplierId, (int) $user['id']);`
+- `api/v1/honey.php`:1100 — `$repriced = honey_pricing_reprice_pending_for_supplier($pdo, $supplierId, (int) $user['id']);`
 
 ## honey_pricing_pending_warehouse_rows {#honey_pricing_pending_warehouse_rows}
 
@@ -126,13 +126,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1118 — `'rows' => honey_pricing_pending_warehouse_rows($pdo),`
+- `api/v1/honey.php`:1122 — `'rows' => honey_pricing_pending_warehouse_rows($pdo),`
 
 ## honey_pricing_set_warehouse_row_cost {#honey_pricing_set_warehouse_row_cost}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1139 — `$row = honey_pricing_set_warehouse_row_cost(ims_pdo(), $warehouseRowId, (float) $raw, (int) $user['id']);`
+- `api/v1/honey.php`:1143 — `$row = honey_pricing_set_warehouse_row_cost(ims_pdo(), $warehouseRowId, (float) $raw, (int) $user['id']);`
 
 ## honey_pricing_serialize_warehouse_row {#honey_pricing_serialize_warehouse_row}
 
@@ -144,7 +144,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `api/v1/honey.php`:238 — `static fn (array $r) => honey_pricing_enrich_warehouse_row(honey_warehouse_normalize_cost_row($r)),`
+- `api/v1/honey.php`:225 — `static fn (array $r) => honey_pricing_enrich_warehouse_row(honey_warehouse_normalize_cost_row($r)),`
 - `includes/bulk_honey_orders.php`:76 — `? honey_pricing_enrich_warehouse_row(honey_warehouse_normalize_cost_row($row))`
 - `includes/bulk_honey_orders.php`:156 — `$enriched = honey_pricing_enrich_warehouse_row(`
 - `includes/honey_pricing.php`:357 — `return honey_pricing_enrich_warehouse_row($wh);`
@@ -153,7 +153,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:244 — `'can_view_cost' => honey_pricing_role_can_view_cost($role),`
+- `api/v1/honey.php`:231 — `'can_view_cost' => honey_pricing_role_can_view_cost($user),`
 
 ## honey_pricing_pending_count {#honey_pricing_pending_count}
 
@@ -161,9 +161,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (5):**
 
-- `api/v1/honey.php`:245 — `'pending_count' => honey_warehouse_has_pricing_columns($pdo) ? honey_pricing_pending_count($pdo) : 0,`
-- `api/v1/honey.php`:1078 — `'pending_count' => honey_pricing_pending_count($pdo),`
-- `api/v1/honey.php`:1108 — `'pending_count' => honey_pricing_pending_count($pdo),`
-- `api/v1/honey.php`:1119 — `'pending_count' => honey_pricing_pending_count($pdo),`
-- `api/v1/honey.php`:1146 — `'pending_count' => honey_pricing_pending_count(ims_pdo()),`
+- `api/v1/honey.php`:232 — `'pending_count' => honey_warehouse_has_pricing_columns($pdo) ? honey_pricing_pending_count($pdo) : 0,`
+- `api/v1/honey.php`:1082 — `'pending_count' => honey_pricing_pending_count($pdo),`
+- `api/v1/honey.php`:1112 — `'pending_count' => honey_pricing_pending_count($pdo),`
+- `api/v1/honey.php`:1123 — `'pending_count' => honey_pricing_pending_count($pdo),`
+- `api/v1/honey.php`:1150 — `'pending_count' => honey_pricing_pending_count(ims_pdo()),`
 

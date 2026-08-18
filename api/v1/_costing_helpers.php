@@ -68,30 +68,30 @@ if (!function_exists('api_costing_formula_row_current_unit')) {
 }
 
 if (!function_exists('api_costing_can_view_all')) {
-    function api_costing_can_view_all(string $role): bool
+    function api_costing_can_view_all(array $user): bool
     {
-        return $role === 'executive';
+        return ims_user_can($user, 'costing.manage');
     }
 }
 
 if (!function_exists('api_costing_can_manage_products')) {
-    function api_costing_can_manage_products(string $role): bool
+    function api_costing_can_manage_products(array $user): bool
     {
-        return $role === 'executive';
+        return ims_user_can($user, 'costing.manage');
     }
 }
 
 if (!function_exists('api_costing_can_edit_stocks')) {
-    function api_costing_can_edit_stocks(string $role): bool
+    function api_costing_can_edit_stocks(array $user): bool
     {
-        return $role === 'executive';
+        return ims_user_can($user, 'costing.manage');
     }
 }
 
 if (!function_exists('api_costing_show_pricing')) {
-    function api_costing_show_pricing(string $role): bool
+    function api_costing_show_pricing(array $user): bool
     {
-        return $role === 'executive';
+        return ims_user_can($user, 'honey.pricing.view_cost');
     }
 }
 

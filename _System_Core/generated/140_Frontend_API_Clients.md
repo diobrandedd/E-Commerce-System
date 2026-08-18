@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-08-15T10:54:27+02:00
+generated: 2026-08-18T09:59:35+02:00
 type: memory-bank
 ---
 
@@ -46,6 +46,7 @@ Backend index: [[100_API_Index]]
 | `app/src/app/lib/rtsApi.ts` | `rts_cases.php` |
 | `app/src/app/pages/RTSPage.tsx` | `rts_sync.php` |
 | `app/src/app/pages/exec/SettingsPage.tsx` | `settings.php` |
+| `app/src/app/components/exec/StaffPermissionsModal.tsx` | `staff.php` |
 | `app/src/app/pages/exec/StaffManagementPage.tsx` | `staff.php` |
 | `app/src/app/pages/InventoryPage.tsx` | `stocks.php` |
 | `app/src/app/lib/suppliers.ts` | `suppliers.php` |

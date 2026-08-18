@@ -5,12 +5,13 @@ declare(strict_types=1);
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../../includes/honey_pos.php';
 require_once __DIR__ . '/../../includes/dept_pos.php';
+require_once __DIR__ . '/../../includes/pos_unified.php';
 require_once __DIR__ . '/../../includes/pos_discount_requests.php';
 require_once __DIR__ . '/../../includes/ar_credits.php';
 
 /**
- * Walk-in POS terminal API.  Requires the dedicated POS session created by
- * `ims_login_pos()` — POS users cannot access any non-POS endpoint.
+ * Walk-in POS terminal API. Requires a POS PIN session (`ims_login_pos()`)
+ * or an IMS user with `pos.sell`. PIN terminals cannot access non-POS endpoints.
  *
  *   GET  ?action=products         -> sellable products with selling_price (legacy)
  *   GET  ?action=honey_catalog    -> honey variants, sizes, on-hand, prices
@@ -27,6 +28,9 @@ api_dispatch([
     'honey_ar_checkout' => 'api_pos_honey_ar_checkout',
     'dept_checkout' => 'api_pos_dept_checkout',
     'dept_ar_checkout' => 'api_pos_dept_ar_checkout',
+    'unified_lookup' => 'api_pos_unified_lookup',
+    'unified_checkout' => 'api_pos_unified_checkout',
+    'unified_ar_checkout' => 'api_pos_unified_ar_checkout',
     'staff_picker' => 'api_pos_staff_picker',
     'discount_request_create' => 'api_pos_discount_request_create',
     'discount_request_status' => 'api_pos_discount_request_status',
@@ -34,9 +38,10 @@ api_dispatch([
 
 function api_pos_require_session(): void
 {
-    if (!ims_pos_authenticated()) {
-        api_fail('POS session required.', 401);
+    if (ims_pos_authenticated()) {
+        return;
     }
+    api_require_permission('pos.sell');
 }
 
 function api_pos_products(): void
@@ -341,6 +346,71 @@ function api_pos_discount_request_status(): void
 
     try {
         $result = pos_discount_request_fetch_for_pin(ims_pdo(), $requestId, $pinId);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok($result);
+}
+
+function api_pos_unified_lookup(): void
+{
+    api_method_allowed(['GET']);
+    api_pos_require_session();
+    $code = trim((string) ($_GET['code'] ?? ''));
+    try {
+        api_ok(['barcode' => pos_unified_lookup(ims_pdo(), $code)]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_pos_unified_checkout(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_pos_require_session();
+
+    $items = is_array($input['items'] ?? null) ? $input['items'] : [];
+    $buyerName = trim((string) ($input['buyer_name'] ?? 'Walk-in'));
+    $buyerCreds = trim((string) ($input['buyer_credentials'] ?? ''));
+    $discountPercent = (int) ($input['discount_percent'] ?? 0);
+    $discountRequestId = isset($input['discount_request_id']) ? (int) $input['discount_request_id'] : null;
+
+    try {
+        $result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $buyerName, $buyerCreds, [
+            'discount_percent' => $discountPercent,
+            'discount_request_id' => $discountRequestId,
+        ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+
+    api_ok($result);
+}
+
+function api_pos_unified_ar_checkout(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_pos_require_session();
+
+    $items = is_array($input['items'] ?? null) ? $input['items'] : [];
+    $debtorUserId = isset($input['debtor_user_id']) ? (int) $input['debtor_user_id'] : null;
+    if ($debtorUserId !== null && $debtorUserId < 1) {
+        $debtorUserId = null;
+    }
+    $debtorName = trim((string) ($input['debtor_name'] ?? ''));
+    $debtorMobile = trim((string) ($input['debtor_mobile'] ?? ''));
+
+    try {
+        $result = pos_unified_ar_checkout(ims_pdo(), pos_session_actor(), $items, [
+            'debtor_user_id' => $debtorUserId,
+            'debtor_name' => $debtorName,
+            'debtor_mobile' => $debtorMobile,
+        ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

@@ -32,7 +32,7 @@ function api_er_list(): void
             LEFT JOIN departments d ON d.id = u.dept_id
             LEFT JOIN users r ON r.id = er.reviewed_by';
     $params = [];
-    if ($role === 'executive') {
+    if (ims_user_can($user, 'inventory.edit_requests.approve')) {
         $statusFilter = trim((string) ($_GET['status'] ?? 'pending'));
         if ($statusFilter !== 'all' && in_array($statusFilter, ['pending', 'approved', 'rejected'], true)) {
             $sql .= ' WHERE er.status = ?';
@@ -47,7 +47,7 @@ function api_er_list(): void
     $st->execute($params);
     api_ok([
         'requests' => $st->fetchAll(),
-        'is_reviewer' => $role === 'executive',
+        'is_reviewer' => ims_user_can($user, 'inventory.edit_requests.approve'),
     ]);
 }
 
@@ -56,7 +56,7 @@ function api_er_submit(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['tl', 'staff', 'prod_manager']);
+    $user = api_require_permission('inventory.edit_requests.submit');
 
     $table = trim((string) ($input['table_name'] ?? ''));
     $recordId = (int) ($input['record_id'] ?? 0);
@@ -123,7 +123,7 @@ function api_er_approve(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('inventory.edit_requests.approve');
     $id = (int) ($input['id'] ?? 0);
     if ($id < 1) {
         api_fail('Invalid request id.', 422);
@@ -182,7 +182,7 @@ function api_er_reject(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_role(['executive']);
+    $user = api_require_permission('inventory.edit_requests.approve');
     $id = (int) ($input['id'] ?? 0);
     $note = trim((string) ($input['rejection_note'] ?? ''));
     if ($id < 1) {

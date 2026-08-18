@@ -8,6 +8,7 @@ require_once __DIR__ . '/qr_decode.php';
 require_once __DIR__ . '/rts_schema.php';
 require_once __DIR__ . '/rts_storage.php';
 require_once __DIR__ . '/tracking_search.php';
+require_once __DIR__ . '/permissions.php';
 
 /** Max rows per list page (SPA custom input and API). */
 const ONLINE_PARCELS_LIST_MAX_PER_PAGE = 10000;
@@ -36,23 +37,20 @@ function online_parcels_user_can_access(?array $user): bool
     if ($user === null) {
         return false;
     }
+    if (!ims_user_can($user, 'csr.parcels.view')) {
+        return false;
+    }
+
     $role = (string) ($user['role'] ?? '');
 
-    if (in_array($role, ['executive', 'prod_manager'], true)) {
+    if (in_array($role, ['executive', 'prod_manager', 'staff'], true)) {
         return true;
     }
 
-    // SPA-normalized names (session normally stores IMS `tl` / `staff` instead).
     if (in_array($role, ['csr_tl', 'csr_staff'], true)) {
         return true;
     }
 
-    // Operations staff (non-CSR) get parcel visibility as part of the staff role.
-    if ($role === 'staff') {
-        return true;
-    }
-
-    // IMS CSR team leader — same dept gate as waybill stamper + online orders.
     if ($role === 'tl') {
         return online_parcels_user_is_csr_dept($user);
     }
@@ -65,11 +63,8 @@ function online_parcels_user_can_ship(?array $user): bool
     if ($user === null) {
         return false;
     }
-    $role = (string) ($user['role'] ?? '');
 
-    // Staff record + ship deliveries; executive-only actions (void/delete/resolve)
-    // are still gated separately in deliveries.php.
-    return in_array($role, ['executive', 'prod_manager', 'staff'], true);
+    return ims_user_can($user, 'deliveries.ship');
 }
 
 function online_parcels_user_can_edit_items(?array $user): bool
@@ -77,6 +72,10 @@ function online_parcels_user_can_edit_items(?array $user): bool
     if ($user === null) {
         return false;
     }
+    if (!ims_user_can($user, 'csr.parcels.edit_items')) {
+        return false;
+    }
+
     $role = (string) ($user['role'] ?? '');
     if ($role === 'executive') {
         return true;

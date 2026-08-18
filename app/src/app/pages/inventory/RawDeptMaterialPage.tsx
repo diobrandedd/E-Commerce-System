@@ -32,7 +32,7 @@ import {
   type DeptRawSnapshot,
 } from "@/app/lib/deptRawInventory";
 import { listSuppliers, type Supplier } from "@/app/lib/suppliers";
-import { deptPouchBarcodesApi, deptPouchBarcodesEnabled, deptPouchDefectEnabled, deptPouchUnitLabel } from "@/app/lib/deptPouchBarcodes";
+import { deptPouchBarcodesApi, deptPouchBarcodesEnabled, deptPouchUnitLabel } from "@/app/lib/deptPouchBarcodes";
 import {
   AppErrorBanner,
   AppPressable,
@@ -46,7 +46,6 @@ import {
   DeptPouchRequestsPanel,
   DeptPouchScanInPanel,
 } from "@/app/components/dept/DeptPouchBarcodePanels";
-import { DeptPouchDefectPanel } from "@/app/components/dept/DeptPouchDefectPanel";
 import { DeptRawProduceGuideModal } from "@/app/components/inventory/DeptRawProduceGuideModal";
 import { ParagisProductionGuideModal } from "@/app/components/inventory/ParagisProductionGuideModal";
 import { runDeptRawProduceTour } from "@/app/components/tour/guides/deptRawProduceTour";
@@ -101,8 +100,8 @@ interface RawDeptMaterialPageProps {
 
 export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const { user } = useAuth();
-  const canMutate = canMutateDeptRawProduction(user?.role);
-  const canPouchBarcodes = canDeptPouchBarcodeOps(user?.role);
+  const canMutate = canMutateDeptRawProduction(user, route.productKey);
+  const canPouchBarcodes = canDeptPouchBarcodeOps(user, route.productKey);
   const productKey = route.productKey;
   const isParagis = productKey === "pt";
   const isSingleStageProduce = productKey === "brc" || productKey === "jar_cacao" || productKey === "honey_comb";
@@ -133,14 +132,12 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const [showWipWaste, setShowWipWaste] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [pouchLogTick, setPouchLogTick] = useState(0);
-  const [pouchModal, setPouchModal] = useState<"request" | "scan" | "admin" | "history" | "defect" | null>(null);
+  const [pouchModal, setPouchModal] = useState<"request" | "scan" | "admin" | "history" | null>(null);
   const [pendingPouchLabels, setPendingPouchLabels] = useState(0);
   const pouchRequestTitleId = useId();
   const pouchScanTitleId = useId();
   const pouchAdminTitleId = useId();
   const pouchHistoryTitleId = useId();
-  const pouchDefectTitleId = useId();
-  const showDefectScan = showPouchBarcodes && deptPouchDefectEnabled(productKey);
 
   const refreshPendingPouchLabels = useCallback(async () => {
     if (!showPouchBarcodes) {
@@ -180,18 +177,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
       title={route.title}
       subtitle={route.subtitle}
       actions={
-        <div className="flex items-center gap-2">
-          {showGuide && (
-            <button
-              type="button"
-              onClick={() => setGuideOpen(true)}
-              className="sm:hidden inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-lg border border-border"
-            >
-              <BookOpen size={12} /> Guide
-            </button>
-          )}
-
-          <div className="hidden sm:flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             to={route.finishedProductPath}
             className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary"
@@ -202,117 +188,11 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             <button
               type="button"
               onClick={() => setGuideOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg border border-border"
+              className={appHeaderActionClass}
             >
               <BookOpen size={13} /> Guide
             </button>
           )}
-          {canMutate && (
-            <>
-              <button
-                type="button"
-                onClick={() => setShowStockIn(true)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-white px-3 py-1.5 rounded-lg"
-                style={{ background: "#C8900A" }}
-              >
-                <Plus size={13} /> Stock in raw bags
-              </button>
-              {isParagis ? (
-                <>
-                  <button
-                    type="button"
-                    disabled={(data?.bags_on_hand ?? 0) <= 0}
-                    onClick={() => setShowUseRawBags(true)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#C8900A] text-[#8a6506] disabled:opacity-40"
-                  >
-                    <Factory size={13} /> Use raw bags
-                  </button>
-                  <button
-                    type="button"
-                    disabled={wipTeaBags <= 0}
-                    onClick={() => setShowWipWaste(true)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary disabled:opacity-40"
-                  >
-                    <Minus size={13} /> WIP waste
-                  </button>
-                </>
-              ) : hasPouchBarcodes ? null : (
-                <button
-                  type="button"
-                  disabled={(data?.bags_on_hand ?? 0) <= 0}
-                  onClick={() => setShowProduce(true)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#C8900A] text-[#8a6506] disabled:opacity-40"
-                >
-                  <Factory size={13} /> Produce
-                </button>
-              )}
-              <button
-                type="button"
-                disabled={(data?.bags_on_hand ?? 0) <= 0}
-                onClick={() => setShowWarehouseWaste(true)}
-                className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary disabled:opacity-40"
-              >
-                <Minus size={13} /> Bag waste
-              </button>
-            </>
-          )}
-          {showPouchBarcodes && (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className={`${appHeaderActionClass} gap-1.5`}
-                onClick={() => setPouchModal("request")}
-              >
-                <Tag size={13} /> Request barcodes
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className={`${appHeaderActionClass} gap-1.5`}
-                onClick={() => setPouchModal("scan")}
-              >
-                <ScanLine size={13} /> Scan to inventory
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className={`${appHeaderActionClass} gap-1.5`}
-                onClick={() => setPouchModal("history")}
-              >
-                <History size={13} /> Scan history
-              </Button>
-              {showDefectScan && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className={`${appHeaderActionClass} gap-1.5 text-red-700 border-red-200 hover:bg-red-50`}
-                  onClick={() => setPouchModal("defect")}
-                >
-                  <AlertTriangle size={13} /> Defect
-                </Button>
-              )}
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className={`${appHeaderActionClass} relative gap-1.5`}
-                onClick={() => setPouchModal("admin")}
-              >
-                <Printer size={13} /> Generate / print
-                {pendingPouchLabels > 0 ? (
-                  <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                    {pendingPouchLabels > 99 ? "99+" : pendingPouchLabels}
-                  </span>
-                ) : null}
-              </Button>
-            </>
-          )}
-          </div>
         </div>
       }
     >
@@ -381,8 +261,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           </div>
 
           {(canMutate || showPouchBarcodes) && (
-            <div className="sm:hidden">
-              <RawDeptInlineActions
+            <RawDeptInlineActions
                 isParagis={isParagis}
                 finishedProductPath={route.finishedProductPath}
                 finishedTitle={route.finishedTitle}
@@ -391,7 +270,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 canMutate={canMutate}
                 hasPouchBarcodes={hasPouchBarcodes}
                 showPouchBarcodes={showPouchBarcodes}
-                showDefectScan={showDefectScan}
                 unitSingular={pouchUnit.singular}
                 unitPlural={pouchUnit.plural}
                 onStockIn={() => setShowStockIn(true)}
@@ -399,14 +277,12 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 onRequestBarcodes={() => setPouchModal("request")}
                 onScanPouches={() => setPouchModal("scan")}
                 onScanHistory={() => setPouchModal("history")}
-                onDefect={() => setPouchModal("defect")}
                 onGeneratePrint={() => setPouchModal("admin")}
                 pendingPouchLabels={pendingPouchLabels}
                 onWipWaste={() => setShowWipWaste(true)}
                 onProduce={() => undefined}
                 onBagWaste={() => setShowWarehouseWaste(true)}
-              />
-            </div>
+            />
           )}
 
           {dailyProduce && (
@@ -631,29 +507,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           </AppModalBody>
         </AppModal>
       )}
-      {pouchModal === "defect" && (
-        <AppModal
-          open
-          onClose={() => {
-            setPouchModal(null);
-            void refresh();
-          }}
-          panelClassName="max-w-2xl w-full"
-          labelledBy={pouchDefectTitleId}
-        >
-          <AppModalHeader
-            title={`Defect — ${route.finishedTitle}`}
-            titleId={pouchDefectTitleId}
-            onClose={() => {
-              setPouchModal(null);
-              void refresh();
-            }}
-          />
-          <AppModalBody>
-            <DeptPouchDefectPanel productKey={productKey} productLabel={route.finishedTitle} />
-          </AppModalBody>
-        </AppModal>
-      )}
       {showWipWaste && data && (
         <WipWasteModal
           maxQty={wipTeaBags}
@@ -674,7 +527,6 @@ function RawDeptInlineActions({
   canMutate,
   hasPouchBarcodes,
   showPouchBarcodes,
-  showDefectScan,
   unitSingular,
   unitPlural,
   onStockIn,
@@ -682,7 +534,6 @@ function RawDeptInlineActions({
   onRequestBarcodes,
   onScanPouches,
   onScanHistory,
-  onDefect,
   onGeneratePrint,
   pendingPouchLabels,
   onWipWaste,
@@ -697,7 +548,6 @@ function RawDeptInlineActions({
   canMutate: boolean;
   hasPouchBarcodes: boolean;
   showPouchBarcodes: boolean;
-  showDefectScan: boolean;
   unitSingular: string;
   unitPlural: string;
   onStockIn: () => void;
@@ -705,7 +555,6 @@ function RawDeptInlineActions({
   onRequestBarcodes: () => void;
   onScanPouches: () => void;
   onScanHistory: () => void;
-  onDefect: () => void;
   onGeneratePrint: () => void;
   pendingPouchLabels: number;
   onWipWaste: () => void;
@@ -724,10 +573,10 @@ function RawDeptInlineActions({
       <div className="px-4 py-3 border-b bg-secondary/30">
         <p className="text-sm font-semibold">Do next</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Production steps — tap the action you need.
+          Production steps — choose the action you need.
         </p>
       </div>
-      <div className="p-3 grid grid-cols-1 gap-2">
+      <div className="p-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
         {canMutate && (
           <AppPressable
             variant="primary"
@@ -786,14 +635,13 @@ function RawDeptInlineActions({
             >
               <History size={16} /> Scan history
             </AppPressable>
-            {showDefectScan && (
-              <AppPressable
-                variant="outline"
-                onClick={onDefect}
-                className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-red-300 text-red-700"
+            {showPouchBarcodes && (
+              <Link
+                to="/inventory/leak-damage"
+                className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border border-red-300 text-red-700 rounded-md px-3 hover:bg-red-50 transition-colors"
               >
-                <AlertTriangle size={16} /> Defect
-              </AppPressable>
+                <AlertTriangle size={16} /> Leak / damage scan
+              </Link>
             )}
             <AppPressable
               variant="outline"

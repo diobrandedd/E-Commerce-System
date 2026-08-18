@@ -8,19 +8,16 @@ require_once __DIR__ . '/../../includes/honey_sales_report.php';
 /**
  * Honey walk-in sales reporting for Executive + Production Manager.
  *
- *   GET ?action=honey_sold&period=day|week|month|year|custom|all&from=&to=&page=1&receipt=&sale_type=all|regular|discount|ar
+ *   GET ?action=honey_sold&period=day|week|month|year|custom|all&from=&to=&page=1&receipt=&sale_type=all|regular|discount|ar&product=all|honey|pt|brc|jar_cacao|honey_comb
  */
 
 api_dispatch([
     'honey_sold' => 'api_sales_honey_sold',
 ]);
 
-function api_sales_require(): void
+function api_sales_require(): array
 {
-    $user = api_require_ims_user();
-    if (!in_array((string) $user['role'], ['executive', 'prod_manager'], true)) {
-        api_fail('Forbidden.', 403);
-    }
+    return api_require_permission('sales.view');
 }
 
 function api_sales_honey_sold(): void
@@ -35,6 +32,7 @@ function api_sales_honey_sold(): void
     $receipt = trim((string) ($_GET['receipt'] ?? ''));
     $saleType = trim((string) ($_GET['sale_type'] ?? 'all'));
     $channel = trim((string) ($_GET['channel'] ?? 'all'));
+    $product = trim((string) ($_GET['product'] ?? 'all'));
 
     try {
         $data = honey_sales_sold_snapshot(
@@ -45,7 +43,8 @@ function api_sales_honey_sold(): void
             $page,
             $receipt !== '' ? $receipt : null,
             $saleType !== '' ? $saleType : 'all',
-            $channel !== '' ? $channel : 'all'
+            $channel !== '' ? $channel : 'all',
+            $product !== '' ? $product : 'all'
         );
     } catch (InvalidArgumentException $e) {
         api_fail($e->getMessage(), 422);

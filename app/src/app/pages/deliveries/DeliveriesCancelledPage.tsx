@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { BookOpen, Camera, CheckCircle2, ChevronDown, ChevronRight, Loader2, XCircle } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
@@ -16,6 +16,7 @@ import {
 import { ApiError } from "@/app/lib/api";
 import { packCancelRestockApi, type PackCancelRestockSession } from "@/app/lib/packCancelRestock";
 import { playScanBeep } from "@/app/lib/scanBeep";
+import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 import { DeliveriesCancelledGuideModal } from "@/app/components/fulfillment/DeliveriesCancelledGuideModal";
 import { runDeliveriesCancelledTour } from "@/app/components/fulfillment/deliveriesCancelledTour";
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
@@ -105,7 +106,6 @@ export function DeliveriesCancelledPage() {
 }
 
 function RestockLivePanel() {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [session, setSession] = useState<PackCancelRestockSession | null>(null);
   const [code, setCode] = useState("");
   const [flash, setFlash] = useState<"ok" | "dup" | "bad" | null>(null);
@@ -116,6 +116,7 @@ function RestockLivePanel() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const cameraTitleId = useId();
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, session?.id);
 
   const start = useCallback(async () => {
     setError(null);
@@ -130,10 +131,6 @@ function RestockLivePanel() {
   useEffect(() => {
     void start();
   }, [start]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, [session?.id]);
 
   const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     if (!session) return { kind: "error", message: "Session not ready." };
@@ -152,7 +149,7 @@ function RestockLivePanel() {
             : `${res.lookup?.variant ?? ""} ${res.lookup?.size_label ?? ""}`.trim() || "Honey";
         setMsg(label);
         window.setTimeout(() => setFlash(null), 650);
-        inputRef.current?.focus();
+        refocus();
         return { kind: "success", message: `Restock queued: ${label}` };
       }
       if (res.result === "duplicate_session") {
@@ -221,6 +218,7 @@ function RestockLivePanel() {
       <div className="flex gap-2">
         <input
           ref={inputRef}
+          {...inputProps}
           className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide font-mono"
           placeholder="Scan packed barcode…"
           value={code}

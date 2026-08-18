@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { Camera, Loader2, Printer } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -19,6 +19,7 @@ import {
   type DeptPouchRequest,
 } from "@/app/lib/deptPouchBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
+import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 import { DeptPouchScanLogModal } from "@/app/components/dept/DeptPouchScanLogModal";
 
 interface DeptPouchPanelProps {
@@ -289,17 +290,13 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
 
 export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPanelProps) {
   const unit = deptPouchUnitLabel(productKey);
-  const inputRef = useRef<HTMLInputElement>(null);
   const [code, setCode] = useState("");
   const [flash, setFlash] = useState<"ok" | "err" | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const cameraTitleId = useId();
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, productKey);
 
   const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     const value = (raw ?? code).trim();
@@ -327,7 +324,7 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
       window.setTimeout(() => setFlash(null), 1200);
       return { kind: dup ? "duplicate" : "error", message };
     } finally {
-      inputRef.current?.focus();
+      refocus();
     }
   };
 
@@ -340,6 +337,7 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
       <div className="flex flex-wrap gap-2">
         <input
           ref={inputRef}
+          {...inputProps}
           className={`flex-1 min-w-[12rem] border rounded-lg px-3 py-2 font-mono text-sm outline-none focus:ring-4 focus:ring-[#C8900A]/15 ${
             flash === "ok" ? "border-green-500" : flash === "err" ? "border-red-500" : "border-border"
           }`}

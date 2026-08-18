@@ -10,7 +10,7 @@ const BULK_HONEY_NEGOTIATION_MODES = ['margin_pct', 'unit_price', 'total_price']
 
 function bulk_honey_orders_assert_executive(array $user): void
 {
-    if ((string) ($user['role'] ?? '') !== 'executive') {
+    if (!ims_user_can($user, 'sales.bulk_orders')) {
         throw new RuntimeException('Forbidden.');
     }
 }

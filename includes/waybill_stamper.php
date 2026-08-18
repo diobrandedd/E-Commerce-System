@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/rts_storage.php';
+require_once __DIR__ . '/permissions.php';
 
 function waybill_stamper_storage_root(): string
 {
@@ -57,11 +58,14 @@ function waybill_stamper_user_is_csr_dept(array $user): bool
 /** @param array{role:string,dept_id:?int} $user */
 function waybill_stamper_user_can_access(array $user): bool
 {
+    if (!ims_user_can($user, 'csr.online_orders')) {
+        return false;
+    }
+
     $role = (string) ($user['role'] ?? '');
     if ($role === 'executive' || $role === 'csr_tl' || $role === 'csr_staff') {
         return true;
     }
-    // IMS session stores `tl` / `staff` — CSR users are gated by department, not SPA role names.
     if (in_array($role, ['tl', 'staff'], true)) {
         return waybill_stamper_user_is_csr_dept($user);
     }

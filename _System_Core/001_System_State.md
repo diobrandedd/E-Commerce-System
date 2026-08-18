@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-08-15_daily-scan-in-report]] |
-| **Active Plan** | [[plans/archive/2026-08-15_daily-scan-in-report_plan]] |
-| **Status** | `shipped` - Daily gross scan-to-inventory reports (2026-08-15) |
+| **Active Spec** | [[specs/2026-08-18_pos-account-discount-sales-log]] |
+| **Active Plan** | [[plans/archive/2026-08-18_leak-damage-scan-unified-pos-sales-dates_plan]] |
+| **Status** | `shipped` - Account POS, checkout discounts, Sales seller log (2026-08-18) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

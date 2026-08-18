@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/material_inventory.php';
+require_once __DIR__ . '/permissions.php';
 require_once __DIR__ . '/parcel_pack_costing.php';
 require_once __DIR__ . '/rts_schema.php';
 
@@ -212,24 +213,24 @@ function fulfillment_packing_tables_ready(PDO $pdo): bool
     return $ready;
 }
 
-function material_inventory_role_can_issue_packing(string $role): bool
+function material_inventory_role_can_issue_packing(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'tl', 'team_leader', 'staff', 'csr_tl'], true);
+    return ims_user_can($user, 'packing.materials.issue');
 }
 
-function material_inventory_role_can_edit_packaging_price(string $role): bool
+function material_inventory_role_can_edit_packaging_price(array $user): bool
 {
-    return in_array($role, ['executive', 'hr'], true);
+    return ims_user_can($user, 'packaging.edit_price');
 }
 
-function material_inventory_role_can_view_packing_staging(string $role): bool
+function material_inventory_role_can_view_packing_staging(array $user): bool
 {
-    return material_inventory_role_can_issue_packing($role);
+    return ims_user_can($user, 'packing.materials.view');
 }
 
-function material_inventory_role_can_view_on_hold_parcels(string $role): bool
+function material_inventory_role_can_view_on_hold_parcels(array $user): bool
 {
-    return in_array($role, ['executive', 'prod_manager', 'csr_tl', 'csr_staff'], true);
+    return ims_user_can($user, 'packing.on_hold.view');
 }
 
 /** @return array{issued_qty: float, consumed_qty: float, remaining_qty: float}|null */

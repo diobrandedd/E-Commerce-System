@@ -14,9 +14,9 @@ interface MaterialsCategoryPageProps {
 }
 
 export function MaterialsCategoryPage({ category, title, subtitle }: MaterialsCategoryPageProps) {
-  const { user } = useAuth();
-  const isExec = user?.role === "executive";
-  const isPm = user?.role === "prod_manager";
+  const { can } = useAuth();
+  const isExec = can("packaging.catalog");
+  const isPm = can("packaging.deduct") && !can("packaging.catalog");
   const [items, setItems] = useState<MaterialStockRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
