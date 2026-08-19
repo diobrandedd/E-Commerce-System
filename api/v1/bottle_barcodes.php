@@ -67,6 +67,7 @@ api_dispatch([
     'pack_get' => 'api_bottle_pack_get',
     'pack_session_list' => 'api_bottle_pack_session_list',
     'pack_scan' => 'api_bottle_pack_scan',
+    'pack_remove_item' => 'api_bottle_pack_remove_item',
     'pack_confirm' => 'api_bottle_pack_confirm',
     'pack_discard' => 'api_bottle_pack_discard',
     'pos_lookup' => 'api_bottle_pos_lookup',
@@ -374,6 +375,24 @@ function api_bottle_pack_scan(): void
         (int) ($in['session_id'] ?? 0),
         (string) ($in['code'] ?? '')
     ));
+}
+
+function api_bottle_pack_remove_item(): void
+{
+    api_method_allowed(['POST']);
+    api_bottle_require_csrf();
+    api_bottle_require_scan();
+    $in = api_input();
+    try {
+        api_ok(['session' => honey_bottle_pack_session_remove_item(
+            ims_pdo(),
+            (int) ($in['session_id'] ?? 0),
+            (string) ($in['kind'] ?? 'honey'),
+            (int) ($in['item_id'] ?? 0)
+        )]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
 }
 
 function api_bottle_pack_confirm(): void

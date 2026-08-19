@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-18T09:58:55+02:00
+generated: 2026-08-19T03:30:30+02:00
 type: memory-bank
 ---
 
@@ -85,6 +85,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pack_get` | `api_bottle_pack_get()` | `honey_bottle_pack_session_get()`, `ims_pdo()` |
 | `pack_session_list` | `api_bottle_pack_session_list()` | `honey_bottle_pack_session_list()`, `ims_pdo()` |
 | `pack_scan` | `api_bottle_pack_scan()` | `honey_bottle_pack_session_scan()`, `ims_pdo()` |
+| `pack_remove_item` | `api_bottle_pack_remove_item()` | `honey_bottle_pack_session_remove_item()`, `ims_pdo()` |
 | `pack_confirm` | `api_bottle_pack_confirm()` | `honey_bottle_pack_session_confirm()`, `ims_pdo()` |
 | `pack_discard` | `api_bottle_pack_discard()` | `honey_bottle_pack_session_discard()`, `ims_pdo()` |
 | `pos_lookup` | `api_bottle_pos_lookup()` | `honey_bottle_pos_lookup()`, `ims_pdo()` |

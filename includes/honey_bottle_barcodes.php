@@ -1530,6 +1530,33 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
     return honey_bottle_pack_session_get($pdo, $sessionId);
 }
 
+/**
+ * Drop one scanned sticker from a draft pack session. Units are not consumed until confirm.
+ *
+ * @return array<string, mixed>
+ */
+function honey_bottle_pack_session_remove_item(PDO $pdo, int $sessionId, string $kind, int $itemId): array
+{
+    $sess = honey_bottle_pack_session_get($pdo, $sessionId);
+    if ($sess['status'] !== 'draft') {
+        throw new RuntimeException('This pack session is already closed.');
+    }
+    if ($itemId < 1) {
+        throw new RuntimeException('Invalid session item.');
+    }
+    $kind = $kind === 'dept' ? 'dept' : 'honey';
+    $sql = $kind === 'dept'
+        ? 'DELETE FROM honey_bottle_pack_session_dept_items WHERE id = ? AND session_id = ?'
+        : 'DELETE FROM honey_bottle_pack_session_items WHERE id = ? AND session_id = ?';
+    $st = $pdo->prepare($sql);
+    $st->execute([$itemId, $sessionId]);
+    if ($st->rowCount() < 1) {
+        throw new RuntimeException('That barcode is not in this session.');
+    }
+
+    return honey_bottle_pack_session_get($pdo, $sessionId);
+}
+
 function honey_bottle_pack_session_discard(PDO $pdo, int $sessionId): void
 {
     $pdo->prepare(

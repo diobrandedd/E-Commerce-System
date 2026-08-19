@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useState } from "react";
-import { BookOpen, Camera, CheckCircle2, ChevronDown, ChevronRight, Loader2, XCircle } from "lucide-react";
+import { BookOpen, Camera, CheckCircle2, ChevronDown, ChevronRight, Loader2, Trash2, XCircle } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -17,6 +17,7 @@ import { ApiError } from "@/app/lib/api";
 import {
   bottleBarcodesApi,
   type HoneyPackSession,
+  type HoneyPackSessionGroup,
   type HoneyPackSessionItem,
   type HoneyPackSessionListRow,
 } from "@/app/lib/bottleBarcodes";
@@ -50,40 +51,18 @@ function packItemLabel(item: {
   return `${item.variant} ${item.size_label}`.trim();
 }
 
-function PackSessionBarcodeList({
-  items,
-  newestFirst = false,
-}: {
-  items: HoneyPackSessionItem[];
-  newestFirst?: boolean;
-}) {
-  const rows = newestFirst ? [...items].reverse() : items;
-  if (rows.length === 0) {
-    return <p className="text-xs text-muted-foreground">No barcodes in this session yet.</p>;
+function packGroupKey(g: Pick<HoneyPackSessionGroup, "kind" | "product_key" | "variant" | "size">): string {
+  if (g.kind === "dept") {
+    return `dept|${g.product_key ?? g.variant}`;
   }
+  return `honey|${g.variant}|${g.size}`;
+}
 
-  return (
-    <div className="overflow-x-auto rounded-xl border bg-card max-h-64 overflow-y-auto">
-      <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-secondary/40 text-xs uppercase text-muted-foreground">
-          <tr>
-            <th className="text-left px-2 py-1.5">Barcode</th>
-            <th className="text-left px-2 py-1.5">Item</th>
-            <th className="text-left px-2 py-1.5">Batch</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(it => (
-            <tr key={`${it.kind ?? "honey"}-${it.id}`} className={`border-t ${appHoverRow}`}>
-              <td className="px-2 py-1.5 font-mono text-xs">{it.code}</td>
-              <td className="px-2 py-1.5 capitalize">{packItemLabel(it)}</td>
-              <td className="px-2 py-1.5 font-mono text-xs">{it.batch_no || "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+function packItemGroupKey(item: HoneyPackSessionItem): string {
+  if (item.kind === "dept") {
+    return `dept|${item.product_key ?? item.variant}`;
+  }
+  return `honey|${item.variant}|${item.size}`;
 }
 
 const PACK_PRODUCT_FILTERS: { value: string; label: string }[] = [
@@ -140,8 +119,8 @@ export function HoneyPackScanPage() {
           <p>
             <strong className="text-foreground">Scan</strong> — scan every sticker going into the parcel:
             honey bottles plus Paragis, Black Rice, Cacao, or Honey Comb. Mix them in one session in any
-            order. Duplicates in this session are ignored. Units already packed or sold show a distinct
-            warning.
+            order. Tap a product row to see its barcodes. Remove a mistaken scan before you confirm.
+            Duplicates in this session are ignored. Units already packed or sold show a distinct warning.
           </p>
           <p>
             <strong className="text-foreground">Confirm</strong> deducts honey packaging stock and finished
@@ -167,6 +146,8 @@ function PackScanLivePanel() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const cameraTitleId = useId();
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, session?.id);
 
@@ -200,6 +181,11 @@ function PackScanLivePanel() {
             ? res.lookup.product_label || res.lookup.variant || "Dept item"
             : `${res.lookup?.variant ?? ""} ${res.lookup?.size_label ?? ""}`.trim() || "Honey";
         setMsg(label);
+        const last = res.session.items[res.session.items.length - 1];
+        if (last) {
+          const groupKey = packItemGroupKey(last);
+          setExpandedGroups(prev => (prev.includes(groupKey) ? prev : [...prev, groupKey]));
+        }
         window.setTimeout(() => setFlash(null), 650);
         refocus();
         return { kind: "success", message: `Scanned: ${label}` };
@@ -257,7 +243,34 @@ function PackScanLivePanel() {
     if (!session) return;
     await bottleBarcodesApi.packDiscard(session.id);
     setOk("Session discarded.");
+    setExpandedGroups([]);
     await start();
+  };
+
+  const removeItem = async (item: HoneyPackSessionItem) => {
+    if (!session) return;
+    const rowKey = `${item.kind ?? "honey"}-${item.id}`;
+    setRemovingId(rowKey);
+    setError(null);
+    try {
+      const res = await bottleBarcodesApi.packRemoveItem(session.id, item.kind === "dept" ? "dept" : "honey", item.id);
+      setSession(res.session);
+      setMsg(`Removed ${item.code}`);
+      const leftover = res.session.items.some(it => packItemGroupKey(it) === packItemGroupKey(item));
+      if (!leftover) {
+        const key = packItemGroupKey(item);
+        setExpandedGroups(prev => prev.filter(k => k !== key));
+      }
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not remove barcode.");
+    } finally {
+      setRemovingId(null);
+      refocus();
+    }
+  };
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
   };
 
   const flashClass =
@@ -302,20 +315,63 @@ function PackScanLivePanel() {
       </div>
       {msg && <p className="text-sm">{msg}</p>}
       <p className="text-xl font-bold">{session?.item_count ?? 0} items in session</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {(session?.grouped ?? []).map(g => (
-          <div
-            key={`${g.kind ?? "honey"}-${g.product_key ?? g.variant}-${g.size}`}
-            className="bg-card border rounded-xl px-3 py-2"
-          >
-            <p className="text-xs text-muted-foreground capitalize">{packItemLabel(g)}</p>
-            <p className="text-lg font-bold">{g.qty}</p>
-          </div>
-        ))}
-      </div>
-      <div className="space-y-1.5">
-        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Barcodes in this session</p>
-        <PackSessionBarcodeList items={session?.items ?? []} newestFirst />
+      <div className="space-y-2">
+        {(session?.grouped ?? []).map(g => {
+          const key = packGroupKey(g);
+          const open = expandedGroups.includes(key);
+          const barcodes = (session?.items ?? []).filter(it => packItemGroupKey(it) === key);
+          return (
+            <div key={key} className="bg-card border rounded-xl overflow-hidden">
+              <button
+                type="button"
+                className={`w-full text-left px-3 py-2.5 flex items-center gap-2 ${appHoverRow}`}
+                onClick={() => toggleGroup(key)}
+              >
+                <span className="text-muted-foreground shrink-0">
+                  {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs text-muted-foreground capitalize">{packItemLabel(g)}</span>
+                  <span className="text-lg font-bold leading-tight">{g.qty}</span>
+                </span>
+              </button>
+              {open ? (
+                <div className="border-t bg-secondary/20 px-3 py-2 space-y-1">
+                  {barcodes.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-1">No barcodes.</p>
+                  ) : (
+                    barcodes.map(it => {
+                      const rowKey = `${it.kind ?? "honey"}-${it.id}`;
+                      const removing = removingId === rowKey;
+                      return (
+                        <div key={rowKey} className="flex items-center gap-2 py-1">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-mono text-xs">{it.code}</p>
+                            {it.batch_no ? (
+                              <p className="text-[10px] text-muted-foreground font-mono">{it.batch_no}</p>
+                            ) : null}
+                          </div>
+                          <button
+                            type="button"
+                            className="text-red-400 hover:text-red-600 p-1 transition-colors active:scale-90 disabled:opacity-40"
+                            aria-label={`Remove ${it.code}`}
+                            disabled={removing || busy}
+                            onClick={e => {
+                              e.stopPropagation();
+                              void removeItem(it);
+                            }}
+                          >
+                            {removing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
       <div className="flex flex-wrap gap-2">
         <Button type="button" onClick={() => setConfirmOpen(true)} disabled={!session || session.item_count < 1}>
@@ -327,7 +383,7 @@ function PackScanLivePanel() {
       </div>
       <AppModal open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <AppModalHeader title="Confirm pack deduction" onClose={() => setConfirmOpen(false)} />
-        <AppModalBody className="space-y-3">
+        <AppModalBody className="space-y-2">
           <p className="text-sm text-muted-foreground">
             These leave finished stock now (honey packaging and/or dept finished qty).
           </p>
@@ -339,10 +395,6 @@ function PackScanLivePanel() {
               {g.qty} × {packItemLabel(g)}
             </p>
           ))}
-          <div className="space-y-1.5">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Barcodes</p>
-            <PackSessionBarcodeList items={session?.items ?? []} />
-          </div>
         </AppModalBody>
         <AppModalFooter>
           <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>Keep scanning</Button>

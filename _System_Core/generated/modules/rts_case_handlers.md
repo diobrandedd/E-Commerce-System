@@ -1,7 +1,7 @@
 ---
 title: rts_case_handlers
 source: includes/rts_case_handlers.php
-generated: 2026-08-18T09:59:28+02:00
+generated: 2026-08-19T03:31:03+02:00
 type: module
 function_count: 28
 ---

@@ -1,7 +1,7 @@
 ---
 title: rts_damaged_use
 source: includes/rts_damaged_use.php
-generated: 2026-08-18T09:59:29+02:00
+generated: 2026-08-19T03:31:04+02:00
 type: module
 function_count: 6
 ---

@@ -50,6 +50,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-08-19_pack-scan-session-barcode-remove]] — Pack scan session rows expand to barcodes; remove a draft scan
 - [[records/2026-08-18_pos-account-discount-sales-log]] — Account POS (`pos.sell`), checkout discounts, Sales seller + product filter
 - [[records/2026-08-18_scan-camera-software-keyboard]] — Phone Gboard no longer opens during camera scan
 - [[records/2026-08-18_barcode-request-desktop-notify]] — Windows toast when barcode requests increase

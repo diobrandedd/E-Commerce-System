@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-19 — Pack scan session barcodes + remove
+**Change:** Live pack session product rows expand to show scanned barcodes. Trash removes one draft scan (stock still deducted only on Confirm). → [[problems/records/2026-08-19_pack-scan-session-barcode-remove]]
+
 ### 2026-08-18 — Account POS, discounts at checkout, Sales seller log
 **Change:** POS is permission `pos.sell` (sidebar). 10%/20% complete the sale immediately with the cashier recorded. Sales Recent walk-in sales shows Sold by / Sold to and filters by product. Run phase 65. → [[problems/records/2026-08-18_pos-account-discount-sales-log]]
 

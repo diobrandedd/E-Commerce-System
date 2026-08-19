@@ -248,6 +248,12 @@ export const bottleBarcodesApi = {
         product_label?: string;
       }) | null;
     }>("bottle_barcodes.php", "pack_scan", { session_id: sessionId, code }),
+  packRemoveItem: (sessionId: number, kind: "honey" | "dept", itemId: number) =>
+    apiPost<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_remove_item", {
+      session_id: sessionId,
+      kind,
+      item_id: itemId,
+    }),
   packConfirm: (sessionId: number) =>
     apiPost<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_confirm", { session_id: sessionId }),
   packDiscard: (sessionId: number) =>

@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-08-18T09:59:29+02:00
+generated: 2026-08-19T03:31:04+02:00
 type: module
 function_count: 22
 ---
@@ -107,7 +107,7 @@ function_count: 22
 **Callers (4):**
 
 - `api/v1/rts.php`:232 — `rts_inventory_deduct_sell_honey_variant(`
-- `includes/honey_bottle_barcodes.php`:1661 — `rts_inventory_deduct_sell_honey_variant(`
+- `includes/honey_bottle_barcodes.php`:1688 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_pos.php`:406 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_pos.php`:625 — `rts_inventory_deduct_sell_honey_variant(`
 
