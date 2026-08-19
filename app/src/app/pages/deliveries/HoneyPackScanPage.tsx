@@ -17,6 +17,7 @@ import { ApiError } from "@/app/lib/api";
 import {
   bottleBarcodesApi,
   type HoneyPackSession,
+  type HoneyPackSessionItem,
   type HoneyPackSessionListRow,
 } from "@/app/lib/bottleBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
@@ -47,6 +48,42 @@ function packItemLabel(item: {
     return item.product_label || item.variant;
   }
   return `${item.variant} ${item.size_label}`.trim();
+}
+
+function PackSessionBarcodeList({
+  items,
+  newestFirst = false,
+}: {
+  items: HoneyPackSessionItem[];
+  newestFirst?: boolean;
+}) {
+  const rows = newestFirst ? [...items].reverse() : items;
+  if (rows.length === 0) {
+    return <p className="text-xs text-muted-foreground">No barcodes in this session yet.</p>;
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-xl border bg-card max-h-64 overflow-y-auto">
+      <table className="w-full text-sm">
+        <thead className="sticky top-0 bg-secondary/40 text-xs uppercase text-muted-foreground">
+          <tr>
+            <th className="text-left px-2 py-1.5">Barcode</th>
+            <th className="text-left px-2 py-1.5">Item</th>
+            <th className="text-left px-2 py-1.5">Batch</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(it => (
+            <tr key={`${it.kind ?? "honey"}-${it.id}`} className={`border-t ${appHoverRow}`}>
+              <td className="px-2 py-1.5 font-mono text-xs">{it.code}</td>
+              <td className="px-2 py-1.5 capitalize">{packItemLabel(it)}</td>
+              <td className="px-2 py-1.5 font-mono text-xs">{it.batch_no || "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 const PACK_PRODUCT_FILTERS: { value: string; label: string }[] = [
@@ -112,7 +149,7 @@ export function HoneyPackScanPage() {
           </p>
           <p>
             <strong className="text-foreground">History</strong> — read-only list of confirmed pack sessions.
-            Filter by date, product, or batch code. Expanding a row shows items grouped by batch.
+            Filter by date, product, or batch code. Expanding a row shows items, barcodes, and batches.
           </p>
         </AppModalBody>
       </AppModal>
@@ -276,6 +313,10 @@ function PackScanLivePanel() {
           </div>
         ))}
       </div>
+      <div className="space-y-1.5">
+        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Barcodes in this session</p>
+        <PackSessionBarcodeList items={session?.items ?? []} newestFirst />
+      </div>
       <div className="flex flex-wrap gap-2">
         <Button type="button" onClick={() => setConfirmOpen(true)} disabled={!session || session.item_count < 1}>
           Done scanning
@@ -286,7 +327,7 @@ function PackScanLivePanel() {
       </div>
       <AppModal open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <AppModalHeader title="Confirm pack deduction" onClose={() => setConfirmOpen(false)} />
-        <AppModalBody className="space-y-2">
+        <AppModalBody className="space-y-3">
           <p className="text-sm text-muted-foreground">
             These leave finished stock now (honey packaging and/or dept finished qty).
           </p>
@@ -298,6 +339,10 @@ function PackScanLivePanel() {
               {g.qty} × {packItemLabel(g)}
             </p>
           ))}
+          <div className="space-y-1.5">
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Barcodes</p>
+            <PackSessionBarcodeList items={session?.items ?? []} />
+          </div>
         </AppModalBody>
         <AppModalFooter>
           <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>Keep scanning</Button>
@@ -501,7 +546,7 @@ function PackScanHistoryPanel() {
                         <table className="w-full text-sm">
                           <thead className="sticky top-0 bg-secondary/40 text-xs uppercase text-muted-foreground">
                             <tr>
-                              <th className="text-left px-2 py-1.5">Code</th>
+                              <th className="text-left px-2 py-1.5">Barcode</th>
                               <th className="text-left px-2 py-1.5">Batch</th>
                               <th className="text-left px-2 py-1.5">Item</th>
                               <th className="text-left px-2 py-1.5">Scanned</th>
