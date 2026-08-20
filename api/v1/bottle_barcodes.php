@@ -48,6 +48,16 @@ function api_bottle_require_scan(): array
     return $user;
 }
 
+function api_bottle_require_pack_scan(): array
+{
+    $user = api_bottle_require_user();
+    if (!honey_bottle_can_pack_scan($user) && !honey_bottle_can_scan($user)) {
+        api_fail('Forbidden.', 403);
+    }
+
+    return $user;
+}
+
 api_dispatch([
     'meta' => 'api_bottle_meta',
     'request_create' => 'api_bottle_request_create',
@@ -334,14 +344,14 @@ function api_bottle_pack_start(): void
 {
     api_method_allowed(['POST']);
     api_bottle_require_csrf();
-    $user = api_bottle_require_scan();
+    $user = api_bottle_require_pack_scan();
     api_ok(['session' => honey_bottle_pack_session_start(ims_pdo(), (int) $user['id'])]);
 }
 
 function api_bottle_pack_get(): void
 {
     api_method_allowed(['GET']);
-    api_bottle_require_scan();
+    api_bottle_require_pack_scan();
     $id = (int) ($_GET['id'] ?? 0);
     api_ok(['session' => honey_bottle_pack_session_get(ims_pdo(), $id)]);
 }
@@ -349,7 +359,7 @@ function api_bottle_pack_get(): void
 function api_bottle_pack_session_list(): void
 {
     api_method_allowed(['GET']);
-    api_bottle_require_scan();
+    api_bottle_require_pack_scan();
     try {
         api_ok(honey_bottle_pack_session_list(
             ims_pdo(),
@@ -368,7 +378,7 @@ function api_bottle_pack_scan(): void
 {
     api_method_allowed(['POST']);
     api_bottle_require_csrf();
-    api_bottle_require_scan();
+    api_bottle_require_pack_scan();
     $in = api_input();
     api_ok(honey_bottle_pack_session_scan(
         ims_pdo(),
@@ -381,7 +391,7 @@ function api_bottle_pack_remove_item(): void
 {
     api_method_allowed(['POST']);
     api_bottle_require_csrf();
-    api_bottle_require_scan();
+    api_bottle_require_pack_scan();
     $in = api_input();
     try {
         api_ok(['session' => honey_bottle_pack_session_remove_item(
@@ -399,7 +409,7 @@ function api_bottle_pack_confirm(): void
 {
     api_method_allowed(['POST']);
     api_bottle_require_csrf();
-    $user = api_bottle_require_scan();
+    $user = api_bottle_require_pack_scan();
     $in = api_input();
     api_ok(['session' => honey_bottle_pack_session_confirm(
         ims_pdo(),
@@ -412,7 +422,7 @@ function api_bottle_pack_discard(): void
 {
     api_method_allowed(['POST']);
     api_bottle_require_csrf();
-    api_bottle_require_scan();
+    api_bottle_require_pack_scan();
     $in = api_input();
     honey_bottle_pack_session_discard(ims_pdo(), (int) ($in['session_id'] ?? 0));
     api_ok(['ok' => true]);

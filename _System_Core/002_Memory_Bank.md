@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-20 — Pack scan Forbidden despite permission
+**Change:** Pack scan API now accepts `deliveries.pack_scan` (same key as sidebar/route). Staff with only Pack scan no longer get 403 on page load. → [[problems/records/2026-08-20_pack-scan-forbidden-permission]]
+
 ### 2026-08-19 — Pack scan session barcodes + remove
 **Change:** Live pack session product rows expand to show scanned barcodes. Trash removes one draft scan (stock still deducted only on Confirm). → [[problems/records/2026-08-19_pack-scan-session-barcode-remove]]
 

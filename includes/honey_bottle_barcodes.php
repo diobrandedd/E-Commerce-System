@@ -34,6 +34,11 @@ function honey_bottle_can_scan(array $user): bool
     return ims_user_can($user, 'honey.bottle.scan');
 }
 
+function honey_bottle_can_pack_scan(array $user): bool
+{
+    return ims_user_can($user, 'deliveries.pack_scan');
+}
+
 /** Resolve IMS department key for a session user (honey, csr, …). */
 function honey_bottle_user_dept_key(array $user): ?string
 {
