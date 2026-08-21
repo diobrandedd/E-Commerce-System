@@ -157,6 +157,8 @@ function honey_bottle_serialize_batch(array $row): array
     return [
         'id' => (int) $row['id'],
         'request_id' => $row['request_id'] !== null ? (int) $row['request_id'] : null,
+        'rts_label_job_id' => isset($row['rts_label_job_id']) && $row['rts_label_job_id'] !== null
+            ? (int) $row['rts_label_job_id'] : null,
         'source' => (string) $row['source'],
         'generated_by' => (int) $row['generated_by'],
         'generated_by_name' => (string) ($row['generated_by_name'] ?? ''),
@@ -366,9 +368,11 @@ function honey_bottle_generate_batch(
     int $packagingRowId,
     string $size,
     string $source,
-    ?int $requestId
+    ?int $requestId,
+    ?string $batchDateOverride = null,
+    ?int $rtsLabelJobId = null
 ): array {
-    if (!in_array($source, ['request', 'backfill'], true)) {
+    if (!in_array($source, ['request', 'backfill', 'rts_label'], true)) {
         throw new RuntimeException('Invalid batch source.');
     }
     if (!in_array($size, HONEY_SIZES, true)) {
@@ -387,7 +391,17 @@ function honey_bottle_generate_batch(
     // Stickers are made on the day the bottles are filled, so each generation run
     // stamps its own date. The packaging row keeps the lot's original bottling_date —
     // one lot bottled across several days yields several sticker batches with real dates.
-    $batchDate = date('Y-m-d');
+    // RTS label jobs pass the user-entered bottling date instead.
+    if ($batchDateOverride !== null && trim($batchDateOverride) !== '') {
+        $ts = strtotime(trim($batchDateOverride));
+        if ($ts === false) {
+            throw new RuntimeException('Invalid batch date.');
+        }
+        $batchDate = date('Y-m-d', $ts);
+    } else {
+        $batchDate = date('Y-m-d');
+    }
+    $rtsJobId = ($rtsLabelJobId !== null && $rtsLabelJobId > 0) ? $rtsLabelJobId : null;
 
     $owns = !$pdo->inTransaction();
     if ($owns) {
@@ -397,12 +411,13 @@ function honey_bottle_generate_batch(
         $start = honey_bottle_next_sequence($pdo, $qty);
         $insB = $pdo->prepare(
             'INSERT INTO honey_barcode_batches (
-                request_id, source, generated_by, packaging_row_id, supplier_code, batch_no,
+                request_id, rts_label_job_id, source, generated_by, packaging_row_id, supplier_code, batch_no,
                 batch_date, variant, size, quantity_generated
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $insB->execute([
             $requestId,
+            $rtsJobId,
             $source,
             $userId,
             $packagingRowId,
@@ -512,7 +527,7 @@ function honey_bottle_batch_list(PDO $pdo, string $source = '', int $limit = 50)
             FROM honey_barcode_batches b
             LEFT JOIN users u ON u.id = b.generated_by';
     $params = [];
-    if ($source === 'request' || $source === 'backfill') {
+    if ($source === 'request' || $source === 'backfill' || $source === 'rts_label') {
         $sql .= ' WHERE b.source = ?';
         $params[] = $source;
     }

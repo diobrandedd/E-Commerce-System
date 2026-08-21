@@ -68,6 +68,7 @@ export type PermissionKey =
   | "pos.sell"
   | "reports.view"
   | "rts.admin"
+  | "rts.barcode_labels"
   | "rts.damaged.use"
   | "rts.inventory.set"
   | "rts.record"
@@ -154,6 +155,7 @@ export const PERMISSION_KEYS: readonly PermissionKey[] = [
   "pos.sell",
   "reports.view",
   "rts.admin",
+  "rts.barcode_labels",
   "rts.damaged.use",
   "rts.inventory.set",
   "rts.record",

@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-21 — RTS label print clipping
+**Change:** Continuous RTS barcode print no longer packs past 17 rows or splits mid-grid; banners start on a fresh row. Fixes stacked/clipped barcodes on page 2. → [[problems/records/2026-08-21_rts-barcode-labels]]
+
+### 2026-08-21 — RTS multi-batch barcode labels
+**Change:** RTS → Barcode labels: enter many batch numbers + qtys, generate one job, continuous print with section banners, then stock-in via existing scanners (`rts_label` provenance). Run phase 66. → [[problems/records/2026-08-21_rts-barcode-labels]]
+
 ### 2026-08-20 — Pack scan Forbidden despite permission
 **Change:** Pack scan API now accepts `deliveries.pack_scan` (same key as sidebar/route). Staff with only Pack scan no longer get 403 on page load. → [[problems/records/2026-08-20_pack-scan-forbidden-permission]]
 

@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-08-20T05:19:30+02:00
+generated: 2026-08-21T04:51:09+02:00
 type: memory-bank
-table_count: 81
+table_count: 83
 ---
 
 
@@ -229,6 +229,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_list]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_get]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_events_list]] |
 
 ## `pos_pins`
@@ -936,6 +938,24 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/permissions.php` | [[modules/permissions#ims_user_permissions]] |
 | `includes/permissions.php` | [[modules/permissions#ims_user_permissions_set]] |
+
+## `rts_barcode_label_jobs`
+
+| File | Function |
+|------|----------|
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_get]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_create]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_mark_printed]] |
+
+## `rts_barcode_label_job_lines`
+
+| File | Function |
+|------|----------|
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_lines]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_get]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_create]] |
 
 ## `honey_warehouse_rows`
 

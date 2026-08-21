@@ -15,6 +15,7 @@ import { RTSDashboardPage } from "./pages/rts/RTSDashboardPage";
 import { RTSLeaksPage } from "./pages/rts/RTSLeaksPage";
 import { RTSSwappedPage } from "./pages/rts/RTSSwappedPage";
 import { RTSDamagedInventoryPage } from "./pages/rts/RTSDamagedInventoryPage";
+import { RTSBarcodeLabelsPage } from "./pages/rts/RTSBarcodeLabelsPage";
 import { HoneyWarehousePage } from "./pages/honey/HoneyWarehousePage";
 import { HoneyProductionPage } from "./pages/honey/HoneyProductionPage";
 import { HoneyPackagingPage } from "./pages/honey/HoneyPackagingPage";
@@ -176,6 +177,7 @@ export const router = createBrowserRouter(
         { path: "rts/swapped", element: permGuard(RTSSwappedPage, "rts.view") },
         { path: "rts/leaks", element: permGuard(RTSLeaksPage, "rts.view") },
         { path: "rts/damaged", element: permGuard(RTSDamagedInventoryPage, "rts.view") },
+        { path: "rts/barcode-labels", element: permGuard(RTSBarcodeLabelsPage, "rts.barcode_labels") },
         { path: "rts/dashboard", element: permGuard(RTSDashboardPage, "rts.view") },
         { path: "settings", element: permGuard(SettingsPage, "settings.manage") },
         { path: "account", element: guarded(AccountSettingsPage) },

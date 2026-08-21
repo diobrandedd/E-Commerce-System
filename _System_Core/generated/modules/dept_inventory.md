@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-08-20T05:19:35+02:00
+generated: 2026-08-21T04:51:15+02:00
 type: module
 function_count: 17
 ---
@@ -30,7 +30,7 @@ function_count: 17
 - `includes/dept_inventory.php`:223 — `$finished = dept_inventory_fetch_row($pdo, $productKey);`
 - `includes/dept_inventory.php`:510 — `$row = dept_inventory_fetch_row($pdo, $productKey, true);`
 - `includes/dept_inventory.php`:558 — `$row = dept_inventory_fetch_row($pdo, $def['key']);`
-- `includes/dept_pouch_barcodes.php`:527 — `$finished = dept_inventory_fetch_row($pdo, $productKey);`
+- `includes/dept_pouch_barcodes.php`:591 — `$finished = dept_inventory_fetch_row($pdo, $productKey);`
 - `includes/dept_production.php`:916 — `$finished = dept_inventory_fetch_row($pdo, 'pt');`
 - `includes/dept_production.php`:964 — `$finished = dept_inventory_fetch_row($pdo, 'brc');`
 - `includes/dept_production.php`:1017 — `$finished = dept_inventory_fetch_row($pdo, 'jar_cacao');`
@@ -44,7 +44,7 @@ function_count: 17
 
 - `includes/dept_inventory.php`:406 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/dept_inventory.php`:449 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
-- `includes/dept_pouch_barcodes.php`:491 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
+- `includes/dept_pouch_barcodes.php`:555 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/dept_production.php`:901 — `$row = dept_inventory_ensure_row($pdo, $userId, 'pt');`
 - `includes/dept_production.php`:954 — `$row = dept_inventory_ensure_row($pdo, $userId, 'brc');`
 - `includes/dept_production.php`:1007 — `$row = dept_inventory_ensure_row($pdo, $userId, 'jar_cacao');`
@@ -152,9 +152,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/dept_pos.php`:259 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
 - `includes/dept_pos.php`:408 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
-- `includes/dept_pouch_barcodes.php`:942 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
+- `includes/dept_pouch_barcodes.php`:1006 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
 - `includes/finished_leak_damage.php`:231 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
-- `includes/honey_bottle_barcodes.php`:1519 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
+- `includes/honey_bottle_barcodes.php`:1534 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
 - `includes/honey_parcel_inventory.php`:88 — `$deducted = dept_inventory_deduct($pdo, $productKey, (float) $qty);`
 
 ## dept_inventory_resolve_other_item {#dept_inventory_resolve_other_item}

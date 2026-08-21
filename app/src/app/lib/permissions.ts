@@ -50,6 +50,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionKey | PermissionKey[]> 
   "/rts/swapped": "rts.view",
   "/rts/leaks": "rts.view",
   "/rts/damaged": "rts.view",
+  "/rts/barcode-labels": "rts.barcode_labels",
   "/rts/dashboard": "rts.view",
   "/settings": "settings.manage",
   "/deliveries": "deliveries.view",

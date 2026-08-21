@@ -203,6 +203,8 @@ function getNavItems(role: Role, _dept: string, pendingCorrections: number, labe
   const rtsLeaks: NavLinkChild = { label: "Leaks", to: "/rts/leaks" };
   const rtsDamaged: NavLinkChild = { label: "Damaged stock", to: "/rts/damaged" };
 
+  const rtsBarcodeLabels: NavLinkChild = { label: "Barcode labels", to: "/rts/barcode-labels" };
+
   const rtsNav = (children: NavLinkChild[]): NavItem => ({
     icon: RotateCcw,
     label: "RTS",
@@ -210,7 +212,16 @@ function getNavItems(role: Role, _dept: string, pendingCorrections: number, labe
     children,
   });
 
-  const rtsNavFull = rtsNav([rtsInventory, rtsDamaged, rtsRecords, rtsSwapped, rtsLeaks, rtsDashboard, rtsRecord]);
+  const rtsNavFull = rtsNav([
+    rtsInventory,
+    rtsDamaged,
+    rtsBarcodeLabels,
+    rtsRecords,
+    rtsSwapped,
+    rtsLeaks,
+    rtsDashboard,
+    rtsRecord,
+  ]);
 
   const productSetupNav: NavItem = {
     icon: Factory,

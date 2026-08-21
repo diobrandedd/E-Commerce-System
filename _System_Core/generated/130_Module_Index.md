@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-08-20T05:18:00+02:00
+generated: 2026-08-21T04:51:09+02:00
 type: memory-bank
 ---
 
@@ -30,7 +30,7 @@ type: memory-bank
 | [[modules/delivery_edit_requests]] | 15 |
 | [[modules/dept_inventory]] | 17 |
 | [[modules/dept_pos]] | 5 |
-| [[modules/dept_pouch_barcodes]] | 33 |
+| [[modules/dept_pouch_barcodes]] | 34 |
 | [[modules/dept_pricing]] | 8 |
 | [[modules/dept_production]] | 29 |
 | [[modules/dept_products]] | 23 |
@@ -63,6 +63,7 @@ type: memory-bank
 | [[modules/pos_unified]] | 10 |
 | [[modules/qr_decode]] | 13 |
 | [[modules/rts_attachments]] | 6 |
+| [[modules/rts_barcode_labels]] | 9 |
 | [[modules/rts_case_handlers]] | 28 |
 | [[modules/rts_claim_status]] | 3 |
 | [[modules/rts_damaged_use]] | 6 |

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-20T05:19:30+02:00
+generated: 2026-08-21T04:51:09+02:00
 type: memory-bank
 ---
 
@@ -518,6 +518,21 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `use_damaged` | `api_rts_use_damaged()` | `rts_damaged_use_apply()`, `ims_pdo()` |
 | `damaged_use_log` | `api_rts_damaged_use_log()` | `rts_damaged_use_events_list()`, `ims_pdo()` |
 | `sync_status` | `api_rts_sync_status_action()` | `rts_inventory_sync_status()`, `ims_pdo()` |
+
+### `rts_barcode_labels.php`
+
+- **Path:** `api/v1/rts_barcode_labels.php`
+- **URL:** `/rts/api/v1/rts_barcode_labels.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `job_create` | `api_rts_barcode_labels_job_create()` | `rts_barcode_label_job_create()`, `ims_pdo()` |
+| `job_get` | `api_rts_barcode_labels_job_get()` | `rts_barcode_label_job_get()`, `ims_pdo()` |
+| `job_list` | `api_rts_barcode_labels_job_list()` | `rts_barcode_label_job_list()`, `ims_pdo()` |
+| `mark_printed` | `api_rts_barcode_labels_mark_printed()` | `rts_barcode_label_job_mark_printed()`, `ims_pdo()` |
+| `print_sheet` | `api_rts_barcode_labels_print_sheet()` | `rts_barcode_label_print_sheet_html()`, `ims_pdo()` |
+| `meta` | `api_rts_barcode_labels_meta()` | `dept_pouch_product_label()`, `honey_bottle_size_label()` |
 
 ### `rts_cases.php`
 

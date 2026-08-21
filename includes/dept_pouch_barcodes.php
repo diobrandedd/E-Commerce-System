@@ -164,6 +164,9 @@ function dept_pouch_serialize_batch(array $row): array
         'id' => (int) $row['id'],
         'product_key' => (string) ($row['product_key'] ?? 'pt'),
         'request_id' => $row['request_id'] !== null ? (int) $row['request_id'] : null,
+        'source' => (string) ($row['source'] ?? 'request'),
+        'rts_label_job_id' => isset($row['rts_label_job_id']) && $row['rts_label_job_id'] !== null
+            ? (int) $row['rts_label_job_id'] : null,
         'generated_by' => (int) $row['generated_by'],
         'generated_by_name' => (string) ($row['generated_by_name'] ?? ''),
         'batch_no' => (string) $row['batch_no'],
@@ -410,6 +413,67 @@ function dept_pouch_generate_for_request(PDO $pdo, int $userId, int $requestId):
             'UPDATE dept_pouch_requests SET status = "barcodes_generated"
              WHERE id = ? AND status IN ("pending","barcodes_generated","in_progress")'
         )->execute([$requestId]);
+        if ($owns) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($owns && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    return dept_pouch_batch_get($pdo, $batchId);
+}
+
+/**
+ * Generate dept pouch/jar barcodes for an RTS label job (no request row).
+ *
+ * @return array<string, mixed>
+ */
+function dept_pouch_generate_rts_label(
+    PDO $pdo,
+    int $userId,
+    string $productKey,
+    string $batchNo,
+    string $bottlingDate,
+    int $qty,
+    int $rtsLabelJobId
+): array {
+    $productKey = dept_pouch_normalize_product_key($productKey);
+    $batchNo = dept_pouch_normalize_batch_no($batchNo);
+    if ($qty < 1 || $qty > 5000) {
+        throw new RuntimeException('Quantity must be between 1 and 5000.');
+    }
+    if ($rtsLabelJobId < 1) {
+        throw new RuntimeException('rts_label_job_id is required.');
+    }
+    $ts = strtotime(trim($bottlingDate));
+    if ($ts === false) {
+        throw new RuntimeException('Invalid bottling date.');
+    }
+    $batchDate = date('Y-m-d', $ts);
+
+    $owns = !$pdo->inTransaction();
+    if ($owns) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $start = dept_pouch_next_sequence($pdo, $qty);
+        $pdo->prepare(
+            'INSERT INTO dept_pouch_barcode_batches (
+                request_id, source, rts_label_job_id, generated_by, product_key, batch_no, batch_date, quantity_generated
+             ) VALUES (NULL, "rts_label", ?, ?, ?, ?, ?, ?)'
+        )->execute([$rtsLabelJobId, $userId, $productKey, $batchNo, $batchDate, $qty]);
+        $batchId = (int) $pdo->lastInsertId();
+        $insC = $pdo->prepare(
+            'INSERT INTO dept_pouch_barcodes (batch_id, code, sequence_no, status)
+             VALUES (?, ?, ?, "generated")'
+        );
+        $used = [];
+        for ($i = 0; $i < $qty; $i++) {
+            $insC->execute([$batchId, dept_pouch_random_code($pdo, $used), $start + $i]);
+        }
         if ($owns) {
             $pdo->commit();
         }

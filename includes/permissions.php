@@ -101,6 +101,7 @@ function ims_permission_catalog(): array
         'rts.damaged.use' => ['label' => 'Use damaged RTS stock', 'group' => 'RTS', 'description' => 'Use damaged inventory from RTS pool.'],
         'rts.inventory.set' => ['label' => 'Set RTS inventory', 'group' => 'RTS', 'description' => 'Executive set honey/other RTS inventory levels.'],
         'rts.sync.run' => ['label' => 'Run RTS sync', 'group' => 'RTS', 'description' => 'Run RTS inventory sync jobs.'],
+        'rts.barcode_labels' => ['label' => 'RTS barcode labels', 'group' => 'RTS', 'description' => 'Generate and print barcodes for unlabeled RTS units (batch generate).'],
 
         'sales.view' => ['label' => 'View sales', 'group' => 'Sales & AR', 'description' => 'View sales reports and summaries.'],
         'sales.bulk_orders' => ['label' => 'Bulk honey orders', 'group' => 'Sales & AR', 'description' => 'Manage bulk honey order batches.'],
@@ -207,7 +208,7 @@ function ims_permission_preset_for_role(string $role, ?string $deptKey = null): 
             'deliveries.view', 'deliveries.pack_scan', 'deliveries.ship', 'deliveries.review', 'deliveries.cancel_restock',
             'csr.parcels.view',
             'csr.reconcile.partner_sold', 'csr.reconcile.courier_soa', 'csr.historical_import',
-            'rts.view', 'rts.record', 'rts.damaged.use', 'rts.sync.run', 'rts.admin',
+            'rts.view', 'rts.record', 'rts.damaged.use', 'rts.sync.run', 'rts.admin', 'rts.barcode_labels',
             'sales.view', 'reports.view',
             'ar.take', 'ar.view_all',
             'suppliers.view',
@@ -229,7 +230,7 @@ function ims_permission_preset_for_role(string $role, ?string $deptKey = null): 
             'honey.bottle.request', 'honey.bottle.scan',
             'suppliers.view',
             'packing.materials.view', 'packing.materials.issue',
-            'rts.view', 'rts.record', 'rts.damaged.use',
+            'rts.view', 'rts.record', 'rts.damaged.use', 'rts.barcode_labels',
             'ar.take',
         ], ims_dept_line_permission_keys($deptLines, ['view', 'produce', 'barcodes']), $isCsr ? [
             'csr.online_orders', 'csr.parcels.view', 'csr.parcels.edit_items',

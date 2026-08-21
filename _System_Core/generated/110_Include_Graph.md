@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-08-20T05:19:30+02:00
+generated: 2026-08-21T04:51:09+02:00
 type: memory-bank
-edge_count: 321
+edge_count: 325
 ---
 
 
@@ -81,6 +81,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/reports.php` | `api/v1/_bootstrap.php` |
 | `api/v1/reports.php` | `includes/courier_detect.php` |
 | `api/v1/rts.php` | `api/v1/_bootstrap.php` |
+| `api/v1/rts_barcode_labels.php` | `api/v1/_bootstrap.php` |
 | `api/v1/rts_cases.php` | `api/v1/_bootstrap.php` |
 | `api/v1/rts_sync.php` | `api/v1/_bootstrap.php` |
 | `api/v1/sales.php` | `api/v1/_bootstrap.php` |
@@ -253,6 +254,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_unified.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/pos_unified.php` | `includes/honey_pos.php` |
 | `includes/rts_attachments.php` | `includes/rts_storage.php` |
+| `includes/rts_barcode_labels.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/rts_barcode_labels.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/rts_barcode_labels.php` | `includes/permissions.php` |
 | `includes/rts_case_handlers.php` | `includes/courier_detect.php` |
 | `includes/rts_case_handlers.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/rts_case_handlers.php` | `includes/honey_bottle_barcodes.php` |
