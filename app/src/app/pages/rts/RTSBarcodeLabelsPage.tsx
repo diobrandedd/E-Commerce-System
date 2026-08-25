@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useId, useState } from "react";
-import { Loader2, Plus, Printer, Trash2 } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { ChevronDown, Loader2, Plus, Printer, Trash2 } from "lucide-react";
 import {
   AppErrorBanner,
+  AppPressable,
   AppSectionEnter,
   AppSuccessNotice,
   appHoverRow,
@@ -12,11 +14,13 @@ import { ApiError } from "@/app/lib/api";
 import { HONEY_BOTTLE_OPTIONS, HONEY_VARIANTS } from "@/app/lib/honey";
 import { variantLabel } from "@/app/lib/posHoney";
 import {
+  rtsBarcodeLabelJobCodes,
   rtsBarcodeLabelJobCreate,
   rtsBarcodeLabelJobList,
   rtsBarcodeLabelMarkPrinted,
   rtsBarcodeLabelMeta,
   rtsBarcodeLabelPrintUrl,
+  type RtsBarcodeLabelCode,
   type RtsBarcodeLabelDraftLine,
   type RtsBarcodeLabelJob,
   type RtsLabelHoneySize,
@@ -52,12 +56,197 @@ function newDraftLine(): RtsBarcodeLabelDraftLine {
   };
 }
 
+function scanRatioLabel(job: RtsBarcodeLabelJob): string {
+  const total = job.code_count > 0 ? job.code_count : job.label_count;
+  return `${job.scanned_count} / ${total} scanned`;
+}
+
+function statusBadgeClass(status: string): string {
+  if (status === "scanned") return "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300";
+  if (status === "void") return "bg-destructive/15 text-destructive";
+  if (status === "printed") return "bg-amber-500/15 text-amber-900 dark:text-amber-200";
+  return "bg-muted text-muted-foreground";
+}
+
+function RtsBarcodeJobRow({
+  job,
+  open,
+  onToggle,
+  onPrint,
+}: {
+  job: RtsBarcodeLabelJob;
+  open: boolean;
+  onToggle: () => void;
+  onPrint: () => void;
+}) {
+  const reduceMotion = useReducedMotion();
+  const [codes, setCodes] = useState<RtsBarcodeLabelCode[] | null>(null);
+  const [loadingCodes, setLoadingCodes] = useState(false);
+  const [codesError, setCodesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || codes !== null) return;
+    let cancelled = false;
+    setLoadingCodes(true);
+    setCodesError(null);
+    void rtsBarcodeLabelJobCodes(job.id)
+      .then((res) => {
+        if (!cancelled) setCodes(res.codes ?? []);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setCodesError(e instanceof ApiError ? e.message : "Could not load barcodes.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCodes(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, job.id, codes]);
+
+  const total = job.code_count > 0 ? job.code_count : job.label_count;
+  const pct = total > 0 ? Math.round((job.scanned_count / total) * 100) : 0;
+
+  return (
+    <li className="border-b border-border last:border-b-0">
+      <div className={cn(appHoverRow, "flex flex-wrap items-center gap-2 py-3 px-2 -mx-2 rounded-lg")}>
+        <AppPressable
+          type="button"
+          variant="ghost"
+          className="!px-1 !py-0.5 flex min-w-0 flex-1 items-start gap-2 text-left font-normal"
+          onClick={onToggle}
+        >
+          <ChevronDown
+            className={cn(
+              "size-4 shrink-0 mt-1 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="font-medium">Job #{job.id}</span>
+              <span
+                className={cn(
+                  "text-xs font-medium tabular-nums rounded-md px-1.5 py-0.5",
+                  job.scanned_count >= total && total > 0
+                    ? "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300"
+                    : "bg-muted text-muted-foreground",
+                )}
+                title="Barcodes stocked in via inventory scan"
+              >
+                {scanRatioLabel(job)}
+                {total > 0 ? ` (${pct}%)` : ""}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {job.created_by_name} · {job.created_at}
+              {" · "}
+              {job.line_count} line(s) · {job.label_count} label(s)
+              {job.printed_at ? " · printed" : ""}
+            </div>
+            {job.note ? <div className="text-xs text-muted-foreground mt-0.5">{job.note}</div> : null}
+            <div className="mt-1.5 h-1.5 max-w-xs rounded-full bg-muted overflow-hidden" aria-hidden>
+              <div
+                className="h-full rounded-full bg-emerald-600/80 transition-[width] duration-300"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        </AppPressable>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPrint();
+          }}
+        >
+          <Printer className="size-3.5" />
+          Print
+        </Button>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            key="panel"
+            initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="pb-3 pl-8 pr-2 space-y-2">
+              {loadingCodes ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  Loading barcodes…
+                </div>
+              ) : null}
+              {codesError ? <AppErrorBanner message={codesError} /> : null}
+              {codes && codes.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-1">No barcode rows for this job.</p>
+              ) : null}
+              {codes && codes.length > 0 ? (
+                <div className="rounded-lg border border-border bg-muted/30 max-h-64 overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-card border-b border-border text-left text-muted-foreground">
+                      <tr>
+                        <th className="py-1.5 px-2 font-medium">Code</th>
+                        <th className="py-1.5 px-2 font-medium">Batch</th>
+                        <th className="py-1.5 px-2 font-medium">Product</th>
+                        <th className="py-1.5 px-2 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {codes.map((c) => (
+                        <tr key={`${c.line_id}-${c.code}`} className="border-b border-border/60 last:border-0">
+                          <td className="py-1.5 px-2 font-mono">{c.code}</td>
+                          <td className="py-1.5 px-2 font-mono">{c.batch_no}</td>
+                          <td className="py-1.5 px-2">
+                            {c.product_label}
+                            {c.size_label ? ` · ${c.size_label}` : ""}
+                          </td>
+                          <td className="py-1.5 px-2">
+                            <span
+                              className={cn(
+                                "inline-block rounded px-1.5 py-0.5 capitalize",
+                                statusBadgeClass(c.status),
+                              )}
+                            >
+                              {c.status}
+                            </span>
+                            {c.scanned_at ? (
+                              <span className="block text-[10px] text-muted-foreground mt-0.5">
+                                {c.scanned_at}
+                              </span>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </li>
+  );
+}
+
 export function RTSBarcodeLabelsPage() {
   const formId = useId();
   const [draft, setDraft] = useState<RtsBarcodeLabelDraftLine[]>([newDraftLine()]);
   const [note, setNote] = useState("");
   const [jobs, setJobs] = useState<RtsBarcodeLabelJob[]>([]);
   const [lastJob, setLastJob] = useState<RtsBarcodeLabelJob | null>(null);
+  const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +323,7 @@ export function RTSBarcodeLabelsPage() {
       );
       setDraft([newDraftLine()]);
       setNote("");
+      setExpandedJobId(res.job.id);
       await loadHistory();
     } catch (e) {
       setError(e instanceof ApiError || e instanceof Error ? e.message : "Generate failed.");
@@ -321,7 +511,12 @@ export function RTSBarcodeLabelsPage() {
         ) : null}
 
         <section className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <h2 className="text-base font-semibold">Recent jobs</h2>
+          <div>
+            <h2 className="text-base font-semibold">Recent jobs</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Expand a job to see each barcode and how many have been stocked in (scan status).
+            </p>
+          </div>
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
               <Loader2 className="size-4 animate-spin" />
@@ -330,27 +525,17 @@ export function RTSBarcodeLabelsPage() {
           ) : jobs.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4">No RTS label jobs yet.</p>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul>
               {jobs.map((job) => (
-                <li
+                <RtsBarcodeJobRow
                   key={job.id}
-                  className={cn(appHoverRow, "flex flex-wrap items-center justify-between gap-3 py-3 px-2 -mx-2 rounded-lg")}
-                >
-                  <div>
-                    <div className="font-medium">Job #{job.id}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {job.created_by_name} · {job.created_at}
-                      {" · "}
-                      {job.line_count} line(s) · {job.label_count} label(s)
-                      {job.printed_at ? " · printed" : ""}
-                    </div>
-                    {job.note ? <div className="text-xs text-muted-foreground mt-0.5">{job.note}</div> : null}
-                  </div>
-                  <Button type="button" variant="outline" size="sm" onClick={() => void openPrint(job.id)}>
-                    <Printer className="size-3.5" />
-                    Print
-                  </Button>
-                </li>
+                  job={job}
+                  open={expandedJobId === job.id}
+                  onToggle={() =>
+                    setExpandedJobId((id) => (id === job.id ? null : job.id))
+                  }
+                  onPrint={() => void openPrint(job.id)}
+                />
               ))}
             </ul>
           )}
@@ -359,7 +544,7 @@ export function RTSBarcodeLabelsPage() {
         <p className="text-xs text-muted-foreground">
           After sticking, scan stock-in on Honey production or the matching dept barcode scanner. These
           batches are marked <span className="font-mono">rts_label</span> so history shows they came from
-          RTS.
+          RTS. Ratio counts barcodes with status <span className="font-mono">scanned</span>.
         </p>
       </AppSectionEnter>
     </PageLayout>

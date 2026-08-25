@@ -1,6 +1,6 @@
 ---
 title: SPA Routes
-generated: 2026-08-21T04:51:52+02:00
+generated: 2026-08-25T08:09:35+02:00
 type: spa
 ---
 

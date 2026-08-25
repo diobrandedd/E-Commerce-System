@@ -32,6 +32,7 @@ api_dispatch([
     'job_create' => 'api_rts_barcode_labels_job_create',
     'job_get' => 'api_rts_barcode_labels_job_get',
     'job_list' => 'api_rts_barcode_labels_job_list',
+    'job_codes' => 'api_rts_barcode_labels_job_codes',
     'mark_printed' => 'api_rts_barcode_labels_mark_printed',
     'print_sheet' => 'api_rts_barcode_labels_print_sheet',
     'meta' => 'api_rts_barcode_labels_meta',
@@ -101,6 +102,18 @@ function api_rts_barcode_labels_job_list(): void
         (int) ($_GET['page'] ?? 1),
         (int) ($_GET['per_page'] ?? 25)
     ));
+}
+
+function api_rts_barcode_labels_job_codes(): void
+{
+    api_method_allowed(['GET']);
+    api_rts_barcode_labels_require_perm();
+    $id = (int) ($_GET['id'] ?? 0);
+    try {
+        api_ok(rts_barcode_label_job_codes(ims_pdo(), $id));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 404);
+    }
 }
 
 function api_rts_barcode_labels_mark_printed(): void

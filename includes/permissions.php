@@ -33,6 +33,9 @@ function ims_permission_catalog(): array
         'inventory.products.view' => ['label' => 'View finished products', 'group' => 'Inventory', 'description' => 'View Honey finished stock and the products hub. Does not grant Paragis / BRC / Cacao / Comb.'],
         'inventory.leak_damage.view' => ['label' => 'View leak/damage log', 'group' => 'Inventory', 'description' => 'View finished-unit leak and damage records.'],
         'inventory.leak_damage.record' => ['label' => 'Record leak/damage', 'group' => 'Inventory', 'description' => 'Scan and record leak or damage on finished units.'],
+        'inventory.check.scan' => ['label' => 'Check inventory - scan', 'group' => 'Inventory', 'description' => 'Scan finished products into the daily physical count.'],
+        'inventory.check.view_all' => ['label' => 'Check inventory - full report', 'group' => 'Inventory', 'description' => 'See the full count summary, comparison, and history across all product lines.'],
+        'inventory.check.manage' => ['label' => 'Check inventory - open/close count', 'group' => 'Inventory', 'description' => 'Open and close the daily physical count event.'],
 
         'packaging.view' => ['label' => 'View packaging materials', 'group' => 'Packaging & supplies', 'description' => 'View packaging inventory and activity.'],
         'packaging.catalog' => ['label' => 'Edit packaging catalog', 'group' => 'Packaging & supplies', 'description' => 'Create and edit packaging SKUs.'],
@@ -199,6 +202,7 @@ function ims_permission_preset_for_role(string $role, ?string $deptKey = null): 
             'barcode.verify',
             'inventory.entries.view', 'inventory.daily_count', 'inventory.edit_requests.submit',
             'inventory.raw.view', 'inventory.products.view', 'inventory.leak_damage.view', 'inventory.leak_damage.record',
+            'inventory.check.scan', 'inventory.check.view_all', 'inventory.check.manage',
             'packaging.view', 'packaging.stock_in', 'packaging.deduct',
             'supplies.view',
             'honey.view', 'honey.mutate', 'honey.ops', 'honey.pricing.view_cost',
@@ -216,6 +220,7 @@ function ims_permission_preset_for_role(string $role, ?string $deptKey = null): 
         'hr' => [
             'barcode.verify',
             'inventory.entries.view', 'inventory.requests.view',
+            'inventory.check.scan',
             'packaging.view', 'packaging.stock_in', 'packaging.request', 'packaging.set_on_hand',
             'supplies.view', 'supplies.stock_in', 'supplies.issue', 'supplies.catalog', 'supplies.request',
             'honey.view',
@@ -226,6 +231,7 @@ function ims_permission_preset_for_role(string $role, ?string $deptKey = null): 
         'tl' => array_merge([
             'barcode.verify',
             'inventory.raw.view', 'inventory.products.view', 'inventory.leak_damage.view', 'inventory.leak_damage.record',
+            'inventory.check.scan',
             'honey.view', 'honey.ops',
             'honey.bottle.request', 'honey.bottle.scan',
             'suppliers.view',
@@ -241,6 +247,7 @@ function ims_permission_preset_for_role(string $role, ?string $deptKey = null): 
         'staff' => array_merge([
             'barcode.verify',
             'inventory.raw.view', 'inventory.products.view', 'inventory.leak_damage.view', 'inventory.leak_damage.record',
+            'inventory.check.scan',
             'honey.view',
             'honey.bottle.request', 'honey.bottle.scan',
             'packing.materials.view', 'packing.materials.issue',

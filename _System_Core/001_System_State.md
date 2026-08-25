@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-08-21_rts-barcode-labels]] |
-| **Active Plan** | [[plans/archive/2026-08-21_rts-barcode-labels_plan]] |
-| **Status** | `shipped` - RTS multi-batch barcode labels (2026-08-21) |
+| **Active Spec** | [[specs/2026-08-25_check-inventory-stock-take]] |
+| **Active Plan** | [[plans/archive/2026-08-25_check-inventory-stock-take_plan]] |
+| **Status** | `shipped` - Check Inventory physical stock take (2026-08-25) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

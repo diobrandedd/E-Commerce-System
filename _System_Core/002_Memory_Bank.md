@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-25 — RTS label job scan progress UI
+**Change:** Recent jobs expandable: scanned/generated ratio + barcode list via `job_codes`. → [[problems/records/2026-08-25_rts-barcode-job-scan-progress]]
+
+### 2026-08-25 — Check Inventory (physical stock take)
+**Change:** Inventory → Check inventory: manager opens one shared count per day, any staff scans any finished product (read-only, never mutates stock), then exec/prod manager gets the scanned summary with per-row scan log, compare vs system inventory scoped to counted lines, and dated history. Run phase 67. → [[problems/records/2026-08-25_check-inventory-stock-take]]
+
 ### 2026-08-21 — RTS label print clipping
 **Change:** Continuous RTS barcode print no longer packs past 17 rows or splits mid-grid; banners start on a fresh row. Fixes stacked/clipped barcodes on page 2. → [[problems/records/2026-08-21_rts-barcode-labels]]
 

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-21T04:51:09+02:00
+generated: 2026-08-25T08:08:50+02:00
 type: memory-bank
 ---
 
@@ -322,6 +322,26 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `seed_packaging_row` | `api_honey_seed_packaging_row()` | `ims_pdo()`, `honey_executive_seed_packaging_row()` |
 | `dept_raw_set_bags` | `api_honey_dept_raw_set_bags()` | `ims_pdo()`, `dept_raw_set_bags_on_hand()` |
 
+### `inventory_check.php`
+
+- **Path:** `api/v1/inventory_check.php`
+- **URL:** `/rts/api/v1/inventory_check.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `context` | `api_inventory_check_context()` | `ims_pdo()`, `inventory_check_event_current()`, `inventory_check_can_view_all()`, `inventory_check_can_manage()`, `inventory_check_summary()` |
+| `event_open` | `api_inventory_check_event_open()` | `inventory_check_event_open()`, `ims_pdo()` |
+| `event_close` | `api_inventory_check_event_close()` | `inventory_check_event_close()`, `ims_pdo()` |
+| `event_list` | `api_inventory_check_event_list()` | `inventory_check_event_list()`, `ims_pdo()` |
+| `scan` | `api_inventory_check_scan()` | `ims_pdo()`, `inventory_check_scan()`, `inventory_check_summary()`, `inventory_check_can_view_all()` |
+| `scan_remove` | `api_inventory_check_scan_remove()` | `ims_pdo()`, `inventory_check_scan_remove()`, `inventory_check_can_manage()`, `inventory_check_summary()`, `inventory_check_can_view_all()` |
+| `summary` | `api_inventory_check_summary()` | `inventory_check_can_view_all()`, `inventory_check_summary()`, `ims_pdo()` |
+| `scan_log` | `api_inventory_check_scan_log()` | `inventory_check_can_view_all()`, `inventory_check_scan_log()`, `ims_pdo()` |
+| `compare_run` | `api_inventory_check_compare_run()` | `inventory_check_compare_run()`, `ims_pdo()` |
+| `compare_get` | `api_inventory_check_compare_get()` | `inventory_check_compare_get()`, `ims_pdo()` |
+| `compare_list` | `api_inventory_check_compare_list()` | `inventory_check_compare_list()`, `ims_pdo()` |
+
 ### `materials.php`
 
 - **Path:** `api/v1/materials.php`
@@ -530,6 +550,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `job_create` | `api_rts_barcode_labels_job_create()` | `rts_barcode_label_job_create()`, `ims_pdo()` |
 | `job_get` | `api_rts_barcode_labels_job_get()` | `rts_barcode_label_job_get()`, `ims_pdo()` |
 | `job_list` | `api_rts_barcode_labels_job_list()` | `rts_barcode_label_job_list()`, `ims_pdo()` |
+| `job_codes` | `api_rts_barcode_labels_job_codes()` | `rts_barcode_label_job_codes()`, `ims_pdo()` |
 | `mark_printed` | `api_rts_barcode_labels_mark_printed()` | `rts_barcode_label_job_mark_printed()`, `ims_pdo()` |
 | `print_sheet` | `api_rts_barcode_labels_print_sheet()` | `rts_barcode_label_print_sheet_html()`, `ims_pdo()` |
 | `meta` | `api_rts_barcode_labels_meta()` | `dept_pouch_product_label()`, `honey_bottle_size_label()` |

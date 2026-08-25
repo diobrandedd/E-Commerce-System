@@ -28,6 +28,7 @@ import { PackagingMaterialsPage } from "./pages/inventory/PackagingMaterialsPage
 import { SuppliesMaterialsPage } from "./pages/inventory/SuppliesMaterialsPage";
 import { CacaoBrcHubPage } from "./pages/inventory/CacaoBrcHubPage";
 import { FinishedLeakDamagePage } from "./pages/inventory/FinishedLeakDamagePage";
+import { InventoryCheckPage } from "./pages/inventory/InventoryCheckPage";
 import { StaffManagementPage } from "./pages/exec/StaffManagementPage";
 import { CostingPage } from "./pages/exec/CostingPage";
 import { ARCreditsPage } from "./pages/exec/ARCreditsPage";
@@ -142,6 +143,7 @@ export const router = createBrowserRouter(
         { path: "inventory/paragis", element: createElement(Navigate, { to: "/inventory/products/paragis-tea", replace: true }) },
         { path: "inventory/cacao-brc", element: permGuard(CacaoBrcHubPage, ["dept.brc.view", "dept.cacao.view"]) },
         { path: "inventory/leak-damage", element: permGuard(FinishedLeakDamagePage, "inventory.leak_damage.view") },
+        { path: "inventory/check", element: permGuard(InventoryCheckPage, "inventory.check.scan") },
         { path: "inventory/:dept", element: guarded(InventoryPage) },
 
         { path: "staff", element: permGuard(StaffManagementPage, "staff.manage") },

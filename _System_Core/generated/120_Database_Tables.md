@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-08-21T04:51:09+02:00
+generated: 2026-08-25T08:08:51+02:00
 type: memory-bank
-table_count: 83
+table_count: 87
 ---
 
 
@@ -221,6 +221,14 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_list]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_get]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_summary]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_log]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_list]] |
 | `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
@@ -741,6 +749,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_log]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_scan_stock_in]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_batch_codes]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 
 ## `honey_bottle_barcodes`
 
@@ -762,7 +771,11 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_opened_return_scan]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_batch_codes]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_scan_stats]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_codes]] |
 
 ## `honey_bottle_units`
 
@@ -783,9 +796,11 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_unit_count_for_row]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_reconcile]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_stock_summary]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
 | `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_build_cart_lines]] |
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_codes]] |
 
 ## `honey_bottle_pack_sessions`
 
@@ -952,10 +967,52 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_scan_stats]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_lines]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_get]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_create]] |
+
+## `inventory_check_events`
+
+| File | Function |
+|------|----------|
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_current]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_open]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_close]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_remove]] |
+
+## `inventory_check_scans`
+
+| File | Function |
+|------|----------|
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_get]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_remove]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_summary]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_log]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_build]] |
+
+## `inventory_check_compare_runs`
+
+| File | Function |
+|------|----------|
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_run]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_list]] |
+
+## `inventory_check_variance_lines`
+
+| File | Function |
+|------|----------|
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_run]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
 
 ## `honey_warehouse_rows`
 
@@ -1032,6 +1089,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_packaging_availability]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_available_qty]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_deduct_packaging_aggregate]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_honey_lines]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 
 ## `honey_sales_log`

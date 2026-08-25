@@ -31,7 +31,22 @@ export interface RtsBarcodeLabelJob {
   created_at: string;
   line_count: number;
   label_count: number;
+  code_count: number;
+  scanned_count: number;
   lines: RtsBarcodeLabelLine[];
+}
+
+export interface RtsBarcodeLabelCode {
+  line_id: number;
+  kind: "honey" | "dept";
+  product_label: string;
+  batch_no: string;
+  size_label: string | null;
+  code: string;
+  sequence_no: number;
+  status: string;
+  scanned_at: string | null;
+  unit_pool: string | null;
 }
 
 export interface RtsBarcodeLabelDraftLine {
@@ -83,6 +98,12 @@ export async function rtsBarcodeLabelJobList(
   page = 1,
 ): Promise<{ rows: RtsBarcodeLabelJob[]; page: number; per_page: number; total: number }> {
   return apiGet(ENDPOINT, "job_list", { page });
+}
+
+export async function rtsBarcodeLabelJobCodes(
+  id: number,
+): Promise<{ job: RtsBarcodeLabelJob; codes: RtsBarcodeLabelCode[] }> {
+  return apiGet(ENDPOINT, "job_codes", { id });
 }
 
 export async function rtsBarcodeLabelMarkPrinted(id: number): Promise<{ job: RtsBarcodeLabelJob }> {

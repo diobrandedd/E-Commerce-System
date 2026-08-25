@@ -16,6 +16,13 @@ function rts_barcode_labels_can(array $user): bool
  */
 function rts_barcode_label_serialize_job(array $row, array $lines = []): array
 {
+    $labelCount = isset($row['label_count']) ? (int) $row['label_count'] : array_sum(array_map(
+        static fn (array $l): int => (int) ($l['quantity'] ?? 0),
+        $lines
+    ));
+    $codeCount = isset($row['code_count']) ? (int) $row['code_count'] : $labelCount;
+    $scannedCount = isset($row['scanned_count']) ? (int) $row['scanned_count'] : 0;
+
     return [
         'id' => (int) $row['id'],
         'created_by' => (int) $row['created_by'],
@@ -24,11 +31,43 @@ function rts_barcode_label_serialize_job(array $row, array $lines = []): array
         'printed_at' => $row['printed_at'] !== null ? (string) $row['printed_at'] : null,
         'created_at' => (string) $row['created_at'],
         'line_count' => isset($row['line_count']) ? (int) $row['line_count'] : count($lines),
-        'label_count' => isset($row['label_count']) ? (int) $row['label_count'] : array_sum(array_map(
-            static fn (array $l): int => (int) ($l['quantity'] ?? 0),
-            $lines
-        )),
+        'label_count' => $labelCount,
+        'code_count' => $codeCount,
+        'scanned_count' => $scannedCount,
         'lines' => $lines,
+    ];
+}
+
+/**
+ * Actual barcode rows + stock-in scans for a job (honey + dept batches linked on lines).
+ *
+ * @return array{code_count: int, scanned_count: int}
+ */
+function rts_barcode_label_job_scan_stats(PDO $pdo, int $jobId): array
+{
+    $honey = $pdo->prepare(
+        'SELECT COUNT(*) AS total,
+                COALESCE(SUM(c.status = "scanned"), 0) AS scanned
+         FROM rts_barcode_label_job_lines l
+         INNER JOIN honey_bottle_barcodes c ON c.batch_id = l.honey_batch_id
+         WHERE l.job_id = ? AND l.kind = "honey" AND l.honey_batch_id IS NOT NULL'
+    );
+    $honey->execute([$jobId]);
+    $h = $honey->fetch(PDO::FETCH_ASSOC) ?: ['total' => 0, 'scanned' => 0];
+
+    $dept = $pdo->prepare(
+        'SELECT COUNT(*) AS total,
+                COALESCE(SUM(c.status = "scanned"), 0) AS scanned
+         FROM rts_barcode_label_job_lines l
+         INNER JOIN dept_pouch_barcodes c ON c.batch_id = l.dept_batch_id
+         WHERE l.job_id = ? AND l.kind = "dept" AND l.dept_batch_id IS NOT NULL'
+    );
+    $dept->execute([$jobId]);
+    $d = $dept->fetch(PDO::FETCH_ASSOC) ?: ['total' => 0, 'scanned' => 0];
+
+    return [
+        'code_count' => (int) $h['total'] + (int) $d['total'],
+        'scanned_count' => (int) $h['scanned'] + (int) $d['scanned'],
     ];
 }
 
@@ -100,6 +139,9 @@ function rts_barcode_label_job_get(PDO $pdo, int $jobId): array
     if ($row === false) {
         throw new RuntimeException('RTS label job not found.');
     }
+    $stats = rts_barcode_label_job_scan_stats($pdo, $jobId);
+    $row['code_count'] = $stats['code_count'];
+    $row['scanned_count'] = $stats['scanned_count'];
 
     return rts_barcode_label_serialize_job($row, rts_barcode_label_job_lines($pdo, $jobId));
 }
@@ -116,7 +158,23 @@ function rts_barcode_label_job_list(PDO $pdo, int $page = 1, int $perPage = 25):
     $st = $pdo->prepare(
         'SELECT j.*, u.name AS created_by_name,
                 (SELECT COUNT(*) FROM rts_barcode_label_job_lines l WHERE l.job_id = j.id) AS line_count,
-                (SELECT COALESCE(SUM(l.quantity), 0) FROM rts_barcode_label_job_lines l WHERE l.job_id = j.id) AS label_count
+                (SELECT COALESCE(SUM(l.quantity), 0) FROM rts_barcode_label_job_lines l WHERE l.job_id = j.id) AS label_count,
+                (
+                  (SELECT COUNT(*) FROM rts_barcode_label_job_lines l
+                   INNER JOIN honey_bottle_barcodes c ON c.batch_id = l.honey_batch_id
+                   WHERE l.job_id = j.id AND l.kind = "honey" AND l.honey_batch_id IS NOT NULL)
+                + (SELECT COUNT(*) FROM rts_barcode_label_job_lines l
+                   INNER JOIN dept_pouch_barcodes c ON c.batch_id = l.dept_batch_id
+                   WHERE l.job_id = j.id AND l.kind = "dept" AND l.dept_batch_id IS NOT NULL)
+                ) AS code_count,
+                (
+                  (SELECT COALESCE(SUM(c.status = "scanned"), 0) FROM rts_barcode_label_job_lines l
+                   INNER JOIN honey_bottle_barcodes c ON c.batch_id = l.honey_batch_id
+                   WHERE l.job_id = j.id AND l.kind = "honey" AND l.honey_batch_id IS NOT NULL)
+                + (SELECT COALESCE(SUM(c.status = "scanned"), 0) FROM rts_barcode_label_job_lines l
+                   INNER JOIN dept_pouch_barcodes c ON c.batch_id = l.dept_batch_id
+                   WHERE l.job_id = j.id AND l.kind = "dept" AND l.dept_batch_id IS NOT NULL)
+                ) AS scanned_count
          FROM rts_barcode_label_jobs j
          LEFT JOIN users u ON u.id = j.created_by
          ORDER BY j.id DESC
@@ -286,6 +344,77 @@ function rts_barcode_label_job_mark_printed(PDO $pdo, int $jobId): array
     )->execute([$jobId]);
 
     return rts_barcode_label_job_get($pdo, $jobId);
+}
+
+/**
+ * All barcodes for a job, ordered by line then sequence (for expandable history UI).
+ *
+ * @return array{
+ *   job: array<string, mixed>,
+ *   codes: list<array<string, mixed>>
+ * }
+ */
+function rts_barcode_label_job_codes(PDO $pdo, int $jobId): array
+{
+    $job = rts_barcode_label_job_get($pdo, $jobId);
+    $codes = [];
+    foreach ($job['lines'] as $line) {
+        $lineId = (int) $line['id'];
+        $productLabel = (string) $line['product_label'];
+        $batchNo = (string) $line['batch_no'];
+        $sizeLabel = $line['size_label'] !== null ? (string) $line['size_label'] : null;
+        if (($line['kind'] ?? '') === 'honey' && !empty($line['honey_batch_id'])) {
+            $st = $pdo->prepare(
+                'SELECT c.code, c.sequence_no, c.status, c.scanned_at, u.pool AS unit_pool
+                 FROM honey_bottle_barcodes c
+                 LEFT JOIN honey_bottle_units u ON u.barcode_id = c.id
+                 WHERE c.batch_id = ?
+                 ORDER BY c.sequence_no ASC'
+            );
+            $st->execute([(int) $line['honey_batch_id']]);
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $codes[] = [
+                    'line_id' => $lineId,
+                    'kind' => 'honey',
+                    'product_label' => $productLabel,
+                    'batch_no' => $batchNo,
+                    'size_label' => $sizeLabel,
+                    'code' => (string) $row['code'],
+                    'sequence_no' => (int) $row['sequence_no'],
+                    'status' => (string) $row['status'],
+                    'scanned_at' => $row['scanned_at'] !== null ? (string) $row['scanned_at'] : null,
+                    'unit_pool' => $row['unit_pool'] !== null ? (string) $row['unit_pool'] : null,
+                ];
+            }
+        } elseif (($line['kind'] ?? '') === 'dept' && !empty($line['dept_batch_id'])) {
+            $st = $pdo->prepare(
+                'SELECT c.code, c.sequence_no, c.status, c.scanned_at
+                 FROM dept_pouch_barcodes c
+                 WHERE c.batch_id = ?
+                 ORDER BY c.sequence_no ASC'
+            );
+            $st->execute([(int) $line['dept_batch_id']]);
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $codes[] = [
+                    'line_id' => $lineId,
+                    'kind' => 'dept',
+                    'product_label' => $productLabel,
+                    'batch_no' => $batchNo,
+                    'size_label' => null,
+                    'code' => (string) $row['code'],
+                    'sequence_no' => (int) $row['sequence_no'],
+                    'status' => (string) $row['status'],
+                    'scanned_at' => $row['scanned_at'] !== null ? (string) $row['scanned_at'] : null,
+                    'unit_pool' => (string) $row['status'] === 'scanned' ? 'finished' : null,
+                ];
+            }
+        }
+    }
+
+    return [
+        'job' => $job,
+        'codes' => $codes,
+    ];
 }
 
 /**

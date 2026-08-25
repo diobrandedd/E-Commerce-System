@@ -1,7 +1,7 @@
 ---
 title: permissions
 source: includes/permissions.php
-generated: 2026-08-21T04:51:41+02:00
+generated: 2026-08-25T08:09:24+02:00
 type: module
 function_count: 18
 ---
@@ -22,45 +22,45 @@ function_count: 18
 
 **Callers (7):**
 
-- `includes/permissions.php`:129 — `return array_keys(ims_permission_catalog());`
-- `includes/permissions.php`:261 — `static fn(string $k): bool => isset(ims_permission_catalog()[$k])`
-- `includes/permissions.php`:310 — `if (!isset(ims_permission_catalog()[$key])) {`
-- `includes/permissions.php`:354 — `$catalog = ims_permission_catalog();`
-- `includes/permissions.php`:366 — `foreach (ims_permission_catalog() as $key => $meta) {`
-- `includes/permissions.php`:382 — `foreach (ims_permission_catalog() as $key => $meta) {`
-- `includes/permissions.php`:411 — `$catalog = ims_permission_catalog();`
+- `includes/permissions.php`:132 — `return array_keys(ims_permission_catalog());`
+- `includes/permissions.php`:268 — `static fn(string $k): bool => isset(ims_permission_catalog()[$k])`
+- `includes/permissions.php`:317 — `if (!isset(ims_permission_catalog()[$key])) {`
+- `includes/permissions.php`:361 — `$catalog = ims_permission_catalog();`
+- `includes/permissions.php`:373 — `foreach (ims_permission_catalog() as $key => $meta) {`
+- `includes/permissions.php`:389 — `foreach (ims_permission_catalog() as $key => $meta) {`
+- `includes/permissions.php`:418 — `$catalog = ims_permission_catalog();`
 
 ## ims_all_permission_keys {#ims_all_permission_keys}
 
 **Callers (1):**
 
-- `includes/permissions.php`:194 — `return ims_all_permission_keys();`
+- `includes/permissions.php`:197 — `return ims_all_permission_keys();`
 
 ## ims_dept_line_map {#ims_dept_line_map}
 
 **Callers (1):**
 
-- `includes/permissions.php`:149 — `$line = ims_dept_line_map()[strtolower(trim($productKey))] ?? null;`
+- `includes/permissions.php`:152 — `$line = ims_dept_line_map()[strtolower(trim($productKey))] ?? null;`
 
 ## ims_dept_permission_key {#ims_dept_permission_key}
 
 **Callers (1):**
 
-- `includes/permissions.php`:333 — `$key = ims_dept_permission_key($productKey, $action);`
+- `includes/permissions.php`:340 — `$key = ims_dept_permission_key($productKey, $action);`
 
 ## ims_dept_line_permission_keys {#ims_dept_line_permission_keys}
 
 **Callers (3):**
 
-- `includes/permissions.php`:206 — `], ims_dept_line_permission_keys(['paragis', 'brc', 'cacao', 'comb'], ['view', 'produce', 'barcodes']), [`
-- `includes/permissions.php`:235 — `], ims_dept_line_permission_keys($deptLines, ['view', 'produce', 'barcodes']), $isCsr ? [`
-- `includes/permissions.php`:250 — `], ims_dept_line_permission_keys($deptLines, ['view', 'barcodes']), $isCsr ? [`
+- `includes/permissions.php`:210 — `], ims_dept_line_permission_keys(['paragis', 'brc', 'cacao', 'comb'], ['view', 'produce', 'barcodes']), [`
+- `includes/permissions.php`:241 — `], ims_dept_line_permission_keys($deptLines, ['view', 'produce', 'barcodes']), $isCsr ? [`
+- `includes/permissions.php`:257 — `], ims_dept_line_permission_keys($deptLines, ['view', 'barcodes']), $isCsr ? [`
 
 ## ims_preset_dept_lines {#ims_preset_dept_lines}
 
 **Callers (1):**
 
-- `includes/permissions.php`:191 — `$deptLines = ims_preset_dept_lines($deptKey);`
+- `includes/permissions.php`:194 — `$deptLines = ims_preset_dept_lines($deptKey);`
 
 ## ims_permission_preset_for_role {#ims_permission_preset_for_role}
 
@@ -76,19 +76,19 @@ function_count: 18
 
 - `api/v1/auth.php`:89 — `$payload['permissions'] = ims_user_permissions((int) $user['id']);`
 - `api/v1/auth.php`:127 — `$serialized['permissions'] = ims_user_permissions((int) $user['id']);`
-- `includes/permissions.php`:313 — `$granted = ims_user_permissions((int) $user['id']);`
-- `includes/permissions.php`:341 — `$keys = ims_user_permissions($userId);`
-- `includes/permissions.php`:445 — `return count(ims_user_permissions($userId));`
+- `includes/permissions.php`:320 — `$granted = ims_user_permissions((int) $user['id']);`
+- `includes/permissions.php`:348 — `$keys = ims_user_permissions($userId);`
+- `includes/permissions.php`:452 — `return count(ims_user_permissions($userId));`
 
 ## ims_user_permissions_clear_cache {#ims_user_permissions_clear_cache}
 
 **Callers (1):**
 
-- `includes/permissions.php`:440 — `ims_user_permissions_clear_cache($userId);`
+- `includes/permissions.php`:447 — `ims_user_permissions_clear_cache($userId);`
 
 ## ims_user_can {#ims_user_can}
 
-**Callers (85):**
+**Callers (88):**
 
 - `api/v1/_bootstrap.php`:155 — `if (ims_user_can($u, $key)) {`
 - `api/v1/_costing_helpers.php`:73 — `return ims_user_can($user, 'costing.manage');`
@@ -115,7 +115,7 @@ function_count: 18
 - `api/v1/materials.php`:274 — `if (!ims_user_can($user, 'inventory.requests.approve')) {`
 - `api/v1/materials.php`:345 — `$logLimit = ims_user_can($user, 'packaging.set_on_hand') ? 100 : 25;`
 - `api/v1/materials.php`:356 — `'can_set_pool_yield' => ims_user_can($user, 'packaging.set_on_hand') && !$isGenericFoam,`
-- _… and 60 more (run impact.php for full list)_
+- _… and 63 more (run impact.php for full list)_
 
 ## ims_user_can_dept_line {#ims_user_can_dept_line}
 
@@ -166,7 +166,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/permissions.php`:468 — `return ims_user_dept_key($user) === 'csr';`
+- `includes/permissions.php`:475 — `return ims_user_dept_key($user) === 'csr';`
 
 ## ims_user_is_csr_dept {#ims_user_is_csr_dept}
 

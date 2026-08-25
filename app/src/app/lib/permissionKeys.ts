@@ -40,6 +40,9 @@ export type PermissionKey =
   | "honey.ops"
   | "honey.pricing.view_cost"
   | "honey.view"
+  | "inventory.check.manage"
+  | "inventory.check.scan"
+  | "inventory.check.view_all"
   | "inventory.daily_count"
   | "inventory.edit_requests.approve"
   | "inventory.edit_requests.submit"
@@ -127,6 +130,9 @@ export const PERMISSION_KEYS: readonly PermissionKey[] = [
   "honey.ops",
   "honey.pricing.view_cost",
   "honey.view",
+  "inventory.check.manage",
+  "inventory.check.scan",
+  "inventory.check.view_all",
   "inventory.daily_count",
   "inventory.edit_requests.approve",
   "inventory.edit_requests.submit",

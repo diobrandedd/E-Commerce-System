@@ -1,7 +1,7 @@
 ---
 title: dept_pos
 source: includes/dept_pos.php
-generated: 2026-08-21T04:51:16+02:00
+generated: 2026-08-25T08:08:57+02:00
 type: module
 function_count: 5
 ---

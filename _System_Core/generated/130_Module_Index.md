@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-08-21T04:51:09+02:00
+generated: 2026-08-25T08:08:51+02:00
 type: memory-bank
 ---
 
@@ -48,6 +48,7 @@ type: memory-bank
 | [[modules/honey_sales_report]] | 13 |
 | [[modules/honey_volume]] | 8 |
 | [[modules/ims_exec_sidebar]] | 1 |
+| [[modules/inventory_check]] | 25 |
 | [[modules/inventory_edit_log]] | 3 |
 | [[modules/labels]] | 3 |
 | [[modules/material_inventory]] | 64 |
@@ -63,7 +64,7 @@ type: memory-bank
 | [[modules/pos_unified]] | 10 |
 | [[modules/qr_decode]] | 13 |
 | [[modules/rts_attachments]] | 6 |
-| [[modules/rts_barcode_labels]] | 9 |
+| [[modules/rts_barcode_labels]] | 11 |
 | [[modules/rts_case_handlers]] | 28 |
 | [[modules/rts_claim_status]] | 3 |
 | [[modules/rts_damaged_use]] | 6 |

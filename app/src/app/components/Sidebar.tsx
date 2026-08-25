@@ -138,6 +138,7 @@ function getNavItems(role: Role, _dept: string, pendingCorrections: number, labe
     { label: "Supplies", to: "/inventory/supplies" },
     { label: "Products", children: PRODUCTS_CHILDREN },
     leakDamageNav,
+    { label: "Check inventory", to: "/inventory/check" },
   ];
 
   const inventoryChildrenExec: NavChild[] = [
