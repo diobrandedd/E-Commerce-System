@@ -201,14 +201,57 @@ export function rtsDashboard() {
   return apiGet<RtsDashboardData>("rts_cases.php", "dashboard");
 }
 
+export interface RtsInventoryListResult {
+  honey: Record<string, string>[];
+  other: Record<string, string>[];
+  sync?: { last_synced_at: string | null; last_error: string | null; sellable_from_cases?: number | boolean };
+  diagnostic?: {
+    case_count: number;
+    line_item_count: number;
+    syncable_line_item_count: number;
+    inventory_row_count: number;
+  };
+  readonly?: boolean;
+  can_mutate?: boolean;
+  can_use_damaged?: boolean;
+  can_executive_edit?: boolean;
+  /** When false, sellable Use RTS by qty is disabled (barcode cutover). */
+  can_use_rts_qty?: boolean;
+  /** When true, sellable on-hand is barcode-backed (not case sync). */
+  barcode_backed_sellable?: boolean;
+  pool?: string;
+}
+
+export function rtsListInventory(pool?: "sellable" | "damaged") {
+  return apiGet<RtsInventoryListResult>(
+    "rts.php",
+    "inventory_list",
+    pool ? { pool } : undefined,
+  );
+}
+
 export function rtsListDamagedInventory() {
-  return apiGet<{
-    honey: Record<string, string>[];
-    other: Record<string, string>[];
-    can_use_damaged: boolean;
-    can_executive_edit: boolean;
-    pool: string;
-  }>("rts.php", "inventory_list", { pool: "damaged" });
+  return apiGet<RtsInventoryListResult>("rts.php", "inventory_list", { pool: "damaged" });
+}
+
+export interface RtsStockInScanResult {
+  kind: "honey" | "dept";
+  unit: {
+    code?: string;
+    variant?: string;
+    size?: string;
+    size_label?: string;
+    product_key?: string;
+    product_label?: string;
+    unit_id?: number;
+    rts_stock_in?: boolean;
+    [key: string]: unknown;
+  };
+}
+
+/** Scan a honey or dept barcode into RTS sellable inventory. */
+export function rtsStockInScan(code: string) {
+  return apiPost<RtsStockInScanResult>("rts.php", "stock_in_scan", { code: code.trim() });
 }
 
 export interface RtsDamagedUseLogRow {

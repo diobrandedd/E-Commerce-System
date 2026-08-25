@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-08-25T08:08:51+02:00
+generated: 2026-08-25T09:55:24+02:00
 type: memory-bank
 table_count: 87
 ---
@@ -748,6 +748,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_report]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_log]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_scan_stock_in]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_rts_stock_in_scan]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_batch_codes]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 
@@ -768,6 +769,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_report]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_log]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_scan_stock_in]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_rts_stock_in_scan]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_opened_return_scan]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_batch_codes]] |
@@ -787,6 +789,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_fetch_code_row]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_log]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_scan_stock_in]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_rts_stock_in_scan]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_list]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
@@ -1153,6 +1156,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_case_replace_line_items]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_credit_sellable_honey]] |
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_credit_sellable_other]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_list_honey_aggregated]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_list_other_aggregated]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_honey_variant]] |
@@ -1169,6 +1174,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_sellable_from_cases_enabled]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_status]] |
 

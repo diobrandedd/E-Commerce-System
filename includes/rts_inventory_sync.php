@@ -30,12 +30,26 @@ function rts_inv_is_honey_line(string $productType): bool
     return str_contains($productType, 'honey');
 }
 
-/** @return array{synced:int, last_synced_at:?string, last_error:?string} */
+/**
+ * When false, case sync must not create/update sellable RTS inventory rows (barcode-backed cutover).
+ */
+function rts_sellable_from_cases_enabled(PDO $pdo): bool
+{
+    if (!rts_db_has_column($pdo, 'rts_sync_state', 'sellable_from_cases')) {
+        return true;
+    }
+    $v = $pdo->query('SELECT sellable_from_cases FROM rts_sync_state WHERE id = 1 LIMIT 1')->fetchColumn();
+
+    return (int) $v === 1;
+}
+
+/** @return array{synced:int, last_synced_at:?string, last_error:?string, sellable_from_cases: bool} */
 function rts_inventory_sync_run(PDO $pdo): array
 {
     $state = $pdo->query('SELECT * FROM rts_sync_state WHERE id = 1 LIMIT 1')->fetch();
     $lastId = (int) ($state['last_line_item_id'] ?? 0);
     $synced = 0;
+    $sellableFromCases = rts_sellable_from_cases_enabled($pdo);
 
     $dispositionSql = rts_db_has_column($pdo, 'rts_cases', 'case_disposition')
         ? " AND COALESCE(c.case_disposition, 'standard') IN ('standard', 'leak')"
@@ -101,6 +115,10 @@ function rts_inventory_sync_run(PDO $pdo): array
             }
 
             $pool = ($hasLineRole && (string) ($li['line_role'] ?? 'reusable') === 'damaged') ? 'damaged' : 'sellable';
+            // Barcode cutover: advance cursor for sellable lines but do not invent sellable stock.
+            if ($pool === 'sellable' && !$sellableFromCases) {
+                continue;
+            }
             if ($hasInvPool) {
                 $ins->execute([
                     $lineId,
@@ -151,6 +169,7 @@ function rts_inventory_sync_run(PDO $pdo): array
         'synced' => $synced,
         'last_synced_at' => $state['last_synced_at'] ?? null,
         'last_error' => $state['last_error'] ?? null,
+        'sellable_from_cases' => $sellableFromCases,
     ];
 }
 
@@ -235,13 +254,79 @@ function rts_case_replace_line_items(PDO $pdo, int $caseId, array $lines): void
 
 function rts_inventory_sync_status(PDO $pdo): array
 {
-    $state = $pdo->query('SELECT last_synced_at, last_error, last_line_item_id FROM rts_sync_state WHERE id = 1')->fetch();
+    $cols = 'last_synced_at, last_error, last_line_item_id';
+    if (rts_db_has_column($pdo, 'rts_sync_state', 'sellable_from_cases')) {
+        $cols .= ', sellable_from_cases';
+    }
+    $state = $pdo->query("SELECT {$cols} FROM rts_sync_state WHERE id = 1")->fetch();
 
     return [
         'last_synced_at' => $state['last_synced_at'] ?? null,
         'last_error' => $state['last_error'] ?? null,
         'last_line_item_id' => (int) ($state['last_line_item_id'] ?? 0),
+        'sellable_from_cases' => rts_sellable_from_cases_enabled($pdo),
     ];
+}
+
+/**
+ * +1 (or qty) sellable honey size on RTS inventory rollup (barcode stock-in).
+ */
+function rts_inventory_credit_sellable_honey(PDO $pdo, string $variant, string $size, float $qty = 1.0): void
+{
+    require_once __DIR__ . '/honey_inventory.php';
+    $variant = honey_normalize_variant($variant);
+    $size = strtolower(trim($size));
+    if (!in_array($size, HONEY_SIZES, true)) {
+        throw new RuntimeException('Invalid honey size for RTS credit.');
+    }
+    if ($qty <= 0) {
+        return;
+    }
+    $col = match ($size) {
+        'liter' => 'current_liter',
+        '250ml' => 'current_250ml',
+        '350ml' => 'current_350ml',
+        'gallon' => 'current_gallon',
+        default => throw new RuntimeException('Invalid honey size for RTS credit.'),
+    };
+    $poolSql = rts_inventory_pool_filter_sql($pdo, 'sellable');
+    $st = $pdo->prepare(
+        "SELECT id FROM rts_inventory_rows
+         WHERE category = 'honey'
+           AND COALESCE(NULLIF(TRIM(variant), ''), 'other') = ?{$poolSql}
+         ORDER BY id ASC LIMIT 1"
+    );
+    $st->execute([$variant]);
+    $rowId = $st->fetchColumn();
+    if ($rowId === false) {
+        $rowId = rts_inventory_seed_honey_row($pdo, $variant, 'sellable');
+    }
+    $pdo->prepare("UPDATE rts_inventory_rows SET {$col} = {$col} + ? WHERE id = ?")
+        ->execute([$qty, (int) $rowId]);
+}
+
+/**
+ * +1 (or qty) sellable other-product on RTS inventory rollup (barcode stock-in).
+ */
+function rts_inventory_credit_sellable_other(PDO $pdo, string $productLabel, float $qty = 1.0): void
+{
+    $productLabel = trim($productLabel);
+    if ($productLabel === '' || $qty <= 0) {
+        return;
+    }
+    $poolSql = rts_inventory_pool_filter_sql($pdo, 'sellable');
+    $st = $pdo->prepare(
+        "SELECT id FROM rts_inventory_rows
+         WHERE category = 'other' AND product_label = ?{$poolSql}
+         ORDER BY id ASC LIMIT 1"
+    );
+    $st->execute([$productLabel]);
+    $rowId = $st->fetchColumn();
+    if ($rowId === false) {
+        $rowId = rts_inventory_seed_other_row($pdo, $productLabel, 'sellable');
+    }
+    $pdo->prepare('UPDATE rts_inventory_rows SET current_qty = current_qty + ? WHERE id = ?')
+        ->execute([$qty, (int) $rowId]);
 }
 
 function rts_inventory_pool_filter_sql(PDO $pdo, string $pool): string

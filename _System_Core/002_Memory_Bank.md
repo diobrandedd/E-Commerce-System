@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-25 — RTS barcode inventory cutover
+**Change:** Sellable RTS barcode-backed: phase 68 hard reset + sync skip, stock_in_scan, pack/POS RTS consume, Sales RTS counts. → [[problems/records/2026-08-25_rts-barcode-inventory-cutover]]
+
+### 2026-08-25 — RTS barcode inventory cutover SPA
+**Change:** RTS inventory stock-in scan + gate Use RTS; Record/labels/POS copy for barcode-backed sellable. → [[problems/records/2026-08-25_rts-barcode-inventory-cutover-spa]]
+
 ### 2026-08-25 — RTS label job scan progress UI
 **Change:** Recent jobs expandable: scanned/generated ratio + barcode list via `job_codes`. → [[problems/records/2026-08-25_rts-barcode-job-scan-progress]]
 

@@ -445,7 +445,7 @@ export function RTSRecordPage() {
         return "Add at least one damaged or reusable product line";
       }
       if (!damagedLines.length && lines.length > 0) {
-        return "Put leaked items under Damaged / leaked — reusable lines sync to sellable RTS stock only.";
+        return "Put leaked items under Damaged / leaked — reusable lines are for the case record only; scan barcodes on RTS inventory for sellable stock.";
       }
       return null;
     }
@@ -585,6 +585,11 @@ export function RTSRecordPage() {
         />
         <AppModalBody className="space-y-4">
           {modalError && <FulfillmentErrorBanner message={modalError} />}
+          <p className="text-xs rounded-lg border border-amber-200 bg-amber-50 text-amber-950 px-3 py-2">
+            Saving this case does <strong className="font-semibold">not</strong> add sellable RTS stock.
+            After record, scan product barcodes on the{" "}
+            <Link to="/rts" className="underline font-semibold text-[#8a5c00]">RTS inventory</Link> page.
+          </p>
           {lookupBusy && (
             <p className="text-xs text-muted-foreground flex items-center gap-2">
               <Loader2 size={14} className="animate-spin" /> Loading parcel data…
@@ -654,7 +659,7 @@ export function RTSRecordPage() {
                 lines={lines}
                 onChange={setLines}
                 title="Reusable (RTS sellable)"
-                description="What can go back to sellable RTS inventory after inspection."
+                description="What can go back to sellable RTS after inspection — scan barcodes on RTS inventory to add sellable stock (saving the case does not)."
               />
             </div>
           )}
@@ -667,8 +672,8 @@ export function RTSRecordPage() {
             <div className="rounded-xl border border-border p-4 space-y-2">
               <p className="text-sm font-semibold">Product barcodes (optional)</p>
               <p className="text-xs text-muted-foreground">
-                Scan honey or Paragis / BRC / Cacao / Comb stickers on this return. Units go to RTS sellable or
-                damaged/leaked from the case disposition. Unreadable stickers can be skipped with a note in the product lines.
+                Scan honey or Paragis / BRC / Cacao / Comb stickers on this return for case history.
+                Saving the case does not add sellable RTS stock — after record, scan barcodes on the RTS inventory page.
               </p>
               <input
                 className="w-full border rounded-lg px-2 py-2 text-sm"
@@ -891,7 +896,8 @@ export function RTSRecordPage() {
               )}
               {disposition === "leak" && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Record damaged/leaked items and reusable sellable items separately — each syncs to its own RTS pool.
+                  Record damaged/leaked and reusable lines separately. Damaged can sync to the damaged pool;
+                  sellable on-hand still requires barcode scan on RTS inventory.
                 </p>
               )}
             </div>

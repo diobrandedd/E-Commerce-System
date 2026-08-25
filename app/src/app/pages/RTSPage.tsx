@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { RefreshCcw, Loader2, Plus } from "lucide-react";
+import { RefreshCcw, Loader2, Plus, ScanLine } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import {
   AppErrorBanner,
@@ -16,6 +16,9 @@ import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_SIZES, HONEY_VARIANTS } from "@/app/lib/honey";
 import { variantLabel } from "@/app/lib/posHoney";
+import { playScanBeep } from "@/app/lib/scanBeep";
+import { useScanWedgeField } from "@/app/lib/scanWedgeField";
+import { rtsStockInScan } from "@/app/lib/rtsApi";
 import { cn } from "@/app/components/ui/utils";
 
 const OTHER_PRODUCT_PRESETS = [
@@ -62,10 +65,12 @@ function whereLabel(w: string): string {
 }
 
 export function RTSPage() {
-  const { user, can } = useAuth();
+  const { can } = useAuth();
   const canRecord = can("rts.record");
   const [canMutate, setCanMutate] = useState(false);
   const [canExecutiveEdit, setCanExecutiveEdit] = useState(false);
+  const [canUseRtsQty, setCanUseRtsQty] = useState(true);
+  const [barcodeBackedSellable, setBarcodeBackedSellable] = useState(false);
   const canViewOps = can("rts.admin");
   const readonly = can("rts.view") && !can("rts.record");
 
@@ -88,8 +93,13 @@ export function RTSPage() {
   const [editOther, setEditOther] = useState<RtsInvRow | null>(null);
   const [addHoneyOpen, setAddHoneyOpen] = useState(false);
   const [addOtherOpen, setAddOtherOpen] = useState(false);
+  const [stockInCode, setStockInCode] = useState("");
+  const [stockInBusy, setStockInBusy] = useState(false);
+  const { inputRef: stockInRef, refocus: stockInRefocus, inputProps: stockInInputProps } =
+    useScanWedgeField(false);
 
   const canSync = can("rts.sync.run");
+  const showUseRts = canMutate && canUseRtsQty;
 
   const loadUseLog = useCallback(async () => {
     try {
@@ -112,6 +122,8 @@ export function RTSPage() {
         readonly: boolean;
         can_mutate: boolean;
         can_executive_edit: boolean;
+        can_use_rts_qty?: boolean;
+        barcode_backed_sellable?: boolean;
       }>("rts.php", "inventory_list");
       setHoney(inv.honey);
       setOther(inv.other);
@@ -119,6 +131,8 @@ export function RTSPage() {
       setDiagnostic(inv.diagnostic ?? null);
       setCanMutate(!!inv.can_mutate);
       setCanExecutiveEdit(!!inv.can_executive_edit);
+      setCanUseRtsQty(inv.can_use_rts_qty !== false);
+      setBarcodeBackedSellable(!!inv.barcode_backed_sellable);
       await loadUseLog();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load RTS inventory.");
@@ -126,6 +140,33 @@ export function RTSPage() {
       if (showLoader) setLoading(false);
     }
   }, [loadUseLog]);
+
+  const runStockInScan = useCallback(async () => {
+    const code = stockInCode.trim();
+    if (!code || !canMutate) return;
+    setStockInBusy(true);
+    setError(null);
+    setStockInCode("");
+    try {
+      const res = await rtsStockInScan(code);
+      const unit = res.unit;
+      const label =
+        res.kind === "honey"
+          ? `${variantLabel(String(unit.variant ?? ""))} ${String(unit.size_label ?? unit.size ?? "")}`.trim()
+          : String(unit.product_label ?? unit.product_key ?? "Dept unit");
+      playScanBeep("ok");
+      setToast(`Stocked into RTS: ${unit.code ?? code} · ${label}`);
+      window.setTimeout(() => setToast(null), 4000);
+      await loadInventory(false);
+      stockInRefocus();
+    } catch (e) {
+      playScanBeep("bad");
+      setError(e instanceof ApiError ? e.message : "RTS stock-in scan failed.");
+      stockInRefocus();
+    } finally {
+      setStockInBusy(false);
+    }
+  }, [stockInCode, canMutate, loadInventory, stockInRefocus]);
 
   const syncNow = useCallback(async () => {
     if (!canSync) {
@@ -165,7 +206,11 @@ export function RTSPage() {
   return (
     <PageLayout
       title="RTS inventory"
-      subtitle="Synced from operational RTS records"
+      subtitle={
+        barcodeBackedSellable
+          ? "Sellable on-hand is barcode-backed — scan units here after Record RTS"
+          : "Synced from operational RTS records"
+      }
       actions={
         <div className="flex gap-2 flex-wrap">
           <AppPressable
@@ -188,6 +233,51 @@ export function RTSPage() {
       <AppSuccessNotice message={toast} />
       <AppErrorBanner message={error} />
       <div className="space-y-6">
+        {canMutate && (
+          <AppSectionEnter index={0}>
+            <section className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <ScanLine size={16} className="text-[#C8900A]" />
+                <h3 className="text-sm font-semibold">Stock in to RTS</h3>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Scan honey or dept barcodes into sellable RTS. Does not add packaging stock.
+              </p>
+              <div className="flex flex-wrap gap-2 max-w-xl">
+                <input
+                  ref={stockInRef}
+                  {...stockInInputProps}
+                  className="flex-1 min-w-[12rem] border rounded-lg px-3 py-2 text-sm"
+                  placeholder="Scan barcode and press Enter"
+                  value={stockInCode}
+                  disabled={stockInBusy}
+                  onChange={e => setStockInCode(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key !== "Enter") return;
+                    e.preventDefault();
+                    void runStockInScan();
+                  }}
+                />
+                <Button
+                  type="button"
+                  disabled={stockInBusy || !stockInCode.trim()}
+                  onClick={() => void runStockInScan()}
+                  style={{ background: "#C8900A" }}
+                  className="text-white"
+                >
+                  {stockInBusy ? <Loader2 size={14} className="animate-spin mr-1" /> : <ScanLine size={14} className="mr-1" />}
+                  Scan
+                </Button>
+              </div>
+            </section>
+          </AppSectionEnter>
+        )}
+        {barcodeBackedSellable && !canUseRtsQty && (
+          <p className="text-xs rounded-lg border border-border bg-secondary/40 px-3 py-2 text-muted-foreground">
+            Qty-only <span className="font-medium text-foreground">Use RTS</span> is off for sellable stock.
+            Sell via POS/pack by scanning RTS barcodes. Damaged Use stays on the damaged page.
+          </p>
+        )}
         {diagnostic && diagnostic.case_count > 0 && diagnostic.line_item_count === 0 && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
             <p>
@@ -212,13 +302,14 @@ export function RTSPage() {
         <p className="text-xs text-muted-foreground">
           Last synced: {sync?.last_synced_at ? new Date(sync.last_synced_at.replace(" ", "T")).toLocaleString() : "Never"}
           {readonly && " · Read-only for your role"}
+          {barcodeBackedSellable && " · Sellable qty from barcode stock-in"}
         </p>
 
         {loading ? (
           <div className="text-sm text-muted-foreground py-8 text-center"><Loader2 className="inline animate-spin mr-2" size={14} /> Loading…</div>
         ) : (
           <>
-            <AppSectionEnter index={0}>
+            <AppSectionEnter index={1}>
               <section>
                 <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                   <h3 className="text-sm font-semibold">Honey RTS</h3>
@@ -231,12 +322,13 @@ export function RTSPage() {
                 <RtsTable
                   rows={honey}
                   honey
-                  onUse={canMutate ? setUseRow : undefined}
+                  barcodeBacked={barcodeBackedSellable}
+                  onUse={showUseRts ? setUseRow : undefined}
                   onEdit={canExecutiveEdit ? setEditHoney : undefined}
                 />
               </section>
             </AppSectionEnter>
-            <AppSectionEnter index={1}>
+            <AppSectionEnter index={2}>
               <section>
                 <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                   <h3 className="text-sm font-semibold">Other products</h3>
@@ -249,12 +341,13 @@ export function RTSPage() {
                 <RtsTable
                   rows={other}
                   honey={false}
-                  onUse={canMutate ? setUseRow : undefined}
+                  barcodeBacked={barcodeBackedSellable}
+                  onUse={showUseRts ? setUseRow : undefined}
                   onEdit={canExecutiveEdit ? setEditOther : undefined}
                 />
               </section>
             </AppSectionEnter>
-            <AppSectionEnter index={2}>
+            <AppSectionEnter index={3}>
               <section>
                 <h3 className="text-sm font-semibold mb-3">Used RTS</h3>
                 <UsedRtsTable rows={useLog} />
@@ -367,11 +460,13 @@ function UsedRtsTable({ rows }: { rows: UseLogRow[] }) {
 function RtsTable({
   rows,
   honey,
+  barcodeBacked,
   onUse,
   onEdit,
 }: {
   rows: RtsInvRow[];
   honey: boolean;
+  barcodeBacked?: boolean;
   onUse?: (r: RtsInvRow) => void;
   onEdit?: (r: RtsInvRow) => void;
 }) {
@@ -379,7 +474,11 @@ function RtsTable({
   if (!rows.length) {
     return (
       <p className="text-sm text-muted-foreground">
-        No rows yet.{onEdit ? " Use Add above to create inventory, or sync after RTS records." : " Run sync after new RTS records are saved."}
+        {barcodeBacked
+          ? "No sellable qty yet — scan barcodes above after Record RTS (or print labels, stick, then scan here)."
+          : onEdit
+            ? "No rows yet. Use Add above to create inventory, or sync after RTS records."
+            : "No rows yet. Run sync after new RTS records are saved."}
       </p>
     );
   }

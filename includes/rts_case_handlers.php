@@ -505,23 +505,29 @@ function rts_case_handler_create(PDO $pdo, array $data): array
         if (is_array($bottleCodes) && $bottleCodes !== []) {
             require_once __DIR__ . '/honey_bottle_barcodes.php';
             require_once __DIR__ . '/dept_pouch_barcodes.php';
+            require_once __DIR__ . '/rts_inventory_sync.php';
             $pool = (($fields['damaged_reason'] ?? null) !== null && (string) $fields['damaged_reason'] !== '')
                 ? 'rts_damaged'
                 : 'rts_sellable';
-            $honeyRx = honey_bottle_rts_receive($pdo, 0, $bottleCodes, $pool);
-            $got = [];
-            foreach ($honeyRx['received'] as $r) {
-                $got[strtoupper((string) ($r['code'] ?? ''))] = true;
-            }
-            $remaining = [];
-            foreach ($bottleCodes as $raw) {
-                $c = strtoupper(trim((string) $raw));
-                if ($c !== '' && !isset($got[$c])) {
-                    $remaining[] = $c;
+            // Cutover: sellable stock enters only via RTS inventory barcode scan — skip case receive for sellable.
+            if ($pool === 'rts_sellable' && !rts_sellable_from_cases_enabled($pdo)) {
+                // no-op unit move; staff scan into RTS inventory after record
+            } else {
+                $honeyRx = honey_bottle_rts_receive($pdo, 0, $bottleCodes, $pool);
+                $got = [];
+                foreach ($honeyRx['received'] as $r) {
+                    $got[strtoupper((string) ($r['code'] ?? ''))] = true;
                 }
-            }
-            if ($remaining !== []) {
-                dept_pouch_rts_receive($pdo, $remaining, $pool);
+                $remaining = [];
+                foreach ($bottleCodes as $raw) {
+                    $c = strtoupper(trim((string) $raw));
+                    if ($c !== '' && !isset($got[$c])) {
+                        $remaining[] = $c;
+                    }
+                }
+                if ($remaining !== []) {
+                    dept_pouch_rts_receive($pdo, $remaining, $pool);
+                }
             }
         }
         online_parcels_mark_rts($pdo, $tracking, $caseId);

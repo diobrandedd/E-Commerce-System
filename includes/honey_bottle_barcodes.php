@@ -953,6 +953,109 @@ function honey_bottle_scan_stock_in(PDO $pdo, int $userId, string $code, bool $a
 }
 
 /**
+ * Scan a honey barcode into RTS sellable inventory (not packaging).
+ *
+ * @return array<string, mixed>
+ */
+function honey_bottle_rts_stock_in_scan(PDO $pdo, int $userId, string $code): array
+{
+    require_once __DIR__ . '/rts_inventory_sync.php';
+    $code = honey_bottle_normalize_code($code);
+    $owns = !$pdo->inTransaction();
+    if ($owns) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT c.*, b.variant, b.supplier_code, b.batch_no, b.packaging_row_id, b.request_id, b.source AS batch_source,
+                    u.id AS unit_id, u.status AS unit_status, u.pool AS unit_pool
+             FROM honey_bottle_barcodes c
+             INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
+             LEFT JOIN honey_bottle_units u ON u.barcode_id = c.id
+             WHERE c.code = ? LIMIT 1 FOR UPDATE'
+        );
+        $st->execute([$code]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row === false) {
+            throw new RuntimeException('Unknown barcode.');
+        }
+        if ((string) $row['status'] === 'void') {
+            throw new RuntimeException('This barcode is void.');
+        }
+        $packId = (int) ($row['packaging_row_id'] ?? 0);
+        $variant = honey_normalize_variant((string) $row['variant']);
+        $size = (string) $row['size'];
+        $unitId = $row['unit_id'] !== null ? (int) $row['unit_id'] : 0;
+
+        if ($unitId > 0) {
+            $unitStatus = (string) ($row['unit_status'] ?? '');
+            $unitPool = (string) ($row['unit_pool'] ?? '');
+            if ($unitPool === 'rts_sellable' && $unitStatus === 'in_stock') {
+                throw new RuntimeException('Already in RTS inventory.');
+            }
+            if ($unitPool === 'packaging' && $unitStatus === 'in_stock') {
+                throw new RuntimeException(
+                    'This bottle is still in packaging stock. Use packaging inventory — do not move with RTS stock-in.'
+                );
+            }
+            if (!in_array($unitStatus, ['packed', 'sold', 'shipped', 'rts'], true)) {
+                throw new RuntimeException('This bottle cannot enter RTS inventory (' . $unitStatus . ').');
+            }
+            // Returned unit that already had a barcode: move into RTS sellable on-hand.
+            $pdo->prepare(
+                'UPDATE honey_bottle_units
+                 SET status = "in_stock", pool = "rts_sellable",
+                     consumed_at = NULL, consumed_ref_type = NULL, consumed_ref_id = NULL
+                 WHERE id = ?'
+            )->execute([$unitId]);
+            if ((string) $row['status'] !== 'scanned') {
+                $pdo->prepare(
+                    'UPDATE honey_bottle_barcodes SET status = "scanned", scanned_at = COALESCE(scanned_at, NOW()), scanned_by = ?
+                     WHERE id = ?'
+                )->execute([$userId, (int) $row['id']]);
+            }
+            rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);
+        } else {
+            if ($packId < 1) {
+                throw new RuntimeException('Barcode is not tied to a packaging batch.');
+            }
+            $pdo->prepare(
+                'UPDATE honey_bottle_barcodes SET status = "scanned", scanned_at = NOW(), scanned_by = ? WHERE id = ?'
+            )->execute([$userId, (int) $row['id']]);
+            $pdo->prepare(
+                'INSERT INTO honey_bottle_units (
+                    barcode_id, variant, size, supplier_code, packaging_row_id, pool, status, created_date
+                 ) VALUES (?, ?, ?, ?, ?, "rts_sellable", "in_stock", CURDATE())'
+            )->execute([
+                (int) $row['id'],
+                $variant,
+                $size,
+                (string) $row['supplier_code'],
+                $packId,
+            ]);
+            $unitId = (int) $pdo->lastInsertId();
+            rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);
+        }
+
+        if ($owns) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($owns && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    $fresh = honey_bottle_fetch_code_row($pdo, $code);
+    $out = honey_bottle_serialize_lookup($fresh ?? []);
+    $out['unit_id'] = $unitId;
+    $out['rts_stock_in'] = true;
+
+    return $out;
+}
+
+/**
  * @return array<string, mixed>
  */
 function honey_bottle_pack_session_start(PDO $pdo, int $userId): array
@@ -1460,7 +1563,7 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
             throw new RuntimeException('This pack session is already closed.');
         }
         $itemsSt = $pdo->prepare(
-            'SELECT i.unit_id, u.packaging_row_id, u.variant, u.size, u.status, u.barcode_id, pk.batch_no
+            'SELECT i.unit_id, u.packaging_row_id, u.variant, u.size, u.status, u.pool, u.barcode_id, pk.batch_no
              FROM honey_bottle_pack_session_items i
              INNER JOIN honey_bottle_units u ON u.id = i.unit_id
              LEFT JOIN honey_packaging_rows pk ON pk.id = u.packaging_row_id
@@ -1471,7 +1574,7 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
         $items = $itemsSt->fetchAll(PDO::FETCH_ASSOC);
 
         $deptSt = $pdo->prepare(
-            'SELECT i.unit_id, i.product_key, un.status, un.batch_no
+            'SELECT i.unit_id, i.product_key, un.status, un.batch_no, un.pool
              FROM honey_bottle_pack_session_dept_items i
              INNER JOIN dept_pouch_units un ON un.id = i.unit_id
              WHERE i.session_id = ?
@@ -1484,6 +1587,7 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
             throw new RuntimeException('Scan at least one barcode before confirming.');
         }
 
+        require_once __DIR__ . '/rts_inventory_sync.php';
         $hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');
         $hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');
         foreach ($items as $item) {
@@ -1494,16 +1598,30 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
             $packId = (int) ($item['packaging_row_id'] ?? 0);
             $size = (string) $item['size'];
             $variant = honey_normalize_variant((string) $item['variant']);
+            $pool = (string) ($item['pool'] ?? 'packaging');
             $pdo->prepare(
                 'UPDATE honey_bottle_units
                  SET status = "packed", consumed_at = NOW(), consumed_ref_type = "pack_session", consumed_ref_id = ?
                  WHERE id = ? AND status = "in_stock"'
             )->execute([$sessionId, $unitId]);
-            if ($packId > 0) {
+            if ($pool === 'rts_sellable') {
+                rts_inventory_deduct_sell_honey_variant(
+                    $pdo,
+                    $userId,
+                    $variant,
+                    [$size => 1.0],
+                    'parcel',
+                    'sellable',
+                    [
+                        'used_where' => 'packaging',
+                        'actor_user_id' => $userId,
+                    ]
+                );
+            } elseif ($packId > 0) {
                 honey_bottle_adjust_aggregate($pdo, $packId, $size, -1);
             }
             honey_bottle_write_sale_log($pdo, [
-                'source' => 'packaging',
+                'source' => $pool === 'rts_sellable' ? 'rts' : 'packaging',
                 'packaging_row_id' => $packId > 0 ? $packId : null,
                 'batch_no' => $item['batch_no'] !== null ? (string) $item['batch_no'] : null,
                 'variant' => $variant,
@@ -1522,6 +1640,7 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
             }
             $unitId = (int) $item['unit_id'];
             $productKey = (string) $item['product_key'];
+            $pool = (string) ($item['pool'] ?? 'finished');
             $upd = $pdo->prepare(
                 'UPDATE dept_pouch_units
                  SET status = "packed", consumed_at = NOW(), consumed_ref_type = "pack_session", consumed_ref_id = ?
@@ -1531,7 +1650,22 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
             if ($upd->rowCount() < 1) {
                 throw new RuntimeException('Could not mark a pouch/jar as packed. Discard and rescan.');
             }
-            dept_inventory_deduct($pdo, $productKey, 1.0);
+            if ($pool === 'rts_sellable') {
+                rts_inventory_deduct_sell_other_label(
+                    $pdo,
+                    $userId,
+                    dept_pouch_product_label($productKey),
+                    1.0,
+                    'parcel',
+                    'sellable',
+                    [
+                        'used_where' => 'packaging',
+                        'actor_user_id' => $userId,
+                    ]
+                );
+            } else {
+                dept_inventory_deduct($pdo, $productKey, 1.0);
+            }
         }
 
         $pdo->prepare(
@@ -1809,7 +1943,9 @@ function honey_bottle_rts_receive(PDO $pdo, int $userId, array $codes, string $p
     if (!in_array($pool, ['rts_sellable', 'rts_damaged'], true)) {
         throw new RuntimeException('Invalid RTS pool.');
     }
-    $targetStatus = $pool === 'rts_damaged' ? 'damaged' : 'rts';
+    // Cutover: available sellable uses in_stock + rts_sellable (POS/pack compatible).
+    // Damaged keeps status=damaged. Do not bump rts_inventory_rows here — sellable is barcode stock-in only.
+    $targetStatus = $pool === 'rts_damaged' ? 'damaged' : 'in_stock';
     $received = [];
     $warnings = [];
     foreach ($codes as $raw) {
@@ -1827,14 +1963,22 @@ function honey_bottle_rts_receive(PDO $pdo, int $userId, array $codes, string $p
             continue;
         }
         $unitStatus = (string) ($row['unit_status'] ?? '');
-        if ($unitStatus === 'in_stock') {
-            $warnings[] = $code . ': still in stock — pack scan was missed.';
+        if ($unitStatus === 'in_stock' && (string) ($row['unit_pool'] ?? '') === 'packaging') {
+            $warnings[] = $code . ': still in packaging stock — pack scan was missed.';
         }
         $pdo->prepare(
             'UPDATE honey_bottle_units
              SET status = ?, pool = ?, consumed_at = NOW(), consumed_ref_type = "rts_case"
              WHERE id = ?'
         )->execute([$targetStatus, $pool, (int) $row['unit_id']]);
+        // Sellable cutover path: clear consumed_* so unit is available on-hand.
+        if ($pool === 'rts_sellable') {
+            $pdo->prepare(
+                'UPDATE honey_bottle_units
+                 SET consumed_at = NULL, consumed_ref_type = NULL, consumed_ref_id = NULL
+                 WHERE id = ?'
+            )->execute([(int) $row['unit_id']]);
+        }
         $received[] = honey_bottle_serialize_lookup($row);
     }
 

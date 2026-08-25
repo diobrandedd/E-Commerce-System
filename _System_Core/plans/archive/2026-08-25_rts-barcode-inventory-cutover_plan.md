@@ -1,8 +1,8 @@
 ---
-status: draft
+status: approved
 spec: "[[specs/2026-08-25_rts-barcode-inventory-cutover]]"
 created: 2026-08-25
-approved_by: pending
+approved_by: user (chat approve 2026-08-25)
 ---
 
 # Implementation Plan: RTS barcode inventory cutover
@@ -12,7 +12,7 @@ approved_by: pending
 
 ## Summary
 
-Stop writing **sellable** RTS on-hand from case sync. Sellable stock enters only when a honey/dept barcode is scanned into the **RTS sellable** pool (creating/updating the unit + bumping `rts_inventory_rows`). Record RTS stays for cases (including damaged/leak qty on the case). Packing and POS must consume RTS by scanning units in that pool (block qty-only Use RTS for sellable). Sales/ship reporting counts RTS via existing `honey_sales_log.source` / pool use log, extended for pack-scan. No rewrite of historical packaging stock-ins or past sales.
+Stop writing **sellable** RTS on-hand from case sync. At go-live **hard-reset sellable** `current_*` / `current_qty` to **0** (option 1) so the RTS inventory page does not show pre-cutover sync/edit totals. Sellable stock then enters only when a honey/dept barcode is scanned into the **RTS sellable** pool. Record RTS stays for cases (including damaged/leak). Packing and POS must consume RTS by scanning units in that pool. Sales/ship reporting counts RTS via logs. No rewrite of past packaging stock-ins or past sales; cases never wiped.
 
 ## Constraints (must read)
 
@@ -21,7 +21,8 @@ Stop writing **sellable** RTS on-hand from case sync. Sellable stock enters only
 - UI: [[004_SPA_Design_System]] · [[005_SPA_UX_Patterns]] · feedback-animations
 - Theory update required: [[010_Product_Theory]] §2 today says SPA inventory is a **synced mirror** — replace with barcode-backed sellable after cutover
 - `source_line_item_id` already nullable (phase 47) — barcode-backed RTS rows can seed without a case line
-- Do **not** wipe historical `rts_inventory_rows` or cases
+- **Hard reset sellable on-hand at cutover** (spec decision 4 / option 1) — zero sellable currents; do **not** present old synced qty as live stock
+- Do **not** wipe historical **cases**; damaged pool not zeroed by this reset
 - Early `rts_label` stickers already scanned into **packaging** and shipped: leave as-is (spec §8)
 
 ## Impact preview
@@ -30,7 +31,7 @@ Stop writing **sellable** RTS on-hand from case sync. Sellable stock enters only
 |------|--------|
 | API | RTS stock-in scan action(s); gate Use RTS; pack/POS scan rules; sales indicators |
 | Includes | `rts_inventory_sync.php` (skip sellable sync), `honey_bottle_barcodes.php` / `dept_pouch_barcodes.php` (RTS stock-in + consume), pack session confirm, POS paths |
-| DB | Small migration: cutover flag + optional `source_barcode_unit` provenance on inventory rows (or reuse seed rows only) |
+| DB | Migration: cutover flag + **zero sellable currents** at enable; dept pool column if needed |
 | SPA | Record RTS copy; RTS inventory scan-in UI; disable sellable Use RTS qty; POS/pack scan-only for RTS; sales RTS counts |
 | Legacy / Python | none |
 
@@ -51,13 +52,25 @@ When packing/POS consumes: set `packed` / `sold` as today; deduct `rts_inventory
 
 When recording a case with bottle codes (existing path): prefer moving into the same standard (`in_stock` + `rts_sellable`) **or** leave case-receive as optional/legacy and push staff to RTS stock-in scan — prefer one path: **RTS inventory scan-in** is canonical after cutover; case `bottle_codes` should not invent sellable qty (sync already stopped).
 
-### Sellable sync cutover
+### Sellable sync cutover + hard reset
 
 In `rts_inventory_sync_run`:
 
 - If cutover flag on: for lines that would map to **sellable**, advance cursor **without** inserting/updating sellable inventory rows
 - Still sync **damaged** pool from case lines (damaged stays qty-on-case → damaged inventory mirror; no barcode required per locked decision)
 - Flag stored in DB (e.g. `rts_sync_state.sellable_from_cases TINYINT NOT NULL DEFAULT 1`) so rollback is one UPDATE
+
+**Hard reset (option 1) when enabling cutover** (same deploy step / one-shot SQL):
+
+```sql
+UPDATE rts_inventory_rows
+SET current_liter = 0, current_250ml = 0, current_350ml = 0, current_gallon = 0, current_qty = 0
+WHERE inventory_pool = 'sellable' OR inventory_pool IS NULL; -- probe: only sellable
+```
+
+- Keep row shells / `initial_*` / `source_line_item_id` for audit if useful; **UI current on-hand must read as 0** until barcode stock-in
+- Do **not** zero `inventory_pool = 'damaged'`
+- After reset, stock-in/out only mutates these currents (and/or preferred: list UI driven by unit counts with rows as rollup — implementers keep row currents in lockstep with units)
 
 ### Stock-in into RTS (new)
 
@@ -91,21 +104,21 @@ API: prefer `api/v1/rts.php` action `stock_in_scan` (or `bottle_barcodes.php` / 
 ### UI copy
 
 - Record RTS: “Saving the case does not add sellable stock — scan barcodes into RTS inventory.”
-- RTS inventory page: scan-in control + subtitle not “Synced from operational RTS records” alone; show last scan / barcode-backed note; keep historical synced qty visible.
-- Barcode labels: generate ≠ inventory (already partly true); ratio remains `status=scanned` (after cutover, scans into RTS should set scanned + unit in RTS pool — job expand can optionally show `unit_pool`).
+- RTS inventory page: scan-in control; subtitle that on-hand is **barcode-backed** (starts at 0 after cutover — not old sync/edit totals).
+- Barcode labels: generate ≠ inventory; after cutover, stock-in target = RTS sellable; job expand can show `unit_pool`.
 
 ## Implementation steps
 
 ### Phase 0 — Spec / theory gate
 
-1. [ ] Human marks [[specs/2026-08-25_rts-barcode-inventory-cutover]] approved
-2. [ ] Human approves **this** plan (checkbox below)
+1. [x] Human marks [[specs/2026-08-25_rts-barcode-inventory-cutover]] approved
+2. [x] Human approves **this** plan (checkbox below)
 3. [ ] Update [[010_Product_Theory]] §2 for barcode-backed sellable RTS (theory before code)
 4. [ ] Point [[001_System_State]] Active Spec/Plan here
 
 ### Phase 1 — Data / backend core
 
-1. [ ] Migration phase68 (name TBD): `rts_sync_state.sellable_from_cases` (default `1`); enable cutover by setting `0` on deploy
+1. [ ] Migration phase68 (name TBD): `rts_sync_state.sellable_from_cases` (default `1`); **one-shot zero sellable currents** when ops flip cutover (script or documented UPDATE in migration notes)
 2. [ ] Spike dept pouch units: confirm how to store RTS pool (add `pool` column if missing — migration)
 3. [ ] `rts_inventory_sync_run`: honor flag — skip sellable inserts; keep damaged sync; still advance `last_line_item_id`
 4. [ ] `honey_bottle_rts_stock_in_scan` + dept equivalent; bump sellable aggregates via existing seed/deduct helpers (inverse of deduct)
@@ -129,7 +142,7 @@ API: prefer `api/v1/rts.php` action `stock_in_scan` (or `bottle_barcodes.php` / 
 
 ### Phase 4 — Integration & cleanup
 
-1. [ ] Deploy migration; set `sellable_from_cases = 0` when ops ready
+1. [ ] Deploy migration; set `sellable_from_cases = 0` **and** run sellable hard-reset UPDATE when ops ready (same window)
 2. [ ] Verify loop (`tools/verify.ps1`); packaging-tester N/A
 3. [ ] Regenerate memory bank; problem record; [[002_Memory_Bank]]
 4. [ ] Archive this plan; mark spec shipped
@@ -156,17 +169,18 @@ API: prefer `api/v1/rts.php` action `stock_in_scan` (or `bottle_barcodes.php` / 
 
 ## Test plan
 
-- [ ] Record new sellable RTS case → sync runs → **sellable on-hand unchanged**; case visible in records
+- [ ] After cutover enable: RTS inventory sellable shows **0** everywhere (no pre-edit sync totals)
+- [ ] Record new sellable RTS case → sync runs → **sellable on-hand still 0**; case visible in records
 - [ ] Record damaged/leak lines → damaged pool still updates (if sync kept) / case shows lines
 - [ ] Generate RTS labels → print → scan into RTS inventory → sellable +1 per code; packaging unchanged
 - [ ] Scan production barcode (already existed) from a return into RTS → sellable +1
 - [ ] Expand job on Barcode labels → scanned ratio increases
 - [ ] POS: scan RTS unit → sale succeeds; sales log `source=rts`; sellable −1; packaging unchanged
 - [ ] POS: cannot sell RTS by qty-only toggle when cutover on
-- [ ] Pack scan: RTS unit → confirm → shipped/packed; sellable −1; sales/ship shows RTS
+- [ ] Pack scan: RTS unit → confirm → packed; sellable −1; case still in RTS Records; sales/ship shows RTS
 - [ ] Use RTS sellable button hidden/errors when cutover on
-- [ ] Historical sellable qty from old sync still visible; no mass rewrite
-- [ ] Rollback: set `sellable_from_cases = 1` restores case→sellable sync (new cases only); stock-in API can stay but ops stop using it
+- [ ] Cases / records unchanged by hard reset
+- [ ] Rollback note: flipping sync flag back does **not** restore zeroed currents (would need backup); document restore from pre-cutover dump if needed
 
 ## Risks & mitigations
 
@@ -176,18 +190,20 @@ API: prefer `api/v1/rts.php` action `stock_in_scan` (or `bottle_barcodes.php` / 
 | `status=rts` vs `in_stock` breaks POS | Normalize to `in_stock` + `pool`; migrate or coerce on stock-in |
 | Dept units lack pool | Phase 1 migration before stock-in |
 | Pack confirm always deducted packaging | Branch on unit pool |
-| Staff confusion during transition week | Copy on Record + RTS inventory; keep barcode labels generator |
-| Executive set-totals fights barcode truth | Keep executive edit as override; document; optional later lock |
+| Staff confusion during transition week | Copy on Record + RTS inventory; hard reset makes empty shelf obvious — scan to rebuild |
+| Hard reset irreversible without backup | Dump `rts_inventory_rows` sellable currents before zero; document in deploy notes |
+| Executive set-totals fights barcode truth | Prefer disable sellable executive set after cutover, or treat as rare override |
 
 ## Rollback
 
-1. `UPDATE rts_sync_state SET sellable_from_cases = 1 WHERE id = 1;`
+1. `UPDATE rts_sync_state SET sellable_from_cases = 1 WHERE id = 1;` (new cases sync sellable again)
 2. Re-enable Use RTS UI/API if gated on same flag
 3. Leave barcode units already in `rts_sellable` in place (do not auto-delete)
-4. Revert deploy if needed; migration flag column can remain
+4. **Currents:** hard reset is not undone by the flag — restore sellable currents from pre-cutover dump if ops need the old numbers back
+5. Revert deploy if needed; migration flag column can remain
 
 ## Approval
 
-- [ ] Human approved — OK to implement in Agent mode
-- Approved date: _
-- Approved by: _
+- [x] Human approved — OK to implement in Agent mode
+- Approved date: 2026-08-25
+- Approved by: user (chat)

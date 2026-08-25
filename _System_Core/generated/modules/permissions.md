@@ -1,7 +1,7 @@
 ---
 title: permissions
 source: includes/permissions.php
-generated: 2026-08-25T08:09:24+02:00
+generated: 2026-08-25T09:55:54+02:00
 type: module
 function_count: 18
 ---
@@ -124,7 +124,7 @@ function_count: 18
 - `api/v1/honey.php`:613 — `if ($productKey !== '' && !ims_user_can_dept_line($user, $productKey, 'view')) {`
 - `api/v1/honey.php`:624 — `static fn(array $item): bool => ims_user_can_dept_line($user, (string) $item['key'], 'view')`
 - `api/v1/honey.php`:707 — `if (!ims_user_can_dept_line($user, $productKey, 'view')) {`
-- `includes/dept_pouch_barcodes.php`:20 — `return ims_user_can_dept_line($user, $productKey, 'barcodes');`
+- `includes/dept_pouch_barcodes.php`:21 — `return ims_user_can_dept_line($user, $productKey, 'barcodes');`
 - `includes/honey_inventory.php`:44 — `return ims_user_can_dept_line($user, $productKey, 'produce');`
 
 ## ims_user_permissions_expanded {#ims_user_permissions_expanded}

@@ -274,6 +274,14 @@ export function POSHoneyPage() {
 
   const handleCheckout = async (stockSource: PosStockSource) => {
     if (cart.length === 0) return;
+    const hasBarcodeUnits = cart.some(l => (l.bottleUnitIds?.length ?? 0) > 0);
+    if (stockSource === "rts" && !hasBarcodeUnits) {
+      setError(
+        "RTS walk-in requires scanning bottle barcodes into the cart. Qty-only RTS checkout is disabled after barcode cutover.",
+      );
+      setShowStockSource(false);
+      return;
+    }
     setCheckingOut(true);
     setError(null);
     try {

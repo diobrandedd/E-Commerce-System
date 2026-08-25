@@ -23,6 +23,9 @@ export function POSStockSourceModal({
         <p className="text-sm text-muted-foreground mb-4">
           Are these RTS products or Non-RTS products?
         </p>
+        <p className="text-xs text-muted-foreground mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+          RTS walk-in requires scanning product barcodes into the cart. Qty-only RTS checkout is not available after barcode cutover.
+        </p>
         <div className="flex flex-col gap-2">
           <Button
             type="button"

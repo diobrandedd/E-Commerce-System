@@ -335,7 +335,7 @@ export function RTSBarcodeLabelsPage() {
   return (
     <PageLayout
       title="Barcode labels"
-      subtitle="Generate barcodes for unlabeled RTS units — many batch numbers in one continuous print, then stock-in with inventory scanners."
+      subtitle="Generate barcodes for unlabeled RTS units — print, stick, then scan stock-in on the RTS inventory page."
     >
       <AppSectionEnter className="space-y-6">
         {error ? <AppErrorBanner message={error} /> : null}
@@ -542,9 +542,10 @@ export function RTSBarcodeLabelsPage() {
         </section>
 
         <p className="text-xs text-muted-foreground">
-          After sticking, scan stock-in on Honey production or the matching dept barcode scanner. These
-          batches are marked <span className="font-mono">rts_label</span> so history shows they came from
-          RTS. Ratio counts barcodes with status <span className="font-mono">scanned</span>.
+          After sticking, scan stock-in on the <span className="font-medium text-foreground">RTS inventory</span>{" "}
+          page (not packaging / Honey production scanners). These batches are marked{" "}
+          <span className="font-mono">rts_label</span> so history shows they came from RTS. Ratio counts
+          barcodes with status <span className="font-mono">scanned</span>.
         </p>
       </AppSectionEnter>
     </PageLayout>

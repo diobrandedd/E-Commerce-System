@@ -565,6 +565,30 @@ function honey_sales_sold_snapshot(
     $onlineQty += $deptShare['shipped'];
     $shareTotal = $walkInQty + $onlineQty;
 
+    $rtsWalkIn = 0.0;
+    $rtsShipped = 0.0;
+    $rtsWhere = ' WHERE h.source = "rts" AND h.sale_type IN ("walk_in","parcel")';
+    $rtsParams = [];
+    if ($range !== null) {
+        $rtsWhere .= ' AND h.created_at >= ? AND h.created_at <= ?';
+        $rtsParams = [$range['from'] . ' 00:00:00', $range['to'] . ' 23:59:59'];
+    }
+    $rtsSt = $pdo->prepare(
+        "SELECT h.sale_type,
+                COALESCE(SUM(h.qty_liter + h.qty_250ml + h.qty_350ml + h.qty_gallon + COALESCE(h.qty_other, 0)), 0) AS qty
+         FROM honey_sales_log h
+         {$rtsWhere}
+         GROUP BY h.sale_type"
+    );
+    $rtsSt->execute($rtsParams);
+    foreach ($rtsSt->fetchAll(PDO::FETCH_ASSOC) as $rr) {
+        if ((string) $rr['sale_type'] === 'walk_in') {
+            $rtsWalkIn = (float) $rr['qty'];
+        } elseif ((string) $rr['sale_type'] === 'parcel') {
+            $rtsShipped = (float) $rr['qty'];
+        }
+    }
+
     return [
         'filter' => $filterMeta,
         'total_bottles_sold' => $all['total'],
@@ -577,6 +601,11 @@ function honey_sales_sold_snapshot(
             'total' => $all['total'],
         ],
         'dept' => $dept,
+        'rts' => [
+            'walk_in' => $rtsWalkIn,
+            'shipped' => $rtsShipped,
+            'total' => $rtsWalkIn + $rtsShipped,
+        ],
         'channel_share' => [
             'walk_in' => $walkInQty,
             'online' => $onlineQty,

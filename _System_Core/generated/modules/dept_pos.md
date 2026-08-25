@@ -1,7 +1,7 @@
 ---
 title: dept_pos
 source: includes/dept_pos.php
-generated: 2026-08-25T08:08:57+02:00
+generated: 2026-08-25T09:55:30+02:00
 type: module
 function_count: 5
 ---
@@ -20,6 +20,7 @@ function_count: 5
 - `includes/ar_credits.php`
 - `includes/honey_pos.php`
 - `includes/dept_pouch_barcodes.php`
+- `includes/rts_inventory_sync.php`
 - `includes/rts_inventory_sync.php`
 - `includes/rts_inventory_sync.php`
 - `includes/rts_inventory_sync.php`
@@ -43,8 +44,8 @@ function_count: 5
 
 **Callers (3):**
 
-- `includes/dept_pos.php`:200 — `$cleanLines = dept_pos_build_cart_lines($pdo, $items, $discountFactor, $stockSource);`
-- `includes/dept_pos.php`:351 — `$cleanLines = dept_pos_build_cart_lines($pdo, $items, 1.0, $stockSource);`
+- `includes/dept_pos.php`:205 — `$cleanLines = dept_pos_build_cart_lines($pdo, $items, $discountFactor, $stockSource);`
+- `includes/dept_pos.php`:356 — `$cleanLines = dept_pos_build_cart_lines($pdo, $items, 1.0, $stockSource);`
 - `includes/pos_discount_requests.php`:38 — `$clean = dept_pos_build_cart_lines($pdo, $items, $discountFactor);`
 
 ## dept_pos_checkout {#dept_pos_checkout}

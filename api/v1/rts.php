@@ -31,6 +31,7 @@ api_dispatch([
     'inventory_use_log' => 'api_rts_inventory_use_log',
     'inventory_set_honey' => 'api_rts_inventory_set_honey',
     'inventory_set_other' => 'api_rts_inventory_set_other',
+    'stock_in_scan' => 'api_rts_stock_in_scan',
     'use_damaged' => 'api_rts_use_damaged',
     'damaged_use_log' => 'api_rts_damaged_use_log',
     'sync_status' => 'api_rts_sync_status_action',
@@ -165,8 +166,42 @@ function api_rts_inventory_list(): void
         'can_mutate' => api_rts_role_can_mutate($user),
         'can_use_damaged' => api_rts_role_can_use_damaged($user),
         'can_executive_edit' => ims_user_can($user, 'honey.executive_edit'),
+        'can_use_rts_qty' => !empty($sync['sellable_from_cases']),
+        'barcode_backed_sellable' => empty($sync['sellable_from_cases']),
         'pool' => $pool,
     ]);
+}
+
+function api_rts_stock_in_scan(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_ims_user();
+    if (!api_rts_role_can_mutate($user)) {
+        api_fail('Forbidden.', 403);
+    }
+    $code = trim((string) ($input['code'] ?? ''));
+    if ($code === '') {
+        api_fail('Barcode is required.');
+    }
+    require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
+    require_once dirname(__DIR__, 2) . '/includes/dept_pouch_barcodes.php';
+    try {
+        $honeyRow = honey_bottle_fetch_code_row(ims_pdo(), $code);
+        if ($honeyRow !== null) {
+            api_ok([
+                'kind' => 'honey',
+                'unit' => honey_bottle_rts_stock_in_scan(ims_pdo(), (int) $user['id'], $code),
+            ]);
+        }
+        api_ok([
+            'kind' => 'dept',
+            'unit' => dept_pouch_rts_stock_in_scan(ims_pdo(), (int) $user['id'], $code),
+        ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
 }
 
 function api_rts_use_damaged(): void
@@ -222,6 +257,9 @@ function api_rts_inventory_deduct_sell(): void
         $pool = trim((string) ($input['pool'] ?? 'sellable'));
         if (!in_array($pool, ['sellable', 'damaged'], true)) {
             $pool = 'sellable';
+        }
+        if ($pool === 'sellable' && !rts_sellable_from_cases_enabled(ims_pdo())) {
+            api_fail('Qty Use RTS is disabled — scan RTS barcodes for packing or POS.', 400);
         }
         $useOpts = [
             'used_where' => 'packaging',

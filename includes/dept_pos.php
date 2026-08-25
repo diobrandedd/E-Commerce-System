@@ -108,7 +108,12 @@ function dept_pos_build_cart_lines(PDO $pdo, array $items, float $discountFactor
                 }
             }
         } elseif (dept_pouch_supports($productKey) && $stockSource === 'rts' && $unitIds === []) {
-            // Qty RTS sell still allowed without stickers (RTS pool has no pouch unit link yet).
+            require_once __DIR__ . '/rts_inventory_sync.php';
+            if (!rts_sellable_from_cases_enabled($pdo)) {
+                throw new RuntimeException(
+                    'RTS walk-in must scan product barcodes (qty-only Use RTS is disabled).'
+                );
+            }
         }
 
         $st = $pdo->prepare(

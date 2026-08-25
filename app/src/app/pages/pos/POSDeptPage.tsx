@@ -233,7 +233,9 @@ export function POSDeptPage() {
   const checkout = async (stockSource: PosStockSource) => {
     if (cart.length === 0) return;
     if (stockSource === "rts") {
-      setError("Scan packaging stickers for walk-in sell. Use RTS stock source only for non-barcode RTS qty sales.");
+      setError(
+        "RTS walk-in requires scanning unit barcodes into the cart. Qty-only RTS is disabled — use Non-RTS for packaging stock, or scan RTS stickers first.",
+      );
       setShowStockSource(false);
       return;
     }

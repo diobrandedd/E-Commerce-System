@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/dept_inventory.php';
 require_once __DIR__ . '/dept_production.php';
+require_once __DIR__ . '/rts_schema.php';
 
 const DEPT_POUCH_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 const DEPT_POUCH_CODE_LENGTH = 6;
@@ -979,6 +980,8 @@ function dept_pouch_pos_consume(PDO $pdo, array $unitIds, int $saleId): void
         return;
     }
     require_once __DIR__ . '/dept_inventory.php';
+    require_once __DIR__ . '/rts_inventory_sync.php';
+    $hasPool = rts_db_has_column($pdo, 'dept_pouch_units', 'pool');
     foreach ($unitIds as $unitId) {
         $unitId = (int) $unitId;
         if ($unitId < 1) {
@@ -994,6 +997,7 @@ function dept_pouch_pos_consume(PDO $pdo, array $unitIds, int $saleId): void
             throw new RuntimeException('A scanned unit is no longer in stock.');
         }
         $productKey = (string) $unit['product_key'];
+        $pool = $hasPool ? (string) ($unit['pool'] ?? 'finished') : 'finished';
         $upd = $pdo->prepare(
             'UPDATE dept_pouch_units
              SET status = "sold", consumed_at = NOW(), consumed_ref_type = "pos_sale", consumed_ref_id = ?
@@ -1003,7 +1007,22 @@ function dept_pouch_pos_consume(PDO $pdo, array $unitIds, int $saleId): void
         if ($upd->rowCount() < 1) {
             throw new RuntimeException('Could not mark unit as sold.');
         }
-        dept_inventory_deduct($pdo, $productKey, 1.0);
+        if ($pool === 'rts_sellable') {
+            rts_inventory_deduct_sell_other_label(
+                $pdo,
+                0,
+                dept_pouch_product_label($productKey),
+                1.0,
+                'walk_in',
+                'sellable',
+                [
+                    'used_where' => 'pos',
+                    'pos_sale_id' => $saleId,
+                ]
+            );
+        } else {
+            dept_inventory_deduct($pdo, $productKey, 1.0);
+        }
     }
 }
 
@@ -1016,7 +1035,8 @@ function dept_pouch_rts_receive(PDO $pdo, array $codes, string $pool): array
     if (!in_array($pool, ['rts_sellable', 'rts_damaged'], true)) {
         throw new RuntimeException('Invalid RTS pool.');
     }
-    $targetStatus = $pool === 'rts_damaged' ? 'damaged' : 'rts';
+    $hasPool = rts_db_has_column($pdo, 'dept_pouch_units', 'pool');
+    $targetStatus = $pool === 'rts_damaged' ? 'damaged' : 'in_stock';
     $received = [];
     $warnings = [];
     foreach ($codes as $raw) {
@@ -1046,11 +1066,20 @@ function dept_pouch_rts_receive(PDO $pdo, array $codes, string $pool): array
         if ($unitStatus === 'in_stock') {
             $warnings[] = $code . ': still in stock — pack scan was missed.';
         }
-        $pdo->prepare(
-            'UPDATE dept_pouch_units
-             SET status = ?, consumed_at = NOW(), consumed_ref_type = "rts_case", consumed_ref_id = NULL
-             WHERE id = ?'
-        )->execute([$targetStatus, (int) $row['unit_id']]);
+        if ($hasPool) {
+            $pdo->prepare(
+                'UPDATE dept_pouch_units
+                 SET status = ?, pool = ?, consumed_at = NULL, consumed_ref_type = NULL, consumed_ref_id = NULL
+                 WHERE id = ?'
+            )->execute([$targetStatus, $pool, (int) $row['unit_id']]);
+        } else {
+            $legacyStatus = $pool === 'rts_damaged' ? 'damaged' : 'rts';
+            $pdo->prepare(
+                'UPDATE dept_pouch_units
+                 SET status = ?, consumed_at = NOW(), consumed_ref_type = "rts_case", consumed_ref_id = NULL
+                 WHERE id = ?'
+            )->execute([$legacyStatus, (int) $row['unit_id']]);
+        }
         $productKey = (string) $row['product_key'];
         $received[] = [
             'code' => (string) $row['code'],
@@ -1062,6 +1091,101 @@ function dept_pouch_rts_receive(PDO $pdo, array $codes, string $pool): array
     }
 
     return ['received' => $received, 'warnings' => $warnings];
+}
+
+/**
+ * Scan a dept pouch/jar barcode into RTS sellable inventory.
+ *
+ * @return array<string, mixed>
+ */
+function dept_pouch_rts_stock_in_scan(PDO $pdo, int $userId, string $code): array
+{
+    require_once __DIR__ . '/rts_inventory_sync.php';
+    if (!rts_db_has_column($pdo, 'dept_pouch_units', 'pool')) {
+        throw new RuntimeException('Run migration phase68 (dept_pouch_units.pool) before RTS stock-in.');
+    }
+    $code = dept_pouch_normalize_code($code);
+    $owns = !$pdo->inTransaction();
+    if ($owns) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $st = $pdo->prepare(
+            'SELECT c.*, b.product_key, b.batch_no,
+                    un.id AS unit_id, un.status AS unit_status, un.pool AS unit_pool
+             FROM dept_pouch_barcodes c
+             INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
+             LEFT JOIN dept_pouch_units un ON un.barcode_id = c.id
+             WHERE c.code = ? LIMIT 1 FOR UPDATE'
+        );
+        $st->execute([$code]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row === false) {
+            throw new RuntimeException('Unknown barcode.');
+        }
+        if ((string) $row['status'] === 'void') {
+            throw new RuntimeException('This barcode is void.');
+        }
+        $productKey = dept_pouch_normalize_product_key((string) $row['product_key']);
+        $label = dept_pouch_product_label($productKey);
+        $unitId = $row['unit_id'] !== null ? (int) $row['unit_id'] : 0;
+
+        if ($unitId > 0) {
+            $unitStatus = (string) ($row['unit_status'] ?? '');
+            $unitPool = (string) ($row['unit_pool'] ?? 'finished');
+            if ($unitPool === 'rts_sellable' && $unitStatus === 'in_stock') {
+                throw new RuntimeException('Already in RTS inventory.');
+            }
+            if ($unitPool === 'finished' && $unitStatus === 'in_stock') {
+                throw new RuntimeException(
+                    'This unit is still in finished stock. Use the dept scanner — do not move with RTS stock-in.'
+                );
+            }
+            if (!in_array($unitStatus, ['packed', 'sold', 'shipped', 'rts'], true)) {
+                throw new RuntimeException('This unit cannot enter RTS inventory (' . $unitStatus . ').');
+            }
+            $pdo->prepare(
+                'UPDATE dept_pouch_units
+                 SET status = "in_stock", pool = "rts_sellable",
+                     consumed_at = NULL, consumed_ref_type = NULL, consumed_ref_id = NULL
+                 WHERE id = ?'
+            )->execute([$unitId]);
+            if ((string) $row['status'] !== 'scanned') {
+                $pdo->prepare(
+                    'UPDATE dept_pouch_barcodes SET status = "scanned", scanned_at = COALESCE(scanned_at, NOW()), scanned_by = ?
+                     WHERE id = ?'
+                )->execute([$userId, (int) $row['id']]);
+            }
+            rts_inventory_credit_sellable_other($pdo, $label, 1.0);
+        } else {
+            $pdo->prepare(
+                'UPDATE dept_pouch_barcodes SET status = "scanned", scanned_at = NOW(), scanned_by = ? WHERE id = ?'
+            )->execute([$userId, (int) $row['id']]);
+            $pdo->prepare(
+                'INSERT INTO dept_pouch_units (barcode_id, product_key, batch_no, status, pool, created_date)
+                 VALUES (?, ?, ?, "in_stock", "rts_sellable", CURDATE())'
+            )->execute([(int) $row['id'], $productKey, (string) $row['batch_no']]);
+            $unitId = (int) $pdo->lastInsertId();
+            rts_inventory_credit_sellable_other($pdo, $label, 1.0);
+        }
+
+        if ($owns) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($owns && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    return [
+        'code' => $code,
+        'product_key' => $productKey,
+        'product_label' => $label,
+        'unit_id' => $unitId,
+        'rts_stock_in' => true,
+    ];
 }
 
 /**

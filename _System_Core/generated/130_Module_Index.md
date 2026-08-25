@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-08-25T08:08:51+02:00
+generated: 2026-08-25T09:55:24+02:00
 type: memory-bank
 ---
 
@@ -30,7 +30,7 @@ type: memory-bank
 | [[modules/delivery_edit_requests]] | 15 |
 | [[modules/dept_inventory]] | 17 |
 | [[modules/dept_pos]] | 5 |
-| [[modules/dept_pouch_barcodes]] | 34 |
+| [[modules/dept_pouch_barcodes]] | 35 |
 | [[modules/dept_pricing]] | 8 |
 | [[modules/dept_production]] | 29 |
 | [[modules/dept_products]] | 23 |
@@ -39,7 +39,7 @@ type: memory-bank
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 33 |
 | [[modules/historical_orders_import]] | 25 |
-| [[modules/honey_bottle_barcodes]] | 57 |
+| [[modules/honey_bottle_barcodes]] | 58 |
 | [[modules/honey_inventory]] | 47 |
 | [[modules/honey_parcel_inventory]] | 4 |
 | [[modules/honey_parcel_item_parser]] | 17 |
@@ -68,7 +68,7 @@ type: memory-bank
 | [[modules/rts_case_handlers]] | 28 |
 | [[modules/rts_claim_status]] | 3 |
 | [[modules/rts_damaged_use]] | 6 |
-| [[modules/rts_inventory_sync]] | 22 |
+| [[modules/rts_inventory_sync]] | 25 |
 | [[modules/rts_prefill]] | 8 |
 | [[modules/rts_products]] | 14 |
 | [[modules/rts_schema]] | 13 |

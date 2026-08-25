@@ -69,6 +69,20 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
     setSubmitting(true);
     setError(null);
     try {
+      const hasUnitBarcodes = lines.some(
+        l => (l.bottleUnitIds?.length ?? 0) > 0 || (l.pouchUnitIds?.length ?? 0) > 0,
+      );
+      const resolvedSource =
+        mode === "unified" || (mode === "dept" && lines.some(l => (l.pouchUnitIds?.length ?? 0) > 0))
+          ? "packaging"
+          : stockSource;
+      if (resolvedSource === "rts" && !hasUnitBarcodes) {
+        setError(
+          "RTS AR requires scanned unit barcodes in the cart. Qty-only RTS is disabled after barcode cutover.",
+        );
+        setSubmitting(false);
+        return;
+      }
       const action =
         mode === "honey" ? "honey_ar_checkout" : mode === "dept" ? "dept_ar_checkout" : "unified_ar_checkout";
       const items =
@@ -104,10 +118,7 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
         debtor_user_id: debtor.debtor_user_id,
         debtor_name: debtorName,
         debtor_mobile: mobile.trim(),
-        stock_source:
-          mode === "unified" || (mode === "dept" && lines.some(l => (l.pouchUnitIds?.length ?? 0) > 0))
-            ? "packaging"
-            : stockSource,
+        stock_source: resolvedSource,
       });
       onSuccess(result);
     } catch (e) {
@@ -155,6 +166,11 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
             Non-RTS
           </button>
         </div>
+        {stockSource === "rts" && !lines.some(l => (l.bottleUnitIds?.length ?? 0) > 0 || (l.pouchUnitIds?.length ?? 0) > 0) ? (
+          <p className="text-xs text-amber-800 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+            RTS AR requires scanned unit barcodes in the cart. Qty-only RTS is not available after barcode cutover.
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-3 mb-4">

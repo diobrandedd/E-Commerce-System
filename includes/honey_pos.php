@@ -337,6 +337,14 @@ function honey_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyer
         }
 
         if ($unitIds === []) {
+            if ($stockSource === 'rts') {
+                require_once __DIR__ . '/rts_inventory_sync.php';
+                if (!rts_sellable_from_cases_enabled($pdo)) {
+                    throw new RuntimeException(
+                        'RTS walk-in must scan product barcodes (qty-only Use RTS is disabled).'
+                    );
+                }
+            }
             $avail = $stockSource === 'rts'
                 ? rts_inventory_available_honey($pdo, $variant, $size, 'sellable')
                 : honey_pos_available_qty($pdo, $variant, $size);
@@ -560,6 +568,14 @@ function honey_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $deb
         }
 
         if ($unitIds === []) {
+            if ($stockSource === 'rts') {
+                require_once __DIR__ . '/rts_inventory_sync.php';
+                if (!rts_sellable_from_cases_enabled($pdo)) {
+                    throw new RuntimeException(
+                        'RTS walk-in must scan product barcodes (qty-only Use RTS is disabled).'
+                    );
+                }
+            }
             $avail = $stockSource === 'rts'
                 ? rts_inventory_available_honey($pdo, $variant, $size, 'sellable')
                 : honey_pos_available_qty($pdo, $variant, $size);

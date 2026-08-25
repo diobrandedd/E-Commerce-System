@@ -69,6 +69,11 @@ interface SalesSnapshot {
     shipped: number;
     total: number;
   };
+  rts?: {
+    walk_in: number;
+    shipped: number;
+    total: number;
+  };
   channel_share?: {
     walk_in: number;
     online: number;
@@ -266,6 +271,12 @@ export function SalesPage() {
             <p className="text-2xl font-bold text-foreground mt-1">
               {loading ? "…" : fmtQty(data?.total_units_sold ?? data?.total_bottles_sold ?? 0)} total units
             </p>
+            {!loading && data?.rts ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                RTS barcode: walk-in {fmtQty(data.rts.walk_in)} · shipped {fmtQty(data.rts.shipped)}
+                {data.rts.total > 0 ? ` · ${fmtQty(data.rts.total)} total` : ""}
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-end gap-2">
             <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
