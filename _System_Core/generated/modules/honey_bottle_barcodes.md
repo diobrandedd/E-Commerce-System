@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-08-25T09:55:37+02:00
+generated: 2026-08-26T04:06:52+02:00
 type: module
 function_count: 58
 ---
@@ -41,7 +41,7 @@ function_count: 58
 - `includes/inventory_check.php`:478 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
 - `includes/inventory_check.php`:770 — `'size_label' => $size !== '' ? honey_bottle_size_label($size) : null,`
 - `includes/inventory_check.php`:829 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
-- `includes/pack_cancel_restock.php`:75 — `$sizeLabel = honey_bottle_size_label($size);`
+- `includes/pack_cancel_restock.php`:87 — `$sizeLabel = honey_bottle_size_label($size);`
 - `includes/pos_unified.php`:144 — `ucfirst($variant) . ' · ' . honey_bottle_size_label($size)`
 - `includes/pos_unified.php`:150 — `'size_label' => honey_bottle_size_label($size),`
 - `includes/rts_barcode_labels.php`:99 — `'size_label' => $size !== null ? honey_bottle_size_label($size) : null,`
@@ -103,7 +103,7 @@ function_count: 58
 - `includes/honey_bottle_barcodes.php`:1391 — `$code = honey_bottle_normalize_code($code);`
 - `includes/honey_bottle_barcodes.php`:1878 — `$code = honey_bottle_normalize_code($code);`
 - `includes/honey_bottle_barcodes.php`:1952 — `$code = honey_bottle_normalize_code((string) $raw);`
-- `includes/pack_cancel_restock.php`:153 — `$code = honey_bottle_normalize_code($code);`
+- `includes/pack_cancel_restock.php`:177 — `$code = honey_bottle_normalize_code($code);`
 
 ## honey_bottle_random_code {#honey_bottle_random_code}
 
@@ -146,7 +146,7 @@ function_count: 58
 - `includes/honey_bottle_barcodes.php`:1621 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, -1);`
 - `includes/honey_bottle_barcodes.php`:1839 — `honey_bottle_adjust_aggregate($pdo, $packId, (string) $unit['size'], -1);`
 - `includes/honey_bottle_barcodes.php`:1910 — `honey_bottle_adjust_aggregate($pdo, $packId, (string) $unit['size'], 1);`
-- `includes/pack_cancel_restock.php`:334 — `honey_bottle_adjust_aggregate($pdo, $packId, (string) $item['size'], 1.0);`
+- `includes/pack_cancel_restock.php`:386 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, 1.0);`
 
 ## honey_bottle_request_create {#honey_bottle_request_create}
 
@@ -258,7 +258,7 @@ function_count: 58
 - `includes/honey_bottle_barcodes.php`:1396 — `$row = honey_bottle_fetch_code_row($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:1787 — `$row = honey_bottle_fetch_code_row($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:1956 — `$row = honey_bottle_fetch_code_row($pdo, $code);`
-- `includes/pack_cancel_restock.php`:159 — `$honey = honey_bottle_fetch_code_row($pdo, $code);`
+- `includes/pack_cancel_restock.php`:183 — `$honey = honey_bottle_fetch_code_row($pdo, $code);`
 
 ## honey_bottle_lookup {#honey_bottle_lookup}
 
@@ -282,7 +282,7 @@ function_count: 58
 - `includes/honey_bottle_barcodes.php`:1450 — `'lookup' => honey_bottle_serialize_lookup($row),`
 - `includes/honey_bottle_barcodes.php`:1791 — `$lookup = honey_bottle_serialize_lookup($row);`
 - `includes/honey_bottle_barcodes.php`:1982 — `$received[] = honey_bottle_serialize_lookup($row);`
-- `includes/pack_cancel_restock.php`:173 — `$lookup = honey_bottle_serialize_lookup($row);`
+- `includes/pack_cancel_restock.php`:197 — `$lookup = honey_bottle_serialize_lookup($row);`
 
 ## honey_bottle_scan_report_date {#honey_bottle_scan_report_date}
 
@@ -415,11 +415,12 @@ function_count: 58
 
 **Tables:** `honey_sales_log`
 
-**Callers (3):**
+**Callers (4):**
 
 - `includes/honey_bottle_barcodes.php`:1623 — `honey_bottle_write_sale_log($pdo, [`
 - `includes/honey_bottle_barcodes.php`:1856 — `honey_bottle_write_sale_log($pdo, [`
 - `includes/honey_bottle_barcodes.php`:1912 — `honey_bottle_write_sale_log($pdo, [`
+- `includes/pack_cancel_restock.php`:396 — `honey_bottle_write_sale_log($pdo, [`
 
 ## honey_bottle_pos_lookup {#honey_bottle_pos_lookup}
 

@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-08-25T09:55:23+02:00
+generated: 2026-08-26T04:06:32+02:00
 type: memory-bank
-edge_count: 340
+edge_count: 347
 ---
 
 
@@ -211,12 +211,16 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_pos.php` | `includes/rts_inventory_sync.php` |
 | `includes/honey_pos.php` | `includes/rts_inventory_sync.php` |
 | `includes/honey_pos.php` | `includes/rts_inventory_sync.php` |
+| `includes/honey_pos.php` | `includes/rts_schema.php` |
+| `includes/honey_pos.php` | `includes/rts_schema.php` |
 | `includes/honey_pricing.php` | `api/v1/_costing_helpers.php` |
 | `includes/honey_pricing.php` | `includes/honey_inventory.php` |
 | `includes/honey_pricing.php` | `includes/honey_pos.php` |
 | `includes/honey_pricing.php` | `includes/honey_volume.php` |
 | `includes/honey_sales_report.php` | `includes/dashboard_inventory.php` |
 | `includes/honey_sales_report.php` | `includes/dept_products.php` |
+| `includes/honey_sales_report.php` | `includes/honey_pos.php` |
+| `includes/honey_sales_report.php` | `includes/rts_schema.php` |
 | `includes/inventory_check.php` | `includes/dept_inventory.php` |
 | `includes/inventory_check.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/inventory_check.php` | `includes/honey_bottle_barcodes.php` |
@@ -249,6 +253,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pack_cancel_restock.php` | `includes/dept_inventory.php` |
 | `includes/pack_cancel_restock.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/pack_cancel_restock.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/pack_cancel_restock.php` | `includes/honey_pos.php` |
+| `includes/pack_cancel_restock.php` | `includes/rts_inventory_sync.php` |
+| `includes/pack_cancel_restock.php` | `includes/rts_schema.php` |
 | `includes/parcel_pack_costing.php` | `includes/dept_inventory.php` |
 | `includes/parcel_pack_costing.php` | `includes/dept_products.php` |
 | `includes/parcel_pack_costing.php` | `includes/honey_parcel_item_parser.php` |

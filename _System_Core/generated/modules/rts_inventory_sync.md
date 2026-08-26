@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-08-25T09:55:59+02:00
+generated: 2026-08-26T04:07:23+02:00
 type: module
 function_count: 25
 ---
@@ -89,19 +89,21 @@ function_count: 25
 
 **Tables:** `rts_inventory_rows`
 
-**Callers (2):**
+**Callers (3):**
 
 - `includes/honey_bottle_barcodes.php`:1017 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
 - `includes/honey_bottle_barcodes.php`:1037 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
+- `includes/pack_cancel_restock.php`:384 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
 
 ## rts_inventory_credit_sellable_other {#rts_inventory_credit_sellable_other}
 
 **Tables:** `rts_inventory_rows`
 
-**Callers (2):**
+**Callers (3):**
 
 - `includes/dept_pouch_barcodes.php`:1159 — `rts_inventory_credit_sellable_other($pdo, $label, 1.0);`
 - `includes/dept_pouch_barcodes.php`:1169 — `rts_inventory_credit_sellable_other($pdo, $label, 1.0);`
+- `includes/pack_cancel_restock.php`:434 — `rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), 1.0);`
 
 ## rts_inventory_pool_filter_sql {#rts_inventory_pool_filter_sql}
 

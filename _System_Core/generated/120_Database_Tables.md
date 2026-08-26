@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-08-25T09:55:24+02:00
+generated: 2026-08-26T04:06:33+02:00
 type: memory-bank
 table_count: 87
 ---
@@ -387,6 +387,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_build_cart_lines]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_load_formula_lines]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_product_map]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_reverse_one_unit]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_product_exists_clause]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_checkout_where_clause]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
@@ -773,6 +774,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_opened_return_scan]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_batch_codes]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_load_checkout_barcodes]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_scan_stats]] |
@@ -799,6 +801,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_unit_count_for_row]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_reconcile]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_stock_summary]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_heal_returned_units]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_load_checkout_barcodes]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
@@ -865,6 +869,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_ar_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_ar_checkout]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_recalc_totals]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_reverse_one_unit]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
@@ -881,6 +887,9 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_ar_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_ar_checkout]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_recalc_totals]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_reverse_one_unit]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_heal_returned_units]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_product_exists_clause]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_checkout_where_clause]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
@@ -1106,7 +1115,10 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_log_sale]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_log_sale]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_id_for_honey_unit]] |
+| `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_heal_returned_units]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_checkout_where_clause]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_load_checkout_barcodes]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_case_replace_line_items]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_honey_variant]] |

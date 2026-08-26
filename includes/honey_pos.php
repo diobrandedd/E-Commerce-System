@@ -735,3 +735,228 @@ function honey_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $deb
         'debtor_mobile' => $debtorMobile !== '' ? $debtorMobile : null,
     ];
 }
+
+/**
+ * Recalculate pos_sales money fields from remaining receipt lines.
+ * Caller should already be in a transaction when mutating lines.
+ */
+function pos_sale_recalc_totals(PDO $pdo, int $saleId): void
+{
+    $saleId = (int) $saleId;
+    if ($saleId < 1) {
+        return;
+    }
+    $hasList = honey_pos_column_exists($pdo, 'pos_receipt_items', 'list_unit_price');
+    $st = $pdo->prepare(
+        'SELECT qty, unit_price, line_total'
+        . ($hasList ? ', list_unit_price' : '')
+        . ' FROM pos_receipt_items WHERE sale_id = ?'
+    );
+    $st->execute([$saleId]);
+    $subtotal = 0.0;
+    $total = 0.0;
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $qty = (float) ($row['qty'] ?? 0);
+        $list = $hasList
+            ? (float) ($row['list_unit_price'] ?? $row['unit_price'] ?? 0)
+            : (float) ($row['unit_price'] ?? 0);
+        $subtotal += round($list * $qty, 2);
+        $total += round((float) ($row['line_total'] ?? 0), 2);
+    }
+    $subtotal = round($subtotal, 2);
+    $total = round($total, 2);
+    $discountAmount = round(max(0, $subtotal - $total), 2);
+    $hasSub = honey_pos_column_exists($pdo, 'pos_sales', 'subtotal_amount');
+    $hasDiscAmt = honey_pos_column_exists($pdo, 'pos_sales', 'discount_amount');
+    if ($hasSub && $hasDiscAmt) {
+        $pdo->prepare(
+            'UPDATE pos_sales
+             SET subtotal_amount = ?, discount_amount = ?, total_amount = ?
+             WHERE id = ?'
+        )->execute([$subtotal, $discountAmount, $total, $saleId]);
+    } else {
+        $pdo->prepare('UPDATE pos_sales SET total_amount = ? WHERE id = ?')
+            ->execute([$total, $saleId]);
+    }
+}
+
+/**
+ * Remove one unit from a POS receipt (qty−1 or delete line) and recalc totals.
+ *
+ * @param array{variant?: string, size?: string, product_key?: string} $match
+ */
+function pos_sale_reverse_one_unit(PDO $pdo, int $saleId, string $kind, array $match): void
+{
+    $saleId = (int) $saleId;
+    if ($saleId < 1) {
+        return;
+    }
+    $kind = strtolower(trim($kind));
+    $hasVariant = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');
+    $hasList = honey_pos_column_exists($pdo, 'pos_receipt_items', 'list_unit_price');
+
+    $lock = $pdo->prepare('SELECT id FROM pos_sales WHERE id = ? FOR UPDATE');
+    $lock->execute([$saleId]);
+    if ($lock->fetchColumn() === false) {
+        return;
+    }
+
+    if ($kind === 'honey' && $hasVariant) {
+        $variant = strtolower(trim((string) ($match['variant'] ?? '')));
+        $size = trim((string) ($match['size'] ?? ''));
+        if ($variant === '' || $size === '') {
+            return;
+        }
+        $st = $pdo->prepare(
+            'SELECT id, qty, unit_price'
+            . ($hasList ? ', list_unit_price' : '')
+            . ' FROM pos_receipt_items
+             WHERE sale_id = ? AND LOWER(TRIM(variant)) = ? AND size = ? AND qty >= 1
+             ORDER BY id DESC LIMIT 1 FOR UPDATE'
+        );
+        $st->execute([$saleId, $variant, $size]);
+    } elseif ($kind === 'dept') {
+        $productKey = strtolower(trim((string) ($match['product_key'] ?? '')));
+        if ($productKey === '') {
+            return;
+        }
+        $st = $pdo->prepare(
+            'SELECT pri.id, pri.qty, pri.unit_price'
+            . ($hasList ? ', pri.list_unit_price' : '')
+            . ' FROM pos_receipt_items pri
+             INNER JOIN products p ON p.id = pri.product_id
+             WHERE pri.sale_id = ? AND LOWER(TRIM(p.dept_product_key)) = ? AND pri.qty >= 1
+             ORDER BY pri.id DESC LIMIT 1 FOR UPDATE'
+        );
+        $st->execute([$saleId, $productKey]);
+    } else {
+        return;
+    }
+
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        return;
+    }
+    $lineId = (int) $row['id'];
+    $qty = (float) $row['qty'];
+    $unitPrice = (float) $row['unit_price'];
+    $listUnit = $hasList ? (float) ($row['list_unit_price'] ?? $unitPrice) : $unitPrice;
+
+    if ($qty <= 1.0001) {
+        $pdo->prepare('DELETE FROM pos_receipt_items WHERE id = ? AND sale_id = ?')
+            ->execute([$lineId, $saleId]);
+    } else {
+        $newQty = round($qty - 1, 2);
+        $lineTotal = round($unitPrice * $newQty, 2);
+        if ($hasList) {
+            $pdo->prepare(
+                'UPDATE pos_receipt_items SET qty = ?, line_total = ? WHERE id = ? AND sale_id = ?'
+            )->execute([$newQty, $lineTotal, $lineId, $saleId]);
+        } else {
+            $pdo->prepare(
+                'UPDATE pos_receipt_items SET qty = ?, line_total = ? WHERE id = ? AND sale_id = ?'
+            )->execute([$newQty, $lineTotal, $lineId, $saleId]);
+        }
+        unset($listUnit); // kept for clarity / future list_line sync
+    }
+
+    pos_sale_recalc_totals($pdo, $saleId);
+}
+
+/**
+ * Resolve POS sale id for a sold honey bottle unit.
+ */
+function pos_sale_id_for_honey_unit(PDO $pdo, int $unitId, ?int $consumedRefId = null): int
+{
+    if ($consumedRefId !== null && $consumedRefId > 0) {
+        return $consumedRefId;
+    }
+    require_once __DIR__ . '/rts_schema.php';
+    if (!rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id')
+        || !rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id')) {
+        return 0;
+    }
+    $st = $pdo->prepare(
+        'SELECT pos_sale_id FROM honey_sales_log
+         WHERE bottle_unit_id = ? AND pos_sale_id IS NOT NULL
+           AND (COALESCE(qty_liter,0)+COALESCE(qty_250ml,0)+COALESCE(qty_350ml,0)+COALESCE(qty_gallon,0)) > 0
+         ORDER BY id DESC LIMIT 1'
+    );
+    $st->execute([$unitId]);
+    return (int) ($st->fetchColumn() ?: 0);
+}
+
+/**
+ * Heal receipt money when units were restocked before totals were reduced.
+ * Idempotent: only reverses while receipt qty exceeds still-sold barcode count.
+ */
+function pos_sale_heal_returned_units(PDO $pdo, int $saleId): void
+{
+    $saleId = (int) $saleId;
+    if ($saleId < 1) {
+        return;
+    }
+    require_once __DIR__ . '/rts_schema.php';
+
+    $activeHoney = [];
+    $returnedHoney = [];
+    if (rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id')) {
+        $st = $pdo->prepare(
+            'SELECT u.variant, u.size, u.status,
+                    (COALESCE(h.qty_liter,0)+COALESCE(h.qty_250ml,0)+COALESCE(h.qty_350ml,0)+COALESCE(h.qty_gallon,0)) AS qty_signed
+             FROM honey_sales_log h
+             INNER JOIN honey_bottle_units u ON u.id = h.bottle_unit_id
+             WHERE h.pos_sale_id = ? AND h.bottle_unit_id IS NOT NULL'
+        );
+        $st->execute([$saleId]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            if ((float) ($row['qty_signed'] ?? 0) <= 0) {
+                continue;
+            }
+            $key = strtolower(trim((string) $row['variant'])) . '|' . trim((string) $row['size']);
+            if ((string) $row['status'] === 'sold') {
+                $activeHoney[$key] = ($activeHoney[$key] ?? 0) + 1;
+            } else {
+                $returnedHoney[$key] = ($returnedHoney[$key] ?? 0) + 1;
+            }
+        }
+    }
+
+    $hasVariant = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');
+    if ($hasVariant && $returnedHoney !== []) {
+        $st = $pdo->prepare(
+            'SELECT LOWER(TRIM(variant)) AS variant, size, SUM(qty) AS qty
+             FROM pos_receipt_items
+             WHERE sale_id = ? AND variant IS NOT NULL AND variant != ""
+             GROUP BY LOWER(TRIM(variant)), size'
+        );
+        $st->execute([$saleId]);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $key = (string) $row['variant'] . '|' . trim((string) $row['size']);
+            $receiptQty = (int) round((float) $row['qty']);
+            $active = $activeHoney[$key] ?? 0;
+            $extra = $receiptQty - $active;
+            if ($extra < 1) {
+                continue;
+            }
+            // Only heal up to known returned count for this key.
+            $extra = min($extra, $returnedHoney[$key] ?? $extra);
+            [$variant, $size] = explode('|', $key, 2);
+            for ($i = 0; $i < $extra; $i++) {
+                pos_sale_reverse_one_unit($pdo, $saleId, 'honey', [
+                    'variant' => $variant,
+                    'size' => $size,
+                ]);
+            }
+        }
+    }
+
+    $st = $pdo->prepare(
+        'SELECT un.product_key, un.status
+         FROM dept_pouch_units un
+         WHERE un.consumed_ref_type = "pos_sale" AND un.consumed_ref_id = ?'
+    );
+    // Dept returned units lose consumed_ref — heal dept from remaining sold links vs receipt only when we still have sold refs.
+    // For dept returns after clear, match via nothing reliable without sales log; skip dept heal here.
+}
+

@@ -19,6 +19,9 @@ export type PackCancelRestockSession = {
     variant: string;
     size_label: string;
     batch_no: string | null;
+    unit_status?: string;
+    unit_pool?: string;
+    stock_label?: string;
     scanned_at: string;
   }[];
   grouped: {
@@ -27,6 +30,8 @@ export type PackCancelRestockSession = {
     product_label: string;
     variant: string;
     size_label: string;
+    unit_pool?: string;
+    stock_label?: string;
     qty: number;
   }[];
 };
@@ -40,7 +45,15 @@ export const packCancelRestockApi = {
     apiPost<{
       result: string;
       session: PackCancelRestockSession;
-      lookup: { kind?: string; product_label?: string; variant?: string; size_label?: string; code?: string } | null;
+      lookup: {
+        kind?: string;
+        product_label?: string;
+        variant?: string;
+        size_label?: string;
+        code?: string;
+        stock_label?: string;
+        unit_pool?: string;
+      } | null;
     }>(ENDPOINT, "scan", { session_id: sessionId, code }),
   confirm: (sessionId: number) =>
     apiPost<{ session: PackCancelRestockSession }>(ENDPOINT, "confirm", { session_id: sessionId }),

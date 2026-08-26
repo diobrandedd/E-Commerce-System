@@ -1,9 +1,9 @@
 ---
 title: pack_cancel_restock
 source: includes/pack_cancel_restock.php
-generated: 2026-08-25T09:55:51+02:00
+generated: 2026-08-26T04:07:13+02:00
 type: module
-function_count: 8
+function_count: 9
 ---
 
 
@@ -18,6 +18,18 @@ function_count: 8
 - `includes/honey_bottle_barcodes.php`
 - `includes/dept_pouch_barcodes.php`
 - `includes/dept_inventory.php`
+- `includes/rts_inventory_sync.php`
+- `includes/rts_schema.php`
+- `includes/honey_pos.php`
+
+## pack_cancel_restock_is_restorable {#pack_cancel_restock_is_restorable}
+
+**Callers (4):**
+
+- `includes/pack_cancel_restock.php`:212 — `if (!pack_cancel_restock_is_restorable($unitStatus)) {`
+- `includes/pack_cancel_restock.php`:283 — `if (!pack_cancel_restock_is_restorable($unitStatus)) {`
+- `includes/pack_cancel_restock.php`:356 — `if (!pack_cancel_restock_is_restorable($status)) {`
+- `includes/pack_cancel_restock.php`:412 — `if (!pack_cancel_restock_is_restorable($status)) {`
 
 ## pack_cancel_restock_start {#pack_cancel_restock_start}
 
@@ -34,22 +46,22 @@ function_count: 8
 **Callers (17):**
 
 - `api/v1/pack_cancel_restock.php`:55 — `api_ok(['session' => pack_cancel_restock_get(ims_pdo(), $id)]);`
-- `includes/pack_cancel_restock.php`:21 — `return pack_cancel_restock_get($pdo, (int) $existing);`
-- `includes/pack_cancel_restock.php`:26 — `return pack_cancel_restock_get($pdo, (int) $pdo->lastInsertId());`
-- `includes/pack_cancel_restock.php`:154 — `$sess = pack_cancel_restock_get($pdo, $sessionId);`
-- `includes/pack_cancel_restock.php`:176 — `return ['result' => 'void', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
-- `includes/pack_cancel_restock.php`:183 — `return ['result' => 'duplicate_session', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
-- `includes/pack_cancel_restock.php`:189 — `'session' => pack_cancel_restock_get($pdo, $sessionId),`
-- `includes/pack_cancel_restock.php`:194 — `return ['result' => 'not_packed', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
-- `includes/pack_cancel_restock.php`:202 — `'session' => pack_cancel_restock_get($pdo, $sessionId),`
-- `includes/pack_cancel_restock.php`:226 — `return ['result' => 'unknown', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => null];`
-- `includes/pack_cancel_restock.php`:241 — `return ['result' => 'void', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
-- `includes/pack_cancel_restock.php`:248 — `return ['result' => 'duplicate_session', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
-- `includes/pack_cancel_restock.php`:254 — `'session' => pack_cancel_restock_get($pdo, $sessionId),`
-- `includes/pack_cancel_restock.php`:259 — `return ['result' => 'not_packed', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
-- `includes/pack_cancel_restock.php`:268 — `'session' => pack_cancel_restock_get($pdo, $sessionId),`
-- `includes/pack_cancel_restock.php`:376 — `return pack_cancel_restock_get($pdo, $sessionId);`
-- `includes/pack_cancel_restock.php`:459 — `$detail = pack_cancel_restock_get($pdo, (int) $r['id']);`
+- `includes/pack_cancel_restock.php`:30 — `return pack_cancel_restock_get($pdo, (int) $existing);`
+- `includes/pack_cancel_restock.php`:35 — `return pack_cancel_restock_get($pdo, (int) $pdo->lastInsertId());`
+- `includes/pack_cancel_restock.php`:178 — `$sess = pack_cancel_restock_get($pdo, $sessionId);`
+- `includes/pack_cancel_restock.php`:202 — `return ['result' => 'void', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
+- `includes/pack_cancel_restock.php`:209 — `return ['result' => 'duplicate_session', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
+- `includes/pack_cancel_restock.php`:215 — `'session' => pack_cancel_restock_get($pdo, $sessionId),`
+- `includes/pack_cancel_restock.php`:220 — `return ['result' => 'not_restorable', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
+- `includes/pack_cancel_restock.php`:228 — `'session' => pack_cancel_restock_get($pdo, $sessionId),`
+- `includes/pack_cancel_restock.php`:255 — `return ['result' => 'unknown', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => null];`
+- `includes/pack_cancel_restock.php`:273 — `return ['result' => 'void', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
+- `includes/pack_cancel_restock.php`:280 — `return ['result' => 'duplicate_session', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
+- `includes/pack_cancel_restock.php`:286 — `'session' => pack_cancel_restock_get($pdo, $sessionId),`
+- `includes/pack_cancel_restock.php`:291 — `return ['result' => 'not_restorable', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];`
+- `includes/pack_cancel_restock.php`:300 — `'session' => pack_cancel_restock_get($pdo, $sessionId),`
+- `includes/pack_cancel_restock.php`:464 — `return pack_cancel_restock_get($pdo, $sessionId);`
+- `includes/pack_cancel_restock.php`:547 — `$detail = pack_cancel_restock_get($pdo, (int) $r['id']);`
 
 ## pack_cancel_restock_scan {#pack_cancel_restock_scan}
 
@@ -63,7 +75,7 @@ function_count: 8
 
 **Callers (1):**
 
-- `includes/pack_cancel_restock.php`:161 — `return pack_cancel_restock_scan_honey($pdo, $sessionId, $honey);`
+- `includes/pack_cancel_restock.php`:185 — `return pack_cancel_restock_scan_honey($pdo, $sessionId, $honey);`
 
 ## pack_cancel_restock_scan_dept {#pack_cancel_restock_scan_dept}
 
@@ -71,7 +83,7 @@ function_count: 8
 
 **Callers (1):**
 
-- `includes/pack_cancel_restock.php`:164 — `return pack_cancel_restock_scan_dept($pdo, $sessionId, $code);`
+- `includes/pack_cancel_restock.php`:188 — `return pack_cancel_restock_scan_dept($pdo, $sessionId, $code);`
 
 ## pack_cancel_restock_confirm {#pack_cancel_restock_confirm}
 

@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-08-25T09:55:33+02:00
+generated: 2026-08-26T04:06:46+02:00
 type: module
 function_count: 23
 ---
@@ -125,7 +125,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_products.php`:212 — `foreach (dept_product_catalog() as $def) {`
 - `includes/dept_products.php`:234 — `foreach (dept_product_catalog() as $def) {`
 - `includes/dept_products.php`:283 — `foreach (dept_product_catalog() as $def) {`
-- `includes/honey_sales_report.php`:212 — `foreach (dept_product_catalog() as $product) {`
+- `includes/honey_sales_report.php`:214 — `foreach (dept_product_catalog() as $product) {`
 
 ## dept_product_by_key {#dept_product_by_key}
 

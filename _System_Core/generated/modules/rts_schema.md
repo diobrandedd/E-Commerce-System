@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-08-25T09:56:01+02:00
+generated: 2026-08-26T04:07:26+02:00
 type: module
 function_count: 13
 ---
@@ -25,7 +25,7 @@ function_count: 13
 
 ## rts_db_has_column {#rts_db_has_column}
 
-**Callers (60):**
+**Callers (68):**
 
 - `api/v1/deliveries.php`:308 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `api/v1/deliveries.php`:347 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
@@ -52,7 +52,7 @@ function_count: 13
 - `includes/honey_bottle_barcodes.php`:1745 — `$hasSess = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
 - `includes/honey_bottle_barcodes.php`:1746 — `$hasPos = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');`
 - `includes/honey_bottle_barcodes.php`:1812 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
-- _… and 35 more (run impact.php for full list)_
+- _… and 43 more (run impact.php for full list)_
 
 ## rts_cases_void_sql {#rts_cases_void_sql}
 

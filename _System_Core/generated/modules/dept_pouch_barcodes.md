@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-08-25T09:55:30+02:00
+generated: 2026-08-26T04:06:42+02:00
 type: module
 function_count: 35
 ---
@@ -48,7 +48,7 @@ function_count: 35
 - `includes/dept_pos.php`:110 — `} elseif (dept_pouch_supports($productKey) && $stockSource === 'rts' && $unitIds === []) {`
 - `includes/dept_pouch_barcodes.php`:44 — `if (!dept_pouch_supports($productKey)) {`
 - `includes/honey_bottle_barcodes.php`:1285 — `if ($productKey !== '' && $productKey !== 'honey' && !dept_pouch_supports($productKey)) {`
-- `includes/pack_cancel_restock.php`:424 — `if (!dept_pouch_supports($productKey)) {`
+- `includes/pack_cancel_restock.php`:512 — `if (!dept_pouch_supports($productKey)) {`
 - `includes/rts_barcode_labels.php`:290 — `} elseif (dept_pouch_supports($productKey)) {`
 
 ## dept_pouch_normalize_product_key {#dept_pouch_normalize_product_key}
@@ -68,7 +68,7 @@ function_count: 35
 
 ## dept_pouch_product_label {#dept_pouch_product_label}
 
-**Callers (25):**
+**Callers (26):**
 
 - `api/v1/rts_barcode_labels.php`:49 — `'label' => dept_pouch_product_label($key),`
 - `includes/barcode_verify.php`:100 — `$productLabel = dept_pouch_product_label($productKey);`
@@ -91,10 +91,11 @@ function_count: 35
 - `includes/inventory_check.php`:684 — `'product_label' => dept_pouch_product_label((string) $productKey),`
 - `includes/inventory_check.php`:689 — `'variant' => dept_pouch_product_label((string) $productKey),`
 - `includes/inventory_check.php`:822 — `'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label((string) $row['product_key']),`
-- `includes/pack_cancel_restock.php`:103 — `$productLabel = dept_pouch_product_label($productKey);`
-- `includes/pack_cancel_restock.php`:232 — `'product_label' => dept_pouch_product_label($productKey),`
-- `includes/pack_cancel_restock.php`:237 — `'variant' => dept_pouch_product_label($productKey),`
-- `includes/rts_barcode_labels.php`:83 — `: dept_pouch_product_label($productKey);`
+- `includes/pack_cancel_restock.php`:121 — `$productLabel = dept_pouch_product_label($productKey);`
+- `includes/pack_cancel_restock.php`:262 — `'product_label' => dept_pouch_product_label($productKey),`
+- `includes/pack_cancel_restock.php`:269 — `'variant' => dept_pouch_product_label($productKey),`
+- `includes/pack_cancel_restock.php`:434 — `rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), 1.0);`
+- _… and 1 more (run impact.php for full list)_
 
 ## dept_pouch_unit_singular {#dept_pouch_unit_singular}
 
@@ -108,9 +109,9 @@ function_count: 35
 - `includes/inventory_check.php`:365 — `'size' => dept_pouch_unit_singular($productKey),`
 - `includes/inventory_check.php`:690 — `'size' => dept_pouch_unit_singular((string) $productKey),`
 - `includes/inventory_check.php`:691 — `'size_label' => dept_pouch_unit_singular((string) $productKey),`
-- `includes/pack_cancel_restock.php`:111 — `'size_label' => dept_pouch_unit_singular($productKey),`
-- `includes/pack_cancel_restock.php`:122 — `'size_label' => dept_pouch_unit_singular($productKey),`
-- `includes/pack_cancel_restock.php`:238 — `'size_label' => dept_pouch_unit_singular($productKey),`
+- `includes/pack_cancel_restock.php`:130 — `'size_label' => dept_pouch_unit_singular($productKey),`
+- `includes/pack_cancel_restock.php`:144 — `'size_label' => dept_pouch_unit_singular($productKey),`
+- `includes/pack_cancel_restock.php`:270 — `'size_label' => dept_pouch_unit_singular($productKey),`
 
 ## dept_pouch_normalize_code {#dept_pouch_normalize_code}
 
@@ -122,7 +123,7 @@ function_count: 35
 - `includes/dept_pouch_barcodes.php`:1107 — `$code = dept_pouch_normalize_code($code);`
 - `includes/finished_leak_damage.php`:75 — `$deptCode = dept_pouch_normalize_code($code);`
 - `includes/honey_bottle_barcodes.php`:1459 — `$code = dept_pouch_normalize_code($code);`
-- `includes/pack_cancel_restock.php`:212 — `$code = dept_pouch_normalize_code($code);`
+- `includes/pack_cancel_restock.php`:238 — `$code = dept_pouch_normalize_code($code);`
 
 ## dept_pouch_normalize_batch_no {#dept_pouch_normalize_batch_no}
 

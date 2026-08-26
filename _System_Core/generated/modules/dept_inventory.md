@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-08-25T09:55:29+02:00
+generated: 2026-08-26T04:06:41+02:00
 type: module
 function_count: 17
 ---
@@ -50,7 +50,7 @@ function_count: 17
 - `includes/dept_production.php`:954 — `$row = dept_inventory_ensure_row($pdo, $userId, 'brc');`
 - `includes/dept_production.php`:1007 — `$row = dept_inventory_ensure_row($pdo, $userId, 'jar_cacao');`
 - `includes/dept_production.php`:1037 — `$row = dept_inventory_ensure_row($pdo, $userId, 'honey_comb');`
-- `includes/pack_cancel_restock.php`:354 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
+- `includes/pack_cancel_restock.php`:436 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 
 ## dept_inventory_stock_in {#dept_inventory_stock_in}
 

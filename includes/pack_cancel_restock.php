@@ -5,6 +5,15 @@ declare(strict_types=1);
 require_once __DIR__ . '/honey_bottle_barcodes.php';
 require_once __DIR__ . '/dept_pouch_barcodes.php';
 require_once __DIR__ . '/dept_inventory.php';
+require_once __DIR__ . '/rts_inventory_sync.php';
+require_once __DIR__ . '/rts_schema.php';
+require_once __DIR__ . '/honey_pos.php';
+
+/** Packed (ship), shipped, or POS walk-in sold — all can return to on-hand. */
+function pack_cancel_restock_is_restorable(string $unitStatus): bool
+{
+    return in_array($unitStatus, ['packed', 'shipped', 'sold'], true);
+}
 
 /**
  * @return array<string, mixed>
@@ -47,7 +56,7 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
     }
 
     $honeySt = $pdo->prepare(
-        'SELECT i.id, i.scanned_at, c.code, u.variant, u.size, pk.batch_no
+        'SELECT i.id, i.scanned_at, c.code, u.variant, u.size, u.pool, u.status AS unit_status, pk.batch_no
          FROM pack_cancel_restock_honey_items i
          INNER JOIN honey_bottle_barcodes c ON c.id = i.barcode_id
          INNER JOIN honey_bottle_units u ON u.id = i.unit_id
@@ -57,8 +66,11 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
     );
     $honeySt->execute([$sessionId]);
 
+    $deptPoolSelect = rts_db_has_column($pdo, 'dept_pouch_units', 'pool')
+        ? ', un.pool'
+        : ', "finished" AS pool';
     $deptSt = $pdo->prepare(
-        'SELECT i.id, i.product_key, i.scanned_at, c.code, un.batch_no
+        'SELECT i.id, i.product_key, i.scanned_at, c.code, un.batch_no, un.status AS unit_status' . $deptPoolSelect . '
          FROM pack_cancel_restock_dept_items i
          INNER JOIN dept_pouch_barcodes c ON c.id = i.barcode_id
          INNER JOIN dept_pouch_units un ON un.id = i.unit_id
@@ -74,6 +86,7 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
         $size = (string) $row['size'];
         $sizeLabel = honey_bottle_size_label($size);
         $batchNo = $row['batch_no'] !== null ? (string) $row['batch_no'] : null;
+        $pool = (string) ($row['pool'] ?? 'packaging');
         $items[] = [
             'id' => (int) $row['id'],
             'kind' => 'honey',
@@ -83,9 +96,12 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
             'variant' => $variant,
             'size_label' => $sizeLabel,
             'batch_no' => $batchNo,
+            'unit_status' => (string) ($row['unit_status'] ?? ''),
+            'unit_pool' => $pool,
+            'stock_label' => $pool === 'rts_sellable' ? 'RTS' : 'Packaging',
             'scanned_at' => (string) $row['scanned_at'],
         ];
-        $gKey = 'honey|' . $variant . '|' . $size;
+        $gKey = 'honey|' . $variant . '|' . $size . '|' . $pool;
         if (!isset($grouped[$gKey])) {
             $grouped[$gKey] = [
                 'kind' => 'honey',
@@ -93,6 +109,8 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
                 'product_label' => 'Honey',
                 'variant' => $variant,
                 'size_label' => $sizeLabel,
+                'unit_pool' => $pool,
+                'stock_label' => $pool === 'rts_sellable' ? 'RTS' : 'Packaging',
                 'qty' => 0,
             ];
         }
@@ -101,6 +119,7 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
     foreach ($deptSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $productKey = (string) $row['product_key'];
         $productLabel = dept_pouch_product_label($productKey);
+        $pool = (string) ($row['pool'] ?? 'finished');
         $items[] = [
             'id' => (int) $row['id'],
             'kind' => 'dept',
@@ -110,9 +129,12 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
             'variant' => $productLabel,
             'size_label' => dept_pouch_unit_singular($productKey),
             'batch_no' => (string) $row['batch_no'],
+            'unit_status' => (string) ($row['unit_status'] ?? ''),
+            'unit_pool' => $pool,
+            'stock_label' => $pool === 'rts_sellable' ? 'RTS' : 'Finished',
             'scanned_at' => (string) $row['scanned_at'],
         ];
-        $gKey = 'dept|' . $productKey;
+        $gKey = 'dept|' . $productKey . '|' . $pool;
         if (!isset($grouped[$gKey])) {
             $grouped[$gKey] = [
                 'kind' => 'dept',
@@ -120,6 +142,8 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
                 'product_label' => $productLabel,
                 'variant' => $productLabel,
                 'size_label' => dept_pouch_unit_singular($productKey),
+                'unit_pool' => $pool,
+                'stock_label' => $pool === 'rts_sellable' ? 'RTS' : 'Finished',
                 'qty' => 0,
             ];
         }
@@ -172,6 +196,8 @@ function pack_cancel_restock_scan_honey(PDO $pdo, int $sessionId, array $row): a
 {
     $lookup = honey_bottle_serialize_lookup($row);
     $lookup['kind'] = 'honey';
+    $pool = (string) ($lookup['unit_pool'] ?? 'packaging');
+    $lookup['stock_label'] = $pool === 'rts_sellable' ? 'RTS' : 'Packaging';
     if ((string) $row['status'] === 'void') {
         return ['result' => 'void', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];
     }
@@ -183,15 +209,15 @@ function pack_cancel_restock_scan_honey(PDO $pdo, int $sessionId, array $row): a
         return ['result' => 'duplicate_session', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];
     }
     $unitStatus = $row['unit_status'] !== null ? (string) $row['unit_status'] : '';
-    if ($unitStatus !== 'packed' && $unitStatus !== 'shipped') {
+    if (!pack_cancel_restock_is_restorable($unitStatus)) {
         return [
-            'result' => $unitStatus === 'in_stock' ? 'already_in_stock' : 'not_packed',
+            'result' => $unitStatus === 'in_stock' ? 'already_in_stock' : 'not_restorable',
             'session' => pack_cancel_restock_get($pdo, $sessionId),
             'lookup' => $lookup,
         ];
     }
     if ($row['unit_id'] === null) {
-        return ['result' => 'not_packed', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];
+        return ['result' => 'not_restorable', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];
     }
     $pdo->prepare(
         'INSERT INTO pack_cancel_restock_honey_items (session_id, barcode_id, unit_id) VALUES (?, ?, ?)'
@@ -210,10 +236,13 @@ function pack_cancel_restock_scan_honey(PDO $pdo, int $sessionId, array $row): a
 function pack_cancel_restock_scan_dept(PDO $pdo, int $sessionId, string $code): array
 {
     $code = dept_pouch_normalize_code($code);
+    $poolCol = rts_db_has_column($pdo, 'dept_pouch_units', 'pool')
+        ? ', un.pool AS unit_pool'
+        : ', NULL AS unit_pool';
     $st = $pdo->prepare(
         'SELECT c.id AS barcode_id, c.code, c.status AS barcode_status,
                 b.product_key, b.batch_no,
-                un.id AS unit_id, un.status AS unit_status
+                un.id AS unit_id, un.status AS unit_status' . $poolCol . '
          FROM dept_pouch_barcodes c
          INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
          LEFT JOIN dept_pouch_units un ON un.barcode_id = c.id
@@ -226,6 +255,7 @@ function pack_cancel_restock_scan_dept(PDO $pdo, int $sessionId, string $code): 
         return ['result' => 'unknown', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => null];
     }
     $productKey = (string) $row['product_key'];
+    $pool = $row['unit_pool'] !== null ? (string) $row['unit_pool'] : 'finished';
     $lookup = [
         'kind' => 'dept',
         'product_key' => $productKey,
@@ -234,6 +264,8 @@ function pack_cancel_restock_scan_dept(PDO $pdo, int $sessionId, string $code): 
         'batch_no' => (string) $row['batch_no'],
         'unit_id' => $row['unit_id'] !== null ? (int) $row['unit_id'] : null,
         'unit_status' => $row['unit_status'] !== null ? (string) $row['unit_status'] : null,
+        'unit_pool' => $pool,
+        'stock_label' => $pool === 'rts_sellable' ? 'RTS' : 'Finished',
         'variant' => dept_pouch_product_label($productKey),
         'size_label' => dept_pouch_unit_singular($productKey),
     ];
@@ -248,15 +280,15 @@ function pack_cancel_restock_scan_dept(PDO $pdo, int $sessionId, string $code): 
         return ['result' => 'duplicate_session', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];
     }
     $unitStatus = $row['unit_status'] !== null ? (string) $row['unit_status'] : '';
-    if ($unitStatus !== 'packed' && $unitStatus !== 'shipped') {
+    if (!pack_cancel_restock_is_restorable($unitStatus)) {
         return [
-            'result' => $unitStatus === 'in_stock' ? 'already_in_stock' : 'not_packed',
+            'result' => $unitStatus === 'in_stock' ? 'already_in_stock' : 'not_restorable',
             'session' => pack_cancel_restock_get($pdo, $sessionId),
             'lookup' => $lookup,
         ];
     }
     if ($row['unit_id'] === null) {
-        return ['result' => 'not_packed', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];
+        return ['result' => 'not_restorable', 'session' => pack_cancel_restock_get($pdo, $sessionId), 'lookup' => $lookup];
     }
     $pdo->prepare(
         'INSERT INTO pack_cancel_restock_dept_items (session_id, product_key, barcode_id, unit_id)
@@ -291,7 +323,8 @@ function pack_cancel_restock_confirm(PDO $pdo, int $userId, int $sessionId): arr
         }
 
         $honeySt = $pdo->prepare(
-            'SELECT i.unit_id, u.status, u.packaging_row_id, u.size, u.pool
+            'SELECT i.unit_id, u.status, u.packaging_row_id, u.size, u.variant, u.pool,
+                    u.consumed_ref_type, u.consumed_ref_id
              FROM pack_cancel_restock_honey_items i
              INNER JOIN honey_bottle_units u ON u.id = i.unit_id
              WHERE i.session_id = ?
@@ -300,8 +333,11 @@ function pack_cancel_restock_confirm(PDO $pdo, int $userId, int $sessionId): arr
         $honeySt->execute([$sessionId]);
         $honeyItems = $honeySt->fetchAll(PDO::FETCH_ASSOC);
 
+        $deptPoolSelect = rts_db_has_column($pdo, 'dept_pouch_units', 'pool')
+            ? ', un.pool'
+            : ', "finished" AS pool';
         $deptSt = $pdo->prepare(
-            'SELECT i.unit_id, i.product_key, un.status
+            'SELECT i.unit_id, i.product_key, un.status, un.consumed_ref_type, un.consumed_ref_id' . $deptPoolSelect . '
              FROM pack_cancel_restock_dept_items i
              INNER JOIN dept_pouch_units un ON un.id = i.unit_id
              WHERE i.session_id = ?
@@ -311,50 +347,102 @@ function pack_cancel_restock_confirm(PDO $pdo, int $userId, int $sessionId): arr
         $deptItems = $deptSt->fetchAll(PDO::FETCH_ASSOC);
 
         if ($honeyItems === [] && $deptItems === []) {
-            throw new RuntimeException('Scan at least one packed barcode before confirming.');
+            throw new RuntimeException('Scan at least one barcode before confirming.');
         }
 
+        $hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');
         foreach ($honeyItems as $item) {
             $status = (string) $item['status'];
-            if ($status !== 'packed' && $status !== 'shipped') {
-                throw new RuntimeException('A honey unit is no longer packed. Discard and rescan.');
+            if (!pack_cancel_restock_is_restorable($status)) {
+                throw new RuntimeException('A honey unit is no longer restorable. Discard and rescan.');
             }
             $unitId = (int) $item['unit_id'];
+            $pool = (string) ($item['pool'] ?? 'packaging');
+            $size = (string) $item['size'];
+            $variant = honey_normalize_variant((string) $item['variant']);
+            $saleId = 0;
+            if ($status === 'sold') {
+                $refType = (string) ($item['consumed_ref_type'] ?? '');
+                $refId = $item['consumed_ref_id'] !== null ? (int) $item['consumed_ref_id'] : null;
+                $saleId = pos_sale_id_for_honey_unit(
+                    $pdo,
+                    $unitId,
+                    $refType === 'pos_sale' ? $refId : null
+                );
+            }
             $upd = $pdo->prepare(
                 'UPDATE honey_bottle_units
                  SET status = "in_stock", consumed_at = NULL, consumed_ref_type = NULL, consumed_ref_id = NULL
-                 WHERE id = ? AND status IN ("packed", "shipped")'
+                 WHERE id = ? AND status IN ("packed", "shipped", "sold")'
             );
             $upd->execute([$unitId]);
             if ($upd->rowCount() < 1) {
                 throw new RuntimeException('Could not restore a honey unit.');
             }
             $packId = (int) ($item['packaging_row_id'] ?? 0);
-            if ($packId > 0 && (string) ($item['pool'] ?? 'packaging') === 'packaging') {
-                honey_bottle_adjust_aggregate($pdo, $packId, (string) $item['size'], 1.0);
+            if ($pool === 'rts_sellable') {
+                rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);
+            } elseif ($packId > 0) {
+                honey_bottle_adjust_aggregate($pdo, $packId, $size, 1.0);
+            }
+            // Reverse POS walk-in sales qty + receipt money so Sales totals stay honest.
+            if ($status === 'sold') {
+                if ($saleId > 0) {
+                    pos_sale_reverse_one_unit($pdo, $saleId, 'honey', [
+                        'variant' => $variant,
+                        'size' => $size,
+                    ]);
+                }
+                honey_bottle_write_sale_log($pdo, [
+                    'source' => $pool === 'rts_sellable' ? 'rts' : 'packaging',
+                    'packaging_row_id' => $packId > 0 ? $packId : null,
+                    'variant' => $variant,
+                    'size' => $size,
+                    'qty' => -1,
+                    'sale_type' => 'walk_in',
+                    'sold_by' => $userId,
+                    'pos_sale_id' => $saleId > 0 ? $saleId : null,
+                    'bottle_unit_id' => $hasUnitCol ? $unitId : null,
+                ]);
             }
         }
 
         foreach ($deptItems as $item) {
             $status = (string) $item['status'];
-            if ($status !== 'packed' && $status !== 'shipped') {
-                throw new RuntimeException('A pouch/jar is no longer packed. Discard and rescan.');
+            if (!pack_cancel_restock_is_restorable($status)) {
+                throw new RuntimeException('A pouch/jar is no longer restorable. Discard and rescan.');
             }
             $unitId = (int) $item['unit_id'];
             $productKey = (string) $item['product_key'];
+            $pool = (string) ($item['pool'] ?? 'finished');
+            $saleId = 0;
+            if ($status === 'sold'
+                && (string) ($item['consumed_ref_type'] ?? '') === 'pos_sale'
+                && $item['consumed_ref_id'] !== null) {
+                $saleId = (int) $item['consumed_ref_id'];
+            }
             $upd = $pdo->prepare(
                 'UPDATE dept_pouch_units
                  SET status = "in_stock", consumed_at = NULL, consumed_ref_type = NULL, consumed_ref_id = NULL
-                 WHERE id = ? AND status IN ("packed", "shipped")'
+                 WHERE id = ? AND status IN ("packed", "shipped", "sold")'
             );
             $upd->execute([$unitId]);
             if ($upd->rowCount() < 1) {
                 throw new RuntimeException('Could not restore a pouch/jar unit.');
             }
-            $fin = dept_inventory_ensure_row($pdo, $userId, $productKey);
-            $pdo->prepare(
-                'UPDATE dept_inventory_rows SET current_qty = current_qty + 1 WHERE id = ?'
-            )->execute([(int) $fin['id']]);
+            if ($pool === 'rts_sellable') {
+                rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), 1.0);
+            } else {
+                $fin = dept_inventory_ensure_row($pdo, $userId, $productKey);
+                $pdo->prepare(
+                    'UPDATE dept_inventory_rows SET current_qty = current_qty + 1 WHERE id = ?'
+                )->execute([(int) $fin['id']]);
+            }
+            if ($status === 'sold' && $saleId > 0) {
+                pos_sale_reverse_one_unit($pdo, $saleId, 'dept', [
+                    'product_key' => $productKey,
+                ]);
+            }
         }
 
         $pdo->prepare(

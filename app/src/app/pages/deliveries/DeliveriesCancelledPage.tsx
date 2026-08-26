@@ -36,9 +36,15 @@ function formatWhen(raw: string | null | undefined) {
   return new Date(raw.replace(" ", "T")).toLocaleString();
 }
 
-function itemLabel(g: { kind?: string; product_label?: string; variant: string; size_label: string }) {
-  if (g.kind === "dept") return g.product_label || g.variant;
-  return `${g.variant} ${g.size_label}`.trim();
+function itemLabel(g: {
+  kind?: string;
+  product_label?: string;
+  variant: string;
+  size_label: string;
+  stock_label?: string;
+}) {
+  const base = g.kind === "dept" ? g.product_label || g.variant : `${g.variant} ${g.size_label}`.trim();
+  return g.stock_label ? `${base} · ${g.stock_label}` : base;
 }
 
 const PRODUCT_FILTERS = [
@@ -57,7 +63,7 @@ export function DeliveriesCancelledPage() {
   return (
     <PageLayout
       title="Cancelled restock"
-      subtitle="Scan packed stickers back to finished stock after courier cancel. Sealed-box re-waybill stays on Hold."
+      subtitle="Scan packed, shipped, or POS walk-in sold stickers back to packaging, finished, or RTS stock (by original pool)."
       actions={
         <button
           type="button"
@@ -143,10 +149,11 @@ function RestockLivePanel() {
       if (res.result === "ok") {
         playScanBeep("ok");
         setFlash("ok");
+        const stock = res.lookup?.stock_label ? ` → ${res.lookup.stock_label}` : "";
         const label =
           res.lookup?.kind === "dept"
-            ? res.lookup.product_label || "Dept"
-            : `${res.lookup?.variant ?? ""} ${res.lookup?.size_label ?? ""}`.trim() || "Honey";
+            ? `${res.lookup.product_label || "Dept"}${stock}`
+            : `${`${res.lookup?.variant ?? ""} ${res.lookup?.size_label ?? ""}`.trim() || "Honey"}${stock}`;
         setMsg(label);
         window.setTimeout(() => setFlash(null), 650);
         refocus();
@@ -181,7 +188,9 @@ function RestockLivePanel() {
     setError(null);
     try {
       const res = await packCancelRestockApi.confirm(session.id);
-      setOk(`Restored ${res.session.item_count} item${res.session.item_count === 1 ? "" : "s"} to finished stock.`);
+      setOk(
+          `Restored ${res.session.item_count} item${res.session.item_count === 1 ? "" : "s"} to stock (packaging / finished / RTS by pool).`,
+        );
       setConfirmOpen(false);
       await start();
     } catch (e) {
@@ -212,15 +221,18 @@ function RestockLivePanel() {
       {error && <AppErrorBanner message={error} />}
       {ok && <AppSuccessNotice message={ok} />}
       <p className="text-xs text-muted-foreground">
-        Only stickers marked <strong className="text-foreground">packed</strong> (from Pack scan) can be returned.
-        Confirm restores finished inventory.
+        Only stickers that are <strong className="text-foreground">packed</strong>,{" "}
+        <strong className="text-foreground">shipped</strong>, or POS walk-in{" "}
+        <strong className="text-foreground">sold</strong> can be returned. Stock goes back to packaging,
+        finished, or RTS by the unit&apos;s original pool.
+        Confirm restores packaging, finished, or RTS inventory by each unit&apos;s pool.
       </p>
       <div className="flex gap-2">
         <input
           ref={inputRef}
           {...inputProps}
           className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide font-mono"
-          placeholder="Scan packed barcode…"
+          placeholder="Scan packed / sold barcode…"
           value={code}
           onChange={e => setCode(e.target.value)}
           onKeyDown={e => {
@@ -260,7 +272,9 @@ function RestockLivePanel() {
       <AppModal open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <AppModalHeader title="Confirm inventory restore" onClose={() => setConfirmOpen(false)} />
         <AppModalBody className="space-y-2">
-          <p className="text-sm text-muted-foreground">These return to finished stock now.</p>
+          <p className="text-sm text-muted-foreground">
+            These return to packaging, finished, or RTS stock (by pool).
+          </p>
           {(session?.grouped ?? []).map(g => (
             <p key={`${g.kind}-${g.product_key}`} className="text-sm font-medium capitalize">
               {g.qty} × {itemLabel(g)}
@@ -279,10 +293,10 @@ function RestockLivePanel() {
       </AppModal>
       {cameraOpen ? (
         <BarcodeCameraScannerModal
-          title="Scan packed barcode"
+          title="Scan barcode to restock"
           titleId={cameraTitleId}
           continuous
-          scanPrompt="Scan each packed sticker returning from courier cancel."
+          scanPrompt="Scan each packed, shipped, or POS sold sticker to return to stock."
           onClose={() => setCameraOpen(false)}
           onDecoded={decoded => onScan(decoded)}
         />
@@ -334,7 +348,7 @@ function RestockHistoryPanel() {
   return (
     <AppSectionEnter className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Confirmed restock sessions — how many units returned to inventory after courier cancel.
+        Confirmed restock sessions — units returned after courier cancel or POS walk-in cancel.
       </p>
       <div className="flex flex-wrap gap-2 items-end bg-card border rounded-xl p-3">
         <label className="text-xs text-muted-foreground">

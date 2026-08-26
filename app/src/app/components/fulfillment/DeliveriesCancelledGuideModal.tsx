@@ -42,15 +42,20 @@ export function DeliveriesCancelledGuideModal({
       <AppModalBody className="flex flex-col min-h-0 overflow-y-auto overscroll-contain gap-5 py-4">
         <GuideSection title="What this page is for">
           <p>
-            When a courier cancel means the <strong className="text-foreground">box was opened</strong> and products
-            come back, scan each packed sticker to restore finished inventory. History shows how many units returned.
+            Return barcode units to on-hand after courier cancel (packed/shipped) or a mistaken POS walk-in
+            sale (sold). Each unit goes back to <strong className="text-foreground">packaging</strong>,{" "}
+            <strong className="text-foreground">finished</strong>, or <strong className="text-foreground">RTS</strong>{" "}
+            based on its original pool.
           </p>
         </GuideSection>
 
         <GuideSection title="Workflow">
           <ol className="list-decimal pl-4 space-y-1.5">
-            <li>Open <strong className="text-foreground">Restock</strong> and scan each packed honey or dept sticker.</li>
-            <li>Confirm — units become in stock again and finished qty goes up.</li>
+            <li>
+              Open <strong className="text-foreground">Restock</strong> and scan each honey or dept sticker
+              (packed, shipped, or POS sold).
+            </li>
+            <li>Confirm — units become in stock again; the matching inventory pool goes up.</li>
             <li>Use <strong className="text-foreground">History</strong> to audit returns by date or product.</li>
             <li>
               Sealed box still reusable? Use <strong className="text-foreground">Hold / Re-waybill</strong> on Add
@@ -63,7 +68,7 @@ export function DeliveriesCancelledGuideModal({
           <ul className="list-disc pl-4 space-y-1">
             <li>Not tracking-QR parcel cancel (retired)</li>
             <li>Not RTS case recording (that still uses tracking + optional barcodes on RTS Record)</li>
-            <li>Only accepts stickers already marked packed from Pack scan</li>
+            <li>Does not accept stickers that are still in stock or void</li>
           </ul>
         </GuideSection>
 

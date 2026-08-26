@@ -12,6 +12,11 @@ type SaleTypeFilter = "all" | "regular" | "discount" | "ar";
 type ChannelFilter = "all" | "walk_in" | "online";
 type ProductFilter = "all" | "honey" | "pt" | "brc" | "jar_cacao" | "honey_comb";
 
+interface CheckoutBarcode {
+  code: string;
+  returned?: boolean;
+}
+
 interface CheckoutItem {
   variant: string;
   size: string;
@@ -23,6 +28,7 @@ interface CheckoutItem {
   line_subtotal?: number;
   line_total: number;
   name?: string;
+  barcodes?: CheckoutBarcode[];
 }
 
 interface CheckoutRow {
@@ -39,6 +45,7 @@ interface CheckoutRow {
   is_ar?: boolean;
   item_count: number;
   items: CheckoutItem[];
+  returned_units?: { code: string; kind?: string; match_key?: string }[];
 }
 
 interface CheckoutsPage {
@@ -626,7 +633,7 @@ export function SalesPage() {
                                       key={idx}
                                       className="flex justify-between gap-3 text-sm py-1.5 px-3 rounded-lg bg-card border border-border/60"
                                     >
-                                      <span>
+                                      <span className="min-w-0">
                                         <span className="capitalize font-medium">
                                           {item.variant ? variantLabel(item.variant) : (item.label ?? item.name ?? "Item")}
                                         </span>
@@ -634,8 +641,20 @@ export function SalesPage() {
                                           <span className="text-muted-foreground"> · {item.size_label}</span>
                                         ) : null}
                                         <span className="text-muted-foreground"> × {fmtQty(item.qty)}</span>
+                                        {(item.barcodes ?? []).length > 0 ? (
+                                          <span className="mt-1 flex flex-col gap-0.5">
+                                            {item.barcodes!.map(bc => (
+                                              <span
+                                                key={bc.code}
+                                                className="font-mono text-[11px] text-muted-foreground break-all"
+                                              >
+                                                {bc.code}
+                                              </span>
+                                            ))}
+                                          </span>
+                                        ) : null}
                                       </span>
-                                      <span className="font-semibold whitespace-nowrap">
+                                      <span className="font-semibold whitespace-nowrap self-start">
                                         {item.line_subtotal != null && item.line_subtotal > item.line_total ? (
                                           <>
                                             <span className="line-through text-muted-foreground mr-1">{peso(item.line_subtotal)}</span>
@@ -648,6 +667,21 @@ export function SalesPage() {
                                     </li>
                                   ))}
                                 </ul>
+                                {(row.returned_units ?? []).length > 0 ? (
+                                  <div className="mt-3 pt-2 border-t border-border/60">
+                                    <p className="text-xs font-semibold text-amber-800 mb-1.5">Returned (removed from total)</p>
+                                    <ul className="space-y-1">
+                                      {row.returned_units!.map(u => (
+                                        <li
+                                          key={u.code}
+                                          className="font-mono text-[11px] text-amber-900/80 py-1 px-3 rounded-lg bg-amber-50 border border-amber-200/80"
+                                        >
+                                          {u.code}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ) : null}
                               </td>
                             </tr>
                           )}

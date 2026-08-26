@@ -7,7 +7,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Cancelled restock",
         description:
-          "Return packed stickers to finished stock after courier cancel when goods come back. Sealed-box re-waybill stays on Hold.",
+          "Return packed, shipped, or POS walk-in sold stickers to packaging, finished, or RTS stock (by original pool). Sealed-box re-waybill stays on Hold.",
         side: "over",
         align: "center",
       },

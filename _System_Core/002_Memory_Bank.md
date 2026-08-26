@@ -4,6 +4,15 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-26 — POS return reduces receipt total
+**Change:** Cancelled sold restock reverses pos_receipt line + recalc total; Sales heal for prior returns; returned codes listed separately. → [[problems/records/2026-08-26_pos-return-receipt-total]]
+
+### 2026-08-26 — Sales checkout line barcodes
+**Change:** Recent walk-in sales expand shows scanned barcodes per receipt line (returned badge if restocked). → [[problems/records/2026-08-26_sales-checkout-line-barcodes]]
+
+### 2026-08-26 — Cancelled restock POS sold + RTS pool
+**Change:** Deliveries Cancelled accepts POS walk-in `sold` barcodes; confirm credits packaging/finished or RTS by unit pool; honey sold reverses sale log qty −1. → [[problems/records/2026-08-26_pack-cancel-restock-pos-sold]]
+
 ### 2026-08-25 — RTS barcode inventory cutover
 **Change:** Sellable RTS barcode-backed: phase 68 hard reset + sync skip, stock_in_scan, pack/POS RTS consume, Sales RTS counts. → [[problems/records/2026-08-25_rts-barcode-inventory-cutover]]
 

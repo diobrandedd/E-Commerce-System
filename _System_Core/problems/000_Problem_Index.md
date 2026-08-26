@@ -45,11 +45,15 @@ flowchart LR
 - [[fixes/raw-dept-mobile-first-actions-and-lists]] — Raw materials page is phone-first: compact header actions + mobile activity cards
 - [[fixes/inventory-mobile-action-modal-and-cards]] — Packaging/Supplies mobile consistency: actions modal + stacked card rows
 - [[fixes/deliveries-cancel-scan-revert-and-log]] — Cancel scanner path with shipped-inventory revert + cancellation audit table
+- [[fixes/pack-cancel-restock-sold-and-pool]] — Cancelled restock: packed/shipped/sold + credit by unit pool (RTS vs packaging/finished)
 - [[fixes/vip-spx-order-remarks-parser-guards]] — VIP/SPX: strip size before L/A/D, combo export, 3L LLA, 250ml, J&T concatenated 350ml
 - [[fixes/waybill-stamp-text-only-no-border]] — PDF item stamp: text only, no box
 
 ## Records (newest first)
 
+- [[records/2026-08-26_pos-return-receipt-total]] — Returned POS barcode reduces receipt total (heal + restock reverse)
+- [[records/2026-08-26_sales-checkout-line-barcodes]] — Walk-in sales expand shows barcode per line
+- [[records/2026-08-26_pack-cancel-restock-pos-sold]] — Cancelled restock accepts POS sold barcodes; credits RTS vs packaging/finished by pool
 - [[records/2026-08-19_pack-scan-session-barcode-remove]] — Pack scan session rows expand to barcodes; remove a draft scan
 - [[records/2026-08-18_pos-account-discount-sales-log]] — Account POS (`pos.sell`), checkout discounts, Sales seller + product filter
 - [[records/2026-08-18_scan-camera-software-keyboard]] — Phone Gboard no longer opens during camera scan

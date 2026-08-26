@@ -1,7 +1,7 @@
 ---
 title: admin_sidebar_styles
 source: includes/admin_sidebar_styles.php
-generated: 2026-08-25T09:55:24+02:00
+generated: 2026-08-26T04:06:33+02:00
 type: module
 function_count: 0
 ---

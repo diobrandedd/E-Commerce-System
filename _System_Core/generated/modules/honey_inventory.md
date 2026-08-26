@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-08-25T09:55:39+02:00
+generated: 2026-08-26T04:06:55+02:00
 type: module
 function_count: 47
 ---
@@ -92,7 +92,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_normalize_variant {#honey_normalize_variant}
 
-**Callers (26):**
+**Callers (27):**
 
 - `includes/honey_bottle_barcodes.php`:229 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_bottle_barcodes.php`:248 — `if (honey_normalize_variant((string) $pk['variant']) !== $variant) {`
@@ -118,8 +118,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_pos.php`:143 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:160 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_pos.php`:211 — `$variant = honey_normalize_variant($variant);`
-- `includes/rts_barcode_labels.php`:249 — `$variant = honey_normalize_variant((string) ($raw['variant'] ?? 'light'));`
-- _… and 1 more (run impact.php for full list)_
+- `includes/pack_cancel_restock.php`:362 — `$variant = honey_normalize_variant((string) $item['variant']);`
+- _… and 2 more (run impact.php for full list)_
 
 ## honey_unique_packaging_batch_no {#honey_unique_packaging_batch_no}
 

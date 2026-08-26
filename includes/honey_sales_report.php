@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/dashboard_inventory.php';
 require_once __DIR__ . '/dept_products.php';
+require_once __DIR__ . '/rts_schema.php';
+require_once __DIR__ . '/honey_pos.php';
 
 const HONEY_SALES_SIZE_LABELS = [
     '250ml' => '250ml',
@@ -250,20 +252,186 @@ function honey_sales_serialize_receipt_item(array $row): array
     $label = $variant !== ''
         ? trim(ucfirst($variant) . ($sizeLabel !== '' ? ' · ' . $sizeLabel : ''))
         : ($name !== '' ? $name : 'Item');
+    $productKey = strtolower(trim((string) ($row['dept_product_key'] ?? '')));
 
     return [
+        'kind' => $variant !== '' ? 'honey' : 'dept',
         'variant' => $variant,
         'size' => $size,
         'size_label' => $sizeLabel,
         'label' => $label,
+        'product_key' => $productKey !== '' ? $productKey : null,
         'qty' => (float) ($row['qty'] ?? 0),
         'list_unit_price' => round((float) ($row['list_unit_price'] ?? $row['unit_price'] ?? 0), 2),
         'unit_price' => round((float) ($row['unit_price'] ?? 0), 2),
         'line_subtotal' => round((float) ($row['list_unit_price'] ?? $row['unit_price'] ?? 0) * (float) ($row['qty'] ?? 0), 2),
         'line_total' => round((float) ($row['line_total'] ?? 0), 2),
         'name' => (string) ($row['product_name'] ?? ''),
+        'barcodes' => [],
     ];
 }
+
+/**
+ * POS unit barcodes for checkout receipts (honey sales_log + still-linked units).
+ *
+ * @param list<int> $saleIds
+ * @return array<int, list<array{kind: string, match_key: string, code: string, returned: bool}>>
+ */
+function honey_sales_load_checkout_barcodes(PDO $pdo, array $saleIds): array
+{
+    $saleIds = array_values(array_filter(array_map('intval', $saleIds), static fn ($id) => $id > 0));
+    if ($saleIds === []) {
+        return [];
+    }
+    $placeholders = implode(',', array_fill(0, count($saleIds), '?'));
+    /** @var array<int, list<array{kind: string, match_key: string, code: string, returned: bool}>> $bySale */
+    $bySale = [];
+    /** @var array<string, true> $seen */
+    $seen = [];
+
+    $push = static function (int $saleId, string $kind, string $matchKey, string $code, bool $returned) use (&$bySale, &$seen): void {
+        $code = trim($code);
+        if ($saleId < 1 || $code === '') {
+            return;
+        }
+        $dedupe = $saleId . '|' . $code;
+        if (isset($seen[$dedupe])) {
+            return;
+        }
+        $seen[$dedupe] = true;
+        $bySale[$saleId][] = [
+            'kind' => $kind,
+            'match_key' => $matchKey,
+            'code' => $code,
+            'returned' => $returned,
+        ];
+    };
+
+    $hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');
+    if ($hasUnitCol) {
+        $st = $pdo->prepare(
+            "SELECT h.pos_sale_id, u.variant, u.size, c.code, u.status AS unit_status,
+                    (COALESCE(h.qty_liter, 0) + COALESCE(h.qty_250ml, 0)
+                     + COALESCE(h.qty_350ml, 0) + COALESCE(h.qty_gallon, 0)) AS qty_signed
+             FROM honey_sales_log h
+             INNER JOIN honey_bottle_units u ON u.id = h.bottle_unit_id
+             INNER JOIN honey_bottle_barcodes c ON c.id = u.barcode_id
+             WHERE h.pos_sale_id IN ({$placeholders})
+               AND h.bottle_unit_id IS NOT NULL
+             ORDER BY h.id ASC"
+        );
+        $st->execute($saleIds);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            if ((float) ($row['qty_signed'] ?? 0) <= 0) {
+                continue;
+            }
+            $variant = strtolower(trim((string) $row['variant']));
+            $size = trim((string) $row['size']);
+            $returned = (string) ($row['unit_status'] ?? '') !== 'sold';
+            $push(
+                (int) $row['pos_sale_id'],
+                'honey',
+                'honey|' . $variant . '|' . $size,
+                (string) $row['code'],
+                $returned
+            );
+        }
+    }
+
+    $st = $pdo->prepare(
+        "SELECT u.consumed_ref_id AS sale_id, u.variant, u.size, c.code, u.status AS unit_status
+         FROM honey_bottle_units u
+         INNER JOIN honey_bottle_barcodes c ON c.id = u.barcode_id
+         WHERE u.consumed_ref_type = 'pos_sale' AND u.consumed_ref_id IN ({$placeholders})
+         ORDER BY u.id ASC"
+    );
+    $st->execute($saleIds);
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $variant = strtolower(trim((string) $row['variant']));
+        $size = trim((string) $row['size']);
+        $push(
+            (int) $row['sale_id'],
+            'honey',
+            'honey|' . $variant . '|' . $size,
+            (string) $row['code'],
+            (string) ($row['unit_status'] ?? '') !== 'sold'
+        );
+    }
+
+    $st = $pdo->prepare(
+        "SELECT un.consumed_ref_id AS sale_id, un.product_key, c.code, un.status AS unit_status
+         FROM dept_pouch_units un
+         INNER JOIN dept_pouch_barcodes c ON c.id = un.barcode_id
+         WHERE un.consumed_ref_type = 'pos_sale' AND un.consumed_ref_id IN ({$placeholders})
+         ORDER BY un.id ASC"
+    );
+    $st->execute($saleIds);
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $productKey = strtolower(trim((string) $row['product_key']));
+        $push(
+            (int) $row['sale_id'],
+            'dept',
+            'dept|' . $productKey,
+            (string) $row['code'],
+            (string) ($row['unit_status'] ?? '') !== 'sold'
+        );
+    }
+
+    return $bySale;
+}
+
+/**
+ * Attach scanned barcodes onto receipt lines (qty units → that many codes).
+ *
+ * @param list<array<string, mixed>> $items
+ * @param list<array{kind: string, match_key: string, code: string, returned: bool}> $units
+ * @return list<array<string, mixed>>
+ */
+function honey_sales_attach_barcodes_to_items(array $items, array $units): array
+{
+    $queues = [];
+    foreach ($units as $unit) {
+        if (!empty($unit['returned'])) {
+            continue;
+        }
+        $queues[$unit['match_key']][] = $unit;
+    }
+
+    foreach ($items as &$item) {
+        $variant = strtolower(trim((string) ($item['variant'] ?? '')));
+        $size = trim((string) ($item['size'] ?? ''));
+        $productKey = strtolower(trim((string) ($item['product_key'] ?? '')));
+        if ($variant !== '' && $size !== '') {
+            $matchKey = 'honey|' . $variant . '|' . $size;
+        } elseif ($productKey !== '') {
+            $matchKey = 'dept|' . $productKey;
+        } else {
+            $matchKey = '';
+            foreach (array_keys($queues) as $key) {
+                if (str_starts_with((string) $key, 'dept|') && ($queues[$key] ?? []) !== []) {
+                    $matchKey = (string) $key;
+                    break;
+                }
+            }
+        }
+        $need = max(1, (int) round((float) ($item['qty'] ?? 0)));
+        $picked = [];
+        while ($need > 0 && $matchKey !== '' && ($queues[$matchKey] ?? []) !== []) {
+            $unit = array_shift($queues[$matchKey]);
+            $picked[] = [
+                'code' => $unit['code'],
+                'returned' => false,
+            ];
+            $need--;
+        }
+        $item['barcodes'] = $picked;
+    }
+    unset($item);
+
+    return $items;
+}
+
+
 
 function honey_sales_pos_has_sold_by_user(PDO $pdo): bool
 {
@@ -347,9 +515,52 @@ function honey_sales_fetch_checkouts(
     $saleIds = array_map(static fn ($r) => (int) $r['sale_id'], $sales);
     $placeholders = implode(',', array_fill(0, count($saleIds), '?'));
 
+    // Heal receipts that were restocked before money reverse existed (idempotent).
+    foreach ($saleIds as $saleId) {
+        $ownsHeal = !$pdo->inTransaction();
+        try {
+            if ($ownsHeal) {
+                $pdo->beginTransaction();
+            }
+            pos_sale_heal_returned_units($pdo, $saleId);
+            if ($ownsHeal) {
+                $pdo->commit();
+            }
+        } catch (Throwable $e) {
+            if ($ownsHeal && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            // Non-fatal: still show checkouts even if heal fails.
+        }
+    }
+
+    // Refresh sale money after possible heal.
+    if ($saleIds !== []) {
+        $hasUserSeller = honey_sales_pos_has_sold_by_user($pdo);
+        $refreshSql = 'SELECT ps.id AS sale_id, ps.subtotal_amount, ps.discount_amount, ps.total_amount
+                       FROM pos_sales ps WHERE ps.id IN (' . $placeholders . ')';
+        $rst = $pdo->prepare($refreshSql);
+        $rst->execute($saleIds);
+        $moneyById = [];
+        foreach ($rst->fetchAll(PDO::FETCH_ASSOC) as $m) {
+            $moneyById[(int) $m['sale_id']] = $m;
+        }
+        foreach ($sales as &$s) {
+            $sid = (int) $s['sale_id'];
+            if (isset($moneyById[$sid])) {
+                $s['subtotal_amount'] = $moneyById[$sid]['subtotal_amount'];
+                $s['discount_amount'] = $moneyById[$sid]['discount_amount'];
+                $s['total_amount'] = $moneyById[$sid]['total_amount'];
+            }
+        }
+        unset($s);
+        unset($hasUserSeller);
+    }
+
     $itemSql = "SELECT pri.sale_id, pri.qty, pri.unit_price, pri.list_unit_price, pri.line_total,
                        pri.variant, pri.size,
-                       p.variant AS p_variant, p.size AS p_size, p.name AS product_name
+                       p.variant AS p_variant, p.size AS p_size, p.name AS product_name,
+                       p.dept_product_key
                 FROM pos_receipt_items pri
                 LEFT JOIN products p ON p.id = pri.product_id
                 WHERE pri.sale_id IN ({$placeholders})
@@ -360,6 +571,24 @@ function honey_sales_fetch_checkouts(
     foreach ($ist->fetchAll(PDO::FETCH_ASSOC) as $item) {
         $sid = (int) $item['sale_id'];
         $itemsBySale[$sid][] = honey_sales_serialize_receipt_item($item);
+    }
+
+    $barcodesBySale = honey_sales_load_checkout_barcodes($pdo, $saleIds);
+    foreach ($itemsBySale as $sid => $items) {
+        $itemsBySale[$sid] = honey_sales_attach_barcodes_to_items($items, $barcodesBySale[$sid] ?? []);
+    }
+    $returnedBySale = [];
+    foreach ($barcodesBySale as $sid => $units) {
+        $returnedBySale[$sid] = [];
+        foreach ($units as $unit) {
+            if (!empty($unit['returned'])) {
+                $returnedBySale[$sid][] = [
+                    'code' => $unit['code'],
+                    'kind' => $unit['kind'],
+                    'match_key' => $unit['match_key'],
+                ];
+            }
+        }
     }
 
     $rows = [];
@@ -380,6 +609,7 @@ function honey_sales_fetch_checkouts(
             'is_ar' => (int) ($s['is_ar'] ?? 0) === 1,
             'item_count' => count($items),
             'items' => $items,
+            'returned_units' => $returnedBySale[$saleId] ?? [],
         ];
     }
 
