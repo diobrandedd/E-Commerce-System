@@ -251,63 +251,49 @@ function rts_barcode_label_job_create(PDO $pdo, int $userId, array $lines, ?stri
                 if (!in_array($size, HONEY_SIZES, true)) {
                     throw new RuntimeException('Honey size is required (250ml / 350ml / 1L / Gallon).');
                 }
-                $reused = false;
-                $pk = honey_bottle_create_custom_packaging(
-                    $pdo,
-                    $userId,
-                    '',
-                    $variant,
-                    $bottlingDate,
-                    $batchNo,
-                    $reused
-                );
-                $batch = honey_bottle_generate_batch(
-                    $pdo,
-                    $userId,
-                    $qty,
-                    (int) $pk['id'],
-                    $size,
-                    'rts_label',
-                    null,
-                    $bottlingDate,
-                    $jobId
-                );
+                require_once __DIR__ . '/sku_barcodes.php';
+                $sku = sku_barcode_fetch_honey($pdo, $variant, $size);
+                if ($sku === null) {
+                    throw new RuntimeException(
+                        'No SKU barcode for ' . ucfirst($variant) . ' ' . honey_bottle_size_label($size)
+                        . '. Set it in System Settings → Barcode Settings.'
+                    );
+                }
+                sku_barcode_record_print($pdo, $userId, (int) $sku['id'], $qty, 'rts', null, null, $jobId);
                 $pdo->prepare(
                     'INSERT INTO rts_barcode_label_job_lines (
                         job_id, sort_order, kind, honey_batch_id, dept_batch_id,
                         product_key, size, variant, batch_no, bottling_date, quantity
-                     ) VALUES (?, ?, "honey", ?, NULL, "honey", ?, ?, ?, ?, ?)'
+                     ) VALUES (?, ?, "honey", NULL, NULL, "honey", ?, ?, ?, ?, ?)'
                 )->execute([
                     $jobId,
                     $sort,
-                    (int) $batch['id'],
                     $size,
                     $variant,
-                    (string) $batch['batch_no'],
+                    $batchNo !== '' ? $batchNo : (string) $sku['code'],
                     $bottlingDate,
                     $qty,
                 ]);
             } elseif (dept_pouch_supports($productKey)) {
-                $batch = dept_pouch_generate_rts_label(
-                    $pdo,
-                    $userId,
-                    $productKey,
-                    $batchNo,
-                    $bottlingDate,
-                    $qty,
-                    $jobId
-                );
+                require_once __DIR__ . '/sku_barcodes.php';
+                $sku = sku_barcode_fetch_dept($pdo, $productKey);
+                if ($sku === null) {
+                    throw new RuntimeException(
+                        'No SKU barcode for ' . dept_pouch_product_label($productKey)
+                        . '. Set it in System Settings → Barcode Settings.'
+                    );
+                }
+                sku_barcode_record_print($pdo, $userId, (int) $sku['id'], $qty, 'rts', null, null, $jobId);
                 $pdo->prepare(
                     'INSERT INTO rts_barcode_label_job_lines (
                         job_id, sort_order, kind, honey_batch_id, dept_batch_id,
                         product_key, size, variant, batch_no, bottling_date, quantity
-                     ) VALUES (?, ?, "dept", NULL, ?, ?, NULL, NULL, ?, ?, ?)'
+                     ) VALUES (?, ?, "dept", NULL, NULL, ?, NULL, NULL, ?, ?, ?)'
                 )->execute([
                     $jobId,
                     $sort,
-                    (int) $batch['id'],
                     $productKey,
-                    (string) $batch['batch_no'],
+                    $batchNo !== '' ? $batchNo : (string) $sku['code'],
                     $bottlingDate,
                     $qty,
                 ]);
@@ -422,237 +408,58 @@ function rts_barcode_label_job_codes(PDO $pdo, int $jobId): array
  */
 function rts_barcode_label_print_sheet_html(PDO $pdo, int $jobId): string
 {
+    require_once __DIR__ . '/sku_barcodes.php';
     $job = rts_barcode_label_job_get($pdo, $jobId);
     /** @var list<array{slots: int, html: string}> $stream */
     $stream = [];
     $labelCount = 0;
+    $batchIndex = 0;
 
     foreach ($job['lines'] as $line) {
-        $batchNo = htmlspecialchars((string) $line['batch_no'], ENT_QUOTES, 'UTF-8');
-        $date = htmlspecialchars((string) $line['bottling_date'], ENT_QUOTES, 'UTF-8');
-        $product = htmlspecialchars((string) $line['product_label'], ENT_QUOTES, 'UTF-8');
-        $sizeBit = '';
-        if (!empty($line['size_label'])) {
-            $sizeBit = ' · ' . htmlspecialchars((string) $line['size_label'], ENT_QUOTES, 'UTF-8');
-        }
-        $qty = (int) $line['quantity'];
-        $bannerText = 'Batch ' . $batchNo . ' · Bottled ' . $date . ' · ' . $product . $sizeBit . ' · qty ' . $qty;
+        $batchIndex++;
+        $letter = $batchIndex <= 26 ? chr(64 + $batchIndex) : (string) $batchIndex;
         $stream[] = [
-            'slots' => 4,
-            'html' => '<div class="banner" title="' . $bannerText . '"><div class="banner-inner">'
-                . $bannerText . '</div></div>',
+            'slots' => SKU_LABEL_SHEET_COLS,
+            'html' => sku_barcode_label_banner_html('BATCH ' . $letter),
         ];
 
         $codes = [];
+        $qty = (int) $line['quantity'];
         if (($line['kind'] ?? '') === 'honey' && !empty($line['honey_batch_id'])) {
             $codes = honey_bottle_batch_codes($pdo, (int) $line['honey_batch_id']);
         } elseif (($line['kind'] ?? '') === 'dept' && !empty($line['dept_batch_id'])) {
             $codes = dept_pouch_batch_codes($pdo, (int) $line['dept_batch_id']);
+        } else {
+            $sku = null;
+            if (($line['kind'] ?? '') === 'honey') {
+                $sku = sku_barcode_fetch_honey(
+                    $pdo,
+                    (string) ($line['variant'] ?? ''),
+                    (string) ($line['size'] ?? '')
+                );
+            } else {
+                $sku = sku_barcode_fetch_dept($pdo, (string) ($line['product_key'] ?? ''));
+            }
+            if ($sku !== null) {
+                $skuCode = (string) $sku['code'];
+                for ($i = 0; $i < $qty; $i++) {
+                    $codes[] = ['code' => $skuCode, 'status' => 'generated', 'sequence_no' => $i + 1];
+                }
+            }
         }
         foreach ($codes as $row) {
             if ((string) ($row['status'] ?? '') === 'void') {
                 continue;
             }
-            $code = (string) $row['code'];
-            try {
-                $svg = honey_bottle_code128_svg($code);
-            } catch (Throwable) {
-                $svg = '<div class="err">barcode lib missing</div>';
-            }
-            $safe = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
             $stream[] = [
                 'slots' => 1,
-                'html' => '<div class="label"><div class="bc" title="' . $safe . '">' . $svg
-                    . '</div><div class="code">' . $safe . '</div></div>',
+                'html' => sku_barcode_label_cell_html((string) $row['code']),
             ];
             $labelCount++;
         }
     }
 
-    // Pack by visual rows (17 × 4), not abstract “slots”. A full-width banner is
-    // one row via grid-column:1/-1. If the previous batch ended mid-row, pad empties
-    // so the next banner starts at column 1 — otherwise auto-placement leaves holes,
-    // later pages overflow the fixed 17-row sheet, and barcodes clip (overflow:hidden).
-    $cols = 4;
-    $rowsPerPage = 17;
-    $pages = [];
-    $current = [];
-    $col = 0;
-    $rowsUsed = 0;
-
-    $pushEmpty = static function () use (&$current, &$col, &$rowsUsed, $cols): void {
-        $current[] = '<div class="label empty"></div>';
-        $col++;
-        if ($col >= $cols) {
-            $col = 0;
-            $rowsUsed++;
-        }
-    };
-
-    $flushPage = static function () use (
-        &$pages,
-        &$current,
-        &$col,
-        &$rowsUsed,
-        $cols,
-        $rowsPerPage,
-        $pushEmpty
-    ): void {
-        while ($col > 0) {
-            $pushEmpty();
-        }
-        while ($rowsUsed < $rowsPerPage) {
-            for ($i = 0; $i < $cols; $i++) {
-                $current[] = '<div class="label empty"></div>';
-            }
-            $rowsUsed++;
-        }
-        $pages[] = $current;
-        $current = [];
-        $col = 0;
-        $rowsUsed = 0;
-    };
-
-    $ensureRowStart = static function () use (&$col, $pushEmpty): void {
-        while ($col > 0) {
-            $pushEmpty();
-        }
-    };
-
-    foreach ($stream as $item) {
-        $need = (int) $item['slots'];
-        if ($need >= $cols) {
-            // Banner: always a full row starting at column 1.
-            $ensureRowStart();
-            if ($rowsUsed >= $rowsPerPage) {
-                $flushPage();
-            }
-            $current[] = $item['html'];
-            $rowsUsed++;
-            $col = 0;
-            if ($rowsUsed >= $rowsPerPage) {
-                $flushPage();
-            }
-            continue;
-        }
-        // Label (1 cell).
-        if ($rowsUsed >= $rowsPerPage && $col === 0) {
-            $flushPage();
-        }
-        if ($rowsUsed >= $rowsPerPage) {
-            $flushPage();
-        }
-        $current[] = $item['html'];
-        $col++;
-        if ($col >= $cols) {
-            $col = 0;
-            $rowsUsed++;
-            if ($rowsUsed >= $rowsPerPage) {
-                $flushPage();
-            }
-        }
-    }
-    if ($current !== [] || $pages === []) {
-        $flushPage();
-    }
-
-    $pagesHtml = '';
-    foreach ($pages as $i => $chunk) {
-        $pageClass = $i === 0 ? 'page' : 'page page-break';
-        $pagesHtml .= '<section class="' . $pageClass . '"><div class="sheet">'
-            . implode('', $chunk) . '</div></section>';
-    }
-
     $title = 'RTS labels · job #' . (int) $job['id'];
-    $lineCount = count($job['lines']);
 
-    return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>'
-        . htmlspecialchars($title, ENT_QUOTES, 'UTF-8')
-        . '</title><style>
-        @page { size: A4 portrait; margin: 5mm; }
-        * { box-sizing: border-box; }
-        body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #fff; color: #111; }
-        .toolbar { margin: 10px 12px 0; }
-        .toolbar button { font-size: 14px; padding: 8px 14px; cursor: pointer; }
-        .toolbar .hint { font-size: 12px; color: #666; margin-left: 10px; }
-        .page { width: 200mm; margin: 0 auto; padding: 0; page-break-inside: avoid; break-inside: avoid; }
-        /* Fixed row height, never 1fr — a grid that crosses a browser print page
-           boundary re-solves rows and stacks/clips barcodes (see honey sheets).
-           Cap the sheet at exactly 17 rows so our .page sections stay atomic. */
-        .sheet {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          grid-auto-rows: 16.8mm;
-          gap: 0;
-          width: 100%;
-          height: 285.6mm;
-          max-height: 285.6mm;
-          overflow: hidden;
-          border-top: 0.35pt dashed #999;
-          border-left: 0.35pt dashed #999;
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-        .label, .banner {
-          height: 16.8mm;
-          max-height: 16.8mm;
-          border: none;
-          border-right: 0.35pt dashed #999;
-          border-bottom: 0.35pt dashed #999;
-          padding: 2mm 5mm;
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          overflow: hidden;
-          break-inside: avoid;
-          page-break-inside: avoid;
-        }
-        .banner {
-          grid-column: 1 / -1;
-          background: #f3f3f3;
-          padding: 1.5mm 3mm;
-        }
-        .banner-inner {
-          font-size: 8pt;
-          font-weight: 700;
-          letter-spacing: 0.2pt;
-          line-height: 1.2;
-          width: 100%;
-          text-align: left;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .label.empty .bc { visibility: hidden; }
-        .bc { line-height: 0; width: 100%; max-height: 11mm; overflow: hidden; }
-        .bc svg { width: 100%; max-height: 11mm; height: auto; display: block; }
-        .code {
-          margin-top: 0.6mm;
-          font-size: 7pt;
-          font-weight: 700;
-          letter-spacing: 0.6pt;
-          font-family: Consolas, monospace;
-          line-height: 1;
-        }
-        .label.empty .code { visibility: hidden; }
-        .page-break { page-break-before: always; break-before: page; }
-        @media print {
-          .toolbar { display: none; }
-          body { margin: 0; }
-          .page { width: auto; margin: 0; }
-          .sheet, .banner {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-        }
-        </style></head><body>
-        <div class="toolbar">
-          <button type="button" onclick="window.print()">Print A4</button>
-          <span class="hint">' . (int) $labelCount . ' label(s) · ' . (int) $lineCount
-        . ' batch line(s) · continuous packing · 68 slots/page · print at 100% scale</span>
-        </div>
-        ' . $pagesHtml . '
-        </body></html>';
+    return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);
 }

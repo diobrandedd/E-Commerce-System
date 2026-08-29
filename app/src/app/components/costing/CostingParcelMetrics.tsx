@@ -20,8 +20,8 @@ export function CostingParcelRowColumnHeaders({
     <div
       className={cn(
         withColorBar
-          ? "grid w-full items-center gap-x-2 sm:gap-x-3 px-4 py-1.5 border-t border-border bg-secondary/25 [grid-template-columns:0.25rem_minmax(0,1fr)_auto_1.25rem] sm:[grid-template-columns:0.25rem_minmax(5rem,1fr)_3.5rem_3.5rem_3.75rem_minmax(4rem,4.5rem)_4rem_1.25rem]"
-          : "grid w-full items-center gap-x-2 sm:gap-x-3 px-4 py-1.5 border-t border-border bg-secondary/25 [grid-template-columns:minmax(0,1fr)_auto_1.25rem] sm:[grid-template-columns:minmax(5rem,1fr)_3.5rem_3.5rem_3.75rem_minmax(4rem,4.5rem)_4rem_1.25rem]",
+          ? "grid w-full items-center gap-x-2 sm:gap-x-3 px-4 py-1.5 border-t border-border bg-secondary/25 [grid-template-columns:0.25rem_minmax(0,1fr)_auto_1.25rem] sm:[grid-template-columns:0.25rem_minmax(5rem,1fr)_3.5rem_3.5rem_3.75rem_4rem_minmax(4rem,4.5rem)_4rem_1.25rem]"
+          : "grid w-full items-center gap-x-2 sm:gap-x-3 px-4 py-1.5 border-t border-border bg-secondary/25 [grid-template-columns:minmax(0,1fr)_auto_1.25rem] sm:[grid-template-columns:minmax(5rem,1fr)_3.5rem_3.5rem_3.75rem_4rem_minmax(4rem,4.5rem)_4rem_1.25rem]",
       )}
     >
       {withColorBar && <span />}
@@ -31,6 +31,7 @@ export function CostingParcelRowColumnHeaders({
       <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Prod. COGS</span>
       <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Pack (typ.)</span>
       <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Landed</span>
+      <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Sell</span>
       {isExec && <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Margin</span>}
       <span className={cn(costingRowHeaderClass, "hidden sm:block text-right")}>Baseline</span>
       <span />
@@ -41,12 +42,12 @@ export function CostingParcelRowColumnHeaders({
 export const costingParcelRowGridClass =
   "grid w-full items-center gap-x-2 sm:gap-x-3 " +
   "[grid-template-columns:minmax(0,1fr)_auto_1.25rem] " +
-  "sm:[grid-template-columns:minmax(5rem,1fr)_3.5rem_3.5rem_3.75rem_minmax(4rem,4.5rem)_4rem_1.25rem]";
+  "sm:[grid-template-columns:minmax(5rem,1fr)_3.5rem_3.5rem_3.75rem_4rem_minmax(4rem,4.5rem)_4rem_1.25rem]";
 
 export const costingParcelHoneyRowGridClass =
   "grid w-full items-center gap-x-2 sm:gap-x-3 " +
   "[grid-template-columns:0.25rem_minmax(0,1fr)_auto_1.25rem] " +
-  "sm:[grid-template-columns:0.25rem_minmax(5rem,1fr)_3.5rem_3.5rem_3.75rem_minmax(4rem,4.5rem)_4rem_1.25rem]";
+  "sm:[grid-template-columns:0.25rem_minmax(5rem,1fr)_3.5rem_3.5rem_3.75rem_4rem_minmax(4rem,4.5rem)_4rem_1.25rem]";
 
 export function CostingParcelProductMetrics({
   cogs,
@@ -73,12 +74,15 @@ export function CostingParcelProductMetrics({
       <div className="flex flex-col items-end justify-center min-w-0 sm:contents">
         <div className="sm:hidden text-right tabular-nums">
           <MetricValue value={landed !== null ? peso(landed) : peso(cogs)} />
-          {isExec && landed !== null && (
-            <p className="text-[10px] text-muted-foreground leading-tight">
-              +{peso(parcelAddon ?? 0)} pack ·{" "}
-              <span className={margin > 0 ? "text-green-600" : "text-red-500"}>{marginPct}%</span>
-            </p>
-          )}
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            Sell {peso(selling)}
+            {isExec && landed !== null && (
+              <>
+                {" · "}
+                <span className={margin > 0 ? "text-green-600" : "text-red-500"}>{marginPct}%</span>
+              </>
+            )}
+          </p>
         </div>
         <div className="hidden sm:block text-right tabular-nums">
           <MetricValue value={peso(cogs)} />
@@ -94,6 +98,9 @@ export function CostingParcelProductMetrics({
             value={landed !== null ? peso(landed) : "—"}
             className={landed === null ? "text-muted-foreground font-normal" : undefined}
           />
+        </div>
+        <div className="hidden sm:block text-right tabular-nums">
+          <MetricValue value={peso(selling)} />
         </div>
         {isExec && (
           <div className="hidden sm:block text-right tabular-nums">

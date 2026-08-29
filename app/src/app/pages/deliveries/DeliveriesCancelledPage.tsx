@@ -14,7 +14,11 @@ import {
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
 import { ApiError } from "@/app/lib/api";
-import { packCancelRestockApi, type PackCancelRestockSession } from "@/app/lib/packCancelRestock";
+import {
+  packCancelRestockApi,
+  type PackCancelRestockLookup,
+  type PackCancelRestockSession,
+} from "@/app/lib/packCancelRestock";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 import { DeliveriesCancelledGuideModal } from "@/app/components/fulfillment/DeliveriesCancelledGuideModal";
@@ -63,7 +67,7 @@ export function DeliveriesCancelledPage() {
   return (
     <PageLayout
       title="Cancelled restock"
-      subtitle="Scan packed, shipped, or POS walk-in sold stickers back to packaging, finished, or RTS stock (by original pool)."
+      subtitle="Scan cancelled stickers or static SKU barcodes back to packaging, finished, or RTS stock."
       actions={
         <button
           type="button"
@@ -120,6 +124,10 @@ function RestockLivePanel() {
   const [ok, setOk] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [pendingLookup, setPendingLookup] = useState<PackCancelRestockLookup | null>(null);
+  const [pendingCode, setPendingCode] = useState("");
+  const [pendingQty, setPendingQty] = useState("1");
+  const [pendingPool, setPendingPool] = useState<"packaging" | "finished" | "rts_sellable">("packaging");
   const [busy, setBusy] = useState(false);
   const cameraTitleId = useId();
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, session?.id);
@@ -146,6 +154,15 @@ function RestockLivePanel() {
     try {
       const res = await packCancelRestockApi.scan(session.id, value);
       setSession(res.session);
+      if (res.result === "sku_requires_details" && res.lookup) {
+        setPendingLookup(res.lookup);
+        setPendingCode(res.lookup.code || value);
+        setPendingQty("1");
+        setPendingPool(res.lookup.kind === "honey" ? "packaging" : "finished");
+        setCameraOpen(false);
+        setMsg(`${res.lookup.label || res.lookup.product_label || "SKU"} — enter quantity and destination`);
+        return { kind: "success", message: "SKU found. Enter quantity and destination." };
+      }
       if (res.result === "ok") {
         playScanBeep("ok");
         setFlash("ok");
@@ -179,6 +196,31 @@ function RestockLivePanel() {
       setMsg(reason);
       window.setTimeout(() => setFlash(null), 650);
       return { kind: "error", message: reason };
+    }
+  };
+
+  const queueSku = async () => {
+    if (!session || !pendingLookup || !pendingCode) return;
+    const qty = Number.parseInt(pendingQty, 10);
+    if (!Number.isInteger(qty) || qty < 1 || qty > 5000) {
+      setError("Quantity must be a whole number from 1 to 5000.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await packCancelRestockApi.scan(session.id, pendingCode, { qty, pool: pendingPool });
+      setSession(res.session);
+      setPendingLookup(null);
+      setPendingCode("");
+      setFlash("ok");
+      setMsg(`Restock queued: ${res.lookup?.label || res.lookup?.product_label || "SKU"} × ${qty}`);
+      window.setTimeout(() => setFlash(null), 650);
+      refocus();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not queue SKU return.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -226,6 +268,7 @@ function RestockLivePanel() {
         <strong className="text-foreground">sold</strong> can be returned. Stock goes back to packaging,
         finished, or RTS by the unit&apos;s original pool.
         Confirm restores packaging, finished, or RTS inventory by each unit&apos;s pool.
+        Static SKU barcodes ask for a quantity and destination before they are queued.
       </p>
       <div className="flex gap-2">
         <input
@@ -255,7 +298,7 @@ function RestockLivePanel() {
       <p className="text-xl font-bold">{session?.item_count ?? 0} items to restore</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {(session?.grouped ?? []).map(g => (
-          <div key={`${g.kind}-${g.product_key}-${g.size_label}`} className="bg-card border rounded-xl px-3 py-2">
+          <div key={`${g.kind}-${g.product_key}-${g.size_label}-${g.unit_pool ?? "default"}`} className="bg-card border rounded-xl px-3 py-2">
             <p className="text-xs text-muted-foreground capitalize">{itemLabel(g)}</p>
             <p className="text-lg font-bold">{g.qty}</p>
           </div>
@@ -276,7 +319,7 @@ function RestockLivePanel() {
             These return to packaging, finished, or RTS stock (by pool).
           </p>
           {(session?.grouped ?? []).map(g => (
-            <p key={`${g.kind}-${g.product_key}`} className="text-sm font-medium capitalize">
+            <p key={`${g.kind}-${g.product_key}-${g.size_label}-${g.unit_pool ?? "default"}`} className="text-sm font-medium capitalize">
               {g.qty} × {itemLabel(g)}
             </p>
           ))}
@@ -288,6 +331,62 @@ function RestockLivePanel() {
           <Button type="button" onClick={() => void confirm()} disabled={busy}>
             {busy ? <Loader2 className="animate-spin" size={16} /> : null}
             Confirm
+          </Button>
+        </AppModalFooter>
+      </AppModal>
+      <AppModal open={pendingLookup !== null} onClose={() => setPendingLookup(null)}>
+        <AppModalHeader title="Return static SKU to stock" onClose={() => setPendingLookup(null)} />
+        <AppModalBody className="space-y-4">
+          <div className="rounded-lg border bg-secondary/20 px-3 py-2">
+            <p className="text-sm font-semibold">
+              {pendingLookup?.label || pendingLookup?.product_label || "SKU barcode"}
+            </p>
+            <p className="text-xs font-mono text-muted-foreground">{pendingCode || "—"}</p>
+          </div>
+          <label className="block text-sm font-medium">
+            Quantity
+            <input
+              type="number"
+              min={1}
+              max={5000}
+              step={1}
+              className="mt-1 block w-full border rounded-lg px-3 py-2 bg-background"
+              value={pendingQty}
+              onChange={e => setPendingQty(e.target.value)}
+              autoFocus
+            />
+          </label>
+          <label className="block text-sm font-medium">
+            Destination pool
+            <select
+              className="mt-1 block w-full border rounded-lg px-3 py-2 bg-background"
+              value={pendingPool}
+              onChange={e => setPendingPool(e.target.value as typeof pendingPool)}
+            >
+              {(pendingLookup?.kind === "honey"
+                ? [
+                    { value: "packaging", label: "Packaging" },
+                    { value: "rts_sellable", label: "RTS sellable" },
+                  ]
+                : [
+                    { value: "finished", label: "Finished" },
+                    { value: "rts_sellable", label: "RTS sellable" },
+                  ]
+              ).map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </AppModalBody>
+        <AppModalFooter>
+          <Button type="button" variant="outline" onClick={() => setPendingLookup(null)}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={() => void queueSku()} disabled={busy}>
+            {busy ? <Loader2 className="animate-spin" size={16} /> : null}
+            Queue return
           </Button>
         </AppModalFooter>
       </AppModal>
@@ -348,7 +447,7 @@ function RestockHistoryPanel() {
   return (
     <AppSectionEnter className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Confirmed restock sessions — units returned after courier cancel or POS walk-in cancel.
+        Confirmed restock sessions — units and quantity-based SKU returns after courier cancel or POS walk-in cancel.
       </p>
       <div className="flex flex-wrap gap-2 items-end bg-card border rounded-xl p-3">
         <label className="text-xs text-muted-foreground">
@@ -422,7 +521,9 @@ function RestockHistoryPanel() {
                         <tr>
                           <th className="text-left px-2 py-1">Code</th>
                           <th className="text-left px-2 py-1">Item</th>
+                          <th className="text-left px-2 py-1">Qty</th>
                           <th className="text-left px-2 py-1">Batch</th>
+                          <th className="text-left px-2 py-1">Scanned by</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -430,7 +531,12 @@ function RestockHistoryPanel() {
                           <tr key={`${it.kind}-${it.id}`} className="border-t">
                             <td className="px-2 py-1 font-mono text-xs">{it.code}</td>
                             <td className="px-2 py-1 capitalize">{itemLabel(it)}</td>
+                            <td className="px-2 py-1">{it.qty ?? 1}</td>
                             <td className="px-2 py-1 font-mono text-xs">{it.batch_no || "—"}</td>
+                            <td className="px-2 py-1 text-xs">
+                              {it.scanned_by_name || "—"}
+                              <span className="block text-muted-foreground">{formatWhen(it.scanned_at)}</span>
+                            </td>
                           </tr>
                         ))}
                       </tbody>

@@ -35,10 +35,13 @@ export function PackagingScanLogModal({
       size_label: string;
       scanned_at: string;
       scanned_by_name: string;
+      qty: number;
+      scan_kind: "sticker" | "sku";
       unit_status: string | null;
     }[]
   >([]);
   const [total, setTotal] = useState(0);
+  const [totalQty, setTotalQty] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,11 +54,13 @@ export function PackagingScanLogModal({
         const res = await bottleBarcodesApi.packagingScanLog(packagingRowId, p, scanDate);
         setRows(res.rows);
         setTotal(res.total);
+        setTotalQty(res.total_qty);
         setPage(res.page);
       } catch (e) {
         setError(e instanceof ApiError ? e.message : "Could not load scan history.");
         setRows([]);
         setTotal(0);
+        setTotalQty(0);
       } finally {
         setLoading(false);
       }
@@ -80,7 +85,7 @@ export function PackagingScanLogModal({
       <AppModalBody className="space-y-3 max-h-[75vh] overflow-y-auto">
         <AppSectionEnter>
           <p className="text-sm text-muted-foreground">
-            Bottles scanned into packaging inventory
+            Bottles stocked into packaging inventory
             {scanDate === "all" ? " across all dates" : ` on ${scanDate}`} — who scanned and when.
           </p>
           {error && <AppErrorBanner message={error} />}
@@ -90,20 +95,26 @@ export function PackagingScanLogModal({
             </div>
           ) : total === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
-              No stickers scanned into this batch
+              No stock-in entries for this batch
               {scanDate === "all" ? " yet." : ` on ${scanDate}.`}
             </p>
           ) : (
             <>
-              <p className="text-xs text-muted-foreground">{total} scan{total === 1 ? "" : "s"}</p>
+              <p className="text-xs text-muted-foreground">
+                {totalQty} bottle{totalQty === 1 ? "" : "s"} across {total} entr{total === 1 ? "y" : "ies"}
+              </p>
               <ul className="divide-y rounded-xl border border-border overflow-hidden">
                 {rows.map(r => (
-                  <li key={`${r.code}-${r.scanned_at}`} className={`px-3 py-2.5 ${appHoverRow}`}>
+                  <li key={`${r.scan_kind}-${r.code}-${r.scanned_at}`} className={`px-3 py-2.5 ${appHoverRow}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-mono text-sm font-semibold tracking-wide">{r.code}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {r.size_label}
+                          {" · "}
+                          {r.scan_kind === "sku" ? "SKU quantity" : "Individual sticker"}
+                          {" · Qty "}
+                          {r.qty}
                           {r.unit_status ? ` · ${r.unit_status.replace(/_/g, " ")}` : ""}
                         </p>
                       </div>

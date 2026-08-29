@@ -39,6 +39,18 @@ export interface DeptPouchRequest {
   latest_batch_id: number | null;
 }
 
+export interface DeptSkuPrintJobRow {
+  id: number;
+  sku_id: number;
+  sku_code: string;
+  product_key: string;
+  label: string;
+  quantity: number;
+  printed_by_name: string;
+  printed_at: string;
+  print_url: string;
+}
+
 export interface DeptPouchBatch {
   id: number;
   product_key: string;
@@ -62,7 +74,7 @@ export function deptPouchPrintSheetUrl(batchId: number): string {
 export const deptPouchBarcodesApi = {
   requestCreate: (
     productKey: string,
-    body: { batch_no: string; quantity: number; notes?: string },
+    body: { batch_no?: string; quantity: number; notes?: string },
   ) =>
     apiPost<{ request: DeptPouchRequest }>(ENDPOINT, "request_create", {
       ...body,
@@ -80,20 +92,45 @@ export const deptPouchBarcodesApi = {
   pendingCounts: () =>
     apiGet<{ counts: Partial<Record<DeptPouchProductKey, number>> }>(ENDPOINT, "pending_counts"),
   generate: (requestId: number) =>
-    apiPost<{ batch: DeptPouchBatch }>(ENDPOINT, "generate", { request_id: requestId }),
+    apiPost<{
+      sku: { id: number; code: string; label?: string };
+      print_job_id: number;
+      print_url: string;
+      request: DeptPouchRequest;
+      message?: string;
+    }>(ENDPOINT, "generate", { request_id: requestId }),
+  generateBatch: (productKey: string, requestIds: number[]) =>
+    apiPost<{
+      print_url: string;
+      requests: DeptPouchRequest[];
+      batch_count: number;
+      message?: string;
+    }>(ENDPOINT, "generate_batch", { product_key: productKey, request_ids: requestIds }),
+  skuPrintList: (productKey: string, limit = 40) =>
+    apiGet<{ rows: DeptSkuPrintJobRow[] }>(ENDPOINT, "sku_print_list", {
+      product_key: productKey,
+      limit,
+    }),
   batchList: (productKey: string) =>
     apiGet<{ rows: DeptPouchBatch[] }>(ENDPOINT, "batch_list", { product_key: productKey }),
   markPrinted: (batchId: number) =>
     apiPost<{ batch: DeptPouchBatch }>(ENDPOINT, "mark_printed", { batch_id: batchId }),
-  scanStockIn: (productKey: string, code: string) =>
+  scanStockIn: (productKey: string, code: string, qty?: number) =>
     apiPost<{
       code: string;
       product_key: string;
-      batch_no: string;
-      unit_id: number;
-      finished_on_hand: number | null;
+      batch_no?: string;
+      unit_id?: number;
+      finished_on_hand?: number | null;
       request?: DeptPouchRequest;
-    }>(ENDPOINT, "scan_stock_in", { product_key: productKey, code }),
+      lookup_kind?: string;
+      qty?: number;
+      label?: string;
+    }>(ENDPOINT, "scan_stock_in", {
+      product_key: productKey,
+      code,
+      ...(qty != null ? { qty } : {}),
+    }),
   scanReport: (productKey: string, scanDate: string, page = 1) =>
     apiGet<{
       dates: string[];

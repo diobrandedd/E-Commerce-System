@@ -66,6 +66,8 @@ api_dispatch([
     'request_cancel' => 'api_bottle_request_cancel',
     'pending_count' => 'api_bottle_pending_count',
     'generate' => 'api_bottle_generate',
+    'generate_batch' => 'api_bottle_generate_batch',
+    'sku_print_list' => 'api_bottle_sku_print_list',
     'batch_list' => 'api_bottle_batch_list',
     'batch_get' => 'api_bottle_batch_get',
     'mark_printed' => 'api_bottle_mark_printed',
@@ -253,19 +255,113 @@ function api_bottle_generate(): void
     $user = api_bottle_require_generate();
     $in = api_input();
     $requestId = (int) ($in['request_id'] ?? 0);
-    $packId = isset($in['packaging_row_id']) ? (int) $in['packaging_row_id'] : null;
-    $productionRowId = isset($in['production_row_id']) ? (int) $in['production_row_id'] : null;
     if ($requestId < 1) {
         api_fail('request_id is required.');
     }
-    $batch = honey_bottle_generate_for_request(
+    require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
+    $req = honey_bottle_request_get(ims_pdo(), $requestId);
+    $sku = sku_barcode_fetch_honey(ims_pdo(), (string) $req['variant'], (string) $req['size']);
+    if ($sku === null) {
+        api_fail(
+            'No SKU barcode configured for this product. Set it in System Settings → Barcode Settings first.',
+            422
+        );
+    }
+    $qty = (int) $req['quantity'];
+    $jobId = sku_barcode_record_print(
         ims_pdo(),
         (int) $user['id'],
+        (int) $sku['id'],
+        $qty,
+        'honey',
         $requestId,
-        $packId !== null && $packId > 0 ? $packId : null,
-        $productionRowId !== null && $productionRowId > 0 ? $productionRowId : null
+        null,
+        null
     );
-    api_ok(['batch' => $batch]);
+    ims_pdo()->prepare(
+        'UPDATE honey_bottle_requests SET status = "barcodes_generated" WHERE id = ? AND status IN ("pending","barcodes_generated")'
+    )->execute([$requestId]);
+    api_ok([
+        'sku' => sku_barcode_serialize($sku),
+        'print_job_id' => $jobId,
+        'print_url' => '/rts/api/v1/sku_barcodes.php?action=print_sheet&sku_id=' . (int) $sku['id'] . '&qty=' . $qty,
+        'request' => honey_bottle_request_get(ims_pdo(), $requestId),
+        'message' => 'Print identical SKU stickers — unique per-bottle codes are no longer generated.',
+    ]);
+}
+
+function api_bottle_generate_batch(): void
+{
+    api_method_allowed(['POST']);
+    api_bottle_require_csrf();
+    $user = api_bottle_require_generate();
+    $in = api_input();
+    $rawIds = $in['request_ids'] ?? null;
+    if (!is_array($rawIds) || $rawIds === []) {
+        api_fail('request_ids array is required.', 422);
+    }
+    require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
+    $pdo = ims_pdo();
+    $groups = [];
+    $batchIndex = 0;
+    $requests = [];
+    foreach ($rawIds as $rawId) {
+        $requestId = (int) $rawId;
+        if ($requestId < 1) {
+            continue;
+        }
+        $req = honey_bottle_request_get($pdo, $requestId);
+        if ((string) ($req['status'] ?? '') === 'cancelled') {
+            continue;
+        }
+        $sku = sku_barcode_fetch_honey($pdo, (string) $req['variant'], (string) $req['size']);
+        if ($sku === null) {
+            api_fail(
+                'No SKU barcode for ' . (string) $req['variant'] . ' ' . (string) $req['size_label']
+                . '. Set it in Barcode Settings first.',
+                422
+            );
+        }
+        $qty = (int) $req['quantity'];
+        $batchIndex++;
+        $letter = $batchIndex <= 26 ? chr(64 + $batchIndex) : (string) $batchIndex;
+        sku_barcode_record_print(
+            $pdo,
+            (int) $user['id'],
+            (int) $sku['id'],
+            $qty,
+            'honey',
+            $requestId,
+            null,
+            null
+        );
+        $pdo->prepare(
+            'UPDATE honey_bottle_requests SET status = "barcodes_generated" WHERE id = ? AND status IN ("pending","barcodes_generated")'
+        )->execute([$requestId]);
+        $groups[] = [
+            'sku_id' => (int) $sku['id'],
+            'qty' => $qty,
+            'banner' => 'BATCH ' . $letter,
+        ];
+        $requests[] = honey_bottle_request_get($pdo, $requestId);
+    }
+    if ($groups === []) {
+        api_fail('No valid requests to print.', 422);
+    }
+    api_ok([
+        'print_url' => sku_barcode_print_sheet_url($groups),
+        'requests' => $requests,
+        'batch_count' => count($groups),
+        'message' => 'Combined print sheet — ' . count($groups) . ' product batch(es).',
+    ]);
+}
+
+function api_bottle_sku_print_list(): void
+{
+    api_method_allowed(['GET']);
+    api_bottle_require_generate();
+    require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
+    api_ok(['rows' => sku_barcode_print_job_list(ims_pdo(), 'honey', (int) ($_GET['limit'] ?? 40))]);
 }
 
 function api_bottle_batch_list(): void
@@ -336,8 +432,62 @@ function api_bottle_scan_stock_in(): void
     api_bottle_require_csrf();
     $user = api_bottle_require_scan();
     $in = api_input();
+    $code = (string) ($in['code'] ?? '');
+    $qty = isset($in['qty']) ? (int) $in['qty'] : null;
+    $packId = isset($in['packaging_row_id']) ? (int) $in['packaging_row_id'] : 0;
+    $customBatchNo = trim((string) ($in['batch_no'] ?? ''));
+    require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
+    $sku = sku_barcode_fetch_by_code(ims_pdo(), $code);
+    if ($sku !== null) {
+        if ((string) $sku['kind'] !== 'honey') {
+            api_fail('This SKU is not a honey product. Use the dept scan-in page.', 422);
+        }
+        if ($qty === null || $qty < 1) {
+            api_fail('Enter how many bottles to stock in for this SKU.', 422);
+        }
+        if ($packId < 1 && $customBatchNo === '') {
+            api_fail('Enter a custom batch number before stocking in SKU barcodes.', 422);
+        }
+        try {
+            if ($packId < 1 && $customBatchNo !== '') {
+                $reused = false;
+                $customPack = honey_bottle_create_custom_packaging(
+                    ims_pdo(),
+                    (int) $user['id'],
+                    $customBatchNo,
+                    (string) $sku['variant'],
+                    date('Y-m-d'),
+                    $customBatchNo,
+                    $reused
+                );
+                $packId = (int) $customPack['id'];
+            }
+            $stocked = sku_barcode_honey_stock_in(
+                ims_pdo(),
+                (int) $user['id'],
+                (string) $sku['variant'],
+                (string) $sku['size'],
+                $qty,
+                $packId
+            );
+            $payload = array_merge($stocked, [
+                'lookup_kind' => 'sku',
+                'code' => (string) $sku['code'],
+                'variant' => (string) $sku['variant'],
+                'size' => (string) $sku['size'],
+                'size_label' => honey_bottle_size_label((string) $sku['size']),
+            ]);
+            if (!empty($stocked['primary_request_id'])) {
+                require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
+                $payload['request'] = honey_bottle_request_get(ims_pdo(), (int) $stocked['primary_request_id']);
+            }
+            api_ok($payload);
+        } catch (Throwable $e) {
+            api_fail($e->getMessage(), 422);
+        }
+    }
     $adopt = !empty($in['adopt']);
-    api_ok(honey_bottle_scan_stock_in(ims_pdo(), (int) $user['id'], (string) ($in['code'] ?? ''), $adopt));
+    api_ok(honey_bottle_scan_stock_in(ims_pdo(), (int) $user['id'], $code, $adopt));
 }
 
 function api_bottle_pack_start(): void
@@ -383,7 +533,10 @@ function api_bottle_pack_scan(): void
     api_ok(honey_bottle_pack_session_scan(
         ims_pdo(),
         (int) ($in['session_id'] ?? 0),
-        (string) ($in['code'] ?? '')
+        (string) ($in['code'] ?? ''),
+        isset($in['qty']) ? (int) $in['qty'] : null,
+        isset($in['pool']) ? (string) $in['pool'] : null,
+        isset($in['packaging_row_id']) ? (int) $in['packaging_row_id'] : null
     ));
 }
 

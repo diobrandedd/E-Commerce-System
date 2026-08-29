@@ -16,6 +16,8 @@ export interface POSARLineItem {
   variant?: string;
   size?: string;
   productKey?: string;
+  lookupKind?: "sku" | "unique_honey" | "unique_dept";
+  skuId?: number;
   bottleUnitIds?: number[];
   pouchUnitIds?: number[];
 }
@@ -70,10 +72,13 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
     setError(null);
     try {
       const hasUnitBarcodes = lines.some(
-        l => (l.bottleUnitIds?.length ?? 0) > 0 || (l.pouchUnitIds?.length ?? 0) > 0,
+        l =>
+          l.lookupKind === "sku" ||
+          (l.bottleUnitIds?.length ?? 0) > 0 ||
+          (l.pouchUnitIds?.length ?? 0) > 0,
       );
       const resolvedSource =
-        mode === "unified" || (mode === "dept" && lines.some(l => (l.pouchUnitIds?.length ?? 0) > 0))
+        mode === "unified" || (mode === "dept" && lines.some(l => (l.pouchUnitIds?.length ?? 0) > 0 || l.lookupKind === "sku"))
           ? "packaging"
           : stockSource;
       if (resolvedSource === "rts" && !hasUnitBarcodes) {
@@ -87,17 +92,40 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
         mode === "honey" ? "honey_ar_checkout" : mode === "dept" ? "dept_ar_checkout" : "unified_ar_checkout";
       const items =
         mode === "unified"
-          ? lines.map(l => ({
-              kind: l.kind ?? (l.bottleUnitIds?.length ? "honey" : "dept"),
-              product_id: l.productId,
-              list_unit_price: l.unitPrice,
-              qty: l.qty,
-              variant: l.variant,
-              size: l.size,
-              product_key: l.productKey,
-              bottle_unit_ids: l.bottleUnitIds ?? [],
-              pouch_unit_ids: l.pouchUnitIds ?? [],
-            }))
+          ? lines.map(l => {
+              const lookupKind =
+                l.lookupKind ??
+                (l.skuId
+                  ? "sku"
+                  : l.bottleUnitIds?.length
+                    ? "unique_honey"
+                    : "unique_dept");
+              if (lookupKind === "sku") {
+                return {
+                  kind: l.kind ?? "honey",
+                  product_id: l.productId,
+                  list_unit_price: l.unitPrice,
+                  qty: l.qty,
+                  lookup_kind: "sku",
+                  sku_id: l.skuId,
+                  variant: l.variant,
+                  size: l.size,
+                  product_key: l.productKey,
+                };
+              }
+              return {
+                kind: l.kind ?? (l.bottleUnitIds?.length ? "honey" : "dept"),
+                product_id: l.productId,
+                list_unit_price: l.unitPrice,
+                qty: l.qty,
+                lookup_kind: lookupKind,
+                variant: l.variant,
+                size: l.size,
+                product_key: l.productKey,
+                bottle_unit_ids: l.bottleUnitIds ?? [],
+                pouch_unit_ids: l.pouchUnitIds ?? [],
+              };
+            })
           : mode === "honey"
           ? lines.map(l => ({
               product_id: l.productId,

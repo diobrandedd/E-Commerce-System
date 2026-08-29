@@ -236,6 +236,7 @@ export function rtsListDamagedInventory() {
 
 export interface RtsStockInScanResult {
   kind: "honey" | "dept";
+  lookup_kind?: "sku" | "unique_honey" | "unique_dept";
   unit: {
     code?: string;
     variant?: string;
@@ -245,13 +246,17 @@ export interface RtsStockInScanResult {
     product_label?: string;
     unit_id?: number;
     rts_stock_in?: boolean;
+    qty?: number;
     [key: string]: unknown;
   };
 }
 
-/** Scan a honey or dept barcode into RTS sellable inventory. */
-export function rtsStockInScan(code: string) {
-  return apiPost<RtsStockInScanResult>("rts.php", "stock_in_scan", { code: code.trim() });
+/** Scan a honey or dept barcode into RTS sellable inventory. SKU codes require qty. */
+export function rtsStockInScan(code: string, qty?: number) {
+  return apiPost<RtsStockInScanResult>("rts.php", "stock_in_scan", {
+    code: code.trim(),
+    ...(qty != null ? { qty } : {}),
+  });
 }
 
 export interface RtsDamagedUseLogRow {

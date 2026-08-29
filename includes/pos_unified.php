@@ -129,6 +129,62 @@ function pos_unified_lookup(PDO $pdo, string $code): array
         throw new RuntimeException('Scan a barcode.');
     }
 
+    require_once __DIR__ . '/sku_barcodes.php';
+    $sku = sku_barcode_fetch_by_code($pdo, $code);
+    if ($sku !== null) {
+        if ((string) $sku['kind'] === 'honey') {
+            $variant = (string) $sku['variant'];
+            $size = (string) $sku['size'];
+            $prod = pos_unified_resolve_honey_product($pdo, $variant, $size);
+            if ($prod === null || $prod['product_id'] < 1) {
+                throw new RuntimeException('No product record for this honey SKU.');
+            }
+
+            return [
+                'kind' => 'honey',
+                'lookup_kind' => 'sku',
+                'requires_qty' => true,
+                'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),
+                'product_id' => $prod['product_id'],
+                'product_name' => $prod['name'],
+                'variant' => $variant,
+                'size' => $size,
+                'size_label' => honey_bottle_size_label($size),
+                'product_key' => null,
+                'unit_id' => null,
+                'sku_id' => (int) $sku['id'],
+                'code' => (string) $sku['code'],
+                'batch_no' => null,
+                'suggested_price' => $prod['suggested_price'],
+                'pool' => 'packaging',
+            ];
+        }
+        $productKey = (string) $sku['product_key'];
+        $prod = pos_unified_resolve_dept_product($pdo, $productKey);
+        if ($prod === null || $prod['product_id'] < 1) {
+            throw new RuntimeException('No product record for this SKU.');
+        }
+
+        return [
+            'kind' => 'dept',
+            'lookup_kind' => 'sku',
+            'requires_qty' => true,
+            'label' => dept_pouch_product_label($productKey),
+            'product_id' => $prod['product_id'],
+            'product_name' => $prod['name'],
+            'variant' => null,
+            'size' => null,
+            'size_label' => null,
+            'product_key' => $productKey,
+            'unit_id' => null,
+            'sku_id' => (int) $sku['id'],
+            'code' => (string) $sku['code'],
+            'batch_no' => null,
+            'suggested_price' => $prod['suggested_price'],
+            'pool' => 'finished',
+        ];
+    }
+
     try {
         $honey = honey_bottle_pos_lookup($pdo, $code);
         $variant = (string) $honey['variant'];
@@ -140,6 +196,8 @@ function pos_unified_lookup(PDO $pdo, string $code): array
 
         return [
             'kind' => 'honey',
+            'lookup_kind' => 'unique_honey',
+            'requires_qty' => false,
             'label' => trim(
                 ucfirst($variant) . ' · ' . honey_bottle_size_label($size)
             ),
@@ -153,6 +211,7 @@ function pos_unified_lookup(PDO $pdo, string $code): array
             'code' => (string) $honey['code'],
             'batch_no' => (string) $honey['batch_no'],
             'suggested_price' => $prod['suggested_price'],
+            'pool' => (string) ($honey['unit_pool'] ?? 'packaging'),
         ];
     } catch (RuntimeException $honeyErr) {
         if (!str_contains(strtolower($honeyErr->getMessage()), 'unknown barcode')) {
@@ -168,6 +227,8 @@ function pos_unified_lookup(PDO $pdo, string $code): array
 
     return [
         'kind' => 'dept',
+        'lookup_kind' => 'unique_dept',
+        'requires_qty' => false,
         'label' => (string) $dept['product_label'],
         'product_id' => $prod['product_id'],
         'product_name' => $prod['name'],
@@ -179,6 +240,7 @@ function pos_unified_lookup(PDO $pdo, string $code): array
         'code' => (string) $dept['code'],
         'batch_no' => (string) $dept['batch_no'],
         'suggested_price' => $prod['suggested_price'],
+        'pool' => (string) ($dept['unit_pool'] ?? 'finished'),
     ];
 }
 
@@ -213,79 +275,141 @@ function pos_unified_build_cart_lines(PDO $pdo, array $items, float $discountFac
             $unitIds = honey_pos_line_unit_ids($entry);
             $variant = strtolower(trim((string) ($entry['variant'] ?? '')));
             $size = trim((string) ($entry['size'] ?? ''));
-            if ($unitIds === [] || $variant === '' || $size === '') {
-                throw new RuntimeException('Invalid honey cart line.');
-            }
-            $prod = pos_unified_resolve_honey_product($pdo, $variant, $size);
-            if ($prod === null || (int) $prod['product_id'] !== $productId) {
-                throw new RuntimeException('Product mismatch.');
-            }
-            foreach ($unitIds as $uid) {
-                $ust = $pdo->prepare(
-                    'SELECT status, variant, size FROM honey_bottle_units WHERE id = ? LIMIT 1'
-                );
-                $ust->execute([(int) $uid]);
-                $urow = $ust->fetch(PDO::FETCH_ASSOC);
-                if ($urow === false) {
-                    throw new RuntimeException('Scanned bottle not found.');
+            $skuId = (int) ($entry['sku_id'] ?? 0);
+            $skuQty = (int) ($entry['qty'] ?? 0);
+            $pool = (string) ($entry['pool'] ?? 'packaging');
+            if ($skuId > 0 || (!empty($entry['lookup_kind']) && (string) $entry['lookup_kind'] === 'sku')) {
+                if ($variant === '' || $size === '' || $skuQty < 1) {
+                    throw new RuntimeException('Invalid honey SKU cart line.');
                 }
-                if ((string) $urow['status'] !== 'in_stock') {
-                    throw new RuntimeException('A scanned bottle is not available.');
+                $prod = pos_unified_resolve_honey_product($pdo, $variant, $size);
+                if ($prod === null || (int) $prod['product_id'] !== $productId) {
+                    throw new RuntimeException('Product mismatch.');
                 }
-                if (strtolower((string) $urow['variant']) !== $variant || (string) $urow['size'] !== $size) {
-                    throw new RuntimeException('Scanned bottle product mismatch.');
+                $qty = (float) $skuQty;
+                $line = [
+                    'kind' => 'honey',
+                    'lookup_kind' => 'sku',
+                    'product_id' => $productId,
+                    'variant' => $variant,
+                    'size' => $size,
+                    'qty' => $qty,
+                    'list_unit_price' => $listUnit,
+                    'unit_price' => round($listUnit * $discountFactor, 2),
+                    'line_subtotal' => round($listUnit * $qty, 2),
+                    'name' => (string) $prod['name'],
+                    'bottle_unit_ids' => [],
+                    'sku_id' => $skuId > 0 ? $skuId : null,
+                    'sku_code' => isset($entry['code']) ? (string) $entry['code'] : null,
+                    'pool' => in_array($pool, ['packaging', 'rts_sellable'], true) ? $pool : 'packaging',
+                    'packaging_row_id' => isset($entry['packaging_row_id']) ? (int) $entry['packaging_row_id'] : null,
+                ];
+            } else {
+                if ($unitIds === [] || $variant === '' || $size === '') {
+                    throw new RuntimeException('Invalid honey cart line.');
                 }
+                $prod = pos_unified_resolve_honey_product($pdo, $variant, $size);
+                if ($prod === null || (int) $prod['product_id'] !== $productId) {
+                    throw new RuntimeException('Product mismatch.');
+                }
+                foreach ($unitIds as $uid) {
+                    $ust = $pdo->prepare(
+                        'SELECT status, variant, size FROM honey_bottle_units WHERE id = ? LIMIT 1'
+                    );
+                    $ust->execute([(int) $uid]);
+                    $urow = $ust->fetch(PDO::FETCH_ASSOC);
+                    if ($urow === false) {
+                        throw new RuntimeException('Scanned bottle not found.');
+                    }
+                    if ((string) $urow['status'] !== 'in_stock') {
+                        throw new RuntimeException('A scanned bottle is not available.');
+                    }
+                    if (strtolower((string) $urow['variant']) !== $variant || (string) $urow['size'] !== $size) {
+                        throw new RuntimeException('Scanned bottle product mismatch.');
+                    }
+                }
+                $qty = (float) count($unitIds);
+                $name = (string) $prod['name'];
+                $line = [
+                    'kind' => 'honey',
+                    'lookup_kind' => 'unique_honey',
+                    'product_id' => $productId,
+                    'variant' => $variant,
+                    'size' => $size,
+                    'qty' => $qty,
+                    'list_unit_price' => $listUnit,
+                    'unit_price' => round($listUnit * $discountFactor, 2),
+                    'line_subtotal' => round($listUnit * $qty, 2),
+                    'name' => $name,
+                    'bottle_unit_ids' => $unitIds,
+                ];
             }
-            $qty = (float) count($unitIds);
-            $name = (string) $prod['name'];
-            $line = [
-                'kind' => 'honey',
-                'product_id' => $productId,
-                'variant' => $variant,
-                'size' => $size,
-                'qty' => $qty,
-                'list_unit_price' => $listUnit,
-                'unit_price' => round($listUnit * $discountFactor, 2),
-                'line_subtotal' => round($listUnit * $qty, 2),
-                'name' => $name,
-                'bottle_unit_ids' => $unitIds,
-            ];
         } else {
             $unitIds = dept_pos_pouch_unit_ids_from_entry($entry);
             $productKey = strtolower(trim((string) ($entry['product_key'] ?? '')));
-            if ($unitIds === [] || $productKey === '') {
-                throw new RuntimeException('Invalid dept cart line.');
-            }
-            $prod = pos_unified_resolve_dept_product($pdo, $productKey);
-            if ($prod === null || (int) $prod['product_id'] !== $productId) {
-                throw new RuntimeException('Product mismatch.');
-            }
-            foreach ($unitIds as $uid) {
-                $ust = $pdo->prepare('SELECT product_key, status FROM dept_pouch_units WHERE id = ? LIMIT 1');
-                $ust->execute([(int) $uid]);
-                $urow = $ust->fetch(PDO::FETCH_ASSOC);
-                if ($urow === false) {
-                    throw new RuntimeException('Scanned unit not found.');
+            $skuId = (int) ($entry['sku_id'] ?? 0);
+            $skuQty = (int) ($entry['qty'] ?? 0);
+            $pool = (string) ($entry['pool'] ?? 'finished');
+            if ($skuId > 0 || (!empty($entry['lookup_kind']) && (string) $entry['lookup_kind'] === 'sku')) {
+                if ($productKey === '' || $skuQty < 1) {
+                    throw new RuntimeException('Invalid dept SKU cart line.');
                 }
-                if ((string) $urow['product_key'] !== $productKey) {
-                    throw new RuntimeException('Scanned unit product mismatch.');
+                $prod = pos_unified_resolve_dept_product($pdo, $productKey);
+                if ($prod === null || (int) $prod['product_id'] !== $productId) {
+                    throw new RuntimeException('Product mismatch.');
                 }
-                if ((string) $urow['status'] !== 'in_stock') {
-                    throw new RuntimeException('A scanned unit is not available.');
+                $qty = (float) $skuQty;
+                $line = [
+                    'kind' => 'dept',
+                    'lookup_kind' => 'sku',
+                    'product_id' => $productId,
+                    'product_key' => $productKey,
+                    'qty' => $qty,
+                    'list_unit_price' => $listUnit,
+                    'unit_price' => round($listUnit * $discountFactor, 2),
+                    'line_subtotal' => round($listUnit * $qty, 2),
+                    'name' => (string) $prod['name'],
+                    'pouch_unit_ids' => [],
+                    'sku_id' => $skuId > 0 ? $skuId : null,
+                    'sku_code' => isset($entry['code']) ? (string) $entry['code'] : null,
+                    'pool' => in_array($pool, ['finished', 'rts_sellable'], true) ? $pool : 'finished',
+                ];
+            } else {
+                if ($unitIds === [] || $productKey === '') {
+                    throw new RuntimeException('Invalid dept cart line.');
                 }
+                $prod = pos_unified_resolve_dept_product($pdo, $productKey);
+                if ($prod === null || (int) $prod['product_id'] !== $productId) {
+                    throw new RuntimeException('Product mismatch.');
+                }
+                foreach ($unitIds as $uid) {
+                    $ust = $pdo->prepare('SELECT product_key, status FROM dept_pouch_units WHERE id = ? LIMIT 1');
+                    $ust->execute([(int) $uid]);
+                    $urow = $ust->fetch(PDO::FETCH_ASSOC);
+                    if ($urow === false) {
+                        throw new RuntimeException('Scanned unit not found.');
+                    }
+                    if ((string) $urow['product_key'] !== $productKey) {
+                        throw new RuntimeException('Scanned unit product mismatch.');
+                    }
+                    if ((string) $urow['status'] !== 'in_stock') {
+                        throw new RuntimeException('A scanned unit is not available.');
+                    }
+                }
+                $qty = (float) count($unitIds);
+                $line = [
+                    'kind' => 'dept',
+                    'lookup_kind' => 'unique_dept',
+                    'product_id' => $productId,
+                    'product_key' => $productKey,
+                    'qty' => $qty,
+                    'list_unit_price' => $listUnit,
+                    'unit_price' => round($listUnit * $discountFactor, 2),
+                    'line_subtotal' => round($listUnit * $qty, 2),
+                    'name' => (string) $prod['name'],
+                    'pouch_unit_ids' => $unitIds,
+                ];
             }
-            $qty = (float) count($unitIds);
-            $line = [
-                'kind' => 'dept',
-                'product_id' => $productId,
-                'product_key' => $productKey,
-                'qty' => $qty,
-                'list_unit_price' => $listUnit,
-                'unit_price' => round($listUnit * $discountFactor, 2),
-                'line_subtotal' => round($listUnit * $qty, 2),
-                'name' => (string) $prod['name'],
-                'pouch_unit_ids' => $unitIds,
-            ];
         }
 
         $line['line_total'] = round($line['unit_price'] * $line['qty'], 2);
@@ -344,9 +468,39 @@ function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buye
 
         foreach ($cleanLines as $line) {
             if ($line['kind'] === 'honey') {
-                honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);
+                if (($line['lookup_kind'] ?? '') === 'sku') {
+                    require_once __DIR__ . '/sku_barcodes.php';
+                    $actorUserId = isset($actor['user_id']) && $actor['user_id'] ? (int) $actor['user_id'] : 0;
+                    sku_barcode_honey_deduct(
+                        $pdo,
+                        $actorUserId,
+                        (string) $line['variant'],
+                        (string) $line['size'],
+                        (int) $line['qty'],
+                        (string) ($line['pool'] ?? 'packaging'),
+                        isset($line['packaging_row_id']) ? (int) $line['packaging_row_id'] : null,
+                        'walk_in',
+                        $saleId,
+                        null
+                    );
+                } else {
+                    honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);
+                }
             } else {
-                dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);
+                if (($line['lookup_kind'] ?? '') === 'sku') {
+                    require_once __DIR__ . '/sku_barcodes.php';
+                    $actorUserId = isset($actor['user_id']) && $actor['user_id'] ? (int) $actor['user_id'] : 0;
+                    sku_barcode_dept_deduct(
+                        $pdo,
+                        $actorUserId,
+                        (string) $line['product_key'],
+                        (int) $line['qty'],
+                        (string) ($line['pool'] ?? 'finished'),
+                        'walk_in'
+                    );
+                } else {
+                    dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);
+                }
             }
 
             if ($hasVariantCol && $line['kind'] === 'honey') {
@@ -476,9 +630,39 @@ function pos_unified_ar_checkout(PDO $pdo, array $actor, array $items, array $de
 
         foreach ($cleanLines as $line) {
             if ($line['kind'] === 'honey') {
-                honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);
+                if (($line['lookup_kind'] ?? '') === 'sku') {
+                    require_once __DIR__ . '/sku_barcodes.php';
+                    $actorUserId = isset($actor['user_id']) && $actor['user_id'] ? (int) $actor['user_id'] : 0;
+                    sku_barcode_honey_deduct(
+                        $pdo,
+                        $actorUserId,
+                        (string) $line['variant'],
+                        (string) $line['size'],
+                        (int) $line['qty'],
+                        (string) ($line['pool'] ?? 'packaging'),
+                        isset($line['packaging_row_id']) ? (int) $line['packaging_row_id'] : null,
+                        'walk_in',
+                        $saleId,
+                        null
+                    );
+                } else {
+                    honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);
+                }
             } else {
-                dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);
+                if (($line['lookup_kind'] ?? '') === 'sku') {
+                    require_once __DIR__ . '/sku_barcodes.php';
+                    $actorUserId = isset($actor['user_id']) && $actor['user_id'] ? (int) $actor['user_id'] : 0;
+                    sku_barcode_dept_deduct(
+                        $pdo,
+                        $actorUserId,
+                        (string) $line['product_key'],
+                        (int) $line['qty'],
+                        (string) ($line['pool'] ?? 'finished'),
+                        'walk_in'
+                    );
+                } else {
+                    dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);
+                }
             }
 
             if ($hasVariantCol && $line['kind'] === 'honey') {

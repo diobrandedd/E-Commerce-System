@@ -185,18 +185,41 @@ function api_rts_stock_in_scan(): void
     if ($code === '') {
         api_fail('Barcode is required.');
     }
+    $qty = isset($input['qty']) ? (int) $input['qty'] : null;
     require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
     require_once dirname(__DIR__, 2) . '/includes/dept_pouch_barcodes.php';
+    require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
     try {
+        $sku = sku_barcode_fetch_by_code(ims_pdo(), $code);
+        if ($sku !== null) {
+            if ($qty === null || $qty < 1) {
+                api_fail('Enter how many to stock into RTS for this SKU.', 422);
+            }
+            api_ok([
+                'kind' => (string) $sku['kind'],
+                'lookup_kind' => 'sku',
+                'unit' => sku_barcode_rts_stock_in(
+                    ims_pdo(),
+                    (int) $user['id'],
+                    (string) $sku['kind'],
+                    (string) ($sku['variant'] ?? ''),
+                    (string) ($sku['size'] ?? ''),
+                    (string) ($sku['product_key'] ?? ''),
+                    $qty
+                ),
+            ]);
+        }
         $honeyRow = honey_bottle_fetch_code_row(ims_pdo(), $code);
         if ($honeyRow !== null) {
             api_ok([
                 'kind' => 'honey',
+                'lookup_kind' => 'unique_honey',
                 'unit' => honey_bottle_rts_stock_in_scan(ims_pdo(), (int) $user['id'], $code),
             ]);
         }
         api_ok([
             'kind' => 'dept',
+            'lookup_kind' => 'unique_dept',
             'unit' => dept_pouch_rts_stock_in_scan(ims_pdo(), (int) $user['id'], $code),
         ]);
     } catch (Throwable $e) {

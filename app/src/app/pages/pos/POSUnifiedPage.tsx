@@ -21,8 +21,20 @@ import { useAuth } from "@/app/context/AuthContext";
 import { ApiError } from "@/app/lib/api";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { peso, type HoneyCheckoutResult } from "@/app/lib/posHoney";
-import { posUnifiedApi, unifiedCartPayload, type UnifiedCartLine } from "@/app/lib/posUnified";
+import {
+  posUnifiedApi,
+  unifiedCartPayload,
+  type UnifiedCartLine,
+  type UnifiedLookupKind,
+  type UnifiedPosLookup,
+} from "@/app/lib/posUnified";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
+
+function lookupKindOf(b: UnifiedPosLookup): UnifiedLookupKind {
+  if (b.lookup_kind) return b.lookup_kind;
+  if (b.requires_qty || (b.sku_id != null && b.sku_id > 0)) return "sku";
+  return b.kind === "honey" ? "unique_honey" : "unique_dept";
+}
 
 export function POSUnifiedPage() {
   const navigate = useNavigate();
@@ -47,7 +59,7 @@ export function POSUnifiedPage() {
 
   const pricedCart = useMemo(() => cart.every(l => l.list_unit_price > 0), [cart]);
   const subtotal = cart.reduce((s, l) => s + l.list_unit_price * l.qty, 0);
-  const itemCount = cart.length;
+  const itemCount = cart.reduce((s, l) => s + l.qty, 0);
 
   const removeLine = (key: string) => setCart(prev => prev.filter(l => l.key !== key));
 
@@ -58,30 +70,66 @@ export function POSUnifiedPage() {
     );
   };
 
-  const addScanned = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
-    const value = (raw ?? scanCode).trim();
-    if (!value) return;
-    setScanCode("");
-    setError(null);
-    try {
-      const res = await posUnifiedApi.lookup(value);
-      const b = res.barcode;
-      if (cart.some(l => l.unit_id === b.unit_id)) {
-        const reason = "That sticker is already in the cart.";
-        playScanBeep("dup");
-        setError(reason);
-        setFeedback("error");
-        return { kind: "duplicate", message: reason };
-      }
+  const setLineQty = (key: string, raw: string) => {
+    const n = parseInt(raw, 10);
+    setCart(prev =>
+      prev.map(l =>
+        l.key === key && l.lookup_kind === "sku"
+          ? { ...l, qty: Number.isFinite(n) && n >= 1 ? n : 1 }
+          : l,
+      ),
+    );
+  };
+
+  const addFromLookup = (b: UnifiedPosLookup): ScannerDecodeFeedback => {
+    const lk = lookupKindOf(b);
+    if (lk !== "sku" && b.unit_id != null && cart.some(l => l.unit_id === b.unit_id)) {
+      const reason = "That sticker is already in the cart.";
+      playScanBeep("dup");
+      setError(reason);
+      setFeedback("error");
+      return { kind: "duplicate", message: reason };
+    }
+
+    if (lk === "sku") {
+      const key = `sku|${b.sku_id ?? b.code}`;
+      setCart(prev => {
+        const existing = prev.find(l => l.key === key);
+        if (existing) {
+          return prev.map(l => (l.key === key ? { ...l, qty: l.qty + 1 } : l));
+        }
+        return [
+          ...prev,
+          {
+            key,
+            kind: b.kind,
+            lookup_kind: "sku",
+            label: b.label,
+            code: b.code,
+            batch_no: b.batch_no ?? "",
+            product_id: b.product_id,
+            variant: b.variant ?? undefined,
+            size: b.size ?? undefined,
+            product_key: b.product_key ?? undefined,
+            unit_id: null,
+            sku_id: b.sku_id ?? null,
+            list_unit_price: b.suggested_price ?? 0,
+            qty: 1,
+            pool: b.pool,
+          },
+        ];
+      });
+    } else {
       const key = `${b.kind}|u${b.unit_id}`;
       setCart(prev => [
         ...prev,
         {
           key,
           kind: b.kind,
+          lookup_kind: lk,
           label: b.label,
           code: b.code,
-          batch_no: b.batch_no,
+          batch_no: b.batch_no ?? "",
           product_id: b.product_id,
           variant: b.variant ?? undefined,
           size: b.size ?? undefined,
@@ -89,14 +137,27 @@ export function POSUnifiedPage() {
           unit_id: b.unit_id,
           list_unit_price: b.suggested_price ?? 0,
           qty: 1,
+          pool: b.pool,
         },
       ]);
-      setCartPulse(true);
-      setTimeout(() => setCartPulse(false), 500);
-      playScanBeep("ok");
-      setFeedback("success");
-      refocus();
-      return { kind: "success", message: `Added: ${b.label}` };
+    }
+
+    setCartPulse(true);
+    setTimeout(() => setCartPulse(false), 500);
+    playScanBeep("ok");
+    setFeedback("success");
+    refocus();
+    return { kind: "success", message: `Added: ${b.label}` };
+  };
+
+  const addScanned = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
+    const value = (raw ?? scanCode).trim();
+    if (!value) return;
+    setScanCode("");
+    setError(null);
+    try {
+      const res = await posUnifiedApi.lookup(value);
+      return addFromLookup(res.barcode);
     } catch (e) {
       const reason = e instanceof ApiError ? e.message : "Scan failed.";
       const isDup = /already|duplicate/i.test(reason);
@@ -167,8 +228,12 @@ export function POSUnifiedPage() {
         variant: l.variant,
         size: l.size,
         productKey: l.product_key,
-        bottleUnitIds: l.kind === "honey" ? [l.unit_id] : undefined,
-        pouchUnitIds: l.kind === "dept" ? [l.unit_id] : undefined,
+        lookupKind: l.lookup_kind,
+        skuId: l.sku_id ?? undefined,
+        bottleUnitIds:
+          l.lookup_kind !== "sku" && l.kind === "honey" && l.unit_id != null ? [l.unit_id] : undefined,
+        pouchUnitIds:
+          l.lookup_kind !== "sku" && l.kind === "dept" && l.unit_id != null ? [l.unit_id] : undefined,
       })),
     [cart],
   );
@@ -244,6 +309,18 @@ export function POSUnifiedPage() {
                         <p className="font-medium truncate">{line.label}</p>
                         <p className="font-mono text-muted-foreground">{line.code}</p>
                       </div>
+                      {line.lookup_kind === "sku" ? (
+                        <input
+                          type="number"
+                          min={1}
+                          className="w-14 border rounded px-2 py-1 text-right"
+                          value={line.qty}
+                          aria-label="Quantity"
+                          onChange={e => setLineQty(line.key, e.target.value)}
+                        />
+                      ) : (
+                        <span className="w-8 text-center text-muted-foreground">×1</span>
+                      )}
                       <input
                         type="number"
                         min={0}
@@ -276,7 +353,7 @@ export function POSUnifiedPage() {
 
       <main className="flex-1 flex items-center justify-center p-6">
         <p className="text-sm text-muted-foreground text-center max-w-sm">
-          Honey, Paragis, BRC, Cacao, and Honey Comb stickers are detected automatically. Enter each line price manually.
+          SKU stickers add with qty you can edit. Unique leftover stickers stay one unit per scan. Enter each line price manually.
         </p>
       </main>
 

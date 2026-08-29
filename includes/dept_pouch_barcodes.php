@@ -151,6 +151,11 @@ function dept_pouch_serialize_request(array $row): array
         'created_at' => (string) $row['created_at'],
         'scanned_count' => isset($row['scanned_count']) ? (int) $row['scanned_count'] : 0,
         'generated_count' => isset($row['generated_count']) ? (int) $row['generated_count'] : 0,
+        'sku_scanned_qty' => isset($row['sku_scanned_qty']) ? (int) $row['sku_scanned_qty'] : 0,
+        'sku_print_qty' => isset($row['sku_print_qty']) ? (int) $row['sku_print_qty'] : 0,
+        'label_kind' => ((int) ($row['sku_print_qty'] ?? 0) > 0 && (int) ($row['latest_batch_id'] ?? 0) > 0)
+            ? 'mixed'
+            : ((int) ($row['sku_print_qty'] ?? 0) > 0 ? 'sku' : ((int) ($row['latest_batch_id'] ?? 0) > 0 ? 'legacy' : 'sku')),
         'latest_batch_id' => isset($row['latest_batch_id']) && $row['latest_batch_id'] !== null
             ? (int) $row['latest_batch_id'] : null,
     ];
@@ -217,13 +222,17 @@ function dept_pouch_request_get(PDO $pdo, int $id): array
 {
     $st = $pdo->prepare(
         'SELECT r.*, u.name AS requested_by_name,
-                (SELECT COUNT(*) FROM dept_pouch_barcode_batches b
-                  INNER JOIN dept_pouch_barcodes c ON c.batch_id = b.id
-                  WHERE b.request_id = r.id AND c.status = "scanned") AS scanned_count,
-                (SELECT COUNT(*) FROM dept_pouch_barcode_batches b
-                  INNER JOIN dept_pouch_barcodes c ON c.batch_id = b.id
-                  WHERE b.request_id = r.id) AS generated_count,
-                (SELECT MAX(b.id) FROM dept_pouch_barcode_batches b WHERE b.request_id = r.id) AS latest_batch_id
+                COALESCE(r.sku_scanned_qty, 0) AS sku_scanned_qty,
+                (SELECT COALESCE(SUM(j.quantity), 0) FROM sku_barcode_print_jobs j WHERE j.dept_request_id = r.id)
+                 + (SELECT COUNT(*) FROM dept_pouch_barcode_batches b
+                    INNER JOIN dept_pouch_barcodes c ON c.batch_id = b.id
+                    WHERE b.request_id = r.id) AS generated_count,
+                COALESCE(r.sku_scanned_qty, 0)
+                 + (SELECT COUNT(*) FROM dept_pouch_barcode_batches b
+                    INNER JOIN dept_pouch_barcodes c ON c.batch_id = b.id
+                    WHERE b.request_id = r.id AND c.status = "scanned") AS scanned_count,
+                (SELECT MAX(b.id) FROM dept_pouch_barcode_batches b WHERE b.request_id = r.id) AS latest_batch_id,
+                (SELECT COALESCE(SUM(j.quantity), 0) FROM sku_barcode_print_jobs j WHERE j.dept_request_id = r.id) AS sku_print_qty
          FROM dept_pouch_requests r
          LEFT JOIN users u ON u.id = r.requested_by
          WHERE r.id = ? LIMIT 1'
@@ -257,13 +266,17 @@ function dept_pouch_request_list(PDO $pdo, string $productKey, string $status, i
     $offset = ($page - 1) * $perPage;
     $st = $pdo->prepare(
         "SELECT r.*, u.name AS requested_by_name,
-                (SELECT COUNT(*) FROM dept_pouch_barcode_batches b
-                  INNER JOIN dept_pouch_barcodes c ON c.batch_id = b.id
-                  WHERE b.request_id = r.id AND c.status = \"scanned\") AS scanned_count,
-                (SELECT COUNT(*) FROM dept_pouch_barcode_batches b
-                  INNER JOIN dept_pouch_barcodes c ON c.batch_id = b.id
-                  WHERE b.request_id = r.id) AS generated_count,
-                (SELECT MAX(b.id) FROM dept_pouch_barcode_batches b WHERE b.request_id = r.id) AS latest_batch_id
+                COALESCE(r.sku_scanned_qty, 0) AS sku_scanned_qty,
+                (SELECT COALESCE(SUM(j.quantity), 0) FROM sku_barcode_print_jobs j WHERE j.dept_request_id = r.id)
+                 + (SELECT COUNT(*) FROM dept_pouch_barcode_batches b
+                    INNER JOIN dept_pouch_barcodes c ON c.batch_id = b.id
+                    WHERE b.request_id = r.id) AS generated_count,
+                COALESCE(r.sku_scanned_qty, 0)
+                 + (SELECT COUNT(*) FROM dept_pouch_barcode_batches b
+                    INNER JOIN dept_pouch_barcodes c ON c.batch_id = b.id
+                    WHERE b.request_id = r.id AND c.status = \"scanned\") AS scanned_count,
+                (SELECT MAX(b.id) FROM dept_pouch_barcode_batches b WHERE b.request_id = r.id) AS latest_batch_id,
+                (SELECT COALESCE(SUM(j.quantity), 0) FROM sku_barcode_print_jobs j WHERE j.dept_request_id = r.id) AS sku_print_qty
          FROM dept_pouch_requests r
          LEFT JOIN users u ON u.id = r.requested_by
          WHERE {$where}
@@ -640,9 +653,14 @@ function dept_pouch_scan_report(
          FROM dept_pouch_barcodes c
          INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
          WHERE b.product_key = ? AND c.scanned_at IS NOT NULL
+         UNION
+         SELECT DISTINCT DATE(e.scanned_at) AS scan_date
+         FROM sku_barcode_stock_events e
+         INNER JOIN product_sku_barcodes s ON s.id = e.sku_id
+         WHERE e.kind = "dept" AND s.product_key = ?
          ORDER BY scan_date DESC'
     );
-    $datesSt->execute([$productKey]);
+    $datesSt->execute([$productKey, $productKey]);
     $dates = [];
     foreach ($datesSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $dates[] = (string) $row['scan_date'];
@@ -657,11 +675,26 @@ function dept_pouch_scan_report(
         $scanParams[] = $from;
         $scanParams[] = $to;
     }
-    $scanSubquery = "SELECT b.request_id, COUNT(*) AS scanned_count
-                     FROM dept_pouch_barcode_batches b
-                     INNER JOIN dept_pouch_barcodes c ON c.batch_id = b.id
-                     WHERE {$scanWhere}
-                     GROUP BY b.request_id";
+    $scanSubquery = "SELECT request_id, SUM(scanned_count) AS scanned_count FROM (
+        SELECT b.request_id, COUNT(*) AS scanned_count
+        FROM dept_pouch_barcode_batches b
+        INNER JOIN dept_pouch_barcodes c ON c.batch_id = b.id
+        WHERE {$scanWhere}
+        GROUP BY b.request_id
+        UNION ALL
+        SELECT e.dept_request_id AS request_id, SUM(e.qty) AS scanned_count
+        FROM sku_barcode_stock_events e
+        INNER JOIN product_sku_barcodes s ON s.id = e.sku_id
+        WHERE e.kind = 'dept' AND s.product_key = ? AND e.dept_request_id IS NOT NULL"
+        . ($scanDate !== null ? ' AND e.scanned_at >= ? AND e.scanned_at < ?' : '') .
+        " GROUP BY e.dept_request_id
+    ) combined GROUP BY request_id";
+    $scanSubParams = $scanParams;
+    $scanSubParams[] = $productKey;
+    if ($scanDate !== null) {
+        $scanSubParams[] = $from;
+        $scanSubParams[] = $to;
+    }
     $joinType = $scanDate === null ? 'LEFT JOIN' : 'INNER JOIN';
 
     if ($scanDate === null) {
@@ -676,19 +709,22 @@ function dept_pouch_scan_report(
              INNER JOIN ({$scanSubquery}) s ON s.request_id = r.id
              WHERE r.product_key = ?"
         );
-        $countSt->execute(array_merge($scanParams, [$productKey]));
+        $countSt->execute(array_merge($scanSubParams, [$productKey]));
     }
     $total = (int) $countSt->fetchColumn();
     $offset = ($page - 1) * $perPage;
 
     $st = $pdo->prepare(
         "SELECT r.*, u.name AS requested_by_name,
+                COALESCE(r.sku_scanned_qty, 0) AS sku_scanned_qty,
                 COALESCE(s.scanned_count, 0) AS scanned_count,
-                (SELECT COUNT(*) FROM dept_pouch_barcode_batches b2
-                  INNER JOIN dept_pouch_barcodes c2 ON c2.batch_id = b2.id
-                  WHERE b2.request_id = r.id) AS generated_count,
+                (SELECT COALESCE(SUM(j.quantity), 0) FROM sku_barcode_print_jobs j WHERE j.dept_request_id = r.id)
+                 + (SELECT COUNT(*) FROM dept_pouch_barcode_batches b2
+                    INNER JOIN dept_pouch_barcodes c2 ON c2.batch_id = b2.id
+                    WHERE b2.request_id = r.id) AS generated_count,
                 (SELECT MAX(b3.id) FROM dept_pouch_barcode_batches b3
-                  WHERE b3.request_id = r.id) AS latest_batch_id
+                  WHERE b3.request_id = r.id) AS latest_batch_id,
+                (SELECT COALESCE(SUM(j.quantity), 0) FROM sku_barcode_print_jobs j WHERE j.dept_request_id = r.id) AS sku_print_qty
          FROM dept_pouch_requests r
          LEFT JOIN users u ON u.id = r.requested_by
          {$joinType} ({$scanSubquery}) s ON s.request_id = r.id
@@ -696,7 +732,7 @@ function dept_pouch_scan_report(
          ORDER BY r.id DESC
          LIMIT {$perPage} OFFSET {$offset}"
     );
-    $st->execute(array_merge($scanParams, [$productKey]));
+    $st->execute(array_merge($scanSubParams, [$productKey]));
     $rows = [];
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $rows[] = dept_pouch_serialize_request($row);
@@ -709,6 +745,18 @@ function dept_pouch_scan_report(
     );
     $sumSt->execute($scanParams);
     $scannedTotal = (int) $sumSt->fetchColumn();
+    $skuSumSql = 'SELECT COALESCE(SUM(e.qty), 0) FROM sku_barcode_stock_events e
+                  INNER JOIN product_sku_barcodes s ON s.id = e.sku_id
+                  WHERE e.kind = "dept" AND s.product_key = ?';
+    $skuSumParams = [$productKey];
+    if ($scanDate !== null) {
+        $skuSumSql .= ' AND e.scanned_at >= ? AND e.scanned_at < ?';
+        $skuSumParams[] = $from;
+        $skuSumParams[] = $to;
+    }
+    $skuSumSt = $pdo->prepare($skuSumSql);
+    $skuSumSt->execute($skuSumParams);
+    $scannedTotal += (int) $skuSumSt->fetchColumn();
 
     return [
         'dates' => $dates,

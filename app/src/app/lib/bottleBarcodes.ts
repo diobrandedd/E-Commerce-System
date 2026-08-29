@@ -24,6 +24,21 @@ export interface HoneyBottleRequest {
   scanned_count: number;
   generated_count: number;
   latest_batch_id: number | null;
+  sku_scanned_qty?: number;
+  sku_print_qty?: number;
+  label_kind?: "sku" | "legacy" | "mixed";
+}
+
+export interface SkuPrintJobRow {
+  id: number;
+  sku_id: number;
+  sku_code: string;
+  label: string;
+  quantity: number;
+  printed_by_name: string;
+  printed_at: string;
+  print_url: string;
+  honey_request_id: number | null;
 }
 
 export interface HoneyBarcodeBatch {
@@ -74,6 +89,10 @@ export interface HoneyPackSessionItem {
   size_label: string;
   batch_no?: string | null;
   scanned_at: string;
+  qty?: number;
+  sku_id?: number | null;
+  lookup_kind?: string;
+  pool?: string | null;
 }
 
 export interface HoneyPackSessionGroup {
@@ -184,12 +203,25 @@ export const bottleBarcodesApi = {
     ),
   requestCancel: (id: number) => apiPost<{ ok: boolean }>("bottle_barcodes.php", "request_cancel", { id }),
   pendingCount: () => apiGet<{ count: number }>("bottle_barcodes.php", "pending_count"),
-  generate: (requestId: number, packagingRowId?: number | null, productionRowId?: number | null) =>
-    apiPost<{ batch: HoneyBarcodeBatch }>("bottle_barcodes.php", "generate", {
+  generate: (requestId: number) =>
+    apiPost<{
+      sku: { id: number; code: string; label?: string };
+      print_job_id: number;
+      print_url: string;
+      request: HoneyBottleRequest;
+      message?: string;
+    }>("bottle_barcodes.php", "generate", {
       request_id: requestId,
-      packaging_row_id: packagingRowId ?? undefined,
-      production_row_id: productionRowId ?? undefined,
     }),
+  generateBatch: (requestIds: number[]) =>
+    apiPost<{
+      print_url: string;
+      requests: HoneyBottleRequest[];
+      batch_count: number;
+      message?: string;
+    }>("bottle_barcodes.php", "generate_batch", { request_ids: requestIds }),
+  skuPrintList: (limit = 40) =>
+    apiGet<{ rows: SkuPrintJobRow[] }>("bottle_barcodes.php", "sku_print_list", { limit }),
   ensurePackagingShell: (productionRowId: number) =>
     apiPost<{ packaging: HoneyPackagingOption & { created: boolean } }>(
       "bottle_barcodes.php",
@@ -207,12 +239,24 @@ export const bottleBarcodesApi = {
     apiPost<{ batch: HoneyBarcodeBatch }>("bottle_barcodes.php", "mark_printed", { batch_id: batchId }),
   lookup: (code: string) =>
     apiGet<{ barcode: HoneyBottleLookup }>("bottle_barcodes.php", "lookup", { code }),
-  scanStockIn: (code: string, adopt = false) =>
-    apiPost<HoneyBottleLookup & { adopted?: boolean; request?: HoneyBottleRequest }>(
-      "bottle_barcodes.php",
-      "scan_stock_in",
-      { code, adopt: adopt ? 1 : 0 },
-    ),
+  scanStockIn: (
+    code: string,
+    opts: { adopt?: boolean; qty?: number; packaging_row_id?: number; batch_no?: string } = {},
+  ) =>
+    apiPost<
+      HoneyBottleLookup & {
+        adopted?: boolean;
+        request?: HoneyBottleRequest;
+        lookup_kind?: string;
+        qty?: number;
+      }
+    >("bottle_barcodes.php", "scan_stock_in", {
+      code,
+      adopt: opts.adopt ? 1 : 0,
+      qty: opts.qty,
+      packaging_row_id: opts.packaging_row_id,
+      batch_no: opts.batch_no,
+    }),
   packStart: () => apiPost<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_start", {}),
   packGet: (id: number) =>
     apiGet<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_get", { id }),
@@ -238,7 +282,11 @@ export const bottleBarcodesApi = {
       product_key: params.product_key || undefined,
       page: params.page ?? 1,
     }),
-  packScan: (sessionId: number, code: string) =>
+  packScan: (
+    sessionId: number,
+    code: string,
+    opts?: { qty?: number; pool?: string; packaging_row_id?: number },
+  ) =>
     apiPost<{
       result: string;
       session: HoneyPackSession;
@@ -246,8 +294,17 @@ export const bottleBarcodesApi = {
         kind?: "honey" | "dept";
         product_key?: string;
         product_label?: string;
+        lookup_kind?: string;
+        qty?: number;
+        pool?: string;
       }) | null;
-    }>("bottle_barcodes.php", "pack_scan", { session_id: sessionId, code }),
+    }>("bottle_barcodes.php", "pack_scan", {
+      session_id: sessionId,
+      code,
+      ...(opts?.qty != null ? { qty: opts.qty } : {}),
+      ...(opts?.pool ? { pool: opts.pool } : {}),
+      ...(opts?.packaging_row_id != null ? { packaging_row_id: opts.packaging_row_id } : {}),
+    }),
   packRemoveItem: (sessionId: number, kind: "honey" | "dept", itemId: number) =>
     apiPost<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_remove_item", {
       session_id: sessionId,
@@ -316,10 +373,13 @@ export const bottleBarcodesApi = {
         scanned_at: string;
         scanned_by: number | null;
         scanned_by_name: string;
+        qty: number;
+        scan_kind: "sticker" | "sku";
         unit_status: string | null;
         unit_pool: string | null;
       }[];
       total: number;
+      total_qty: number;
       page: number;
       per_page: number;
       scan_date: string | null;

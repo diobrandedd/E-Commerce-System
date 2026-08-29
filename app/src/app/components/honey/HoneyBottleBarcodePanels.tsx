@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { Camera, Loader2, Printer } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -9,7 +9,7 @@ import {
   AppSuccessNotice,
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
-import { ApiError, apiGet } from "@/app/lib/api";
+import { ApiError } from "@/app/lib/api";
 import { HONEY_BOTTLE_OPTIONS, HONEY_VARIANTS } from "@/app/lib/honey";
 import { triggerLiveRefresh } from "@/app/lib/liveRefresh";
 import {
@@ -17,30 +17,18 @@ import {
   bottlePrintSheetUrl,
   type HoneyBarcodeBatch,
   type HoneyBottleRequest,
-  type HoneyPackagingOption,
+  type SkuPrintJobRow,
 } from "@/app/lib/bottleBarcodes";
+import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
+import { RequestNotesCell, RequestNotesInline } from "@/app/components/barcode/RequestNotesCell";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
-
-interface ProductionLotOption {
-  id: number;
-  supplier_code: string;
-  variant: string;
-  arrival_date: string;
-  current_qty: string;
-}
 
 export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
   const [variant, setVariant] = useState("light");
   const [size, setSize] = useState("liter");
   const [qty, setQty] = useState("50");
-  const [packId, setPackId] = useState<number | "">("");
-  const [packMode, setPackMode] = useState<"pick" | "custom">("pick");
-  const [customCode, setCustomCode] = useState("");
-  const [customSupplier, setCustomSupplier] = useState("");
-  const [customBottlingDate, setCustomBottlingDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
-  const [packs, setPacks] = useState<HoneyPackagingOption[]>([]);
   const [rows, setRows] = useState<HoneyBottleRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,12 +38,8 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [list, opts] = await Promise.all([
-        bottleBarcodesApi.requestList({ status: "all", page: 1 }),
-        bottleBarcodesApi.packagingOptions(),
-      ]);
+      const list = await bottleBarcodesApi.requestList({ status: "all", page: 1 });
       setRows(list.rows);
-      setPacks(opts.rows);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load requests.");
     } finally {
@@ -72,39 +56,13 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
     setOk(null);
     setSaving(true);
     try {
-      let packagingRowId: number | null = packMode === "pick" && packId !== "" ? packId : null;
-      let packLabel = "";
-      let packReused = false;
-      if (packMode === "custom") {
-        const created = await bottleBarcodesApi.createCustomPackaging({
-          code: customCode.trim() || undefined,
-          supplier_name: customSupplier.trim() || undefined,
-          variant,
-          bottling_date: customBottlingDate,
-        });
-        packagingRowId = created.packaging.id;
-        packLabel = created.packaging.batch_no;
-        packReused = created.reused;
-        setPacks(prev => [created.packaging, ...prev.filter(p => p.id !== created.packaging.id)]);
-        setPackId(created.packaging.id);
-        setPackMode("pick");
-        setCustomCode("");
-        setCustomSupplier("");
-      }
       await bottleBarcodesApi.requestCreate({
         variant,
         size,
         quantity: Number(qty),
-        packaging_row_id: packagingRowId,
         notes: notes.trim() || undefined,
       });
-      setOk(
-        packReused
-          ? `Request submitted — added to existing batch ${packLabel}.`
-          : packagingRowId
-            ? "Request submitted with packaging batch."
-            : "Request submitted.",
-      );
+      setOk("Label request submitted.");
       setNotes("");
       triggerLiveRefresh();
       await refresh();
@@ -121,6 +79,10 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
       {ok && <AppSuccessNotice message={ok} />}
       <div className="bg-card rounded-xl border border-border p-4 space-y-3">
         <h3 className="text-sm font-semibold">New label request</h3>
+        <p className="text-xs text-muted-foreground">
+          Pick product and how many identical stickers to print. The barcode itself is set in System Settings → Barcode Settings.
+          When bottles are ready, stock them in under Scan into packaging stock and enter a custom batch number there.
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="text-xs text-muted-foreground">
             Variant
@@ -139,70 +101,12 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
             </select>
           </label>
           <label className="text-xs text-muted-foreground">
-            Quantity
+            Quantity (identical stickers)
             <input className="mt-1 w-full border rounded-lg px-2 py-2 text-sm" type="number" min={1} value={qty} onChange={e => setQty(e.target.value)} />
           </label>
-          <label className="text-xs text-muted-foreground">
-            Packaging batch (optional)
-            <select
-              className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
-              value={packMode === "custom" ? "__custom__" : packId === "" ? "" : String(packId)}
-              onChange={e => {
-                const v = e.target.value;
-                if (v === "__custom__") {
-                  setPackMode("custom");
-                  setPackId("");
-                  return;
-                }
-                setPackMode("pick");
-                setPackId(v === "" ? "" : Number(v));
-              }}
-            >
-              <option value="">Pick later</option>
-              <option value="__custom__">+ Create custom batch / supplier…</option>
-              {packs.filter(p => p.variant === variant).map(p => (
-                <option key={p.id} value={p.id}>{p.label}</option>
-              ))}
-            </select>
-          </label>
         </div>
-        {packMode === "custom" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border border-dashed border-border bg-secondary/20 p-3">
-            <label className="text-xs text-muted-foreground sm:col-span-2">
-              Batch code (type it directly)
-              <input
-                className="mt-1 w-full border rounded-lg px-2 py-2 font-mono text-sm uppercase"
-                placeholder="e.g. JR073026"
-                value={customCode}
-                onChange={e => setCustomCode(e.target.value.toUpperCase())}
-              />
-              <span className="mt-1 block text-[11px] text-muted-foreground">
-                Or leave blank and fill supplier + date below to build one (JR073026). The bottling date you pick is what gets recorded. Re-typing a batch you already have reuses it — one batch covers every size.
-              </span>
-            </label>
-            <label className="text-xs text-muted-foreground">
-              Supplier name
-              <input
-                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
-                placeholder="e.g. Maria Santos Apiary"
-                value={customSupplier}
-                onChange={e => setCustomSupplier(e.target.value)}
-                disabled={customCode.trim() !== ""}
-              />
-            </label>
-            <label className="text-xs text-muted-foreground">
-              Bottling date
-              <input
-                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
-                type="date"
-                value={customBottlingDate}
-                onChange={e => setCustomBottlingDate(e.target.value)}
-              />
-            </label>
-          </div>
-        ) : null}
         <textarea className="w-full border rounded-lg px-2 py-2 text-sm" rows={2} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
-        <Button type="button" onClick={() => void submit()} disabled={saving || (packMode === "custom" && !customCode.trim() && !customSupplier.trim())}>
+        <Button type="button" onClick={() => void submit()} disabled={saving}>
           {saving ? <Loader2 className="animate-spin" size={16} /> : null}
           Submit request
         </Button>
@@ -219,6 +123,7 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
                 <th className="text-left px-3 py-2">Item</th>
                 <th className="text-left px-3 py-2">Qty</th>
                 <th className="text-left px-3 py-2">Scanned</th>
+                <th className="text-left px-3 py-2">Notes</th>
                 <th className="text-left px-3 py-2">Status</th>
                 {canAdmin && <th className="px-3 py-2" />}
               </tr>
@@ -231,6 +136,7 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
                   <td className="px-3 py-2 capitalize">{r.variant} {r.size_label}</td>
                   <td className="px-3 py-2">{r.quantity}</td>
                   <td className="px-3 py-2">{r.scanned_count}/{r.generated_count || r.quantity}</td>
+                  <RequestNotesCell notes={r.notes} />
                   <td className="px-3 py-2">{r.status.replace(/_/g, " ")}</td>
                   {canAdmin && (
                     <td className="px-3 py-2">
@@ -257,24 +163,28 @@ export function HoneyBottleScanInPanel() {
   const [msg, setMsg] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [pendingSku, setPendingSku] = useState<{ code: string; label: string } | null>(null);
+  const [skuQty, setSkuQty] = useState("1");
+  const [customBatchNo, setCustomBatchNo] = useState("");
   const cameraTitleId = useId();
-  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen || !!pendingSku);
 
-  const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
-    const value = (raw ?? code).trim();
-    if (!value) return;
-    setCode("");
+  const commitStockIn = async (
+    value: string,
+    opts?: { qty?: number; packaging_row_id?: number; batch_no?: string },
+  ): Promise<ScannerDecodeFeedback | void> => {
     try {
-      const res = await bottleBarcodesApi.scanStockIn(value);
+      const res = await bottleBarcodesApi.scanStockIn(value, opts);
       playScanBeep("ok");
       setFlash("ok");
-      setMsg(`${res.variant} ${res.size_label} · ${res.code}`);
+      const qtyBit = res.qty ? ` ×${res.qty}` : "";
+      setMsg(`${res.variant} ${res.size_label} · ${res.code}${qtyBit}`);
       if (res.request) {
         setProgress(`${res.request.scanned_count} / ${res.request.generated_count || res.request.quantity} scanned`);
       }
       window.setTimeout(() => setFlash(null), 700);
       refocus();
-      return { kind: "success", message: `Stocked in: ${res.variant} ${res.size_label} · ${res.code}` };
+      return { kind: "success", message: `Stocked in: ${res.variant} ${res.size_label} · ${res.code}${qtyBit}` };
     } catch (e) {
       const reason = e instanceof ApiError ? e.message : "Scan failed.";
       const isDup = /already|duplicate/i.test(reason);
@@ -290,10 +200,57 @@ export function HoneyBottleScanInPanel() {
     }
   };
 
+  const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
+    const value = (raw ?? code).trim();
+    if (!value) return;
+    setCode("");
+    try {
+      const { lookup } = await skuBarcodesApi.lookup(value);
+      if (lookup.lookup_kind === "sku" && lookup.kind === "honey") {
+        setPendingSku({ code: value, label: lookup.label ?? "Honey SKU" });
+        setSkuQty("1");
+        return { kind: "success", message: `SKU ${lookup.label} — enter qty` };
+      }
+    } catch {
+      // fall through to unique scan
+    }
+    return commitStockIn(value);
+  };
+
+  const confirmSku = async () => {
+    if (!pendingSku) return;
+    const qty = Number(skuQty);
+    if (!Number.isFinite(qty) || qty < 1) {
+      setMsg("Enter a quantity of at least 1.");
+      return;
+    }
+    if (!customBatchNo.trim()) {
+      setMsg("Enter a custom batch number for SKU stock-in.");
+      return;
+    }
+    const codeVal = pendingSku.code;
+    setPendingSku(null);
+    await commitStockIn(codeVal, { qty, batch_no: customBatchNo.trim() });
+  };
+
   return (
     <AppSectionEnter className="space-y-4">
       <div className="bg-card rounded-xl border border-border p-4 space-y-3">
-        <h3 className="text-sm font-semibold">Scan bottle into packaging stock</h3>
+        <h3 className="text-sm font-semibold">Scan into packaging stock</h3>
+        <p className="text-xs text-muted-foreground">
+          SKU barcodes: scan → enter how many → enter a custom batch number. No supplier or existing batch lookup is required.
+          Leftover unique stickers still scan one at a time.
+        </p>
+        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Custom batch number (for SKU stock-in)
+          <input
+            className="mt-1 w-full border rounded-lg px-3 py-2 text-sm uppercase"
+            value={customBatchNo}
+            onChange={e => setCustomBatchNo(e.target.value.toUpperCase())}
+            placeholder="e.g. NF082826"
+            autoComplete="off"
+          />
+        </label>
         <div className="flex gap-2">
           <input
             ref={inputRef}
@@ -313,9 +270,31 @@ export function HoneyBottleScanInPanel() {
             <Camera size={16} /> Camera
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          2D imager scanner, tap Camera to use this device, or type the code printed under the barcode.
-        </p>
+        {pendingSku ? (
+          <div className="rounded-lg border border-[#C8900A]/40 bg-[#C8900A]/5 p-3 space-y-2">
+            <p className="text-sm font-medium">{pendingSku.label}</p>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground">Quantity</label>
+                <input
+                  className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                  type="number"
+                  min={1}
+                  value={skuQty}
+                  onChange={e => setSkuQty(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void confirmSku();
+                    }
+                  }}
+                />
+              </div>
+              <Button type="button" onClick={() => void confirmSku()}>Stock in</Button>
+              <Button type="button" variant="outline" onClick={() => setPendingSku(null)}>Cancel</Button>
+            </div>
+          </div>
+        ) : null}
         <div className={`h-16 rounded-xl border flex items-center justify-center text-sm font-medium ${
           flash === "ok" ? "bg-green-100 border-green-300 text-green-800" : flash === "err" ? "bg-red-100 border-red-300 text-red-800" : "bg-secondary/30 border-border text-muted-foreground"
         }`}>
@@ -341,14 +320,8 @@ export function HoneyBottleScanInPanel() {
 export function HoneyBottleAdminPanel() {
   const [pending, setPending] = useState<HoneyBottleRequest[]>([]);
   const [batches, setBatches] = useState<HoneyBarcodeBatch[]>([]);
-  const [packs, setPacks] = useState<HoneyPackagingOption[]>([]);
-  const [lots, setLots] = useState<ProductionLotOption[]>([]);
-  const [packPick, setPackPick] = useState<Record<number, number>>({});
-  const [lotPick, setLotPick] = useState<Record<number, number>>({});
-  const [customOpenFor, setCustomOpenFor] = useState<number | null>(null);
-  const [customCode, setCustomCode] = useState("");
-  const [customSupplier, setCustomSupplier] = useState("");
-  const [customBottlingDate, setCustomBottlingDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [skuPrints, setSkuPrints] = useState<SkuPrintJobRow[]>([]);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -356,16 +329,15 @@ export function HoneyBottleAdminPanel() {
 
   const refresh = useCallback(async () => {
     try {
-      const [list, batchList, opts, production] = await Promise.all([
+      const [list, batchList, printList] = await Promise.all([
         bottleBarcodesApi.requestList({ status: "pending" }),
         bottleBarcodesApi.batchList(),
-        bottleBarcodesApi.packagingOptions(),
-        apiGet<{ rows: ProductionLotOption[] }>("honey.php", "production_list"),
+        bottleBarcodesApi.skuPrintList(),
       ]);
       setPending(list.rows);
       setBatches(batchList.rows);
-      setPacks(opts.rows);
-      setLots(production.rows);
+      setSkuPrints(printList.rows);
+      setSelected(new Set(list.rows.map(r => r.id)));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load queue.");
     }
@@ -376,26 +348,35 @@ export function HoneyBottleAdminPanel() {
   }, [refresh]);
 
   const generate = async (req: HoneyBottleRequest) => {
+    await printBatch([req.id]);
+  };
+
+  const printBatch = async (ids: number[]) => {
+    if (ids.length === 0) return;
     setBusy(true);
     setError(null);
     try {
-      const packId = packPick[req.id] ?? req.packaging_row_id;
-      const productionRowId = lotPick[req.id];
-      const res = await bottleBarcodesApi.generate(
-        req.id,
-        packId,
-        packId ? null : productionRowId ?? null,
-      );
-      setOk(`Generated ${res.batch.quantity_generated} barcodes · print as A4 (68/page).`);
-      window.open(bottlePrintSheetUrl(res.batch.id), "_blank");
-      await bottleBarcodesApi.markPrinted(res.batch.id);
+      const res = await bottleBarcodesApi.generateBatch(ids);
+      setOk(res.message ?? `Combined sheet — ${res.batch_count} batch(es).`);
+      if (res.print_url) {
+        window.open(res.print_url, "_blank");
+      }
       triggerLiveRefresh();
       await refresh();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Generate failed.");
+      setError(e instanceof ApiError ? e.message : "Print failed.");
     } finally {
       setBusy(false);
     }
+  };
+
+  const toggleSelected = (id: number, on: boolean) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
   };
 
   const backfill = async () => {
@@ -426,37 +407,6 @@ export function HoneyBottleAdminPanel() {
     }
   };
 
-  const createCustomForRequest = async (req: HoneyBottleRequest) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const created = await bottleBarcodesApi.createCustomPackaging({
-        code: customCode.trim() || undefined,
-        supplier_name: customSupplier.trim() || undefined,
-        variant: req.variant,
-        bottling_date: customBottlingDate,
-      });
-      setPacks(prev => [created.packaging, ...prev.filter(p => p.id !== created.packaging.id)]);
-      setPackPick(p => ({ ...p, [req.id]: created.packaging.id }));
-      setLotPick(p => {
-        const next = { ...p };
-        delete next[req.id];
-        return next;
-      });
-      setCustomOpenFor(null);
-      setCustomCode("");
-      setCustomSupplier("");
-      setOk(created.reused ? `Using existing ${created.packaging.label}` : `Created ${created.packaging.label}`);
-      triggerLiveRefresh();
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not create custom batch.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const packOptions = useMemo(() => packs, [packs]);
-
   return (
     <AppSectionEnter className="space-y-4">
       {error && <AppErrorBanner message={error} />}
@@ -471,110 +421,71 @@ export function HoneyBottleAdminPanel() {
         {drift !== null && <span className="text-sm self-center">{drift} drifted rows</span>}
       </div>
       <p className="text-xs text-muted-foreground">
-        Labels print on A4 at 68 per page (4×17) — barcode plus the code text underneath (type it in if a sticker won&rsquo;t scan), dashed cut guides. Print at 100% scale (not &ldquo;fit to page&rdquo;) or the bars get too thin to scan. If no packaging batch exists, pick a production lot or create a custom supplier batch (no gallon deduct).
+        New prints use permanent SKU barcodes from Settings. Print at 100% scale on A4 (8×20). Legacy unique batches remain below for old stickers.
       </p>
+      <h3 className="text-sm font-semibold">Pending label requests</h3>
       <div className="overflow-x-auto rounded-xl border border-border">
+        {pending.length > 0 ? (
+          <div className="px-3 py-2 border-b border-border flex flex-wrap gap-2 items-center bg-secondary/20">
+            <Button
+              type="button"
+              size="sm"
+              disabled={busy}
+              onClick={() => void printBatch(pending.map(r => r.id))}
+            >
+              Print all pending (one sheet)
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy || selected.size === 0}
+              onClick={() => void printBatch([...selected])}
+            >
+              Print selected ({selected.size})
+            </Button>
+            <span className="text-xs text-muted-foreground">8×20 grid · barcode only · BATCH headers</span>
+          </div>
+        ) : null}
         <table className="w-full text-sm">
           <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
             <tr>
+              <th className="px-3 py-2 w-8">
+                <input
+                  type="checkbox"
+                  aria-label="Select all pending"
+                  checked={pending.length > 0 && selected.size === pending.length}
+                  onChange={e => {
+                    if (e.target.checked) setSelected(new Set(pending.map(r => r.id)));
+                    else setSelected(new Set());
+                  }}
+                />
+              </th>
               <th className="text-left px-3 py-2">Request</th>
-              <th className="text-left px-3 py-2">Batch / lot</th>
               <th className="px-3 py-2" />
             </tr>
           </thead>
           <tbody>
             {pending.map(r => (
               <tr key={r.id} className={appHoverRow}>
-                <td className="px-3 py-2 capitalize">{r.variant} {r.size_label} ×{r.quantity}</td>
-                <td className="px-3 py-2 space-y-1">
-                  <select
-                    className="border rounded-lg px-2 py-1 text-xs w-full max-w-xs"
-                    value={
-                      customOpenFor === r.id
-                        ? "__custom__"
-                        : String(packPick[r.id] ?? r.packaging_row_id ?? "")
-                    }
-                    onChange={e => {
-                      const v = e.target.value;
-                      if (v === "__custom__") {
-                        setCustomOpenFor(r.id);
-                        setCustomCode("");
-                        setCustomSupplier("");
-                        setCustomBottlingDate(new Date().toISOString().slice(0, 10));
-                        return;
-                      }
-                      setCustomOpenFor(null);
-                      setPackPick(p => {
-                        const next = { ...p };
-                        if (v === "") delete next[r.id];
-                        else next[r.id] = Number(v);
-                        return next;
-                      });
-                    }}
-                  >
-                    <option value="">Select packaging batch</option>
-                    <option value="__custom__">+ Create custom batch / supplier…</option>
-                    {packOptions.filter(p => p.variant === r.variant).map(p => (
-                      <option key={p.id} value={p.id}>{p.label}</option>
-                    ))}
-                  </select>
-                  {customOpenFor === r.id ? (
-                    <div className="max-w-xs space-y-1 rounded-lg border border-dashed border-border bg-secondary/20 p-2">
-                      <input
-                        className="w-full border rounded-lg px-2 py-1 font-mono text-xs uppercase"
-                        placeholder="Batch code, e.g. JR073026"
-                        value={customCode}
-                        onChange={e => setCustomCode(e.target.value.toUpperCase())}
-                      />
-                      <p className="text-[11px] text-muted-foreground">…or build it from a supplier name:</p>
-                      <input
-                        className="w-full border rounded-lg px-2 py-1 text-xs"
-                        placeholder="Supplier name"
-                        value={customSupplier}
-                        onChange={e => setCustomSupplier(e.target.value)}
-                        disabled={customCode.trim() !== ""}
-                      />
-                      <label className="block text-[11px] text-muted-foreground">
-                        Bottling date
-                        <input
-                          className="mt-0.5 w-full border rounded-lg px-2 py-1 text-xs"
-                          type="date"
-                          value={customBottlingDate}
-                          onChange={e => setCustomBottlingDate(e.target.value)}
-                        />
-                      </label>
-                      <div className="flex gap-1">
-                        <Button
-                          type="button"
-                          size="sm"
-                          disabled={busy || (!customCode.trim() && !customSupplier.trim())}
-                          onClick={() => void createCustomForRequest(r)}
-                        >
-                          Create batch
-                        </Button>
-                        <Button type="button" size="sm" variant="outline" onClick={() => setCustomOpenFor(null)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : !(packPick[r.id] ?? r.packaging_row_id) ? (
-                    <select
-                      className="border rounded-lg px-2 py-1 text-xs w-full max-w-xs"
-                      value={lotPick[r.id] ?? ""}
-                      onChange={e => setLotPick(p => ({ ...p, [r.id]: Number(e.target.value) }))}
-                    >
-                      <option value="">Or create from production lot</option>
-                      {lots.filter(l => l.variant === r.variant).map(l => (
-                        <option key={l.id} value={l.id}>
-                          {l.supplier_code} · {l.arrival_date}
-                        </option>
-                      ))}
-                    </select>
+                <td className="px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(r.id)}
+                    onChange={e => toggleSelected(r.id, e.target.checked)}
+                    aria-label={`Select ${r.variant} ${r.size_label}`}
+                  />
+                </td>
+                <td className="px-3 py-2 capitalize">
+                  {r.variant} {r.size_label} ×{r.quantity}
+                  {r.batch_no ? (
+                    <span className="ml-2 font-mono text-xs text-muted-foreground">· {r.batch_no}</span>
                   ) : null}
+                  <RequestNotesInline notes={r.notes} />
                 </td>
                 <td className="px-3 py-2">
                   <Button type="button" size="sm" disabled={busy} onClick={() => void generate(r)}>
-                    Generate + print
+                    Print
                   </Button>
                 </td>
               </tr>
@@ -585,7 +496,24 @@ export function HoneyBottleAdminPanel() {
           </tbody>
         </table>
       </div>
-      <h3 className="text-sm font-semibold">Recent batches</h3>
+      <h3 className="text-sm font-semibold">Recent SKU prints</h3>
+      <ul className="space-y-2">
+        {skuPrints.slice(0, 25).map(p => (
+          <li key={p.id} className="flex items-center justify-between gap-2 bg-card border rounded-xl px-3 py-2">
+            <span className="text-sm">
+              {p.label} · <span className="font-mono text-xs">{p.sku_code}</span> ×{p.quantity}
+              <span className="ml-2 text-xs text-muted-foreground">{p.printed_at.slice(0, 16)} · {p.printed_by_name}</span>
+            </span>
+            <Button type="button" size="sm" variant="outline" onClick={() => window.open(p.print_url, "_blank")}>
+              <Printer size={14} /> Reprint
+            </Button>
+          </li>
+        ))}
+        {skuPrints.length === 0 && (
+          <li className="text-sm text-muted-foreground px-3 py-2">No SKU print jobs yet.</li>
+        )}
+      </ul>
+      <h3 className="text-sm font-semibold">Recent unique batches (legacy)</h3>
       <ul className="space-y-2">
         {batches.slice(0, 20).map(b => (
           <li key={b.id} className="flex items-center justify-between gap-2 bg-card border rounded-xl px-3 py-2">

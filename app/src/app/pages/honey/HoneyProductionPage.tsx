@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router";
-import { BookOpen, Loader2, Printer, ScanLine, Tag, AlertTriangle } from "lucide-react";
+import { BookOpen, Loader2, Printer, Tag, AlertTriangle } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { HoneyStockStatusBadge } from "@/app/components/honey/HoneyStockStatusBadge";
 import {
   HoneyBottleAdminPanel,
   HoneyBottleRequestsPanel,
-  HoneyBottleScanInPanel,
 } from "@/app/components/honey/HoneyBottleBarcodePanels";
 import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
@@ -24,18 +23,18 @@ interface PrRow {
   id: number;
   supplier_code: string;
   arrival_date: string;
+  stock_out_date?: string;
   variant: string;
   current_qty: string;
   initial_qty: string;
 }
 
-type ModalKind = "request" | "scan" | "admin" | "guide" | null;
+type ModalKind = "request" | "admin" | "guide" | null;
 
 export function HoneyProductionPage() {
   const { user, can } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const canRequest = can("honey.bottle.request");
-  const canScan = can("honey.bottle.scan");
   const canGenerate = can("honey.bottle.generate") || canGenerateHoneyBottleLabels(user);
   const isCsrOnly = user?.role === "csr_tl" || user?.role === "csr_staff";
   const canLeakDamage = can("inventory.leak_damage.view");
@@ -104,11 +103,6 @@ export function HoneyProductionPage() {
           <Tag size={14} /> Request barcodes
         </Button>
       )}
-      {canScan && (
-        <Button type="button" size="sm" variant="outline" onClick={() => setModal("scan")}>
-          <ScanLine size={14} /> Scan to inventory
-        </Button>
-      )}
       {canGenerate && (
         <Button
           type="button"
@@ -159,7 +153,7 @@ export function HoneyProductionPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-secondary/40">
-                {["Supplier code", "From WH", "Variant", "Gallon/s", "Status"].map(h => (
+                {["Supplier code", "From WH", "Stock out", "Variant", "Gallon/s", "Status"].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
                     {h}
                   </th>
@@ -169,14 +163,14 @@ export function HoneyProductionPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center">
+                  <td colSpan={6} className="py-8 text-center">
                     <Loader2 className="inline animate-spin" size={14} />
                   </td>
                 </tr>
               )}
               {!loading && pagedRows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     No production lots yet.
                   </td>
                 </tr>
@@ -191,6 +185,7 @@ export function HoneyProductionPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">{r.arrival_date}</td>
+                  <td className="px-4 py-3">{r.stock_out_date ?? "—"}</td>
                   <td className="px-4 py-3 capitalize">{r.variant}</td>
                   <td className="px-4 py-3">
                     <QtyCounter current={r.current_qty} initial={r.initial_qty} />
@@ -237,13 +232,6 @@ export function HoneyProductionPage() {
         <AppModalHeader title="Request barcodes" onClose={closeModal} />
         <AppModalBody className="max-h-[75vh] overflow-y-auto">
           <HoneyBottleRequestsPanel canAdmin={canGenerate} />
-        </AppModalBody>
-      </AppModal>
-
-      <AppModal open={modal === "scan"} onClose={closeModal} panelClassName="max-w-lg w-full">
-        <AppModalHeader title="Scan to inventory" onClose={closeModal} />
-        <AppModalBody>
-          <HoneyBottleScanInPanel />
         </AppModalBody>
       </AppModal>
 

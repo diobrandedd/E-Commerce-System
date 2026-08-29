@@ -18,6 +18,38 @@ function barcode_verify_lookup(PDO $pdo, string $rawCode): array
         throw new RuntimeException('Enter a barcode to verify.');
     }
 
+    require_once __DIR__ . '/sku_barcodes.php';
+    $sku = sku_barcode_fetch_by_code($pdo, $code);
+    if ($sku !== null) {
+        $ser = sku_barcode_serialize($sku);
+
+        return [
+            'found' => true,
+            'kind' => 'sku',
+            'lookup_kind' => 'sku',
+            'code' => (string) $sku['code'],
+            'status' => 'sku',
+            'product_label' => (string) $ser['label'],
+            'supplier_code' => null,
+            'batch_no' => null,
+            'batch_date' => null,
+            'scanned_at' => null,
+            'scanned_by_name' => null,
+            'unit_status' => null,
+            'requires_qty' => true,
+            'honey' => (string) $sku['kind'] === 'honey' ? [
+                'variant' => (string) $sku['variant'],
+                'size' => (string) $sku['size'],
+                'size_label' => honey_bottle_size_label((string) $sku['size']),
+            ] : null,
+            'dept' => (string) $sku['kind'] === 'dept' ? [
+                'product_key' => (string) $sku['product_key'],
+                'unit' => dept_pouch_unit_singular((string) $sku['product_key']),
+                'unit_plural' => dept_pouch_unit_singular((string) $sku['product_key']) === 'jar' ? 'jars' : 'pouches',
+            ] : null,
+        ];
+    }
+
     $honey = barcode_verify_lookup_honey($pdo, $code);
     if ($honey !== null) {
         return $honey;

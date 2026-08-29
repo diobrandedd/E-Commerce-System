@@ -1,13 +1,42 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, CheckCircle2, Loader2, ShoppingCart } from "lucide-react";
+import { Loader2, ShoppingCart, Tag } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
+import { Button } from "@/app/components/ui/button";
+import {
+  AppErrorBanner,
+  AppSuccessNotice,
+} from "@/app/components/layout/appFeedbackMotion";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
+import { skuBarcodesApi, type SkuBarcodeRow } from "@/app/lib/skuBarcodes";
 
 interface PosPinRow {
   id: number;
   label: string;
   is_active: boolean;
   created_at: string;
+}
+
+function skuRowKey(r: SkuBarcodeRow): string {
+  return r.kind === "honey" ? `honey:${r.variant}:${r.size}` : `dept:${r.product_key}`;
+}
+
+function formatPriceInput(n: number | null): string {
+  if (n == null || !Number.isFinite(n)) return "";
+  return Number.isInteger(n) ? String(n) : n.toFixed(2);
+}
+
+function parsePriceInput(raw: string): number | null {
+  const t = raw.trim();
+  if (t === "") return null;
+  const n = Number(t);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
+function pricesEqual(a: number | null, b: number | null): boolean {
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  return Math.abs(a - b) < 0.005;
 }
 
 export function SettingsPage() {
@@ -22,6 +51,14 @@ export function SettingsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [posBusy, setPosBusy] = useState<number | "create" | null>(null);
   const [posMsg, setPosMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const [skuRows, setSkuRows] = useState<SkuBarcodeRow[]>([]);
+  const [skuCodes, setSkuCodes] = useState<Record<string, string>>({});
+  const [skuPrices, setSkuPrices] = useState<Record<string, string>>({});
+  const [skuLoading, setSkuLoading] = useState(true);
+  const [skuSaving, setSkuSaving] = useState(false);
+  const [skuOk, setSkuOk] = useState<string | null>(null);
+  const [skuErr, setSkuErr] = useState<string | null>(null);
 
   const loadPins = useCallback(async () => {
     setPinsLoading(true);
@@ -41,9 +78,77 @@ export function SettingsPage() {
     }
   }, []);
 
+  const loadSkuRows = useCallback(async () => {
+    setSkuLoading(true);
+    try {
+      const data = await skuBarcodesApi.list();
+      setSkuRows(data.rows);
+      const codes: Record<string, string> = {};
+      const prices: Record<string, string> = {};
+      data.rows.forEach(r => {
+        const key = skuRowKey(r);
+        codes[key] = r.code ?? "";
+        prices[key] = formatPriceInput(r.selling_price_hint);
+      });
+      setSkuCodes(codes);
+      setSkuPrices(prices);
+    } catch (e) {
+      setSkuErr(e instanceof ApiError ? e.message : "Could not load barcode settings.");
+    } finally {
+      setSkuLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadPins();
-  }, [loadPins]);
+    void loadSkuRows();
+  }, [loadPins, loadSkuRows]);
+
+  const saveAllSku = async () => {
+    setSkuSaving(true);
+    setSkuOk(null);
+    setSkuErr(null);
+    try {
+      const items = skuRows.map(row => {
+        const key = skuRowKey(row);
+        const code = (skuCodes[key] ?? "").trim();
+        const priceRaw = (skuPrices[key] ?? "").trim();
+        const priceDirty = !pricesEqual(parsePriceInput(priceRaw), row.selling_price_hint);
+        const body: {
+          kind: "honey" | "dept";
+          variant?: string;
+          size?: string;
+          product_key?: string;
+          code: string;
+          selling_price?: string;
+        } = {
+          kind: row.kind,
+          ...(row.kind === "honey"
+            ? { variant: row.variant ?? undefined, size: row.size ?? undefined }
+            : { product_key: row.product_key ?? undefined }),
+          code,
+        };
+        if (priceDirty) {
+          body.selling_price = priceRaw;
+        }
+        return body;
+      });
+      const res = await skuBarcodesApi.saveBulk(items);
+      setSkuOk(`Saved barcode settings (${res.saved_count} row${res.saved_count === 1 ? "" : "s"}).`);
+      await loadSkuRows();
+    } catch (e) {
+      setSkuErr(e instanceof ApiError ? e.message : "Could not save barcode settings.");
+    } finally {
+      setSkuSaving(false);
+    }
+  };
+
+  const skuDirty = skuRows.some(row => {
+    const key = skuRowKey(row);
+    const codeDirty = (skuCodes[key] ?? "").trim() !== (row.code ?? "").trim();
+    const priceDirty = !pricesEqual(parsePriceInput(skuPrices[key] ?? ""), row.selling_price_hint);
+    return codeDirty || priceDirty;
+  });
 
   const savePin = async (id: number) => {
     const form = pinForms[id];
@@ -96,19 +201,111 @@ export function SettingsPage() {
 
   return (
     <PageLayout title="System Settings" subtitle="Configure system-wide preferences">
-      <div className="max-w-2xl space-y-6">
-        {posMsg && (
-          <div
-            className={`rounded-lg border px-4 py-3 text-sm flex items-start gap-2 ${
-              posMsg.type === "ok"
-                ? "border-green-200 bg-green-50 text-green-800"
-                : "border-red-200 bg-red-50 text-red-700"
-            }`}
-          >
-            {posMsg.type === "ok" ? <CheckCircle2 size={16} className="mt-0.5" /> : <AlertCircle size={16} className="mt-0.5" />}
-            <span>{posMsg.text}</span>
+      <div className="max-w-4xl space-y-6">
+        {posMsg?.type === "ok" && <AppSuccessNotice message={posMsg.text} />}
+        {posMsg?.type === "err" && <AppErrorBanner message={posMsg.text} />}
+        {skuOk && <AppSuccessNotice message={skuOk} />}
+        {skuErr && <AppErrorBanner message={skuErr} />}
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <Tag size={18} className="text-[#C8900A] shrink-0" />
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-foreground">Barcode Settings</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Permanent SKU barcodes for stickers. Selling price defaults from Product Setup; changes here update Product Setup and POS.
+                </p>
+              </div>
+            </div>
+            {!skuLoading && skuRows.length > 0 && (
+              <Button
+                type="button"
+                disabled={skuSaving || !skuDirty}
+                onClick={() => void saveAllSku()}
+                className="shrink-0 bg-[#C8900A] hover:bg-[#b07f09] text-white"
+              >
+                {skuSaving ? <Loader2 className="animate-spin" size={14} /> : "Save all"}
+              </Button>
+            )}
           </div>
-        )}
+          {skuLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-4 py-2.5 font-semibold">Product</th>
+                    <th className="text-left px-4 py-2.5 font-semibold">Selling price</th>
+                    <th className="text-left px-4 py-2.5 font-semibold">Code</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {skuRows.map(row => {
+                    const key = skuRowKey(row);
+                    const codeDirty = (skuCodes[key] ?? "").trim() !== (row.code ?? "").trim();
+                    const priceDirty = !pricesEqual(parsePriceInput(skuPrices[key] ?? ""), row.selling_price_hint);
+                    const dirty = codeDirty || priceDirty;
+                    return (
+                      <tr key={key} className={dirty ? "bg-[#C8900A]/5" : undefined}>
+                        <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{row.label}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1 min-w-[6rem]">
+                            <span className="text-xs text-muted-foreground shrink-0">₱</span>
+                            <input
+                              value={skuPrices[key] ?? ""}
+                              onChange={e =>
+                                setSkuPrices(prev => ({ ...prev, [key]: e.target.value }))
+                              }
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                              placeholder={row.selling_price_hint == null ? "No product" : "0"}
+                            />
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            value={skuCodes[key] ?? ""}
+                            onChange={e =>
+                              setSkuCodes(prev => ({ ...prev, [key]: e.target.value }))
+                            }
+                            className="w-full min-w-[7rem] rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-[#C8900A]"
+                            placeholder="e.g. 250"
+                            maxLength={32}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {skuRows.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">
+                        No SKU catalog rows yet. Run the SKU barcodes migration.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {skuRows.length > 0 && (
+                <div className="px-6 py-4 border-t border-border flex justify-end">
+                  <Button
+                    type="button"
+                    disabled={skuSaving || !skuDirty}
+                    onClick={() => void saveAllSku()}
+                    className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+                  >
+                    {skuSaving ? <Loader2 className="animate-spin" size={14} /> : "Save all"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
           <div className="px-6 py-4 border-b border-border flex items-center gap-2">

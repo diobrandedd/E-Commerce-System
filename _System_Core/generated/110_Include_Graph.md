@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-08-26T04:09:30+02:00
+generated: 2026-08-29T11:19:01+02:00
 type: memory-bank
-edge_count: 347
+edge_count: 387
 ---
 
 
@@ -88,6 +88,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/sales.php` | `api/v1/_bootstrap.php` |
 | `api/v1/sales.php` | `includes/honey_sales_report.php` |
 | `api/v1/settings.php` | `api/v1/_bootstrap.php` |
+| `api/v1/sku_barcodes.php` | `api/v1/_bootstrap.php` |
 | `api/v1/staff.php` | `api/v1/_bootstrap.php` |
 | `api/v1/stocks.php` | `api/v1/_bootstrap.php` |
 | `api/v1/stocks.php` | `api/v1/_costing_helpers.php` |
@@ -124,6 +125,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/auth_check.php` | `includes/db.php` |
 | `includes/barcode_verify.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/barcode_verify.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/barcode_verify.php` | `includes/sku_barcodes.php` |
 | `includes/bulk_honey_orders.php` | `includes/honey_inventory.php` |
 | `includes/bulk_honey_orders.php` | `includes/honey_pricing.php` |
 | `includes/catalog_bootstrap.php` | `includes/honey_volume.php` |
@@ -188,6 +190,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_bottle_barcodes.php` | `includes/rts_inventory_sync.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/rts_inventory_sync.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/rts_schema.php` |
+| `includes/honey_bottle_barcodes.php` | `includes/sku_barcodes.php` |
+| `includes/honey_bottle_barcodes.php` | `includes/sku_barcodes.php` |
 | `includes/honey_inventory.php` | `includes/catalog_bootstrap.php` |
 | `includes/honey_inventory.php` | `includes/db.php` |
 | `includes/honey_inventory.php` | `includes/dept_production.php` |
@@ -221,10 +225,13 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_sales_report.php` | `includes/dept_products.php` |
 | `includes/honey_sales_report.php` | `includes/honey_pos.php` |
 | `includes/honey_sales_report.php` | `includes/rts_schema.php` |
+| `includes/honey_warehouse_barcodes.php` | `includes/honey_inventory.php` |
+| `includes/honey_warehouse_barcodes.php` | `includes/sku_barcodes.php` |
 | `includes/inventory_check.php` | `includes/dept_inventory.php` |
 | `includes/inventory_check.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/inventory_check.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/inventory_check.php` | `includes/permissions.php` |
+| `includes/inventory_check.php` | `includes/sku_barcodes.php` |
 | `includes/inventory_edit_log.php` | `includes/db.php` |
 | `includes/labels.php` | `includes/rts_products.php` |
 | `includes/material_inventory.php` | `includes/catalog_bootstrap.php` |
@@ -256,6 +263,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pack_cancel_restock.php` | `includes/honey_pos.php` |
 | `includes/pack_cancel_restock.php` | `includes/rts_inventory_sync.php` |
 | `includes/pack_cancel_restock.php` | `includes/rts_schema.php` |
+| `includes/pack_cancel_restock.php` | `includes/sku_barcodes.php` |
 | `includes/parcel_pack_costing.php` | `includes/dept_inventory.php` |
 | `includes/parcel_pack_costing.php` | `includes/dept_products.php` |
 | `includes/parcel_pack_costing.php` | `includes/honey_parcel_item_parser.php` |
@@ -273,10 +281,18 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_unified.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/pos_unified.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/pos_unified.php` | `includes/honey_pos.php` |
+| `includes/pos_unified.php` | `includes/sku_barcodes.php` |
+| `includes/pos_unified.php` | `includes/sku_barcodes.php` |
+| `includes/pos_unified.php` | `includes/sku_barcodes.php` |
+| `includes/pos_unified.php` | `includes/sku_barcodes.php` |
+| `includes/pos_unified.php` | `includes/sku_barcodes.php` |
 | `includes/rts_attachments.php` | `includes/rts_storage.php` |
 | `includes/rts_barcode_labels.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/rts_barcode_labels.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/rts_barcode_labels.php` | `includes/permissions.php` |
+| `includes/rts_barcode_labels.php` | `includes/sku_barcodes.php` |
+| `includes/rts_barcode_labels.php` | `includes/sku_barcodes.php` |
+| `includes/rts_barcode_labels.php` | `includes/sku_barcodes.php` |
 | `includes/rts_case_handlers.php` | `includes/courier_detect.php` |
 | `includes/rts_case_handlers.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/rts_case_handlers.php` | `includes/honey_bottle_barcodes.php` |
@@ -319,6 +335,30 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/shopee_spx_packing_list.php` | `includes/pdf_to_excel.php` |
 | `includes/shopee_spx_packing_list.php` | `includes/shopee_spx_product_info.php` |
 | `includes/shopee_spx_packing_list.php` | `includes/waybill_stamper.php` |
+| `includes/sku_barcodes.php` | `includes/dept_inventory.php` |
+| `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/dept_products.php` |
+| `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/sku_barcodes.php` | `includes/honey_inventory.php` |
+| `includes/sku_barcodes.php` | `includes/honey_pos.php` |
+| `includes/sku_barcodes.php` | `includes/honey_pos.php` |
+| `includes/sku_barcodes.php` | `includes/rts_inventory_sync.php` |
+| `includes/sku_barcodes.php` | `includes/rts_inventory_sync.php` |
+| `includes/sku_barcodes.php` | `includes/rts_inventory_sync.php` |
+| `includes/sku_barcodes.php` | `includes/rts_inventory_sync.php` |
+| `includes/sku_barcodes.php` | `includes/rts_inventory_sync.php` |
+| `includes/sku_barcodes.php` | `includes/rts_schema.php` |
 | `includes/sp_sort_service.php` | `includes/rts_storage.php` |
 | `includes/sp_sort_service.php` | `includes/rts_storage.php` |
 | `includes/suppliers.php` | `includes/db.php` |

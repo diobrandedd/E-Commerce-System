@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-08-26T04:09:32+02:00
+generated: 2026-08-29T11:19:03+02:00
 type: module
 function_count: 14
 ---
@@ -50,7 +50,7 @@ function_count: 14
 
 ## ims_current_user {#ims_current_user}
 
-**Callers (45):**
+**Callers (48):**
 
 - `api/v1/_bootstrap.php`:132 — `$u = ims_current_user();`
 - `api/v1/auth.php`:69 — `$user = ims_current_user();`
@@ -70,14 +70,14 @@ function_count: 14
 - `api/v1/order_remarks.php`:30 — `$user = ims_current_user();`
 - `api/v1/parcels.php`:10 — `$user = ims_current_user();`
 - `api/v1/pdf_to_excel.php`:29 — `$user = ims_current_user();`
+- `api/v1/sku_barcodes.php`:34 — `$user = ims_current_user();`
+- `api/v1/sku_barcodes.php`:60 — `$user = ims_current_user();`
+- `api/v1/sku_barcodes.php`:86 — `$user = ims_current_user();`
 - `api/v1/waybill.php`:36 — `$user = ims_current_user();`
 - `auth/login.php`:12 — `$existing = ims_current_user();`
 - `auth/login.php`:34 — `$u = ims_current_user();`
 - `auth/settings.php`:8 — `$u = ims_current_user();`
-- `dept/beginning_inventory.php`:9 — `$user = ims_current_user();`
-- `dept/example_protected.php`:7 — `$user = ims_current_user();`
-- `dept/home.php`:7 — `$user = ims_current_user();`
-- _… and 20 more (run impact.php for full list)_
+- _… and 23 more (run impact.php for full list)_
 
 ## ims_pos_authenticated {#ims_pos_authenticated}
 

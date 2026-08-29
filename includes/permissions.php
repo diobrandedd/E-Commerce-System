@@ -59,6 +59,8 @@ function ims_permission_catalog(): array
         'honey.bottle.request' => ['label' => 'Request bottle labels', 'group' => 'Honey', 'description' => 'Request honey bottle barcode labels.'],
         'honey.bottle.generate' => ['label' => 'Generate bottle labels', 'group' => 'Honey', 'description' => 'Generate and print honey bottle labels (CSR).'],
         'honey.bottle.scan' => ['label' => 'Scan bottle barcodes', 'group' => 'Honey', 'description' => 'Scan honey bottle barcodes in production.'],
+        'honey.warehouse_barcode.request' => ['label' => 'Request warehouse barcodes', 'group' => 'Honey', 'description' => 'Request supplier/date barcode labels for honey warehouse stock.'],
+        'honey.warehouse_barcode.generate' => ['label' => 'Generate warehouse barcodes', 'group' => 'Honey', 'description' => 'Generate and print supplier/date barcode labels for honey warehouse stock.'],
 
         'dept.paragis.view' => ['label' => 'View Paragis', 'group' => 'Paragis', 'description' => 'View Dried Paragis raw and Paragis Tea finished inventory.'],
         'dept.paragis.produce' => ['label' => 'Produce Paragis', 'group' => 'Paragis', 'description' => 'Stock in bags, use raw bags, and make tea bags.'],
@@ -207,6 +209,7 @@ function ims_permission_preset_for_role(string $role, ?string $deptKey = null): 
             'supplies.view',
             'honey.view', 'honey.mutate', 'honey.ops', 'honey.pricing.view_cost',
             'honey.bottle.request', 'honey.bottle.scan',
+            'honey.warehouse_barcode.request', 'honey.warehouse_barcode.generate',
         ], ims_dept_line_permission_keys(['paragis', 'brc', 'cacao', 'comb'], ['view', 'produce', 'barcodes']), [
             'packing.materials.view', 'packing.materials.issue', 'packing.on_hold.view',
             'deliveries.view', 'deliveries.pack_scan', 'deliveries.ship', 'deliveries.review', 'deliveries.cancel_restock',
@@ -234,6 +237,7 @@ function ims_permission_preset_for_role(string $role, ?string $deptKey = null): 
             'inventory.check.scan',
             'honey.view', 'honey.ops',
             'honey.bottle.request', 'honey.bottle.scan',
+            'honey.warehouse_barcode.request',
             'suppliers.view',
             'packing.materials.view', 'packing.materials.issue',
             'rts.view', 'rts.record', 'rts.damaged.use', 'rts.barcode_labels',

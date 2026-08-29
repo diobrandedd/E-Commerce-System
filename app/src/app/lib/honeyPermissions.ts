@@ -29,6 +29,14 @@ export function canMutateHoneyPipeline(user: AuthUser | null | undefined): boole
   return hasPermission(perms(user), user?.role, "honey.ops");
 }
 
+export function canRequestHoneyWarehouseBarcodes(user: AuthUser | null | undefined): boolean {
+  return hasPermission(perms(user), user?.role, "honey.warehouse_barcode.request");
+}
+
+export function canGenerateHoneyWarehouseBarcodes(user: AuthUser | null | undefined): boolean {
+  return hasPermission(perms(user), user?.role, "honey.warehouse_barcode.generate");
+}
+
 export function canMutateDeptRawProduction(
   user: AuthUser | null | undefined,
   productKey?: DeptProductKey,

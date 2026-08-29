@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-08-26T04:09:30+02:00
+generated: 2026-08-29T11:19:01+02:00
 type: memory-bank
 ---
 
@@ -73,14 +73,16 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `request_get` | `api_bottle_request_get()` | `honey_bottle_request_get()`, `ims_pdo()` |
 | `request_cancel` | `api_bottle_request_cancel()` | `honey_bottle_request_cancel()`, `ims_pdo()`, `honey_bottle_user_dept_key()` |
 | `pending_count` | `api_bottle_pending_count()` | `honey_bottle_can_generate()`, `honey_bottle_can_request()`, `honey_bottle_pending_request_count()`, `ims_pdo()` |
-| `generate` | `api_bottle_generate()` | `honey_bottle_generate_for_request()`, `ims_pdo()` |
+| `generate` | `api_bottle_generate()` | `honey_bottle_request_get()`, `ims_pdo()`, `sku_barcode_fetch_honey()`, `sku_barcode_record_print()`, `sku_barcode_serialize()` |
+| `generate_batch` | `api_bottle_generate_batch()` | `ims_pdo()`, `honey_bottle_request_get()`, `sku_barcode_fetch_honey()`, `sku_barcode_record_print()`, `sku_barcode_print_sheet_url()` |
+| `sku_print_list` | `api_bottle_sku_print_list()` | `sku_barcode_print_job_list()`, `ims_pdo()` |
 | `batch_list` | `api_bottle_batch_list()` | `honey_bottle_batch_list()`, `ims_pdo()` |
 | `batch_get` | `api_bottle_batch_get()` | `honey_bottle_batch_get()`, `ims_pdo()` |
 | `mark_printed` | `api_bottle_mark_printed()` | `honey_bottle_mark_printed()`, `ims_pdo()` |
 | `print_sheet` | `api_bottle_print_sheet()` | `honey_bottle_label_sheet_html()`, `ims_pdo()` |
 | `void` | `api_bottle_void()` | `honey_bottle_void_code()`, `ims_pdo()` |
 | `lookup` | `api_bottle_lookup()` | `honey_bottle_lookup()`, `ims_pdo()` |
-| `scan_stock_in` | `api_bottle_scan_stock_in()` | `honey_bottle_scan_stock_in()`, `ims_pdo()` |
+| `scan_stock_in` | `api_bottle_scan_stock_in()` | `sku_barcode_fetch_by_code()`, `ims_pdo()`, `honey_bottle_create_custom_packaging()`, `sku_barcode_honey_stock_in()`, `honey_bottle_size_label()`, `honey_bottle_request_get()`, `honey_bottle_scan_stock_in()` |
 | `pack_start` | `api_bottle_pack_start()` | `honey_bottle_pack_session_start()`, `ims_pdo()` |
 | `pack_get` | `api_bottle_pack_get()` | `honey_bottle_pack_session_get()`, `ims_pdo()` |
 | `pack_session_list` | `api_bottle_pack_session_list()` | `honey_bottle_pack_session_list()`, `ims_pdo()` |
@@ -202,11 +204,13 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `request_cancel` | `api_dept_pouch_request_cancel()` | `dept_pouch_request_cancel()`, `ims_pdo()` |
 | `pending_count` | `api_dept_pouch_pending_count()` | `dept_pouch_pending_request_count()`, `ims_pdo()` |
 | `pending_counts` | `api_dept_pouch_pending_counts()` | `dept_pouch_pending_request_counts_for_user()`, `ims_pdo()` |
-| `generate` | `api_dept_pouch_generate()` | `dept_pouch_generate_for_request()`, `ims_pdo()` |
+| `generate` | `api_dept_pouch_generate()` | `dept_pouch_request_get()`, `ims_pdo()`, `sku_barcode_fetch_dept()`, `sku_barcode_record_print()`, `sku_barcode_serialize()` |
+| `generate_batch` | `api_dept_pouch_generate_batch()` | `ims_pdo()`, `dept_pouch_request_get()`, `sku_barcode_fetch_dept()`, `sku_barcode_record_print()`, `sku_barcode_print_sheet_url()` |
+| `sku_print_list` | `api_dept_pouch_sku_print_list()` | `sku_barcode_print_job_list()`, `ims_pdo()` |
 | `batch_list` | `api_dept_pouch_batch_list()` | `dept_pouch_batch_list()`, `ims_pdo()` |
 | `mark_printed` | `api_dept_pouch_mark_printed()` | `dept_pouch_mark_printed()`, `ims_pdo()` |
 | `print_sheet` | `api_dept_pouch_print_sheet()` | `dept_pouch_label_sheet_html()`, `ims_pdo()` |
-| `scan_stock_in` | `api_dept_pouch_scan_stock_in()` | `dept_pouch_scan_stock_in()`, `ims_pdo()` |
+| `scan_stock_in` | `api_dept_pouch_scan_stock_in()` | `sku_barcode_fetch_by_code()`, `ims_pdo()`, `sku_barcode_dept_stock_in()`, `dept_pouch_request_get()`, `dept_pouch_scan_stock_in()` |
 | `scan_report` | `api_dept_pouch_scan_report()` | `dept_pouch_scan_report()`, `ims_pdo()` |
 | `request_scan_log` | `api_dept_pouch_request_scan_log()` | `dept_pouch_request_scan_log()`, `ims_pdo()` |
 | `pos_lookup` | `api_dept_pouch_pos_lookup()` | `dept_pouch_pos_lookup()`, `ims_pdo()` |
@@ -275,6 +279,13 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `warehouse_list` | `api_honey_warehouse_list()` | `ims_pdo()`, `honey_warehouse_unit_cost_column()`, `honey_pricing_enrich_warehouse_row()`, `honey_warehouse_normalize_cost_row()`, `honey_pricing_role_can_view_cost()`, `honey_warehouse_has_pricing_columns()`, `honey_pricing_pending_count()` |
 | `warehouse_stock_in` | `api_honey_warehouse_stock_in()` | `honey_warehouse_stock_in()`, `ims_pdo()` |
 | `warehouse_stock_out` | `api_honey_warehouse_stock_out()` | `honey_warehouse_stock_out()`, `ims_pdo()` |
+| `warehouse_barcode_request_list` | `api_honey_warehouse_barcode_request_list()` | `honey_warehouse_barcode_request_list()`, `ims_pdo()` |
+| `warehouse_barcode_request_create` | `api_honey_warehouse_barcode_request_create()` | `ims_user_can()`, `honey_warehouse_barcode_request_create()`, `ims_pdo()` |
+| `warehouse_barcode_request_cancel` | `api_honey_warehouse_barcode_request_cancel()` | `ims_user_can()`, `ims_pdo()` |
+| `warehouse_barcode_generate` | `api_honey_warehouse_barcode_generate()` | `ims_user_can()`, `honey_warehouse_barcode_request_generate()`, `ims_pdo()` |
+| `warehouse_barcode_print` | `api_honey_warehouse_barcode_print()` | `ims_user_can()`, `ims_pdo()`, `honey_warehouse_barcode_request_fetch()`, `honey_warehouse_barcode_print_sheet_html()` |
+| `warehouse_barcode_lookup` | `api_honey_warehouse_barcode_lookup()` | `honey_warehouse_barcode_normalize()`, `honey_warehouse_barcode_lookup()`, `ims_pdo()` |
+| `warehouse_barcode_stock_out` | `api_honey_warehouse_barcode_stock_out()` | `honey_warehouse_barcode_stock_out()`, `ims_pdo()` |
 | `production_list` | `api_honey_production_list()` | `ims_pdo()` |
 | `production_stock_out` | `api_honey_production_stock_out()` | `honey_parse_bottle_lines_from_input()`, `honey_production_stock_out()`, `ims_pdo()` |
 | `packaging_list` | `api_honey_packaging_list()` | `ims_pdo()` |
@@ -535,7 +546,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `inventory_use_log` | `api_rts_inventory_use_log()` | `rts_pool_use_log_list()`, `ims_pdo()` |
 | `inventory_set_honey` | `api_rts_inventory_set_honey()` | `ims_pdo()`, `rts_inventory_set_honey_variant_totals()` |
 | `inventory_set_other` | `api_rts_inventory_set_other()` | `ims_pdo()`, `rts_inventory_set_other_label_total()` |
-| `stock_in_scan` | `api_rts_stock_in_scan()` | `honey_bottle_fetch_code_row()`, `ims_pdo()`, `honey_bottle_rts_stock_in_scan()`, `dept_pouch_rts_stock_in_scan()` |
+| `stock_in_scan` | `api_rts_stock_in_scan()` | `sku_barcode_fetch_by_code()`, `ims_pdo()`, `sku_barcode_rts_stock_in()`, `honey_bottle_fetch_code_row()`, `honey_bottle_rts_stock_in_scan()`, `dept_pouch_rts_stock_in_scan()` |
 | `use_damaged` | `api_rts_use_damaged()` | `rts_damaged_use_apply()`, `ims_pdo()` |
 | `damaged_use_log` | `api_rts_damaged_use_log()` | `rts_damaged_use_events_list()`, `ims_pdo()` |
 | `sync_status` | `api_rts_sync_status_action()` | `rts_inventory_sync_status()`, `ims_pdo()` |
@@ -611,6 +622,22 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pos_pins_list` | `api_settings_pos_pins_list()` | `ims_pdo()` |
 | `pos_pin_update` | `api_settings_pos_pin_update()` | `ims_pdo()` |
 | `pos_pin_create` | `api_settings_pos_pin_create()` | `ims_pdo()` |
+
+### `sku_barcodes.php`
+
+- **Path:** `api/v1/sku_barcodes.php`
+- **URL:** `/rts/api/v1/sku_barcodes.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `list` | `api_sku_barcodes_list()` | `ims_current_user()`, `sku_barcode_list_settings()`, `ims_pdo()` |
+| `lookup` | `api_sku_barcodes_lookup()` | `sku_barcode_lookup()`, `ims_pdo()` |
+| `save` | `api_sku_barcodes_save()` | `ims_current_user()`, `sku_barcode_save()`, `ims_pdo()` |
+| `save_bulk` | `api_sku_barcodes_save_bulk()` | `ims_current_user()`, `sku_barcode_save_bulk()`, `ims_pdo()` |
+| `print_sheet` | `api_sku_barcodes_print_sheet()` | `ims_pdo()`, `sku_barcode_combined_label_sheet_html()`, `sku_barcode_label_sheet_html()` |
+| `print_record` | `api_sku_barcodes_print_record()` | `ims_user_can()`, `sku_barcode_record_print()`, `ims_pdo()` |
+| `stock_in` | `api_sku_barcodes_stock_in()` | `ims_pdo()`, `sku_barcode_fetch_by_id()`, `sku_barcode_fetch_by_code()`, `ims_user_can()`, `sku_barcode_rts_stock_in()`, `sku_barcode_honey_stock_in()`, `sku_barcode_dept_stock_in()`, `sku_barcode_serialize()` |
 
 ### `staff.php`
 

@@ -55,6 +55,10 @@ export function DeliveriesCancelledGuideModal({
               Open <strong className="text-foreground">Restock</strong> and scan each honey or dept sticker
               (packed, shipped, or POS sold).
             </li>
+            <li>
+              A permanent SKU barcode opens a confirmation step. Enter the quantity, then choose
+              <strong className="text-foreground"> Packaging / Finished</strong> or <strong className="text-foreground">RTS</strong>.
+            </li>
             <li>Confirm — units become in stock again; the matching inventory pool goes up.</li>
             <li>Use <strong className="text-foreground">History</strong> to audit returns by date or product.</li>
             <li>
@@ -69,6 +73,7 @@ export function DeliveriesCancelledGuideModal({
             <li>Not tracking-QR parcel cancel (retired)</li>
             <li>Not RTS case recording (that still uses tracking + optional barcodes on RTS Record)</li>
             <li>Does not accept stickers that are still in stock or void</li>
+            <li>Static SKU returns are quantity-based and do not create individual unit sticker records.</li>
           </ul>
         </GuideSection>
 

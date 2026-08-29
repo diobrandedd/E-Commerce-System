@@ -208,6 +208,7 @@ function inventory_check_serialize_scan(array $row): array
         'size' => $size,
         'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,
         'flag' => (string) $row['flag'],
+        'counted_qty' => isset($row['counted_qty']) ? (int) $row['counted_qty'] : 1,
         'scanned_by' => (int) $row['scanned_by'],
         'scanned_by_name' => (string) ($row['scanned_by_name'] ?? ''),
         'scanned_at' => (string) $row['scanned_at'],
@@ -215,11 +216,12 @@ function inventory_check_serialize_scan(array $row): array
 }
 
 /**
- * Record one physical unit against the open count. Never mutates stock.
+ * Record a count line. SKU barcodes take counted_qty (upsert). Unique leftovers are +1 per code.
+ * Never mutates stock.
  *
  * @return array{result: string, scan: array<string, mixed>|null, message: string}
  */
-function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCode): array
+function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCode, ?int $countedQty = null): array
 {
     $event = inventory_check_event_fetch($pdo, $eventId);
     if ($event === null) {
@@ -232,6 +234,58 @@ function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCo
     $code = strtoupper(trim($rawCode));
     if ($code === '' || strlen($code) > 64) {
         throw new RuntimeException('Scan or type a barcode.');
+    }
+
+    require_once __DIR__ . '/sku_barcodes.php';
+    $sku = sku_barcode_fetch_by_code($pdo, $code);
+    if ($sku !== null) {
+        $qty = $countedQty !== null ? $countedQty : 0;
+        if ($qty < 1 || $qty > 100000) {
+            throw new RuntimeException('Enter how many you counted for this product.');
+        }
+        $kind = (string) $sku['kind'];
+        $productKey = $kind === 'honey' ? 'honey' : (string) $sku['product_key'];
+        $variant = $kind === 'honey' ? (string) $sku['variant'] : null;
+        $size = $kind === 'honey' ? (string) $sku['size'] : null;
+        $dup = $pdo->prepare(
+            'SELECT s.*, u.name AS scanned_by_name FROM inventory_check_scans s
+             LEFT JOIN users u ON u.id = s.scanned_by
+             WHERE s.event_id = ? AND s.code = ? LIMIT 1'
+        );
+        $dup->execute([$eventId, $code]);
+        $dupRow = $dup->fetch(PDO::FETCH_ASSOC);
+        if ($dupRow !== false) {
+            $pdo->prepare(
+                'UPDATE inventory_check_scans SET counted_qty = ?, scanned_by = ?, scanned_at = NOW(), flag = "ok"
+                 WHERE id = ?'
+            )->execute([$qty, $userId, (int) $dupRow['id']]);
+            $scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);
+
+            return [
+                'result' => 'ok',
+                'scan' => $scan,
+                'message' => 'Updated count to ' . $qty . '.',
+            ];
+        }
+        $pdo->prepare(
+            'INSERT INTO inventory_check_scans
+                (event_id, kind, product_key, barcode_id, sku_id, unit_id, code, packaging_row_id,
+                 supplier_code, batch_no, bottling_date, variant, size, flag, counted_qty, scanned_by)
+             VALUES (?, ?, ?, NULL, ?, NULL, ?, NULL, NULL, NULL, NULL, ?, ?, "ok", ?, ?)'
+        )->execute([
+            $eventId,
+            $kind,
+            $productKey,
+            (int) $sku['id'],
+            $code,
+            $variant,
+            $size,
+            $qty,
+            $userId,
+        ]);
+        $scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());
+
+        return ['result' => 'ok', 'scan' => $scan, 'message' => 'Counted ' . $qty . '.'];
     }
 
     $dup = $pdo->prepare(
@@ -258,8 +312,8 @@ function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCo
     $pdo->prepare(
         'INSERT INTO inventory_check_scans
             (event_id, kind, product_key, barcode_id, unit_id, code, packaging_row_id,
-             supplier_code, batch_no, bottling_date, variant, size, flag, scanned_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             supplier_code, batch_no, bottling_date, variant, size, flag, counted_qty, scanned_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)'
     )->execute([
         $eventId,
         $resolved['kind'],
@@ -438,7 +492,7 @@ function inventory_check_summary(PDO $pdo, int $eventId, ?int $onlyUserId = null
     $st = $pdo->prepare(
         'SELECT s.kind, s.product_key, s.packaging_row_id, s.supplier_code, s.batch_no,
                 s.bottling_date, s.variant, s.size,
-                COUNT(*) AS qty,
+                COALESCE(SUM(s.counted_qty), 0) AS qty,
                 SUM(s.flag <> "ok") AS flagged_qty,
                 COUNT(DISTINCT s.scanned_by) AS scanner_count,
                 MAX(s.scanned_at) AS last_scanned_at,
@@ -635,7 +689,7 @@ function inventory_check_compare_build(PDO $pdo, int $eventId): array
 
     $countedSt = $pdo->prepare(
         'SELECT kind, product_key, packaging_row_id, supplier_code, batch_no, bottling_date, variant, size,
-                COUNT(*) AS qty
+                COALESCE(SUM(counted_qty), 0) AS qty
          FROM inventory_check_scans
          WHERE event_id = ?
          GROUP BY kind, product_key, packaging_row_id, supplier_code, batch_no, bottling_date, variant, size'

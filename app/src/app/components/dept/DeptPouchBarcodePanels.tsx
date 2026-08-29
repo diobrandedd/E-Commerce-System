@@ -18,6 +18,8 @@ import {
   type DeptPouchBatch,
   type DeptPouchRequest,
 } from "@/app/lib/deptPouchBarcodes";
+import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
+import { RequestNotesCell, RequestNotesInline } from "@/app/components/barcode/RequestNotesCell";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 import { DeptPouchScanLogModal } from "@/app/components/dept/DeptPouchScanLogModal";
@@ -46,7 +48,6 @@ function scanDateLabel(date: string): string {
 export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchPanelProps) {
   const unit = deptPouchUnitLabel(productKey);
   const historyOnly = mode === "history";
-  const [batchNo, setBatchNo] = useState("");
   const [qty, setQty] = useState("50");
   const [notes, setNotes] = useState("");
   const [rows, setRows] = useState<DeptPouchRequest[]>([]);
@@ -86,7 +87,6 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
     setSaving(true);
     try {
       await deptPouchBarcodesApi.requestCreate(productKey, {
-        batch_no: batchNo.trim(),
         quantity: Number(qty),
         notes: notes.trim() || undefined,
       });
@@ -108,18 +108,13 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
       {!historyOnly && (
         <div className="bg-card rounded-xl border border-border p-4 space-y-3">
           <h3 className="text-sm font-semibold">New {unit.singular} label request</h3>
+          <p className="text-xs text-muted-foreground">
+            Pick how many identical stickers to print. The barcode is set in System Settings → Barcode Settings.
+            Stock-in uses the same SKU scan later — no batch code needed here.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="text-xs text-muted-foreground">
-              Batch code
-              <input
-                className="mt-1 w-full border rounded-lg px-2 py-2 font-mono text-sm uppercase"
-                placeholder="e.g. JR073026"
-                value={batchNo}
-                onChange={e => setBatchNo(e.target.value.toUpperCase())}
-              />
-            </label>
-            <label className="text-xs text-muted-foreground">
-              Quantity ({unit.plural})
+            <label className="text-xs text-muted-foreground sm:col-span-2">
+              Quantity ({unit.plural} / identical stickers)
               <input
                 className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
                 type="number"
@@ -136,7 +131,7 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
             value={notes}
             onChange={e => setNotes(e.target.value)}
           />
-          <Button type="button" onClick={() => void submit()} disabled={saving || !batchNo.trim()}>
+          <Button type="button" onClick={() => void submit()} disabled={saving}>
             {saving ? <Loader2 className="animate-spin" size={16} /> : null}
             Submit request
           </Button>
@@ -205,6 +200,7 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
                   <th className="text-left px-3 py-2">Batch</th>
                   <th className="text-left px-3 py-2">Qty</th>
                   <th className="text-left px-3 py-2">Scanned</th>
+                  <th className="text-left px-3 py-2">Notes</th>
                   <th className="text-left px-3 py-2">Status</th>
                   {!historyOnly && <th className="px-3 py-2" />}
                 </tr>
@@ -223,6 +219,7 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
                     <td className="px-3 py-2">
                       {r.scanned_count}/{r.generated_count || r.quantity}
                     </td>
+                    <RequestNotesCell notes={r.notes} />
                     <td className="px-3 py-2">{r.status.replace(/_/g, " ")}</td>
                     {!historyOnly && (
                       <td className="px-3 py-2">
@@ -295,18 +292,18 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
   const [msg, setMsg] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [pendingSku, setPendingSku] = useState<{ code: string; label: string } | null>(null);
+  const [skuQty, setSkuQty] = useState("1");
   const cameraTitleId = useId();
-  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, productKey);
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen || !!pendingSku, productKey);
 
-  const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
-    const value = (raw ?? code).trim();
-    if (!value) return;
-    setCode("");
+  const commit = async (value: string, qty?: number): Promise<ScannerDecodeFeedback | void> => {
     try {
-      const res = await deptPouchBarcodesApi.scanStockIn(productKey, value);
+      const res = await deptPouchBarcodesApi.scanStockIn(productKey, value, qty);
       playScanBeep("ok");
       setFlash("ok");
-      setMsg(`${res.batch_no} · ${res.code}`);
+      const qtyBit = res.qty ? ` ×${res.qty}` : "";
+      setMsg(`${res.batch_no ?? productLabel} · ${res.code}${qtyBit}`);
       if (res.request) {
         setProgress(
           `${res.request.scanned_count} / ${res.request.generated_count || res.request.quantity} scanned`,
@@ -314,7 +311,7 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
       }
       window.setTimeout(() => setFlash(null), 700);
       triggerLiveRefresh();
-      return { kind: "success", message: `Stocked ${res.code}` };
+      return { kind: "success", message: `Stocked ${res.code}${qtyBit}` };
     } catch (e) {
       const message = e instanceof ApiError ? e.message : "Scan failed.";
       const dup = /already scanned/i.test(message);
@@ -328,11 +325,39 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
     }
   };
 
+  const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
+    const value = (raw ?? code).trim();
+    if (!value) return;
+    setCode("");
+    try {
+      const { lookup } = await skuBarcodesApi.lookup(value);
+      if (lookup.lookup_kind === "sku" && lookup.kind === "dept") {
+        setPendingSku({ code: value, label: lookup.label ?? productLabel });
+        setSkuQty("1");
+        return { kind: "success", message: `SKU — enter qty` };
+      }
+    } catch {
+      // unique leftover
+    }
+    return commit(value);
+  };
+
+  const confirmSku = async () => {
+    if (!pendingSku) return;
+    const qty = Number(skuQty);
+    if (!Number.isFinite(qty) || qty < 1) {
+      setMsg("Enter a quantity of at least 1.");
+      return;
+    }
+    const c = pendingSku.code;
+    setPendingSku(null);
+    await commit(c, qty);
+  };
+
   return (
     <AppSectionEnter className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Scan each {unit.singular} sticker into finished {productLabel} stock. WIP and packaging are not
-        deducted in this flow.
+        SKU barcodes: scan → enter how many into finished {productLabel}. Leftover unique stickers still scan one at a time.
       </p>
       <div className="flex flex-wrap gap-2">
         <input
@@ -355,6 +380,31 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
           <Camera size={16} /> Camera
         </Button>
       </div>
+      {pendingSku ? (
+        <div className="rounded-lg border border-[#C8900A]/40 bg-[#C8900A]/5 p-3 space-y-2">
+          <p className="text-sm font-medium">{pendingSku.label}</p>
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <label className="text-xs text-muted-foreground">Quantity</label>
+              <input
+                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                type="number"
+                min={1}
+                value={skuQty}
+                onChange={e => setSkuQty(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void confirmSku();
+                  }
+                }}
+              />
+            </div>
+            <Button type="button" onClick={() => void confirmSku()}>Stock in</Button>
+            <Button type="button" variant="outline" onClick={() => setPendingSku(null)}>Cancel</Button>
+          </div>
+        </div>
+      ) : null}
       {msg && <p className="text-sm">{msg}</p>}
       {progress && <p className="text-lg font-bold">{progress}</p>}
       {cameraOpen ? (
@@ -372,9 +422,9 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
 }
 
 export function DeptPouchAdminPanel({ productKey }: DeptPouchPanelProps) {
-  const unit = deptPouchUnitLabel(productKey);
   const [pending, setPending] = useState<DeptPouchRequest[]>([]);
   const [batches, setBatches] = useState<DeptPouchBatch[]>([]);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -387,6 +437,7 @@ export function DeptPouchAdminPanel({ productKey }: DeptPouchPanelProps) {
       ]);
       setPending(list.rows);
       setBatches(batchList.rows);
+      setSelected(new Set(list.rows.map(r => r.id)));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load queue.");
     }
@@ -397,20 +448,35 @@ export function DeptPouchAdminPanel({ productKey }: DeptPouchPanelProps) {
   }, [refresh]);
 
   const generate = async (req: DeptPouchRequest) => {
+    await printBatch([req.id]);
+  };
+
+  const printBatch = async (ids: number[]) => {
+    if (ids.length === 0) return;
     setBusy(true);
     setError(null);
     try {
-      const res = await deptPouchBarcodesApi.generate(req.id);
-      setOk(`Generated ${res.batch.quantity_generated} barcodes · print as A4 (68/page).`);
-      window.open(deptPouchPrintSheetUrl(res.batch.id), "_blank");
-      await deptPouchBarcodesApi.markPrinted(res.batch.id);
+      const res = await deptPouchBarcodesApi.generateBatch(productKey, ids);
+      setOk(res.message ?? `Combined sheet — ${res.batch_count} batch(es).`);
+      if (res.print_url) {
+        window.open(res.print_url, "_blank");
+      }
       triggerLiveRefresh();
       await refresh();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Generate failed.");
+      setError(e instanceof ApiError ? e.message : "Print failed.");
     } finally {
       setBusy(false);
     }
+  };
+
+  const toggleSelected = (id: number, on: boolean) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
   };
 
   return (
@@ -418,13 +484,44 @@ export function DeptPouchAdminPanel({ productKey }: DeptPouchPanelProps) {
       {error && <AppErrorBanner message={error} />}
       {ok && <AppSuccessNotice message={ok} />}
       <p className="text-xs text-muted-foreground">
-        Labels print on A4 at 68 per page (4×17). Print at 100% scale. Scanning stickers adds finished{" "}
-        {unit.plural} without deducting WIP or packaging.
+        New prints use the permanent SKU barcode from Settings (identical copies). Set the code in System Settings → Barcode Settings before generating. Print at 100% scale. Leftover unique batches below can still be reprinted.
       </p>
       <div className="overflow-x-auto rounded-xl border border-border">
+        {pending.length > 0 ? (
+          <div className="px-3 py-2 border-b border-border flex flex-wrap gap-2 items-center bg-secondary/20">
+            <Button
+              type="button"
+              size="sm"
+              disabled={busy}
+              onClick={() => void printBatch(pending.map(r => r.id))}
+            >
+              Print all pending (one sheet)
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy || selected.size === 0}
+              onClick={() => void printBatch([...selected])}
+            >
+              Print selected ({selected.size})
+            </Button>
+          </div>
+        ) : null}
         <table className="w-full text-sm">
           <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
             <tr>
+              <th className="px-3 py-2 w-8">
+                <input
+                  type="checkbox"
+                  aria-label="Select all pending"
+                  checked={pending.length > 0 && selected.size === pending.length}
+                  onChange={e => {
+                    if (e.target.checked) setSelected(new Set(pending.map(r => r.id)));
+                    else setSelected(new Set());
+                  }}
+                />
+              </th>
               <th className="text-left px-3 py-2">Request</th>
               <th className="px-3 py-2" />
             </tr>
@@ -433,18 +530,27 @@ export function DeptPouchAdminPanel({ productKey }: DeptPouchPanelProps) {
             {pending.map(r => (
               <tr key={r.id} className={appHoverRow}>
                 <td className="px-3 py-2">
-                  <span className="font-mono text-xs">{r.batch_no}</span> ×{r.quantity}
+                  <input
+                    type="checkbox"
+                    checked={selected.has(r.id)}
+                    onChange={e => toggleSelected(r.id, e.target.checked)}
+                    aria-label={`Select request ${r.id}`}
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  ×{r.quantity} stickers
+                  <RequestNotesInline notes={r.notes} />
                 </td>
                 <td className="px-3 py-2">
                   <Button type="button" size="sm" disabled={busy} onClick={() => void generate(r)}>
-                    Generate + print
+                    Print
                   </Button>
                 </td>
               </tr>
             ))}
             {pending.length === 0 && (
               <tr>
-                <td className="px-3 py-4 text-muted-foreground" colSpan={2}>
+                <td className="px-3 py-4 text-muted-foreground" colSpan={3}>
                   No pending requests.
                 </td>
               </tr>
@@ -452,7 +558,7 @@ export function DeptPouchAdminPanel({ productKey }: DeptPouchPanelProps) {
           </tbody>
         </table>
       </div>
-      <h3 className="text-sm font-semibold">Recent batches</h3>
+      <h3 className="text-sm font-semibold">Recent unique batches (legacy)</h3>
       <ul className="space-y-2">
         {batches.slice(0, 20).map(b => (
           <li

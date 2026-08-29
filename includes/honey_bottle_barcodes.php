@@ -144,6 +144,11 @@ function honey_bottle_serialize_request(array $row): array
         'created_at' => (string) $row['created_at'],
         'scanned_count' => isset($row['scanned_count']) ? (int) $row['scanned_count'] : 0,
         'generated_count' => isset($row['generated_count']) ? (int) $row['generated_count'] : 0,
+        'sku_scanned_qty' => isset($row['sku_scanned_qty']) ? (int) $row['sku_scanned_qty'] : 0,
+        'sku_print_qty' => isset($row['sku_print_qty']) ? (int) $row['sku_print_qty'] : 0,
+        'label_kind' => ((int) ($row['sku_print_qty'] ?? 0) > 0 && (int) ($row['latest_batch_id'] ?? 0) > 0)
+            ? 'mixed'
+            : ((int) ($row['sku_print_qty'] ?? 0) > 0 ? 'sku' : ((int) ($row['latest_batch_id'] ?? 0) > 0 ? 'legacy' : 'sku')),
         'latest_batch_id' => isset($row['latest_batch_id']) && $row['latest_batch_id'] !== null
             ? (int) $row['latest_batch_id'] : null,
     ];
@@ -268,13 +273,17 @@ function honey_bottle_request_get(PDO $pdo, int $id): array
 {
     $st = $pdo->prepare(
         'SELECT r.*, u.name AS requested_by_name, pk.batch_no,
-                (SELECT COUNT(*) FROM honey_barcode_batches b
-                  INNER JOIN honey_bottle_barcodes c ON c.batch_id = b.id
-                 WHERE b.request_id = r.id) AS generated_count,
-                (SELECT COUNT(*) FROM honey_barcode_batches b
-                  INNER JOIN honey_bottle_barcodes c ON c.batch_id = b.id
-                 WHERE b.request_id = r.id AND c.status = "scanned") AS scanned_count,
-                (SELECT MAX(b.id) FROM honey_barcode_batches b WHERE b.request_id = r.id) AS latest_batch_id
+                COALESCE(r.sku_scanned_qty, 0) AS sku_scanned_qty,
+                (SELECT COALESCE(SUM(j.quantity), 0) FROM sku_barcode_print_jobs j WHERE j.honey_request_id = r.id)
+                 + (SELECT COUNT(*) FROM honey_barcode_batches b
+                    INNER JOIN honey_bottle_barcodes c ON c.batch_id = b.id
+                    WHERE b.request_id = r.id) AS generated_count,
+                COALESCE(r.sku_scanned_qty, 0)
+                 + (SELECT COUNT(*) FROM honey_barcode_batches b
+                    INNER JOIN honey_bottle_barcodes c ON c.batch_id = b.id
+                    WHERE b.request_id = r.id AND c.status = "scanned") AS scanned_count,
+                (SELECT MAX(b.id) FROM honey_barcode_batches b WHERE b.request_id = r.id) AS latest_batch_id,
+                (SELECT COALESCE(SUM(j.quantity), 0) FROM sku_barcode_print_jobs j WHERE j.honey_request_id = r.id) AS sku_print_qty
          FROM honey_bottle_requests r
          LEFT JOIN users u ON u.id = r.requested_by
          LEFT JOIN honey_packaging_rows pk ON pk.id = r.packaging_row_id
@@ -313,13 +322,17 @@ function honey_bottle_request_list(PDO $pdo, string $status, int $userIdFilter, 
     $offset = ($page - 1) * $perPage;
     $st = $pdo->prepare(
         "SELECT r.*, u.name AS requested_by_name, pk.batch_no,
-                (SELECT COUNT(*) FROM honey_barcode_batches b
-                  INNER JOIN honey_bottle_barcodes c ON c.batch_id = b.id
-                 WHERE b.request_id = r.id) AS generated_count,
-                (SELECT COUNT(*) FROM honey_barcode_batches b
-                  INNER JOIN honey_bottle_barcodes c ON c.batch_id = b.id
-                 WHERE b.request_id = r.id AND c.status = \"scanned\") AS scanned_count,
-                (SELECT MAX(b.id) FROM honey_barcode_batches b WHERE b.request_id = r.id) AS latest_batch_id
+                COALESCE(r.sku_scanned_qty, 0) AS sku_scanned_qty,
+                (SELECT COALESCE(SUM(j.quantity), 0) FROM sku_barcode_print_jobs j WHERE j.honey_request_id = r.id)
+                 + (SELECT COUNT(*) FROM honey_barcode_batches b
+                    INNER JOIN honey_bottle_barcodes c ON c.batch_id = b.id
+                    WHERE b.request_id = r.id) AS generated_count,
+                COALESCE(r.sku_scanned_qty, 0)
+                 + (SELECT COUNT(*) FROM honey_barcode_batches b
+                    INNER JOIN honey_bottle_barcodes c ON c.batch_id = b.id
+                    WHERE b.request_id = r.id AND c.status = \"scanned\") AS scanned_count,
+                (SELECT MAX(b.id) FROM honey_barcode_batches b WHERE b.request_id = r.id) AS latest_batch_id,
+                (SELECT COALESCE(SUM(j.quantity), 0) FROM sku_barcode_print_jobs j WHERE j.honey_request_id = r.id) AS sku_print_qty
          FROM honey_bottle_requests r
          LEFT JOIN users u ON u.id = r.requested_by
          LEFT JOIN honey_packaging_rows pk ON pk.id = r.packaging_row_id
@@ -676,6 +689,7 @@ function honey_bottle_scan_report_date(?string $scanDate): ?string
 
 /**
  * Gross bottle stock-in events grouped by packaging row and size.
+ * Includes both individual sticker scans and aggregated SKU stock-ins.
  * Later unit deductions never alter these counts.
  *
  * @return array{dates: list<string>, rows: list<array<string,mixed>>, scan_date: ?string}
@@ -683,24 +697,33 @@ function honey_bottle_scan_report_date(?string $scanDate): ?string
 function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null): array
 {
     $scanDate = honey_bottle_scan_report_date($scanDate);
+    $scanSourceSql = '(
+        SELECT b.packaging_row_id, c.size, c.scanned_at, 1 AS qty
+        FROM honey_bottle_barcodes c
+        INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
+        WHERE c.scanned_at IS NOT NULL AND b.packaging_row_id IS NOT NULL
+        UNION ALL
+        SELECT e.packaging_row_id, s.size, e.scanned_at, e.qty
+        FROM sku_barcode_stock_events e
+        INNER JOIN product_sku_barcodes s ON s.id = e.sku_id
+        WHERE e.kind = "honey" AND e.packaging_row_id IS NOT NULL
+    )';
     $datesSt = $pdo->query(
-        'SELECT DISTINCT DATE(c.scanned_at) AS scan_date
-         FROM honey_bottle_barcodes c
-         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
-         WHERE c.scanned_at IS NOT NULL AND b.packaging_row_id IS NOT NULL
-         ORDER BY scan_date DESC'
+        "SELECT DISTINCT DATE(scan_events.scanned_at) AS scan_date
+         FROM {$scanSourceSql} scan_events
+         ORDER BY scan_date DESC"
     );
     $dates = [];
     foreach (($datesSt ? $datesSt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
         $dates[] = (string) $row['scan_date'];
     }
 
-    $where = 'c.scanned_at IS NOT NULL AND b.packaging_row_id IS NOT NULL';
+    $where = 'scan_events.scanned_at IS NOT NULL';
     $params = [];
     if ($scanDate !== null) {
         $from = $scanDate . ' 00:00:00';
         $to = (new DateTimeImmutable($scanDate))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
-        $where .= ' AND c.scanned_at >= ? AND c.scanned_at < ?';
+        $where .= ' AND scan_events.scanned_at >= ? AND scan_events.scanned_at < ?';
         $params = [$from, $to];
     }
 
@@ -711,13 +734,12 @@ function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null):
                 pk.current_250ml, pk.initial_250ml,
                 pk.current_350ml, pk.initial_350ml,
                 pk.current_gallon, pk.initial_gallon,
-                SUM(CASE WHEN c.size = 'liter' THEN 1 ELSE 0 END) AS scanned_liter,
-                SUM(CASE WHEN c.size = '250ml' THEN 1 ELSE 0 END) AS scanned_250ml,
-                SUM(CASE WHEN c.size = '350ml' THEN 1 ELSE 0 END) AS scanned_350ml,
-                SUM(CASE WHEN c.size = 'gallon' THEN 1 ELSE 0 END) AS scanned_gallon
-         FROM honey_bottle_barcodes c
-         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
-         INNER JOIN honey_packaging_rows pk ON pk.id = b.packaging_row_id
+                SUM(CASE WHEN scan_events.size = 'liter' THEN scan_events.qty ELSE 0 END) AS scanned_liter,
+                SUM(CASE WHEN scan_events.size = '250ml' THEN scan_events.qty ELSE 0 END) AS scanned_250ml,
+                SUM(CASE WHEN scan_events.size = '350ml' THEN scan_events.qty ELSE 0 END) AS scanned_350ml,
+                SUM(CASE WHEN scan_events.size = 'gallon' THEN scan_events.qty ELSE 0 END) AS scanned_gallon
+         FROM {$scanSourceSql} scan_events
+         INNER JOIN honey_packaging_rows pk ON pk.id = scan_events.packaging_row_id
          WHERE {$where}
          GROUP BY pk.id, pk.production_row_id, pk.supplier_code, pk.batch_no,
                   pk.bottling_date, pk.variant, pk.created_at,
@@ -731,17 +753,17 @@ function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null):
     $rows = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
     $variantSt = $pdo->prepare(
-        "SELECT LOWER(b.variant) AS variant,
-                COUNT(*) AS total,
-                SUM(CASE WHEN c.size = 'liter' THEN 1 ELSE 0 END) AS liter,
-                SUM(CASE WHEN c.size = '250ml' THEN 1 ELSE 0 END) AS ml250,
-                SUM(CASE WHEN c.size = '350ml' THEN 1 ELSE 0 END) AS ml350,
-                SUM(CASE WHEN c.size = 'gallon' THEN 1 ELSE 0 END) AS gallon
-         FROM honey_bottle_barcodes c
-         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
+        "SELECT LOWER(pk.variant) AS variant,
+                SUM(scan_events.qty) AS total,
+                SUM(CASE WHEN scan_events.size = 'liter' THEN scan_events.qty ELSE 0 END) AS liter,
+                SUM(CASE WHEN scan_events.size = '250ml' THEN scan_events.qty ELSE 0 END) AS ml250,
+                SUM(CASE WHEN scan_events.size = '350ml' THEN scan_events.qty ELSE 0 END) AS ml350,
+                SUM(CASE WHEN scan_events.size = 'gallon' THEN scan_events.qty ELSE 0 END) AS gallon
+         FROM {$scanSourceSql} scan_events
+         INNER JOIN honey_packaging_rows pk ON pk.id = scan_events.packaging_row_id
          WHERE {$where}
-         GROUP BY LOWER(b.variant)
-         ORDER BY LOWER(b.variant)"
+         GROUP BY LOWER(pk.variant)
+         ORDER BY LOWER(pk.variant)"
     );
     $variantSt->execute($params);
     $byVariant = [];
@@ -771,7 +793,7 @@ function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null):
 }
 
 /**
- * Scanned stickers for a packaging row — who stocked them in and when.
+ * Packaging stock-in entries for a row — who stocked them in and how many.
  *
  * @return array{rows: list<array<string, mixed>>, total: int, page: int, per_page: int, packaging: array<string, mixed>|null}
  */
@@ -793,35 +815,49 @@ function honey_bottle_packaging_scan_log(
     $page = max(1, $page);
     $perPage = max(1, min(200, $perPage));
     $scanDate = honey_bottle_scan_report_date($scanDate);
+    $scanSourceSql = '(
+        SELECT b.packaging_row_id, c.id AS event_id, c.code, c.size, c.scanned_at, c.scanned_by,
+               un.status AS unit_status, un.pool AS unit_pool, 1 AS qty, "sticker" AS scan_kind
+        FROM honey_bottle_barcodes c
+        INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
+        LEFT JOIN honey_bottle_units un ON un.barcode_id = c.id
+        WHERE c.scanned_at IS NOT NULL AND b.packaging_row_id IS NOT NULL
+        UNION ALL
+        SELECT e.packaging_row_id, e.id AS event_id, s.code, s.size, e.scanned_at, e.scanned_by,
+               NULL AS unit_status, NULL AS unit_pool, e.qty, "sku" AS scan_kind
+        FROM sku_barcode_stock_events e
+        INNER JOIN product_sku_barcodes s ON s.id = e.sku_id
+        WHERE e.kind = "honey" AND e.packaging_row_id IS NOT NULL
+    )';
     $dateSql = '';
     $params = [$packagingRowId];
     if ($scanDate !== null) {
         $from = $scanDate . ' 00:00:00';
         $to = (new DateTimeImmutable($scanDate))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
-        $dateSql = ' AND c.scanned_at >= ? AND c.scanned_at < ?';
+        $dateSql = ' AND scan_events.scanned_at >= ? AND scan_events.scanned_at < ?';
         $params[] = $from;
         $params[] = $to;
     }
     $cst = $pdo->prepare(
-        'SELECT COUNT(*)
-         FROM honey_bottle_barcodes c
-         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
-         WHERE b.packaging_row_id = ? AND c.scanned_at IS NOT NULL' . $dateSql
+        "SELECT COUNT(*) AS entry_count, COALESCE(SUM(scan_events.qty), 0) AS total_qty
+         FROM {$scanSourceSql} scan_events
+         WHERE scan_events.packaging_row_id = ?" . $dateSql
     );
     $cst->execute($params);
-    $total = (int) $cst->fetchColumn();
+    $countRow = $cst->fetch(PDO::FETCH_ASSOC) ?: [];
+    $total = (int) ($countRow['entry_count'] ?? 0);
+    $totalQty = (int) ($countRow['total_qty'] ?? 0);
     $offset = ($page - 1) * $perPage;
     $st = $pdo->prepare(
-        'SELECT c.code, c.size, c.scanned_at, c.scanned_by,
+        "SELECT scan_events.code, scan_events.size, scan_events.scanned_at, scan_events.scanned_by,
+                scan_events.qty, scan_events.scan_kind,
                 u.name AS scanned_by_name,
-                un.status AS unit_status, un.pool AS unit_pool
-         FROM honey_bottle_barcodes c
-         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
-         LEFT JOIN users u ON u.id = c.scanned_by
-         LEFT JOIN honey_bottle_units un ON un.barcode_id = c.id
-         WHERE b.packaging_row_id = ? AND c.scanned_at IS NOT NULL' . $dateSql . '
-         ORDER BY c.scanned_at DESC, c.id DESC
-         LIMIT ' . $perPage . ' OFFSET ' . $offset
+                scan_events.unit_status, scan_events.unit_pool
+         FROM {$scanSourceSql} scan_events
+         LEFT JOIN users u ON u.id = scan_events.scanned_by
+         WHERE scan_events.packaging_row_id = ?" . $dateSql . "
+         ORDER BY scan_events.scanned_at DESC, scan_events.event_id DESC
+         LIMIT {$perPage} OFFSET {$offset}"
     );
     $st->execute($params);
     $rows = [];
@@ -833,6 +869,8 @@ function honey_bottle_packaging_scan_log(
             'scanned_at' => (string) $row['scanned_at'],
             'scanned_by' => $row['scanned_by'] !== null ? (int) $row['scanned_by'] : null,
             'scanned_by_name' => (string) ($row['scanned_by_name'] ?? ''),
+            'qty' => (int) $row['qty'],
+            'scan_kind' => (string) $row['scan_kind'],
             'unit_status' => $row['unit_status'] !== null ? (string) $row['unit_status'] : null,
             'unit_pool' => $row['unit_pool'] !== null ? (string) $row['unit_pool'] : null,
         ];
@@ -848,6 +886,7 @@ function honey_bottle_packaging_scan_log(
         ],
         'rows' => $rows,
         'total' => $total,
+        'total_qty' => $totalQty,
         'page' => $page,
         'per_page' => $perPage,
         'scan_date' => $scanDate,
@@ -1095,23 +1134,26 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
     }
 
     $itemsSt = $pdo->prepare(
-        'SELECT i.id, i.barcode_id, i.unit_id, i.scanned_at, c.code, u.variant, u.size,
-                pk.batch_no
+        'SELECT i.id, i.barcode_id, i.unit_id, i.sku_id, i.sku_code, i.qty, i.pool AS item_pool,
+                i.packaging_row_id AS item_packaging_row_id, i.variant AS item_variant, i.size AS item_size,
+                i.scanned_at, c.code AS unique_code, u.variant AS unit_variant, u.size AS unit_size,
+                COALESCE(pk.batch_no, pk2.batch_no) AS batch_no
          FROM honey_bottle_pack_session_items i
-         INNER JOIN honey_bottle_barcodes c ON c.id = i.barcode_id
-         INNER JOIN honey_bottle_units u ON u.id = i.unit_id
+         LEFT JOIN honey_bottle_barcodes c ON c.id = i.barcode_id
+         LEFT JOIN honey_bottle_units u ON u.id = i.unit_id
          LEFT JOIN honey_packaging_rows pk ON pk.id = u.packaging_row_id
+         LEFT JOIN honey_packaging_rows pk2 ON pk2.id = i.packaging_row_id
          WHERE i.session_id = ?
          ORDER BY i.id ASC'
     );
     $itemsSt->execute([$sessionId]);
 
     $deptSt = $pdo->prepare(
-        'SELECT i.id, i.product_key, i.barcode_id, i.unit_id, i.scanned_at,
-                c.code, un.batch_no, un.status AS unit_status
+        'SELECT i.id, i.product_key, i.barcode_id, i.unit_id, i.sku_id, i.sku_code, i.qty, i.pool AS item_pool,
+                i.scanned_at, c.code AS unique_code, un.batch_no, un.status AS unit_status
          FROM honey_bottle_pack_session_dept_items i
-         INNER JOIN dept_pouch_barcodes c ON c.id = i.barcode_id
-         INNER JOIN dept_pouch_units un ON un.id = i.unit_id
+         LEFT JOIN dept_pouch_barcodes c ON c.id = i.barcode_id
+         LEFT JOIN dept_pouch_units un ON un.id = i.unit_id
          WHERE i.session_id = ?
          ORDER BY i.id ASC'
     );
@@ -1122,20 +1164,26 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
     $byBatch = [];
 
     foreach ($itemsSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $variant = (string) $row['variant'];
-        $size = (string) $row['size'];
+        $isSku = $row['sku_id'] !== null && (int) $row['sku_id'] > 0 && ($row['unit_id'] === null || (int) $row['unit_id'] < 1);
+        $variant = $isSku ? (string) ($row['item_variant'] ?? '') : (string) ($row['unit_variant'] ?? '');
+        $size = $isSku ? (string) ($row['item_size'] ?? '') : (string) ($row['unit_size'] ?? '');
+        $qty = max(1, (int) ($row['qty'] ?? 1));
         $batchNo = $row['batch_no'] !== null ? (string) $row['batch_no'] : '';
         $sizeLabel = honey_bottle_size_label($size);
+        $code = $isSku ? (string) ($row['sku_code'] ?? '') : (string) ($row['unique_code'] ?? '');
         $items[] = [
             'id' => (int) $row['id'],
             'kind' => 'honey',
+            'lookup_kind' => $isSku ? 'sku' : 'unique_honey',
             'product_key' => 'honey',
             'product_label' => 'Honey',
-            'code' => (string) $row['code'],
+            'code' => $code,
             'variant' => $variant,
             'size' => $size,
             'size_label' => $sizeLabel,
             'batch_no' => $batchNo !== '' ? $batchNo : null,
+            'qty' => $qty,
+            'pool' => $row['item_pool'] !== null ? (string) $row['item_pool'] : null,
             'scanned_at' => (string) $row['scanned_at'],
         ];
         $key = 'honey|' . $variant . '|' . $size;
@@ -1150,7 +1198,7 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
                 'qty' => 0,
             ];
         }
-        $grouped[$key]['qty']++;
+        $grouped[$key]['qty'] += $qty;
         $bKey = 'honey|' . $batchNo . '|' . $variant . '|' . $size;
         if (!isset($byBatch[$bKey])) {
             $byBatch[$bKey] = [
@@ -1164,24 +1212,30 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
                 'qty' => 0,
             ];
         }
-        $byBatch[$bKey]['qty']++;
+        $byBatch[$bKey]['qty'] += $qty;
     }
 
     foreach ($deptSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $productKey = (string) $row['product_key'];
         $productLabel = dept_pouch_product_label($productKey);
         $unitNoun = dept_pouch_unit_singular($productKey);
-        $batchNo = (string) $row['batch_no'];
+        $isSku = $row['sku_id'] !== null && (int) $row['sku_id'] > 0 && ($row['unit_id'] === null || (int) $row['unit_id'] < 1);
+        $qty = max(1, (int) ($row['qty'] ?? 1));
+        $batchNo = $row['batch_no'] !== null ? (string) $row['batch_no'] : '';
+        $code = $isSku ? (string) ($row['sku_code'] ?? '') : (string) ($row['unique_code'] ?? '');
         $items[] = [
             'id' => (int) $row['id'],
             'kind' => 'dept',
+            'lookup_kind' => $isSku ? 'sku' : 'unique_dept',
             'product_key' => $productKey,
             'product_label' => $productLabel,
-            'code' => (string) $row['code'],
+            'code' => $code,
             'variant' => $productLabel,
             'size' => $unitNoun,
             'size_label' => $unitNoun,
             'batch_no' => $batchNo !== '' ? $batchNo : null,
+            'qty' => $qty,
+            'pool' => $row['item_pool'] !== null ? (string) $row['item_pool'] : null,
             'scanned_at' => (string) $row['scanned_at'],
         ];
         $key = 'dept|' . $productKey;
@@ -1196,7 +1250,7 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
                 'qty' => 0,
             ];
         }
-        $grouped[$key]['qty']++;
+        $grouped[$key]['qty'] += $qty;
         $bKey = 'dept|' . $batchNo . '|' . $productKey;
         if (!isset($byBatch[$bKey])) {
             $byBatch[$bKey] = [
@@ -1210,7 +1264,7 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
                 'qty' => 0,
             ];
         }
-        $byBatch[$bKey]['qty']++;
+        $byBatch[$bKey]['qty'] += $qty;
     }
 
     usort($items, static function (array $a, array $b): int {
@@ -1386,19 +1440,153 @@ function honey_bottle_pack_session_list(
 /**
  * @return array{result: string, session: array<string, mixed>, lookup?: array<string, mixed>|null}
  */
-function honey_bottle_pack_session_scan(PDO $pdo, int $sessionId, string $code): array
-{
+function honey_bottle_pack_session_scan(
+    PDO $pdo,
+    int $sessionId,
+    string $code,
+    ?int $qty = null,
+    ?string $pool = null,
+    ?int $packagingRowId = null
+): array {
     $code = honey_bottle_normalize_code($code);
     $sess = honey_bottle_pack_session_get($pdo, $sessionId);
     if ($sess['status'] !== 'draft') {
         throw new RuntimeException('This pack session is already closed.');
     }
+
+    require_once __DIR__ . '/sku_barcodes.php';
+    $sku = sku_barcode_fetch_by_code($pdo, $code);
+    if ($sku !== null) {
+        return honey_bottle_pack_session_scan_sku(
+            $pdo,
+            $sessionId,
+            $sku,
+            $qty ?? 0,
+            $pool,
+            $packagingRowId
+        );
+    }
+
     $row = honey_bottle_fetch_code_row($pdo, $code);
     if ($row !== null) {
         return honey_bottle_pack_session_scan_honey($pdo, $sessionId, $row);
     }
 
     return honey_bottle_pack_session_scan_dept($pdo, $sessionId, $code);
+}
+
+/**
+ * @param array<string, mixed> $sku
+ * @return array{result: string, session: array<string, mixed>, lookup?: array<string, mixed>|null}
+ */
+function honey_bottle_pack_session_scan_sku(
+    PDO $pdo,
+    int $sessionId,
+    array $sku,
+    int $qty,
+    ?string $pool,
+    ?int $packagingRowId
+): array {
+    if ($qty < 1 || $qty > 5000) {
+        throw new RuntimeException('Enter how many units to pack for this SKU.');
+    }
+    $skuId = (int) $sku['id'];
+    $code = (string) $sku['code'];
+    if ((string) $sku['kind'] === 'honey') {
+        $variant = honey_normalize_variant((string) $sku['variant']);
+        $size = (string) $sku['size'];
+        $poolUse = in_array((string) $pool, ['packaging', 'rts_sellable'], true)
+            ? (string) $pool
+            : 'packaging';
+        $existing = $pdo->prepare(
+            'SELECT id, qty FROM honey_bottle_pack_session_items
+             WHERE session_id = ? AND sku_id = ? AND unit_id IS NULL LIMIT 1'
+        );
+        $existing->execute([$sessionId, $skuId]);
+        $ex = $existing->fetch(PDO::FETCH_ASSOC);
+        if ($ex !== false) {
+            $pdo->prepare(
+                'UPDATE honey_bottle_pack_session_items
+                 SET qty = ?, pool = ?, packaging_row_id = ?, variant = ?, size = ?, sku_code = ?
+                 WHERE id = ?'
+            )->execute([
+                $qty,
+                $poolUse,
+                $packagingRowId !== null && $packagingRowId > 0 ? $packagingRowId : null,
+                $variant,
+                $size,
+                $code,
+                (int) $ex['id'],
+            ]);
+        } else {
+            $pdo->prepare(
+                'INSERT INTO honey_bottle_pack_session_items
+                    (session_id, barcode_id, unit_id, sku_id, sku_code, qty, pool, packaging_row_id, variant, size)
+                 VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?)'
+            )->execute([
+                $sessionId,
+                $skuId,
+                $code,
+                $qty,
+                $poolUse,
+                $packagingRowId !== null && $packagingRowId > 0 ? $packagingRowId : null,
+                $variant,
+                $size,
+            ]);
+        }
+
+        return [
+            'result' => 'ok',
+            'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+            'lookup' => [
+                'lookup_kind' => 'sku',
+                'kind' => 'honey',
+                'code' => $code,
+                'variant' => $variant,
+                'size' => $size,
+                'size_label' => honey_bottle_size_label($size),
+                'qty' => $qty,
+                'pool' => $poolUse,
+            ],
+        ];
+    }
+
+    $productKey = (string) $sku['product_key'];
+    $poolUse = in_array((string) $pool, ['finished', 'rts_sellable'], true)
+        ? (string) $pool
+        : 'finished';
+    $existing = $pdo->prepare(
+        'SELECT id FROM honey_bottle_pack_session_dept_items
+         WHERE session_id = ? AND sku_id = ? AND unit_id IS NULL LIMIT 1'
+    );
+    $existing->execute([$sessionId, $skuId]);
+    $ex = $existing->fetch(PDO::FETCH_ASSOC);
+    if ($ex !== false) {
+        $pdo->prepare(
+            'UPDATE honey_bottle_pack_session_dept_items
+             SET qty = ?, pool = ?, sku_code = ?, product_key = ? WHERE id = ?'
+        )->execute([$qty, $poolUse, $code, $productKey, (int) $ex['id']]);
+    } else {
+        $pdo->prepare(
+            'INSERT INTO honey_bottle_pack_session_dept_items
+                (session_id, product_key, barcode_id, unit_id, sku_id, sku_code, qty, pool)
+             VALUES (?, ?, NULL, NULL, ?, ?, ?, ?)'
+        )->execute([$sessionId, $productKey, $skuId, $code, $qty, $poolUse]);
+    }
+
+    return [
+        'result' => 'ok',
+        'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+        'lookup' => [
+            'lookup_kind' => 'sku',
+            'kind' => 'dept',
+            'product_key' => $productKey,
+            'product_label' => dept_pouch_product_label($productKey),
+            'code' => $code,
+            'qty' => $qty,
+            'pool' => $poolUse,
+        ],
+    ];
 }
 
 /**
@@ -1563,9 +1751,11 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
             throw new RuntimeException('This pack session is already closed.');
         }
         $itemsSt = $pdo->prepare(
-            'SELECT i.unit_id, u.packaging_row_id, u.variant, u.size, u.status, u.pool, u.barcode_id, pk.batch_no
+            'SELECT i.id AS item_id, i.unit_id, i.sku_id, i.qty, i.pool AS item_pool,
+                    i.packaging_row_id AS item_packaging_row_id, i.variant AS item_variant, i.size AS item_size,
+                    u.packaging_row_id, u.variant, u.size, u.status, u.pool, u.barcode_id, pk.batch_no
              FROM honey_bottle_pack_session_items i
-             INNER JOIN honey_bottle_units u ON u.id = i.unit_id
+             LEFT JOIN honey_bottle_units u ON u.id = i.unit_id
              LEFT JOIN honey_packaging_rows pk ON pk.id = u.packaging_row_id
              WHERE i.session_id = ?
              FOR UPDATE'
@@ -1574,9 +1764,10 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
         $items = $itemsSt->fetchAll(PDO::FETCH_ASSOC);
 
         $deptSt = $pdo->prepare(
-            'SELECT i.unit_id, i.product_key, un.status, un.batch_no, un.pool
+            'SELECT i.id AS item_id, i.unit_id, i.product_key, i.sku_id, i.qty, i.pool AS item_pool,
+                    un.status, un.batch_no, un.pool
              FROM honey_bottle_pack_session_dept_items i
-             INNER JOIN dept_pouch_units un ON un.id = i.unit_id
+             LEFT JOIN dept_pouch_units un ON un.id = i.unit_id
              WHERE i.session_id = ?
              FOR UPDATE'
         );
@@ -1588,9 +1779,32 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
         }
 
         require_once __DIR__ . '/rts_inventory_sync.php';
+        require_once __DIR__ . '/sku_barcodes.php';
         $hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');
         $hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');
         foreach ($items as $item) {
+            $skuId = isset($item['sku_id']) ? (int) $item['sku_id'] : 0;
+            $unitId = isset($item['unit_id']) ? (int) $item['unit_id'] : 0;
+            if ($skuId > 0 && $unitId < 1) {
+                $qty = max(1, (int) ($item['qty'] ?? 1));
+                $variant = honey_normalize_variant((string) ($item['item_variant'] ?? ''));
+                $size = (string) ($item['item_size'] ?? '');
+                $pool = (string) ($item['item_pool'] ?? 'packaging');
+                $packId = isset($item['item_packaging_row_id']) ? (int) $item['item_packaging_row_id'] : null;
+                sku_barcode_honey_deduct(
+                    $pdo,
+                    $userId,
+                    $variant,
+                    $size,
+                    $qty,
+                    $pool,
+                    $packId,
+                    'parcel',
+                    null,
+                    $sessionId
+                );
+                continue;
+            }
             if ((string) $item['status'] !== 'in_stock') {
                 throw new RuntimeException('A bottle in this session is no longer in stock. Discard and rescan.');
             }
@@ -1635,6 +1849,15 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
         }
 
         foreach ($deptItems as $item) {
+            $skuId = isset($item['sku_id']) ? (int) $item['sku_id'] : 0;
+            $unitId = isset($item['unit_id']) ? (int) $item['unit_id'] : 0;
+            if ($skuId > 0 && $unitId < 1) {
+                $qty = max(1, (int) ($item['qty'] ?? 1));
+                $productKey = (string) $item['product_key'];
+                $pool = (string) ($item['item_pool'] ?? 'finished');
+                sku_barcode_dept_deduct($pdo, $userId, $productKey, $qty, $pool, 'parcel');
+                continue;
+            }
             if ((string) $item['status'] !== 'in_stock') {
                 throw new RuntimeException('A pouch/jar in this session is no longer in stock. Discard and rescan.');
             }

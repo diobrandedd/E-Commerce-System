@@ -1,5 +1,30 @@
 import { apiGet, apiPost } from "@/app/lib/api";
 
+export type PackCancelRestockLookup = {
+  lookup_kind?: "sku" | "unique_honey" | "unique_dept" | string;
+  requires_qty?: boolean;
+  allowed_pools?: string[];
+  selected_qty?: number;
+  selected_pool?: string;
+  kind?: "honey" | "dept" | string;
+  id?: number;
+  product_label?: string;
+  label?: string;
+  variant?: string | null;
+  size?: string | null;
+  size_label?: string;
+  code?: string;
+  product_key?: string | null;
+  stock_label?: string;
+  unit_pool?: string;
+};
+
+export type PackCancelRestockScanResponse = {
+  result: string;
+  session: PackCancelRestockSession;
+  lookup: PackCancelRestockLookup | null;
+};
+
 export type PackCancelRestockSession = {
   id: number;
   status: "draft" | "confirmed" | "discarded";
@@ -10,9 +35,11 @@ export type PackCancelRestockSession = {
   confirmed_at?: string | null;
   created_at: string;
   item_count: number;
+  entry_count?: number;
   items: {
     id: number;
     kind: "honey" | "dept";
+    lookup_kind?: "sku" | string;
     product_key: string;
     product_label: string;
     code: string;
@@ -22,10 +49,14 @@ export type PackCancelRestockSession = {
     unit_status?: string;
     unit_pool?: string;
     stock_label?: string;
+    qty?: number;
+    scanned_by?: number;
+    scanned_by_name?: string;
     scanned_at: string;
   }[];
   grouped: {
     kind: "honey" | "dept";
+    lookup_kind?: "sku" | string;
     product_key: string;
     product_label: string;
     variant: string;
@@ -41,20 +72,17 @@ const ENDPOINT = "pack_cancel_restock.php";
 export const packCancelRestockApi = {
   start: () => apiPost<{ session: PackCancelRestockSession }>(ENDPOINT, "start", {}),
   get: (id: number) => apiGet<{ session: PackCancelRestockSession }>(ENDPOINT, "get", { id }),
-  scan: (sessionId: number, code: string) =>
-    apiPost<{
-      result: string;
-      session: PackCancelRestockSession;
-      lookup: {
-        kind?: string;
-        product_label?: string;
-        variant?: string;
-        size_label?: string;
-        code?: string;
-        stock_label?: string;
-        unit_pool?: string;
-      } | null;
-    }>(ENDPOINT, "scan", { session_id: sessionId, code }),
+  scan: (
+    sessionId: number,
+    code: string,
+    details?: { qty?: number; pool?: "packaging" | "finished" | "rts_sellable" },
+  ) =>
+    apiPost<PackCancelRestockScanResponse>(ENDPOINT, "scan", {
+      session_id: sessionId,
+      code,
+      qty: details?.qty,
+      pool: details?.pool,
+    }),
   confirm: (sessionId: number) =>
     apiPost<{ session: PackCancelRestockSession }>(ENDPOINT, "confirm", { session_id: sessionId }),
   discard: (sessionId: number) => apiPost<{ ok: boolean }>(ENDPOINT, "discard", { session_id: sessionId }),

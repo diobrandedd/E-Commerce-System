@@ -31,6 +31,7 @@ export interface InventoryCheckScan {
   size: string | null;
   size_label: string | null;
   flag: "ok" | "not_in_stock" | "void";
+  counted_qty?: number;
   scanned_by: number;
   scanned_by_name: string;
   scanned_at: string;
@@ -138,8 +139,12 @@ export const inventoryCheckApi = {
       { page },
     ),
 
-  scan: (eventId: number, code: string) =>
-    apiPost<InventoryCheckScanResult>(ENDPOINT, "scan", { event_id: eventId, code }),
+  scan: (eventId: number, code: string, qty?: number) =>
+    apiPost<InventoryCheckScanResult>(ENDPOINT, "scan", {
+      event_id: eventId,
+      code,
+      ...(qty != null ? { qty } : {}),
+    }),
 
   scanRemove: (eventId: number, scanId: number) =>
     apiPost<{ summary: InventoryCheckSummary | null }>(ENDPOINT, "scan_remove", {

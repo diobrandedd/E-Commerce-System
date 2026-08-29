@@ -62,13 +62,24 @@ function api_pack_cancel_scan(): void
 {
     api_method_allowed(['POST']);
     api_pack_cancel_require_csrf();
-    api_pack_cancel_require_ops();
+    $user = api_pack_cancel_require_ops();
     $in = api_input();
+    $qty = null;
+    if (array_key_exists('qty', $in) && $in['qty'] !== null && $in['qty'] !== '') {
+        $qty = (int) $in['qty'];
+    }
+    $pool = null;
+    if (array_key_exists('pool', $in) && $in['pool'] !== null) {
+        $pool = (string) $in['pool'];
+    }
     try {
         api_ok(pack_cancel_restock_scan(
             ims_pdo(),
+            (int) $user['id'],
             (int) ($in['session_id'] ?? 0),
-            (string) ($in['code'] ?? '')
+            (string) ($in['code'] ?? ''),
+            $qty,
+            $pool
         ));
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);

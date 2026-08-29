@@ -1,7 +1,7 @@
 ---
 title: barcode_verify
 source: includes/barcode_verify.php
-generated: 2026-08-26T04:09:33+02:00
+generated: 2026-08-29T11:19:04+02:00
 type: module
 function_count: 3
 ---
@@ -17,6 +17,7 @@ function_count: 3
 
 - `includes/honey_bottle_barcodes.php`
 - `includes/dept_pouch_barcodes.php`
+- `includes/sku_barcodes.php`
 
 ## barcode_verify_lookup {#barcode_verify_lookup}
 
@@ -30,7 +31,7 @@ function_count: 3
 
 **Callers (1):**
 
-- `includes/barcode_verify.php`:21 — `$honey = barcode_verify_lookup_honey($pdo, $code);`
+- `includes/barcode_verify.php`:53 — `$honey = barcode_verify_lookup_honey($pdo, $code);`
 
 ## barcode_verify_lookup_dept {#barcode_verify_lookup_dept}
 
@@ -38,5 +39,5 @@ function_count: 3
 
 **Callers (1):**
 
-- `includes/barcode_verify.php`:26 — `$dept = barcode_verify_lookup_dept($pdo, $code);`
+- `includes/barcode_verify.php`:58 — `$dept = barcode_verify_lookup_dept($pdo, $code);`
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Camera, ClipboardCheck, Loader2, Scale, Trash2 } from "lucide-react";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -15,6 +16,7 @@ import { InventoryCheckScanLogModal } from "@/app/components/inventory/Inventory
 import { ApiError } from "@/app/lib/api";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
+import { skuBarcodesApi, type SkuLookup } from "@/app/lib/skuBarcodes";
 import {
   inventoryCheckApi,
   type InventoryCheckCompareResult,
@@ -52,6 +54,9 @@ export function InventoryCheckPage() {
   const [compare, setCompare] = useState<InventoryCheckCompareResult | null>(null);
   const [runs, setRuns] = useState<InventoryCheckCompareRun[]>([]);
   const [history, setHistory] = useState<InventoryCheckContext["event"][]>([]);
+  const [pendingSku, setPendingSku] = useState<{ code: string; lookup: SkuLookup } | null>(null);
+  const [skuQty, setSkuQty] = useState("1");
+  const qtyTitleId = useId();
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen && tab === "scan", tab);
 
   const event = ctx?.event ?? null;
@@ -133,14 +138,13 @@ export function InventoryCheckPage() {
     }
   };
 
-  const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
-    const value = (raw ?? code).trim();
-    if (!value || event === null) return;
-    setCode("");
-    setOk(null);
-    setError(null);
+  const submitScan = async (
+    value: string,
+    qty?: number,
+  ): Promise<ScannerDecodeFeedback | void> => {
+    if (event === null) return;
     try {
-      const res = await inventoryCheckApi.scan(event.id, value);
+      const res = await inventoryCheckApi.scan(event.id, value, qty);
       setSummary(res.summary);
       if (res.result === "unknown" || res.result === "duplicate_event") {
         playScanBeep("bad");
@@ -150,12 +154,19 @@ export function InventoryCheckPage() {
       }
       playScanBeep("ok");
       if (res.scan !== null) {
-        setRecent(prev => [res.scan as InventoryCheckScan, ...prev].slice(0, 25));
+        setRecent(prev => {
+          const next = [res.scan as InventoryCheckScan, ...prev.filter(r => r.id !== res.scan!.id)];
+          return next.slice(0, 25);
+        });
       }
       const label = res.scan
         ? `${res.scan.product_label}${res.scan.size_label ? ` ${res.scan.size_label}` : ""}`
         : value;
-      setOk(`${label} — ${res.message}`);
+      const qtyNote =
+        res.scan?.counted_qty != null && res.scan.counted_qty !== 1
+          ? ` ×${res.scan.counted_qty}`
+          : "";
+      setOk(`${label}${qtyNote} — ${res.message}`);
       refocus();
       return { kind: "success", message: label };
     } catch (e) {
@@ -165,6 +176,35 @@ export function InventoryCheckPage() {
       refocus();
       return { kind: "error", message: msg };
     }
+  };
+
+  const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
+    const value = (raw ?? code).trim();
+    if (!value || event === null) return;
+    setCode("");
+    setOk(null);
+    setError(null);
+    try {
+      const looked = await skuBarcodesApi.lookup(value);
+      const lookup = looked.lookup;
+      if (lookup.lookup_kind === "sku" || lookup.requires_qty) {
+        setPendingSku({ code: value, lookup });
+        setSkuQty("1");
+        return;
+      }
+      return await submitScan(value);
+    } catch {
+      // Unknown to SKU catalog — try unique leftover scan immediately
+      return await submitScan(value);
+    }
+  };
+
+  const confirmSkuQty = async () => {
+    if (!pendingSku) return;
+    const qty = Math.max(1, parseInt(skuQty, 10) || 1);
+    const pending = pendingSku;
+    setPendingSku(null);
+    await submitScan(pending.code, qty);
   };
 
   const removeScan = async (scanId: number) => {
@@ -338,6 +378,9 @@ export function InventoryCheckPage() {
                                 {r.product_label}
                                 {r.size_label ? ` · ${r.size_label}` : ""}
                                 {r.batch_no ? ` · ${r.batch_no}` : ""}
+                                {r.counted_qty != null && r.counted_qty !== 1
+                                  ? ` · qty ${r.counted_qty}`
+                                  : ""}
                               </p>
                               <p className="font-mono text-xs text-muted-foreground">
                                 {r.code}
@@ -536,6 +579,57 @@ export function InventoryCheckPage() {
           onDecoded={onScan}
         />
       ) : null}
+
+      <AppModal
+        open={pendingSku !== null}
+        onClose={() => {
+          setPendingSku(null);
+          refocus();
+        }}
+        labelledBy={qtyTitleId}
+        panelClassName="max-w-sm w-full"
+      >
+        <AppModalHeader
+          titleId={qtyTitleId}
+          title="How many counted?"
+          subtitle={
+            pendingSku
+              ? `${pendingSku.lookup.label ?? pendingSku.lookup.product_label ?? pendingSku.code}`
+              : undefined
+          }
+          onClose={() => {
+            setPendingSku(null);
+            refocus();
+          }}
+        />
+        <AppModalBody>
+          <label className="text-xs text-muted-foreground block">
+            Quantity
+            <input
+              type="number"
+              min={1}
+              autoFocus
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+              value={skuQty}
+              onChange={e => setSkuQty(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void confirmSkuQty();
+                }
+              }}
+            />
+          </label>
+        </AppModalBody>
+        <AppModalFooter>
+          <Button type="button" variant="outline" onClick={() => { setPendingSku(null); refocus(); }}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={() => void confirmSkuQty()}>
+            Count
+          </Button>
+        </AppModalFooter>
+      </AppModal>
 
       {detailRow && event ? (
         <InventoryCheckScanLogModal

@@ -74,6 +74,8 @@ api_dispatch([
     'pending_count' => 'api_dept_pouch_pending_count',
     'pending_counts' => 'api_dept_pouch_pending_counts',
     'generate' => 'api_dept_pouch_generate',
+    'generate_batch' => 'api_dept_pouch_generate_batch',
+    'sku_print_list' => 'api_dept_pouch_sku_print_list',
     'batch_list' => 'api_dept_pouch_batch_list',
     'mark_printed' => 'api_dept_pouch_mark_printed',
     'print_sheet' => 'api_dept_pouch_print_sheet',
@@ -159,12 +161,120 @@ function api_dept_pouch_generate(): void
     $in = api_input();
     $requestId = (int) ($in['request_id'] ?? 0);
     $user = api_dept_pouch_require_ops_request($requestId);
-    $batch = dept_pouch_generate_for_request(
+    require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
+    $req = dept_pouch_request_get(ims_pdo(), $requestId);
+    $productKey = (string) ($req['product_key'] ?? '');
+    $sku = sku_barcode_fetch_dept(ims_pdo(), $productKey);
+    if ($sku === null) {
+        api_fail(
+            'No SKU barcode configured for this product. Set it in System Settings → Barcode Settings first.',
+            422
+        );
+    }
+    $qty = (int) $req['quantity'];
+    $jobId = sku_barcode_record_print(
         ims_pdo(),
         (int) $user['id'],
-        $requestId
+        (int) $sku['id'],
+        $qty,
+        'dept',
+        null,
+        $requestId,
+        null
     );
-    api_ok(['batch' => $batch]);
+    ims_pdo()->prepare(
+        'UPDATE dept_pouch_requests SET status = "barcodes_generated" WHERE id = ? AND status IN ("pending","barcodes_generated")'
+    )->execute([$requestId]);
+    api_ok([
+        'sku' => sku_barcode_serialize($sku),
+        'print_job_id' => $jobId,
+        'print_url' => '/rts/api/v1/sku_barcodes.php?action=print_sheet&sku_id=' . (int) $sku['id'] . '&qty=' . $qty,
+        'request' => dept_pouch_request_get(ims_pdo(), $requestId),
+        'message' => 'Print identical SKU stickers — unique per-unit codes are no longer generated.',
+    ]);
+}
+
+function api_dept_pouch_generate_batch(): void
+{
+    api_method_allowed(['POST']);
+    api_dept_pouch_require_csrf();
+    $in = api_input();
+    $productKey = api_dept_pouch_product_key($in);
+    $user = api_dept_pouch_require_ops($productKey);
+    $rawIds = $in['request_ids'] ?? null;
+    if (!is_array($rawIds) || $rawIds === []) {
+        api_fail('request_ids array is required.', 422);
+    }
+    require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
+    $pdo = ims_pdo();
+    $groups = [];
+    $batchIndex = 0;
+    $requests = [];
+    foreach ($rawIds as $rawId) {
+        $requestId = (int) $rawId;
+        if ($requestId < 1) {
+            continue;
+        }
+        $req = dept_pouch_request_get($pdo, $requestId);
+        if ((string) ($req['product_key'] ?? '') !== $productKey) {
+            api_fail('Request does not match this product.', 422);
+        }
+        if ((string) ($req['status'] ?? '') === 'cancelled') {
+            continue;
+        }
+        $sku = sku_barcode_fetch_dept($pdo, $productKey);
+        if ($sku === null) {
+            api_fail(
+                'No SKU barcode configured for this product. Set it in System Settings → Barcode Settings first.',
+                422
+            );
+        }
+        $qty = (int) $req['quantity'];
+        $batchIndex++;
+        $letter = $batchIndex <= 26 ? chr(64 + $batchIndex) : (string) $batchIndex;
+        sku_barcode_record_print(
+            $pdo,
+            (int) $user['id'],
+            (int) $sku['id'],
+            $qty,
+            'dept',
+            null,
+            $requestId,
+            null
+        );
+        $pdo->prepare(
+            'UPDATE dept_pouch_requests SET status = "barcodes_generated" WHERE id = ? AND status IN ("pending","barcodes_generated")'
+        )->execute([$requestId]);
+        $groups[] = [
+            'sku_id' => (int) $sku['id'],
+            'qty' => $qty,
+            'banner' => 'BATCH ' . $letter,
+        ];
+        $requests[] = dept_pouch_request_get($pdo, $requestId);
+    }
+    if ($groups === []) {
+        api_fail('No valid requests to print.', 422);
+    }
+    api_ok([
+        'print_url' => sku_barcode_print_sheet_url($groups),
+        'requests' => $requests,
+        'batch_count' => count($groups),
+        'message' => 'Combined print sheet — ' . count($groups) . ' product batch(es).',
+    ]);
+}
+
+function api_dept_pouch_sku_print_list(): void
+{
+    api_method_allowed(['GET']);
+    $productKey = api_dept_pouch_product_key();
+    api_dept_pouch_require_ops($productKey);
+    require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
+    $rows = sku_barcode_print_job_list(ims_pdo(), 'dept', (int) ($_GET['limit'] ?? 40));
+    $rows = array_values(array_filter(
+        $rows,
+        static fn (array $r): bool => (string) ($r['product_key'] ?? '') === $productKey
+    ));
+    api_ok(['rows' => $rows]);
 }
 
 function api_dept_pouch_batch_list(): void
@@ -202,11 +312,39 @@ function api_dept_pouch_scan_stock_in(): void
     $in = api_input();
     $productKey = api_dept_pouch_product_key($in);
     $user = api_dept_pouch_require_ops($productKey);
+    $code = (string) ($in['code'] ?? '');
+    $qty = isset($in['qty']) ? (int) $in['qty'] : null;
+    require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
+    $sku = sku_barcode_fetch_by_code(ims_pdo(), $code);
+    if ($sku !== null) {
+        if ((string) $sku['kind'] !== 'dept') {
+            api_fail('This SKU is not a dept product.', 422);
+        }
+        if ((string) $sku['product_key'] !== $productKey) {
+            api_fail('This SKU belongs to a different product.', 422);
+        }
+        if ($qty === null || $qty < 1) {
+            api_fail('Enter how many to stock in for this SKU.', 422);
+        }
+        try {
+            $stocked = sku_barcode_dept_stock_in(ims_pdo(), (int) $user['id'], $productKey, $qty);
+            $payload = array_merge($stocked, [
+                'lookup_kind' => 'sku',
+                'code' => (string) $sku['code'],
+            ]);
+            if (!empty($stocked['primary_request_id'])) {
+                $payload['request'] = dept_pouch_request_get(ims_pdo(), (int) $stocked['primary_request_id']);
+            }
+            api_ok($payload);
+        } catch (Throwable $e) {
+            api_fail($e->getMessage(), 422);
+        }
+    }
     $result = dept_pouch_scan_stock_in(
         ims_pdo(),
         (int) $user['id'],
         $productKey,
-        (string) ($in['code'] ?? '')
+        $code
     );
     api_ok($result);
 }

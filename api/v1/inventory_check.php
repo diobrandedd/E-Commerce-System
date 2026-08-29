@@ -130,7 +130,13 @@ function api_inventory_check_scan(): void
     $pdo = ims_pdo();
     $eventId = (int) ($in['event_id'] ?? 0);
     try {
-        $res = inventory_check_scan($pdo, $eventId, (int) $user['id'], (string) ($in['code'] ?? ''));
+        $res = inventory_check_scan(
+            $pdo,
+            $eventId,
+            (int) $user['id'],
+            (string) ($in['code'] ?? ''),
+            isset($in['qty']) ? (int) $in['qty'] : null
+        );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
         return;

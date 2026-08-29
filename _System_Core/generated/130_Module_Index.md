@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-08-26T04:09:30+02:00
+generated: 2026-08-29T11:15:14+02:00
 type: memory-bank
 ---
 
@@ -39,7 +39,7 @@ type: memory-bank
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 33 |
 | [[modules/historical_orders_import]] | 25 |
-| [[modules/honey_bottle_barcodes]] | 58 |
+| [[modules/honey_bottle_barcodes]] | 59 |
 | [[modules/honey_inventory]] | 47 |
 | [[modules/honey_parcel_inventory]] | 4 |
 | [[modules/honey_parcel_item_parser]] | 17 |
@@ -47,6 +47,7 @@ type: memory-bank
 | [[modules/honey_pricing]] | 19 |
 | [[modules/honey_sales_report]] | 15 |
 | [[modules/honey_volume]] | 8 |
+| [[modules/honey_warehouse_barcodes]] | 10 |
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/inventory_check]] | 25 |
 | [[modules/inventory_edit_log]] | 3 |
@@ -55,7 +56,7 @@ type: memory-bank
 | [[modules/online_order_parcels]] | 29 |
 | [[modules/online_orders_generator]] | 44 |
 | [[modules/order_remarks]] | 19 |
-| [[modules/pack_cancel_restock]] | 9 |
+| [[modules/pack_cancel_restock]] | 11 |
 | [[modules/parcel_pack_costing]] | 37 |
 | [[modules/partner_sold_reconcile]] | 16 |
 | [[modules/pdf_to_excel]] | 15 |
@@ -76,6 +77,7 @@ type: memory-bank
 | [[modules/rts_storage]] | 16 |
 | [[modules/shopee_spx_packing_list]] | 4 |
 | [[modules/shopee_spx_product_info]] | 12 |
+| [[modules/sku_barcodes]] | 34 |
 | [[modules/sp_sort_service]] | 26 |
 | [[modules/suppliers]] | 12 |
 | [[modules/tracking_search]] | 4 |

@@ -8,6 +8,7 @@ require_once __DIR__ . '/dept_inventory.php';
 require_once __DIR__ . '/rts_inventory_sync.php';
 require_once __DIR__ . '/rts_schema.php';
 require_once __DIR__ . '/honey_pos.php';
+require_once __DIR__ . '/sku_barcodes.php';
 
 /** Packed (ship), shipped, or POS walk-in sold — all can return to on-hand. */
 function pack_cancel_restock_is_restorable(string $unitStatus): bool
@@ -79,6 +80,19 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
     );
     $deptSt->execute([$sessionId]);
 
+    $skuSt = $pdo->prepare(
+        'SELECT i.id, i.sku_id, i.qty, i.pool, i.packaging_row_id, i.scanned_by, i.scanned_at,
+                s.code, s.kind, s.variant, s.size, s.product_key,
+                u.name AS scanned_by_name, pk.batch_no
+         FROM pack_cancel_restock_sku_items i
+         INNER JOIN product_sku_barcodes s ON s.id = i.sku_id
+         LEFT JOIN users u ON u.id = i.scanned_by
+         LEFT JOIN honey_packaging_rows pk ON pk.id = i.packaging_row_id
+         WHERE i.session_id = ?
+         ORDER BY i.id ASC'
+    );
+    $skuSt->execute([$sessionId]);
+
     $items = [];
     $grouped = [];
     foreach ($honeySt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -115,6 +129,55 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
             ];
         }
         $grouped[$gKey]['qty']++;
+    }
+    foreach ($skuSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $kind = (string) $row['kind'];
+        $pool = (string) $row['pool'];
+        $qty = (int) $row['qty'];
+        $isHoney = $kind === 'honey';
+        $productKey = (string) ($row['product_key'] ?? '');
+        $variant = $isHoney ? (string) $row['variant'] : '';
+        $size = $isHoney ? (string) $row['size'] : '';
+        $productLabel = $isHoney
+            ? 'Honey'
+            : dept_pouch_product_label($productKey);
+        $sizeLabel = $isHoney ? honey_bottle_size_label($size) : dept_pouch_unit_singular($productKey);
+        $stockLabel = $pool === 'rts_sellable'
+            ? 'RTS'
+            : ($isHoney ? 'Packaging' : 'Finished');
+        $items[] = [
+            'id' => (int) $row['id'],
+            'kind' => $kind,
+            'lookup_kind' => 'sku',
+            'product_key' => $isHoney ? 'honey' : $productKey,
+            'product_label' => $productLabel,
+            'code' => (string) $row['code'],
+            'variant' => $isHoney ? $variant : $productLabel,
+            'size_label' => $sizeLabel,
+            'batch_no' => $row['batch_no'] !== null ? (string) $row['batch_no'] : null,
+            'qty' => $qty,
+            'unit_status' => null,
+            'unit_pool' => $pool,
+            'stock_label' => $stockLabel,
+            'scanned_by' => (int) $row['scanned_by'],
+            'scanned_by_name' => (string) ($row['scanned_by_name'] ?? ''),
+            'scanned_at' => (string) $row['scanned_at'],
+        ];
+        $gKey = 'sku|' . $kind . '|' . ($isHoney ? $variant . '|' . $size : $productKey) . '|' . $pool;
+        if (!isset($grouped[$gKey])) {
+            $grouped[$gKey] = [
+                'kind' => $kind,
+                'lookup_kind' => 'sku',
+                'product_key' => $isHoney ? 'honey' : $productKey,
+                'product_label' => $productLabel,
+                'variant' => $isHoney ? $variant : $productLabel,
+                'size_label' => $sizeLabel,
+                'unit_pool' => $pool,
+                'stock_label' => $stockLabel,
+                'qty' => 0,
+            ];
+        }
+        $grouped[$gKey]['qty'] += $qty;
     }
     foreach ($deptSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $productKey = (string) $row['product_key'];
@@ -163,7 +226,8 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
         'confirmed_by_name' => (string) ($sess['confirmed_by_name'] ?? ''),
         'confirmed_at' => $sess['confirmed_at'] !== null ? (string) $sess['confirmed_at'] : null,
         'created_at' => (string) $sess['created_at'],
-        'item_count' => count($items),
+        'item_count' => array_sum(array_map(static fn (array $item): int => (int) ($item['qty'] ?? 1), $items)),
+        'entry_count' => count($items),
         'items' => $items,
         'grouped' => array_values($grouped),
     ];
@@ -172,20 +236,101 @@ function pack_cancel_restock_get(PDO $pdo, int $sessionId): array
 /**
  * @return array{result: string, session: array<string,mixed>, lookup?: array<string,mixed>|null}
  */
-function pack_cancel_restock_scan(PDO $pdo, int $sessionId, string $code): array
+function pack_cancel_restock_scan(
+    PDO $pdo,
+    int $userId,
+    int $sessionId,
+    string $code,
+    ?int $qty = null,
+    ?string $pool = null
+): array
 {
-    $code = honey_bottle_normalize_code($code);
+    $code = sku_barcode_normalize_code($code);
     $sess = pack_cancel_restock_get($pdo, $sessionId);
     if ($sess['status'] !== 'draft') {
         throw new RuntimeException('This restock session is already closed.');
     }
 
+    $sku = sku_barcode_fetch_by_code($pdo, $code);
+    if ($sku !== null) {
+        $lookup = sku_barcode_serialize($sku);
+        $lookup['lookup_kind'] = 'sku';
+        $lookup['requires_qty'] = true;
+        $lookup['allowed_pools'] = (string) $sku['kind'] === 'honey'
+            ? ['packaging', 'rts_sellable']
+            : ['finished', 'rts_sellable'];
+        if ($qty === null || $pool === null || trim($pool) === '') {
+            return [
+                'result' => 'sku_requires_details',
+                'session' => $sess,
+                'lookup' => $lookup,
+            ];
+        }
+
+        return pack_cancel_restock_scan_sku($pdo, $userId, $sessionId, $sku, $qty, $pool);
+    }
+
+    $code = honey_bottle_normalize_code($code);
     $honey = honey_bottle_fetch_code_row($pdo, $code);
     if ($honey !== null) {
         return pack_cancel_restock_scan_honey($pdo, $sessionId, $honey);
     }
 
     return pack_cancel_restock_scan_dept($pdo, $sessionId, $code);
+}
+
+/**
+ * Queue a quantity-based permanent SKU return. This does not create fake unit
+ * rows; inventory is credited only when the draft session is confirmed.
+ *
+ * @param array<string,mixed> $sku
+ * @return array{result: string, session: array<string,mixed>, lookup: array<string,mixed>}
+ */
+function pack_cancel_restock_scan_sku(
+    PDO $pdo,
+    int $userId,
+    int $sessionId,
+    array $sku,
+    int $qty,
+    string $pool
+): array {
+    if ($userId < 1) {
+        throw new RuntimeException('A valid scanner is required.');
+    }
+    if ($qty < 1 || $qty > 5000) {
+        throw new RuntimeException('Return quantity must be between 1 and 5000.');
+    }
+    $kind = (string) ($sku['kind'] ?? '');
+    $pool = strtolower(trim($pool));
+    $allowedPools = $kind === 'honey'
+        ? ['packaging', 'rts_sellable']
+        : ['finished', 'rts_sellable'];
+    if (!in_array($pool, $allowedPools, true)) {
+        throw new RuntimeException(
+            $kind === 'honey'
+                ? 'Honey returns may go to Packaging or RTS.'
+                : 'Department returns may go to Finished or RTS.'
+        );
+    }
+
+    $lookup = sku_barcode_serialize($sku);
+    $lookup['lookup_kind'] = 'sku';
+    $lookup['requires_qty'] = true;
+    $lookup['allowed_pools'] = $allowedPools;
+    $lookup['selected_qty'] = $qty;
+    $lookup['selected_pool'] = $pool;
+
+    $pdo->prepare(
+        'INSERT INTO pack_cancel_restock_sku_items
+            (session_id, sku_id, qty, pool, scanned_by)
+         VALUES (?, ?, ?, ?, ?)'
+    )->execute([$sessionId, (int) $sku['id'], $qty, $pool, $userId]);
+
+    return [
+        'result' => 'ok',
+        'session' => pack_cancel_restock_get($pdo, $sessionId),
+        'lookup' => $lookup,
+    ];
 }
 
 /**
@@ -346,7 +491,18 @@ function pack_cancel_restock_confirm(PDO $pdo, int $userId, int $sessionId): arr
         $deptSt->execute([$sessionId]);
         $deptItems = $deptSt->fetchAll(PDO::FETCH_ASSOC);
 
-        if ($honeyItems === [] && $deptItems === []) {
+        $skuSt = $pdo->prepare(
+            'SELECT i.id, i.sku_id, i.qty, i.pool, i.packaging_row_id,
+                    s.kind, s.variant, s.size, s.product_key
+             FROM pack_cancel_restock_sku_items i
+             INNER JOIN product_sku_barcodes s ON s.id = i.sku_id
+             WHERE i.session_id = ?
+             FOR UPDATE'
+        );
+        $skuSt->execute([$sessionId]);
+        $skuItems = $skuSt->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($honeyItems === [] && $deptItems === [] && $skuItems === []) {
             throw new RuntimeException('Scan at least one barcode before confirming.');
         }
 
@@ -445,6 +601,45 @@ function pack_cancel_restock_confirm(PDO $pdo, int $userId, int $sessionId): arr
             }
         }
 
+        foreach ($skuItems as $item) {
+            $qty = (int) $item['qty'];
+            if ($qty < 1 || $qty > 5000) {
+                throw new RuntimeException('A SKU return quantity is invalid. Discard and rescan.');
+            }
+            $kind = (string) $item['kind'];
+            $pool = (string) $item['pool'];
+            $packagingRowId = $item['packaging_row_id'] !== null ? (int) $item['packaging_row_id'] : null;
+            if ($kind === 'honey') {
+                $variant = honey_normalize_variant((string) $item['variant']);
+                $size = (string) $item['size'];
+                if (!in_array($size, HONEY_SIZES, true)) {
+                    throw new RuntimeException('A SKU honey size is invalid. Discard and rescan.');
+                }
+                if ($pool === 'packaging' && ($packagingRowId === null || $packagingRowId < 1)) {
+                    $packagingRowId = pack_cancel_restock_system_packaging_row($pdo, $userId, $variant);
+                    $pdo->prepare(
+                        'UPDATE pack_cancel_restock_sku_items SET packaging_row_id = ? WHERE id = ?'
+                    )->execute([$packagingRowId, (int) $item['id']]);
+                }
+                sku_barcode_honey_credit(
+                    $pdo,
+                    $variant,
+                    $size,
+                    $qty,
+                    $pool,
+                    $packagingRowId
+                );
+            } elseif ($kind === 'dept') {
+                $productKey = strtolower(trim((string) $item['product_key']));
+                if (!in_array($productKey, DEPT_PRODUCT_KEYS, true)) {
+                    throw new RuntimeException('A SKU department product is invalid. Discard and rescan.');
+                }
+                sku_barcode_dept_credit($pdo, $userId, $productKey, $qty, $pool);
+            } else {
+                throw new RuntimeException('A SKU return type is invalid. Discard and rescan.');
+            }
+        }
+
         $pdo->prepare(
             'UPDATE pack_cancel_restock_sessions
              SET status = "confirmed", confirmed_at = NOW(), confirmed_by = ?
@@ -462,6 +657,32 @@ function pack_cancel_restock_confirm(PDO $pdo, int $userId, int $sessionId): arr
     }
 
     return pack_cancel_restock_get($pdo, $sessionId);
+}
+
+/**
+ * Honey packaging requires a production row for legacy foreign-key reasons.
+ * This reserved row is deliberately unassigned to a production batch.
+ */
+function pack_cancel_restock_system_packaging_row(PDO $pdo, int $userId, string $variant): int
+{
+    $variant = honey_normalize_variant($variant);
+    $batchNo = 'CANCELLED-RESTOCK-' . strtoupper($variant);
+    $st = $pdo->prepare(
+        'SELECT id FROM honey_packaging_rows WHERE batch_no = ? LIMIT 1 FOR UPDATE'
+    );
+    $st->execute([$batchNo]);
+    $existing = $st->fetchColumn();
+    if ($existing !== false) {
+        return (int) $existing;
+    }
+
+    $pdo->prepare(
+        'INSERT INTO honey_packaging_rows (
+            production_row_id, supplier_code, batch_no, bottling_date, variant, created_by
+         ) VALUES (NULL, "CANCELLED", ?, CURDATE(), ?, ?)'
+    )->execute([$batchNo, $variant, $userId]);
+
+    return (int) $pdo->lastInsertId();
 }
 
 function pack_cancel_restock_discard(PDO $pdo, int $sessionId): void
@@ -507,14 +728,27 @@ function pack_cancel_restock_list(
     $joins = '';
     $params = [];
     if ($productKey === 'honey') {
-        $joins = ' INNER JOIN (SELECT DISTINCT session_id FROM pack_cancel_restock_honey_items) ph ON ph.session_id = s.id';
+        $joins = ' INNER JOIN (
+            SELECT DISTINCT session_id FROM pack_cancel_restock_honey_items
+            UNION
+            SELECT DISTINCT i.session_id
+            FROM pack_cancel_restock_sku_items i
+            INNER JOIN product_sku_barcodes sku ON sku.id = i.sku_id
+            WHERE sku.kind = "honey"
+        ) ph ON ph.session_id = s.id';
     } elseif ($productKey !== '') {
         if (!dept_pouch_supports($productKey)) {
             throw new RuntimeException('Unknown product filter.');
         }
         $joins = ' INNER JOIN (
             SELECT DISTINCT session_id FROM pack_cancel_restock_dept_items WHERE product_key = ?
+            UNION
+            SELECT DISTINCT i.session_id
+            FROM pack_cancel_restock_sku_items i
+            INNER JOIN product_sku_barcodes sku ON sku.id = i.sku_id
+            WHERE sku.kind = "dept" AND sku.product_key = ?
         ) pd ON pd.session_id = s.id';
+        $params[] = $productKey;
         $params[] = $productKey;
     }
     $params[] = $fromDt;
@@ -533,6 +767,7 @@ function pack_cancel_restock_list(
                 (
                   (SELECT COUNT(*) FROM pack_cancel_restock_honey_items h WHERE h.session_id = s.id)
                   + (SELECT COUNT(*) FROM pack_cancel_restock_dept_items d WHERE d.session_id = s.id)
+                  + (SELECT COALESCE(SUM(sk.qty), 0) FROM pack_cancel_restock_sku_items sk WHERE sk.session_id = s.id)
                 ) AS item_count
          FROM pack_cancel_restock_sessions s' . $joins
         . ' LEFT JOIN users u_start ON u_start.id = s.started_by

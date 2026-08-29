@@ -19,6 +19,7 @@ import { variantLabel } from "@/app/lib/posHoney";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 import { rtsStockInScan } from "@/app/lib/rtsApi";
+import { skuBarcodesApi, type SkuLookup } from "@/app/lib/skuBarcodes";
 import { cn } from "@/app/components/ui/utils";
 
 const OTHER_PRODUCT_PRESETS = [
@@ -95,6 +96,9 @@ export function RTSPage() {
   const [addOtherOpen, setAddOtherOpen] = useState(false);
   const [stockInCode, setStockInCode] = useState("");
   const [stockInBusy, setStockInBusy] = useState(false);
+  const [pendingSku, setPendingSku] = useState<{ code: string; lookup: SkuLookup } | null>(null);
+  const [skuQty, setSkuQty] = useState("1");
+  const qtyTitleId = "rts-stock-in-qty-title";
   const { inputRef: stockInRef, refocus: stockInRefocus, inputProps: stockInInputProps } =
     useScanWedgeField(false);
 
@@ -141,32 +145,60 @@ export function RTSPage() {
     }
   }, [loadUseLog]);
 
+  const finishStockIn = useCallback(
+    async (code: string, qty?: number) => {
+      setStockInBusy(true);
+      setError(null);
+      try {
+        const res = await rtsStockInScan(code, qty);
+        const unit = res.unit;
+        const label =
+          res.kind === "honey"
+            ? `${variantLabel(String(unit.variant ?? ""))} ${String(unit.size_label ?? unit.size ?? "")}`.trim()
+            : String(unit.product_label ?? unit.product_key ?? "Dept unit");
+        const qtyNote = qty != null && qty !== 1 ? ` ×${qty}` : "";
+        playScanBeep("ok");
+        setToast(`Stocked into RTS: ${unit.code ?? code}${qtyNote} · ${label}`);
+        window.setTimeout(() => setToast(null), 4000);
+        await loadInventory(false);
+        stockInRefocus();
+      } catch (e) {
+        playScanBeep("bad");
+        setError(e instanceof ApiError ? e.message : "RTS stock-in scan failed.");
+        stockInRefocus();
+      } finally {
+        setStockInBusy(false);
+      }
+    },
+    [loadInventory, stockInRefocus],
+  );
+
   const runStockInScan = useCallback(async () => {
     const code = stockInCode.trim();
     if (!code || !canMutate) return;
-    setStockInBusy(true);
-    setError(null);
     setStockInCode("");
+    setError(null);
     try {
-      const res = await rtsStockInScan(code);
-      const unit = res.unit;
-      const label =
-        res.kind === "honey"
-          ? `${variantLabel(String(unit.variant ?? ""))} ${String(unit.size_label ?? unit.size ?? "")}`.trim()
-          : String(unit.product_label ?? unit.product_key ?? "Dept unit");
-      playScanBeep("ok");
-      setToast(`Stocked into RTS: ${unit.code ?? code} · ${label}`);
-      window.setTimeout(() => setToast(null), 4000);
-      await loadInventory(false);
-      stockInRefocus();
-    } catch (e) {
-      playScanBeep("bad");
-      setError(e instanceof ApiError ? e.message : "RTS stock-in scan failed.");
-      stockInRefocus();
-    } finally {
-      setStockInBusy(false);
+      const looked = await skuBarcodesApi.lookup(code);
+      const lookup = looked.lookup;
+      if (lookup.lookup_kind === "sku" || lookup.requires_qty) {
+        setPendingSku({ code, lookup });
+        setSkuQty("1");
+        return;
+      }
+      await finishStockIn(code);
+    } catch {
+      await finishStockIn(code);
     }
-  }, [stockInCode, canMutate, loadInventory, stockInRefocus]);
+  }, [stockInCode, canMutate, finishStockIn]);
+
+  const confirmSkuStockIn = async () => {
+    if (!pendingSku) return;
+    const qty = Math.max(1, parseInt(skuQty, 10) || 1);
+    const pending = pendingSku;
+    setPendingSku(null);
+    await finishStockIn(pending.code, qty);
+  };
 
   const syncNow = useCallback(async () => {
     if (!canSync) {
@@ -241,7 +273,7 @@ export function RTSPage() {
                 <h3 className="text-sm font-semibold">Stock in to RTS</h3>
               </div>
               <p className="text-xs text-muted-foreground">
-                Scan honey or dept barcodes into sellable RTS. Does not add packaging stock.
+                Scan honey or dept barcodes into sellable RTS. SKU stickers ask for quantity; unique leftovers stock in one unit.
               </p>
               <div className="flex flex-wrap gap-2 max-w-xl">
                 <input
@@ -250,7 +282,7 @@ export function RTSPage() {
                   className="flex-1 min-w-[12rem] border rounded-lg px-3 py-2 text-sm"
                   placeholder="Scan barcode and press Enter"
                   value={stockInCode}
-                  disabled={stockInBusy}
+                  disabled={stockInBusy || pendingSku !== null}
                   onChange={e => setStockInCode(e.target.value)}
                   onKeyDown={e => {
                     if (e.key !== "Enter") return;
@@ -260,7 +292,7 @@ export function RTSPage() {
                 />
                 <Button
                   type="button"
-                  disabled={stockInBusy || !stockInCode.trim()}
+                  disabled={stockInBusy || !stockInCode.trim() || pendingSku !== null}
                   onClick={() => void runStockInScan()}
                   style={{ background: "#C8900A" }}
                   className="text-white"
@@ -272,6 +304,65 @@ export function RTSPage() {
             </section>
           </AppSectionEnter>
         )}
+        <AppModal
+          open={pendingSku !== null}
+          onClose={() => {
+            setPendingSku(null);
+            stockInRefocus();
+          }}
+          labelledBy={qtyTitleId}
+          panelClassName="max-w-sm w-full"
+        >
+          <AppModalHeader
+            titleId={qtyTitleId}
+            title="How many to RTS?"
+            subtitle={
+              pendingSku
+                ? pendingSku.lookup.label ??
+                  pendingSku.lookup.product_label ??
+                  pendingSku.code
+                : undefined
+            }
+            onClose={() => {
+              setPendingSku(null);
+              stockInRefocus();
+            }}
+          />
+          <AppModalBody>
+            <label className="text-xs text-muted-foreground block">
+              Quantity
+              <input
+                type="number"
+                min={1}
+                autoFocus
+                className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+                value={skuQty}
+                onChange={e => setSkuQty(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void confirmSkuStockIn();
+                  }
+                }}
+              />
+            </label>
+          </AppModalBody>
+          <AppModalFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setPendingSku(null);
+                stockInRefocus();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="button" disabled={stockInBusy} onClick={() => void confirmSkuStockIn()}>
+              Stock in
+            </Button>
+          </AppModalFooter>
+        </AppModal>
         {barcodeBackedSellable && !canUseRtsQty && (
           <p className="text-xs rounded-lg border border-border bg-secondary/40 px-3 py-2 text-muted-foreground">
             Qty-only <span className="font-medium text-foreground">Use RTS</span> is off for sellable stock.

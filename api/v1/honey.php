@@ -9,11 +9,19 @@ require_once dirname(__DIR__, 2) . '/includes/dept_inventory.php';
 require_once dirname(__DIR__, 2) . '/includes/dept_production.php';
 require_once dirname(__DIR__, 2) . '/includes/dept_pricing.php';
 require_once dirname(__DIR__, 2) . '/includes/inventory_edit_log.php';
+require_once dirname(__DIR__, 2) . '/includes/honey_warehouse_barcodes.php';
 
 api_dispatch([
     'warehouse_list' => 'api_honey_warehouse_list',
     'warehouse_stock_in' => 'api_honey_warehouse_stock_in',
     'warehouse_stock_out' => 'api_honey_warehouse_stock_out',
+    'warehouse_barcode_request_list' => 'api_honey_warehouse_barcode_request_list',
+    'warehouse_barcode_request_create' => 'api_honey_warehouse_barcode_request_create',
+    'warehouse_barcode_request_cancel' => 'api_honey_warehouse_barcode_request_cancel',
+    'warehouse_barcode_generate' => 'api_honey_warehouse_barcode_generate',
+    'warehouse_barcode_print' => 'api_honey_warehouse_barcode_print',
+    'warehouse_barcode_lookup' => 'api_honey_warehouse_barcode_lookup',
+    'warehouse_barcode_stock_out' => 'api_honey_warehouse_barcode_stock_out',
     'production_list' => 'api_honey_production_list',
     'production_stock_out' => 'api_honey_production_stock_out',
     'packaging_list' => 'api_honey_packaging_list',
@@ -273,14 +281,171 @@ function api_honey_warehouse_stock_out(): void
     api_ok($result);
 }
 
+function api_honey_warehouse_barcode_request_list(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    try {
+        api_ok([
+            'rows' => honey_warehouse_barcode_request_list(
+                ims_pdo(),
+                isset($_GET['status']) ? (string) $_GET['status'] : null
+            ),
+        ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+}
+
+function api_honey_warehouse_barcode_request_create(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'honey.warehouse_barcode.request')) {
+        api_fail('You do not have permission to request warehouse barcodes.', 403);
+    }
+    try {
+        api_ok([
+            'request' => honey_warehouse_barcode_request_create(
+                ims_pdo(),
+                (int) $user['id'],
+                (int) ($input['supplier_id'] ?? 0),
+                (string) ($input['arrival_date'] ?? ''),
+                (int) ($input['quantity'] ?? 0)
+            ),
+        ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+}
+
+function api_honey_warehouse_barcode_request_cancel(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'honey.warehouse_barcode.request')) {
+        api_fail('You do not have permission to cancel warehouse barcode requests.', 403);
+    }
+    $id = (int) ($input['request_id'] ?? 0);
+    $st = ims_pdo()->prepare(
+        'UPDATE honey_warehouse_barcode_requests
+         SET status = "cancelled"
+         WHERE id = ? AND status = "pending"'
+    );
+    $st->execute([$id]);
+    if ($st->rowCount() < 1) {
+        api_fail('Only pending warehouse barcode requests can be cancelled.', 422);
+    }
+    api_ok(['cancelled' => true, 'request_id' => $id]);
+}
+
+function api_honey_warehouse_barcode_generate(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'honey.warehouse_barcode.generate')) {
+        api_fail('You do not have permission to generate warehouse barcodes.', 403);
+    }
+    try {
+        $request = honey_warehouse_barcode_request_generate(
+            ims_pdo(),
+            (int) $user['id'],
+            (int) ($input['request_id'] ?? 0)
+        );
+        api_ok([
+            'request' => $request,
+            'print_url' => '/rts/api/v1/honey.php?action=warehouse_barcode_print&request_id='
+                . (int) $request['id'],
+        ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+}
+
+function api_honey_warehouse_barcode_print(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'honey.warehouse_barcode.generate')) {
+        api_fail('Forbidden.', 403);
+    }
+    try {
+        $pdo = ims_pdo();
+        $request = honey_warehouse_barcode_request_fetch($pdo, (int) ($_GET['request_id'] ?? 0));
+        if ($request === null) {
+            api_fail('Warehouse barcode request not found.', 404);
+        }
+        if ((string) $request['status'] === 'cancelled') {
+            api_fail('Cancelled warehouse barcode requests cannot be printed.', 422);
+        }
+        $html = honey_warehouse_barcode_print_sheet_html(
+            (string) $request['supplier_code'],
+            (int) $request['quantity']
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+    header('Content-Type: text/html; charset=utf-8');
+    echo $html;
+    exit;
+}
+
+function api_honey_warehouse_barcode_lookup(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_honey_ops();
+    try {
+        api_ok([
+            'code' => honey_warehouse_barcode_normalize((string) ($_GET['code'] ?? '')),
+            'candidates' => honey_warehouse_barcode_lookup(
+                ims_pdo(),
+                (string) ($_GET['code'] ?? '')
+            ),
+        ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+}
+
+function api_honey_warehouse_barcode_stock_out(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_honey_require_honey_ops();
+    try {
+        api_ok([
+            'stock_out' => honey_warehouse_barcode_stock_out(
+                ims_pdo(),
+                (int) $user['id'],
+                (string) ($input['code'] ?? ''),
+                (int) ($input['supplier_id'] ?? 0),
+                (string) ($input['arrival_date'] ?? ''),
+                (string) ($input['variant'] ?? ''),
+                (float) ($input['quantity_gallons'] ?? 0)
+            ),
+        ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+}
+
 function api_honey_production_list(): void
 {
     api_method_allowed(['GET']);
     api_honey_require_view();
     $pdo = ims_pdo();
     $st = $pdo->query(
-        'SELECT pr.id, pr.warehouse_row_id, pr.supplier_code, pr.arrival_date, pr.variant,
-                pr.current_qty, pr.initial_qty, pr.transferred_at, pr.created_at,
+        'SELECT pr.id, pr.warehouse_row_id, pr.supplier_code, pr.arrival_date,
+                COALESCE(pr.stock_out_date, DATE(pr.transferred_at)) AS stock_out_date,
+                pr.daily_group_key, pr.variant, pr.current_qty, pr.initial_qty,
+                pr.transferred_at, pr.created_at,
                 pk.batch_no AS packaging_batch_no, pk.bottling_date AS packaging_bottling_date
          FROM honey_production_rows pr
          LEFT JOIN honey_packaging_rows pk ON pk.production_row_id = pr.id

@@ -4,6 +4,18 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-08-28 — Honey warehouse supplier/date barcodes
+**Change:** Added reusable supplier+arrival-date barcode requests and Code128 printing; warehouse scan-out selects the supplier/date/variant, deducts FIFO gallons, logs source events, and aggregates one daily Production row per supplier/date/variant. → [[problems/records/2026-08-28_honey-warehouse-supplier-barcodes]]
+
+### 2026-08-27 — Barcode Settings selling price sync
+**Change:** Editable selling price in Barcode Settings; save updates `products.selling_price` (Product Setup / POS) via `sku_barcode_update_selling_price` on bulk save.
+
+### 2026-08-26 — SKU barcodes (one code per product)
+**Change:** Permanent SKU catalog + print N copies; scan→qty stock-in/pack/POS/check; leftover uniques kept. Run phase 69. → [[problems/records/2026-08-26_sku-barcode-inventory]]
+
+### 2026-08-26 — SKU barcode SPA (settings + scan qty)
+**Change:** Barcode Settings; generate→print_url; POS/check/pack/RTS SKU qty UX; unique leftovers unchanged. → [[problems/records/2026-08-26_sku-barcode-spa]]
+
 ### 2026-08-26 — POS return reduces receipt total
 **Change:** Cancelled sold restock reverses pos_receipt line + recalc total; Sales heal for prior returns; returned codes listed separately. → [[problems/records/2026-08-26_pos-return-receipt-total]]
 
@@ -830,3 +842,19 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-07-14 — Fast tracking search
 - **What we did:** Debounced list search + TN-shaped `=`/prefix SQL on Deliveries review, RTS lists, Online parcels; search caps parcels `per_page` at 100.
 - **Record:** [[problems/fixes/fast-tracking-search]]
+
+### 2026-08-29 — Honey SKU stock-in custom batch
+- **What we did:** Replaced the existing packaging-batch dropdown in the honey SKU scanner with a typed custom batch number; the API creates/reuses the matching custom packaging row without supplier-master validation.
+- **Record:** [[problems/records/2026-08-29_honey-sku-custom-batch-stock-in]]
+
+### 2026-08-29 — Honey Packaging Today SKU report
+- **What we did:** Packaging scan reports now combine unique sticker scans with quantity-based SKU stock-in events, so current SKU stock-ins appear under Today and in totals.
+- **Record:** [[problems/records/2026-08-29_honey-packaging-today-sku-events]]
+
+### 2026-08-29 — Honey Packaging scan-log quantities
+- **What we did:** Packaging scan details now show the scanned/inputted quantity, operator, timestamp, and whether each entry came from a SKU quantity or individual sticker scan.
+- **Record:** [[problems/records/2026-08-29_honey-packaging-scan-log-quantities]]
+
+### 2026-08-29 — Static SKU cancelled restock
+- **What we did:** Cancelled Restock now queues permanent SKU returns with quantity and destination pool, restores aggregate Honey/department/RTS inventory on confirmation, and shows scanner audit details in history without creating fake unit rows.
+- **Record:** [[problems/records/2026-08-29_static-sku-cancelled-restock]]

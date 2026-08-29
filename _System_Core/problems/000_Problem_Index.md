@@ -30,6 +30,7 @@ flowchart LR
 
 ## Reusable fix patterns (inventory & UX)
 
+- [[fixes/sku-barcode-permanent-catalog]] — One permanent SKU code per product; print N copies; scan→qty
 - [[fixes/packaging-inventory-roles]] — HR stock-in / PM deduct / exec all
 - [[fixes/inventory-role-permissions]] — PHP helpers + API `permissions` + SPA guides
 - [[fixes/page-guide-button-modal]] — Guide header button + modal (not inline panel)
@@ -51,6 +52,8 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-08-26_sku-barcode-inventory]] — Permanent SKU barcodes (one code per product); print N copies; scan→qty; leftover uniques kept
+- [[records/2026-08-26_sku-barcode-spa]] — Barcode Settings + POS/check/pack/RTS SKU qty UX
 - [[records/2026-08-26_pos-return-receipt-total]] — Returned POS barcode reduces receipt total (heal + restock reverse)
 - [[records/2026-08-26_sales-checkout-line-barcodes]] — Walk-in sales expand shows barcode per line
 - [[records/2026-08-26_pack-cancel-restock-pos-sold]] — Cancelled restock accepts POS sold barcodes; credits RTS vs packaging/finished by pool
