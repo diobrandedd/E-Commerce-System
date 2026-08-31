@@ -453,7 +453,7 @@ function rts_barcode_label_print_sheet_html(PDO $pdo, int $jobId): string
             }
             $stream[] = [
                 'slots' => 1,
-                'html' => sku_barcode_label_cell_html((string) $row['code']),
+                'html' => sku_barcode_label_cell_html((string) $row['code'], $line),
             ];
             $labelCount++;
         }

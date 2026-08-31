@@ -1226,7 +1226,13 @@ const SKU_LABEL_SHEET_COLS = 8;
 const SKU_LABEL_SHEET_ROWS = 20;
 const SKU_LABEL_SHEET_HEIGHT_MM = 285.6;
 
-function sku_barcode_label_cell_html(string $code): string
+/**
+ * Render one product label as product info, Code128 barcode, and exact code.
+ * A null product keeps the legacy bare label used by supplier/date labels.
+ *
+ * @param array<string,mixed>|null $product
+ */
+function sku_barcode_label_cell_html(string $code, ?array $product = null): string
 {
     require_once __DIR__ . '/honey_bottle_barcodes.php';
     try {
@@ -1236,7 +1242,36 @@ function sku_barcode_label_cell_html(string $code): string
     }
     $safe = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
 
-    return '<div class="label"><div class="bc" title="' . $safe . '">' . $svg . '</div></div>';
+    if ($product === null) {
+        return '<div class="label label-plain"><div class="bc" title="' . $safe . '">' . $svg . '</div></div>';
+    }
+
+    $kind = (string) ($product['kind'] ?? '');
+    $topText = '';
+    if ($kind === 'honey') {
+        $size = strtolower(trim((string) ($product['size'] ?? '')));
+        $sizeLabel = match ($size) {
+            'liter' => '1L',
+            'gallon' => '1G',
+            '250ml' => '250ml',
+            '350ml' => '350ml',
+            default => trim((string) ($product['size_label'] ?? $size)),
+        };
+        $variant = ucfirst(trim((string) ($product['variant'] ?? '')));
+        $topText = trim($sizeLabel . ' – ' . $variant, ' –');
+    } elseif ($kind === 'dept') {
+        $topText = dept_pouch_product_label((string) ($product['product_key'] ?? ''));
+    }
+    if ($topText === '') {
+        return '<div class="label label-plain"><div class="bc" title="' . $safe . '">' . $svg . '</div></div>';
+    }
+    $safeTop = htmlspecialchars($topText, ENT_QUOTES, 'UTF-8');
+
+    return '<div class="label label-product">'
+        . '<div class="product-info" title="' . $safeTop . '">' . $safeTop . '</div>'
+        . '<div class="bc" title="' . $safe . '">' . $svg . '</div>'
+        . '<div class="human-code" title="' . $safe . '">' . $safe . '</div>'
+        . '</div>';
 }
 
 function sku_barcode_label_banner_html(string $text): string
@@ -1401,8 +1436,41 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
           text-align: left;
         }
         .label.empty .bc { visibility: hidden; }
+        .label-product {
+          padding: 0.8mm 0.7mm;
+          justify-content: space-between;
+          gap: 0.3mm;
+        }
+        .product-info {
+          width: 100%;
+          min-height: 2.4mm;
+          font-size: 6.5pt;
+          font-weight: 700;
+          line-height: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
         .bc { line-height: 0; width: 100%; max-height: 11mm; overflow: hidden; }
+        .label-product .bc {
+          flex: 1 1 auto;
+          min-height: 0;
+          max-height: 7.5mm;
+          display: flex;
+          align-items: center;
+        }
+        .human-code {
+          width: 100%;
+          min-height: 2.4mm;
+          font-family: "Courier New", Courier, monospace;
+          font-size: 6.2pt;
+          line-height: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
         .bc svg { width: 100%; max-height: 11mm; height: auto; display: block; }
+        .label-product .bc svg { max-height: 7.5mm; }
         .err { font-size: 6pt; color: #c00; }
         .page-break { page-break-before: always; break-before: page; }
         @media print {
@@ -1459,7 +1527,7 @@ function sku_barcode_combined_label_sheet_html(PDO $pdo, array $groups): string
         for ($i = 0; $i < $qty; $i++) {
             $stream[] = [
                 'slots' => 1,
-                'html' => sku_barcode_label_cell_html($code),
+                'html' => sku_barcode_label_cell_html($code, $row),
             ];
             $labelCount++;
         }
