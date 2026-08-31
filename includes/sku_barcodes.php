@@ -1437,13 +1437,13 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
         }
         .label.empty .bc { visibility: hidden; }
         .label-product {
-          padding: 0.8mm 0.7mm;
+          padding: 0.45mm 0.7mm;
           justify-content: space-between;
-          gap: 0.3mm;
+          gap: 0.2mm;
         }
         .product-info {
           width: 100%;
-          min-height: 2.4mm;
+          min-height: 2.3mm;
           font-size: 6.5pt;
           font-weight: 700;
           line-height: 1;
@@ -1455,13 +1455,13 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
         .label-product .bc {
           flex: 1 1 auto;
           min-height: 0;
-          max-height: 7.5mm;
+          max-height: 8.5mm;
           display: flex;
           align-items: center;
         }
         .human-code {
           width: 100%;
-          min-height: 2.4mm;
+          min-height: 2.2mm;
           font-family: "Courier New", Courier, monospace;
           font-size: 6.2pt;
           line-height: 1;
@@ -1470,7 +1470,7 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
           text-overflow: ellipsis;
         }
         .bc svg { width: 100%; max-height: 11mm; height: auto; display: block; }
-        .label-product .bc svg { max-height: 7.5mm; }
+        .label-product .bc svg { max-height: 8.5mm; }
         .err { font-size: 6pt; color: #c00; }
         .page-break { page-break-before: always; break-before: page; }
         @media print {
