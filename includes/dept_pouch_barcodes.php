@@ -76,6 +76,13 @@ function dept_pouch_normalize_batch_no(string $batchNo): string
     return $batchNo;
 }
 
+function dept_pouch_system_request_batch_no(string $productKey): string
+{
+    return dept_pouch_normalize_batch_no(
+        'SKU-' . strtoupper(trim($productKey)) . '-' . date('ymdHis')
+    );
+}
+
 /**
  * Codes are unique across every dept product so a sticker can never be
  * ambiguous at the scanner.
@@ -196,7 +203,9 @@ function dept_pouch_request_create(
     ?string $notes
 ): array {
     $productKey = dept_pouch_normalize_product_key($productKey);
-    $batchNo = dept_pouch_normalize_batch_no($batchNo);
+    $batchNo = trim($batchNo) === ''
+        ? dept_pouch_system_request_batch_no($productKey)
+        : dept_pouch_normalize_batch_no($batchNo);
     if ($qty < 1 || $qty > 5000) {
         throw new RuntimeException('Quantity must be between 1 and 5000.');
     }

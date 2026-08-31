@@ -858,3 +858,7 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-08-29 — Static SKU cancelled restock
 - **What we did:** Cancelled Restock now queues permanent SKU returns with quantity and destination pool, restores aggregate Honey/department/RTS inventory on confirmation, and shows scanner audit details in history without creating fake unit rows.
 - **Record:** [[problems/records/2026-08-29_static-sku-cancelled-restock]]
+
+### 2026-08-31 — Static pouch request batch validation
+- **What we did:** Static SKU pouch requests no longer require an operator-entered batch code; the backend creates an internal legacy reference while printing continues from Barcode Settings.
+- **Record:** [[problems/records/2026-08-31_dept-pouch-request-stale-batch-validation]]
