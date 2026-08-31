@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-08-31T08:23:49+02:00
+generated: 2026-08-31T09:49:31+02:00
 type: module
 function_count: 36
 ---
@@ -298,7 +298,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `includes/dept_pouch_barcodes.php`:875 — `$codes = dept_pouch_batch_codes($pdo, $batchId);`
-- `includes/rts_barcode_labels.php`:431 — `$codes = dept_pouch_batch_codes($pdo, (int) $line['dept_batch_id']);`
+- `includes/rts_barcode_labels.php`:435 — `$codes = dept_pouch_batch_codes($pdo, (int) $line['dept_batch_id']);`
 
 ## dept_pouch_label_sheet_html {#dept_pouch_label_sheet_html}
 

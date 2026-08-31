@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-08-31T08:23:48+02:00
+generated: 2026-08-31T09:49:30+02:00
 type: module
 function_count: 17
 ---

@@ -418,9 +418,13 @@ function rts_barcode_label_print_sheet_html(PDO $pdo, int $jobId): string
     foreach ($job['lines'] as $line) {
         $batchIndex++;
         $letter = $batchIndex <= 26 ? chr(64 + $batchIndex) : (string) $batchIndex;
+        $bannerText = sku_barcode_product_info_text($line);
+        if ($bannerText === '') {
+            $bannerText = 'BATCH ' . $letter;
+        }
         $stream[] = [
             'slots' => SKU_LABEL_SHEET_COLS,
-            'html' => sku_barcode_label_banner_html('BATCH ' . $letter),
+            'html' => sku_barcode_label_banner_html($bannerText),
         ];
 
         $codes = [];

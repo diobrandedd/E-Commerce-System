@@ -1227,6 +1227,37 @@ const SKU_LABEL_SHEET_ROWS = 20;
 const SKU_LABEL_SHEET_HEIGHT_MM = 285.6;
 
 /**
+ * Product text used by both the label cell and its request/banner row.
+ *
+ * @param array<string,mixed>|null $product
+ */
+function sku_barcode_product_info_text(?array $product): string
+{
+    if ($product === null) {
+        return '';
+    }
+    $kind = (string) ($product['kind'] ?? '');
+    if ($kind === 'honey') {
+        $size = strtolower(trim((string) ($product['size'] ?? '')));
+        $sizeLabel = match ($size) {
+            'liter' => '1L',
+            'gallon' => '1G',
+            '250ml' => '250ml',
+            '350ml' => '350ml',
+            default => trim((string) ($product['size_label'] ?? $size)),
+        };
+        $variant = ucfirst(trim((string) ($product['variant'] ?? '')));
+
+        return trim($sizeLabel . ' – ' . $variant, ' –');
+    }
+    if ($kind === 'dept') {
+        return dept_pouch_product_label((string) ($product['product_key'] ?? ''));
+    }
+
+    return '';
+}
+
+/**
  * Render one product label as product info, Code128 barcode, and exact code.
  * A null product keeps the legacy bare label used by supplier/date labels.
  *
@@ -1246,22 +1277,7 @@ function sku_barcode_label_cell_html(string $code, ?array $product = null): stri
         return '<div class="label label-plain"><div class="bc" title="' . $safe . '">' . $svg . '</div></div>';
     }
 
-    $kind = (string) ($product['kind'] ?? '');
-    $topText = '';
-    if ($kind === 'honey') {
-        $size = strtolower(trim((string) ($product['size'] ?? '')));
-        $sizeLabel = match ($size) {
-            'liter' => '1L',
-            'gallon' => '1G',
-            '250ml' => '250ml',
-            '350ml' => '350ml',
-            default => trim((string) ($product['size_label'] ?? $size)),
-        };
-        $variant = ucfirst(trim((string) ($product['variant'] ?? '')));
-        $topText = trim($sizeLabel . ' – ' . $variant, ' –');
-    } elseif ($kind === 'dept') {
-        $topText = dept_pouch_product_label((string) ($product['product_key'] ?? ''));
-    }
+    $topText = sku_barcode_product_info_text($product);
     if ($topText === '') {
         return '<div class="label label-plain"><div class="bc" title="' . $safe . '">' . $svg . '</div></div>';
     }
@@ -1515,9 +1531,13 @@ function sku_barcode_combined_label_sheet_html(PDO $pdo, array $groups): string
         $code = (string) $row['code'];
         $batchIndex++;
         $letter = $batchIndex <= 26 ? chr(64 + $batchIndex) : (string) $batchIndex;
-        $bannerText = isset($group['banner']) && trim((string) $group['banner']) !== ''
-            ? trim((string) $group['banner'])
-            : 'BATCH ' . $letter;
+        $requestedBanner = isset($group['banner']) ? trim((string) $group['banner']) : '';
+        $bannerText = $requestedBanner !== '' && !preg_match('/^BATCH(?:\s+[A-Z0-9]+)?$/i', $requestedBanner)
+            ? $requestedBanner
+            : sku_barcode_product_info_text($row);
+        if ($bannerText === '') {
+            $bannerText = 'BATCH ' . $letter;
+        }
 
         $stream[] = [
             'slots' => SKU_LABEL_SHEET_COLS,

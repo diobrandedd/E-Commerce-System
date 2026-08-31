@@ -1,9 +1,9 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-08-31T08:24:24+02:00
+generated: 2026-08-31T09:50:07+02:00
 type: module
-function_count: 34
+function_count: 35
 ---
 
 
@@ -85,8 +85,8 @@ function_count: 34
 - `api/v1/sku_barcodes.php`:205 — `$sku = sku_barcode_fetch_by_id($pdo, (int) $input['sku_id']);`
 - `includes/sku_barcodes.php`:480 — `$row = sku_barcode_fetch_by_id($pdo, $id);`
 - `includes/sku_barcodes.php`:1204 — `if (sku_barcode_fetch_by_id($pdo, $skuId) === null) {`
-- `includes/sku_barcodes.php`:1511 — `$row = sku_barcode_fetch_by_id($pdo, $skuId);`
-- `includes/sku_barcodes.php`:1550 — `if (sku_barcode_fetch_by_id($pdo, $skuId) === null) {`
+- `includes/sku_barcodes.php`:1527 — `$row = sku_barcode_fetch_by_id($pdo, $skuId);`
+- `includes/sku_barcodes.php`:1570 — `if (sku_barcode_fetch_by_id($pdo, $skuId) === null) {`
 
 ## sku_barcode_fetch_by_code {#sku_barcode_fetch_by_code}
 
@@ -114,7 +114,7 @@ function_count: 34
 - `api/v1/bottle_barcodes.php`:263 — `$sku = sku_barcode_fetch_honey(ims_pdo(), (string) $req['variant'], (string) $req['size']);`
 - `api/v1/bottle_barcodes.php`:317 — `$sku = sku_barcode_fetch_honey($pdo, (string) $req['variant'], (string) $req['size']);`
 - `includes/rts_barcode_labels.php`:255 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
-- `includes/rts_barcode_labels.php`:435 — `$sku = sku_barcode_fetch_honey(`
+- `includes/rts_barcode_labels.php`:439 — `$sku = sku_barcode_fetch_honey(`
 - `includes/sku_barcodes.php`:400 — `? sku_barcode_fetch_honey($pdo, $variant, $size)`
 - `includes/sku_barcodes.php`:904 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
 
@@ -127,7 +127,7 @@ function_count: 34
 - `api/v1/dept_pouch_barcodes.php`:167 — `$sku = sku_barcode_fetch_dept(ims_pdo(), $productKey);`
 - `api/v1/dept_pouch_barcodes.php`:225 — `$sku = sku_barcode_fetch_dept($pdo, $productKey);`
 - `includes/rts_barcode_labels.php`:279 — `$sku = sku_barcode_fetch_dept($pdo, $productKey);`
-- `includes/rts_barcode_labels.php`:441 — `$sku = sku_barcode_fetch_dept($pdo, (string) ($line['product_key'] ?? ''));`
+- `includes/rts_barcode_labels.php`:445 — `$sku = sku_barcode_fetch_dept($pdo, (string) ($line['product_key'] ?? ''));`
 - `includes/sku_barcodes.php`:401 — `: sku_barcode_fetch_dept($pdo, $productKey);`
 - `includes/sku_barcodes.php`:952 — `$sku = sku_barcode_fetch_dept($pdo, $productKey);`
 
@@ -294,35 +294,43 @@ function_count: 34
 - `includes/rts_barcode_labels.php`:262 — `sku_barcode_record_print($pdo, $userId, (int) $sku['id'], $qty, 'rts', null, null, $jobId);`
 - `includes/rts_barcode_labels.php`:286 — `sku_barcode_record_print($pdo, $userId, (int) $sku['id'], $qty, 'rts', null, null, $jobId);`
 
+## sku_barcode_product_info_text {#sku_barcode_product_info_text}
+
+**Callers (3):**
+
+- `includes/rts_barcode_labels.php`:421 — `$bannerText = sku_barcode_product_info_text($line);`
+- `includes/sku_barcodes.php`:1280 — `$topText = sku_barcode_product_info_text($product);`
+- `includes/sku_barcodes.php`:1537 — `: sku_barcode_product_info_text($row);`
+
 ## sku_barcode_label_cell_html {#sku_barcode_label_cell_html}
 
 **Callers (3):**
 
 - `includes/honey_warehouse_barcodes.php`:346 — `$stream[] = ['slots' => 1, 'html' => sku_barcode_label_cell_html($code)];`
-- `includes/rts_barcode_labels.php`:456 — `'html' => sku_barcode_label_cell_html((string) $row['code'], $line),`
-- `includes/sku_barcodes.php`:1530 — `'html' => sku_barcode_label_cell_html($code, $row),`
+- `includes/rts_barcode_labels.php`:460 — `'html' => sku_barcode_label_cell_html((string) $row['code'], $line),`
+- `includes/sku_barcodes.php`:1550 — `'html' => sku_barcode_label_cell_html($code, $row),`
 
 ## sku_barcode_label_banner_html {#sku_barcode_label_banner_html}
 
 **Callers (2):**
 
-- `includes/rts_barcode_labels.php`:423 — `'html' => sku_barcode_label_banner_html('BATCH ' . $letter),`
-- `includes/sku_barcodes.php`:1524 — `'html' => sku_barcode_label_banner_html($bannerText),`
+- `includes/rts_barcode_labels.php`:427 — `'html' => sku_barcode_label_banner_html($bannerText),`
+- `includes/sku_barcodes.php`:1544 — `'html' => sku_barcode_label_banner_html($bannerText),`
 
 ## sku_barcode_render_packed_label_sheet {#sku_barcode_render_packed_label_sheet}
 
 **Callers (3):**
 
 - `includes/honey_warehouse_barcodes.php`:349 — `return sku_barcode_render_packed_label_sheet(`
-- `includes/rts_barcode_labels.php`:464 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
-- `includes/sku_barcodes.php`:1542 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
+- `includes/rts_barcode_labels.php`:468 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
+- `includes/sku_barcodes.php`:1562 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
 
 ## sku_barcode_combined_label_sheet_html {#sku_barcode_combined_label_sheet_html}
 
 **Callers (2):**
 
 - `api/v1/sku_barcodes.php`:125 — `$html = sku_barcode_combined_label_sheet_html($pdo, $groups);`
-- `includes/sku_barcodes.php`:1554 — `return sku_barcode_combined_label_sheet_html($pdo, [`
+- `includes/sku_barcodes.php`:1574 — `return sku_barcode_combined_label_sheet_html($pdo, [`
 
 ## sku_barcode_label_sheet_html {#sku_barcode_label_sheet_html}
 

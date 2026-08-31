@@ -862,3 +862,7 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-08-31 — Static pouch request batch validation
 - **What we did:** Static SKU pouch requests no longer require an operator-entered batch code; the backend creates an internal legacy reference while printing continues from Barcode Settings.
 - **Record:** [[problems/records/2026-08-31_dept-pouch-request-stale-batch-validation]]
+
+### 2026-08-31 — Barcode sheet requested-item banners
+- **What we did:** Barcode sheet banners now identify the requested Honey size/variant or department product instead of generic BATCH A/B text, while supplier/date labels retain their legacy fallback.
+- **Record:** [[problems/records/2026-08-31_barcode-sheet-requested-item-banner]]
