@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-09-01T04:04:09+02:00
+generated: 2026-09-01T10:05:17+02:00
 type: module
 function_count: 59
 ---
@@ -48,10 +48,10 @@ function_count: 59
 - `includes/inventory_check.php`:883 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
 - `includes/pack_cancel_restock.php`:101 — `$sizeLabel = honey_bottle_size_label($size);`
 - `includes/pack_cancel_restock.php`:144 — `$sizeLabel = $isHoney ? honey_bottle_size_label($size) : dept_pouch_unit_singular($productKey);`
-- `includes/pos_unified.php`:147 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`
-- `includes/pos_unified.php`:152 — `'size_label' => honey_bottle_size_label($size),`
-- `includes/pos_unified.php`:202 — `ucfirst($variant) . ' · ' . honey_bottle_size_label($size)`
-- `includes/pos_unified.php`:208 — `'size_label' => honey_bottle_size_label($size),`
+- `includes/pos_unified.php`:117 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`
+- `includes/pos_unified.php`:122 — `'size_label' => honey_bottle_size_label($size),`
+- `includes/pos_unified.php`:172 — `ucfirst($variant) . ' · ' . honey_bottle_size_label($size)`
+- `includes/pos_unified.php`:178 — `'size_label' => honey_bottle_size_label($size),`
 - `includes/rts_barcode_labels.php`:99 — `'size_label' => $size !== null ? honey_bottle_size_label($size) : null,`
 - `includes/rts_barcode_labels.php`:258 — `'No SKU barcode for ' . ucfirst($variant) . ' ' . honey_bottle_size_label($size)`
 - _… and 13 more (run impact.php for full list)_
@@ -458,7 +458,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/bottle_barcodes.php`:589 — `api_ok(['barcode' => honey_bottle_pos_lookup(ims_pdo(), $code)]);`
-- `includes/pos_unified.php`:189 — `$honey = honey_bottle_pos_lookup($pdo, $code);`
+- `includes/pos_unified.php`:159 — `$honey = honey_bottle_pos_lookup($pdo, $code);`
 
 ## honey_bottle_pos_consume {#honey_bottle_pos_consume}
 
@@ -466,10 +466,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/honey_pos.php`:412 — `honey_bottle_pos_consume($pdo, $unitIds, $saleId, 1);`
-- `includes/honey_pos.php`:639 — `honey_bottle_pos_consume($pdo, $unitIds, $saleId, 1);`
-- `includes/pos_unified.php`:487 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
-- `includes/pos_unified.php`:649 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
+- `includes/honey_pos.php`:416 — `honey_bottle_pos_consume($pdo, $unitIds, $saleId, 1);`
+- `includes/honey_pos.php`:647 — `honey_bottle_pos_consume($pdo, $unitIds, $saleId, 1);`
+- `includes/pos_unified.php`:459 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
+- `includes/pos_unified.php`:623 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
 
 ## honey_bottle_opened_return_scan {#honey_bottle_opened_return_scan}
 

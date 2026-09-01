@@ -483,13 +483,21 @@ function honey_sales_fetch_checkouts(
 
     $offset = ($page - 1) * $perPage;
     $hasUserSeller = honey_sales_pos_has_sold_by_user($pdo);
+    $hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');
     $sellerJoin = $hasUserSeller
         ? ' LEFT JOIN users su ON su.id = ps.sold_by_user_id LEFT JOIN pos_pins sp ON sp.id = ps.sold_by_pin_id'
         : ' LEFT JOIN pos_pins sp ON sp.id = ps.sold_by_pin_id';
-    $sellerSelect = $hasUserSeller
-        ? "COALESCE(NULLIF(TRIM(su.name), ''), NULLIF(TRIM(sp.label), ''), 'POS') AS sold_by_name"
-        : "COALESCE(NULLIF(TRIM(sp.label), ''), 'POS') AS sold_by_name";
-    $sellerGroup = $hasUserSeller ? ', su.name, sp.label' : ', sp.label';
+    if ($hasSellerName) {
+        $sellerSelect = $hasUserSeller
+            ? "COALESCE(NULLIF(TRIM(ps.seller_name), ''), NULLIF(TRIM(su.name), ''), NULLIF(TRIM(sp.label), ''), 'POS') AS sold_by_name"
+            : "COALESCE(NULLIF(TRIM(ps.seller_name), ''), NULLIF(TRIM(sp.label), ''), 'POS') AS sold_by_name";
+        $sellerGroup = $hasUserSeller ? ', ps.seller_name, su.name, sp.label' : ', ps.seller_name, sp.label';
+    } else {
+        $sellerSelect = $hasUserSeller
+            ? "COALESCE(NULLIF(TRIM(su.name), ''), NULLIF(TRIM(sp.label), ''), 'POS') AS sold_by_name"
+            : "COALESCE(NULLIF(TRIM(sp.label), ''), 'POS') AS sold_by_name";
+        $sellerGroup = $hasUserSeller ? ', su.name, sp.label' : ', sp.label';
+    }
     $listSql = "SELECT ps.id AS sale_id, ps.receipt_no, ps.sale_date AS sold_at,
                        ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount,
                        ps.buyer_name, ps.buyer_credentials, COALESCE(ps.is_ar, 0) AS is_ar,

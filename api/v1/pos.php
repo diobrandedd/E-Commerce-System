@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../includes/dept_pos.php';
 require_once __DIR__ . '/../../includes/pos_unified.php';
 require_once __DIR__ . '/../../includes/pos_discount_requests.php';
 require_once __DIR__ . '/../../includes/ar_credits.php';
+require_once __DIR__ . '/../../includes/pos_sales_helpers.php';
 
 /**
  * Walk-in POS terminal API. Requires a POS PIN session (`ims_login_pos()`)
@@ -42,6 +43,27 @@ function api_pos_require_session(): void
         return;
     }
     api_require_permission('pos.sell');
+}
+
+/**
+ * @return array{buyer_name: string, buyer_credentials: string, seller_name: string}
+ */
+function api_pos_checkout_identity(array $input): array
+{
+    $buyerName = trim((string) ($input['buyer_name'] ?? ''));
+    $sellerName = trim((string) ($input['seller_name'] ?? ''));
+    if ($buyerName === '') {
+        throw new RuntimeException('Customer name is required.');
+    }
+    if ($sellerName === '') {
+        throw new RuntimeException('Seller name is required.');
+    }
+
+    return [
+        'buyer_name' => $buyerName,
+        'buyer_credentials' => trim((string) ($input['buyer_credentials'] ?? '')),
+        'seller_name' => $sellerName,
+    ];
 }
 
 function api_pos_products(): void
@@ -92,13 +114,18 @@ function api_pos_dept_checkout(): void
 
     $pinId = (int) ($_SESSION['pos_pin_id'] ?? 0);
     $items = is_array($input['items'] ?? null) ? $input['items'] : [];
-    $buyerName = trim((string) ($input['buyer_name'] ?? 'Walk-in'));
-    $buyerCreds = trim((string) ($input['buyer_credentials'] ?? ''));
+    try {
+        $identity = api_pos_checkout_identity($input);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+        return;
+    }
     $stockSource = strtolower(trim((string) ($input['stock_source'] ?? 'packaging')));
 
     try {
-        $result = dept_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds, [
+        $result = dept_pos_checkout(ims_pdo(), $pinId, $items, $identity['buyer_name'], $identity['buyer_credentials'], [
             'stock_source' => $stockSource,
+            'seller_name' => $identity['seller_name'],
         ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
@@ -115,8 +142,12 @@ function api_pos_checkout(): void
     api_pos_require_session();
 
     $items = is_array($input['items'] ?? null) ? $input['items'] : [];
-    $buyerName = trim((string) ($input['buyer_name'] ?? 'Walk-in'));
-    $buyerCreds = trim((string) ($input['buyer_credentials'] ?? ''));
+    try {
+        $identity = api_pos_checkout_identity($input);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+        return;
+    }
     $pinId = (int) ($_SESSION['pos_pin_id'] ?? 0);
 
     if ($pinId < 1) {
@@ -129,6 +160,7 @@ function api_pos_checkout(): void
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
+        $seller = pos_sales_seller_insert($pdo, ['pin_id' => $pinId, 'user_id' => null], $identity['seller_name']);
         $total = 0.0;
         $cleanItems = [];
         foreach ($items as $entry) {
@@ -162,17 +194,16 @@ function api_pos_checkout(): void
         $receiptNo = sprintf('RCP-%s', strtoupper(bin2hex(random_bytes(4))));
         $insSale = $pdo->prepare(
             'INSERT INTO pos_sales (
-                receipt_no, buyer_name, buyer_credentials, subtotal_amount, discount_percent, discount_amount, total_amount, sold_by_pin_id, sale_date
-             ) VALUES (?, ?, ?, ?, NULL, 0, ?, ?, NOW())'
+                receipt_no, buyer_name, buyer_credentials, subtotal_amount, discount_percent, discount_amount, total_amount, ' . $seller['sql_cols'] . ', sale_date
+             ) VALUES (?, ?, ?, ?, NULL, 0, ?, ' . $seller['sql_vals'] . ', NOW())'
         );
-        $insSale->execute([
+        $insSale->execute(array_merge([
             $receiptNo,
-            $buyerName !== '' ? $buyerName : 'Walk-in',
-            $buyerCreds === '' ? null : $buyerCreds,
+            $identity['buyer_name'],
+            $identity['buyer_credentials'] === '' ? null : $identity['buyer_credentials'],
             $total,
             $total,
-            $pinId,
-        ]);
+        ], $seller['params']));
         $saleId = (int) $pdo->lastInsertId();
 
         $insLine = $pdo->prepare(
@@ -203,7 +234,8 @@ function api_pos_checkout(): void
         'receipt_no' => $receiptNo,
         'total' => $total,
         'items' => $cleanItems,
-        'buyer_name' => $buyerName !== '' ? $buyerName : 'Walk-in',
+        'buyer_name' => $identity['buyer_name'],
+        'seller_name' => $identity['seller_name'],
     ]);
 }
 
@@ -216,13 +248,18 @@ function api_pos_honey_checkout(): void
 
     $pinId = (int) ($_SESSION['pos_pin_id'] ?? 0);
     $items = is_array($input['items'] ?? null) ? $input['items'] : [];
-    $buyerName = trim((string) ($input['buyer_name'] ?? 'Walk-in'));
-    $buyerCreds = trim((string) ($input['buyer_credentials'] ?? ''));
+    try {
+        $identity = api_pos_checkout_identity($input);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+        return;
+    }
     $stockSource = strtolower(trim((string) ($input['stock_source'] ?? 'packaging')));
 
     try {
-        $result = honey_pos_checkout(ims_pdo(), $pinId, $items, $buyerName, $buyerCreds, [
+        $result = honey_pos_checkout(ims_pdo(), $pinId, $items, $identity['buyer_name'], $identity['buyer_credentials'], [
             'stock_source' => $stockSource,
+            'seller_name' => $identity['seller_name'],
         ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
@@ -257,6 +294,11 @@ function api_pos_honey_ar_checkout(): void
     }
     $debtorName = trim((string) ($input['debtor_name'] ?? ''));
     $debtorMobile = trim((string) ($input['debtor_mobile'] ?? ''));
+    $sellerName = trim((string) ($input['seller_name'] ?? ''));
+    if ($sellerName === '') {
+        api_fail('Seller name is required.', 422);
+        return;
+    }
 
     try {
         $result = honey_pos_ar_checkout(ims_pdo(), $pinId, $items, [
@@ -265,6 +307,7 @@ function api_pos_honey_ar_checkout(): void
             'debtor_mobile' => $debtorMobile,
         ], [
             'stock_source' => strtolower(trim((string) ($input['stock_source'] ?? 'packaging'))),
+            'seller_name' => $sellerName,
         ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
@@ -288,6 +331,11 @@ function api_pos_dept_ar_checkout(): void
     }
     $debtorName = trim((string) ($input['debtor_name'] ?? ''));
     $debtorMobile = trim((string) ($input['debtor_mobile'] ?? ''));
+    $sellerName = trim((string) ($input['seller_name'] ?? ''));
+    if ($sellerName === '') {
+        api_fail('Seller name is required.', 422);
+        return;
+    }
 
     try {
         $result = dept_pos_ar_checkout(ims_pdo(), $pinId, $items, [
@@ -296,6 +344,7 @@ function api_pos_dept_ar_checkout(): void
             'debtor_mobile' => $debtorMobile,
         ], [
             'stock_source' => strtolower(trim((string) ($input['stock_source'] ?? 'packaging'))),
+            'seller_name' => $sellerName,
         ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
@@ -373,15 +422,20 @@ function api_pos_unified_checkout(): void
     api_pos_require_session();
 
     $items = is_array($input['items'] ?? null) ? $input['items'] : [];
-    $buyerName = trim((string) ($input['buyer_name'] ?? 'Walk-in'));
-    $buyerCreds = trim((string) ($input['buyer_credentials'] ?? ''));
+    try {
+        $identity = api_pos_checkout_identity($input);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+        return;
+    }
     $discountPercent = (int) ($input['discount_percent'] ?? 0);
     $discountRequestId = isset($input['discount_request_id']) ? (int) $input['discount_request_id'] : null;
 
     try {
-        $result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $buyerName, $buyerCreds, [
+        $result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $identity['buyer_name'], $identity['buyer_credentials'], [
             'discount_percent' => $discountPercent,
             'discount_request_id' => $discountRequestId,
+            'seller_name' => $identity['seller_name'],
         ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
@@ -404,13 +458,18 @@ function api_pos_unified_ar_checkout(): void
     }
     $debtorName = trim((string) ($input['debtor_name'] ?? ''));
     $debtorMobile = trim((string) ($input['debtor_mobile'] ?? ''));
+    $sellerName = trim((string) ($input['seller_name'] ?? ''));
+    if ($sellerName === '') {
+        api_fail('Seller name is required.', 422);
+        return;
+    }
 
     try {
         $result = pos_unified_ar_checkout(ims_pdo(), pos_session_actor(), $items, [
             'debtor_user_id' => $debtorUserId,
             'debtor_name' => $debtorName,
             'debtor_mobile' => $debtorMobile,
-        ]);
+        ], $sellerName);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

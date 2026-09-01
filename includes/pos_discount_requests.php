@@ -328,9 +328,11 @@ function pos_discount_request_fetch_for_pin(PDO $pdo, int $requestId, int $posPi
 /** @return array<string,mixed> */
 function pos_discount_receipt_payload(PDO $pdo, int $saleId): array
 {
+    $hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');
     $stSale = $pdo->prepare(
-        'SELECT id, receipt_no, buyer_name, subtotal_amount, discount_percent, discount_amount, total_amount
-         FROM pos_sales
+        'SELECT id, receipt_no, buyer_name, subtotal_amount, discount_percent, discount_amount, total_amount'
+        . ($hasSellerName ? ', seller_name' : '')
+        . ' FROM pos_sales
          WHERE id = ?
          LIMIT 1'
     );
@@ -367,6 +369,7 @@ function pos_discount_receipt_payload(PDO $pdo, int $saleId): array
         'sale_id' => (int) $sale['id'],
         'receipt_no' => (string) $sale['receipt_no'],
         'buyer_name' => (string) $sale['buyer_name'],
+        'seller_name' => $hasSellerName ? (string) ($sale['seller_name'] ?? '') : '',
         'subtotal' => (float) ($sale['subtotal_amount'] ?? $sale['total_amount']),
         'discount_percent' => $sale['discount_percent'] !== null ? (int) $sale['discount_percent'] : null,
         'discount_amount' => (float) ($sale['discount_amount'] ?? 0),

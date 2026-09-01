@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-09-01T04:04:00+02:00
+generated: 2026-09-01T10:05:08+02:00
 type: module
 function_count: 17
 ---
@@ -153,8 +153,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (7):**
 
-- `includes/dept_pos.php`:264 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
-- `includes/dept_pos.php`:413 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
+- `includes/dept_pos.php`:268 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
+- `includes/dept_pos.php`:421 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
 - `includes/dept_pouch_barcodes.php`:1081 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
 - `includes/finished_leak_damage.php`:231 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
 - `includes/honey_bottle_barcodes.php`:1890 — `dept_inventory_deduct($pdo, $productKey, 1.0);`

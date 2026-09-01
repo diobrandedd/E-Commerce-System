@@ -41,6 +41,7 @@ interface POSARCheckoutPanelProps {
 export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCheckoutPanelProps) {
   const [debtor, setDebtor] = useState<StaffDebtorValue>({ debtor_user_id: null, debtor_name: "" });
   const [mobile, setMobile] = useState("");
+  const [sellerName, setSellerName] = useState("");
   const [stockSource, setStockSource] = useState<PosStockSource>("packaging");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +62,10 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
     const debtorName = debtor.debtor_name.trim();
     if (!debtorName) {
       setError("Debtor name is required.");
+      return;
+    }
+    if (!sellerName.trim()) {
+      setError("Seller name is required.");
       return;
     }
     if (lines.length === 0) {
@@ -146,6 +151,7 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
         debtor_user_id: debtor.debtor_user_id,
         debtor_name: debtorName,
         debtor_mobile: mobile.trim(),
+        seller_name: sellerName.trim(),
         stock_source: resolvedSource,
       });
       onSuccess(result);
@@ -209,6 +215,17 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
           </div>
         </label>
         <label className="block text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+          Seller <span className="text-destructive">*</span>
+          <input
+            value={sellerName}
+            onChange={e => setSellerName(e.target.value)}
+            placeholder="Who sold this order?"
+            className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+            disabled={submitting}
+            required
+          />
+        </label>
+        <label className="block text-xs uppercase tracking-wide text-muted-foreground font-semibold">
           Mobile (optional)
           <input
             value={mobile}
@@ -251,7 +268,7 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
         </ActionFeedbackButton>
         <ActionFeedbackButton
           variant="confirm"
-          disabled={submitting || !debtor.debtor_name.trim()}
+          disabled={submitting || !debtor.debtor_name.trim() || !sellerName.trim()}
           flashOnClick={false}
           onClick={() => void submit()}
           className="font-bold bg-red-600 hover:bg-red-700 border-red-600"

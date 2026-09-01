@@ -38,6 +38,7 @@ export interface HoneyCheckoutResult {
   discount_amount?: number;
   total: number;
   buyer_name: string;
+  seller_name?: string;
   items: {
     product_id: number;
     qty: number;

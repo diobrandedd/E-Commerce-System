@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-09-01T04:04:33+02:00
+generated: 2026-09-01T10:05:42+02:00
 type: module
 function_count: 25
 ---
@@ -46,8 +46,8 @@ function_count: 25
 
 - `api/v1/rts.php`:284 — `if ($pool === 'sellable' && !rts_sellable_from_cases_enabled(ims_pdo())) {`
 - `includes/dept_pos.php`:112 — `if (!rts_sellable_from_cases_enabled($pdo)) {`
-- `includes/honey_pos.php`:342 — `if (!rts_sellable_from_cases_enabled($pdo)) {`
-- `includes/honey_pos.php`:573 — `if (!rts_sellable_from_cases_enabled($pdo)) {`
+- `includes/honey_pos.php`:347 — `if (!rts_sellable_from_cases_enabled($pdo)) {`
+- `includes/honey_pos.php`:582 — `if (!rts_sellable_from_cases_enabled($pdo)) {`
 - `includes/rts_case_handlers.php`:513 — `if ($pool === 'rts_sellable' && !rts_sellable_from_cases_enabled($pdo)) {`
 - `includes/rts_inventory_sync.php`:52 — `$sellableFromCases = rts_sellable_from_cases_enabled($pdo);`
 - `includes/rts_inventory_sync.php`:267 — `'sellable_from_cases' => rts_sellable_from_cases_enabled($pdo),`
@@ -150,8 +150,8 @@ function_count: 25
 - `api/v1/rts.php`:293 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_bottle_barcodes.php`:1822 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_bottle_barcodes.php`:2065 — `rts_inventory_deduct_sell_honey_variant(`
-- `includes/honey_pos.php`:414 — `rts_inventory_deduct_sell_honey_variant(`
-- `includes/honey_pos.php`:641 — `rts_inventory_deduct_sell_honey_variant(`
+- `includes/honey_pos.php`:418 — `rts_inventory_deduct_sell_honey_variant(`
+- `includes/honey_pos.php`:649 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/sku_barcodes.php`:1155 — `rts_inventory_deduct_sell_honey_variant(`
 
 ## rts_inventory_deduct_sell_other_label {#rts_inventory_deduct_sell_other_label}
@@ -161,8 +161,8 @@ function_count: 25
 **Callers (6):**
 
 - `api/v1/rts.php`:303 — `rts_inventory_deduct_sell_other_label(`
-- `includes/dept_pos.php`:246 — `rts_inventory_deduct_sell_other_label(`
-- `includes/dept_pos.php`:395 — `rts_inventory_deduct_sell_other_label(`
+- `includes/dept_pos.php`:250 — `rts_inventory_deduct_sell_other_label(`
+- `includes/dept_pos.php`:403 — `rts_inventory_deduct_sell_other_label(`
 - `includes/dept_pouch_barcodes.php`:1068 — `rts_inventory_deduct_sell_other_label(`
 - `includes/honey_bottle_barcodes.php`:1877 — `rts_inventory_deduct_sell_other_label(`
 - `includes/sku_barcodes.php`:1232 — `rts_inventory_deduct_sell_other_label(`
@@ -232,8 +232,8 @@ function_count: 25
 
 **Callers (2):**
 
-- `includes/honey_pos.php`:349 — `? rts_inventory_available_honey($pdo, $variant, $size, 'sellable')`
-- `includes/honey_pos.php`:580 — `? rts_inventory_available_honey($pdo, $variant, $size, 'sellable')`
+- `includes/honey_pos.php`:354 — `? rts_inventory_available_honey($pdo, $variant, $size, 'sellable')`
+- `includes/honey_pos.php`:589 — `? rts_inventory_available_honey($pdo, $variant, $size, 'sellable')`
 
 ## rts_inventory_available_other {#rts_inventory_available_other}
 

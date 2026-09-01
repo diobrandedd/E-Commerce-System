@@ -48,6 +48,7 @@ export const posUnifiedApi = {
   checkout: (payload: {
     items: Array<Record<string, unknown>>;
     buyer_name: string;
+    seller_name: string;
     buyer_credentials?: string;
     discount_percent?: number;
     discount_request_id?: number;

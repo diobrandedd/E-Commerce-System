@@ -18,6 +18,10 @@ import {
   CartLineMotion,
 } from "@/app/components/pos/posMotion";
 import { POSARCheckoutPanel, type POSARCheckoutResult } from "@/app/components/pos/POSARCheckoutPanel";
+import {
+  checkoutIdentityReady,
+  POSCheckoutIdentityFields,
+} from "@/app/components/pos/POSCheckoutIdentityFields";
 import { POSStockSourceModal, type PosStockSource } from "@/app/components/pos/POSStockSourceModal";
 import { useAuth } from "@/app/context/AuthContext";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
@@ -65,6 +69,7 @@ export function POSDeptPage() {
   const [requestingDiscount, setRequestingDiscount] = useState<number | null>(null);
   const [pendingRequest, setPendingRequest] = useState<DeptDiscountRequestResult | null>(null);
   const [buyerName, setBuyerName] = useState("");
+  const [sellerName, setSellerName] = useState("");
   const [buyerCreds, setBuyerCreds] = useState("");
   const [receipt, setReceipt] = useState<HoneyCheckoutResult | null>(null);
   const [feedback, setFeedback] = useState<"success" | "error" | null>(null);
@@ -117,6 +122,7 @@ export function POSDeptPage() {
     setShowCheckout(false);
     setCart([]);
     setBuyerName("");
+    setSellerName("");
     setBuyerCreds("");
     setArNotice(`AR recorded ${result.receipt_no} for ${result.debtor_name}`);
     setFeedback("success");
@@ -153,6 +159,7 @@ export function POSDeptPage() {
     discount_amount: result.discount_amount,
     total: result.total,
     buyer_name: result.buyer_name,
+    seller_name: result.seller_name,
     items: result.items.map(i => ({
       product_id: i.product_id,
       qty: i.qty,
@@ -244,7 +251,8 @@ export function POSDeptPage() {
     try {
       const result = await apiPost<DeptCheckoutResult>("pos.php", "dept_checkout", {
         items: cartPayload,
-        buyer_name: buyerName.trim() || "Walk-in",
+        buyer_name: buyerName.trim(),
+        seller_name: sellerName.trim(),
         buyer_credentials: buyerCreds.trim(),
         stock_source: stockSource,
       });
@@ -255,8 +263,9 @@ export function POSDeptPage() {
         setFeedback(null);
         setReceipt(mapReceipt(result));
         setCart([]);
-        setBuyerName("");
-        setBuyerCreds("");
+    setBuyerName("");
+    setSellerName("");
+    setBuyerCreds("");
         void loadCatalog();
       }, 650);
     } catch (e) {
@@ -270,8 +279,8 @@ export function POSDeptPage() {
 
   const submitDiscountRequest = async (discountPercent: 10 | 20) => {
     if (cart.length === 0) return;
-    if (!buyerName.trim()) {
-      setError("Customer name is required for discount approval.");
+    if (!checkoutIdentityReady(buyerName, sellerName)) {
+      setError("Customer name and seller are required for discount approval.");
       return;
     }
     setRequestingDiscount(discountPercent);
@@ -304,8 +313,9 @@ export function POSDeptPage() {
         if (status.status === "approved" && status.receipt) {
           setPendingRequest(null);
           setCart([]);
-          setBuyerName("");
-          setBuyerCreds("");
+    setBuyerName("");
+    setSellerName("");
+    setBuyerCreds("");
           setReceipt(mapReceipt(status.receipt));
           void loadCatalog();
           return;
@@ -480,24 +490,16 @@ export function POSDeptPage() {
         <div className="bg-card rounded-2xl border w-full p-5 shadow-lg">
           <h3 className="font-bold text-lg mb-4 text-center">Confirm order</h3>
           <div className="space-y-2 mb-4">
-            <label className="block text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-              Customer name
-              <input
-                value={buyerName}
-                onChange={e => setBuyerName(e.target.value)}
-                placeholder="Walk-in customer"
-                className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-              Credentials (optional)
-              <input
-                value={buyerCreds}
-                onChange={e => setBuyerCreds(e.target.value)}
-                placeholder="ID / note"
-                className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
-              />
-            </label>
+            <POSCheckoutIdentityFields
+              buyerName={buyerName}
+              onBuyerNameChange={setBuyerName}
+              sellerName={sellerName}
+              onSellerNameChange={setSellerName}
+              buyerCreds={buyerCreds}
+              onBuyerCredsChange={setBuyerCreds}
+              labelClassName="block text-xs uppercase tracking-wide text-muted-foreground font-semibold"
+              inputClassName="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+            />
           </div>
           <div className="space-y-2 text-sm mb-4 text-center max-h-32 overflow-y-auto">
             {cart.map(line => (
@@ -517,7 +519,7 @@ export function POSDeptPage() {
             </ActionFeedbackButton>
             <ActionFeedbackButton
               variant="confirm"
-              disabled={checkingOut}
+              disabled={checkingOut || !checkoutIdentityReady(buyerName, sellerName)}
               flashOnClick={false}
               onClick={() => {
                 setShowCheckout(false);
@@ -531,7 +533,7 @@ export function POSDeptPage() {
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              disabled={requestingDiscount !== null || checkingOut || !buyerName.trim()}
+              disabled={requestingDiscount !== null || checkingOut || !checkoutIdentityReady(buyerName, sellerName)}
               onClick={() => void submitDiscountRequest(10)}
               className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 disabled:opacity-50 transition-transform active:scale-[0.98]"
             >
@@ -539,7 +541,7 @@ export function POSDeptPage() {
             </button>
             <button
               type="button"
-              disabled={requestingDiscount !== null || checkingOut || !buyerName.trim()}
+              disabled={requestingDiscount !== null || checkingOut || !checkoutIdentityReady(buyerName, sellerName)}
               onClick={() => void submitDiscountRequest(20)}
               className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50 transition-transform active:scale-[0.98]"
             >

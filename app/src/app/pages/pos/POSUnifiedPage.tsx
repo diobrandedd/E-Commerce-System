@@ -17,6 +17,10 @@ import {
   CartLineMotion,
 } from "@/app/components/pos/posMotion";
 import { POSARCheckoutPanel, type POSARCheckoutResult } from "@/app/components/pos/POSARCheckoutPanel";
+import {
+  checkoutIdentityReady,
+  POSCheckoutIdentityFields,
+} from "@/app/components/pos/POSCheckoutIdentityFields";
 import { useAuth } from "@/app/context/AuthContext";
 import { ApiError } from "@/app/lib/api";
 import { playScanBeep } from "@/app/lib/scanBeep";
@@ -49,6 +53,7 @@ export function POSUnifiedPage() {
   const [arNotice, setArNotice] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [buyerName, setBuyerName] = useState("");
+  const [sellerName, setSellerName] = useState("");
   const [buyerCreds, setBuyerCreds] = useState("");
   const [receipt, setReceipt] = useState<HoneyCheckoutResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -180,12 +185,17 @@ export function POSUnifiedPage() {
 
   const checkout = async (discountPercent = 0) => {
     if (cart.length === 0 || !pricedCart) return;
+    if (!checkoutIdentityReady(buyerName, sellerName)) {
+      setError("Customer name and seller are required.");
+      return;
+    }
     setCheckingOut(true);
     setError(null);
     try {
       const result = await posUnifiedApi.checkout({
         items: unifiedCartPayload(cart),
-        buyer_name: buyerName.trim() || "Walk-in",
+        buyer_name: buyerName.trim(),
+        seller_name: sellerName.trim(),
         buyer_credentials: buyerCreds.trim(),
         discount_percent: discountPercent,
       });
@@ -195,6 +205,7 @@ export function POSUnifiedPage() {
         setReceipt(result);
         setCart([]);
         setBuyerName("");
+        setSellerName("");
         setBuyerCreds("");
       }, 650);
     } catch (e) {
@@ -210,6 +221,7 @@ export function POSUnifiedPage() {
     setShowCheckout(false);
     setCart([]);
     setBuyerName("");
+    setSellerName("");
     setBuyerCreds("");
     setArNotice(`AR recorded ${result.receipt_no} for ${result.debtor_name}`);
     setFeedback("success");
@@ -383,32 +395,29 @@ export function POSUnifiedPage() {
       <POSModal open={showCheckout} onClose={() => setShowCheckout(false)} panelClassName="max-w-md">
         <div className="bg-card rounded-2xl border w-full p-5 space-y-4">
           <h3 className="font-bold text-lg">Checkout</h3>
-          <label className="block text-xs text-muted-foreground">
-            Customer name
-            <input
-              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-              value={buyerName}
-              onChange={e => setBuyerName(e.target.value)}
-              placeholder="Walk-in"
-            />
-          </label>
-          <label className="block text-xs text-muted-foreground">
-            Credentials (optional)
-            <input
-              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-              value={buyerCreds}
-              onChange={e => setBuyerCreds(e.target.value)}
-            />
-          </label>
+          <POSCheckoutIdentityFields
+            buyerName={buyerName}
+            onBuyerNameChange={setBuyerName}
+            sellerName={sellerName}
+            onSellerNameChange={setSellerName}
+            buyerCreds={buyerCreds}
+            onBuyerCredsChange={setBuyerCreds}
+          />
           <p className="text-sm font-semibold">Total: {peso(subtotal)}</p>
           <div className="flex flex-wrap gap-2">
-            <ActionFeedbackButton onClick={() => void checkout(0)} disabled={checkingOut} className="flex-1 py-2.5 text-sm font-bold text-white rounded-xl" style={{ background: "#C8900A" }}>
+            <ActionFeedbackButton
+              onClick={() => void checkout(0)}
+              disabled={checkingOut || !checkoutIdentityReady(buyerName, sellerName)} className="flex-1 py-2.5 text-sm font-bold text-white rounded-xl" style={{ background: "#C8900A" }}>
               {checkingOut ? <Loader2 className="animate-spin mx-auto" size={18} /> : "Pay full price"}
             </ActionFeedbackButton>
-            <ActionFeedbackButton onClick={() => void checkout(10)} disabled={checkingOut} className="px-3 py-2 text-xs border rounded-lg">
+            <ActionFeedbackButton
+              onClick={() => void checkout(10)}
+              disabled={checkingOut || !checkoutIdentityReady(buyerName, sellerName)} className="px-3 py-2 text-xs border rounded-lg">
               10% off · {peso(subtotal * 0.9)}
             </ActionFeedbackButton>
-            <ActionFeedbackButton onClick={() => void checkout(20)} disabled={checkingOut} className="px-3 py-2 text-xs border rounded-lg">
+            <ActionFeedbackButton
+              onClick={() => void checkout(20)}
+              disabled={checkingOut || !checkoutIdentityReady(buyerName, sellerName)} className="px-3 py-2 text-xs border rounded-lg">
               20% off · {peso(subtotal * 0.8)}
             </ActionFeedbackButton>
           </div>

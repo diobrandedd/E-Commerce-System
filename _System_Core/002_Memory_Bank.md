@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-01 — POS required customer + manual seller
+**Change:** Checkout and AR require customer name and manually entered seller (`pos_sales.seller_name`); no walk-in default or session-derived seller. Run `migration_phase74_pos_seller_name.sql`. → [[problems/records/2026-09-01_pos-required-customer-seller-name]]
+
 ### 2026-09-01 — SKU hex color barcodes + legacy scan
 **Change:** Settings + DB use hex SKU codes (e.g. `F54927` light 350ml); pre-2026 text stickers (`350mlL`, `1LiterD`, …) still scan via alias map. Run `migration_phase73_sku_hex_codes.sql`. → [[problems/records/2026-09-01_sku-hex-barcode-legacy-scan]]
 

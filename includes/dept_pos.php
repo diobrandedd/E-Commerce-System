@@ -184,9 +184,14 @@ function dept_pos_build_cart_lines(PDO $pdo, array $items, float $discountFactor
  */
 function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerName, string $buyerCreds, array $opts = []): array
 {
+    require_once __DIR__ . '/pos_sales_helpers.php';
     if ($posPinId < 1) {
         throw new RuntimeException('POS session is invalid.');
     }
+
+    $buyerName = pos_normalize_buyer_name($buyerName);
+    $sellerName = pos_normalize_seller_name((string) ($opts['seller_name'] ?? ''));
+    $seller = pos_sales_seller_insert($pdo, ['pin_id' => $posPinId, 'user_id' => null], $sellerName);
 
     $discountPercent = isset($opts['discount_percent']) ? (int) $opts['discount_percent'] : 0;
     if (!in_array($discountPercent, [0, 10, 20], true)) {
@@ -217,19 +222,18 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
         $insSale = $pdo->prepare(
             'INSERT INTO pos_sales (
                 receipt_no, buyer_name, buyer_credentials, subtotal_amount,
-                discount_percent, discount_amount, total_amount, sold_by_pin_id, sale_date
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+                discount_percent, discount_amount, total_amount, ' . $seller['sql_cols'] . ', sale_date
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ' . $seller['sql_vals'] . ', NOW())'
         );
-        $insSale->execute([
+        $insSale->execute(array_merge([
             $receiptNo,
-            $buyerName !== '' ? $buyerName : 'Walk-in',
+            $buyerName,
             $buyerCreds === '' ? null : $buyerCreds,
             $subtotal,
             $discountPercent > 0 ? $discountPercent : null,
             $discountAmount,
             $total,
-            $posPinId,
-        ]);
+        ], $seller['params']));
         $saleId = (int) $pdo->lastInsertId();
 
         $insLine = $pdo->prepare(
@@ -312,7 +316,8 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
             'line_total' => $l['line_total'],
             'name' => $l['name'],
         ], $cleanLines),
-        'buyer_name' => $buyerName !== '' ? $buyerName : 'Walk-in',
+        'buyer_name' => $buyerName,
+        'seller_name' => $sellerName,
     ];
 }
 
@@ -329,12 +334,16 @@ function dept_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyerN
  */
 function dept_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debtor, array $opts = []): array
 {
+    require_once __DIR__ . '/pos_sales_helpers.php';
     if ($posPinId < 1) {
         throw new RuntimeException('POS session is invalid.');
     }
     if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {
         throw new RuntimeException('AR checkout requires migration phase 50 (pos_sales.is_ar).');
     }
+
+    $sellerName = pos_normalize_seller_name((string) ($opts['seller_name'] ?? ''));
+    $seller = pos_sales_seller_insert($pdo, ['pin_id' => $posPinId, 'user_id' => null], $sellerName);
 
     $debtorName = trim((string) ($debtor['debtor_name'] ?? ''));
     if ($debtorName === '') {
@@ -367,17 +376,16 @@ function dept_pos_ar_checkout(PDO $pdo, int $posPinId, array $items, array $debt
         $insSale = $pdo->prepare(
             'INSERT INTO pos_sales (
                 receipt_no, buyer_name, buyer_credentials, subtotal_amount,
-                discount_percent, discount_amount, total_amount, is_ar, sold_by_pin_id, sale_date
-             ) VALUES (?, ?, ?, ?, NULL, 0, ?, 1, ?, NOW())'
+                discount_percent, discount_amount, total_amount, is_ar, ' . $seller['sql_cols'] . ', sale_date
+             ) VALUES (?, ?, ?, ?, NULL, 0, ?, 1, ' . $seller['sql_vals'] . ', NOW())'
         );
-        $insSale->execute([
+        $insSale->execute(array_merge([
             $receiptNo,
             $debtorName,
             $debtorMobile === '' ? null : $debtorMobile,
             $subtotal,
             $total,
-            $posPinId,
-        ]);
+        ], $seller['params']));
         $saleId = (int) $pdo->lastInsertId();
 
         $insLine = $pdo->prepare(

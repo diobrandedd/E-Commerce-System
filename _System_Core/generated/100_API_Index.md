@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-01T04:03:53+02:00
+generated: 2026-09-01T10:05:02+02:00
 type: memory-bank
 ---
 
@@ -485,14 +485,14 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/pos.php`
 - **URL:** `/rts/api/v1/pos.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_unified.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_unified.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`, `includes/pos_sales_helpers.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
 | `products` | `api_pos_products()` | `ims_pdo()` |
 | `honey_catalog` | `api_pos_honey_catalog()` | `honey_pos_honey_catalog()`, `ims_pdo()` |
 | `dept_catalog` | `api_pos_dept_catalog()` | `dept_pos_catalog()`, `ims_pdo()` |
-| `checkout` | `api_pos_checkout()` | `ims_pdo()` |
+| `checkout` | `api_pos_checkout()` | `ims_pdo()`, `pos_sales_seller_insert()` |
 | `honey_checkout` | `api_pos_honey_checkout()` | `honey_pos_checkout()`, `ims_pdo()` |
 | `honey_ar_checkout` | `api_pos_honey_ar_checkout()` | `honey_pos_ar_checkout()`, `ims_pdo()` |
 | `dept_checkout` | `api_pos_dept_checkout()` | `dept_pos_checkout()`, `ims_pdo()` |

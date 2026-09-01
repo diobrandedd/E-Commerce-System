@@ -6,6 +6,7 @@ require_once __DIR__ . '/honey_bottle_barcodes.php';
 require_once __DIR__ . '/dept_pouch_barcodes.php';
 require_once __DIR__ . '/honey_pos.php';
 require_once __DIR__ . '/dept_pos.php';
+require_once __DIR__ . '/pos_sales_helpers.php';
 
 /**
  * Current POS cashier: PIN terminal or IMS user with pos.sell.
@@ -28,37 +29,6 @@ function pos_session_actor(): array
     }
 
     return ['pin_id' => null, 'user_id' => (int) $user['id']];
-}
-
-/**
- * @param array{pin_id?: ?int, user_id?: ?int} $actor
- * @return array{sql_cols: string, sql_vals: string, params: list<mixed>}
- */
-function pos_sales_seller_insert(PDO $pdo, array $actor): array
-{
-    $pin = isset($actor['pin_id']) ? (int) $actor['pin_id'] : 0;
-    $user = isset($actor['user_id']) ? (int) $actor['user_id'] : 0;
-    $pinVal = $pin > 0 ? $pin : null;
-    $userVal = $user > 0 ? $user : null;
-    if ($pinVal === null && $userVal === null) {
-        throw new RuntimeException('POS session is invalid.');
-    }
-    if (honey_pos_column_exists($pdo, 'pos_sales', 'sold_by_user_id')) {
-        return [
-            'sql_cols' => 'sold_by_pin_id, sold_by_user_id',
-            'sql_vals' => '?, ?',
-            'params' => [$pinVal, $userVal],
-        ];
-    }
-    if ($pinVal === null) {
-        throw new RuntimeException('Run sql/migration_phase65_pos_sold_by_user.sql so account POS can record the seller.');
-    }
-
-    return [
-        'sql_cols' => 'sold_by_pin_id',
-        'sql_vals' => '?',
-        'params' => [$pinVal],
-    ];
 }
 
 /**
@@ -427,7 +397,9 @@ function pos_unified_build_cart_lines(PDO $pdo, array $items, float $discountFac
  */
 function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buyerName, string $buyerCreds, array $opts = []): array
 {
-    $seller = pos_sales_seller_insert($pdo, $actor);
+    $buyerName = pos_normalize_buyer_name($buyerName);
+    $sellerName = pos_normalize_seller_name((string) ($opts['seller_name'] ?? ''));
+    $seller = pos_sales_seller_insert($pdo, $actor, $sellerName);
 
     $discountPercent = isset($opts['discount_percent']) ? (int) $opts['discount_percent'] : 0;
     if (!in_array($discountPercent, [0, 10, 20], true)) {
@@ -455,7 +427,7 @@ function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buye
         );
         $insSale->execute(array_merge([
             $receiptNo,
-            $buyerName !== '' ? $buyerName : 'Walk-in',
+            $buyerName,
             $buyerCreds === '' ? null : $buyerCreds,
             $subtotal,
             $discountPercent > 0 ? $discountPercent : null,
@@ -562,7 +534,8 @@ function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buye
         'discount_percent' => $discountPercent > 0 ? $discountPercent : null,
         'discount_amount' => $discountAmount,
         'total' => $total,
-        'buyer_name' => $buyerName !== '' ? $buyerName : 'Walk-in',
+        'buyer_name' => $buyerName,
+        'seller_name' => $sellerName,
         'items' => array_map(static fn ($l) => [
             'product_id' => $l['product_id'],
             'qty' => $l['qty'],
@@ -585,9 +558,10 @@ function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buye
  * @param array{debtor_user_id?: int|null, debtor_name: string, debtor_mobile?: string|null} $debtor
  * @return array<string, mixed>
  */
-function pos_unified_ar_checkout(PDO $pdo, array $actor, array $items, array $debtor): array
+function pos_unified_ar_checkout(PDO $pdo, array $actor, array $items, array $debtor, string $sellerName): array
 {
-    $seller = pos_sales_seller_insert($pdo, $actor);
+    $sellerName = pos_normalize_seller_name($sellerName);
+    $seller = pos_sales_seller_insert($pdo, $actor, $sellerName);
     if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {
         throw new RuntimeException('AR checkout requires migration phase 50 (pos_sales.is_ar).');
     }

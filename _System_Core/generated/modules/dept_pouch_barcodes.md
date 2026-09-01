@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-09-01T04:04:01+02:00
+generated: 2026-09-01T10:05:09+02:00
 type: module
 function_count: 36
 ---
@@ -132,7 +132,7 @@ function_count: 36
 
 **Callers (3):**
 
-- `includes/dept_pouch_barcodes.php`:81 — `return dept_pouch_normalize_batch_no(`
+- `includes/dept_pouch_barcodes.php`:83 — `return dept_pouch_normalize_batch_no('SKU-' . $slug . '-' . date('ymdHis'));`
 - `includes/dept_pouch_barcodes.php`:208 — `: dept_pouch_normalize_batch_no($batchNo);`
 - `includes/dept_pouch_barcodes.php`:467 — `$batchNo = dept_pouch_normalize_batch_no($batchNo);`
 
@@ -311,16 +311,16 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/dept_pouch_barcodes.php`:398 — `api_ok(['barcode' => dept_pouch_pos_lookup(ims_pdo(), $code)]);`
-- `includes/pos_unified.php`:222 — `$dept = dept_pouch_pos_lookup($pdo, $code);`
+- `includes/pos_unified.php`:192 — `$dept = dept_pouch_pos_lookup($pdo, $code);`
 
 ## dept_pouch_pos_consume {#dept_pouch_pos_consume}
 
 **Callers (4):**
 
-- `includes/dept_pos.php`:262 — `dept_pouch_pos_consume($pdo, $unitIds, $saleId);`
-- `includes/dept_pos.php`:411 — `dept_pouch_pos_consume($pdo, $unitIds, $saleId);`
-- `includes/pos_unified.php`:502 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
-- `includes/pos_unified.php`:664 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
+- `includes/dept_pos.php`:266 — `dept_pouch_pos_consume($pdo, $unitIds, $saleId);`
+- `includes/dept_pos.php`:419 — `dept_pouch_pos_consume($pdo, $unitIds, $saleId);`
+- `includes/pos_unified.php`:474 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
+- `includes/pos_unified.php`:638 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
 
 ## dept_pouch_rts_receive {#dept_pouch_rts_receive}
 

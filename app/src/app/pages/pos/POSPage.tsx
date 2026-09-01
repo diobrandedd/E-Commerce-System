@@ -4,6 +4,11 @@ import { Plus, Minus, Trash2, Printer, LogOut, AlertCircle, Loader2 } from "luci
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { useAuth } from "@/app/context/AuthContext";
+import { printPosThermalReceipt } from "@/app/lib/posThermalPrint";
+import {
+  checkoutIdentityReady,
+  POSCheckoutIdentityFields,
+} from "@/app/components/pos/POSCheckoutIdentityFields";
 
 interface POSProduct {
   id: number;
@@ -21,6 +26,7 @@ interface CheckoutResult {
   receipt_no: string;
   total: number;
   buyer_name: string;
+  seller_name?: string;
   items: { product_id: number; qty: number; unit_price: number; line_total: number; name: string }[];
 }
 
@@ -34,6 +40,7 @@ export function POSPage() {
   const [error, setError] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [buyer, setBuyer] = useState("");
+  const [seller, setSeller] = useState("");
   const [buyerCreds, setBuyerCreds] = useState("");
   const [checkingOut, setCheckingOut] = useState(false);
   const [receipt, setReceipt] = useState<CheckoutResult | null>(null);
@@ -67,12 +74,17 @@ export function POSPage() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
+    if (!checkoutIdentityReady(buyer, seller)) {
+      setError("Customer name and seller are required.");
+      return;
+    }
     setCheckingOut(true);
     setError(null);
     try {
       const result = await apiPost<CheckoutResult>("pos.php", "checkout", {
         items: cart.map(i => ({ product_id: i.product.id, qty: i.qty })),
-        buyer_name: buyer,
+        buyer_name: buyer.trim(),
+        seller_name: seller.trim(),
         buyer_credentials: buyerCreds,
       });
       setReceipt(result);
@@ -100,7 +112,12 @@ export function POSPage() {
             <p className="text-xs text-muted-foreground">{new Date().toLocaleString("en-PH")}</p>
           </div>
           <div className="border-t border-dashed border-border pt-4 mb-4">
-            <p className="text-xs text-muted-foreground mb-3">Buyer: <span className="text-foreground font-semibold">{receipt.buyer_name}</span></p>
+            <p className="text-xs text-muted-foreground mb-1">Buyer: <span className="text-foreground font-semibold">{receipt.buyer_name}</span></p>
+            {receipt.seller_name?.trim() ? (
+              <p className="text-xs text-muted-foreground mb-3">Seller: <span className="text-foreground font-semibold">{receipt.seller_name.trim()}</span></p>
+            ) : (
+              <div className="mb-3" />
+            )}
             <div className="space-y-2">
               {receipt.items.map((item, idx) => (
                 <div key={idx} className="flex justify-between text-xs">
@@ -115,10 +132,25 @@ export function POSPage() {
             <span className="text-xl font-bold" style={{ color: "#C8900A" }}>{peso(receipt.total)}</span>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => window.print()} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold text-white" style={{ background: "#C8900A" }}>
+            <button
+              onClick={() =>
+                printPosThermalReceipt(
+                  {
+                    receipt_no: receipt.receipt_no,
+                    total: receipt.total,
+                    buyer_name: receipt.buyer_name,
+                    seller_name: receipt.seller_name,
+                    items: receipt.items,
+                  },
+                  pyxLogo,
+                )
+              }
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold text-white"
+              style={{ background: "#C8900A" }}
+            >
               <Printer size={15} /> Print
             </button>
-            <button onClick={() => { setCart([]); setBuyer(""); setBuyerCreds(""); setReceipt(null); }} className="flex-1 py-3 rounded-lg text-sm font-semibold border border-border hover:bg-secondary transition-colors text-muted-foreground">
+            <button onClick={() => { setCart([]); setBuyer(""); setSeller(""); setBuyerCreds(""); setReceipt(null); }} className="flex-1 py-3 rounded-lg text-sm font-semibold border border-border hover:bg-secondary transition-colors text-muted-foreground">
               New Sale
             </button>
           </div>
@@ -220,15 +252,24 @@ export function POSPage() {
           </div>
 
           <div className="px-5 py-4 border-t border-border space-y-3">
-            <input value={buyer} onChange={e => setBuyer(e.target.value)} placeholder="Buyer name" className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-[#C8900A] transition-colors" />
-            <input value={buyerCreds} onChange={e => setBuyerCreds(e.target.value)} placeholder="Buyer credentials (optional)" className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A] transition-colors" />
+            <POSCheckoutIdentityFields
+              buyerName={buyer}
+              onBuyerNameChange={setBuyer}
+              sellerName={seller}
+              onSellerNameChange={setSeller}
+              buyerCreds={buyerCreds}
+              onBuyerCredsChange={setBuyerCreds}
+              className="space-y-3"
+              labelClassName="block text-xs text-muted-foreground"
+              inputClassName="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A] transition-colors"
+            />
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Total</span>
               <span className="text-xl font-bold" style={{ color: "#C8900A" }}>{peso(total)}</span>
             </div>
             <button
               onClick={handleCheckout}
-              disabled={cart.length === 0 || checkingOut}
+              disabled={cart.length === 0 || checkingOut || !checkoutIdentityReady(buyer, seller)}
               className="w-full py-3.5 rounded-lg text-sm font-bold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: "#C8900A" }}
             >

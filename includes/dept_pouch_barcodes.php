@@ -78,9 +78,9 @@ function dept_pouch_normalize_batch_no(string $batchNo): string
 
 function dept_pouch_system_request_batch_no(string $productKey): string
 {
-    return dept_pouch_normalize_batch_no(
-        'SKU-' . strtoupper(trim($productKey)) . '-' . date('ymdHis')
-    );
+    $slug = strtoupper(str_replace('_', '-', trim($productKey)));
+
+    return dept_pouch_normalize_batch_no('SKU-' . $slug . '-' . date('ymdHis'));
 }
 
 /**

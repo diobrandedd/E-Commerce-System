@@ -4,6 +4,7 @@ import { Check, Printer } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import { peso, type HoneyCheckoutResult } from "@/app/lib/posHoney";
 import { variantLabel } from "@/app/lib/posHoney";
+import { printPosThermalReceipt } from "@/app/lib/posThermalPrint";
 import { POSPageTransition } from "@/app/components/pos/posMotion";
 
 export function POSReceiptView({
@@ -70,9 +71,16 @@ export function POSReceiptView({
           <p className="text-xs text-muted-foreground">{new Date().toLocaleString("en-PH")}</p>
         </div>
         <div className="border-t border-dashed border-border pt-4 mb-4">
-          <p className="text-xs text-muted-foreground mb-3">
+          <p className="text-xs text-muted-foreground mb-1">
             Buyer: <span className="text-foreground font-semibold">{receipt.buyer_name}</span>
           </p>
+          {receipt.seller_name?.trim() ? (
+            <p className="text-xs text-muted-foreground mb-3">
+              Seller: <span className="text-foreground font-semibold">{receipt.seller_name.trim()}</span>
+            </p>
+          ) : (
+            <div className="mb-3" />
+          )}
           <div className="space-y-2">
             {receipt.items.map((item, idx) => (
               <motion.div
@@ -120,7 +128,7 @@ export function POSReceiptView({
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={() => printPosThermalReceipt(receipt, pyxLogo)}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-semibold text-white transition-transform active:scale-[0.97]"
             style={{ background: "#C8900A" }}
           >

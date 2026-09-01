@@ -40,6 +40,7 @@ export interface DeptCheckoutResult {
     line_total: number;
   }[];
   buyer_name: string;
+  seller_name?: string;
 }
 
 export interface DeptDiscountRequestResult {

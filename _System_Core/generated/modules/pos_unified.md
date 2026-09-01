@@ -1,9 +1,9 @@
 ---
 title: pos_unified
 source: includes/pos_unified.php
-generated: 2026-09-01T04:04:29+02:00
+generated: 2026-09-01T10:05:39+02:00
 type: module
-function_count: 10
+function_count: 9
 ---
 
 
@@ -19,6 +19,7 @@ function_count: 10
 - `includes/dept_pouch_barcodes.php`
 - `includes/honey_pos.php`
 - `includes/dept_pos.php`
+- `includes/pos_sales_helpers.php`
 - `includes/sku_barcodes.php`
 - `includes/sku_barcodes.php`
 - `includes/sku_barcodes.php`
@@ -29,15 +30,8 @@ function_count: 10
 
 **Callers (2):**
 
-- `api/v1/pos.php`:382 — `$result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $buyerName, $buyerCreds, [`
-- `api/v1/pos.php`:409 — `$result = pos_unified_ar_checkout(ims_pdo(), pos_session_actor(), $items, [`
-
-## pos_sales_seller_insert {#pos_sales_seller_insert}
-
-**Callers (2):**
-
-- `includes/pos_unified.php`:430 — `$seller = pos_sales_seller_insert($pdo, $actor);`
-- `includes/pos_unified.php`:590 — `$seller = pos_sales_seller_insert($pdo, $actor);`
+- `api/v1/pos.php`:435 — `$result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
+- `api/v1/pos.php`:468 — `$result = pos_unified_ar_checkout(ims_pdo(), pos_session_actor(), $items, [`
 
 ## pos_unified_resolve_honey_product {#pos_unified_resolve_honey_product}
 
@@ -45,10 +39,10 @@ function_count: 10
 
 **Callers (4):**
 
-- `includes/pos_unified.php`:138 — `$prod = pos_unified_resolve_honey_product($pdo, $variant, $size);`
-- `includes/pos_unified.php`:192 — `$prod = pos_unified_resolve_honey_product($pdo, $variant, $size);`
-- `includes/pos_unified.php`:285 — `$prod = pos_unified_resolve_honey_product($pdo, $variant, $size);`
-- `includes/pos_unified.php`:311 — `$prod = pos_unified_resolve_honey_product($pdo, $variant, $size);`
+- `includes/pos_unified.php`:108 — `$prod = pos_unified_resolve_honey_product($pdo, $variant, $size);`
+- `includes/pos_unified.php`:162 — `$prod = pos_unified_resolve_honey_product($pdo, $variant, $size);`
+- `includes/pos_unified.php`:255 — `$prod = pos_unified_resolve_honey_product($pdo, $variant, $size);`
+- `includes/pos_unified.php`:281 — `$prod = pos_unified_resolve_honey_product($pdo, $variant, $size);`
 
 ## pos_unified_resolve_dept_product {#pos_unified_resolve_dept_product}
 
@@ -56,16 +50,16 @@ function_count: 10
 
 **Callers (4):**
 
-- `includes/pos_unified.php`:163 — `$prod = pos_unified_resolve_dept_product($pdo, $productKey);`
-- `includes/pos_unified.php`:223 — `$prod = pos_unified_resolve_dept_product($pdo, (string) $dept['product_key']);`
-- `includes/pos_unified.php`:357 — `$prod = pos_unified_resolve_dept_product($pdo, $productKey);`
-- `includes/pos_unified.php`:381 — `$prod = pos_unified_resolve_dept_product($pdo, $productKey);`
+- `includes/pos_unified.php`:133 — `$prod = pos_unified_resolve_dept_product($pdo, $productKey);`
+- `includes/pos_unified.php`:193 — `$prod = pos_unified_resolve_dept_product($pdo, (string) $dept['product_key']);`
+- `includes/pos_unified.php`:327 — `$prod = pos_unified_resolve_dept_product($pdo, $productKey);`
+- `includes/pos_unified.php`:351 — `$prod = pos_unified_resolve_dept_product($pdo, $productKey);`
 
 ## pos_unified_lookup {#pos_unified_lookup}
 
 **Callers (1):**
 
-- `api/v1/pos.php`:362 — `api_ok(['barcode' => pos_unified_lookup(ims_pdo(), $code)]);`
+- `api/v1/pos.php`:411 — `api_ok(['barcode' => pos_unified_lookup(ims_pdo(), $code)]);`
 
 ## pos_unified_build_cart_lines {#pos_unified_build_cart_lines}
 
@@ -73,9 +67,9 @@ function_count: 10
 
 **Callers (3):**
 
-- `includes/pos_unified.php`:439 — `$cleanLines = pos_unified_build_cart_lines($pdo, $items, $discountFactor);`
-- `includes/pos_unified.php`:604 — `$cleanLines = pos_unified_build_cart_lines($pdo, $items, 1.0);`
-- `includes/pos_unified.php`:743 — `$clean = pos_unified_build_cart_lines($pdo, $items, $discountFactor);`
+- `includes/pos_unified.php`:411 — `$cleanLines = pos_unified_build_cart_lines($pdo, $items, $discountFactor);`
+- `includes/pos_unified.php`:578 — `$cleanLines = pos_unified_build_cart_lines($pdo, $items, 1.0);`
+- `includes/pos_unified.php`:717 — `$clean = pos_unified_build_cart_lines($pdo, $items, $discountFactor);`
 
 ## pos_unified_checkout {#pos_unified_checkout}
 
@@ -83,7 +77,7 @@ function_count: 10
 
 **Callers (2):**
 
-- `api/v1/pos.php`:382 — `$result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $buyerName, $buyerCreds, [`
+- `api/v1/pos.php`:435 — `$result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
 - `includes/pos_discount_requests.php`:240 — `$result = pos_unified_checkout(`
 
 ## pos_unified_ar_checkout {#pos_unified_ar_checkout}
@@ -92,7 +86,7 @@ function_count: 10
 
 **Callers (1):**
 
-- `api/v1/pos.php`:409 — `$result = pos_unified_ar_checkout(ims_pdo(), pos_session_actor(), $items, [`
+- `api/v1/pos.php`:468 — `$result = pos_unified_ar_checkout(ims_pdo(), pos_session_actor(), $items, [`
 
 ## pos_unified_discount_quote {#pos_unified_discount_quote}
 
