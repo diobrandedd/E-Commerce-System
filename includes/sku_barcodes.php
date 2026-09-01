@@ -48,6 +48,106 @@ function sku_barcode_catalog_slots(): array
     return $slots;
 }
 
+/**
+ * Canonical hex SKU codes (2026-09 color format). Settings + new print jobs use these.
+ *
+ * @return array<string, string> identity key (kind|variant|size|product_key) => code
+ */
+function sku_barcode_default_codes(): array
+{
+    return [
+        'honey|light|liter|' => 'F60000',
+        'honey|amber|liter|' => 'FFBF00',
+        'honey|dark|liter|' => '060000',
+        'honey|light|350ml|' => 'F54927',
+        'honey|amber|350ml|' => '473600',
+        'honey|dark|350ml|' => '023020',
+        'honey|light|250ml|' => 'FFA259',
+        'honey|amber|250ml|' => 'C62828',
+        'honey|dark|250ml|' => '1B1212',
+        'honey|light|gallon|' => 'F08B51',
+        'honey|amber|gallon|' => '621F04',
+        'honey|dark|gallon|' => '1F150C',
+        'dept|||pt' => '00FF00',
+        'dept|||brc' => '7F00FF',
+        'dept|||jar_cacao' => '964B00',
+        'dept|||honey_comb' => 'E37434',
+    ];
+}
+
+/**
+ * Pre-2026-09 text SKU codes still on printed stickers — resolve to the same catalog row.
+ *
+ * @return array<string, array{kind:string,variant:string,size:string,product_key:string}>
+ */
+function sku_barcode_legacy_aliases(): array
+{
+    return [
+        '1literl' => ['kind' => 'honey', 'variant' => 'light', 'size' => 'liter', 'product_key' => ''],
+        '1litera' => ['kind' => 'honey', 'variant' => 'amber', 'size' => 'liter', 'product_key' => ''],
+        '1literd' => ['kind' => 'honey', 'variant' => 'dark', 'size' => 'liter', 'product_key' => ''],
+        '350mll' => ['kind' => 'honey', 'variant' => 'light', 'size' => '350ml', 'product_key' => ''],
+        '350mla' => ['kind' => 'honey', 'variant' => 'amber', 'size' => '350ml', 'product_key' => ''],
+        '350mld' => ['kind' => 'honey', 'variant' => 'dark', 'size' => '350ml', 'product_key' => ''],
+        '250mll' => ['kind' => 'honey', 'variant' => 'light', 'size' => '250ml', 'product_key' => ''],
+        '250mla' => ['kind' => 'honey', 'variant' => 'amber', 'size' => '250ml', 'product_key' => ''],
+        '250mld' => ['kind' => 'honey', 'variant' => 'dark', 'size' => '250ml', 'product_key' => ''],
+        '1gallonl' => ['kind' => 'honey', 'variant' => 'light', 'size' => 'gallon', 'product_key' => ''],
+        '1gallona' => ['kind' => 'honey', 'variant' => 'amber', 'size' => 'gallon', 'product_key' => ''],
+        '1gallond' => ['kind' => 'honey', 'variant' => 'dark', 'size' => 'gallon', 'product_key' => ''],
+        '1pouchpt' => ['kind' => 'dept', 'variant' => '', 'size' => '', 'product_key' => 'pt'],
+        '1pouchbrc' => ['kind' => 'dept', 'variant' => '', 'size' => '', 'product_key' => 'brc'],
+        '1jarcacao' => ['kind' => 'dept', 'variant' => '', 'size' => '', 'product_key' => 'jar_cacao'],
+        '1jarhoney' => ['kind' => 'dept', 'variant' => '', 'size' => '', 'product_key' => 'honey_comb'],
+    ];
+}
+
+function sku_barcode_identity_key(string $kind, string $variant, string $size, string $productKey): string
+{
+    return $kind . '|' . $variant . '|' . $size . '|' . $productKey;
+}
+
+/**
+ * @return array<string, mixed>|null
+ */
+function sku_barcode_fetch_by_identity(
+    PDO $pdo,
+    string $kind,
+    string $variant,
+    string $size,
+    string $productKey
+): ?array {
+    if ($kind === 'honey') {
+        return sku_barcode_fetch_honey($pdo, $variant, $size);
+    }
+
+    return sku_barcode_fetch_dept($pdo, $productKey);
+}
+
+/**
+ * @return array<string, mixed>|null
+ */
+function sku_barcode_fetch_legacy_alias(PDO $pdo, string $rawCode): ?array
+{
+    $key = strtolower(sku_barcode_normalize_code($rawCode));
+    if ($key === '') {
+        return null;
+    }
+    $aliases = sku_barcode_legacy_aliases();
+    if (!isset($aliases[$key])) {
+        return null;
+    }
+    $slot = $aliases[$key];
+
+    return sku_barcode_fetch_by_identity(
+        $pdo,
+        $slot['kind'],
+        $slot['variant'],
+        $slot['size'],
+        $slot['product_key']
+    );
+}
+
 function sku_barcode_normalize_code(string $raw): string
 {
     return preg_replace('/\s+/', '', trim($raw)) ?? '';
@@ -136,8 +236,11 @@ function sku_barcode_fetch_by_code(PDO $pdo, string $rawCode): ?array
     );
     $st->execute([$code]);
     $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row !== false) {
+        return $row;
+    }
 
-    return $row === false ? null : $row;
+    return sku_barcode_fetch_legacy_alias($pdo, $code);
 }
 
 /**
@@ -335,6 +438,7 @@ function sku_barcode_list_settings(PDO $pdo): array
             $slot['size'],
             $slot['product_key']
         );
+        $defaults = sku_barcode_default_codes();
         if (isset($byIdentity[$key])) {
             $out[] = sku_barcode_serialize($byIdentity[$key], $hint);
         } else {
@@ -346,7 +450,7 @@ function sku_barcode_list_settings(PDO $pdo): array
                 'size_label' => $slot['kind'] === 'honey' ? honey_bottle_size_label($slot['size']) : null,
                 'product_key' => $slot['kind'] === 'dept' ? $slot['product_key'] : null,
                 'label' => $slot['label'],
-                'code' => '',
+                'code' => $defaults[$key] ?? '',
                 'selling_price_hint' => $hint,
                 'updated_at' => null,
                 'updated_by_name' => null,

@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-08-31T09:49:41+02:00
+generated: 2026-09-01T04:04:11+02:00
 type: module
 function_count: 47
 ---
@@ -155,7 +155,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/rts_inventory_sync.php`:608 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/rts_inventory_sync.php`:725 — `[$curCol, $initCol] = honey_packaging_size_columns($size);`
 - `includes/rts_inventory_sync.php`:1021 — `[$curCol] = honey_packaging_size_columns($size);`
-- `includes/sku_barcodes.php`:1068 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/sku_barcodes.php`:1172 — `[$curCol] = honey_packaging_size_columns($size);`
 
 ## honey_fetch_warehouse {#honey_fetch_warehouse}
 
@@ -204,7 +204,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:816 — `$pk = honey_fetch_packaging($pdo, $packId);`
 - `includes/honey_inventory.php`:1001 — `$pk = honey_fetch_packaging($pdo, $rowId);`
 - `includes/honey_inventory.php`:1124 — `$pk = honey_fetch_packaging($pdo, $rowId);`
-- `includes/sku_barcodes.php`:895 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
+- `includes/sku_barcodes.php`:999 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
 
 ## honey_fetch_packaging_by_production {#honey_fetch_packaging_by_production}
 

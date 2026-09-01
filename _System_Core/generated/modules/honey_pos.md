@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-08-31T09:49:44+02:00
+generated: 2026-09-01T04:04:14+02:00
 type: module
 function_count: 16
 ---
@@ -41,8 +41,8 @@ function_count: 16
 - `includes/honey_pos.php`:83 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
 - `includes/honey_pricing.php`:135 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
 - `includes/pos_unified.php`:69 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
-- `includes/sku_barcodes.php`:189 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
-- `includes/sku_barcodes.php`:230 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
+- `includes/sku_barcodes.php`:292 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
+- `includes/sku_barcodes.php`:333 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
 
 ## honey_pos_packaging_availability {#honey_pos_packaging_availability}
 

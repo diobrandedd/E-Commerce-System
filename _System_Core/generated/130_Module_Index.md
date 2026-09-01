@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-08-31T09:49:24+02:00
+generated: 2026-09-01T04:03:54+02:00
 type: memory-bank
 ---
 
@@ -77,7 +77,7 @@ type: memory-bank
 | [[modules/rts_storage]] | 16 |
 | [[modules/shopee_spx_packing_list]] | 4 |
 | [[modules/shopee_spx_product_info]] | 12 |
-| [[modules/sku_barcodes]] | 35 |
+| [[modules/sku_barcodes]] | 40 |
 | [[modules/sp_sort_service]] | 26 |
 | [[modules/suppliers]] | 12 |
 | [[modules/tracking_search]] | 4 |

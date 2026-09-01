@@ -1,7 +1,7 @@
 ---
 title: shopee_spx_product_info
 source: includes/shopee_spx_product_info.php
-generated: 2026-08-31T09:50:06+02:00
+generated: 2026-09-01T04:04:37+02:00
 type: module
 function_count: 12
 ---

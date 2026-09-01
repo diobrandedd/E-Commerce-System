@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'pyxfood/rts-system',
-        'pretty_version' => '4.0.0.x-dev',
-        'version' => '4.0.0.9999999-dev',
-        'reference' => '9235f2414fb21f2f4ed7408dde471ab654006a37',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => '3342c3b53780b7e0296bc5800a1f36aa1dda306e',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -92,9 +92,9 @@
             'dev_requirement' => false,
         ),
         'pyxfood/rts-system' => array(
-            'pretty_version' => '4.0.0.x-dev',
-            'version' => '4.0.0.9999999-dev',
-            'reference' => '9235f2414fb21f2f4ed7408dde471ab654006a37',
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '3342c3b53780b7e0296bc5800a1f36aa1dda306e',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

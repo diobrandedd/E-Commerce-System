@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-01 — SKU hex color barcodes + legacy scan
+**Change:** Settings + DB use hex SKU codes (e.g. `F54927` light 350ml); pre-2026 text stickers (`350mlL`, `1LiterD`, …) still scan via alias map. Run `migration_phase73_sku_hex_codes.sql`. → [[problems/records/2026-09-01_sku-hex-barcode-legacy-scan]]
+
 ### 2026-08-28 — Honey warehouse supplier/date barcodes
 **Change:** Added reusable supplier+arrival-date barcode requests and Code128 printing; warehouse scan-out selects the supplier/date/variant, deducts FIFO gallons, logs source events, and aggregates one daily Production row per supplier/date/variant. → [[problems/records/2026-08-28_honey-warehouse-supplier-barcodes]]
 
