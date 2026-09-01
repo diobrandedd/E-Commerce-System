@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-09-01T10:05:44+02:00
+generated: 2026-09-01T10:30:49+02:00
 type: module
 function_count: 13
 ---

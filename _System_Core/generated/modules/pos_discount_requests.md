@@ -1,7 +1,7 @@
 ---
 title: pos_discount_requests
 source: includes/pos_discount_requests.php
-generated: 2026-09-01T10:05:38+02:00
+generated: 2026-09-01T10:30:40+02:00
 type: module
 function_count: 10
 ---
