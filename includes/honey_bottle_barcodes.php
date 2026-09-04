@@ -1782,7 +1782,23 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
         require_once __DIR__ . '/sku_barcodes.php';
         $hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');
         $hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');
+
+        // Unique stickers deduct from their linked packaging batch. SKU qty uses FIFO
+        // across batches. Process uniques first so SKU FIFO cannot empty a batch that
+        // a leftover sticker in this same session still needs.
+        $honeyUniqueItems = [];
+        $honeySkuItems = [];
         foreach ($items as $item) {
+            $skuId = isset($item['sku_id']) ? (int) $item['sku_id'] : 0;
+            $unitId = isset($item['unit_id']) ? (int) $item['unit_id'] : 0;
+            if ($skuId > 0 && $unitId < 1) {
+                $honeySkuItems[] = $item;
+            } else {
+                $honeyUniqueItems[] = $item;
+            }
+        }
+
+        foreach (array_merge($honeyUniqueItems, $honeySkuItems) as $item) {
             $skuId = isset($item['sku_id']) ? (int) $item['sku_id'] : 0;
             $unitId = isset($item['unit_id']) ? (int) $item['unit_id'] : 0;
             if ($skuId > 0 && $unitId < 1) {
@@ -1798,7 +1814,7 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
                     $size,
                     $qty,
                     $pool,
-                    $packId,
+                    $packId > 0 ? $packId : null,
                     'parcel',
                     null,
                     $sessionId
@@ -1848,7 +1864,19 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
             ]);
         }
 
+        $deptUniqueItems = [];
+        $deptSkuItems = [];
         foreach ($deptItems as $item) {
+            $skuId = isset($item['sku_id']) ? (int) $item['sku_id'] : 0;
+            $unitId = isset($item['unit_id']) ? (int) $item['unit_id'] : 0;
+            if ($skuId > 0 && $unitId < 1) {
+                $deptSkuItems[] = $item;
+            } else {
+                $deptUniqueItems[] = $item;
+            }
+        }
+
+        foreach (array_merge($deptUniqueItems, $deptSkuItems) as $item) {
             $skuId = isset($item['sku_id']) ? (int) $item['sku_id'] : 0;
             $unitId = isset($item['unit_id']) ? (int) $item['unit_id'] : 0;
             if ($skuId > 0 && $unitId < 1) {

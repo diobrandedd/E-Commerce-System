@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-09-01T10:30:07+02:00
+generated: 2026-09-04T03:39:15+02:00
 type: module
 function_count: 36
 ---
@@ -84,7 +84,7 @@ function_count: 36
 - `includes/honey_bottle_barcodes.php`:1220 — `$productLabel = dept_pouch_product_label($productKey);`
 - `includes/honey_bottle_barcodes.php`:1584 — `'product_label' => dept_pouch_product_label($productKey),`
 - `includes/honey_bottle_barcodes.php`:1669 — `$productLabel = dept_pouch_product_label($productKey);`
-- `includes/honey_bottle_barcodes.php`:1880 — `dept_pouch_product_label($productKey),`
+- `includes/honey_bottle_barcodes.php`:1908 — `dept_pouch_product_label($productKey),`
 - `includes/inventory_check.php`:201 — `'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey),`
 - `includes/inventory_check.php`:418 — `'variant' => dept_pouch_product_label($productKey),`
 - `includes/inventory_check.php`:516 — `$productLabel = $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey);`

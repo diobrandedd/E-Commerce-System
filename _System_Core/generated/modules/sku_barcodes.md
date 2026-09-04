@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-09-01T10:30:52+02:00
+generated: 2026-09-04T03:39:51+02:00
 type: module
 function_count: 40
 ---
@@ -287,7 +287,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/honey_bottle_barcodes.php`:1794 — `sku_barcode_honey_deduct(`
+- `includes/honey_bottle_barcodes.php`:1810 — `sku_barcode_honey_deduct(`
 - `includes/pos_unified.php`:446 — `sku_barcode_honey_deduct(`
 - `includes/pos_unified.php`:610 — `sku_barcode_honey_deduct(`
 
@@ -295,7 +295,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/honey_bottle_barcodes.php`:1858 — `sku_barcode_dept_deduct($pdo, $userId, $productKey, $qty, $pool, 'parcel');`
+- `includes/honey_bottle_barcodes.php`:1886 — `sku_barcode_dept_deduct($pdo, $userId, $productKey, $qty, $pool, 'parcel');`
 - `includes/pos_unified.php`:465 — `sku_barcode_dept_deduct(`
 - `includes/pos_unified.php`:629 — `sku_barcode_dept_deduct(`
 

@@ -125,7 +125,8 @@ export function HoneyPackScanPage() {
           </p>
           <p>
             <strong className="text-foreground">Confirm</strong> deducts honey packaging stock and finished
-            dept stock for each scanned unit.
+            dept stock. Unique stickers are applied first, then SKU quantity lines (so mixed sessions do not
+            empty a batch a leftover sticker still needs).
           </p>
           <p>
             <strong className="text-foreground">History</strong> — read-only list of confirmed pack sessions.

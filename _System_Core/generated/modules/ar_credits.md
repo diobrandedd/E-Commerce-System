@@ -1,7 +1,7 @@
 ---
 title: ar_credits
 source: includes/ar_credits.php
-generated: 2026-09-01T10:30:01+02:00
+generated: 2026-09-04T03:39:09+02:00
 type: module
 function_count: 9
 ---
@@ -26,7 +26,7 @@ function_count: 9
 **Callers (2):**
 
 - `api/v1/ar.php`:44 — `api_ok(['staff' => ar_staff_picker_list(ims_pdo())]);`
-- `api/v1/pos.php`:276 — `api_ok(['staff' => ar_staff_picker_list(ims_pdo())]);`
+- `api/v1/pos.php`:279 — `api_ok(['staff' => ar_staff_picker_list(ims_pdo())]);`
 
 ## ar_credits_list_scope {#ar_credits_list_scope}
 

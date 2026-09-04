@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-09-01T10:30:00+02:00
+generated: 2026-09-04T03:39:08+02:00
 type: memory-bank
-edge_count: 394
+edge_count: 395
 ---
 
 
@@ -77,6 +77,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/pos.php` | `includes/honey_pos.php` |
 | `api/v1/pos.php` | `includes/pos_discount_requests.php` |
 | `api/v1/pos.php` | `includes/pos_sales_helpers.php` |
+| `api/v1/pos.php` | `includes/pos_thermal_print.php` |
 | `api/v1/pos.php` | `includes/pos_unified.php` |
 | `api/v1/pos_discounts.php` | `api/v1/_bootstrap.php` |
 | `api/v1/pos_discounts.php` | `includes/pos_discount_requests.php` |

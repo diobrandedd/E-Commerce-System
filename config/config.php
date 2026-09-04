@@ -16,4 +16,7 @@ return [
         'root' => 'C:/xampp/htdocs/rts_storage',
         'web_base' => '/rts_storage',
     ],
+    // Exact name from Windows Printers & scanners (silent ESC/POS print)
+    'pos_thermal_printer' => 'POS-58(copy of 1)',
+    'pos_thermal_port' => '',
 ];

@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-09-01T10:30:22+02:00
+generated: 2026-09-04T03:39:28+02:00
 type: module
 function_count: 16
 ---
@@ -69,7 +69,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `api/v1/pos.php`:90 — `api_ok(honey_pos_honey_catalog(ims_pdo()));`
+- `api/v1/pos.php`:93 — `api_ok(honey_pos_honey_catalog(ims_pdo()));`
 
 ## honey_pos_available_qty {#honey_pos_available_qty}
 
@@ -140,7 +140,7 @@ function_count: 16
 
 **Callers (2):**
 
-- `api/v1/pos.php`:260 — `$result = honey_pos_checkout(ims_pdo(), $pinId, $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
+- `api/v1/pos.php`:263 — `$result = honey_pos_checkout(ims_pdo(), $pinId, $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
 - `includes/pos_discount_requests.php`:258 — `$result = honey_pos_checkout(`
 
 ## honey_pos_ar_checkout {#honey_pos_ar_checkout}
@@ -149,7 +149,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `api/v1/pos.php`:304 — `$result = honey_pos_ar_checkout(ims_pdo(), $pinId, $items, [`
+- `api/v1/pos.php`:307 — `$result = honey_pos_ar_checkout(ims_pdo(), $pinId, $items, [`
 
 ## pos_sale_recalc_totals {#pos_sale_recalc_totals}
 

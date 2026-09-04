@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-01T10:30:00+02:00
+generated: 2026-09-04T03:39:08+02:00
 type: memory-bank
 ---
 
@@ -485,7 +485,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/pos.php`
 - **URL:** `/rts/api/v1/pos.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_unified.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`, `includes/pos_sales_helpers.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_unified.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`, `includes/pos_sales_helpers.php`, `includes/pos_thermal_print.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
@@ -503,6 +503,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `staff_picker` | `api_pos_staff_picker()` | `ar_staff_picker_list()`, `ims_pdo()` |
 | `discount_request_create` | `api_pos_discount_request_create()` | `pos_discount_request_create()`, `ims_pdo()` |
 | `discount_request_status` | `api_pos_discount_request_status()` | `pos_discount_request_fetch_for_pin()`, `ims_pdo()` |
+| `thermal_print` | `api_pos_thermal_print()` | `pos_thermal_print_raw()`, `pos_thermal_print_config()` |
 
 ### `pos_discounts.php`
 

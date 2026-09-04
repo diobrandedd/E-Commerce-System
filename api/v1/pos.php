@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../includes/pos_unified.php';
 require_once __DIR__ . '/../../includes/pos_discount_requests.php';
 require_once __DIR__ . '/../../includes/ar_credits.php';
 require_once __DIR__ . '/../../includes/pos_sales_helpers.php';
+require_once __DIR__ . '/../../includes/pos_thermal_print.php';
 
 /**
  * Walk-in POS terminal API. Requires a POS PIN session (`ims_login_pos()`)
@@ -18,6 +19,7 @@ require_once __DIR__ . '/../../includes/pos_sales_helpers.php';
  *   GET  ?action=honey_catalog    -> honey variants, sizes, on-hand, prices
  *   POST ?action=checkout         -> legacy flat product checkout
  *   POST ?action=honey_checkout   -> honey cart with packaging deduct + sales log
+ *   POST ?action=thermal_print    -> silent ESC/POS raw print (no browser dialog)
  */
 
 api_dispatch([
@@ -35,6 +37,7 @@ api_dispatch([
     'staff_picker' => 'api_pos_staff_picker',
     'discount_request_create' => 'api_pos_discount_request_create',
     'discount_request_status' => 'api_pos_discount_request_status',
+    'thermal_print' => 'api_pos_thermal_print',
 ]);
 
 function api_pos_require_session(): void
@@ -475,4 +478,37 @@ function api_pos_unified_ar_checkout(): void
     }
 
     api_ok($result);
+}
+
+/**
+ * Silent thermal print — raw ESC/POS to the Windows POS printer (no browser dialog).
+ */
+function api_pos_thermal_print(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_pos_require_session();
+
+    $b64 = trim((string) ($input['escpos_base64'] ?? ''));
+    if ($b64 === '') {
+        api_fail('escpos_base64 is required.', 422);
+    }
+    $raw = base64_decode($b64, true);
+    if ($raw === false || $raw === '') {
+        api_fail('Invalid escpos_base64.', 422);
+    }
+
+    try {
+        pos_thermal_print_raw($raw);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+
+    $cfg = pos_thermal_print_config();
+    api_ok([
+        'printed' => true,
+        'printer' => $cfg['printer'],
+        'port' => $cfg['port'] !== '' ? $cfg['port'] : null,
+    ]);
 }

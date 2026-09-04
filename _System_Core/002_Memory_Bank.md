@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-04 — Pack confirm mixed SKU + unique
+**Change:** Pack confirm processes unique stickers before SKU qty so FIFO cannot empty a batch a leftover sticker in the same session still needs. → [[problems/records/2026-09-04_pack-confirm-mixed-sku-unique]]
+
+### 2026-09-03 — POS mobile receipt print
+**Change:** Silent POS print — ESC/POS via `pos.php?action=thermal_print` + Winspool (no Chrome dialog). Set `pos_thermal_printer` in config.php. → [[problems/records/2026-09-03_pos-mobile-receipt-print]]
+
 ### 2026-09-01 — POS required customer + manual seller
 **Change:** Checkout and AR require customer name and manually entered seller (`pos_sales.seller_name`); no walk-in default or session-derived seller. Run `migration_phase74_pos_seller_name.sql`. → [[problems/records/2026-09-01_pos-required-customer-seller-name]]
 

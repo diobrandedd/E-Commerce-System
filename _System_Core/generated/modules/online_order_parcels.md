@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-09-01T10:30:30+02:00
+generated: 2026-09-04T03:39:35+02:00
 type: module
 function_count: 29
 ---

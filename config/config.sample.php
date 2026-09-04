@@ -35,4 +35,12 @@ return [
     ],
 
     // Mobile HTTPS / ngrok: see config/forwarding.sample.php (separate file).
+
+    /**
+     * Silent POS receipt printer (Windows). Exact name from Printers & scanners.
+     * Example: 'POS-58' or 'POS-58(copy of 1)'
+     * Optional COM port for USB-serial: 'COM3'
+     */
+    'pos_thermal_printer' => 'POS-58',
+    'pos_thermal_port' => '',
 ];

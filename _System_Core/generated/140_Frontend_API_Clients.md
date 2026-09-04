@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-09-01T10:30:57+02:00
+generated: 2026-09-04T03:39:55+02:00
 type: memory-bank
 ---
 
@@ -39,6 +39,7 @@ Backend index: [[100_API_Index]]
 | `app/src/app/lib/materials.ts` | `materials.php` |
 | `app/src/app/lib/onlineOrdersApi.ts` | `online_orders.php` |
 | `app/src/app/lib/parcelsApi.ts` | `parcels.php` |
+| `app/src/app/lib/posThermalPrint.ts` | `pos.php` |
 | `app/src/app/pages/InventoryRequestsPage.tsx` | `pos_discounts.php` |
 | `app/src/app/pages/RTSPage.tsx` | `rts.php` |
 | `app/src/app/pages/exec/MonthlyInventoryPage.tsx` | `rts.php` |
