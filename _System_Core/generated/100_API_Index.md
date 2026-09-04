@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-04T04:55:24+02:00
+generated: 2026-09-04T05:33:38+02:00
 type: memory-bank
 ---
 
@@ -503,7 +503,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `staff_picker` | `api_pos_staff_picker()` | `ar_staff_picker_list()`, `ims_pdo()` |
 | `discount_request_create` | `api_pos_discount_request_create()` | `pos_discount_request_create()`, `ims_pdo()` |
 | `discount_request_status` | `api_pos_discount_request_status()` | `pos_discount_request_fetch_for_pin()`, `ims_pdo()` |
-| `thermal_print` | `api_pos_thermal_print()` | `pos_thermal_print_raw()`, `pos_thermal_print_config()` |
+| `thermal_print` | `api_pos_thermal_print()` | `pos_thermal_print_text()`, `pos_thermal_print_raw()`, `pos_thermal_print_config()` |
 
 ### `pos_discounts.php`
 

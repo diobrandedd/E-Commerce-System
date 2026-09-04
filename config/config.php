@@ -16,7 +16,8 @@ return [
         'root' => 'C:/xampp/htdocs/rts_storage',
         'web_base' => '/rts_storage',
     ],
-    // Exact name from Windows Printers & scanners (silent ESC/POS print)
-    'pos_thermal_printer' => 'POS-58(copy of 1)',
+    // Exact Windows printer name for silent POS print (GDI via driver — same as Chrome).
+    // Use vendor "POS-58" on USB. Avoid POS-58-RAW / copy-of LPT queues for this path.
+    'pos_thermal_printer' => 'POS-58',
     'pos_thermal_port' => '',
 ];

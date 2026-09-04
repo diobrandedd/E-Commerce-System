@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-04 — Sales history reprint
+**Change:** Executive Sales walk-in history expanded row has **Reprint** — rebuilds receipt from `pos_sales` / `pos_receipt_items` and opens Chrome print (no PDF storage).
+
+### 2026-09-04 — POS silent print via GDI driver
+**Change:** Silent POS print uses Windows GDI text (`pos_gdi_print.ps1`) to vendor `POS-58` — same driver path as Chrome. RAW ESC/POS was queuing but not moving paper. → [[problems/records/2026-09-03_pos-mobile-receipt-print]]
+
 ### 2026-09-04 — Unique pack FIFO fallback
 **Change:** Unique sticker pack/POS deduct tries linked batch then FIFO other packaging rows of same variant+size when the linked aggregate is empty. → [[problems/records/2026-09-04_unique-pack-fifo-fallback]]
 

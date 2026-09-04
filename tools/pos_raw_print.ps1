@@ -10,6 +10,9 @@ if (-not (Test-Path -LiteralPath $FilePath)) {
 }
 
 $bytes = [System.IO.File]::ReadAllBytes($FilePath)
+if ($bytes.Length -lt 1) {
+  throw "Print file is empty: $FilePath"
+}
 
 Add-Type -TypeDefinition @"
 using System;
@@ -35,12 +38,6 @@ public class PyxRawPrinter {
   [DllImport("winspool.Drv", EntryPoint = "EndDocPrinter", SetLastError = true)]
   public static extern bool EndDocPrinter(IntPtr hPrinter);
 
-  [DllImport("winspool.Drv", EntryPoint = "StartPagePrinter", SetLastError = true)]
-  public static extern bool StartPagePrinter(IntPtr hPrinter);
-
-  [DllImport("winspool.Drv", EntryPoint = "EndPagePrinter", SetLastError = true)]
-  public static extern bool EndPagePrinter(IntPtr hPrinter);
-
   [DllImport("winspool.Drv", EntryPoint = "WritePrinter", SetLastError = true)]
   public static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes, Int32 dwCount, out Int32 dwWritten);
 
@@ -50,29 +47,27 @@ public class PyxRawPrinter {
       throw new Exception("OpenPrinter failed for '" + printer + "' (error " + Marshal.GetLastWin32Error() + ")");
     }
     try {
+      // RAW jobs must NOT call StartPagePrinter/EndPagePrinter (MSDN).
       DOCINFOA di = new DOCINFOA();
       di.pDocName = "Pyx POS receipt";
+      di.pOutputFile = null;
       di.pDataType = "RAW";
       if (!StartDocPrinter(hPrinter, 1, di)) {
         throw new Exception("StartDocPrinter failed (error " + Marshal.GetLastWin32Error() + ")");
       }
       try {
-        if (!StartPagePrinter(hPrinter)) {
-          throw new Exception("StartPagePrinter failed (error " + Marshal.GetLastWin32Error() + ")");
-        }
+        IntPtr p = Marshal.AllocHGlobal(data.Length);
         try {
-          IntPtr p = Marshal.AllocHGlobal(data.Length);
-          try {
-            Marshal.Copy(data, 0, p, data.Length);
-            int written;
-            if (!WritePrinter(hPrinter, p, data.Length, out written) || written != data.Length) {
-              throw new Exception("WritePrinter failed (error " + Marshal.GetLastWin32Error() + ")");
-            }
-          } finally {
-            Marshal.FreeHGlobal(p);
+          Marshal.Copy(data, 0, p, data.Length);
+          int written;
+          if (!WritePrinter(hPrinter, p, data.Length, out written)) {
+            throw new Exception("WritePrinter failed (error " + Marshal.GetLastWin32Error() + ")");
+          }
+          if (written != data.Length) {
+            throw new Exception("WritePrinter wrote " + written + " of " + data.Length + " bytes");
           }
         } finally {
-          EndPagePrinter(hPrinter);
+          Marshal.FreeHGlobal(p);
         }
       } finally {
         EndDocPrinter(hPrinter);
@@ -85,4 +80,4 @@ public class PyxRawPrinter {
 "@
 
 [PyxRawPrinter]::Send($PrinterName, $bytes)
-Write-Output "OK"
+Write-Output ("OK wrote " + $bytes.Length + " bytes")

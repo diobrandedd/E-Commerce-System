@@ -19,7 +19,7 @@ require_once __DIR__ . '/../../includes/pos_thermal_print.php';
  *   GET  ?action=honey_catalog    -> honey variants, sizes, on-hand, prices
  *   POST ?action=checkout         -> legacy flat product checkout
  *   POST ?action=honey_checkout   -> honey cart with packaging deduct + sales log
- *   POST ?action=thermal_print    -> silent ESC/POS raw print (no browser dialog)
+ *   POST ?action=thermal_print    -> silent receipt print via Windows printer driver (no browser dialog)
  */
 
 api_dispatch([
@@ -481,7 +481,7 @@ function api_pos_unified_ar_checkout(): void
 }
 
 /**
- * Silent thermal print — raw ESC/POS to the Windows POS printer (no browser dialog).
+ * Silent thermal print — GDI text via Windows printer driver (same path as Chrome; no dialog).
  */
 function api_pos_thermal_print(): void
 {
@@ -490,17 +490,25 @@ function api_pos_thermal_print(): void
     api_require_csrf($input);
     api_pos_require_session();
 
-    $b64 = trim((string) ($input['escpos_base64'] ?? ''));
-    if ($b64 === '') {
-        api_fail('escpos_base64 is required.', 422);
-    }
-    $raw = base64_decode($b64, true);
-    if ($raw === false || $raw === '') {
-        api_fail('Invalid escpos_base64.', 422);
-    }
+    $text = (string) ($input['receipt_text'] ?? '');
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
+    $text = trim($text);
 
     try {
-        pos_thermal_print_raw($raw);
+        if ($text !== '') {
+            pos_thermal_print_text($text);
+        } else {
+            // Legacy ESC/POS path (often stuck in queue on vendor POS-58 drivers)
+            $b64 = trim((string) ($input['escpos_base64'] ?? ''));
+            if ($b64 === '') {
+                api_fail('receipt_text is required.', 422);
+            }
+            $raw = base64_decode($b64, true);
+            if ($raw === false || $raw === '') {
+                api_fail('Invalid escpos_base64.', 422);
+            }
+            pos_thermal_print_raw($raw);
+        }
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }
@@ -510,5 +518,6 @@ function api_pos_thermal_print(): void
         'printed' => true,
         'printer' => $cfg['printer'],
         'port' => $cfg['port'] !== '' ? $cfg['port'] : null,
+        'mode' => $text !== '' ? 'gdi' : 'raw',
     ]);
 }

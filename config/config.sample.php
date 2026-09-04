@@ -38,8 +38,8 @@ return [
 
     /**
      * Silent POS receipt printer (Windows). Exact name from Printers & scanners.
-     * Example: 'POS-58' or 'POS-58(copy of 1)'
-     * Optional COM port for USB-serial: 'COM3'
+     * Uses GDI text via the driver (same path as Chrome print, no dialog).
+     * Prefer the vendor queue that works with Chrome (e.g. POS-58 on USB).
      */
     'pos_thermal_printer' => 'POS-58',
     'pos_thermal_port' => '',

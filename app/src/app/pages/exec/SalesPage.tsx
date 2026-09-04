@@ -1,11 +1,14 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Loader2, Package, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, Package, Printer, Search, X } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { HoneyVariantPieGrid, type VariantChart } from "@/app/components/honey/HoneyVariantPieGrid";
 import { AppSectionEnter, AppErrorBanner, appHoverCard, appHoverRow } from "@/app/components/layout/appFeedbackMotion";
+import { Button } from "@/app/components/ui/button";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet, ApiError } from "@/app/lib/api";
 import { peso, variantLabel } from "@/app/lib/posHoney";
+import { printPosThermalReceipt, type PosThermalReceipt } from "@/app/lib/posThermalPrint";
+import pyxLogo from "@/imports/pyxfoodpr.png";
 
 type PeriodFilter = "all" | "day" | "date" | "week" | "month" | "year" | "custom";
 type SaleTypeFilter = "all" | "regular" | "discount" | "ar";
@@ -136,6 +139,30 @@ function itemSummary(items: CheckoutItem[]): string {
     return `${itemLabel(i)} ×${fmtQty(i.qty)}`;
   }
   return `${items.length} line items`;
+}
+
+/** Rebuild thermal receipt from stored sale lines (no PDF on disk). */
+function checkoutToThermalReceipt(row: CheckoutRow): PosThermalReceipt {
+  return {
+    receipt_no: row.receipt_no,
+    total: row.total_amount,
+    buyer_name: row.buyer_name?.trim() || "Walk-in",
+    seller_name: row.sold_by_name?.trim() || "POS",
+    subtotal: row.subtotal_amount,
+    discount_percent: row.discount_percent ?? null,
+    discount_amount: row.discount_amount,
+    items: row.items.map(it => ({
+      product_id: 0,
+      name: it.name || it.label || "Item",
+      variant: it.variant || undefined,
+      size: it.size_label || it.size || undefined,
+      qty: it.qty,
+      list_unit_price: it.list_unit_price,
+      unit_price: it.unit_price,
+      line_subtotal: it.line_subtotal,
+      line_total: it.line_total,
+    })),
+  };
 }
 
 export function SalesPage() {
@@ -611,16 +638,31 @@ export function SalesPage() {
                           {expanded && (
                             <tr key={`${row.sale_id}-detail`} className="border-b border-border/60 bg-secondary/10">
                               <td colSpan={8} className="px-4 py-3">
-                                <p className="text-xs text-muted-foreground mb-2">
-                                  Sold by: <span className="text-foreground font-medium">{row.sold_by_name || "POS"}</span>
-                                  {" · "}
-                                  Sold to: <span className="text-foreground font-medium">{row.buyer_name}</span>
-                                  {row.is_ar && row.buyer_credentials ? (
-                                    <span className="ml-2">
-                                      · Mobile: <span className="text-foreground font-medium">{row.buyer_credentials}</span>
-                                    </span>
-                                  ) : null}
-                                </p>
+                                <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                                  <p className="text-xs text-muted-foreground">
+                                    Sold by: <span className="text-foreground font-medium">{row.sold_by_name || "POS"}</span>
+                                    {" · "}
+                                    Sold to: <span className="text-foreground font-medium">{row.buyer_name}</span>
+                                    {row.is_ar && row.buyer_credentials ? (
+                                      <span className="ml-2">
+                                        · Mobile: <span className="text-foreground font-medium">{row.buyer_credentials}</span>
+                                      </span>
+                                    ) : null}
+                                  </p>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-1.5 shrink-0"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      printPosThermalReceipt(checkoutToThermalReceipt(row), pyxLogo);
+                                    }}
+                                  >
+                                    <Printer size={14} />
+                                    Reprint
+                                  </Button>
+                                </div>
                                 {row.discount_percent ? (
                                   <p className="text-xs text-muted-foreground mb-2">
                                     Subtotal {peso(row.subtotal_amount ?? row.total_amount)} · Discount {row.discount_percent}% (

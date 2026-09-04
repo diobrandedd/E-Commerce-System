@@ -1,7 +1,7 @@
 ---
 title: inventory_check
 source: includes/inventory_check.php
-generated: 2026-09-04T04:55:47+02:00
+generated: 2026-09-04T05:34:03+02:00
 type: module
 function_count: 25
 ---
