@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-04 — Unique pack FIFO fallback
+**Change:** Unique sticker pack/POS deduct tries linked batch then FIFO other packaging rows of same variant+size when the linked aggregate is empty. → [[problems/records/2026-09-04_unique-pack-fifo-fallback]]
+
+### 2026-09-04 — Continuous SKU scan (+1 / typed +N)
+**Change:** Pack, packaging stock-in, and inventory check accept repeated SKU scans as +1; optional Quantity + Add for bulk. Session/check backends increment instead of replace. → [[problems/records/2026-09-04_sku-continuous-scan]]
+
 ### 2026-09-04 — Pack confirm mixed SKU + unique
 **Change:** Pack confirm processes unique stickers before SKU qty so FIFO cannot empty a batch a leftover sticker in the same session still needs. → [[problems/records/2026-09-04_pack-confirm-mixed-sku-unique]]
 

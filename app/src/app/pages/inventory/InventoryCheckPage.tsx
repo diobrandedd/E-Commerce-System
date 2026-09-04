@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Camera, ClipboardCheck, Loader2, Scale, Trash2 } from "lucide-react";
-import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -16,7 +15,7 @@ import { InventoryCheckScanLogModal } from "@/app/components/inventory/Inventory
 import { ApiError } from "@/app/lib/api";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
-import { skuBarcodesApi, type SkuLookup } from "@/app/lib/skuBarcodes";
+import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
 import {
   inventoryCheckApi,
   type InventoryCheckCompareResult,
@@ -54,9 +53,8 @@ export function InventoryCheckPage() {
   const [compare, setCompare] = useState<InventoryCheckCompareResult | null>(null);
   const [runs, setRuns] = useState<InventoryCheckCompareRun[]>([]);
   const [history, setHistory] = useState<InventoryCheckContext["event"][]>([]);
-  const [pendingSku, setPendingSku] = useState<{ code: string; lookup: SkuLookup } | null>(null);
   const [skuQty, setSkuQty] = useState("1");
-  const qtyTitleId = useId();
+  const [lastSku, setLastSku] = useState<{ code: string; label: string } | null>(null);
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen && tab === "scan", tab);
 
   const event = ctx?.event ?? null;
@@ -188,9 +186,9 @@ export function InventoryCheckPage() {
       const looked = await skuBarcodesApi.lookup(value);
       const lookup = looked.lookup;
       if (lookup.lookup_kind === "sku" || lookup.requires_qty) {
-        setPendingSku({ code: value, lookup });
-        setSkuQty("1");
-        return;
+        const label = lookup.label ?? lookup.product_label ?? value;
+        setLastSku({ code: value, label });
+        return await submitScan(value, 1);
       }
       return await submitScan(value);
     } catch {
@@ -199,12 +197,16 @@ export function InventoryCheckPage() {
     }
   };
 
-  const confirmSkuQty = async () => {
-    if (!pendingSku) return;
+  const addSkuBulk = async () => {
+    if (!lastSku) {
+      setError("Scan a SKU barcode first, then use Quantity + Add for bulk.");
+      refocus();
+      return;
+    }
     const qty = Math.max(1, parseInt(skuQty, 10) || 1);
-    const pending = pendingSku;
-    setPendingSku(null);
-    await submitScan(pending.code, qty);
+    setOk(null);
+    setError(null);
+    await submitScan(lastSku.code, qty);
   };
 
   const removeScan = async (scanId: number) => {
@@ -356,6 +358,34 @@ export function InventoryCheckPage() {
                     <Button type="button" variant="outline" onClick={() => setCameraOpen(true)}>
                       <Camera size={16} className="mr-1" /> Camera
                     </Button>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-card p-3 space-y-2 max-w-xl">
+                    <p className="text-xs text-muted-foreground">
+                      SKU barcodes: each scan adds +1 to the count. Or type a quantity and Add
+                      {lastSku ? ` (last: ${lastSku.label})` : ""}.
+                    </p>
+                    <div className="flex flex-wrap gap-2 items-end">
+                      <label className="text-xs text-muted-foreground block w-24">
+                        Quantity
+                        <input
+                          type="number"
+                          min={1}
+                          className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+                          value={skuQty}
+                          onChange={e => setSkuQty(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              void addSkuBulk();
+                            }
+                          }}
+                        />
+                      </label>
+                      <Button type="button" variant="outline" onClick={() => void addSkuBulk()} disabled={!lastSku}>
+                        Add
+                      </Button>
+                    </div>
                   </div>
 
                   <p className="text-xs text-muted-foreground">
@@ -579,57 +609,6 @@ export function InventoryCheckPage() {
           onDecoded={onScan}
         />
       ) : null}
-
-      <AppModal
-        open={pendingSku !== null}
-        onClose={() => {
-          setPendingSku(null);
-          refocus();
-        }}
-        labelledBy={qtyTitleId}
-        panelClassName="max-w-sm w-full"
-      >
-        <AppModalHeader
-          titleId={qtyTitleId}
-          title="How many counted?"
-          subtitle={
-            pendingSku
-              ? `${pendingSku.lookup.label ?? pendingSku.lookup.product_label ?? pendingSku.code}`
-              : undefined
-          }
-          onClose={() => {
-            setPendingSku(null);
-            refocus();
-          }}
-        />
-        <AppModalBody>
-          <label className="text-xs text-muted-foreground block">
-            Quantity
-            <input
-              type="number"
-              min={1}
-              autoFocus
-              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-              value={skuQty}
-              onChange={e => setSkuQty(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void confirmSkuQty();
-                }
-              }}
-            />
-          </label>
-        </AppModalBody>
-        <AppModalFooter>
-          <Button type="button" variant="outline" onClick={() => { setPendingSku(null); refocus(); }}>
-            Cancel
-          </Button>
-          <Button type="button" onClick={() => void confirmSkuQty()}>
-            Count
-          </Button>
-        </AppModalFooter>
-      </AppModal>
 
       {detailRow && event ? (
         <InventoryCheckScanLogModal

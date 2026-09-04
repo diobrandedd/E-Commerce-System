@@ -163,11 +163,11 @@ export function HoneyBottleScanInPanel() {
   const [msg, setMsg] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [pendingSku, setPendingSku] = useState<{ code: string; label: string } | null>(null);
   const [skuQty, setSkuQty] = useState("1");
   const [customBatchNo, setCustomBatchNo] = useState("");
+  const [lastSku, setLastSku] = useState<{ code: string; label: string } | null>(null);
   const cameraTitleId = useId();
-  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen || !!pendingSku);
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
 
   const commitStockIn = async (
     value: string,
@@ -207,9 +207,17 @@ export function HoneyBottleScanInPanel() {
     try {
       const { lookup } = await skuBarcodesApi.lookup(value);
       if (lookup.lookup_kind === "sku" && lookup.kind === "honey") {
-        setPendingSku({ code: value, label: lookup.label ?? "Honey SKU" });
-        setSkuQty("1");
-        return { kind: "success", message: `SKU ${lookup.label} — enter qty` };
+        if (!customBatchNo.trim()) {
+          playScanBeep("bad");
+          setFlash("err");
+          setMsg("Enter a custom batch number before scanning SKU barcodes.");
+          window.setTimeout(() => setFlash(null), 700);
+          refocus();
+          return { kind: "error", message: "Custom batch number required for SKU stock-in." };
+        }
+        const label = lookup.label ?? "Honey SKU";
+        setLastSku({ code: value, label });
+        return commitStockIn(value, { qty: 1, batch_no: customBatchNo.trim() });
       }
     } catch {
       // fall through to unique scan
@@ -217,8 +225,12 @@ export function HoneyBottleScanInPanel() {
     return commitStockIn(value);
   };
 
-  const confirmSku = async () => {
-    if (!pendingSku) return;
+  const addSkuBulk = async () => {
+    if (!lastSku) {
+      setMsg("Scan a SKU barcode first, then use Quantity + Stock in for bulk.");
+      refocus();
+      return;
+    }
     const qty = Number(skuQty);
     if (!Number.isFinite(qty) || qty < 1) {
       setMsg("Enter a quantity of at least 1.");
@@ -228,9 +240,7 @@ export function HoneyBottleScanInPanel() {
       setMsg("Enter a custom batch number for SKU stock-in.");
       return;
     }
-    const codeVal = pendingSku.code;
-    setPendingSku(null);
-    await commitStockIn(codeVal, { qty, batch_no: customBatchNo.trim() });
+    await commitStockIn(lastSku.code, { qty, batch_no: customBatchNo.trim() });
   };
 
   return (
@@ -238,8 +248,8 @@ export function HoneyBottleScanInPanel() {
       <div className="bg-card rounded-xl border border-border p-4 space-y-3">
         <h3 className="text-sm font-semibold">Scan into packaging stock</h3>
         <p className="text-xs text-muted-foreground">
-          SKU barcodes: scan → enter how many → enter a custom batch number. No supplier or existing batch lookup is required.
-          Leftover unique stickers still scan one at a time.
+          Set a custom batch number first. SKU barcodes: each scan stocks in +1, or type a quantity and Stock in
+          for bulk. Leftover unique stickers still scan one at a time.
         </p>
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Custom batch number (for SKU stock-in)
@@ -270,31 +280,32 @@ export function HoneyBottleScanInPanel() {
             <Camera size={16} /> Camera
           </Button>
         </div>
-        {pendingSku ? (
-          <div className="rounded-lg border border-[#C8900A]/40 bg-[#C8900A]/5 p-3 space-y-2">
-            <p className="text-sm font-medium">{pendingSku.label}</p>
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <label className="text-xs text-muted-foreground">Quantity</label>
-                <input
-                  className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
-                  type="number"
-                  min={1}
-                  value={skuQty}
-                  onChange={e => setSkuQty(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      void confirmSku();
-                    }
-                  }}
-                />
-              </div>
-              <Button type="button" onClick={() => void confirmSku()}>Stock in</Button>
-              <Button type="button" variant="outline" onClick={() => setPendingSku(null)}>Cancel</Button>
+        <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Bulk SKU add{lastSku ? ` — last: ${lastSku.label}` : " — scan a SKU first"}
+          </p>
+          <div className="flex gap-2 items-end">
+            <div className="w-24">
+              <label className="text-xs text-muted-foreground">Quantity</label>
+              <input
+                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                type="number"
+                min={1}
+                value={skuQty}
+                onChange={e => setSkuQty(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void addSkuBulk();
+                  }
+                }}
+              />
             </div>
+            <Button type="button" onClick={() => void addSkuBulk()} disabled={!lastSku}>
+              Stock in
+            </Button>
           </div>
-        ) : null}
+        </div>
         <div className={`h-16 rounded-xl border flex items-center justify-center text-sm font-medium ${
           flash === "ok" ? "bg-green-100 border-green-300 text-green-800" : flash === "err" ? "bg-red-100 border-red-300 text-red-800" : "bg-secondary/30 border-border text-muted-foreground"
         }`}>

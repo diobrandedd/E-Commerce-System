@@ -39,9 +39,9 @@ Retail stores that buy from us map barcodes to price in SKU/POS systems. Unique 
 1. **Catalog** — honey: variant × size (12); dept: `pt`, `brc`, `jar_cacao`, `honey_comb`.
 2. **Lookup order** — trim scan → `product_sku_barcodes.code` → else unique-unit lookup → else unknown.
 3. **Print** — N copies of the same Code128; no unique-code generator for new labels.
-4. **Stock-in** — SKU + qty onto packaging row / dept finished / RTS sellable; no unit insert.
-5. **Pack / POS** — SKU lines store sku_code + qty; unique leftovers keep unit lifecycle.
-6. **Inventory check** — one counted_qty row per SKU per event (upsert); unique leftovers still +1 per distinct code.
+4. **Stock-in** — SKU + qty onto packaging row / dept finished / RTS sellable; no unit insert. Continuous re-scan of the same SKU adds +1 each time; typed Quantity + Stock in / Add adds +N (batch number required for honey packaging stock-in).
+5. **Pack / inventory check** — same continuous +1 / optional typed +N; unique leftovers keep unit lifecycle (+1 per distinct code). Pack confirm still finalizes deductions.
+6. **POS** — SKU lines still use qty prompt at checkout (unchanged).
 7. **Price hint** — Settings may show selling price as a hint; never overwrite barcode from price.
 
 ## Out of scope
@@ -54,9 +54,10 @@ Retail stores that buy from us map barcodes to price in SKU/POS systems. Unique 
 ## Open decisions (locked by chat)
 
 1. Encoded value = short string from settings (typically price) — **yes** (2026-08-26)
-2. All flows scan → enter qty; keep old unique codes until gone — **yes** (2026-08-26)
+2. All flows scan → enter qty; keep old unique codes until gone — **yes** (2026-08-26); **amended 2026-09-04**: Pack, packaging stock-in, and inventory check also support continuous SKU re-scan (+1) with optional typed +N (not modal-only).
 
 ## Approval to plan
 
 - [x] Spec reviewed by human (implement request 2026-08-26)
 - [x] Ready for implementation
+- [x] Continuous SKU scan UX approved (2026-09-04)

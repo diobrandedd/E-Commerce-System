@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-09-04T03:53:24+02:00
+generated: 2026-09-04T04:55:31+02:00
 type: module
 function_count: 36
 ---
@@ -47,7 +47,7 @@ function_count: 36
 - `includes/dept_pos.php`:87 — `if (dept_pouch_supports($productKey) && $stockSource === 'packaging') {`
 - `includes/dept_pos.php`:110 — `} elseif (dept_pouch_supports($productKey) && $stockSource === 'rts' && $unitIds === []) {`
 - `includes/dept_pouch_barcodes.php`:44 — `if (!dept_pouch_supports($productKey)) {`
-- `includes/honey_bottle_barcodes.php`:1339 — `if ($productKey !== '' && $productKey !== 'honey' && !dept_pouch_supports($productKey)) {`
+- `includes/honey_bottle_barcodes.php`:1391 — `if ($productKey !== '' && $productKey !== 'honey' && !dept_pouch_supports($productKey)) {`
 - `includes/pack_cancel_restock.php`:740 — `if (!dept_pouch_supports($productKey)) {`
 - `includes/rts_barcode_labels.php`:277 — `} elseif (dept_pouch_supports($productKey)) {`
 
@@ -81,17 +81,17 @@ function_count: 36
 - `includes/dept_pouch_barcodes.php`:1187 — `$label = dept_pouch_product_label($productKey);`
 - `includes/finished_leak_damage.php`:39 — `return dept_pouch_product_label((string) ($row['product_key'] ?? ''));`
 - `includes/finished_leak_damage.php`:258 — `'product_label' => dept_pouch_product_label($productKey),`
-- `includes/honey_bottle_barcodes.php`:1220 — `$productLabel = dept_pouch_product_label($productKey);`
-- `includes/honey_bottle_barcodes.php`:1584 — `'product_label' => dept_pouch_product_label($productKey),`
-- `includes/honey_bottle_barcodes.php`:1669 — `$productLabel = dept_pouch_product_label($productKey);`
-- `includes/honey_bottle_barcodes.php`:1908 — `dept_pouch_product_label($productKey),`
+- `includes/honey_bottle_barcodes.php`:1272 — `$productLabel = dept_pouch_product_label($productKey);`
+- `includes/honey_bottle_barcodes.php`:1647 — `'product_label' => dept_pouch_product_label($productKey),`
+- `includes/honey_bottle_barcodes.php`:1733 — `$productLabel = dept_pouch_product_label($productKey);`
+- `includes/honey_bottle_barcodes.php`:1972 — `dept_pouch_product_label($productKey),`
 - `includes/inventory_check.php`:201 — `'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey),`
-- `includes/inventory_check.php`:418 — `'variant' => dept_pouch_product_label($productKey),`
-- `includes/inventory_check.php`:516 — `$productLabel = $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey);`
-- `includes/inventory_check.php`:723 — `$scopeLabels[] = dept_pouch_product_label($productKey);`
-- `includes/inventory_check.php`:738 — `'product_label' => dept_pouch_product_label((string) $productKey),`
-- `includes/inventory_check.php`:743 — `'variant' => dept_pouch_product_label((string) $productKey),`
-- `includes/inventory_check.php`:876 — `'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label((string) $row['product_key']),`
+- `includes/inventory_check.php`:422 — `'variant' => dept_pouch_product_label($productKey),`
+- `includes/inventory_check.php`:520 — `$productLabel = $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey);`
+- `includes/inventory_check.php`:727 — `$scopeLabels[] = dept_pouch_product_label($productKey);`
+- `includes/inventory_check.php`:742 — `'product_label' => dept_pouch_product_label((string) $productKey),`
+- `includes/inventory_check.php`:747 — `'variant' => dept_pouch_product_label((string) $productKey),`
+- `includes/inventory_check.php`:880 — `'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label((string) $row['product_key']),`
 - `includes/pack_cancel_restock.php`:143 — `: dept_pouch_product_label($productKey);`
 - `includes/pack_cancel_restock.php`:184 — `$productLabel = dept_pouch_product_label($productKey);`
 - `includes/pack_cancel_restock.php`:407 — `'product_label' => dept_pouch_product_label($productKey),`
@@ -106,11 +106,11 @@ function_count: 36
 - `includes/barcode_verify.php`:133 — `$unit = dept_pouch_unit_singular($productKey);`
 - `includes/dept_pouch_barcodes.php`:910 — `$unit = dept_pouch_unit_singular((string) $batch['product_key']);`
 - `includes/dept_pouch_barcodes.php`:1027 — `'unit_noun' => dept_pouch_unit_singular($productKey),`
-- `includes/honey_bottle_barcodes.php`:1221 — `$unitNoun = dept_pouch_unit_singular($productKey);`
-- `includes/honey_bottle_barcodes.php`:1670 — `$unitNoun = dept_pouch_unit_singular($productKey);`
-- `includes/inventory_check.php`:419 — `'size' => dept_pouch_unit_singular($productKey),`
-- `includes/inventory_check.php`:744 — `'size' => dept_pouch_unit_singular((string) $productKey),`
-- `includes/inventory_check.php`:745 — `'size_label' => dept_pouch_unit_singular((string) $productKey),`
+- `includes/honey_bottle_barcodes.php`:1273 — `$unitNoun = dept_pouch_unit_singular($productKey);`
+- `includes/honey_bottle_barcodes.php`:1734 — `$unitNoun = dept_pouch_unit_singular($productKey);`
+- `includes/inventory_check.php`:423 — `'size' => dept_pouch_unit_singular($productKey),`
+- `includes/inventory_check.php`:748 — `'size' => dept_pouch_unit_singular((string) $productKey),`
+- `includes/inventory_check.php`:749 — `'size_label' => dept_pouch_unit_singular((string) $productKey),`
 - `includes/pack_cancel_restock.php`:144 — `$sizeLabel = $isHoney ? honey_bottle_size_label($size) : dept_pouch_unit_singular($productKey);`
 - `includes/pack_cancel_restock.php`:193 — `'size_label' => dept_pouch_unit_singular($productKey),`
 - `includes/pack_cancel_restock.php`:207 — `'size_label' => dept_pouch_unit_singular($productKey),`
@@ -125,7 +125,7 @@ function_count: 36
 - `includes/dept_pouch_barcodes.php`:1100 — `$code = dept_pouch_normalize_code((string) $raw);`
 - `includes/dept_pouch_barcodes.php`:1164 — `$code = dept_pouch_normalize_code($code);`
 - `includes/finished_leak_damage.php`:75 — `$deptCode = dept_pouch_normalize_code($code);`
-- `includes/honey_bottle_barcodes.php`:1647 — `$code = dept_pouch_normalize_code($code);`
+- `includes/honey_bottle_barcodes.php`:1711 — `$code = dept_pouch_normalize_code($code);`
 - `includes/pack_cancel_restock.php`:383 — `$code = dept_pouch_normalize_code($code);`
 
 ## dept_pouch_normalize_batch_no {#dept_pouch_normalize_batch_no}

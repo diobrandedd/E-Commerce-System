@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-09-04T03:54:02+02:00
+generated: 2026-09-04T04:56:08+02:00
 type: module
 function_count: 40
 ---
@@ -130,7 +130,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `api/v1/rts.php`:193 — `$sku = sku_barcode_fetch_by_code(ims_pdo(), $code);`
 - `api/v1/sku_barcodes.php`:207 — `$sku = sku_barcode_fetch_by_code($pdo, (string) $input['code']);`
 - `includes/barcode_verify.php`:22 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
-- `includes/honey_bottle_barcodes.php`:1458 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
+- `includes/honey_bottle_barcodes.php`:1510 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/inventory_check.php`:240 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/pack_cancel_restock.php`:254 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/pos_unified.php`:103 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
@@ -287,7 +287,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/honey_bottle_barcodes.php`:1810 — `sku_barcode_honey_deduct(`
+- `includes/honey_bottle_barcodes.php`:1874 — `sku_barcode_honey_deduct(`
 - `includes/pos_unified.php`:446 — `sku_barcode_honey_deduct(`
 - `includes/pos_unified.php`:610 — `sku_barcode_honey_deduct(`
 
@@ -295,7 +295,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/honey_bottle_barcodes.php`:1886 — `sku_barcode_dept_deduct($pdo, $userId, $productKey, $qty, $pool, 'parcel');`
+- `includes/honey_bottle_barcodes.php`:1950 — `sku_barcode_dept_deduct($pdo, $userId, $productKey, $qty, $pool, 'parcel');`
 - `includes/pos_unified.php`:465 — `sku_barcode_dept_deduct(`
 - `includes/pos_unified.php`:629 — `sku_barcode_dept_deduct(`
 

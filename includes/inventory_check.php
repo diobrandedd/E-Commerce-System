@@ -255,16 +255,20 @@ function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCo
         $dup->execute([$eventId, $code]);
         $dupRow = $dup->fetch(PDO::FETCH_ASSOC);
         if ($dupRow !== false) {
+            $totalQty = (int) ($dupRow['counted_qty'] ?? 0) + $qty;
+            if ($totalQty > 100000) {
+                throw new RuntimeException('Counted quantity for this product cannot exceed 100000.');
+            }
             $pdo->prepare(
                 'UPDATE inventory_check_scans SET counted_qty = ?, scanned_by = ?, scanned_at = NOW(), flag = "ok"
                  WHERE id = ?'
-            )->execute([$qty, $userId, (int) $dupRow['id']]);
+            )->execute([$totalQty, $userId, (int) $dupRow['id']]);
             $scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);
 
             return [
                 'result' => 'ok',
                 'scan' => $scan,
-                'message' => 'Updated count to ' . $qty . '.',
+                'message' => 'Added ' . $qty . ' (total ' . $totalQty . ').',
             ];
         }
         $pdo->prepare(

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-09-04T03:53:17+02:00
+generated: 2026-09-04T04:55:24+02:00
 type: memory-bank
 ---
 
@@ -39,7 +39,7 @@ type: memory-bank
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 33 |
 | [[modules/historical_orders_import]] | 25 |
-| [[modules/honey_bottle_barcodes]] | 59 |
+| [[modules/honey_bottle_barcodes]] | 60 |
 | [[modules/honey_inventory]] | 47 |
 | [[modules/honey_parcel_inventory]] | 4 |
 | [[modules/honey_parcel_item_parser]] | 17 |

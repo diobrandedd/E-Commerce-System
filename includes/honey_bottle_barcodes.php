@@ -220,6 +220,58 @@ function honey_bottle_adjust_aggregate(PDO $pdo, int $packagingRowId, string $si
 }
 
 /**
+ * Deduct one finished bottle from packaging aggregates.
+ * Prefer the unit's linked batch; if that row is empty (SKU FIFO already drained it),
+ * take from any other packaging row of the same variant+size (FIFO by id).
+ *
+ * @return int packaging_row_id that was decremented
+ */
+function honey_bottle_deduct_packaging_one(
+    PDO $pdo,
+    string $variant,
+    string $size,
+    int $preferredPackagingRowId = 0
+): int {
+    $variant = honey_normalize_variant($variant);
+    if (!in_array($size, HONEY_SIZES, true)) {
+        throw new RuntimeException('Invalid size.');
+    }
+    [$curCol] = honey_packaging_size_columns($size);
+
+    if ($preferredPackagingRowId > 0) {
+        $upd = $pdo->prepare(
+            "UPDATE honey_packaging_rows
+             SET {$curCol} = {$curCol} - 1
+             WHERE id = ? AND variant = ? AND {$curCol} >= 1"
+        );
+        $upd->execute([$preferredPackagingRowId, $variant]);
+        if ($upd->rowCount() >= 1) {
+            return $preferredPackagingRowId;
+        }
+    }
+
+    $st = $pdo->prepare(
+        "SELECT id FROM honey_packaging_rows
+         WHERE variant = ? AND {$curCol} >= 1
+         ORDER BY id ASC
+         LIMIT 1
+         FOR UPDATE"
+    );
+    $st->execute([$variant]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        throw new RuntimeException(
+            'Not enough packaging stock for '
+            . ucfirst($variant) . ' ' . honey_bottle_size_label($size) . '.'
+        );
+    }
+    $id = (int) $row['id'];
+    honey_bottle_adjust_aggregate($pdo, $id, $size, -1.0);
+
+    return $id;
+}
+
+/**
  * @return array<string, mixed>
  */
 function honey_bottle_request_create(
@@ -1504,13 +1556,18 @@ function honey_bottle_pack_session_scan_sku(
         );
         $existing->execute([$sessionId, $skuId]);
         $ex = $existing->fetch(PDO::FETCH_ASSOC);
+        $totalQty = $qty;
         if ($ex !== false) {
+            $totalQty = (int) $ex['qty'] + $qty;
+            if ($totalQty > 5000) {
+                throw new RuntimeException('Session quantity for this SKU cannot exceed 5000.');
+            }
             $pdo->prepare(
                 'UPDATE honey_bottle_pack_session_items
                  SET qty = ?, pool = ?, packaging_row_id = ?, variant = ?, size = ?, sku_code = ?
                  WHERE id = ?'
             )->execute([
-                $qty,
+                $totalQty,
                 $poolUse,
                 $packagingRowId !== null && $packagingRowId > 0 ? $packagingRowId : null,
                 $variant,
@@ -1545,7 +1602,8 @@ function honey_bottle_pack_session_scan_sku(
                 'variant' => $variant,
                 'size' => $size,
                 'size_label' => honey_bottle_size_label($size),
-                'qty' => $qty,
+                'qty' => $totalQty,
+                'added_qty' => $qty,
                 'pool' => $poolUse,
             ],
         ];
@@ -1556,16 +1614,21 @@ function honey_bottle_pack_session_scan_sku(
         ? (string) $pool
         : 'finished';
     $existing = $pdo->prepare(
-        'SELECT id FROM honey_bottle_pack_session_dept_items
+        'SELECT id, qty FROM honey_bottle_pack_session_dept_items
          WHERE session_id = ? AND sku_id = ? AND unit_id IS NULL LIMIT 1'
     );
     $existing->execute([$sessionId, $skuId]);
     $ex = $existing->fetch(PDO::FETCH_ASSOC);
+    $totalQty = $qty;
     if ($ex !== false) {
+        $totalQty = (int) $ex['qty'] + $qty;
+        if ($totalQty > 5000) {
+            throw new RuntimeException('Session quantity for this SKU cannot exceed 5000.');
+        }
         $pdo->prepare(
             'UPDATE honey_bottle_pack_session_dept_items
              SET qty = ?, pool = ?, sku_code = ?, product_key = ? WHERE id = ?'
-        )->execute([$qty, $poolUse, $code, $productKey, (int) $ex['id']]);
+        )->execute([$totalQty, $poolUse, $code, $productKey, (int) $ex['id']]);
     } else {
         $pdo->prepare(
             'INSERT INTO honey_bottle_pack_session_dept_items
@@ -1583,7 +1646,8 @@ function honey_bottle_pack_session_scan_sku(
             'product_key' => $productKey,
             'product_label' => dept_pouch_product_label($productKey),
             'code' => $code,
-            'qty' => $qty,
+            'qty' => $totalQty,
+            'added_qty' => $qty,
             'pool' => $poolUse,
         ],
     ];
@@ -1847,8 +1911,8 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
                         'actor_user_id' => $userId,
                     ]
                 );
-            } elseif ($packId > 0) {
-                honey_bottle_adjust_aggregate($pdo, $packId, $size, -1);
+            } else {
+                $packId = honey_bottle_deduct_packaging_one($pdo, $variant, $size, $packId);
             }
             honey_bottle_write_sale_log($pdo, [
                 'source' => $pool === 'rts_sellable' ? 'rts' : 'packaging',
@@ -2086,8 +2150,13 @@ function honey_bottle_pos_consume(PDO $pdo, array $unitIds, int $saleId, int $us
         )->execute([$saleId, $unitId]);
         $packId = (int) ($unit['packaging_row_id'] ?? 0);
         $pool = (string) $unit['pool'];
-        if ($packId > 0 && $pool === 'packaging') {
-            honey_bottle_adjust_aggregate($pdo, $packId, (string) $unit['size'], -1);
+        if ($pool === 'packaging') {
+            $packId = honey_bottle_deduct_packaging_one(
+                $pdo,
+                honey_normalize_variant((string) $unit['variant']),
+                (string) $unit['size'],
+                $packId
+            );
         } elseif ($pool === 'rts_sellable') {
             require_once __DIR__ . '/rts_inventory_sync.php';
             rts_inventory_deduct_sell_honey_variant(

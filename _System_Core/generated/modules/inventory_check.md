@@ -1,7 +1,7 @@
 ---
 title: inventory_check
 source: includes/inventory_check.php
-generated: 2026-09-04T03:53:41+02:00
+generated: 2026-09-04T04:55:47+02:00
 type: module
 function_count: 25
 ---
@@ -71,9 +71,9 @@ function_count: 25
 - `includes/inventory_check.php`:126 — `return inventory_check_event_get($pdo, $existingId);`
 - `includes/inventory_check.php`:133 — `return inventory_check_event_get($pdo, (int) $pdo->lastInsertId());`
 - `includes/inventory_check.php`:152 — `return inventory_check_event_get($pdo, $eventId);`
-- `includes/inventory_check.php`:483 — `$event = inventory_check_event_get($pdo, $eventId);`
-- `includes/inventory_check.php`:623 — `$event = inventory_check_event_get($pdo, $eventId);`
-- `includes/inventory_check.php`:903 — `'event' => $event ?? inventory_check_event_get($pdo, (int) $run['event_id']),`
+- `includes/inventory_check.php`:487 — `$event = inventory_check_event_get($pdo, $eventId);`
+- `includes/inventory_check.php`:627 — `$event = inventory_check_event_get($pdo, $eventId);`
+- `includes/inventory_check.php`:907 — `'event' => $event ?? inventory_check_event_get($pdo, (int) $run['event_id']),`
 
 ## inventory_check_event_current {#inventory_check_event_current}
 
@@ -112,8 +112,8 @@ function_count: 25
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:301 — `'scan' => inventory_check_serialize_scan($dupRow),`
-- `includes/inventory_check.php`:449 — `return inventory_check_serialize_scan($row);`
+- `includes/inventory_check.php`:305 — `'scan' => inventory_check_serialize_scan($dupRow),`
+- `includes/inventory_check.php`:453 — `return inventory_check_serialize_scan($row);`
 
 ## inventory_check_scan {#inventory_check_scan}
 
@@ -129,20 +129,20 @@ function_count: 25
 
 **Callers (1):**
 
-- `includes/inventory_check.php`:306 — `$honey = inventory_check_resolve_honey($pdo, $code);`
+- `includes/inventory_check.php`:310 — `$honey = inventory_check_resolve_honey($pdo, $code);`
 
 ## inventory_check_resolve_dept {#inventory_check_resolve_dept}
 
 **Callers (1):**
 
-- `includes/inventory_check.php`:307 — `$resolved = $honey ?? inventory_check_resolve_dept($pdo, $code);`
+- `includes/inventory_check.php`:311 — `$resolved = $honey ?? inventory_check_resolve_dept($pdo, $code);`
 
 ## inventory_check_flag {#inventory_check_flag}
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:383 — `'flag' => inventory_check_flag((string) $row['barcode_status'], $unitStatus),`
-- `includes/inventory_check.php`:420 — `'flag' => inventory_check_flag((string) $row['barcode_status'], $row['unit_status'] !== null ? (string) $row['unit_status'] : ''),`
+- `includes/inventory_check.php`:387 — `'flag' => inventory_check_flag((string) $row['barcode_status'], $unitStatus),`
+- `includes/inventory_check.php`:424 — `'flag' => inventory_check_flag((string) $row['barcode_status'], $row['unit_status'] !== null ? (string) $row['unit_status'] : ''),`
 
 ## inventory_check_scan_get {#inventory_check_scan_get}
 
@@ -150,9 +150,9 @@ function_count: 25
 
 **Callers (3):**
 
-- `includes/inventory_check.php`:262 — `$scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);`
-- `includes/inventory_check.php`:286 — `$scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());`
-- `includes/inventory_check.php`:334 — `$scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());`
+- `includes/inventory_check.php`:266 — `$scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);`
+- `includes/inventory_check.php`:290 — `$scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());`
+- `includes/inventory_check.php`:338 — `$scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());`
 
 ## inventory_check_scan_remove {#inventory_check_scan_remove}
 
@@ -195,7 +195,7 @@ function_count: 25
 
 **Callers (1):**
 
-- `includes/inventory_check.php`:624 — `$lines = inventory_check_compare_build($pdo, $eventId);`
+- `includes/inventory_check.php`:628 — `$lines = inventory_check_compare_build($pdo, $eventId);`
 
 ## inventory_check_compare_honey_lines {#inventory_check_compare_honey_lines}
 
@@ -203,13 +203,13 @@ function_count: 25
 
 **Callers (1):**
 
-- `includes/inventory_check.php`:730 — `$lines = array_merge($lines, inventory_check_compare_honey_lines($pdo, $honeyCounted, $honeyMeta));`
+- `includes/inventory_check.php`:734 — `$lines = array_merge($lines, inventory_check_compare_honey_lines($pdo, $honeyCounted, $honeyMeta));`
 
 ## inventory_check_dept_system_qty {#inventory_check_dept_system_qty}
 
 **Callers (1):**
 
-- `includes/inventory_check.php`:734 — `$systemQty = inventory_check_dept_system_qty($pdo, (string) $productKey);`
+- `includes/inventory_check.php`:738 — `$systemQty = inventory_check_dept_system_qty($pdo, (string) $productKey);`
 
 ## inventory_check_compare_get {#inventory_check_compare_get}
 
@@ -218,7 +218,7 @@ function_count: 25
 **Callers (2):**
 
 - `api/v1/inventory_check.php`:252 — `api_ok(inventory_check_compare_get(ims_pdo(), (int) ($_GET['run_id'] ?? 0)));`
-- `includes/inventory_check.php`:678 — `return inventory_check_compare_get($pdo, $runId, $event);`
+- `includes/inventory_check.php`:682 — `return inventory_check_compare_get($pdo, $runId, $event);`
 
 ## inventory_check_compare_list {#inventory_check_compare_list}
 

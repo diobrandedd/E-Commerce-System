@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-09-04T03:53:35+02:00
+generated: 2026-09-04T04:55:41+02:00
 type: module
 function_count: 47
 ---
@@ -74,7 +74,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (9):**
 
 - `includes/dept_pricing.php`:157 — `$supplierCode = honey_supplier_code($supplierName, date('Y-m-d'));`
-- `includes/honey_bottle_barcodes.php`:2546 — `$supplierCode = honey_supplier_code($supplierName, $bottlingDate);`
+- `includes/honey_bottle_barcodes.php`:2615 — `$supplierCode = honey_supplier_code($supplierName, $bottlingDate);`
 - `includes/honey_inventory.php`:197 — `$code = honey_supplier_code($supplierName, $arrivalDate);`
 - `includes/honey_inventory.php`:732 — `$code = honey_supplier_code($supplierName, (string) $wh['arrival_date']);`
 - `includes/honey_inventory.php`:772 — `$code = honey_supplier_code($supplierName, (string) $wh['arrival_date']);`
@@ -87,27 +87,29 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/honey_bottle_barcodes.php`:2468 — `honey_batch_no((string) $pr['supplier_code'], $bottlingDate),`
+- `includes/honey_bottle_barcodes.php`:2537 — `honey_batch_no((string) $pr['supplier_code'], $bottlingDate),`
 - `includes/honey_inventory.php`:420 — `honey_batch_no((string) $pr['supplier_code'], $bottlingDate),`
 - `includes/honey_inventory.php`:1551 — `honey_batch_no((string) $pr['supplier_code'], $bottlingDate),`
 
 ## honey_normalize_variant {#honey_normalize_variant}
 
-**Callers (41):**
+**Callers (43):**
 
-- `includes/honey_bottle_barcodes.php`:234 — `$variant = honey_normalize_variant($variant);`
-- `includes/honey_bottle_barcodes.php`:253 — `if (honey_normalize_variant((string) $pk['variant']) !== $variant) {`
-- `includes/honey_bottle_barcodes.php`:401 — `$variant = honey_normalize_variant((string) $pk['variant']);`
-- `includes/honey_bottle_barcodes.php`:491 — `$shellVariant = honey_normalize_variant((string) $shell['variant']);`
-- `includes/honey_bottle_barcodes.php`:946 — `honey_normalize_variant((string) $row['variant']),`
-- `includes/honey_bottle_barcodes.php`:1025 — `$variant = honey_normalize_variant((string) $row['variant']);`
-- `includes/honey_bottle_barcodes.php`:1496 — `$variant = honey_normalize_variant((string) $sku['variant']);`
-- `includes/honey_bottle_barcodes.php`:1806 — `$variant = honey_normalize_variant((string) ($item['item_variant'] ?? ''));`
-- `includes/honey_bottle_barcodes.php`:1830 — `$variant = honey_normalize_variant((string) $item['variant']);`
-- `includes/honey_bottle_barcodes.php`:2096 — `honey_normalize_variant((string) $unit['variant']),`
-- `includes/honey_bottle_barcodes.php`:2111 — `'variant' => honey_normalize_variant((string) $unit['variant']),`
-- `includes/honey_bottle_barcodes.php`:2167 — `'variant' => honey_normalize_variant((string) $unit['variant']),`
-- `includes/honey_bottle_barcodes.php`:2514 — `$variant = honey_normalize_variant($variant);`
+- `includes/honey_bottle_barcodes.php`:235 — `$variant = honey_normalize_variant($variant);`
+- `includes/honey_bottle_barcodes.php`:286 — `$variant = honey_normalize_variant($variant);`
+- `includes/honey_bottle_barcodes.php`:305 — `if (honey_normalize_variant((string) $pk['variant']) !== $variant) {`
+- `includes/honey_bottle_barcodes.php`:453 — `$variant = honey_normalize_variant((string) $pk['variant']);`
+- `includes/honey_bottle_barcodes.php`:543 — `$shellVariant = honey_normalize_variant((string) $shell['variant']);`
+- `includes/honey_bottle_barcodes.php`:998 — `honey_normalize_variant((string) $row['variant']),`
+- `includes/honey_bottle_barcodes.php`:1077 — `$variant = honey_normalize_variant((string) $row['variant']);`
+- `includes/honey_bottle_barcodes.php`:1548 — `$variant = honey_normalize_variant((string) $sku['variant']);`
+- `includes/honey_bottle_barcodes.php`:1870 — `$variant = honey_normalize_variant((string) ($item['item_variant'] ?? ''));`
+- `includes/honey_bottle_barcodes.php`:1894 — `$variant = honey_normalize_variant((string) $item['variant']);`
+- `includes/honey_bottle_barcodes.php`:2156 — `honey_normalize_variant((string) $unit['variant']),`
+- `includes/honey_bottle_barcodes.php`:2165 — `honey_normalize_variant((string) $unit['variant']),`
+- `includes/honey_bottle_barcodes.php`:2180 — `'variant' => honey_normalize_variant((string) $unit['variant']),`
+- `includes/honey_bottle_barcodes.php`:2236 — `'variant' => honey_normalize_variant((string) $unit['variant']),`
+- `includes/honey_bottle_barcodes.php`:2583 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_inventory.php`:117 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_inventory.php`:216 — `$variant = honey_normalize_variant((string) ($row['variant'] ?? ''));`
 - `includes/honey_inventory.php`:693 — `$variant = honey_normalize_variant($newValue);`
@@ -118,9 +120,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:1483 — `? honey_normalize_variant($variant)`
 - `includes/honey_inventory.php`:1484 — `: honey_normalize_variant((string) $wh['variant']);`
 - `includes/honey_parcel_inventory.php`:185 — `$variant = honey_normalize_variant($variant);`
-- `includes/honey_pos.php`:143 — `$variant = honey_normalize_variant($variant);`
-- `includes/honey_pos.php`:160 — `$variant = honey_normalize_variant($variant);`
-- _… and 16 more (run impact.php for full list)_
+- _… and 18 more (run impact.php for full list)_
 
 ## honey_unique_packaging_batch_no {#honey_unique_packaging_batch_no}
 
@@ -128,18 +128,19 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/honey_bottle_barcodes.php`:2466 — `$batchNo = honey_unique_packaging_batch_no(`
-- `includes/honey_bottle_barcodes.php`:2560 — `$batchNo = honey_unique_packaging_batch_no($pdo, $supplierCode, $variant);`
+- `includes/honey_bottle_barcodes.php`:2535 — `$batchNo = honey_unique_packaging_batch_no(`
+- `includes/honey_bottle_barcodes.php`:2629 — `$batchNo = honey_unique_packaging_batch_no($pdo, $supplierCode, $variant);`
 - `includes/honey_inventory.php`:418 — `$batchNo = honey_unique_packaging_batch_no(`
 - `includes/honey_inventory.php`:1549 — `$batchNo = honey_unique_packaging_batch_no(`
 
 ## honey_packaging_size_columns {#honey_packaging_size_columns}
 
-**Callers (19):**
+**Callers (20):**
 
 - `includes/honey_bottle_barcodes.php`:205 — `[$curCol, $iniCol] = honey_packaging_size_columns($size);`
-- `includes/honey_bottle_barcodes.php`:2255 — `[$col] = honey_packaging_size_columns($size);`
-- `includes/honey_bottle_barcodes.php`:2359 — `[$col] = honey_packaging_size_columns($size);`
+- `includes/honey_bottle_barcodes.php`:239 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/honey_bottle_barcodes.php`:2324 — `[$col] = honey_packaging_size_columns($size);`
+- `includes/honey_bottle_barcodes.php`:2428 — `[$col] = honey_packaging_size_columns($size);`
 - `includes/honey_inventory.php`:560 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_inventory.php`:576 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_inventory.php`:656 — `[$curCol] = honey_packaging_size_columns($size);`
@@ -182,7 +183,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (6):**
 
-- `includes/honey_bottle_barcodes.php`:2461 — `$pr = honey_fetch_production($pdo, $productionRowId);`
+- `includes/honey_bottle_barcodes.php`:2530 — `$pr = honey_fetch_production($pdo, $productionRowId);`
 - `includes/honey_inventory.php`:386 — `$pr = honey_fetch_production($pdo, $productionRowId);`
 - `includes/honey_inventory.php`:871 — `$pr = $prodId > 0 ? honey_fetch_production($pdo, $prodId) : null;`
 - `includes/honey_inventory.php`:970 — `$pr = honey_fetch_production($pdo, $rowId);`
@@ -195,11 +196,11 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (10):**
 
-- `includes/honey_bottle_barcodes.php`:249 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
-- `includes/honey_bottle_barcodes.php`:397 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
-- `includes/honey_bottle_barcodes.php`:811 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
-- `includes/honey_bottle_barcodes.php`:2486 — `$pack = honey_fetch_packaging($pdo, (int) $pdo->lastInsertId());`
-- `includes/honey_bottle_barcodes.php`:2577 — `$pack = honey_fetch_packaging($pdo, (int) $pdo->lastInsertId());`
+- `includes/honey_bottle_barcodes.php`:301 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
+- `includes/honey_bottle_barcodes.php`:449 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
+- `includes/honey_bottle_barcodes.php`:863 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
+- `includes/honey_bottle_barcodes.php`:2555 — `$pack = honey_fetch_packaging($pdo, (int) $pdo->lastInsertId());`
+- `includes/honey_bottle_barcodes.php`:2646 — `$pack = honey_fetch_packaging($pdo, (int) $pdo->lastInsertId());`
 - `includes/honey_inventory.php`:546 — `$pk = honey_fetch_packaging($pdo, $packagingRowId);`
 - `includes/honey_inventory.php`:816 — `$pk = honey_fetch_packaging($pdo, $packId);`
 - `includes/honey_inventory.php`:1001 — `$pk = honey_fetch_packaging($pdo, $rowId);`
@@ -213,7 +214,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (3):**
 
 - `api/v1/bottle_barcodes.php`:153 — `$before = honey_fetch_packaging_by_production(ims_pdo(), $productionRowId);`
-- `includes/honey_bottle_barcodes.php`:2457 — `$existing = honey_fetch_packaging_by_production($pdo, $productionRowId);`
+- `includes/honey_bottle_barcodes.php`:2526 — `$existing = honey_fetch_packaging_by_production($pdo, $productionRowId);`
 - `includes/honey_inventory.php`:414 — `$existing = honey_fetch_packaging_by_production($pdo, $productionRowId);`
 
 ## honey_warehouse_stock_in {#honey_warehouse_stock_in}

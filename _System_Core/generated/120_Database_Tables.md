@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-04T03:53:17+02:00
+generated: 2026-09-04T04:55:24+02:00
 type: memory-bank
 table_count: 93
 ---
@@ -1130,6 +1130,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `api/v1/honey.php` | [[modules/honey#api_honey_packaging_list]] |
 | `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_honey_packaging_snapshot]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_adjust_aggregate]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_deduct_packaging_one]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_list]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_report]] |

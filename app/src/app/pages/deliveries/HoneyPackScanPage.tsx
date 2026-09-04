@@ -21,7 +21,7 @@ import {
   type HoneyPackSessionItem,
   type HoneyPackSessionListRow,
 } from "@/app/lib/bottleBarcodes";
-import { skuBarcodesApi, type SkuLookup } from "@/app/lib/skuBarcodes";
+import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 
@@ -120,8 +120,9 @@ export function HoneyPackScanPage() {
           <p>
             <strong className="text-foreground">Scan</strong> — scan every sticker going into the parcel:
             honey bottles plus Paragis, Black Rice, Cacao, or Honey Comb. Mix them in one session in any
-            order. Tap a product row to see its barcodes. Remove a mistaken scan before you confirm.
-            Duplicates in this session are ignored. Units already packed or sold show a distinct warning.
+            order. Permanent SKU barcodes can be scanned repeatedly (+1 each time) or use Quantity + Add for a
+            bulk amount. Unique leftover stickers stay one per scan. Tap a product row to see its barcodes.
+            Remove a mistaken scan before you confirm. Duplicate unique stickers in this session are ignored.
           </p>
           <p>
             <strong className="text-foreground">Confirm</strong> deducts honey packaging stock and finished
@@ -150,11 +151,10 @@ function PackScanLivePanel() {
   const [busy, setBusy] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [removingId, setRemovingId] = useState<string | null>(null);
-  const [pendingSku, setPendingSku] = useState<{ code: string; lookup: SkuLookup } | null>(null);
   const [skuQty, setSkuQty] = useState("1");
   const [skuPool, setSkuPool] = useState<"packaging" | "rts_sellable" | "finished">("packaging");
+  const [lastSku, setLastSku] = useState<{ code: string; kind: "honey" | "dept"; label: string } | null>(null);
   const cameraTitleId = useId();
-  const qtyTitleId = useId();
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, session?.id);
 
   const start = useCallback(async () => {
@@ -178,12 +178,32 @@ function PackScanLivePanel() {
     if (res.result === "ok") {
       playScanBeep("ok");
       setFlash("ok");
+      const lookup = res.lookup;
       const label =
-        res.lookup?.kind === "dept"
-          ? res.lookup.product_label || res.lookup.variant || "Dept item"
-          : `${res.lookup?.variant ?? ""} ${res.lookup?.size_label ?? ""}`.trim() || "Honey";
-      const qtyNote = res.lookup?.qty != null && res.lookup.qty !== 1 ? ` ×${res.lookup.qty}` : "";
+        lookup?.kind === "dept"
+          ? lookup.product_label || lookup.variant || "Dept item"
+          : `${lookup?.variant ?? ""} ${lookup?.size_label ?? ""}`.trim() || "Honey";
+      const added =
+        lookup && typeof (lookup as { added_qty?: number }).added_qty === "number"
+          ? (lookup as { added_qty: number }).added_qty
+          : null;
+      const total = lookup?.qty != null ? lookup.qty : null;
+      const qtyNote =
+        added != null && total != null && total !== added
+          ? ` +${added} (×${total})`
+          : total != null && total !== 1
+            ? ` ×${total}`
+            : "";
       setMsg(`${label}${qtyNote}`);
+      if (lookup?.lookup_kind === "sku" && lookup.code) {
+        const kind = lookup.kind === "dept" ? "dept" : "honey";
+        setLastSku({ code: String(lookup.code), kind, label });
+        if (kind === "dept" && skuPool === "packaging") {
+          setSkuPool("finished");
+        } else if (kind === "honey" && skuPool === "finished") {
+          setSkuPool("packaging");
+        }
+      }
       const last = res.session.items[res.session.items.length - 1];
       if (last) {
         const groupKey = packItemGroupKey(last);
@@ -191,7 +211,7 @@ function PackScanLivePanel() {
       }
       window.setTimeout(() => setFlash(null), 650);
       refocus();
-      return { kind: "success", message: `Scanned: ${label}` };
+      return { kind: "success", message: `Scanned: ${label}${qtyNote}` };
     }
     if (res.result === "duplicate_session") {
       playScanBeep("dup");
@@ -218,6 +238,30 @@ function PackScanLivePanel() {
     return { kind: "error", message: `Failed: ${reason}.` };
   };
 
+  const packSkuDelta = async (
+    skuCode: string,
+    qty: number,
+    poolOverride?: "packaging" | "rts_sellable" | "finished",
+  ): Promise<ScannerDecodeFeedback | void> => {
+    if (!session) return { kind: "error", message: "Pack session is not ready." };
+    const pool = poolOverride ?? skuPool;
+    try {
+      const res = await bottleBarcodesApi.packScan(session.id, skuCode, {
+        qty,
+        pool,
+      });
+      return applyPackResult(res);
+    } catch (e) {
+      playScanBeep("bad");
+      setFlash("bad");
+      const reason = e instanceof ApiError ? e.message : "Scan failed.";
+      setMsg(reason);
+      window.setTimeout(() => setFlash(null), 650);
+      refocus();
+      return { kind: "error", message: reason };
+    }
+  };
+
   const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     if (!session) return { kind: "error", message: "Pack session is not ready." };
     const value = (raw ?? code).trim();
@@ -227,10 +271,15 @@ function PackScanLivePanel() {
       const looked = await skuBarcodesApi.lookup(value);
       const lookup = looked.lookup;
       if (lookup.lookup_kind === "sku" || lookup.requires_qty) {
-        setPendingSku({ code: value, lookup });
-        setSkuQty("1");
-        setSkuPool(lookup.kind === "dept" ? "finished" : "packaging");
-        return;
+        const kind = lookup.kind === "dept" ? "dept" : "honey";
+        let pool: "packaging" | "rts_sellable" | "finished" = skuPool;
+        if (kind === "dept" && pool === "packaging") {
+          pool = "finished";
+        } else if (kind === "honey" && pool === "finished") {
+          pool = "packaging";
+        }
+        setSkuPool(pool);
+        return await packSkuDelta(value, 1, pool);
       }
       const res = await bottleBarcodesApi.packScan(session.id, value);
       return applyPackResult(res);
@@ -251,25 +300,14 @@ function PackScanLivePanel() {
     }
   };
 
-  const confirmSkuPack = async () => {
-    if (!session || !pendingSku) return;
-    const qty = Math.max(1, parseInt(skuQty, 10) || 1);
-    const pending = pendingSku;
-    setPendingSku(null);
-    try {
-      const res = await bottleBarcodesApi.packScan(session.id, pending.code, {
-        qty,
-        pool: skuPool,
-      });
-      applyPackResult(res);
-    } catch (e) {
-      playScanBeep("bad");
-      setFlash("bad");
-      const reason = e instanceof ApiError ? e.message : "Scan failed.";
-      setMsg(reason);
-      window.setTimeout(() => setFlash(null), 650);
+  const addSkuBulk = async () => {
+    if (!lastSku) {
+      setMsg("Scan a SKU barcode first, then use Quantity + Add for bulk.");
       refocus();
+      return;
     }
+    const qty = Math.max(1, parseInt(skuQty, 10) || 1);
+    await packSkuDelta(lastSku.code, qty);
   };
 
   const confirm = async () => {
@@ -280,6 +318,7 @@ function PackScanLivePanel() {
       const res = await bottleBarcodesApi.packConfirm(session.id);
       setOk(`Packed ${res.session.item_count} item${res.session.item_count === 1 ? "" : "s"}.`);
       setConfirmOpen(false);
+      setLastSku(null);
       await start();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Confirm failed.");
@@ -293,6 +332,7 @@ function PackScanLivePanel() {
     await bottleBarcodesApi.packDiscard(session.id);
     setOk("Session discarded.");
     setExpandedGroups([]);
+    setLastSku(null);
     await start();
   };
 
@@ -353,6 +393,56 @@ function PackScanLivePanel() {
         <Button type="button" variant="outline" className="gap-1.5 shrink-0" onClick={() => setCameraOpen(true)}>
           <Camera size={16} /> Camera
         </Button>
+      </div>
+      <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+        <p className="text-xs text-muted-foreground">
+          SKU barcodes: each scan adds +1. Or type a quantity and Add (uses the last SKU scanned
+          {lastSku ? `: ${lastSku.label}` : ""}).
+        </p>
+        <div className="flex flex-wrap gap-2 items-end">
+          <label className="text-xs text-muted-foreground block min-w-[7rem] flex-1">
+            Stock pool
+            <select
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+              value={skuPool}
+              onChange={e =>
+                setSkuPool(e.target.value as "packaging" | "rts_sellable" | "finished")
+              }
+            >
+              {lastSku?.kind === "dept" ? (
+                <>
+                  <option value="finished">Finished</option>
+                  <option value="rts_sellable">RTS sellable</option>
+                </>
+              ) : (
+                <>
+                  <option value="packaging">Packaging</option>
+                  <option value="rts_sellable">RTS sellable</option>
+                  <option value="finished">Finished (dept)</option>
+                </>
+              )}
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground block w-24">
+            Quantity
+            <input
+              type="number"
+              min={1}
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+              value={skuQty}
+              onChange={e => setSkuQty(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void addSkuBulk();
+                }
+              }}
+            />
+          </label>
+          <Button type="button" variant="outline" onClick={() => void addSkuBulk()} disabled={!lastSku}>
+            Add
+          </Button>
+        </div>
       </div>
       <p className="text-xs text-muted-foreground">
         Honey bottles and Paragis / Black Rice / Cacao / Honey Comb stickers can be mixed in one session.
@@ -450,87 +540,6 @@ function PackScanLivePanel() {
           <Button type="button" onClick={() => void confirm()} disabled={busy}>
             {busy ? <Loader2 className="animate-spin" size={16} /> : null}
             Confirm
-          </Button>
-        </AppModalFooter>
-      </AppModal>
-      <AppModal
-        open={pendingSku !== null}
-        onClose={() => {
-          setPendingSku(null);
-          refocus();
-        }}
-        labelledBy={qtyTitleId}
-        panelClassName="max-w-sm w-full"
-      >
-        <AppModalHeader
-          titleId={qtyTitleId}
-          title="How many to pack?"
-          subtitle={
-            pendingSku
-              ? pendingSku.lookup.label ??
-                pendingSku.lookup.product_label ??
-                pendingSku.code
-              : undefined
-          }
-          onClose={() => {
-            setPendingSku(null);
-            refocus();
-          }}
-        />
-        <AppModalBody className="space-y-3">
-          <label className="text-xs text-muted-foreground block">
-            Quantity
-            <input
-              type="number"
-              min={1}
-              autoFocus
-              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-              value={skuQty}
-              onChange={e => setSkuQty(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void confirmSkuPack();
-                }
-              }}
-            />
-          </label>
-          <label className="text-xs text-muted-foreground block">
-            Stock pool
-            <select
-              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-              value={skuPool}
-              onChange={e =>
-                setSkuPool(e.target.value as "packaging" | "rts_sellable" | "finished")
-              }
-            >
-              {pendingSku?.lookup.kind === "dept" ? (
-                <>
-                  <option value="finished">Finished</option>
-                  <option value="rts_sellable">RTS sellable</option>
-                </>
-              ) : (
-                <>
-                  <option value="packaging">Packaging</option>
-                  <option value="rts_sellable">RTS sellable</option>
-                </>
-              )}
-            </select>
-          </label>
-        </AppModalBody>
-        <AppModalFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setPendingSku(null);
-              refocus();
-            }}
-          >
-            Cancel
-          </Button>
-          <Button type="button" onClick={() => void confirmSkuPack()}>
-            Add to pack
           </Button>
         </AppModalFooter>
       </AppModal>
