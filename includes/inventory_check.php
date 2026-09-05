@@ -153,6 +153,31 @@ function inventory_check_event_close(PDO $pdo, int $userId, int $eventId): array
 }
 
 /**
+ * Discard an open audit session without saving to history (deletes event + scans).
+ */
+function inventory_check_event_cancel(PDO $pdo, int $eventId): void
+{
+    $row = inventory_check_event_fetch($pdo, $eventId);
+    if ($row === null) {
+        throw new RuntimeException('Inventory count not found.');
+    }
+    if ((string) $row['status'] !== 'open') {
+        throw new RuntimeException('Only an open audit session can be cancelled.');
+    }
+
+    $runIds = $pdo->prepare('SELECT id FROM inventory_check_compare_runs WHERE event_id = ?');
+    $runIds->execute([$eventId]);
+    $ids = $runIds->fetchAll(PDO::FETCH_COLUMN);
+    if ($ids) {
+        $in = implode(',', array_map('intval', $ids));
+        $pdo->exec('DELETE FROM inventory_check_variance_lines WHERE run_id IN (' . $in . ')');
+        $pdo->prepare('DELETE FROM inventory_check_compare_runs WHERE event_id = ?')->execute([$eventId]);
+    }
+    $pdo->prepare('DELETE FROM inventory_check_scans WHERE event_id = ?')->execute([$eventId]);
+    $pdo->prepare('DELETE FROM inventory_check_events WHERE id = ?')->execute([$eventId]);
+}
+
+/**
  * @return array{rows: list<array<string, mixed>>, total: int, page: int, per_page: int}
  */
 function inventory_check_event_list(PDO $pdo, int $page = 1, int $perPage = 25): array
@@ -209,6 +234,7 @@ function inventory_check_serialize_scan(array $row): array
         'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,
         'flag' => (string) $row['flag'],
         'counted_qty' => isset($row['counted_qty']) ? (int) $row['counted_qty'] : 1,
+        'sku_id' => isset($row['sku_id']) && $row['sku_id'] !== null ? (int) $row['sku_id'] : null,
         'scanned_by' => (int) $row['scanned_by'],
         'scanned_by_name' => (string) ($row['scanned_by_name'] ?? ''),
         'scanned_at' => (string) $row['scanned_at'],
@@ -216,13 +242,19 @@ function inventory_check_serialize_scan(array $row): array
 }
 
 /**
- * Record a count line. SKU barcodes take counted_qty (upsert). Unique leftovers are +1 per code.
+ * Record a count line. SKU barcodes take counted_qty (upsert by code+batch). Unique leftovers are +1 per code.
  * Never mutates stock.
  *
  * @return array{result: string, scan: array<string, mixed>|null, message: string}
  */
-function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCode, ?int $countedQty = null): array
-{
+function inventory_check_scan(
+    PDO $pdo,
+    int $eventId,
+    int $userId,
+    string $rawCode,
+    ?int $countedQty = null,
+    ?string $batchNo = null
+): array {
     $event = inventory_check_event_fetch($pdo, $eventId);
     if ($event === null) {
         throw new RuntimeException('Inventory count not found.');
@@ -235,6 +267,7 @@ function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCo
     if ($code === '' || strlen($code) > 64) {
         throw new RuntimeException('Scan or type a barcode.');
     }
+    $batchNo = $batchNo !== null ? strtoupper(trim($batchNo)) : '';
 
     require_once __DIR__ . '/sku_barcodes.php';
     $sku = sku_barcode_fetch_by_code($pdo, $code);
@@ -243,10 +276,26 @@ function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCo
         if ($qty < 1 || $qty > 100000) {
             throw new RuntimeException('Enter how many you counted for this product.');
         }
+        if ($batchNo === '') {
+            throw new RuntimeException('Enter the batch number for this product.');
+        }
         $kind = (string) $sku['kind'];
         $productKey = $kind === 'honey' ? 'honey' : (string) $sku['product_key'];
         $variant = $kind === 'honey' ? (string) $sku['variant'] : null;
         $size = $kind === 'honey' ? (string) $sku['size'] : null;
+        $packagingRowId = null;
+        $supplierCode = null;
+        $bottlingDate = null;
+        if ($kind === 'honey') {
+            $pk = inventory_check_packaging_by_batch($pdo, $batchNo, $variant);
+            if ($pk !== null) {
+                $packagingRowId = (int) $pk['id'];
+                $supplierCode = (string) $pk['supplier_code'];
+                $bottlingDate = (string) $pk['bottling_date'];
+                $batchNo = (string) $pk['batch_no'];
+            }
+        }
+
         $dup = $pdo->prepare(
             'SELECT s.*, u.name AS scanned_by_name FROM inventory_check_scans s
              LEFT JOIN users u ON u.id = s.scanned_by
@@ -260,9 +309,22 @@ function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCo
                 throw new RuntimeException('Counted quantity for this product cannot exceed 100000.');
             }
             $pdo->prepare(
-                'UPDATE inventory_check_scans SET counted_qty = ?, scanned_by = ?, scanned_at = NOW(), flag = "ok"
+                'UPDATE inventory_check_scans
+                 SET counted_qty = ?, scanned_by = ?, scanned_at = NOW(), flag = "ok",
+                     packaging_row_id = COALESCE(?, packaging_row_id),
+                     supplier_code = COALESCE(?, supplier_code),
+                     bottling_date = COALESCE(?, bottling_date),
+                     batch_no = ?
                  WHERE id = ?'
-            )->execute([$totalQty, $userId, (int) $dupRow['id']]);
+            )->execute([
+                $totalQty,
+                $userId,
+                $packagingRowId,
+                $supplierCode,
+                $bottlingDate,
+                $batchNo,
+                (int) $dupRow['id'],
+            ]);
             $scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);
 
             return [
@@ -275,13 +337,17 @@ function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCo
             'INSERT INTO inventory_check_scans
                 (event_id, kind, product_key, barcode_id, sku_id, unit_id, code, packaging_row_id,
                  supplier_code, batch_no, bottling_date, variant, size, flag, counted_qty, scanned_by)
-             VALUES (?, ?, ?, NULL, ?, NULL, ?, NULL, NULL, NULL, NULL, ?, ?, "ok", ?, ?)'
+             VALUES (?, ?, ?, NULL, ?, NULL, ?, ?, ?, ?, ?, ?, ?, "ok", ?, ?)'
         )->execute([
             $eventId,
             $kind,
             $productKey,
             (int) $sku['id'],
             $code,
+            $packagingRowId,
+            $supplierCode,
+            $batchNo,
+            $bottlingDate,
             $variant,
             $size,
             $qty,
@@ -313,11 +379,26 @@ function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCo
         return ['result' => 'unknown', 'scan' => null, 'message' => 'Unknown barcode — not counted.'];
     }
 
+    $resolvedBatch = strtoupper(trim((string) ($resolved['batch_no'] ?? '')));
+    if ($batchNo === '') {
+        throw new RuntimeException('Enter the batch number for this barcode.');
+    }
+    if ($resolvedBatch !== '' && $batchNo !== $resolvedBatch) {
+        throw new RuntimeException(
+            'Batch number must match this barcode’s batch (' . $resolvedBatch . ').'
+        );
+    }
+    if ($resolvedBatch === '') {
+        $resolved['batch_no'] = $batchNo;
+    }
+
+    $qty = $countedQty !== null && $countedQty > 0 ? min(100000, $countedQty) : 1;
+
     $pdo->prepare(
         'INSERT INTO inventory_check_scans
             (event_id, kind, product_key, barcode_id, unit_id, code, packaging_row_id,
              supplier_code, batch_no, bottling_date, variant, size, flag, counted_qty, scanned_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)'
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     )->execute([
         $eventId,
         $resolved['kind'],
@@ -332,6 +413,7 @@ function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCo
         $resolved['variant'],
         $resolved['size'],
         $resolved['flag'],
+        $qty,
         $userId,
     ]);
 
@@ -343,6 +425,164 @@ function inventory_check_scan(PDO $pdo, int $eventId, int $userId, string $rawCo
     };
 
     return ['result' => $resolved['flag'] === 'ok' ? 'ok' : $resolved['flag'], 'scan' => $scan, 'message' => $message];
+}
+
+/**
+ * @return array<string, mixed>|null
+ */
+function inventory_check_packaging_by_batch(PDO $pdo, string $batchNo, ?string $variant = null): ?array
+{
+    $batchNo = strtoupper(trim($batchNo));
+    if ($batchNo === '') {
+        return null;
+    }
+    if ($variant !== null && trim($variant) !== '') {
+        $st = $pdo->prepare(
+            'SELECT * FROM honey_packaging_rows
+             WHERE UPPER(TRIM(batch_no)) = ? AND LOWER(TRIM(variant)) = ?
+             ORDER BY id DESC LIMIT 1'
+        );
+        $st->execute([$batchNo, strtolower(trim($variant))]);
+    } else {
+        $st = $pdo->prepare(
+            'SELECT * FROM honey_packaging_rows WHERE UPPER(TRIM(batch_no)) = ? ORDER BY id DESC LIMIT 1'
+        );
+        $st->execute([$batchNo]);
+    }
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+
+    return $row === false ? null : $row;
+}
+
+/**
+ * Update qty and/or batch on an open-event scan row.
+ *
+ * @return array<string, mixed>
+ */
+function inventory_check_scan_update(
+    PDO $pdo,
+    int $scanId,
+    int $userId,
+    bool $isManager,
+    ?int $countedQty = null,
+    ?string $batchNo = null
+): array {
+    $st = $pdo->prepare(
+        'SELECT s.*, e.status FROM inventory_check_scans s
+         INNER JOIN inventory_check_events e ON e.id = s.event_id
+         WHERE s.id = ? LIMIT 1'
+    );
+    $st->execute([$scanId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        throw new RuntimeException('Scan not found.');
+    }
+    if ((string) $row['status'] !== 'open') {
+        throw new RuntimeException('This inventory count is already closed.');
+    }
+    if (!$isManager && (int) $row['scanned_by'] !== $userId) {
+        throw new RuntimeException('You can only edit your own lines.');
+    }
+
+    $qty = $countedQty !== null ? $countedQty : (int) ($row['counted_qty'] ?? 1);
+    if ($qty < 1 || $qty > 100000) {
+        throw new RuntimeException('Quantity must be between 1 and 100000.');
+    }
+
+    $newBatch = $batchNo !== null ? strtoupper(trim($batchNo)) : strtoupper(trim((string) ($row['batch_no'] ?? '')));
+    if ($newBatch === '') {
+        throw new RuntimeException('Batch number is required.');
+    }
+
+    $skuId = (int) ($row['sku_id'] ?? 0);
+    $barcodeId = (int) ($row['barcode_id'] ?? 0);
+    if ($skuId < 1 && $barcodeId > 0) {
+        $orig = strtoupper(trim((string) ($row['batch_no'] ?? '')));
+        if ($orig !== '' && $newBatch !== $orig) {
+            throw new RuntimeException('Unique barcode batch cannot be changed (must stay ' . $orig . ').');
+        }
+        $newBatch = $orig !== '' ? $orig : $newBatch;
+    }
+
+    $packagingRowId = $row['packaging_row_id'] !== null ? (int) $row['packaging_row_id'] : null;
+    $supplierCode = $row['supplier_code'] !== null ? (string) $row['supplier_code'] : null;
+    $bottlingDate = $row['bottling_date'] !== null ? (string) $row['bottling_date'] : null;
+    if ((string) $row['kind'] === 'honey' && $skuId > 0) {
+        $pk = inventory_check_packaging_by_batch(
+            $pdo,
+            $newBatch,
+            $row['variant'] !== null ? (string) $row['variant'] : null
+        );
+        if ($pk !== null) {
+            $packagingRowId = (int) $pk['id'];
+            $supplierCode = (string) $pk['supplier_code'];
+            $bottlingDate = (string) $pk['bottling_date'];
+            $newBatch = (string) $pk['batch_no'];
+        } else {
+            $packagingRowId = null;
+        }
+    }
+
+    $pdo->prepare(
+        'UPDATE inventory_check_scans
+         SET counted_qty = ?, batch_no = ?, packaging_row_id = ?, supplier_code = ?, bottling_date = ?,
+             scanned_by = ?, scanned_at = NOW()
+         WHERE id = ?'
+    )->execute([
+        $qty,
+        $newBatch,
+        $packagingRowId,
+        $supplierCode,
+        $bottlingDate,
+        $userId,
+        $scanId,
+    ]);
+
+    return inventory_check_scan_get($pdo, $scanId);
+}
+
+/**
+ * Read-only variance preview (no DB write).
+ *
+ * @return array<string, mixed>
+ */
+function inventory_check_compare_preview(PDO $pdo, int $eventId): array
+{
+    $event = inventory_check_event_get($pdo, $eventId);
+    $built = inventory_check_compare_build($pdo, $eventId);
+    if ($built['scope'] === []) {
+        throw new RuntimeException('Nothing has been counted yet.');
+    }
+
+    $countedTotal = 0;
+    $systemTotal = 0.0;
+    $mismatch = 0;
+    $lines = [];
+    foreach ($built['lines'] as $i => $line) {
+        $countedTotal += (int) $line['counted_qty'];
+        $systemTotal += (float) $line['system_qty'];
+        if (abs((float) $line['variance']) > 0.001) {
+            $mismatch++;
+        }
+        $lines[] = array_merge($line, ['id' => $i + 1]);
+    }
+
+    return [
+        'preview' => true,
+        'run' => [
+            'id' => 0,
+            'event_id' => $eventId,
+            'scope' => implode(', ', $built['scope_labels']),
+            'line_count' => count($lines),
+            'mismatch_count' => $mismatch,
+            'counted_total' => $countedTotal,
+            'system_total' => (int) round($systemTotal),
+            'run_by_name' => '',
+            'run_at' => date('Y-m-d H:i:s'),
+        ],
+        'lines' => $lines,
+        'event' => $event,
+    ];
 }
 
 /**
@@ -716,7 +956,13 @@ function inventory_check_compare_build(PDO $pdo, int $eventId): array
                 $scope[] = 'honey';
                 $scopeLabels[] = 'Honey';
             }
-            $key = ((int) ($row['packaging_row_id'] ?? 0)) . '|' . (string) $row['size'];
+            $packId = (int) ($row['packaging_row_id'] ?? 0);
+            $sizeKey = (string) $row['size'];
+            if ($packId > 0) {
+                $key = $packId . '|' . $sizeKey;
+            } else {
+                $key = 'batch:' . strtoupper(trim((string) ($row['batch_no'] ?? ''))) . '|' . $sizeKey;
+            }
             $honeyCounted[$key] = ($honeyCounted[$key] ?? 0) + $qty;
             $honeyMeta[$key] = $row;
             continue;
@@ -786,18 +1032,48 @@ function inventory_check_compare_honey_lines(PDO $pdo, array $countedQty, array 
     );
     foreach ($st ? $st->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
         $rowId = (int) $row['id'];
+        $batchKeyPrefix = 'batch:' . strtoupper(trim((string) $row['batch_no']));
         foreach ($sizeCols as $size => $col) {
             $qty = (float) $row[$col];
             $key = $rowId . '|' . $size;
-            if ($qty <= 0 && !isset($countedQty[$key])) {
+            $batchKey = $batchKeyPrefix . '|' . $size;
+            if ($qty <= 0 && !isset($countedQty[$key]) && !isset($countedQty[$batchKey])) {
                 continue;
             }
             $system[$key] = $qty;
+            $system[$batchKey] = $qty;
             $rowInfo[$key] = $row;
+            $rowInfo[$batchKey] = $row;
         }
     }
 
+    // Prefer packaging-row keys; drop duplicate batch: aliases that share the same row+size.
     $keys = array_unique(array_merge(array_keys($countedQty), array_keys($system)));
+    $seenPack = [];
+    $filteredKeys = [];
+    foreach ($keys as $key) {
+        $info = $rowInfo[$key] ?? null;
+        $size = explode('|', (string) $key, 2)[1] ?? '';
+        if ($info !== null) {
+            $packKey = (int) $info['id'] . '|' . $size;
+            if (isset($seenPack[$packKey])) {
+                continue;
+            }
+            $seenPack[$packKey] = true;
+            $filteredKeys[] = $packKey;
+            if (!isset($countedQty[$packKey]) && isset($countedQty[$key])) {
+                $countedQty[$packKey] = $countedQty[$key];
+                $meta[$packKey] = $meta[$key] ?? $meta[$packKey] ?? null;
+            }
+            if (!isset($system[$packKey]) && isset($system[$key])) {
+                $system[$packKey] = $system[$key];
+                $rowInfo[$packKey] = $info;
+            }
+            continue;
+        }
+        $filteredKeys[] = $key;
+    }
+    $keys = array_unique($filteredKeys);
     $lines = [];
     foreach ($keys as $key) {
         [$rowIdRaw, $size] = array_pad(explode('|', (string) $key, 2), 2, '');

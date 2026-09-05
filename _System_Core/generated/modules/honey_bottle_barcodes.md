@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-09-05T04:15:53+02:00
+generated: 2026-09-05T11:35:34+02:00
 type: module
 function_count: 60
 ---
@@ -46,10 +46,10 @@ function_count: 60
 - `includes/honey_bottle_barcodes.php`:2474 — `'size_label' => honey_bottle_size_label((string) $row['size']),`
 - `includes/honey_inventory.php`:645 — `'size_label' => honey_bottle_size_label($size),`
 - `includes/honey_inventory.php`:649 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`
-- `includes/inventory_check.php`:209 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
-- `includes/inventory_check.php`:536 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
-- `includes/inventory_check.php`:828 — `'size_label' => $size !== '' ? honey_bottle_size_label($size) : null,`
-- `includes/inventory_check.php`:887 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
+- `includes/inventory_check.php`:234 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
+- `includes/inventory_check.php`:776 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
+- `includes/inventory_check.php`:1104 — `'size_label' => $size !== '' ? honey_bottle_size_label($size) : null,`
+- `includes/inventory_check.php`:1163 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
 - `includes/pack_cancel_restock.php`:101 — `$sizeLabel = honey_bottle_size_label($size);`
 - `includes/pack_cancel_restock.php`:144 — `$sizeLabel = $isHoney ? honey_bottle_size_label($size) : dept_pouch_unit_singular($productKey);`
 - `includes/pos_unified.php`:117 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`

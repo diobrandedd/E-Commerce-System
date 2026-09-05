@@ -47,14 +47,18 @@ api_dispatch([
     'context' => 'api_inventory_check_context',
     'event_open' => 'api_inventory_check_event_open',
     'event_close' => 'api_inventory_check_event_close',
+    'event_cancel' => 'api_inventory_check_event_cancel',
     'event_list' => 'api_inventory_check_event_list',
     'scan' => 'api_inventory_check_scan',
+    'scan_update' => 'api_inventory_check_scan_update',
     'scan_remove' => 'api_inventory_check_scan_remove',
     'summary' => 'api_inventory_check_summary',
     'scan_log' => 'api_inventory_check_scan_log',
+    'compare_preview' => 'api_inventory_check_compare_preview',
     'compare_run' => 'api_inventory_check_compare_run',
     'compare_get' => 'api_inventory_check_compare_get',
     'compare_list' => 'api_inventory_check_compare_list',
+    'finalize' => 'api_inventory_check_finalize',
 ]);
 
 function api_inventory_check_context(): void
@@ -110,6 +114,20 @@ function api_inventory_check_event_close(): void
     }
 }
 
+function api_inventory_check_event_cancel(): void
+{
+    api_method_allowed(['POST']);
+    api_inventory_check_require_csrf();
+    api_inventory_check_require_manage();
+    $in = api_input();
+    try {
+        inventory_check_event_cancel(ims_pdo(), (int) ($in['event_id'] ?? 0));
+        api_ok(['cancelled' => true]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
 function api_inventory_check_event_list(): void
 {
     api_method_allowed(['GET']);
@@ -135,7 +153,8 @@ function api_inventory_check_scan(): void
             $eventId,
             (int) $user['id'],
             (string) ($in['code'] ?? ''),
-            isset($in['qty']) ? (int) $in['qty'] : null
+            isset($in['qty']) ? (int) $in['qty'] : null,
+            isset($in['batch_no']) ? (string) $in['batch_no'] : null
         );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
@@ -151,6 +170,46 @@ function api_inventory_check_scan(): void
             $eventId,
             inventory_check_can_view_all($user) ? null : (int) $user['id']
         ),
+    ]);
+}
+
+function api_inventory_check_scan_update(): void
+{
+    api_method_allowed(['POST']);
+    api_inventory_check_require_csrf();
+    $user = api_inventory_check_require_scan();
+    $in = api_input();
+    $pdo = ims_pdo();
+    try {
+        $scan = inventory_check_scan_update(
+            $pdo,
+            (int) ($in['scan_id'] ?? 0),
+            (int) $user['id'],
+            inventory_check_can_manage($user),
+            isset($in['qty']) ? (int) $in['qty'] : null,
+            isset($in['batch_no']) ? (string) $in['batch_no'] : null
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+        return;
+    }
+
+    $eventId = (int) ($in['event_id'] ?? 0);
+    if ($eventId < 1 && isset($scan['id'])) {
+        $st = $pdo->prepare('SELECT event_id FROM inventory_check_scans WHERE id = ?');
+        $st->execute([(int) ($in['scan_id'] ?? 0)]);
+        $eventId = (int) $st->fetchColumn();
+    }
+
+    api_ok([
+        'scan' => $scan,
+        'summary' => $eventId > 0
+            ? inventory_check_summary(
+                $pdo,
+                $eventId,
+                inventory_check_can_view_all($user) ? null : (int) $user['id']
+            )
+            : null,
     ]);
 }
 
@@ -227,6 +286,20 @@ function api_inventory_check_scan_log(): void
     }
 }
 
+function api_inventory_check_compare_preview(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_inventory_check_require_scan();
+    if (!inventory_check_can_manage($user) && !inventory_check_can_view_all($user)) {
+        api_fail('Forbidden.', 403);
+    }
+    try {
+        api_ok(inventory_check_compare_preview(ims_pdo(), (int) ($_GET['event_id'] ?? 0)));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
 function api_inventory_check_compare_run(): void
 {
     api_method_allowed(['POST']);
@@ -239,6 +312,26 @@ function api_inventory_check_compare_run(): void
             (int) ($in['event_id'] ?? 0),
             (int) $user['id']
         ));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_inventory_check_finalize(): void
+{
+    api_method_allowed(['POST']);
+    api_inventory_check_require_csrf();
+    $user = api_inventory_check_require_manage();
+    $in = api_input();
+    $pdo = ims_pdo();
+    $eventId = (int) ($in['event_id'] ?? 0);
+    try {
+        $compare = inventory_check_compare_run($pdo, $eventId, (int) $user['id']);
+        $event = inventory_check_event_close($pdo, (int) $user['id'], $eventId);
+        api_ok([
+            'event' => $event,
+            'compare' => $compare,
+        ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

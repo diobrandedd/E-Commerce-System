@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-05T04:15:37+02:00
+generated: 2026-09-05T11:35:19+02:00
 type: memory-bank
 table_count: 94
 ---
@@ -1017,16 +1017,21 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_current]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_open]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_close]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_update]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_remove]] |
 
 ## `inventory_check_scans`
 
 | File | Function |
 |------|----------|
+| `api/v1/inventory_check.php` | [[modules/inventory_check#api_inventory_check_scan_update]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_update]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_get]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_remove]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_summary]] |
@@ -1038,6 +1043,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_run]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
@@ -1047,6 +1053,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_run]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
 
@@ -1162,6 +1169,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_packaging_availability]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_available_qty]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_deduct_packaging_aggregate]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_packaging_by_batch]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_honey_lines]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
