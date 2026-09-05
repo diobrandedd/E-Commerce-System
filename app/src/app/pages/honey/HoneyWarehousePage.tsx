@@ -632,7 +632,7 @@ function WarehouseBarcodeStockOutModal({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const cameraTitleId = "honey-warehouse-barcode-camera";
-  const { inputRef, refocus, inputProps } = useScanWedgeField(!cameraOpen);
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
 
   const candidateKey = (candidate: HoneyWarehouseBarcodeCandidate) =>
     `${candidate.supplier_id}|${candidate.arrival_date}|${candidate.variant}`;
@@ -709,9 +709,10 @@ function WarehouseBarcodeStockOutModal({
         {message && <AppSuccessNotice message={message} />}
         {error && <AppErrorBanner message={error} />}
         <p className="text-xs text-muted-foreground">
-          Scan the supplier/date label, choose the variant, then enter gallons moving to Production.
+          Type or scan the supplier/date barcode (Enter to look up), choose the variant, then enter gallons
+          moving to Production.
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <input
             ref={inputRef}
             {...inputProps}
@@ -723,11 +724,20 @@ function WarehouseBarcodeStockOutModal({
                 void lookup(code);
               }
             }}
-            placeholder="Scan supplier/date barcode"
-            className="flex-1 border rounded-lg px-3 py-2.5 font-mono text-sm"
+            placeholder="Type or scan supplier/date barcode"
+            className="flex-1 min-w-[12rem] border rounded-lg px-3 py-2.5 font-mono text-sm"
+            autoComplete="off"
           />
-          <Button type="button" variant="outline" onClick={() => setCameraOpen(true)}>
-            <Camera size={16} /> Scan
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!code.trim()}
+            onClick={() => void lookup(code)}
+          >
+            Look up
+          </Button>
+          <Button type="button" variant="outline" className="gap-1.5" onClick={() => setCameraOpen(true)}>
+            <Camera size={16} /> Camera
           </Button>
         </div>
         {candidates.length > 0 && (

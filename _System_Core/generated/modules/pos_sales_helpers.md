@@ -1,7 +1,7 @@
 ---
 title: pos_sales_helpers
 source: includes/pos_sales_helpers.php
-generated: 2026-09-04T05:34:16+02:00
+generated: 2026-09-04T09:07:02+02:00
 type: module
 function_count: 3
 ---
