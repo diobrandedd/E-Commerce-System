@@ -1,11 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { Loader2 } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
-import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
-import { QtyCounter } from "@/app/components/honey/QtyCounter";
-import { useAuth } from "@/app/context/AuthContext";
-import { canExecutiveDirectEdit } from "@/app/lib/honeyPermissions";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { deptStockInYieldHint, type DeptSupplierProductKey } from "@/app/lib/deptProducts";
 import { fetchDeptInventory, type DeptInventoryRow } from "@/app/lib/deptInventory";
@@ -31,20 +27,12 @@ function yieldDetail(row: DeptInventoryRow): string | null {
   return null;
 }
 
-function finishedSummary(row: DeptInventoryRow): string {
-  const sellUnit = row.inventory_unit ?? row.unit ?? "unit";
-  return `Finished ${sellUnit} count — stock in and produce from Raw Materials`;
-}
-
 export function DeptProductFinishedPage({ productSlug: productSlugProp }: { productSlug?: string } = {}) {
   const { productSlug: paramSlug = "" } = useParams();
   const productSlug = productSlugProp || paramSlug;
   const config = PRODUCT_INVENTORY_ROUTES[productSlug];
-  const { user } = useAuth();
-  const canExecEdit = canExecutiveDirectEdit(user);
   const [rows, setRows] = useState<DeptInventoryRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editRow, setEditRow] = useState<DeptInventoryRow | null>(null);
 
   const refresh = useCallback(async () => {
     if (!config?.productKey) return;
@@ -67,14 +55,6 @@ export function DeptProductFinishedPage({ productSlug: productSlugProp }: { prod
   const unit = row?.inventory_unit ?? row?.unit ?? "units";
   const hint = row ? yieldDetail(row) : null;
   const rawPath = config?.rawMaterialsPath;
-
-  const retailValue = useMemo(() => {
-    const price = row?.selling_price;
-    if (price == null || price === "") return null;
-    const p = typeof price === "string" ? parseFloat(price) : Number(price);
-    if (!Number.isFinite(p)) return null;
-    return onHand * p;
-  }, [row?.selling_price, onHand]);
 
   if (!config?.productKey) {
     return null;
@@ -125,41 +105,6 @@ export function DeptProductFinishedPage({ productSlug: productSlugProp }: { prod
             </div>
           </div>
 
-          <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="px-5 py-4 border-b bg-secondary/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold">{row?.product_label ?? config.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{row ? finishedSummary(row) : "—"}</p>
-              </div>
-              {canExecEdit && row?.id != null && (
-                <button
-                  type="button"
-                  onClick={() => setEditRow(row)}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-background shrink-0"
-                >
-                  Edit count
-                </button>
-              )}
-            </div>
-            <div className="px-5 py-6">
-              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-2">Current vs baseline</p>
-                  <QtyCounter
-                    current={String(row?.current_qty ?? 0)}
-                    initial={String(row?.initial_qty ?? 0)}
-                  />
-                </div>
-                {retailValue != null && onHand > 0 && (
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground">At sell price</p>
-                    <p className="text-lg font-semibold mt-0.5">{peso(retailValue)}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
           {hint && rawPath && (
             <div className="rounded-xl border border-[#C8900A]/25 bg-[#C8900A]/5 px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-[#8a6506] font-semibold mb-1">Production yield</p>
@@ -176,15 +121,6 @@ export function DeptProductFinishedPage({ productSlug: productSlugProp }: { prod
             </p>
           )}
         </div>
-      )}
-
-      {editRow?.id != null && (
-        <ExecutiveRowEditModal
-          stage="dept"
-          row={{ ...editRow, id: editRow.id }}
-          onClose={() => setEditRow(null)}
-          onDone={() => { setEditRow(null); void refresh(); }}
-        />
       )}
     </PageLayout>
   );
