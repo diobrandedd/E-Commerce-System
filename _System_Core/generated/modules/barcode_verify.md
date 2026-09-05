@@ -1,7 +1,7 @@
 ---
 title: barcode_verify
 source: includes/barcode_verify.php
-generated: 2026-09-05T04:13:52+02:00
+generated: 2026-09-05T04:15:40+02:00
 type: module
 function_count: 3
 ---

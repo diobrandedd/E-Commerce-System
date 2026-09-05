@@ -1,7 +1,7 @@
 ---
 title: shopee_spx_packing_list
 source: includes/shopee_spx_packing_list.php
-generated: 2026-09-05T04:14:40+02:00
+generated: 2026-09-05T04:16:29+02:00
 type: module
 function_count: 4
 ---
