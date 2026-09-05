@@ -1,7 +1,7 @@
 ---
 title: inventory_edit_log
 source: includes/inventory_edit_log.php
-generated: 2026-09-05T03:48:15+02:00
+generated: 2026-09-05T04:14:18+02:00
 type: module
 function_count: 3
 ---
@@ -34,7 +34,7 @@ function_count: 3
 **Callers (8):**
 
 - `includes/dept_inventory.php`:673 — `inventory_edit_log_write(`
-- `includes/honey_inventory.php`:799 — `inventory_edit_log_write($pdo, $userId, $rowTable, $rowId, $field, $old, $new, $source);`
+- `includes/honey_inventory.php`:1029 — `inventory_edit_log_write($pdo, $userId, $rowTable, $rowId, $field, $old, $new, $source);`
 - `includes/material_inventory.php`:941 — `inventory_edit_log_write(`
 - `includes/material_inventory.php`:1412 — `inventory_edit_log_write(`
 - `includes/rts_inventory_sync.php`:741 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, $curCol, (string) $old, (string) $new, 'monthly_inventory');`

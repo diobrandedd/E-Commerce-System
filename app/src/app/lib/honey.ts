@@ -50,18 +50,14 @@ export const HONEY_BOTTLE_OPTIONS: { value: HoneyBottleSize; label: string }[] =
   { value: "gallon", label: "Gallon" },
 ];
 
-/** Exact constant — match PHP HONEY_ML_PER_US_GALLON */
-const ML_PER_US_GALLON = 3785.411784;
+/** Factory default — match PHP HONEY_ML_PER_US_GALLON (override via Settings). */
+export const DEFAULT_ML_PER_US_GALLON = 3785.411784;
 
-const ML_PER_BOTTLE: Record<HoneyBottleSize, number> = {
-  "250ml": 250,
-  "350ml": 350,
-  liter: 1000,
-  gallon: ML_PER_US_GALLON,
-};
-
-export function mlPerBottle(size: HoneyBottleSize): number {
-  return ML_PER_BOTTLE[size];
+export function mlPerBottle(size: HoneyBottleSize, mlPerGallon: number = DEFAULT_ML_PER_US_GALLON): number {
+  if (size === "gallon") return mlPerGallon > 0 ? mlPerGallon : DEFAULT_ML_PER_US_GALLON;
+  if (size === "liter") return 1000;
+  if (size === "350ml") return 350;
+  return 250;
 }
 
 export interface BottleLine {
@@ -69,23 +65,24 @@ export interface BottleLine {
   qty: string;
 }
 
-export function linesTotalMl(lines: BottleLine[]): number {
+export function linesTotalMl(lines: BottleLine[], mlPerGallon: number = DEFAULT_ML_PER_US_GALLON): number {
   let total = 0;
   for (const line of lines) {
     const qty = parseFloat(line.qty);
     if (!Number.isFinite(qty) || qty <= 0) continue;
-    total += qty * mlPerBottle(line.size);
+    total += qty * mlPerBottle(line.size, mlPerGallon);
   }
   return total;
 }
 
-export function mlToGallons(ml: number): number {
+export function mlToGallons(ml: number, mlPerGallon: number = DEFAULT_ML_PER_US_GALLON): number {
   if (ml <= 0) return 0;
-  return ml / ML_PER_US_GALLON;
+  const denom = mlPerGallon > 0 ? mlPerGallon : DEFAULT_ML_PER_US_GALLON;
+  return ml / denom;
 }
 
-export function linesToGallons(lines: BottleLine[]): number {
-  return mlToGallons(linesTotalMl(lines));
+export function linesToGallons(lines: BottleLine[], mlPerGallon: number = DEFAULT_ML_PER_US_GALLON): number {
+  return mlToGallons(linesTotalMl(lines, mlPerGallon), mlPerGallon);
 }
 
 /** Human-friendly gallon display (1 decimal). */

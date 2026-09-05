@@ -392,7 +392,8 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
     }
 
     $sizeQtys = honey_aggregate_bottle_lines($lines);
-    $usedGallons = honey_lines_to_gallons($lines);
+    $mlPerGallon = honey_ml_per_gallon($pdo);
+    $usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);
     if ($usedGallons <= 0) {
         throw new RuntimeException('Enter quantity for at least one bottle.');
     }
@@ -476,6 +477,235 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
         'remaining_production_gallons' => round(max(0, $remaining), 4),
         'is_new_packaging_row' => $isNew,
         'packaging_deduct' => $packagingDeduct ?? [],
+        'ml_per_gallon' => $mlPerGallon,
+    ];
+}
+
+/**
+ * Ensure packaging row exists for a production lot (create if missing).
+ *
+ * @return array{packaging_row_id:int, batch_no:string, bottling_date:string, is_new:bool, production:array<string,mixed>}
+ */
+function honey_production_ensure_packaging_row(PDO $pdo, int $userId, int $productionRowId): array
+{
+    $pr = honey_fetch_production($pdo, $productionRowId);
+    if (!$pr) {
+        throw new RuntimeException('Production row not found.');
+    }
+    $existing = honey_fetch_packaging_by_production($pdo, $productionRowId);
+    if ($existing !== null) {
+        return [
+            'packaging_row_id' => (int) $existing['id'],
+            'batch_no' => (string) $existing['batch_no'],
+            'bottling_date' => (string) $existing['bottling_date'],
+            'is_new' => false,
+            'production' => $pr,
+        ];
+    }
+
+    $bottlingDate = date('Y-m-d');
+    $batchNo = honey_unique_packaging_batch_no(
+        $pdo,
+        honey_batch_no((string) $pr['supplier_code'], $bottlingDate),
+        (string) $pr['variant']
+    );
+    $ins = $pdo->prepare(
+        'INSERT INTO honey_packaging_rows (
+            production_row_id, supplier_code, batch_no, bottling_date, variant,
+            current_liter, initial_liter, current_250ml, initial_250ml,
+            current_350ml, initial_350ml, current_gallon, initial_gallon, created_by
+         ) VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?)'
+    );
+    $ins->execute([
+        $productionRowId,
+        $pr['supplier_code'],
+        $batchNo,
+        $bottlingDate,
+        $pr['variant'],
+        $userId,
+    ]);
+
+    return [
+        'packaging_row_id' => (int) $pdo->lastInsertId(),
+        'batch_no' => $batchNo,
+        'bottling_date' => $bottlingDate,
+        'is_new' => true,
+        'production' => $pr,
+    ];
+}
+
+/**
+ * Deduct production gallons for bottled volume (caller must be in a transaction when needed).
+ */
+function honey_production_deduct_gallons(PDO $pdo, int $productionRowId, float $usedGallons): void
+{
+    if ($usedGallons <= 0) {
+        throw new RuntimeException('Bottle volume must be greater than zero.');
+    }
+    $upd = $pdo->prepare(
+        'UPDATE honey_production_rows SET current_qty = current_qty - ? WHERE id = ? AND current_qty >= ?'
+    );
+    $upd->execute([$usedGallons, $productionRowId, $usedGallons]);
+    if ($upd->rowCount() < 1) {
+        throw new RuntimeException('Could not deduct production quantity.');
+    }
+}
+
+/**
+ * Stock finished bottles into packaging from a production lot (deduct gallons + credit aggregates).
+ *
+ * @return array<string, mixed>
+ */
+function honey_production_bottle_stock_in(
+    PDO $pdo,
+    int $userId,
+    int $productionRowId,
+    string $variant,
+    string $size,
+    int $qty
+): array {
+    require_once __DIR__ . '/honey_bottle_barcodes.php';
+    require_once __DIR__ . '/sku_barcodes.php';
+
+    $variant = honey_normalize_variant($variant);
+    $size = honey_normalize_bottle_size($size);
+    if ($qty < 1 || $qty > 5000) {
+        throw new RuntimeException('Quantity must be between 1 and 5000.');
+    }
+
+    $pr = honey_fetch_production($pdo, $productionRowId);
+    if (!$pr) {
+        throw new RuntimeException('Production row not found.');
+    }
+    if (honey_normalize_variant((string) $pr['variant']) !== $variant) {
+        throw new RuntimeException('SKU variant does not match the selected production lot.');
+    }
+
+    $lines = [['size' => $size, 'qty' => $qty]];
+    $sizeQtys = honey_aggregate_bottle_lines($lines);
+    $mlPerGallon = honey_ml_per_gallon($pdo);
+    $usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);
+    if ($usedGallons <= 0) {
+        throw new RuntimeException('Enter quantity for at least one bottle.');
+    }
+
+    $available = (float) $pr['current_qty'];
+    if ($usedGallons > $available + 1e-9) {
+        $usedFriendly = round($usedGallons, 1);
+        $availFriendly = round($available, 1);
+        throw new RuntimeException(
+            "Bottled volume uses {$usedFriendly} gallon/s but only {$availFriendly} gallon/s remain in production."
+        );
+    }
+
+    $packagingDeduct = [];
+    $credit = ['primary_request_id' => null, 'credited' => $qty];
+    $owns = !$pdo->inTransaction();
+    if ($owns) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $ensured = honey_production_ensure_packaging_row($pdo, $userId, $productionRowId);
+        $packId = (int) $ensured['packaging_row_id'];
+        $batchNo = (string) $ensured['batch_no'];
+
+        honey_production_deduct_gallons($pdo, $productionRowId, $usedGallons);
+        honey_bottle_adjust_aggregate($pdo, $packId, $size, (float) $qty);
+        $packagingDeduct = honey_bottling_deduct_packaging_stocks($pdo, $userId, $sizeQtys, $batchNo);
+
+        $sku = sku_barcode_fetch_honey($pdo, $variant, $size);
+        if ($sku !== null) {
+            $credit = sku_barcode_credit_honey_requests(
+                $pdo,
+                $userId,
+                (int) $sku['id'],
+                $variant,
+                $size,
+                $qty,
+                $packId
+            );
+        }
+
+        if ($owns) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($owns && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    $remaining = $available - $usedGallons;
+
+    return [
+        'kind' => 'honey',
+        'variant' => $variant,
+        'size' => $size,
+        'size_label' => honey_bottle_size_label($size),
+        'qty' => $qty,
+        'packaging_row_id' => $packId,
+        'batch_no' => $batchNo,
+        'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),
+        'primary_request_id' => $credit['primary_request_id'] ?? null,
+        'used_gallons' => round($usedGallons, 4),
+        'remaining_production_gallons' => round(max(0, $remaining), 4),
+        'is_new_packaging_row' => !empty($ensured['is_new']),
+        'packaging_deduct' => $packagingDeduct,
+        'ml_per_gallon' => $mlPerGallon,
+        'production_row_id' => $productionRowId,
+    ];
+}
+
+/**
+ * Deduct production gallons for a unique bottle sticker already tied to that lot's packaging.
+ *
+ * @return array{used_gallons:float, remaining_production_gallons:float, ml_per_gallon:float, packaging_row_id:int}
+ */
+function honey_production_deduct_for_unique_stock_in(
+    PDO $pdo,
+    int $userId,
+    int $productionRowId,
+    int $packagingRowId,
+    string $size
+): array {
+    $pr = honey_fetch_production($pdo, $productionRowId);
+    if (!$pr) {
+        throw new RuntimeException('Production row not found.');
+    }
+    $pk = honey_fetch_packaging($pdo, $packagingRowId);
+    if ($pk === null) {
+        throw new RuntimeException('Packaging row not found.');
+    }
+    if ((int) ($pk['production_row_id'] ?? 0) !== $productionRowId) {
+        throw new RuntimeException('This barcode belongs to a different production lot. Select the matching lot.');
+    }
+
+    $size = honey_normalize_bottle_size($size);
+    $mlPerGallon = honey_ml_per_gallon($pdo);
+    $usedGallons = honey_lines_to_gallons([['size' => $size, 'qty' => 1]], $mlPerGallon);
+    $available = (float) $pr['current_qty'];
+    if ($usedGallons > $available + 1e-9) {
+        $usedFriendly = round($usedGallons, 1);
+        $availFriendly = round($available, 1);
+        throw new RuntimeException(
+            "Bottled volume uses {$usedFriendly} gallon/s but only {$availFriendly} gallon/s remain in production."
+        );
+    }
+
+    honey_production_deduct_gallons($pdo, $productionRowId, $usedGallons);
+    honey_bottling_deduct_packaging_stocks(
+        $pdo,
+        $userId,
+        honey_aggregate_bottle_lines([['size' => $size, 'qty' => 1]]),
+        (string) $pk['batch_no']
+    );
+
+    return [
+        'used_gallons' => round($usedGallons, 4),
+        'remaining_production_gallons' => round(max(0, $available - $usedGallons), 4),
+        'ml_per_gallon' => $mlPerGallon,
+        'packaging_row_id' => $packagingRowId,
     ];
 }
 

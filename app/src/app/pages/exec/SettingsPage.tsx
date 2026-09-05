@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, ShoppingCart, Tag } from "lucide-react";
+import { Loader2, ShoppingCart, Tag, Droplets } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import {
@@ -8,6 +8,7 @@ import {
 } from "@/app/components/layout/appFeedbackMotion";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
 import { skuBarcodesApi, type SkuBarcodeRow } from "@/app/lib/skuBarcodes";
+import { DEFAULT_ML_PER_US_GALLON } from "@/app/lib/honey";
 
 interface PosPinRow {
   id: number;
@@ -60,6 +61,13 @@ export function SettingsPage() {
   const [skuOk, setSkuOk] = useState<string | null>(null);
   const [skuErr, setSkuErr] = useState<string | null>(null);
 
+  const [mlPerGallon, setMlPerGallon] = useState(String(DEFAULT_ML_PER_US_GALLON));
+  const [mlDefault, setMlDefault] = useState(DEFAULT_ML_PER_US_GALLON);
+  const [mlLoading, setMlLoading] = useState(true);
+  const [mlSaving, setMlSaving] = useState(false);
+  const [mlOk, setMlOk] = useState<string | null>(null);
+  const [mlErr, setMlErr] = useState<string | null>(null);
+
   const loadPins = useCallback(async () => {
     setPinsLoading(true);
     try {
@@ -99,10 +107,46 @@ export function SettingsPage() {
     }
   }, []);
 
+  const loadHoneyVolume = useCallback(async () => {
+    setMlLoading(true);
+    setMlErr(null);
+    try {
+      const data = await apiGet<{ ml_per_gallon: number; default_ml_per_gallon: number }>(
+        "settings.php",
+        "honey_volume_get",
+      );
+      setMlPerGallon(String(data.ml_per_gallon));
+      setMlDefault(data.default_ml_per_gallon ?? DEFAULT_ML_PER_US_GALLON);
+    } catch (e) {
+      setMlErr(e instanceof ApiError ? e.message : "Could not load honey volume setting.");
+    } finally {
+      setMlLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadPins();
     void loadSkuRows();
-  }, [loadPins, loadSkuRows]);
+    void loadHoneyVolume();
+  }, [loadPins, loadSkuRows, loadHoneyVolume]);
+
+  const saveHoneyVolume = async () => {
+    setMlSaving(true);
+    setMlOk(null);
+    setMlErr(null);
+    try {
+      const n = Number(mlPerGallon);
+      const res = await apiPost<{ ml_per_gallon: number }>("settings.php", "honey_volume_save", {
+        ml_per_gallon: n,
+      });
+      setMlPerGallon(String(res.ml_per_gallon));
+      setMlOk(`Saved ml per gallon (${res.ml_per_gallon}).`);
+    } catch (e) {
+      setMlErr(e instanceof ApiError ? e.message : "Could not save honey volume.");
+    } finally {
+      setMlSaving(false);
+    }
+  };
 
   const saveAllSku = async () => {
     setSkuSaving(true);
@@ -206,6 +250,57 @@ export function SettingsPage() {
         {posMsg?.type === "err" && <AppErrorBanner message={posMsg.text} />}
         {skuOk && <AppSuccessNotice message={skuOk} />}
         {skuErr && <AppErrorBanner message={skuErr} />}
+        {mlOk && <AppSuccessNotice message={mlOk} />}
+        {mlErr && <AppErrorBanner message={mlErr} />}
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <Droplets size={18} className="text-[#C8900A]" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Honey volume</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Milliliters per 1 production gallon used when bottling deducts gallons. Default is the US gallon (
+                {mlDefault} ml). Changing this does not rewrite past deductions.
+              </p>
+            </div>
+          </div>
+          {mlLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="px-6 py-5 flex flex-wrap items-end gap-3">
+              <div className="w-48">
+                <label className="text-xs text-muted-foreground">ml per gallon</label>
+                <input
+                  type="number"
+                  min={1000}
+                  max={100000}
+                  step="any"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={mlPerGallon}
+                  onChange={e => setMlPerGallon(e.target.value)}
+                />
+              </div>
+              <Button
+                type="button"
+                disabled={mlSaving}
+                onClick={() => void saveHoneyVolume()}
+                className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+              >
+                {mlSaving ? <Loader2 className="animate-spin" size={14} /> : "Save"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={mlSaving}
+                onClick={() => setMlPerGallon(String(mlDefault))}
+              >
+                Reset to default
+              </Button>
+            </div>
+          )}
+        </div>
 
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
           <div className="px-6 py-4 border-b border-border flex items-center justify-between gap-4">

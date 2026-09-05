@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-04 — Production bottle scan stock-in + ml/gal setting
+**Change:** Production scan stock-in requires a gallon lot, credits packaging, deducts production gallons; Settings `honey.ml_per_gallon` (phase 75 `app_settings`). → [[problems/records/2026-09-04_production-bottle-scan-stock-in]]
+
 ### 2026-09-04 — Sales history reprint
 **Change:** Executive Sales walk-in history expanded row has **Reprint** — rebuilds receipt from `pos_sales` / `pos_receipt_items` and opens Chrome print (no PDF storage).
 

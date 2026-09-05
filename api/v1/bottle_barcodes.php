@@ -436,8 +436,11 @@ function api_bottle_scan_stock_in(): void
     $qty = isset($in['qty']) ? (int) $in['qty'] : null;
     $packId = isset($in['packaging_row_id']) ? (int) $in['packaging_row_id'] : 0;
     $customBatchNo = trim((string) ($in['batch_no'] ?? ''));
+    $productionRowId = isset($in['production_row_id']) ? (int) $in['production_row_id'] : 0;
     require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
-    $sku = sku_barcode_fetch_by_code(ims_pdo(), $code);
+    require_once dirname(__DIR__, 2) . '/includes/honey_inventory.php';
+    $pdo = ims_pdo();
+    $sku = sku_barcode_fetch_by_code($pdo, $code);
     if ($sku !== null) {
         if ((string) $sku['kind'] !== 'honey') {
             api_fail('This SKU is not a honey product. Use the dept scan-in page.', 422);
@@ -445,14 +448,36 @@ function api_bottle_scan_stock_in(): void
         if ($qty === null || $qty < 1) {
             api_fail('Enter how many bottles to stock in for this SKU.', 422);
         }
-        if ($packId < 1 && $customBatchNo === '') {
-            api_fail('Enter a custom batch number before stocking in SKU barcodes.', 422);
-        }
         try {
+            if ($productionRowId > 0) {
+                $stocked = honey_production_bottle_stock_in(
+                    $pdo,
+                    (int) $user['id'],
+                    $productionRowId,
+                    (string) $sku['variant'],
+                    (string) $sku['size'],
+                    $qty
+                );
+                $payload = array_merge($stocked, [
+                    'lookup_kind' => 'sku',
+                    'code' => (string) $sku['code'],
+                    'variant' => (string) $sku['variant'],
+                    'size' => (string) $sku['size'],
+                    'size_label' => honey_bottle_size_label((string) $sku['size']),
+                ]);
+                if (!empty($stocked['primary_request_id'])) {
+                    require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
+                    $payload['request'] = honey_bottle_request_get($pdo, (int) $stocked['primary_request_id']);
+                }
+                api_ok($payload);
+            }
+            if ($packId < 1 && $customBatchNo === '') {
+                api_fail('Select a production lot or enter a custom batch number before stocking in SKU barcodes.', 422);
+            }
             if ($packId < 1 && $customBatchNo !== '') {
                 $reused = false;
                 $customPack = honey_bottle_create_custom_packaging(
-                    ims_pdo(),
+                    $pdo,
                     (int) $user['id'],
                     $customBatchNo,
                     (string) $sku['variant'],
@@ -463,7 +488,7 @@ function api_bottle_scan_stock_in(): void
                 $packId = (int) $customPack['id'];
             }
             $stocked = sku_barcode_honey_stock_in(
-                ims_pdo(),
+                $pdo,
                 (int) $user['id'],
                 (string) $sku['variant'],
                 (string) $sku['size'],
@@ -479,7 +504,7 @@ function api_bottle_scan_stock_in(): void
             ]);
             if (!empty($stocked['primary_request_id'])) {
                 require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
-                $payload['request'] = honey_bottle_request_get(ims_pdo(), (int) $stocked['primary_request_id']);
+                $payload['request'] = honey_bottle_request_get($pdo, (int) $stocked['primary_request_id']);
             }
             api_ok($payload);
         } catch (Throwable $e) {
@@ -487,7 +512,39 @@ function api_bottle_scan_stock_in(): void
         }
     }
     $adopt = !empty($in['adopt']);
-    api_ok(honey_bottle_scan_stock_in(ims_pdo(), (int) $user['id'], $code, $adopt));
+    if ($productionRowId > 0) {
+        try {
+            require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
+            $lookup = honey_bottle_lookup($pdo, $code);
+            $packFromCode = (int) ($lookup['packaging_row_id'] ?? 0);
+            if ($packFromCode < 1) {
+                api_fail('Barcode is not tied to a packaging batch.', 422);
+            }
+            $pdo->beginTransaction();
+            try {
+                $deduct = honey_production_deduct_for_unique_stock_in(
+                    $pdo,
+                    (int) $user['id'],
+                    $productionRowId,
+                    $packFromCode,
+                    (string) $lookup['size']
+                );
+                $scanned = honey_bottle_scan_stock_in($pdo, (int) $user['id'], $code, $adopt);
+                $pdo->commit();
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                throw $e;
+            }
+            api_ok(array_merge($scanned, $deduct, [
+                'production_row_id' => $productionRowId,
+            ]));
+        } catch (Throwable $e) {
+            api_fail($e->getMessage(), 422);
+        }
+    }
+    api_ok(honey_bottle_scan_stock_in($pdo, (int) $user['id'], $code, $adopt));
 }
 
 function api_bottle_pack_start(): void

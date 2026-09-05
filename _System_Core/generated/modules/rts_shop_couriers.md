@@ -1,7 +1,7 @@
 ---
 title: rts_shop_couriers
 source: includes/rts_shop_couriers.php
-generated: 2026-09-05T03:48:34+02:00
+generated: 2026-09-05T04:14:39+02:00
 type: module
 function_count: 2
 ---

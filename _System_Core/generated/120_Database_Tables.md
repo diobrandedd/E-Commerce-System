@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-09-05T03:47:45+02:00
+generated: 2026-09-05T04:13:50+02:00
 type: memory-bank
-table_count: 93
+table_count: 94
 ---
 
 
@@ -1113,6 +1113,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_production]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_warehouse_stock_out]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_deduct_gallons]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_cascade_warehouse_metadata]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_traceability]] |
@@ -1148,6 +1149,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging_by_production]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_ensure_packaging_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_stock_out_sold]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_cascade_warehouse_metadata]] |
@@ -1255,6 +1257,13 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_scan_sku]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_list]] |
+
+## `app_settings`
+
+| File | Function |
+|------|----------|
+| `includes/app_settings.php` | [[modules/app_settings#app_setting_get]] |
+| `includes/app_settings.php` | [[modules/app_settings#app_setting_set]] |
 
 ## `rts_inventory_rows`
 
