@@ -282,6 +282,13 @@ export const bottleBarcodesApi = {
       product_key: params.product_key || undefined,
       page: params.page ?? 1,
     }),
+  packTodayStats: () =>
+    apiGet<{
+      date: string;
+      packaging: number;
+      rts_sellable: number;
+      total: number;
+    }>("bottle_barcodes.php", "pack_today_stats"),
   packScan: (
     sessionId: number,
     code: string,

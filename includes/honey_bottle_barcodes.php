@@ -1490,6 +1490,64 @@ function honey_bottle_pack_session_list(
 }
 
 /**
+ * Units this user packed today: packaging/finished vs RTS sellable (confirmed today + open draft).
+ *
+ * @return array{date: string, packaging: int, rts_sellable: int, total: int}
+ */
+function honey_bottle_pack_session_today_stats(PDO $pdo, int $userId): array
+{
+    $sessionFilter = '(
+        (s.status = "confirmed" AND s.confirmed_at IS NOT NULL AND DATE(s.confirmed_at) = CURDATE())
+        OR s.status = "draft"
+    ) AND s.started_by = ?';
+
+    $honeySt = $pdo->prepare(
+        'SELECT
+            COALESCE(SUM(CASE
+                WHEN COALESCE(NULLIF(i.pool, ""), u.pool, "packaging") = "rts_sellable" THEN COALESCE(i.qty, 1)
+                ELSE 0
+            END), 0) AS rts_sellable,
+            COALESCE(SUM(CASE
+                WHEN COALESCE(NULLIF(i.pool, ""), u.pool, "packaging") = "rts_sellable" THEN 0
+                ELSE COALESCE(i.qty, 1)
+            END), 0) AS packaging
+         FROM honey_bottle_pack_session_items i
+         INNER JOIN honey_bottle_pack_sessions s ON s.id = i.session_id
+         LEFT JOIN honey_bottle_units u ON u.id = i.unit_id
+         WHERE ' . $sessionFilter
+    );
+    $honeySt->execute([$userId]);
+    $honey = $honeySt->fetch(PDO::FETCH_ASSOC) ?: ['packaging' => 0, 'rts_sellable' => 0];
+
+    $deptSt = $pdo->prepare(
+        'SELECT
+            COALESCE(SUM(CASE
+                WHEN COALESCE(NULLIF(i.pool, ""), "finished") = "rts_sellable" THEN COALESCE(i.qty, 1)
+                ELSE 0
+            END), 0) AS rts_sellable,
+            COALESCE(SUM(CASE
+                WHEN COALESCE(NULLIF(i.pool, ""), "finished") = "rts_sellable" THEN 0
+                ELSE COALESCE(i.qty, 1)
+            END), 0) AS packaging
+         FROM honey_bottle_pack_session_dept_items i
+         INNER JOIN honey_bottle_pack_sessions s ON s.id = i.session_id
+         WHERE ' . $sessionFilter
+    );
+    $deptSt->execute([$userId]);
+    $dept = $deptSt->fetch(PDO::FETCH_ASSOC) ?: ['packaging' => 0, 'rts_sellable' => 0];
+
+    $packaging = (int) $honey['packaging'] + (int) $dept['packaging'];
+    $rts = (int) $honey['rts_sellable'] + (int) $dept['rts_sellable'];
+
+    return [
+        'date' => date('Y-m-d'),
+        'packaging' => $packaging,
+        'rts_sellable' => $rts,
+        'total' => $packaging + $rts,
+    ];
+}
+
+/**
  * @return array{result: string, session: array<string, mixed>, lookup?: array<string, mixed>|null}
  */
 function honey_bottle_pack_session_scan(

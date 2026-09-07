@@ -78,6 +78,7 @@ api_dispatch([
     'pack_start' => 'api_bottle_pack_start',
     'pack_get' => 'api_bottle_pack_get',
     'pack_session_list' => 'api_bottle_pack_session_list',
+    'pack_today_stats' => 'api_bottle_pack_today_stats',
     'pack_scan' => 'api_bottle_pack_scan',
     'pack_remove_item' => 'api_bottle_pack_remove_item',
     'pack_confirm' => 'api_bottle_pack_confirm',
@@ -522,6 +523,13 @@ function api_bottle_pack_session_list(): void
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }
+}
+
+function api_bottle_pack_today_stats(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_bottle_require_pack_scan();
+    api_ok(honey_bottle_pack_session_today_stats(ims_pdo(), (int) $user['id']));
 }
 
 function api_bottle_pack_scan(): void

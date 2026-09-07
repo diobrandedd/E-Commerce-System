@@ -133,6 +133,11 @@ export function HoneyPackScanPage() {
             <strong className="text-foreground">History</strong> — read-only list of confirmed pack sessions.
             Filter by date, product, or batch code. Expanding a row shows items, barcodes, and batches.
           </p>
+          <p>
+            <strong className="text-foreground">Today counters</strong> — Packaging and RTS sellable totals
+            for your account today (confirmed packs plus your open draft session). Dept finished stock
+            counts under Packaging.
+          </p>
         </AppModalBody>
       </AppModal>
     </PageLayout>
@@ -141,6 +146,11 @@ export function HoneyPackScanPage() {
 
 function PackScanLivePanel() {
   const [session, setSession] = useState<HoneyPackSession | null>(null);
+  const [todayStats, setTodayStats] = useState<{
+    packaging: number;
+    rts_sellable: number;
+    total: number;
+  } | null>(null);
   const [code, setCode] = useState("");
   const [flash, setFlash] = useState<"ok" | "dup" | "bad" | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -157,24 +167,38 @@ function PackScanLivePanel() {
   const cameraTitleId = useId();
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, session?.id);
 
+  const refreshTodayStats = useCallback(async () => {
+    try {
+      const stats = await bottleBarcodesApi.packTodayStats();
+      setTodayStats({
+        packaging: stats.packaging,
+        rts_sellable: stats.rts_sellable,
+        total: stats.total,
+      });
+    } catch {
+      // Non-blocking — pack scan still works without the daily strip
+    }
+  }, []);
+
   const start = useCallback(async () => {
     setError(null);
     try {
       const res = await bottleBarcodesApi.packStart();
       setSession(res.session);
+      void refreshTodayStats();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not start pack session.");
     }
-  }, []);
+  }, [refreshTodayStats]);
 
-  useEffect(() => {
-    void start();
-  }, [start]);
+  useEffect(() => { void start(); }, [start]);
+  useEffect(() => { void refreshTodayStats(); }, [refreshTodayStats]);
 
   const applyPackResult = (
     res: Awaited<ReturnType<typeof bottleBarcodesApi.packScan>>,
   ): ScannerDecodeFeedback => {
     setSession(res.session);
+    void refreshTodayStats();
     if (res.result === "ok") {
       playScanBeep("ok");
       setFlash("ok");
@@ -344,6 +368,7 @@ function PackScanLivePanel() {
     try {
       const res = await bottleBarcodesApi.packRemoveItem(session.id, item.kind === "dept" ? "dept" : "honey", item.id);
       setSession(res.session);
+      void refreshTodayStats();
       setMsg(`Removed ${item.code}`);
       const leftover = res.session.items.some(it => packItemGroupKey(it) === packItemGroupKey(item));
       if (!leftover) {
@@ -453,6 +478,20 @@ function PackScanLivePanel() {
         {flash === "ok" ? "Scanned" : flash === "dup" ? "Already in this session" : flash === "bad" ? "Not accepted" : "Ready"}
       </div>
       {msg && <p className="text-sm">{msg}</p>}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl border bg-card px-3 py-2.5">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Today · Packaging</p>
+          <p className="text-xl font-semibold mt-0.5 tabular-nums">
+            {(todayStats?.packaging ?? 0).toLocaleString()}
+          </p>
+        </div>
+        <div className="rounded-xl border bg-card px-3 py-2.5">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Today · RTS sellable</p>
+          <p className="text-xl font-semibold mt-0.5 tabular-nums">
+            {(todayStats?.rts_sellable ?? 0).toLocaleString()}
+          </p>
+        </div>
+      </div>
       <p className="text-xl font-bold">{session?.item_count ?? 0} items in session</p>
       <div className="space-y-2">
         {(session?.grouped ?? []).map(g => {

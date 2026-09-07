@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-07 — Pack scan today pool counters
+**Change:** Pack scan shows per-user daily Packaging vs RTS sellable unit totals (confirmed today + open draft). → [[problems/records/2026-09-07_pack-scan-today-pool-stats]]
+
 ### 2026-09-04 — Sales history reprint
 **Change:** Executive Sales walk-in history expanded row has **Reprint** — rebuilds receipt from `pos_sales` / `pos_receipt_items` and opens Chrome print (no PDF storage).
 
