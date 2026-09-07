@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-07 — Scan history cross-account
+**Change:** Finished scan history shows by-person totals for all accounts and product tabs (Paragis / BRC / Cacao / Honey Comb / Honey bottles). → [[problems/records/2026-09-07_scan-history-cross-account]]
+
 ### 2026-09-07 — Pack scan today pool counters
 **Change:** Pack scan shows per-user daily Packaging vs RTS sellable unit totals (confirmed today + open draft). → [[problems/records/2026-09-07_pack-scan-today-pool-stats]]
 

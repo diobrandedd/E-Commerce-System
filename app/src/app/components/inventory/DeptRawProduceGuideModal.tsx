@@ -169,7 +169,7 @@ export function DeptRawProduceGuideModal({
                   <strong className="text-foreground">Scan to inventory</strong> — scan each sticker. Every scan adds one to <strong className="text-foreground">Finished {meta.sellUnit}s</strong>.
                 </li>
                 <li>
-                  <strong className="text-foreground">Scan history</strong> — open from the header or tap the Finished card. The report defaults to today; choose another scan date or All dates to see gross stock-in counts, then tap a batch for each sticker and scanner.
+                  <strong className="text-foreground">Scan history</strong> — open from the header or tap the Finished card. Switch product tabs (Paragis, BRC, Cacao, Honey Comb, Honey bottles) to see stock-in from every account. Defaults to today; pick another date or All dates, then tap a batch for each sticker and scanner.
                 </li>
                 {deptPouchDefectEnabled(productKey) && (
                   <li>

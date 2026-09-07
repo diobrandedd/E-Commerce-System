@@ -5,6 +5,7 @@ import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraSc
 import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
 import {
   AppErrorBanner,
+  AppPressable,
   AppSectionEnter,
   AppSuccessNotice,
   appHoverRow,
@@ -12,17 +13,23 @@ import {
 import { ApiError } from "@/app/lib/api";
 import { triggerLiveRefresh } from "@/app/lib/liveRefresh";
 import {
+  DEPT_POUCH_BARCODE_KEYS,
   deptPouchBarcodesApi,
+  deptPouchHistoryLabel,
   deptPouchPrintSheetUrl,
   deptPouchUnitLabel,
   type DeptPouchBatch,
   type DeptPouchRequest,
+  type DeptScanByScanner,
 } from "@/app/lib/deptPouchBarcodes";
+import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
 import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
 import { RequestNotesCell, RequestNotesInline } from "@/app/components/barcode/RequestNotesCell";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 import { DeptPouchScanLogModal } from "@/app/components/dept/DeptPouchScanLogModal";
+import { PackagingScanLogModal } from "@/app/components/honey/PackagingScanLogModal";
+import { variantLabel } from "@/app/lib/posHoney";
 
 interface DeptPouchPanelProps {
   productKey: string;
@@ -30,6 +37,8 @@ interface DeptPouchPanelProps {
   /** history = list only (no new-request form) for staff discoverability */
   mode?: "full" | "history";
 }
+
+type HistoryViewKey = (typeof DEPT_POUCH_BARCODE_KEYS)[number] | "honey_bottles";
 
 function localToday(): string {
   const now = new Date();
@@ -45,9 +54,174 @@ function scanDateLabel(date: string): string {
   });
 }
 
+function ByScannerList({
+  rows,
+  unitPlural,
+}: {
+  rows: DeptScanByScanner[];
+  unitPlural: string;
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-border bg-secondary/20 px-4 py-3">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+        By person · all accounts
+      </p>
+      <ul className="mt-2 space-y-1.5">
+        {rows.map(row => (
+          <li
+            key={`${row.user_id ?? "unk"}-${row.name}`}
+            className="flex items-baseline justify-between gap-3 text-sm"
+          >
+            <span className="font-medium truncate">{row.name}</span>
+            <span className="tabular-nums shrink-0 text-muted-foreground">
+              {row.qty.toLocaleString()} {unitPlural}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function HoneyBottlesHistoryBlock({ scanDate, onScanDateChange }: {
+  scanDate: string;
+  onScanDateChange: (next: string) => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dates, setDates] = useState<string[]>([]);
+  const [total, setTotal] = useState(0);
+  const [byScanner, setByScanner] = useState<DeptScanByScanner[]>([]);
+  const [rows, setRows] = useState<
+    Awaited<ReturnType<typeof bottleBarcodesApi.packagingScanReport>>["rows"]
+  >([]);
+  const [logRow, setLogRow] = useState<(typeof rows)[number] | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await bottleBarcodesApi.packagingScanReport(scanDate);
+      setDates(data.dates);
+      setTotal(data.totals?.total ?? 0);
+      setByScanner(data.by_scanner ?? []);
+      setRows(data.rows);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not load honey bottle scans.");
+      setRows([]);
+      setByScanner([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [scanDate]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  return (
+    <div className="space-y-4">
+      {error && <AppErrorBanner message={error} />}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Scanned into inventory</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Honey bottles — all scanners. Gross scans only.
+          </p>
+        </div>
+        <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold shrink-0">
+          Scan date
+          <select
+            value={scanDate}
+            onChange={e => onScanDateChange(e.target.value)}
+            className="mt-1 block min-w-[10.5rem] rounded-lg border border-border bg-card px-2.5 py-2 text-sm normal-case"
+          >
+            <option value={localToday()}>Today · {scanDateLabel(localToday())}</option>
+            {dates
+              .filter(date => date !== localToday())
+              .map(date => (
+                <option key={date} value={date}>
+                  {scanDateLabel(date)}
+                </option>
+              ))}
+            <option value="all">All dates</option>
+          </select>
+        </label>
+      </div>
+      {scanDate !== "all" && !loading && (
+        <div className="rounded-xl border border-border bg-card px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+            Total scanned · {scanDate === localToday() ? "Today" : scanDateLabel(scanDate)}
+          </p>
+          <p className="text-2xl font-bold mt-1">
+            {total.toLocaleString()}{" "}
+            <span className="text-sm font-medium text-muted-foreground">bottles</span>
+          </p>
+        </div>
+      )}
+      <ByScannerList rows={byScanner} unitPlural="bottles" />
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-6 text-center">
+          No bottles scanned into inventory {scanDate === "all" ? "yet." : `on ${scanDate}.`}
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="text-left px-3 py-2">Batch</th>
+                <th className="text-left px-3 py-2">Variant</th>
+                <th className="text-left px-3 py-2">1L</th>
+                <th className="text-left px-3 py-2">250</th>
+                <th className="text-left px-3 py-2">350</th>
+                <th className="text-left px-3 py-2">Gal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.slice(0, 40).map(r => (
+                <tr
+                  key={r.id}
+                  className={`${appHoverRow} cursor-pointer`}
+                  onClick={() => setLogRow(r)}
+                >
+                  <td className="px-3 py-2 font-mono text-xs whitespace-nowrap">{r.batch_no}</td>
+                  <td className="px-3 py-2 capitalize">{variantLabel(r.variant)}</td>
+                  <td className="px-3 py-2">{Number(r.scanned_liter).toLocaleString()}</td>
+                  <td className="px-3 py-2">{Number(r.scanned_250ml).toLocaleString()}</td>
+                  <td className="px-3 py-2">{Number(r.scanned_350ml).toLocaleString()}</td>
+                  <td className="px-3 py-2">{Number(r.scanned_gallon).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {logRow && (
+        <PackagingScanLogModal
+          packagingRowId={logRow.id}
+          batchNo={logRow.batch_no}
+          variant={logRow.variant}
+          scanDate={scanDate}
+          onClose={() => setLogRow(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchPanelProps) {
-  const unit = deptPouchUnitLabel(productKey);
   const historyOnly = mode === "history";
+  const [viewKey, setViewKey] = useState<HistoryViewKey>(
+    () => (DEPT_POUCH_BARCODE_KEYS as readonly string[]).includes(productKey)
+      ? (productKey as HistoryViewKey)
+      : "pt",
+  );
+  const activeProductKey = viewKey === "honey_bottles" ? productKey : viewKey;
+  const unit = deptPouchUnitLabel(viewKey === "honey_bottles" ? "pt" : viewKey);
   const [qty, setQty] = useState("50");
   const [notes, setNotes] = useState("");
   const [rows, setRows] = useState<DeptPouchRequest[]>([]);
@@ -56,26 +230,42 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [scannedTotal, setScannedTotal] = useState(0);
+  const [byScanner, setByScanner] = useState<DeptScanByScanner[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [logRequest, setLogRequest] = useState<DeptPouchRequest | null>(null);
 
+  useEffect(() => {
+    if (!historyOnly) {
+      setViewKey(
+        (DEPT_POUCH_BARCODE_KEYS as readonly string[]).includes(productKey)
+          ? (productKey as HistoryViewKey)
+          : "pt",
+      );
+    }
+  }, [historyOnly, productKey]);
+
   const refresh = useCallback(async () => {
+    if (viewKey === "honey_bottles") {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const list = await deptPouchBarcodesApi.scanReport(productKey, scanDate, page);
+      const list = await deptPouchBarcodesApi.scanReport(viewKey, scanDate, page);
       setRows(list.rows);
       setScanDates(list.dates);
       setTotal(list.total);
       setScannedTotal(list.scanned_total ?? 0);
+      setByScanner(list.by_scanner ?? []);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load requests.");
     } finally {
       setLoading(false);
     }
-  }, [page, productKey, scanDate]);
+  }, [page, scanDate, viewKey]);
 
   useEffect(() => {
     void refresh();
@@ -101,10 +291,56 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
     }
   };
 
+  const switchHistoryView = (next: HistoryViewKey) => {
+    setViewKey(next);
+    setPage(1);
+    setLogRequest(null);
+    setError(null);
+  };
+
   return (
     <AppSectionEnter className="space-y-4">
       {error && <AppErrorBanner message={error} />}
       {ok && <AppSuccessNotice message={ok} />}
+      {historyOnly && (
+        <div className="flex flex-wrap gap-1.5">
+          {DEPT_POUCH_BARCODE_KEYS.map(key => (
+            <AppPressable
+              key={key}
+              type="button"
+              onClick={() => switchHistoryView(key)}
+              className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                viewKey === key
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {deptPouchHistoryLabel(key)}
+            </AppPressable>
+          ))}
+          <AppPressable
+            type="button"
+            onClick={() => switchHistoryView("honey_bottles")}
+            className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              viewKey === "honey_bottles"
+                ? "border-foreground bg-foreground text-background"
+                : "border-border bg-card text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Honey
+          </AppPressable>
+        </div>
+      )}
+      {historyOnly && viewKey === "honey_bottles" ? (
+        <HoneyBottlesHistoryBlock
+          scanDate={scanDate}
+          onScanDateChange={next => {
+            setScanDate(next);
+            setPage(1);
+          }}
+        />
+      ) : (
+        <>
       {!historyOnly && (
         <div className="bg-card rounded-xl border border-border p-4 space-y-3">
           <h3 className="text-sm font-semibold">New {unit.singular} label request</h3>
@@ -142,6 +378,9 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
           <h3 className="text-sm font-semibold">Scanned into inventory</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
             Gross scans only — later packing, sales, or defects do not reduce these totals.
+            {historyOnly
+              ? " Includes every account that scanned this product (not only yours)."
+              : ""}
           </p>
         </div>
         <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold shrink-0">
@@ -171,6 +410,7 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
         <div className="rounded-xl border border-border bg-card px-4 py-3">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
             Total scanned · {scanDate === localToday() ? "Today" : scanDateLabel(scanDate)}
+            {historyOnly ? ` · ${deptPouchHistoryLabel(viewKey)}` : ""}
           </p>
           <p className="text-2xl font-bold mt-1">
             {scannedTotal.toLocaleString()}{" "}
@@ -180,6 +420,7 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
           </p>
         </div>
       )}
+      <ByScannerList rows={byScanner} unitPlural={unit.plural} />
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : rows.length === 0 ? (
@@ -196,7 +437,7 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
               <thead className="bg-secondary/40 text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="text-left px-3 py-2">When</th>
-                  <th className="text-left px-3 py-2">Who</th>
+                  <th className="text-left px-3 py-2">Requested by</th>
                   <th className="text-left px-3 py-2">Batch</th>
                   <th className="text-left px-3 py-2">Qty</th>
                   <th className="text-left px-3 py-2">Scanned</th>
@@ -276,10 +517,12 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
         <DeptPouchScanLogModal
           requestId={logRequest.id}
           batchNo={logRequest.batch_no}
-          productKey={productKey}
+          productKey={activeProductKey}
           scanDate={scanDate}
           onClose={() => setLogRequest(null)}
         />
+      )}
+        </>
       )}
     </AppSectionEnter>
   );

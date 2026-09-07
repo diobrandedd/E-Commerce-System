@@ -767,6 +767,8 @@ function dept_pouch_scan_report(
     $skuSumSt->execute($skuSumParams);
     $scannedTotal += (int) $skuSumSt->fetchColumn();
 
+    $byScanner = dept_pouch_scan_report_by_scanner($pdo, $productKey, $scanDate);
+
     return [
         'dates' => $dates,
         'rows' => $rows,
@@ -775,7 +777,63 @@ function dept_pouch_scan_report(
         'per_page' => $perPage,
         'scan_date' => $scanDate,
         'scanned_total' => $scannedTotal,
+        'by_scanner' => $byScanner,
     ];
+}
+
+/**
+ * Gross stock-in qty by who scanned (all accounts — not limited to current user).
+ *
+ * @return list<array{user_id: int|null, name: string, qty: int}>
+ */
+function dept_pouch_scan_report_by_scanner(PDO $pdo, string $productKey, ?string $scanDate): array
+{
+    $productKey = dept_pouch_normalize_product_key($productKey);
+    $dateSqlUnique = '';
+    $dateSqlSku = '';
+    $paramsUnique = [$productKey];
+    $paramsSku = [$productKey];
+    if ($scanDate !== null) {
+        $from = $scanDate . ' 00:00:00';
+        $to = (new DateTimeImmutable($scanDate))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
+        $dateSqlUnique = ' AND c.scanned_at >= ? AND c.scanned_at < ?';
+        $dateSqlSku = ' AND e.scanned_at >= ? AND e.scanned_at < ?';
+        $paramsUnique[] = $from;
+        $paramsUnique[] = $to;
+        $paramsSku[] = $from;
+        $paramsSku[] = $to;
+    }
+
+    $st = $pdo->prepare(
+        "SELECT x.scanned_by, COALESCE(u.name, IF(x.scanned_by IS NULL, 'Unknown', CONCAT('User #', x.scanned_by))) AS name,
+                SUM(x.qty) AS qty
+         FROM (
+            SELECT c.scanned_by, 1 AS qty
+            FROM dept_pouch_barcodes c
+            INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
+            WHERE b.product_key = ? AND c.scanned_at IS NOT NULL{$dateSqlUnique}
+            UNION ALL
+            SELECT e.scanned_by, e.qty
+            FROM sku_barcode_stock_events e
+            INNER JOIN product_sku_barcodes s ON s.id = e.sku_id
+            WHERE e.kind = 'dept' AND s.product_key = ?{$dateSqlSku}
+         ) x
+         LEFT JOIN users u ON u.id = x.scanned_by
+         GROUP BY x.scanned_by, u.name
+         ORDER BY qty DESC, name ASC"
+    );
+    $st->execute(array_merge($paramsUnique, $paramsSku));
+    $out = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $uid = $row['scanned_by'] !== null ? (int) $row['scanned_by'] : null;
+        $out[] = [
+            'user_id' => $uid,
+            'name' => (string) $row['name'],
+            'qty' => (int) $row['qty'],
+        ];
+    }
+
+    return $out;
 }
 
 /**
@@ -796,39 +854,61 @@ function dept_pouch_request_scan_log(
     $perPage = max(1, min(200, $perPage));
     $offset = ($page - 1) * $perPage;
     $scanDate = dept_pouch_scan_report_date($scanDate);
-    $dateSql = '';
-    $params = [$requestId];
+    $dateSqlUnique = '';
+    $dateSqlSku = '';
+    $paramsUnique = [$requestId];
+    $paramsSku = [$requestId];
     if ($scanDate !== null) {
         $from = $scanDate . ' 00:00:00';
         $to = (new DateTimeImmutable($scanDate))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
-        $dateSql = ' AND c.scanned_at >= ? AND c.scanned_at < ?';
-        $params[] = $from;
-        $params[] = $to;
+        $dateSqlUnique = ' AND c.scanned_at >= ? AND c.scanned_at < ?';
+        $dateSqlSku = ' AND e.scanned_at >= ? AND e.scanned_at < ?';
+        $paramsUnique[] = $from;
+        $paramsUnique[] = $to;
+        $paramsSku[] = $from;
+        $paramsSku[] = $to;
     }
 
+    $sourceSql = "(
+        SELECT c.id AS event_id, c.code, c.scanned_at, c.scanned_by, b.batch_no,
+               un.status AS unit_status, 1 AS qty, 'sticker' AS scan_kind
+        FROM dept_pouch_barcodes c
+        INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
+        LEFT JOIN dept_pouch_units un ON un.barcode_id = c.id
+        WHERE b.request_id = ? AND c.scanned_at IS NOT NULL{$dateSqlUnique}
+        UNION ALL
+        SELECT e.id AS event_id, s.code, e.scanned_at, e.scanned_by,
+               COALESCE(
+                 (SELECT b2.batch_no FROM dept_pouch_barcode_batches b2
+                  WHERE b2.request_id = e.dept_request_id ORDER BY b2.id DESC LIMIT 1),
+                 ''
+               ) AS batch_no,
+               NULL AS unit_status, e.qty, 'sku' AS scan_kind
+        FROM sku_barcode_stock_events e
+        INNER JOIN product_sku_barcodes s ON s.id = e.sku_id
+        WHERE e.kind = 'dept' AND e.dept_request_id = ?{$dateSqlSku}
+    )";
+
+    $countParams = array_merge($paramsUnique, $paramsSku);
     $cst = $pdo->prepare(
-        'SELECT COUNT(*)
-         FROM dept_pouch_barcodes c
-         INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
-         WHERE b.request_id = ? AND c.scanned_at IS NOT NULL' . $dateSql
+        "SELECT COUNT(*) AS entry_count, COALESCE(SUM(scan_events.qty), 0) AS total_qty
+         FROM {$sourceSql} scan_events"
     );
-    $cst->execute($params);
-    $total = (int) $cst->fetchColumn();
+    $cst->execute($countParams);
+    $countRow = $cst->fetch(PDO::FETCH_ASSOC) ?: [];
+    $total = (int) ($countRow['entry_count'] ?? 0);
+    $totalQty = (int) ($countRow['total_qty'] ?? 0);
 
     $st = $pdo->prepare(
-        'SELECT c.code, c.scanned_at, c.scanned_by,
-                u.name AS scanned_by_name,
-                b.batch_no,
-                un.status AS unit_status
-         FROM dept_pouch_barcodes c
-         INNER JOIN dept_pouch_barcode_batches b ON b.id = c.batch_id
-         LEFT JOIN users u ON u.id = c.scanned_by
-         LEFT JOIN dept_pouch_units un ON un.barcode_id = c.id
-         WHERE b.request_id = ? AND c.scanned_at IS NOT NULL' . $dateSql . '
-         ORDER BY c.scanned_at DESC, c.id DESC
-         LIMIT ' . $perPage . ' OFFSET ' . $offset
+        "SELECT scan_events.code, scan_events.batch_no, scan_events.scanned_at, scan_events.scanned_by,
+                scan_events.qty, scan_events.scan_kind, scan_events.unit_status,
+                u.name AS scanned_by_name
+         FROM {$sourceSql} scan_events
+         LEFT JOIN users u ON u.id = scan_events.scanned_by
+         ORDER BY scan_events.scanned_at DESC, scan_events.event_id DESC
+         LIMIT {$perPage} OFFSET {$offset}"
     );
-    $st->execute($params);
+    $st->execute($countParams);
     $rows = [];
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $rows[] = [
@@ -837,6 +917,8 @@ function dept_pouch_request_scan_log(
             'scanned_at' => (string) $row['scanned_at'],
             'scanned_by' => $row['scanned_by'] !== null ? (int) $row['scanned_by'] : null,
             'scanned_by_name' => (string) ($row['scanned_by_name'] ?? ''),
+            'qty' => (int) $row['qty'],
+            'scan_kind' => (string) $row['scan_kind'],
             'unit_status' => $row['unit_status'] !== null ? (string) $row['unit_status'] : null,
         ];
     }
@@ -845,6 +927,7 @@ function dept_pouch_request_scan_log(
         'request' => $req,
         'rows' => $rows,
         'total' => $total,
+        'total_qty' => $totalQty,
         'page' => $page,
         'per_page' => $perPage,
         'scan_date' => $scanDate,

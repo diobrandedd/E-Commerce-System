@@ -750,12 +750,12 @@ function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null):
 {
     $scanDate = honey_bottle_scan_report_date($scanDate);
     $scanSourceSql = '(
-        SELECT b.packaging_row_id, c.size, c.scanned_at, 1 AS qty
+        SELECT b.packaging_row_id, c.size, c.scanned_at, c.scanned_by, 1 AS qty
         FROM honey_bottle_barcodes c
         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
         WHERE c.scanned_at IS NOT NULL AND b.packaging_row_id IS NOT NULL
         UNION ALL
-        SELECT e.packaging_row_id, s.size, e.scanned_at, e.qty
+        SELECT e.packaging_row_id, s.size, e.scanned_at, e.scanned_by, e.qty
         FROM sku_barcode_stock_events e
         INNER JOIN product_sku_barcodes s ON s.id = e.sku_id
         WHERE e.kind = "honey" AND e.packaging_row_id IS NOT NULL
@@ -833,6 +833,26 @@ function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null):
         ];
     }
 
+    $byScannerSt = $pdo->prepare(
+        "SELECT scan_events.scanned_by,
+                COALESCE(u.name, IF(scan_events.scanned_by IS NULL, 'Unknown', CONCAT('User #', scan_events.scanned_by))) AS name,
+                SUM(scan_events.qty) AS qty
+         FROM {$scanSourceSql} scan_events
+         LEFT JOIN users u ON u.id = scan_events.scanned_by
+         WHERE {$where}
+         GROUP BY scan_events.scanned_by, u.name
+         ORDER BY qty DESC, name ASC"
+    );
+    $byScannerSt->execute($params);
+    $byScanner = [];
+    foreach ($byScannerSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $byScanner[] = [
+            'user_id' => $row['scanned_by'] !== null ? (int) $row['scanned_by'] : null,
+            'name' => (string) $row['name'],
+            'qty' => (int) $row['qty'],
+        ];
+    }
+
     return [
         'dates' => $dates,
         'rows' => $rows,
@@ -841,6 +861,7 @@ function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null):
             'total' => $grandTotal,
             'by_variant' => $byVariant,
         ],
+        'by_scanner' => $byScanner,
     ];
 }
 

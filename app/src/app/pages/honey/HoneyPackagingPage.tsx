@@ -84,6 +84,9 @@ export function HoneyPackagingPage() {
     { variant: string; total: number; liter: number; "250ml": number; "350ml": number; gallon: number }[]
   >([]);
   const [scannedGrandTotal, setScannedGrandTotal] = useState(0);
+  const [byScanner, setByScanner] = useState<{ user_id: number | null; name: string; qty: number }[]>(
+    [],
+  );
   const [page, setPage] = useState(1);
   const perPage = 12;
   const [loading, setLoading] = useState(true);
@@ -118,6 +121,7 @@ export function HoneyPackagingPage() {
       setScanDates(data.dates);
       setVariantTotals(data.totals?.by_variant ?? []);
       setScannedGrandTotal(data.totals?.total ?? 0);
+      setByScanner(data.by_scanner ?? []);
       setPage(1);
       await refreshPendingComb();
     } finally {
@@ -233,6 +237,26 @@ export function HoneyPackagingPage() {
               All variants · {grossQty(scannedGrandTotal)} bottle{scannedGrandTotal === 1 ? "" : "s"}
             </p>
           )}
+        </div>
+      )}
+      {!loading && byScanner.length > 0 && (
+        <div className="mb-3 rounded-xl border border-border bg-secondary/20 px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+            By person · all accounts
+          </p>
+          <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {byScanner.map(row => (
+              <li
+                key={`${row.user_id ?? "unk"}-${row.name}`}
+                className="flex items-baseline justify-between gap-3 text-sm"
+              >
+                <span className="font-medium truncate">{row.name}</span>
+                <span className="tabular-nums shrink-0 text-muted-foreground">
+                  {row.qty.toLocaleString()} bottles
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
       <div className="bg-card rounded-xl border overflow-x-auto">

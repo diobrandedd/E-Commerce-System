@@ -361,6 +361,7 @@ export const bottleBarcodesApi = {
           gallon: number;
         }[];
       };
+      by_scanner: { user_id: number | null; name: string; qty: number }[];
     }>("bottle_barcodes.php", "packaging_scan_report", {
       scan_date: scanDate,
     }),

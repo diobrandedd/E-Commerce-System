@@ -36,10 +36,13 @@ export function DeptPouchScanLogModal({
       batch_no: string;
       scanned_at: string;
       scanned_by_name: string;
+      qty: number;
+      scan_kind: "sticker" | "sku";
       unit_status: string | null;
     }[]
   >([]);
   const [total, setTotal] = useState(0);
+  const [totalQty, setTotalQty] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,11 +55,13 @@ export function DeptPouchScanLogModal({
         const res = await deptPouchBarcodesApi.requestScanLog(requestId, p, scanDate);
         setRows(res.rows);
         setTotal(res.total);
+        setTotalQty(res.total_qty ?? res.total);
         setPage(res.page);
       } catch (e) {
         setError(e instanceof ApiError ? e.message : "Could not load scan history.");
         setRows([]);
         setTotal(0);
+        setTotalQty(0);
       } finally {
         setLoading(false);
       }
@@ -93,16 +98,24 @@ export function DeptPouchScanLogModal({
           ) : (
             <>
               <p className="text-xs text-muted-foreground">
-                {total} scan{total === 1 ? "" : "s"}
+                {total} entr{total === 1 ? "y" : "ies"} · {totalQty.toLocaleString()}{" "}
+                {totalQty === 1 ? unit.singular : unit.plural}
               </p>
               <ul className="divide-y rounded-xl border border-border overflow-hidden">
                 {rows.map(r => (
-                  <li key={`${r.code}-${r.scanned_at}`} className={`px-3 py-2.5 ${appHoverRow}`}>
+                  <li
+                    key={`${r.scan_kind}-${r.code}-${r.scanned_at}-${r.qty}`}
+                    className={`px-3 py-2.5 ${appHoverRow}`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-mono text-sm font-semibold tracking-wide">{r.code}</p>
+                        <p className="font-mono text-sm font-semibold tracking-wide">
+                          {r.code}
+                          {r.qty > 1 ? ` ×${r.qty}` : ""}
+                        </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {r.batch_no}
+                          {r.scan_kind === "sku" ? " · SKU" : ""}
                           {r.unit_status ? ` · ${r.unit_status.replace(/_/g, " ")}` : ""}
                         </p>
                       </div>

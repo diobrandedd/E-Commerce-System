@@ -492,9 +492,9 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
         </AppModal>
       )}
       {pouchModal === "history" && (
-        <AppModal open onClose={() => setPouchModal(null)} panelClassName="max-w-2xl w-full" labelledBy={pouchHistoryTitleId}>
+        <AppModal open onClose={() => setPouchModal(null)} panelClassName="max-w-3xl w-full" labelledBy={pouchHistoryTitleId}>
           <AppModalHeader
-            title={`Scan history — finished ${pouchUnit.plural}`}
+            title="Scan history — finished stock"
             titleId={pouchHistoryTitleId}
             onClose={() => setPouchModal(null)}
           />

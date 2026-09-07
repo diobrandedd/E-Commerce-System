@@ -17,6 +17,28 @@ export function deptPouchUnitLabel(productKey: string): { singular: string; plur
   return { singular: "pouch", plural: "pouches" };
 }
 
+/** Short line labels for scan-history product tabs. */
+export function deptPouchHistoryLabel(productKey: string): string {
+  switch (productKey) {
+    case "pt":
+      return "Paragis";
+    case "brc":
+      return "BRC";
+    case "jar_cacao":
+      return "Cacao";
+    case "honey_comb":
+      return "Honey Comb";
+    default:
+      return productKey;
+  }
+}
+
+export interface DeptScanByScanner {
+  user_id: number | null;
+  name: string;
+  qty: number;
+}
+
 export type DeptPouchRequestStatus =
   | "pending"
   | "barcodes_generated"
@@ -140,6 +162,7 @@ export const deptPouchBarcodesApi = {
       per_page: number;
       scan_date: string | null;
       scanned_total: number;
+      by_scanner: DeptScanByScanner[];
     }>(ENDPOINT, "scan_report", {
       product_key: productKey,
       scan_date: scanDate,
@@ -154,9 +177,12 @@ export const deptPouchBarcodesApi = {
         scanned_at: string;
         scanned_by: number | null;
         scanned_by_name: string;
+        qty: number;
+        scan_kind: "sticker" | "sku";
         unit_status: string | null;
       }[];
       total: number;
+      total_qty: number;
       page: number;
       per_page: number;
       scan_date: string | null;
