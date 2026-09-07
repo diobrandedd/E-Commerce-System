@@ -1,7 +1,7 @@
 ---
 title: honey_sales_report
 source: includes/honey_sales_report.php
-generated: 2026-09-07T08:37:51+02:00
+generated: 2026-09-07T09:07:11+02:00
 type: module
 function_count: 15
 ---
