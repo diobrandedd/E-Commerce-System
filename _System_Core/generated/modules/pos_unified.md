@@ -1,7 +1,7 @@
 ---
 title: pos_unified
 source: includes/pos_unified.php
-generated: 2026-09-08T09:44:15+02:00
+generated: 2026-09-08T09:45:59+02:00
 type: module
 function_count: 9
 ---
