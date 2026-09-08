@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-09-08T06:17:28+02:00
+generated: 2026-09-08T09:44:22+02:00
 type: module
 function_count: 13
 ---
@@ -46,12 +46,12 @@ function_count: 13
 - `includes/fulfillment_packing.php`:711 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
 - `includes/fulfillment_packing.php`:761 — `if (!rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {`
 - `includes/fulfillment_packing.php`:957 — `$hasBubbleCols = rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'bubble_width_cm');`
-- `includes/honey_bottle_barcodes.php`:1847 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
-- `includes/honey_bottle_barcodes.php`:1848 — `$hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
-- `includes/honey_bottle_barcodes.php`:2059 — `$hasUnit = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
-- `includes/honey_bottle_barcodes.php`:2060 — `$hasSess = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
-- `includes/honey_bottle_barcodes.php`:2061 — `$hasPos = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');`
-- `includes/honey_bottle_barcodes.php`:2127 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/honey_bottle_barcodes.php`:1905 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/honey_bottle_barcodes.php`:1906 — `$hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
+- `includes/honey_bottle_barcodes.php`:2117 — `$hasUnit = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/honey_bottle_barcodes.php`:2118 — `$hasSess = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
+- `includes/honey_bottle_barcodes.php`:2119 — `$hasPos = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');`
+- `includes/honey_bottle_barcodes.php`:2185 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
 - _… and 44 more (run impact.php for full list)_
 
 ## rts_cases_void_sql {#rts_cases_void_sql}

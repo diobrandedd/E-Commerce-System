@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-08 — RTS stock-in review session
+**Change:** RTS stock-in now stages continuous scans in an editable owned draft; users can change SKU qty, remove lines, cancel without mutation, or confirm atomically. RTS camera uses presentation-edge repeats with no time cooldown. Run phase 76. → [[problems/records/2026-09-08_rts-stock-in-review-session]]
+
 ### 2026-09-05 — Inventory audit Add-to-list UX
 **Change:** Check Inventory redesigned — Add-to-list modal (scan/qty/batch), editable session list, Complete → compare preview → Go back or finalize to history. → [[problems/records/2026-09-05_inventory-audit-list-ux]]
 

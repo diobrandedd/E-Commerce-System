@@ -14,6 +14,7 @@ type ScanPhase = "idle" | "starting" | "scanning" | "error";
 
 const SAME_CODE_COOLDOWN_MS = 2500;
 const DECODE_INTERVAL_MS = 120;
+const PRESENTATION_CLEAR_FRAMES = 3;
 /** Fraction of frame height sampled around the aiming guide. */
 const BAND_RATIO = 0.5;
 
@@ -43,6 +44,7 @@ export function BarcodeCameraScannerModal({
   onDecoded,
   onDecode,
   continuous = false,
+  duplicateMode = "cooldown",
   scanPrompt = "Point at one barcode",
   zIndex,
 }: {
@@ -54,6 +56,8 @@ export function BarcodeCameraScannerModal({
   /** @deprecated use `onDecoded` */
   onDecode?: (decoded: string) => void | ScannerDecodeFeedback | Promise<void | ScannerDecodeFeedback>;
   continuous?: boolean;
+  /** `presentationEdge` accepts once while visible, then rearms after the code leaves the frame. */
+  duplicateMode?: "cooldown" | "presentationEdge";
   scanPrompt?: string;
   zIndex?: string;
 }) {
@@ -68,6 +72,8 @@ export function BarcodeCameraScannerModal({
   const processingRef = useRef(false);
   const decodingRef = useRef(false);
   const lastDecodeRef = useRef<{ code: string; at: number } | null>(null);
+  const presentedCodeRef = useRef<string | null>(null);
+  const missingFrameCountRef = useRef(0);
   const facingRef = useRef<"environment" | "user">("environment");
   const onDecodedRef = useRef(decodeHandler);
   onDecodedRef.current = decodeHandler;
@@ -119,7 +125,14 @@ export function BarcodeCameraScannerModal({
       if (continuous) {
         const now = Date.now();
         const last = lastDecodeRef.current;
-        if (processingRef.current || (last?.code === text && now - last.at < SAME_CODE_COOLDOWN_MS)) return;
+        if (processingRef.current) return;
+        if (duplicateMode === "presentationEdge") {
+          missingFrameCountRef.current = 0;
+          if (presentedCodeRef.current === text) return;
+          presentedCodeRef.current = text;
+        } else if (last?.code === text && now - last.at < SAME_CODE_COOLDOWN_MS) {
+          return;
+        }
 
         processingRef.current = true;
         lastDecodeRef.current = { code: text, at: now };
@@ -144,7 +157,7 @@ export function BarcodeCameraScannerModal({
       onClose();
       void onDecodedRef.current?.(text);
     },
-    [continuous, onClose, stopStream],
+    [continuous, duplicateMode, onClose, stopStream],
   );
 
   /** Sample the band under the aiming guide and hand it to the decoder. */
@@ -182,7 +195,16 @@ export function BarcodeCameraScannerModal({
           decodingRef.current = true;
           try {
             const code = await decodeCurrentFrame();
-            if (code && aliveRef.current) handleDecoded(code);
+            if (code && aliveRef.current) {
+              missingFrameCountRef.current = 0;
+              handleDecoded(code);
+            } else if (duplicateMode === "presentationEdge" && presentedCodeRef.current !== null) {
+              missingFrameCountRef.current += 1;
+              if (missingFrameCountRef.current >= PRESENTATION_CLEAR_FRAMES) {
+                presentedCodeRef.current = null;
+                missingFrameCountRef.current = 0;
+              }
+            }
           } catch {
             /* transient decode failure — keep scanning */
           } finally {
@@ -192,7 +214,7 @@ export function BarcodeCameraScannerModal({
         scheduleTick();
       })();
     }, DECODE_INTERVAL_MS);
-  }, [decodeCurrentFrame, handleDecoded]);
+  }, [decodeCurrentFrame, duplicateMode, handleDecoded]);
 
   const start = useCallback(
     async (facing: "environment" | "user") => {
@@ -277,6 +299,8 @@ export function BarcodeCameraScannerModal({
     aliveRef.current = true;
     decodedRef.current = false;
     lastDecodeRef.current = null;
+    presentedCodeRef.current = null;
+    missingFrameCountRef.current = 0;
     void start("environment");
     return () => {
       aliveRef.current = false;

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-09-08T06:16:43+02:00
+generated: 2026-09-08T09:43:27+02:00
 type: memory-bank
 ---
 
@@ -40,7 +40,7 @@ type: memory-bank
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 33 |
 | [[modules/historical_orders_import]] | 25 |
-| [[modules/honey_bottle_barcodes]] | 60 |
+| [[modules/honey_bottle_barcodes]] | 61 |
 | [[modules/honey_inventory]] | 51 |
 | [[modules/honey_parcel_inventory]] | 4 |
 | [[modules/honey_parcel_item_parser]] | 17 |
@@ -77,6 +77,7 @@ type: memory-bank
 | [[modules/rts_products]] | 14 |
 | [[modules/rts_schema]] | 13 |
 | [[modules/rts_shop_couriers]] | 2 |
+| [[modules/rts_stock_in_sessions]] | 13 |
 | [[modules/rts_storage]] | 16 |
 | [[modules/shopee_spx_packing_list]] | 4 |
 | [[modules/shopee_spx_product_info]] | 12 |

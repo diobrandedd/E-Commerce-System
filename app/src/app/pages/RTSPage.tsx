@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
-import { Camera, Loader2, Plus, RefreshCcw, ScanLine } from "lucide-react";
+import { Camera, Loader2, Pencil, Plus, RefreshCcw, ScanLine, Trash2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import {
   AppErrorBanner,
@@ -20,8 +20,16 @@ import { HONEY_SIZES, HONEY_VARIANTS } from "@/app/lib/honey";
 import { variantLabel } from "@/app/lib/posHoney";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
-import { rtsStockInScan } from "@/app/lib/rtsApi";
-import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
+import {
+  rtsStockInSessionCancel,
+  rtsStockInSessionConfirm,
+  rtsStockInSessionRemove,
+  rtsStockInSessionScan,
+  rtsStockInSessionStart,
+  rtsStockInSessionUpdate,
+  type RtsStockInSession,
+  type RtsStockInSessionItem,
+} from "@/app/lib/rtsApi";
 import { cn } from "@/app/components/ui/utils";
 
 const OTHER_PRODUCT_PRESETS = [
@@ -67,6 +75,13 @@ function whereLabel(w: string): string {
   return w;
 }
 
+function stockInRequestKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `rts-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function RTSPage() {
   const { can } = useAuth();
   const canRecord = can("rts.record");
@@ -98,8 +113,11 @@ export function RTSPage() {
   const [addOtherOpen, setAddOtherOpen] = useState(false);
   const [stockInCode, setStockInCode] = useState("");
   const [stockInBusy, setStockInBusy] = useState(false);
-  const [skuQty, setSkuQty] = useState("1");
-  const [lastSku, setLastSku] = useState<{ code: string; label: string } | null>(null);
+  const [stockSession, setStockSession] = useState<RtsStockInSession | null>(null);
+  const [editSessionItem, setEditSessionItem] = useState<RtsStockInSessionItem | null>(null);
+  const [editSessionQty, setEditSessionQty] = useState("1");
+  const [confirmSessionOpen, setConfirmSessionOpen] = useState(false);
+  const [cancelSessionOpen, setCancelSessionOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const cameraTitleId = useId();
   const { inputRef: stockInRef, refocus: stockInRefocus, inputProps: stockInInputProps } =
@@ -148,70 +166,136 @@ export function RTSPage() {
     }
   }, [loadUseLog]);
 
-  const finishStockIn = useCallback(
-    async (code: string, qty?: number): Promise<ScannerDecodeFeedback | void> => {
-      setStockInBusy(true);
-      setError(null);
-      try {
-        const res = await rtsStockInScan(code, qty);
-        const unit = res.unit;
-        const label =
-          res.kind === "honey"
-            ? `${variantLabel(String(unit.variant ?? ""))} ${String(unit.size_label ?? unit.size ?? "")}`.trim()
-            : String(unit.product_label ?? unit.product_key ?? "Dept unit");
-        const qtyNote = qty != null && qty !== 1 ? ` ×${qty}` : "";
-        playScanBeep("ok");
-        setToast(`Stocked into RTS: ${unit.code ?? code}${qtyNote} · ${label}`);
-        window.setTimeout(() => setToast(null), 4000);
-        await loadInventory(false);
-        stockInRefocus();
-        return { kind: "success", message: `Stocked into RTS: ${label}${qtyNote}` };
-      } catch (e) {
-        playScanBeep("bad");
-        const msg = e instanceof ApiError ? e.message : "RTS stock-in scan failed.";
-        setError(msg);
-        stockInRefocus();
-        return { kind: "error", message: msg };
-      } finally {
-        setStockInBusy(false);
-      }
-    },
-    [loadInventory, stockInRefocus],
-  );
+  const startStockSession = async () => {
+    setStockInBusy(true);
+    setError(null);
+    try {
+      const res = await rtsStockInSessionStart();
+      setStockSession(res.session);
+      setToast(res.session.line_count > 0 ? "Draft session resumed." : "RTS stock-in session started.");
+      window.setTimeout(() => setToast(null), 3000);
+      stockInRefocus();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not start the RTS stock-in session.");
+    } finally {
+      setStockInBusy(false);
+    }
+  };
 
   const runStockInScan = useCallback(
     async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
       const code = (raw ?? stockInCode).trim();
-      if (!code || !canMutate) {
-        return { kind: "error", message: "Scan a barcode." };
+      if (!code) return { kind: "error", message: "Scan a barcode." };
+      if (!stockSession || stockSession.status !== "draft") {
+        return { kind: "error", message: "Start or resume a stock-in session first." };
       }
       setStockInCode("");
+      setStockInBusy(true);
       setError(null);
       try {
-        const looked = await skuBarcodesApi.lookup(code);
-        const lookup = looked.lookup;
-        if (lookup.lookup_kind === "sku" || lookup.requires_qty) {
-          const label = lookup.label ?? lookup.product_label ?? code;
-          setLastSku({ code, label });
-          return await finishStockIn(code, 1);
+        const res = await rtsStockInSessionScan(
+          stockSession.id,
+          code,
+          1,
+          stockInRequestKey(),
+        );
+        setStockSession(res.session);
+        if (res.result === "duplicate_session") {
+          playScanBeep("bad");
+          return { kind: "error", message: "Unique sticker is already in this session." };
         }
-        return await finishStockIn(code);
-      } catch {
-        return await finishStockIn(code);
+        const label = res.lookup?.product_label ?? code;
+        const qty = res.lookup?.qty ?? 1;
+        playScanBeep("ok");
+        return { kind: "success", message: `${label} · draft qty ${qty}` };
+      } catch (e) {
+        playScanBeep("bad");
+        const msg = e instanceof ApiError ? e.message : "RTS stock-in scan failed.";
+        setError(msg);
+        return { kind: "error", message: msg };
+      } finally {
+        setStockInBusy(false);
+        stockInRefocus();
       }
     },
-    [stockInCode, canMutate, finishStockIn],
+    [stockInCode, stockSession, stockInRefocus],
   );
 
-  const addSkuBulk = async () => {
-    if (!lastSku) {
-      setError("Scan a SKU barcode first, then use Quantity + Add for bulk.");
-      stockInRefocus();
+  const startSessionEdit = (item: RtsStockInSessionItem) => {
+    setEditSessionItem(item);
+    setEditSessionQty(String(item.qty));
+  };
+
+  const saveSessionQty = async () => {
+    if (!stockSession || !editSessionItem) return;
+    const qty = parseInt(editSessionQty, 10);
+    if (!Number.isFinite(qty) || qty < 1 || qty > 5000) {
+      setError("Quantity must be between 1 and 5000.");
       return;
     }
-    const qty = Math.max(1, parseInt(skuQty, 10) || 1);
+    setStockInBusy(true);
     setError(null);
-    await finishStockIn(lastSku.code, qty);
+    try {
+      const res = await rtsStockInSessionUpdate(stockSession.id, editSessionItem.id, qty);
+      setStockSession(res.session);
+      setEditSessionItem(null);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not update the draft quantity.");
+    } finally {
+      setStockInBusy(false);
+    }
+  };
+
+  const removeSessionItem = async (itemId: number) => {
+    if (!stockSession) return;
+    setStockInBusy(true);
+    setError(null);
+    try {
+      const res = await rtsStockInSessionRemove(stockSession.id, itemId);
+      setStockSession(res.session);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not remove the draft line.");
+    } finally {
+      setStockInBusy(false);
+    }
+  };
+
+  const cancelStockSession = async () => {
+    if (!stockSession) return;
+    setStockInBusy(true);
+    setError(null);
+    try {
+      await rtsStockInSessionCancel(stockSession.id);
+      setStockSession(null);
+      setCancelSessionOpen(false);
+      setCameraOpen(false);
+      setToast("RTS stock-in session cancelled. Inventory was not changed.");
+      window.setTimeout(() => setToast(null), 4000);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not cancel the RTS stock-in session.");
+    } finally {
+      setStockInBusy(false);
+    }
+  };
+
+  const confirmStockSession = async () => {
+    if (!stockSession) return;
+    setStockInBusy(true);
+    setError(null);
+    try {
+      const res = await rtsStockInSessionConfirm(stockSession.id);
+      setConfirmSessionOpen(false);
+      setCameraOpen(false);
+      setStockSession(null);
+      setToast(`Confirmed ${res.session.total_qty} unit(s) into RTS inventory.`);
+      window.setTimeout(() => setToast(null), 4000);
+      await loadInventory(false);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not confirm the RTS stock-in session.");
+      setConfirmSessionOpen(false);
+    } finally {
+      setStockInBusy(false);
+    }
   };
 
   const syncNow = useCallback(async () => {
@@ -282,84 +366,181 @@ export function RTSPage() {
         {canMutate && (
           <AppSectionEnter index={0}>
             <section className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <ScanLine size={16} className="text-[#C8900A]" />
-                <h3 className="text-sm font-semibold">Stock in to RTS</h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ScanLine size={16} className="text-primary" />
+                  <h3 className="text-sm font-semibold">RTS stock-in session</h3>
+                </div>
+                {stockSession ? (
+                  <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium">
+                    Draft #{stockSession.id} · {stockSession.total_qty} unit{stockSession.total_qty === 1 ? "" : "s"}
+                  </span>
+                ) : null}
               </div>
               <p className="text-xs text-muted-foreground">
-                Scan honey or dept barcodes into sellable RTS. SKU stickers: each scan adds +1, or type a
-                quantity and Add. Unique leftovers stock in one unit. Use Camera on phones/tablets.
+                Scans stay in a draft until you review and confirm. SKU scans add +1 each time; unique stickers can
+                appear once. Inventory does not change if you cancel.
               </p>
-              <div className="flex flex-wrap gap-2 max-w-xl">
-                <input
-                  ref={stockInRef}
-                  {...stockInInputProps}
-                  className="flex-1 min-w-[12rem] border rounded-lg px-3 py-2 text-sm"
-                  placeholder="Scan barcode and press Enter"
-                  value={stockInCode}
-                  disabled={stockInBusy}
-                  onChange={e => setStockInCode(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key !== "Enter") return;
-                    e.preventDefault();
-                    void runStockInScan();
-                  }}
-                />
+              {!stockSession ? (
                 <Button
                   type="button"
-                  variant="outline"
-                  className="gap-1.5 shrink-0"
                   disabled={stockInBusy}
-                  onClick={() => setCameraOpen(true)}
+                  onClick={() => void startStockSession()}
+                  className="gap-1.5"
                 >
-                  <Camera size={16} /> Camera
+                  {stockInBusy ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                  Start or resume session
                 </Button>
-                <Button
-                  type="button"
-                  disabled={stockInBusy || !stockInCode.trim()}
-                  onClick={() => void runStockInScan()}
-                  style={{ background: "#C8900A" }}
-                  className="text-white"
-                >
-                  {stockInBusy ? <Loader2 size={14} className="animate-spin mr-1" /> : <ScanLine size={14} className="mr-1" />}
-                  Scan
-                </Button>
-              </div>
-              <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2 max-w-xl">
-                <p className="text-xs text-muted-foreground">
-                  Bulk SKU add{lastSku ? ` — last: ${lastSku.label}` : " — scan a SKU first"}
-                </p>
-                <div className="flex flex-wrap gap-2 items-end">
-                  <label className="text-xs text-muted-foreground block w-24">
-                    Quantity
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-2 max-w-2xl">
                     <input
-                      type="number"
-                      min={1}
-                      className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                      value={skuQty}
-                      onChange={e => setSkuQty(e.target.value)}
+                      ref={stockInRef}
+                      {...stockInInputProps}
+                      className="flex-1 min-w-[12rem] border rounded-lg px-3 py-2 text-sm"
+                      placeholder="Scan barcode and press Enter"
+                      value={stockInCode}
+                      disabled={stockInBusy}
+                      onChange={e => setStockInCode(e.target.value)}
                       onKeyDown={e => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          void addSkuBulk();
-                        }
+                        if (e.key !== "Enter") return;
+                        e.preventDefault();
+                        void runStockInScan();
                       }}
                     />
-                  </label>
-                  <Button type="button" variant="outline" onClick={() => void addSkuBulk()} disabled={!lastSku || stockInBusy}>
-                    Add
-                  </Button>
-                </div>
-              </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-1.5 shrink-0"
+                      disabled={stockInBusy}
+                      onClick={() => setCameraOpen(true)}
+                    >
+                      <Camera size={16} /> Camera
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={stockInBusy || !stockInCode.trim()}
+                      onClick={() => void runStockInScan()}
+                      className="gap-1.5"
+                    >
+                      {stockInBusy ? <Loader2 size={14} className="animate-spin" /> : <ScanLine size={14} />}
+                      Scan
+                    </Button>
+                  </div>
+
+                  {stockSession.items.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-border bg-secondary/20 p-5 text-center text-sm text-muted-foreground">
+                      No products scanned yet. Open the camera or use a hardware scanner.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2 sm:hidden">
+                        {stockSession.items.map(item => (
+                          <div key={item.id} className={cn("rounded-xl border border-border p-3", appHoverRow)}>
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold">{item.product_label}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {item.variant ? `${variantLabel(item.variant)} · ` : ""}
+                                  {item.size_label ?? item.size ?? (item.lookup_kind === "sku" ? "SKU" : "Unique sticker")}
+                                </p>
+                                <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{item.code}</p>
+                              </div>
+                              <span className="text-lg font-bold tabular-nums">×{item.qty}</span>
+                            </div>
+                            <div className="mt-3 flex justify-end gap-2">
+                              {item.lookup_kind === "sku" ? (
+                                <Button type="button" size="sm" variant="outline" onClick={() => startSessionEdit(item)}>
+                                  <Pencil size={14} className="mr-1" /> Edit qty
+                                </Button>
+                              ) : null}
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => void removeSessionItem(item.id)}
+                                disabled={stockInBusy}
+                                aria-label={`Remove ${item.product_label}`}
+                              >
+                                <Trash2 size={15} />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="hidden overflow-x-auto rounded-xl border border-border sm:block">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
+                              <th className="px-3 py-2">Product</th>
+                              <th className="px-3 py-2">Code</th>
+                              <th className="px-3 py-2 text-right">Qty</th>
+                              <th className="w-32 px-3 py-2" />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {stockSession.items.map(item => (
+                              <tr key={item.id} className={cn("border-b last:border-b-0", appHoverRow)}>
+                                <td className="px-3 py-2">
+                                  <span className="font-medium">{item.product_label}</span>
+                                  <span className="block text-xs text-muted-foreground">
+                                    {item.variant ? `${variantLabel(item.variant)} · ` : ""}
+                                    {item.size_label ?? item.size ?? (item.lookup_kind === "sku" ? "SKU" : "Unique sticker")}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 font-mono text-xs">{item.code}</td>
+                                <td className="px-3 py-2 text-right text-base font-bold tabular-nums">{item.qty}</td>
+                                <td className="px-3 py-2">
+                                  <div className="flex justify-end gap-1">
+                                    {item.lookup_kind === "sku" ? (
+                                      <Button type="button" size="sm" variant="outline" onClick={() => startSessionEdit(item)}>
+                                        Edit
+                                      </Button>
+                                    ) : null}
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => void removeSessionItem(item.id)}
+                                      disabled={stockInBusy}
+                                      aria-label={`Remove ${item.product_label}`}
+                                    >
+                                      <Trash2 size={15} />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="flex flex-col-reverse gap-2 border-t border-border pt-3 sm:flex-row sm:justify-end">
+                    <Button type="button" variant="outline" disabled={stockInBusy} onClick={() => setCancelSessionOpen(true)}>
+                      Cancel session
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={stockInBusy || stockSession.items.length === 0}
+                      onClick={() => setConfirmSessionOpen(true)}
+                    >
+                      Confirm {stockSession.total_qty} unit{stockSession.total_qty === 1 ? "" : "s"}
+                    </Button>
+                  </div>
+                </>
+              )}
             </section>
           </AppSectionEnter>
         )}
-        {cameraOpen ? (
+        {cameraOpen && stockSession ? (
           <BarcodeCameraScannerModal
             titleId={cameraTitleId}
-            title="Stock in to RTS"
+            title={`RTS draft #${stockSession.id}`}
             continuous
-            scanPrompt="Point at a honey or dept barcode for RTS sellable stock."
+            duplicateMode="presentationEdge"
+            scanPrompt="Scan continuously. Move a barcode out of view, then present it again to add another +1."
             onClose={() => {
               setCameraOpen(false);
               stockInRefocus();
@@ -506,6 +687,102 @@ export function RTSPage() {
           onError={msg => setError(msg)}
         />
       )}
+      <AppModal
+        open={editSessionItem !== null}
+        onClose={() => setEditSessionItem(null)}
+        panelClassName="max-w-sm w-full"
+        labelledBy="rts-session-qty-title"
+      >
+        <AppModalHeader
+          title="Edit draft quantity"
+          titleId="rts-session-qty-title"
+          onClose={() => setEditSessionItem(null)}
+        />
+        <AppModalBody className="space-y-3">
+          <p className="text-sm font-medium">{editSessionItem?.product_label}</p>
+          <p className="font-mono text-xs text-muted-foreground">{editSessionItem?.code}</p>
+          <label className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Quantity
+            <input
+              type="number"
+              min={1}
+              max={5000}
+              value={editSessionQty}
+              onChange={e => setEditSessionQty(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void saveSessionQty();
+                }
+              }}
+              className="mt-1 w-full rounded-lg border-2 border-border bg-card px-3 py-2.5 text-sm"
+            />
+          </label>
+        </AppModalBody>
+        <AppModalFooter>
+          <Button type="button" variant="outline" disabled={stockInBusy} onClick={() => setEditSessionItem(null)}>
+            Cancel
+          </Button>
+          <Button type="button" disabled={stockInBusy} onClick={() => void saveSessionQty()}>
+            {stockInBusy ? "Saving…" : "Save quantity"}
+          </Button>
+        </AppModalFooter>
+      </AppModal>
+
+      <AppModal
+        open={confirmSessionOpen}
+        onClose={() => !stockInBusy && setConfirmSessionOpen(false)}
+        panelClassName="max-w-md w-full"
+        labelledBy="rts-session-confirm-title"
+      >
+        <AppModalHeader
+          title="Confirm RTS stock-in?"
+          titleId="rts-session-confirm-title"
+          onClose={() => !stockInBusy && setConfirmSessionOpen(false)}
+        />
+        <AppModalBody className="space-y-2 text-sm">
+          <p>
+            Add <strong>{stockSession?.total_qty ?? 0} unit(s)</strong> across{" "}
+            <strong>{stockSession?.line_count ?? 0} reviewed line(s)</strong> to sellable RTS inventory.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            All lines are rechecked and applied together. If one line is invalid, nothing is stocked in.
+          </p>
+        </AppModalBody>
+        <AppModalFooter>
+          <Button type="button" variant="outline" disabled={stockInBusy} onClick={() => setConfirmSessionOpen(false)}>
+            Review again
+          </Button>
+          <Button type="button" disabled={stockInBusy} onClick={() => void confirmStockSession()}>
+            {stockInBusy ? "Confirming…" : "Confirm session"}
+          </Button>
+        </AppModalFooter>
+      </AppModal>
+
+      <AppModal
+        open={cancelSessionOpen}
+        onClose={() => !stockInBusy && setCancelSessionOpen(false)}
+        panelClassName="max-w-md w-full"
+        labelledBy="rts-session-cancel-title"
+      >
+        <AppModalHeader
+          title="Cancel this session?"
+          titleId="rts-session-cancel-title"
+          onClose={() => !stockInBusy && setCancelSessionOpen(false)}
+        />
+        <AppModalBody className="space-y-2 text-sm">
+          <p>Discard all scanned draft lines?</p>
+          <p className="text-xs text-muted-foreground">RTS inventory will not be changed.</p>
+        </AppModalBody>
+        <AppModalFooter>
+          <Button type="button" variant="outline" disabled={stockInBusy} onClick={() => setCancelSessionOpen(false)}>
+            Keep session
+          </Button>
+          <Button type="button" variant="destructive" disabled={stockInBusy} onClick={() => void cancelStockSession()}>
+            {stockInBusy ? "Cancelling…" : "Cancel session"}
+          </Button>
+        </AppModalFooter>
+      </AppModal>
     </PageLayout>
   );
 }
