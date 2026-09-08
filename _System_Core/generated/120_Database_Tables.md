@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-09-07T10:16:40+02:00
+generated: 2026-09-08T07:47:39+02:00
 type: memory-bank
-table_count: 93
+table_count: 94
 ---
 
 
@@ -1021,16 +1021,21 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_current]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_open]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_close]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_update]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_remove]] |
 
 ## `inventory_check_scans`
 
 | File | Function |
 |------|----------|
+| `api/v1/inventory_check.php` | [[modules/inventory_check#api_inventory_check_scan_update]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_update]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_get]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_remove]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_summary]] |
@@ -1042,6 +1047,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_run]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
@@ -1051,6 +1057,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_run]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
 
@@ -1117,6 +1124,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_production]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_warehouse_stock_out]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_deduct_gallons]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_cascade_warehouse_metadata]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_traceability]] |
@@ -1152,6 +1160,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging_by_production]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_ensure_packaging_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_stock_out_sold]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_cascade_warehouse_metadata]] |
@@ -1164,6 +1173,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_packaging_availability]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_available_qty]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_deduct_packaging_aggregate]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_packaging_by_batch]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_honey_lines]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
@@ -1259,6 +1269,13 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_scan_sku]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_list]] |
+
+## `app_settings`
+
+| File | Function |
+|------|----------|
+| `includes/app_settings.php` | [[modules/app_settings#app_setting_get]] |
+| `includes/app_settings.php` | [[modules/app_settings#app_setting_set]] |
 
 ## `rts_inventory_rows`
 

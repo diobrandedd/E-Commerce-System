@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-09-07T10:16:47+02:00
+generated: 2026-09-08T07:47:47+02:00
 type: module
 function_count: 36
 ---
@@ -85,13 +85,13 @@ function_count: 36
 - `includes/honey_bottle_barcodes.php`:1705 — `'product_label' => dept_pouch_product_label($productKey),`
 - `includes/honey_bottle_barcodes.php`:1791 — `$productLabel = dept_pouch_product_label($productKey);`
 - `includes/honey_bottle_barcodes.php`:2030 — `dept_pouch_product_label($productKey),`
-- `includes/inventory_check.php`:201 — `'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey),`
-- `includes/inventory_check.php`:422 — `'variant' => dept_pouch_product_label($productKey),`
-- `includes/inventory_check.php`:520 — `$productLabel = $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey);`
-- `includes/inventory_check.php`:727 — `$scopeLabels[] = dept_pouch_product_label($productKey);`
-- `includes/inventory_check.php`:742 — `'product_label' => dept_pouch_product_label((string) $productKey),`
-- `includes/inventory_check.php`:747 — `'variant' => dept_pouch_product_label((string) $productKey),`
-- `includes/inventory_check.php`:880 — `'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label((string) $row['product_key']),`
+- `includes/inventory_check.php`:226 — `'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey),`
+- `includes/inventory_check.php`:662 — `'variant' => dept_pouch_product_label($productKey),`
+- `includes/inventory_check.php`:760 — `$productLabel = $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey);`
+- `includes/inventory_check.php`:973 — `$scopeLabels[] = dept_pouch_product_label($productKey);`
+- `includes/inventory_check.php`:988 — `'product_label' => dept_pouch_product_label((string) $productKey),`
+- `includes/inventory_check.php`:993 — `'variant' => dept_pouch_product_label((string) $productKey),`
+- `includes/inventory_check.php`:1156 — `'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label((string) $row['product_key']),`
 - `includes/pack_cancel_restock.php`:143 — `: dept_pouch_product_label($productKey);`
 - `includes/pack_cancel_restock.php`:184 — `$productLabel = dept_pouch_product_label($productKey);`
 - `includes/pack_cancel_restock.php`:407 — `'product_label' => dept_pouch_product_label($productKey),`
@@ -108,9 +108,9 @@ function_count: 36
 - `includes/dept_pouch_barcodes.php`:1027 — `'unit_noun' => dept_pouch_unit_singular($productKey),`
 - `includes/honey_bottle_barcodes.php`:1273 — `$unitNoun = dept_pouch_unit_singular($productKey);`
 - `includes/honey_bottle_barcodes.php`:1792 — `$unitNoun = dept_pouch_unit_singular($productKey);`
-- `includes/inventory_check.php`:423 — `'size' => dept_pouch_unit_singular($productKey),`
-- `includes/inventory_check.php`:748 — `'size' => dept_pouch_unit_singular((string) $productKey),`
-- `includes/inventory_check.php`:749 — `'size_label' => dept_pouch_unit_singular((string) $productKey),`
+- `includes/inventory_check.php`:663 — `'size' => dept_pouch_unit_singular($productKey),`
+- `includes/inventory_check.php`:994 — `'size' => dept_pouch_unit_singular((string) $productKey),`
+- `includes/inventory_check.php`:995 — `'size_label' => dept_pouch_unit_singular((string) $productKey),`
 - `includes/pack_cancel_restock.php`:144 — `$sizeLabel = $isHoney ? honey_bottle_size_label($size) : dept_pouch_unit_singular($productKey);`
 - `includes/pack_cancel_restock.php`:193 — `'size_label' => dept_pouch_unit_singular($productKey),`
 - `includes/pack_cancel_restock.php`:207 — `'size_label' => dept_pouch_unit_singular($productKey),`

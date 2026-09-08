@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-09-07T10:16:55+02:00
+generated: 2026-09-08T07:47:57+02:00
 type: module
 function_count: 61
 ---
@@ -27,10 +27,11 @@ function_count: 61
 
 ## honey_bottle_size_label {#honey_bottle_size_label}
 
-**Callers (39):**
+**Callers (42):**
 
 - `api/v1/bottle_barcodes.php`:107 — `static fn ($s) => ['value' => $s, 'label' => honey_bottle_size_label($s)],`
-- `api/v1/bottle_barcodes.php`:479 — `'size_label' => honey_bottle_size_label((string) $sku['size']),`
+- `api/v1/bottle_barcodes.php`:467 — `'size_label' => honey_bottle_size_label((string) $sku['size']),`
+- `api/v1/bottle_barcodes.php`:504 — `'size_label' => honey_bottle_size_label((string) $sku['size']),`
 - `api/v1/rts_barcode_labels.php`:55 — `static fn ($s) => ['value' => $s, 'label' => honey_bottle_size_label($s)],`
 - `includes/barcode_verify.php`:43 — `'size_label' => honey_bottle_size_label((string) $sku['size']),`
 - `includes/barcode_verify.php`:103 — `'size_label' => honey_bottle_size_label((string) $row['size']),`
@@ -43,18 +44,17 @@ function_count: 61
 - `includes/honey_bottle_barcodes.php`:1224 — `$sizeLabel = honey_bottle_size_label($size);`
 - `includes/honey_bottle_barcodes.php`:1662 — `'size_label' => honey_bottle_size_label($size),`
 - `includes/honey_bottle_barcodes.php`:2532 — `'size_label' => honey_bottle_size_label((string) $row['size']),`
-- `includes/inventory_check.php`:209 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
-- `includes/inventory_check.php`:536 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
-- `includes/inventory_check.php`:828 — `'size_label' => $size !== '' ? honey_bottle_size_label($size) : null,`
-- `includes/inventory_check.php`:887 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
+- `includes/honey_inventory.php`:645 — `'size_label' => honey_bottle_size_label($size),`
+- `includes/honey_inventory.php`:649 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`
+- `includes/inventory_check.php`:234 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
+- `includes/inventory_check.php`:776 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
+- `includes/inventory_check.php`:1104 — `'size_label' => $size !== '' ? honey_bottle_size_label($size) : null,`
+- `includes/inventory_check.php`:1163 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
 - `includes/pack_cancel_restock.php`:101 — `$sizeLabel = honey_bottle_size_label($size);`
 - `includes/pack_cancel_restock.php`:144 — `$sizeLabel = $isHoney ? honey_bottle_size_label($size) : dept_pouch_unit_singular($productKey);`
 - `includes/pos_unified.php`:117 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`
 - `includes/pos_unified.php`:122 — `'size_label' => honey_bottle_size_label($size),`
-- `includes/pos_unified.php`:172 — `ucfirst($variant) . ' · ' . honey_bottle_size_label($size)`
-- `includes/pos_unified.php`:178 — `'size_label' => honey_bottle_size_label($size),`
-- `includes/rts_barcode_labels.php`:99 — `'size_label' => $size !== null ? honey_bottle_size_label($size) : null,`
-- _… and 14 more (run impact.php for full list)_
+- _… and 17 more (run impact.php for full list)_
 
 ## honey_bottle_can_request {#honey_bottle_can_request}
 
@@ -149,12 +149,13 @@ function_count: 61
 
 **Tables:** `honey_packaging_rows`
 
-**Callers (9):**
+**Callers (10):**
 
 - `includes/finished_leak_damage.php`:139 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, -1.0);`
 - `includes/honey_bottle_barcodes.php`:269 — `honey_bottle_adjust_aggregate($pdo, $id, $size, -1.0);`
 - `includes/honey_bottle_barcodes.php`:1005 — `honey_bottle_adjust_aggregate($pdo, $packId, (string) $row['size'], 1);`
 - `includes/honey_bottle_barcodes.php`:2288 — `honey_bottle_adjust_aggregate($pdo, $packId, (string) $unit['size'], 1);`
+- `includes/honey_inventory.php`:613 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, (float) $qty);`
 - `includes/pack_cancel_restock.php`:542 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, 1.0);`
 - `includes/sku_barcodes.php`:1006 — `honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, (float) $qty);`
 - `includes/sku_barcodes.php`:1188 — `honey_bottle_adjust_aggregate($pdo, (int) $row['id'], $size, -(float) $take);`
@@ -182,14 +183,15 @@ function_count: 61
 
 **Tables:** `sku_barcode_print_jobs`, `honey_barcode_batches`, `honey_bottle_requests`, `honey_bottle_barcodes`, `users`, `honey_packaging_rows`
 
-**Callers (10):**
+**Callers (11):**
 
 - `api/v1/bottle_barcodes.php`:223 — `api_ok(['request' => honey_bottle_request_get(ims_pdo(), $id)]);`
 - `api/v1/bottle_barcodes.php`:263 — `$req = honey_bottle_request_get(ims_pdo(), $requestId);`
 - `api/v1/bottle_barcodes.php`:289 — `'request' => honey_bottle_request_get(ims_pdo(), $requestId),`
 - `api/v1/bottle_barcodes.php`:314 — `$req = honey_bottle_request_get($pdo, $requestId);`
 - `api/v1/bottle_barcodes.php`:347 — `$requests[] = honey_bottle_request_get($pdo, $requestId);`
-- `api/v1/bottle_barcodes.php`:483 — `$payload['request'] = honey_bottle_request_get(ims_pdo(), (int) $stocked['primary_request_id']);`
+- `api/v1/bottle_barcodes.php`:471 — `$payload['request'] = honey_bottle_request_get($pdo, (int) $stocked['primary_request_id']);`
+- `api/v1/bottle_barcodes.php`:508 — `$payload['request'] = honey_bottle_request_get($pdo, (int) $stocked['primary_request_id']);`
 - `includes/honey_bottle_barcodes.php`:318 — `return honey_bottle_request_get($pdo, (int) $pdo->lastInsertId());`
 - `includes/honey_bottle_barcodes.php`:406 — `$req = honey_bottle_request_get($pdo, $id);`
 - `includes/honey_bottle_barcodes.php`:535 — `$req = honey_bottle_request_get($pdo, $requestId);`
@@ -289,11 +291,12 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_bottle_lookup {#honey_bottle_lookup}
 
-**Callers (3):**
+**Callers (4):**
 
 - `api/v1/bottle_barcodes.php`:427 — `api_ok(['barcode' => honey_bottle_lookup(ims_pdo(), $code)]);`
+- `api/v1/bottle_barcodes.php`:519 — `$lookup = honey_bottle_lookup($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:2311 — `return honey_bottle_lookup($pdo, $code);`
-- `includes/honey_inventory.php`:813 — `$lookup = honey_bottle_lookup($pdo, strtoupper($query));`
+- `includes/honey_inventory.php`:1043 — `$lookup = honey_bottle_lookup($pdo, strtoupper($query));`
 
 ## honey_bottle_serialize_lookup {#honey_bottle_serialize_lookup}
 
@@ -339,9 +342,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `honey_bottle_barcodes`, `honey_bottle_units`, `honey_barcode_batches`, `honey_bottle_requests`
 
-**Callers (1):**
+**Callers (2):**
 
-- `api/v1/bottle_barcodes.php`:491 — `api_ok(honey_bottle_scan_stock_in(ims_pdo(), (int) $user['id'], $code, $adopt));`
+- `api/v1/bottle_barcodes.php`:533 — `$scanned = honey_bottle_scan_stock_in($pdo, (int) $user['id'], $code, $adopt);`
+- `api/v1/bottle_barcodes.php`:548 — `api_ok(honey_bottle_scan_stock_in($pdo, (int) $user['id'], $code, $adopt));`
 
 ## honey_bottle_rts_stock_in_scan {#honey_bottle_rts_stock_in_scan}
 
@@ -357,7 +361,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:499 — `api_ok(['session' => honey_bottle_pack_session_start(ims_pdo(), (int) $user['id'])]);`
+- `api/v1/bottle_barcodes.php`:556 — `api_ok(['session' => honey_bottle_pack_session_start(ims_pdo(), (int) $user['id'])]);`
 
 ## honey_bottle_pack_session_get {#honey_bottle_pack_session_get}
 
@@ -365,7 +369,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (21):**
 
-- `api/v1/bottle_barcodes.php`:507 — `api_ok(['session' => honey_bottle_pack_session_get(ims_pdo(), $id)]);`
+- `api/v1/bottle_barcodes.php`:564 — `api_ok(['session' => honey_bottle_pack_session_get(ims_pdo(), $id)]);`
 - `includes/honey_bottle_barcodes.php`:1160 — `return honey_bottle_pack_session_get($pdo, $existing);`
 - `includes/honey_bottle_barcodes.php`:1165 — `return honey_bottle_pack_session_get($pdo, (int) $pdo->lastInsertId());`
 - `includes/honey_bottle_barcodes.php`:1464 — `$detail = honey_bottle_pack_session_get($pdo, (int) $r['id']);`
@@ -393,7 +397,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:515 — `api_ok(honey_bottle_pack_session_list(`
+- `api/v1/bottle_barcodes.php`:572 — `api_ok(honey_bottle_pack_session_list(`
 
 ## honey_bottle_pack_session_today_stats {#honey_bottle_pack_session_today_stats}
 
@@ -401,13 +405,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:532 — `api_ok(honey_bottle_pack_session_today_stats(ims_pdo(), (int) $user['id']));`
+- `api/v1/bottle_barcodes.php`:589 — `api_ok(honey_bottle_pack_session_today_stats(ims_pdo(), (int) $user['id']));`
 
 ## honey_bottle_pack_session_scan {#honey_bottle_pack_session_scan}
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:541 — `api_ok(honey_bottle_pack_session_scan(`
+- `api/v1/bottle_barcodes.php`:598 — `api_ok(honey_bottle_pack_session_scan(`
 
 ## honey_bottle_pack_session_scan_sku {#honey_bottle_pack_session_scan_sku}
 
@@ -439,7 +443,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:575 — `api_ok(['session' => honey_bottle_pack_session_confirm(`
+- `api/v1/bottle_barcodes.php`:632 — `api_ok(['session' => honey_bottle_pack_session_confirm(`
 
 ## honey_bottle_pack_session_remove_item {#honey_bottle_pack_session_remove_item}
 
@@ -447,7 +451,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:558 — `api_ok(['session' => honey_bottle_pack_session_remove_item(`
+- `api/v1/bottle_barcodes.php`:615 — `api_ok(['session' => honey_bottle_pack_session_remove_item(`
 
 ## honey_bottle_pack_session_discard {#honey_bottle_pack_session_discard}
 
@@ -455,7 +459,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:588 — `honey_bottle_pack_session_discard(ims_pdo(), (int) ($in['session_id'] ?? 0));`
+- `api/v1/bottle_barcodes.php`:645 — `honey_bottle_pack_session_discard(ims_pdo(), (int) ($in['session_id'] ?? 0));`
 
 ## honey_bottle_write_sale_log {#honey_bottle_write_sale_log}
 
@@ -473,7 +477,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/bottle_barcodes.php`:597 — `api_ok(['barcode' => honey_bottle_pos_lookup(ims_pdo(), $code)]);`
+- `api/v1/bottle_barcodes.php`:654 — `api_ok(['barcode' => honey_bottle_pos_lookup(ims_pdo(), $code)]);`
 - `includes/pos_unified.php`:159 — `$honey = honey_bottle_pos_lookup($pdo, $code);`
 
 ## honey_bottle_pos_consume {#honey_bottle_pos_consume}
@@ -493,7 +497,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:606 — `api_ok(['barcode' => honey_bottle_opened_return_scan(`
+- `api/v1/bottle_barcodes.php`:663 — `api_ok(['barcode' => honey_bottle_opened_return_scan(`
 
 ## honey_bottle_rts_receive {#honey_bottle_rts_receive}
 
@@ -501,7 +505,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/bottle_barcodes.php`:624 — `api_ok(honey_bottle_rts_receive(ims_pdo(), (int) api_require_ims_user()['id'], $codes, $pool));`
+- `api/v1/bottle_barcodes.php`:681 — `api_ok(honey_bottle_rts_receive(ims_pdo(), (int) api_require_ims_user()['id'], $codes, $pool));`
 - `includes/rts_case_handlers.php`:516 — `$honeyRx = honey_bottle_rts_receive($pdo, 0, $bottleCodes, $pool);`
 
 ## honey_bottle_backfill_preview {#honey_bottle_backfill_preview}
@@ -510,7 +514,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/bottle_barcodes.php`:631 — `api_ok(honey_bottle_backfill_preview(ims_pdo()));`
+- `api/v1/bottle_barcodes.php`:688 — `api_ok(honey_bottle_backfill_preview(ims_pdo()));`
 - `includes/honey_bottle_barcodes.php`:2433 — `$preview = honey_bottle_backfill_preview($pdo);`
 
 ## honey_bottle_unit_count_for_row {#honey_bottle_unit_count_for_row}
@@ -525,7 +529,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:639 — `$created = honey_bottle_backfill_generate(ims_pdo(), (int) $user['id']);`
+- `api/v1/bottle_barcodes.php`:696 — `$created = honey_bottle_backfill_generate(ims_pdo(), (int) $user['id']);`
 
 ## honey_bottle_reconcile {#honey_bottle_reconcile}
 
@@ -533,7 +537,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:647 — `api_ok(honey_bottle_reconcile(ims_pdo()));`
+- `api/v1/bottle_barcodes.php`:704 — `api_ok(honey_bottle_reconcile(ims_pdo()));`
 
 ## honey_bottle_stock_summary {#honey_bottle_stock_summary}
 
@@ -541,7 +545,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/bottle_barcodes.php`:654 — `api_ok(['rows' => honey_bottle_stock_summary(ims_pdo())]);`
+- `api/v1/bottle_barcodes.php`:711 — `api_ok(['rows' => honey_bottle_stock_summary(ims_pdo())]);`
 
 ## honey_bottle_code128_svg {#honey_bottle_code128_svg}
 
@@ -576,7 +580,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/bottle_barcodes.php`:173 — `$pk = honey_bottle_create_custom_packaging(`
-- `api/v1/bottle_barcodes.php`:455 — `$customPack = honey_bottle_create_custom_packaging(`
+- `api/v1/bottle_barcodes.php`:480 — `$customPack = honey_bottle_create_custom_packaging(`
 
 ## honey_bottle_serialize_packaging_option {#honey_bottle_serialize_packaging_option}
 

@@ -32,6 +32,7 @@ export interface InventoryCheckScan {
   size_label: string | null;
   flag: "ok" | "not_in_stock" | "void";
   counted_qty?: number;
+  sku_id?: number | null;
   scanned_by: number;
   scanned_by_name: string;
   scanned_at: string;
@@ -102,6 +103,7 @@ export interface InventoryCheckCompareRun {
 }
 
 export interface InventoryCheckCompareResult {
+  preview?: boolean;
   run: InventoryCheckCompareRun;
   lines: InventoryCheckVarianceLine[];
   event: InventoryCheckEvent;
@@ -132,6 +134,9 @@ export const inventoryCheckApi = {
   closeEvent: (eventId: number) =>
     apiPost<{ event: InventoryCheckEvent }>(ENDPOINT, "event_close", { event_id: eventId }),
 
+  cancelEvent: (eventId: number) =>
+    apiPost<{ cancelled: boolean }>(ENDPOINT, "event_cancel", { event_id: eventId }),
+
   eventList: (page = 1) =>
     apiGet<{ rows: InventoryCheckEvent[]; total: number; page: number; per_page: number }>(
       ENDPOINT,
@@ -139,11 +144,20 @@ export const inventoryCheckApi = {
       { page },
     ),
 
-  scan: (eventId: number, code: string, qty?: number) =>
+  scan: (eventId: number, code: string, opts?: { qty?: number; batch_no?: string }) =>
     apiPost<InventoryCheckScanResult>(ENDPOINT, "scan", {
       event_id: eventId,
       code,
-      ...(qty != null ? { qty } : {}),
+      ...(opts?.qty != null ? { qty: opts.qty } : {}),
+      ...(opts?.batch_no != null ? { batch_no: opts.batch_no } : {}),
+    }),
+
+  scanUpdate: (eventId: number, scanId: number, opts: { qty?: number; batch_no?: string }) =>
+    apiPost<{ scan: InventoryCheckScan; summary: InventoryCheckSummary | null }>(ENDPOINT, "scan_update", {
+      event_id: eventId,
+      scan_id: scanId,
+      ...(opts.qty != null ? { qty: opts.qty } : {}),
+      ...(opts.batch_no != null ? { batch_no: opts.batch_no } : {}),
     }),
 
   scanRemove: (eventId: number, scanId: number) =>
@@ -155,15 +169,23 @@ export const inventoryCheckApi = {
   summary: (eventId: number) =>
     apiGet<InventoryCheckSummary>(ENDPOINT, "summary", { event_id: eventId }),
 
-  scanLog: (eventId: number, filters: InventoryCheckScanLogFilters, page = 1) =>
+  scanLog: (eventId: number, filters: InventoryCheckScanLogFilters = {}, page = 1, perPage = 200) =>
     apiGet<{ rows: InventoryCheckScan[]; total: number; page: number; per_page: number }>(
       ENDPOINT,
       "scan_log",
-      { event_id: eventId, page, ...filters },
+      { event_id: eventId, page, per_page: perPage, ...filters },
     ),
+
+  comparePreview: (eventId: number) =>
+    apiGet<InventoryCheckCompareResult>(ENDPOINT, "compare_preview", { event_id: eventId }),
 
   compareRun: (eventId: number) =>
     apiPost<InventoryCheckCompareResult>(ENDPOINT, "compare_run", { event_id: eventId }),
+
+  finalize: (eventId: number) =>
+    apiPost<{ event: InventoryCheckEvent; compare: InventoryCheckCompareResult }>(ENDPOINT, "finalize", {
+      event_id: eventId,
+    }),
 
   compareGet: (runId: number) =>
     apiGet<InventoryCheckCompareResult>(ENDPOINT, "compare_get", { run_id: runId }),

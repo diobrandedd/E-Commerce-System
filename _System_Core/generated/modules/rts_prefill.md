@@ -1,7 +1,7 @@
 ---
 title: rts_prefill
 source: includes/rts_prefill.php
-generated: 2026-09-07T10:17:21+02:00
+generated: 2026-09-08T07:48:30+02:00
 type: module
 function_count: 8
 ---

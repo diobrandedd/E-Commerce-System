@@ -310,7 +310,7 @@ function rts_damaged_use_apply(PDO $pdo, int $userId, int $rowId, string $outcom
         }
 
         if ($outcome === 'mix_production') {
-            $volumeGallons = honey_lines_to_gallons($deductLines);
+            $volumeGallons = honey_lines_to_gallons($deductLines, honey_ml_per_gallon($pdo));
             if ($volumeGallons <= 0) {
                 throw new RuntimeException('Could not compute honey volume from deducted quantities.');
             }

@@ -241,7 +241,13 @@ export const bottleBarcodesApi = {
     apiGet<{ barcode: HoneyBottleLookup }>("bottle_barcodes.php", "lookup", { code }),
   scanStockIn: (
     code: string,
-    opts: { adopt?: boolean; qty?: number; packaging_row_id?: number; batch_no?: string } = {},
+    opts: {
+      adopt?: boolean;
+      qty?: number;
+      packaging_row_id?: number;
+      batch_no?: string;
+      production_row_id?: number;
+    } = {},
   ) =>
     apiPost<
       HoneyBottleLookup & {
@@ -249,6 +255,11 @@ export const bottleBarcodesApi = {
         request?: HoneyBottleRequest;
         lookup_kind?: string;
         qty?: number;
+        used_gallons?: number;
+        remaining_production_gallons?: number;
+        ml_per_gallon?: number;
+        production_row_id?: number;
+        batch_no?: string;
       }
     >("bottle_barcodes.php", "scan_stock_in", {
       code,
@@ -256,6 +267,7 @@ export const bottleBarcodesApi = {
       qty: opts.qty,
       packaging_row_id: opts.packaging_row_id,
       batch_no: opts.batch_no,
+      production_row_id: opts.production_row_id,
     }),
   packStart: () => apiPost<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_start", {}),
   packGet: (id: number) =>

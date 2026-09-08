@@ -2,15 +2,58 @@
 
 declare(strict_types=1);
 
-/** US fluid gallon in milliliters (exact; use only in calculations). */
+require_once __DIR__ . '/app_settings.php';
+
+/** US fluid gallon in milliliters (factory default; override via app_settings honey.ml_per_gallon). */
 const HONEY_ML_PER_US_GALLON = 3785.411784;
 
-/** US fluid gallon in liters (exact). */
+/** US fluid gallon in liters (factory default). */
 const HONEY_LITERS_PER_US_GALLON = HONEY_ML_PER_US_GALLON / 1000.0;
+
+const HONEY_ML_PER_GALLON_SETTING_KEY = 'honey.ml_per_gallon';
+const HONEY_ML_PER_GALLON_MIN = 1000.0;
+const HONEY_ML_PER_GALLON_MAX = 100000.0;
 
 function honey_price_per_liter_from_gallon(float $pricePerGallon): float
 {
     return $pricePerGallon / HONEY_LITERS_PER_US_GALLON;
+}
+
+/**
+ * Resolve ml per production gallon (settings override, else factory default).
+ */
+function honey_ml_per_gallon(?PDO $pdo = null): float
+{
+    if ($pdo === null) {
+        return HONEY_ML_PER_US_GALLON;
+    }
+    $raw = app_setting_get($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, null);
+    if ($raw === null || $raw === '') {
+        return HONEY_ML_PER_US_GALLON;
+    }
+    $n = (float) $raw;
+    if (!is_finite($n) || $n < HONEY_ML_PER_GALLON_MIN || $n > HONEY_ML_PER_GALLON_MAX) {
+        return HONEY_ML_PER_US_GALLON;
+    }
+
+    return $n;
+}
+
+/**
+ * Validate and persist ml-per-gallon setting.
+ */
+function honey_ml_per_gallon_save(PDO $pdo, float $ml, ?int $userId = null): float
+{
+    if (!is_finite($ml) || $ml < HONEY_ML_PER_GALLON_MIN || $ml > HONEY_ML_PER_GALLON_MAX) {
+        throw new RuntimeException(
+            'ml per gallon must be between ' . (int) HONEY_ML_PER_GALLON_MIN . ' and ' . (int) HONEY_ML_PER_GALLON_MAX . '.'
+        );
+    }
+    // Store with enough precision for fractional ml.
+    $stored = rtrim(rtrim(sprintf('%.6F', $ml), '0'), '.');
+    app_setting_set($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, $stored, $userId);
+
+    return (float) $stored;
 }
 
 const HONEY_BOTTLE_SIZE_KEYS = ['250ml', '350ml', 'liter', 'gallon'];
@@ -28,13 +71,15 @@ function honey_normalize_bottle_size(string $size): string
     return $size;
 }
 
-function honey_bottle_size_ml(string $size): float
+function honey_bottle_size_ml(string $size, ?float $mlPerGallon = null): float
 {
+    $gal = $mlPerGallon ?? HONEY_ML_PER_US_GALLON;
+
     return match (honey_normalize_bottle_size($size)) {
         '250ml' => 250.0,
         '350ml' => 350.0,
         'liter' => 1000.0,
-        'gallon' => HONEY_ML_PER_US_GALLON,
+        'gallon' => $gal,
         default => throw new RuntimeException('Invalid bottle size.'),
     };
 }
@@ -61,8 +106,10 @@ function honey_aggregate_bottle_lines(array $lines): array
     return $out;
 }
 
-/** @param list<array{size:string, qty:float|int|string}> $lines */
-function honey_lines_total_ml(array $lines): float
+/**
+ * @param list<array{size:string, qty:float|int|string}> $lines
+ */
+function honey_lines_total_ml(array $lines, ?float $mlPerGallon = null): float
 {
     $total = 0.0;
     foreach ($lines as $line) {
@@ -73,25 +120,31 @@ function honey_lines_total_ml(array $lines): float
         if ($qty <= 0) {
             continue;
         }
-        $total += $qty * honey_bottle_size_ml((string) ($line['size'] ?? ''));
+        $total += $qty * honey_bottle_size_ml((string) ($line['size'] ?? ''), $mlPerGallon);
     }
 
     return $total;
 }
 
-function honey_ml_to_gallons(float $ml): float
+function honey_ml_to_gallons(float $ml, ?float $mlPerGallon = null): float
 {
     if ($ml <= 0) {
         return 0.0;
     }
+    $denom = $mlPerGallon ?? HONEY_ML_PER_US_GALLON;
+    if ($denom <= 0) {
+        $denom = HONEY_ML_PER_US_GALLON;
+    }
 
-    return $ml / HONEY_ML_PER_US_GALLON;
+    return $ml / $denom;
 }
 
-/** @param list<array{size:string, qty:float|int|string}> $lines */
-function honey_lines_to_gallons(array $lines): float
+/**
+ * @param list<array{size:string, qty:float|int|string}> $lines
+ */
+function honey_lines_to_gallons(array $lines, ?float $mlPerGallon = null): float
 {
-    return honey_ml_to_gallons(honey_lines_total_ml($lines));
+    return honey_ml_to_gallons(honey_lines_total_ml($lines, $mlPerGallon), $mlPerGallon);
 }
 
 /**

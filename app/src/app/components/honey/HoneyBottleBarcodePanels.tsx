@@ -9,8 +9,8 @@ import {
   AppSuccessNotice,
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
-import { ApiError } from "@/app/lib/api";
-import { HONEY_BOTTLE_OPTIONS, HONEY_VARIANTS } from "@/app/lib/honey";
+import { ApiError, apiGet } from "@/app/lib/api";
+import { HONEY_BOTTLE_OPTIONS, HONEY_VARIANTS, DEFAULT_ML_PER_US_GALLON, formatGallons, linesToGallons, type HoneyBottleSize } from "@/app/lib/honey";
 import { triggerLiveRefresh } from "@/app/lib/liveRefresh";
 import {
   bottleBarcodesApi,
@@ -248,8 +248,9 @@ export function HoneyBottleScanInPanel() {
       <div className="bg-card rounded-xl border border-border p-4 space-y-3">
         <h3 className="text-sm font-semibold">Scan into packaging stock</h3>
         <p className="text-xs text-muted-foreground">
-          Set a custom batch number first. SKU barcodes: each scan stocks in +1, or type a quantity and Stock in
-          for bulk. Leftover unique stickers still scan one at a time.
+          Prefer <span className="font-medium text-foreground">Production → scan stock-in</span> when bottling from a
+          supplier gallon lot (deducts production gallons). This panel is for custom batches and leftover unique stickers:
+          set a custom batch for SKU (+1 per scan or Quantity + Stock in), or scan unique stickers one at a time.
         </p>
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Custom batch number (for SKU stock-in)
@@ -309,6 +310,279 @@ export function HoneyBottleScanInPanel() {
         <div className={`h-16 rounded-xl border flex items-center justify-center text-sm font-medium ${
           flash === "ok" ? "bg-green-100 border-green-300 text-green-800" : flash === "err" ? "bg-red-100 border-red-300 text-red-800" : "bg-secondary/30 border-border text-muted-foreground"
         }`}>
+          {flash === "ok" ? "Scanned" : flash === "err" ? "Not accepted" : "Ready"}
+        </div>
+        {msg && <p className="text-sm">{msg}</p>}
+        {progress && <p className="text-lg font-bold">{progress}</p>}
+      </div>
+      {cameraOpen ? (
+        <BarcodeCameraScannerModal
+          title="Scan bottle barcode"
+          titleId={cameraTitleId}
+          continuous
+          scanPrompt="Point at each bottle barcode. Keep scanning until stock-in is complete."
+          onClose={() => setCameraOpen(false)}
+          onDecoded={decoded => onScan(decoded)}
+        />
+      ) : null}
+    </AppSectionEnter>
+  );
+}
+
+export type ProductionLotOption = {
+  id: number;
+  supplier_code: string;
+  variant: string;
+  current_qty: string | number;
+  initial_qty?: string | number;
+};
+
+export function HoneyProductionScanStockInPanel({
+  lots,
+  onStocked,
+}: {
+  lots: ProductionLotOption[];
+  onStocked?: () => void;
+}) {
+  const [productionRowId, setProductionRowId] = useState<number>(0);
+  const [code, setCode] = useState("");
+  const [flash, setFlash] = useState<"ok" | "err" | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [skuQty, setSkuQty] = useState("1");
+  const [lastSku, setLastSku] = useState<{ code: string; label: string; variant: string; size: HoneyBottleSize } | null>(
+    null,
+  );
+  const [mlPerGallon, setMlPerGallon] = useState(DEFAULT_ML_PER_US_GALLON);
+  const cameraTitleId = useId();
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
+
+  const openLots = lots.filter(l => Number(l.current_qty) > 0);
+  const selected = openLots.find(l => l.id === productionRowId) ?? null;
+
+  useEffect(() => {
+    if (productionRowId > 0 && !lots.some(l => l.id === productionRowId && Number(l.current_qty) > 0)) {
+      setProductionRowId(0);
+    }
+  }, [lots, productionRowId]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const data = await apiGet<{ ml_per_gallon: number }>("settings.php", "honey_volume_get");
+        if (Number.isFinite(data.ml_per_gallon) && data.ml_per_gallon > 0) {
+          setMlPerGallon(data.ml_per_gallon);
+        }
+      } catch {
+        /* keep default */
+      }
+    })();
+  }, []);
+
+  const previewGallons = (() => {
+    if (!lastSku) return 0;
+    const qty = Number(skuQty);
+    if (!Number.isFinite(qty) || qty < 1) return 0;
+    return linesToGallons([{ size: lastSku.size, qty: String(qty) }], mlPerGallon);
+  })();
+
+  const commitStockIn = async (
+    value: string,
+    opts: { qty: number },
+  ): Promise<ScannerDecodeFeedback | void> => {
+    if (productionRowId < 1) {
+      playScanBeep("bad");
+      setFlash("err");
+      setMsg("Select a production lot before stocking in.");
+      window.setTimeout(() => setFlash(null), 700);
+      refocus();
+      return { kind: "error", message: "Select a production lot first." };
+    }
+    try {
+      const res = await bottleBarcodesApi.scanStockIn(value, {
+        qty: opts.qty,
+        production_row_id: productionRowId,
+      });
+      playScanBeep("ok");
+      setFlash("ok");
+      const qtyBit = res.qty ? ` ×${res.qty}` : "";
+      const galBit =
+        res.used_gallons != null
+          ? ` · used ${formatGallons(res.used_gallons)} gal (${formatGallons(res.remaining_production_gallons ?? 0)} remain)`
+          : "";
+      setMsg(`${res.variant} ${res.size_label} · ${res.code}${qtyBit}${galBit}`);
+      if (res.request) {
+        setProgress(`${res.request.scanned_count} / ${res.request.generated_count || res.request.quantity} scanned`);
+      }
+      if (res.ml_per_gallon != null && Number.isFinite(res.ml_per_gallon)) {
+        setMlPerGallon(res.ml_per_gallon);
+      }
+      window.setTimeout(() => setFlash(null), 700);
+      onStocked?.();
+      triggerLiveRefresh();
+      refocus();
+      return {
+        kind: "success",
+        message: `Stocked in: ${res.variant} ${res.size_label} · ${res.code}${qtyBit}`,
+      };
+    } catch (e) {
+      const reason = e instanceof ApiError ? e.message : "Scan failed.";
+      const isDup = /already|duplicate/i.test(reason);
+      playScanBeep(isDup ? "dup" : "bad");
+      setFlash("err");
+      setMsg(reason);
+      window.setTimeout(() => setFlash(null), 700);
+      refocus();
+      return { kind: isDup ? "duplicate" : "error", message: reason };
+    }
+  };
+
+  const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
+    const value = (raw ?? code).trim();
+    if (!value) return;
+    setCode("");
+    if (productionRowId < 1) {
+      playScanBeep("bad");
+      setFlash("err");
+      setMsg("Select a production lot before scanning.");
+      window.setTimeout(() => setFlash(null), 700);
+      refocus();
+      return { kind: "error", message: "Select a production lot first." };
+    }
+    try {
+      const { lookup } = await skuBarcodesApi.lookup(value);
+      if (lookup.lookup_kind === "sku" && lookup.kind === "honey") {
+        const variant = String(lookup.variant ?? "");
+        const size = String(lookup.size ?? "") as HoneyBottleSize;
+        if (selected && variant && variant !== selected.variant) {
+          playScanBeep("bad");
+          setFlash("err");
+          setMsg(`SKU is ${variant}; selected lot is ${selected.variant}.`);
+          window.setTimeout(() => setFlash(null), 700);
+          refocus();
+          return { kind: "error", message: "Variant mismatch." };
+        }
+        const label = lookup.label ?? "Honey SKU";
+        setLastSku({ code: value, label, variant, size });
+        return commitStockIn(value, { qty: 1 });
+      }
+    } catch {
+      // fall through to unique scan
+    }
+    return commitStockIn(value, { qty: 1 });
+  };
+
+  const addSkuBulk = async () => {
+    if (!lastSku) {
+      setMsg("Scan a SKU barcode first, then use Quantity + Stock in for bulk.");
+      refocus();
+      return;
+    }
+    const qty = Number(skuQty);
+    if (!Number.isFinite(qty) || qty < 1) {
+      setMsg("Enter a quantity of at least 1.");
+      return;
+    }
+    await commitStockIn(lastSku.code, { qty });
+  };
+
+  return (
+    <AppSectionEnter className="space-y-4">
+      <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+        <h3 className="text-sm font-semibold">Scan bottles into packaging (from production)</h3>
+        <p className="text-xs text-muted-foreground">
+          Select the supplier gallon lot these bottles came from. Each stock-in credits packaging and deducts production
+          gallons using Settings → Honey volume (ml per gallon).
+        </p>
+        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block">
+          Production lot
+          <select
+            className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-background"
+            value={productionRowId || ""}
+            onChange={e => setProductionRowId(Number(e.target.value) || 0)}
+          >
+            <option value="">Select lot…</option>
+            {openLots.map(l => (
+              <option key={l.id} value={l.id}>
+                {l.supplier_code} · {l.variant} · {formatGallons(Number(l.current_qty))} gal left
+              </option>
+            ))}
+          </select>
+        </label>
+        {openLots.length === 0 && (
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            No production lots with remaining gallons. Stock out from Warehouse first.
+          </p>
+        )}
+        {selected && lastSku && previewGallons > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Qty {skuQty} × {lastSku.label} uses ~{formatGallons(previewGallons)} gal ·{" "}
+            {formatGallons(Math.max(0, Number(selected.current_qty) - previewGallons))} remain after
+            {previewGallons > Number(selected.current_qty) + 1e-9 ? " (not enough gallons)" : ""}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            {...inputProps}
+            className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide"
+            placeholder="Scan barcode or type it…"
+            value={code}
+            onChange={e => setCode(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void onScan();
+              }
+            }}
+            disabled={openLots.length === 0}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-1.5 shrink-0"
+            onClick={() => setCameraOpen(true)}
+            disabled={openLots.length === 0}
+          >
+            <Camera size={16} /> Camera
+          </Button>
+        </div>
+        <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Bulk SKU add{lastSku ? ` — last: ${lastSku.label}` : " — scan a SKU first"}
+          </p>
+          <div className="flex gap-2 items-end">
+            <div className="w-24">
+              <label className="text-xs text-muted-foreground">Quantity</label>
+              <input
+                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                type="number"
+                min={1}
+                value={skuQty}
+                onChange={e => setSkuQty(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void addSkuBulk();
+                  }
+                }}
+              />
+            </div>
+            <Button type="button" onClick={() => void addSkuBulk()} disabled={!lastSku || productionRowId < 1}>
+              Stock in
+            </Button>
+          </div>
+        </div>
+        <div
+          className={`h-16 rounded-xl border flex items-center justify-center text-sm font-medium ${
+            flash === "ok"
+              ? "bg-green-100 border-green-300 text-green-800"
+              : flash === "err"
+                ? "bg-red-100 border-red-300 text-red-800"
+                : "bg-secondary/30 border-border text-muted-foreground"
+          }`}
+        >
           {flash === "ok" ? "Scanned" : flash === "err" ? "Not accepted" : "Ready"}
         </div>
         {msg && <p className="text-sm">{msg}</p>}

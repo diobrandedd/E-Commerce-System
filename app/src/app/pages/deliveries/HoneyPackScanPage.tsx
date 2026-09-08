@@ -25,14 +25,49 @@ import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 
+function localTodayIso() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60_000;
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10);
+}
+
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return localTodayIso();
 }
 
 function daysAgoIso(days: number) {
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
+  const offset = d.getTimezoneOffset() * 60_000;
+  return new Date(d.getTime() - offset).toISOString().slice(0, 10);
+}
+
+/** Units confirmed today from Packaging or RTS sellable (excludes finished-only dept lines). */
+function sumPackagingOrRtsUnits(rows: HoneyPackSessionListRow[]): number {
+  let total = 0;
+  for (const row of rows) {
+    for (const it of row.items ?? []) {
+      const pool = (it.pool ?? "packaging").toLowerCase();
+      if (pool === "finished") continue;
+      if (pool !== "packaging" && pool !== "rts_sellable") continue;
+      total += Math.max(1, Number(it.qty ?? 1));
+    }
+  }
+  return total;
+}
+
+async function fetchTodayPackagingOrRtsTotal(): Promise<number> {
+  const day = localTodayIso();
+  let page = 1;
+  let totalPages = 1;
+  let sum = 0;
+  while (page <= totalPages && page <= 20) {
+    const res = await bottleBarcodesApi.packSessionList({ from: day, to: day, page });
+    sum += sumPackagingOrRtsUnits(res.rows);
+    totalPages = Math.max(1, Math.ceil(res.total / res.per_page));
+    page += 1;
+  }
+  return sum;
 }
 
 function formatWhen(raw: string | null | undefined) {
@@ -130,13 +165,13 @@ export function HoneyPackScanPage() {
             empty a batch a leftover sticker still needs).
           </p>
           <p>
-            <strong className="text-foreground">History</strong> — read-only list of confirmed pack sessions.
-            Filter by date, product, or batch code. Expanding a row shows items, barcodes, and batches.
+            <strong className="text-foreground">Today packed</strong> — after you confirm, the Scan tab shows
+            how many Packaging and RTS sellable units were packed today (all confirmed sessions). Finished-only
+            dept lines are not included in that total.
           </p>
           <p>
-            <strong className="text-foreground">Today counters</strong> — Packaging and RTS sellable totals
-            for your account today (confirmed packs plus your open draft session). Dept finished stock
-            counts under Packaging.
+            <strong className="text-foreground">History</strong> — read-only list of confirmed pack sessions.
+            Filter by date, product, or batch code. Expanding a row shows items, barcodes, and batches.
           </p>
         </AppModalBody>
       </AppModal>
@@ -146,11 +181,6 @@ export function HoneyPackScanPage() {
 
 function PackScanLivePanel() {
   const [session, setSession] = useState<HoneyPackSession | null>(null);
-  const [todayStats, setTodayStats] = useState<{
-    packaging: number;
-    rts_sellable: number;
-    total: number;
-  } | null>(null);
   const [code, setCode] = useState("");
   const [flash, setFlash] = useState<"ok" | "dup" | "bad" | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -164,19 +194,15 @@ function PackScanLivePanel() {
   const [skuQty, setSkuQty] = useState("1");
   const [skuPool, setSkuPool] = useState<"packaging" | "rts_sellable" | "finished">("packaging");
   const [lastSku, setLastSku] = useState<{ code: string; kind: "honey" | "dept"; label: string } | null>(null);
+  const [todayPacked, setTodayPacked] = useState<number | null>(null);
   const cameraTitleId = useId();
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, session?.id);
 
-  const refreshTodayStats = useCallback(async () => {
+  const refreshTodayPacked = useCallback(async () => {
     try {
-      const stats = await bottleBarcodesApi.packTodayStats();
-      setTodayStats({
-        packaging: stats.packaging,
-        rts_sellable: stats.rts_sellable,
-        total: stats.total,
-      });
+      setTodayPacked(await fetchTodayPackagingOrRtsTotal());
     } catch {
-      // Non-blocking — pack scan still works without the daily strip
+      // Keep last known total; do not block scanning.
     }
   }, []);
 
@@ -185,20 +211,20 @@ function PackScanLivePanel() {
     try {
       const res = await bottleBarcodesApi.packStart();
       setSession(res.session);
-      void refreshTodayStats();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not start pack session.");
     }
-  }, [refreshTodayStats]);
+  }, []);
 
-  useEffect(() => { void start(); }, [start]);
-  useEffect(() => { void refreshTodayStats(); }, [refreshTodayStats]);
+  useEffect(() => {
+    void start();
+    void refreshTodayPacked();
+  }, [start, refreshTodayPacked]);
 
   const applyPackResult = (
     res: Awaited<ReturnType<typeof bottleBarcodesApi.packScan>>,
   ): ScannerDecodeFeedback => {
     setSession(res.session);
-    void refreshTodayStats();
     if (res.result === "ok") {
       playScanBeep("ok");
       setFlash("ok");
@@ -344,6 +370,7 @@ function PackScanLivePanel() {
       setConfirmOpen(false);
       setLastSku(null);
       await start();
+      await refreshTodayPacked();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Confirm failed.");
     } finally {
@@ -368,7 +395,6 @@ function PackScanLivePanel() {
     try {
       const res = await bottleBarcodesApi.packRemoveItem(session.id, item.kind === "dept" ? "dept" : "honey", item.id);
       setSession(res.session);
-      void refreshTodayStats();
       setMsg(`Removed ${item.code}`);
       const leftover = res.session.items.some(it => packItemGroupKey(it) === packItemGroupKey(item));
       if (!leftover) {
@@ -478,21 +504,28 @@ function PackScanLivePanel() {
         {flash === "ok" ? "Scanned" : flash === "dup" ? "Already in this session" : flash === "bad" ? "Not accepted" : "Ready"}
       </div>
       {msg && <p className="text-sm">{msg}</p>}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-xl border bg-card px-3 py-2.5">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Today · Packaging</p>
-          <p className="text-xl font-semibold mt-0.5 tabular-nums">
-            {(todayStats?.packaging ?? 0).toLocaleString()}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl border border-border bg-card px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+            In this session
+          </p>
+          <p className="text-2xl font-bold mt-1 tabular-nums">{session?.item_count ?? 0}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {(session?.item_count ?? 0) === 1 ? "item" : "items"} not confirmed yet
           </p>
         </div>
-        <div className="rounded-xl border bg-card px-3 py-2.5">
-          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Today · RTS sellable</p>
-          <p className="text-xl font-semibold mt-0.5 tabular-nums">
-            {(todayStats?.rts_sellable ?? 0).toLocaleString()}
+        <div className="rounded-xl border border-border bg-card px-4 py-3">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+            Today packed
+          </p>
+          <p className="text-2xl font-bold mt-1 tabular-nums">
+            {todayPacked == null ? "…" : todayPacked.toLocaleString()}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            Packaging &amp; RTS sellable · confirmed today
           </p>
         </div>
       </div>
-      <p className="text-xl font-bold">{session?.item_count ?? 0} items in session</p>
       <div className="space-y-2">
         {(session?.grouped ?? []).map(g => {
           const key = packGroupKey(g);
