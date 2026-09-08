@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-08T07:47:39+02:00
+generated: 2026-09-08T07:50:37+02:00
 type: memory-bank
 ---
 
