@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-09-08T07:50:53+02:00
+generated: 2026-09-08T08:39:34+02:00
 type: module
 function_count: 61
 ---
@@ -27,7 +27,7 @@ function_count: 61
 
 ## honey_bottle_size_label {#honey_bottle_size_label}
 
-**Callers (42):**
+**Callers (47):**
 
 - `api/v1/bottle_barcodes.php`:107 — `static fn ($s) => ['value' => $s, 'label' => honey_bottle_size_label($s)],`
 - `api/v1/bottle_barcodes.php`:467 — `'size_label' => honey_bottle_size_label((string) $sku['size']),`
@@ -54,7 +54,7 @@ function_count: 61
 - `includes/pack_cancel_restock.php`:144 — `$sizeLabel = $isHoney ? honey_bottle_size_label($size) : dept_pouch_unit_singular($productKey);`
 - `includes/pos_unified.php`:117 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`
 - `includes/pos_unified.php`:122 — `'size_label' => honey_bottle_size_label($size),`
-- _… and 17 more (run impact.php for full list)_
+- _… and 22 more (run impact.php for full list)_
 
 ## honey_bottle_can_request {#honey_bottle_can_request}
 
@@ -278,7 +278,6 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (10):**
 
-- `api/v1/rts.php`:212 — `$honeyRow = honey_bottle_fetch_code_row(ims_pdo(), $code);`
 - `includes/finished_leak_damage.php`:70 — `$honeyRow = honey_bottle_fetch_code_row($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:695 — `$row = honey_bottle_fetch_code_row($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:1035 — `$fresh = honey_bottle_fetch_code_row($pdo, $code);`
@@ -287,6 +286,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_bottle_barcodes.php`:2160 — `$row = honey_bottle_fetch_code_row($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:2334 — `$row = honey_bottle_fetch_code_row($pdo, $code);`
 - `includes/pack_cancel_restock.php`:274 — `$honey = honey_bottle_fetch_code_row($pdo, $code);`
+- `includes/rts_stock_in_sessions.php`:291 — `$honey = honey_bottle_fetch_code_row($pdo, $code);`
 - `includes/sku_barcodes.php`:697 — `$honeyRow = honey_bottle_fetch_code_row($pdo, $code);`
 
 ## honey_bottle_lookup {#honey_bottle_lookup}
@@ -353,7 +353,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/rts.php`:217 — `'unit' => honey_bottle_rts_stock_in_scan(ims_pdo(), (int) $user['id'], $code),`
+- `includes/rts_stock_in_sessions.php`:514 — `honey_bottle_rts_stock_in_scan($pdo, $userId, (string) $item['code']);`
 
 ## honey_bottle_pack_session_start {#honey_bottle_pack_session_start}
 

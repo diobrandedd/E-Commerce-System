@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-09-08T07:51:18+02:00
+generated: 2026-09-08T08:40:00+02:00
 type: module
 function_count: 25
 ---
@@ -44,7 +44,7 @@ function_count: 25
 
 **Callers (7):**
 
-- `api/v1/rts.php`:284 — `if ($pool === 'sellable' && !rts_sellable_from_cases_enabled(ims_pdo())) {`
+- `api/v1/rts.php`:381 — `if ($pool === 'sellable' && !rts_sellable_from_cases_enabled(ims_pdo())) {`
 - `includes/dept_pos.php`:112 — `if (!rts_sellable_from_cases_enabled($pdo)) {`
 - `includes/honey_pos.php`:347 — `if (!rts_sellable_from_cases_enabled($pdo)) {`
 - `includes/honey_pos.php`:582 — `if (!rts_sellable_from_cases_enabled($pdo)) {`
@@ -81,8 +81,8 @@ function_count: 25
 
 **Callers (3):**
 
-- `api/v1/rts.php`:146 — `$sync = rts_inventory_sync_status($pdo);`
-- `api/v1/rts.php`:344 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
+- `api/v1/rts.php`:154 — `$sync = rts_inventory_sync_status($pdo);`
+- `api/v1/rts.php`:441 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
 - `api/v1/rts_sync.php`:39 — `api_ok(rts_inventory_sync_status(ims_pdo()));`
 
 ## rts_inventory_credit_sellable_honey {#rts_inventory_credit_sellable_honey}
@@ -113,7 +113,7 @@ function_count: 25
 
 **Callers (11):**
 
-- `api/v1/rts.php`:57 — `return rts_inventory_pool_filter_sql($pdo, $pool);`
+- `api/v1/rts.php`:65 — `return rts_inventory_pool_filter_sql($pdo, $pool);`
 - `includes/rts_inventory_sync.php`:292 — `$poolSql = rts_inventory_pool_filter_sql($pdo, 'sellable');`
 - `includes/rts_inventory_sync.php`:317 — `$poolSql = rts_inventory_pool_filter_sql($pdo, 'sellable');`
 - `includes/rts_inventory_sync.php`:345 — `$poolSql = rts_inventory_pool_filter_sql($pdo, $pool);`
@@ -131,7 +131,7 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/rts.php`:141 — `$honey = rts_inventory_list_honey_aggregated($pdo, $pool);`
+- `api/v1/rts.php`:149 — `$honey = rts_inventory_list_honey_aggregated($pdo, $pool);`
 
 ## rts_inventory_list_other_aggregated {#rts_inventory_list_other_aggregated}
 
@@ -139,7 +139,7 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/rts.php`:142 — `$other = rts_inventory_list_other_aggregated($pdo, $pool);`
+- `api/v1/rts.php`:150 — `$other = rts_inventory_list_other_aggregated($pdo, $pool);`
 
 ## rts_inventory_deduct_sell_honey_variant {#rts_inventory_deduct_sell_honey_variant}
 
@@ -147,7 +147,7 @@ function_count: 25
 
 **Callers (6):**
 
-- `api/v1/rts.php`:293 — `rts_inventory_deduct_sell_honey_variant(`
+- `api/v1/rts.php`:390 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_bottle_barcodes.php`:1960 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_bottle_barcodes.php`:2220 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_pos.php`:418 — `rts_inventory_deduct_sell_honey_variant(`
@@ -160,7 +160,7 @@ function_count: 25
 
 **Callers (6):**
 
-- `api/v1/rts.php`:303 — `rts_inventory_deduct_sell_other_label(`
+- `api/v1/rts.php`:400 — `rts_inventory_deduct_sell_other_label(`
 - `includes/dept_pos.php`:250 — `rts_inventory_deduct_sell_other_label(`
 - `includes/dept_pos.php`:403 — `rts_inventory_deduct_sell_other_label(`
 - `includes/dept_pouch_barcodes.php`:1068 — `rts_inventory_deduct_sell_other_label(`
@@ -173,7 +173,7 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/rts.php`:313 — `rts_inventory_deduct_sell(`
+- `api/v1/rts.php`:410 — `rts_inventory_deduct_sell(`
 
 ## rts_inventory_set_honey_variant_totals {#rts_inventory_set_honey_variant_totals}
 
@@ -181,7 +181,7 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/rts.php`:356 — `$result = rts_inventory_set_honey_variant_totals(`
+- `api/v1/rts.php`:453 — `$result = rts_inventory_set_honey_variant_totals(`
 
 ## rts_inventory_set_other_label_total {#rts_inventory_set_other_label_total}
 
@@ -189,7 +189,7 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/rts.php`:382 — `$result = rts_inventory_set_other_label_total(`
+- `api/v1/rts.php`:479 — `$result = rts_inventory_set_other_label_total(`
 
 ## rts_inventory_seed_honey_row {#rts_inventory_seed_honey_row}
 
@@ -256,5 +256,5 @@ function_count: 25
 
 **Callers (1):**
 
-- `api/v1/rts.php`:337 — `api_ok(['rows' => rts_pool_use_log_list(ims_pdo(), $limit)]);`
+- `api/v1/rts.php`:434 — `api_ok(['rows' => rts_pool_use_log_list(ims_pdo(), $limit)]);`
 

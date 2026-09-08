@@ -105,6 +105,13 @@ function Test-PathTouched([string[]]$Paths, [string[]]$Prefixes) {
 $changed = @(Get-ChangedPaths)
 $touchApp = Test-PathTouched $changed @('app/')
 $touchPhp = Test-PathTouched $changed @('includes/', 'api/')
+$touchRtsStockSession = Test-PathTouched $changed @(
+    'includes/rts_stock_in_sessions.php',
+    'api/v1/rts.php',
+    'app/src/app/pages/RTSPage.tsx',
+    'tools/test_rts_stock_in_session.php',
+    'sql/migration_phase76'
+)
 $touchPackaging = Test-PathTouched $changed @(
     'includes/fulfillment_pack',
     'includes/parcel_pack',
@@ -138,6 +145,23 @@ Test-Stage 'PHP syntax' {
         }
     }
     if (-not $Failed) { Write-Pass "PHP syntax (includes and api)" }
+}
+
+if ($touchRtsStockSession -or $All) {
+    Test-Stage 'RTS stock-in session' {
+        Push-Location $RepoRoot
+        try {
+            $out = & $Php tools/test_rts_stock_in_session.php 2>&1
+            Write-Host ($out -join "`n")
+            if ($LASTEXITCODE -ne 0) {
+                Write-Fail 'RTS stock-in session' "exit $LASTEXITCODE"
+            } else {
+                Write-Pass 'RTS stock-in session'
+            }
+        } finally {
+            Pop-Location
+        }
+    }
 }
 
 # Parcel tier regression

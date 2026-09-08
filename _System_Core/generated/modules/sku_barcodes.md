@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-09-08T07:51:22+02:00
+generated: 2026-09-08T08:40:06+02:00
 type: module
 function_count: 40
 ---
@@ -123,17 +123,18 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `product_sku_barcodes`, `users`
 
-**Callers (10):**
+**Callers (11):**
 
 - `api/v1/bottle_barcodes.php`:444 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `api/v1/dept_pouch_barcodes.php`:318 — `$sku = sku_barcode_fetch_by_code(ims_pdo(), $code);`
-- `api/v1/rts.php`:193 — `$sku = sku_barcode_fetch_by_code(ims_pdo(), $code);`
 - `api/v1/sku_barcodes.php`:207 — `$sku = sku_barcode_fetch_by_code($pdo, (string) $input['code']);`
 - `includes/barcode_verify.php`:22 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:1568 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/inventory_check.php`:273 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/pack_cancel_restock.php`:254 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/pos_unified.php`:103 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
+- `includes/rts_stock_in_sessions.php`:256 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
+- `includes/rts_stock_in_sessions.php`:500 — `$sku = sku_barcode_fetch_by_code($pdo, (string) $item['code']);`
 - `includes/sku_barcodes.php`:684 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 
 ## sku_barcode_fetch_honey {#sku_barcode_fetch_honey}
@@ -280,8 +281,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/rts.php`:201 — `'unit' => sku_barcode_rts_stock_in(`
 - `api/v1/sku_barcodes.php`:216 — `$result = sku_barcode_rts_stock_in(`
+- `includes/rts_stock_in_sessions.php`:504 — `sku_barcode_rts_stock_in(`
 
 ## sku_barcode_honey_deduct {#sku_barcode_honey_deduct}
 

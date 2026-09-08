@@ -241,6 +241,12 @@ After stamp: `StampResultPanel` → **Back to tools** or **Done — master Excel
 
 `rts_inventory_deduct_sell()` in `includes/rts_inventory_sync.php` bridges RTS pool rows into honey packaging deduct when `category=honey`. Changing category values or honey deduct signatures breaks SPA sell flow.
 
+## RTS stock-in review session
+
+RTS sellable stock-in is not an immediate scan mutation. `rts_stock_in_sessions` + items hold the user's draft; only `rts_stock_in_session_confirm()` may move unique units and credit `rts_inventory_rows`, inside one transaction. Cancel must never alter inventory. SKU scan request keys make retries idempotent.
+
+The RTS camera uses `duplicateMode="presentationEdge"`: one decode while visible, then rearm after no-code frames. Do not remove all suppression—camera decoding runs every 120 ms and would multiply a stationary SKU.
+
 ## CSR waybill file storage
 
 When `config.php` sets `storage.root` (e.g. `C:/xampp/htdocs/rts_storage`), stashes and outputs for waybill stamper, PDF→Excel, order remarks, and online orders live under:

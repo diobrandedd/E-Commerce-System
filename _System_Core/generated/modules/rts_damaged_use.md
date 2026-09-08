@@ -1,7 +1,7 @@
 ---
 title: rts_damaged_use
 source: includes/rts_damaged_use.php
-generated: 2026-09-08T07:51:17+02:00
+generated: 2026-09-08T08:40:00+02:00
 type: module
 function_count: 6
 ---
@@ -28,7 +28,7 @@ function_count: 6
 
 **Callers (1):**
 
-- `api/v1/rts.php`:261 — `api_ok(['rows' => rts_damaged_use_events_list(ims_pdo(), $limit)]);`
+- `api/v1/rts.php`:358 — `api_ok(['rows' => rts_damaged_use_events_list(ims_pdo(), $limit)]);`
 
 ## rts_damaged_use_event_summary {#rts_damaged_use_event_summary}
 
@@ -64,5 +64,5 @@ function_count: 6
 
 **Callers (1):**
 
-- `api/v1/rts.php`:240 — `$result = rts_damaged_use_apply(`
+- `api/v1/rts.php`:337 — `$result = rts_damaged_use_apply(`
 

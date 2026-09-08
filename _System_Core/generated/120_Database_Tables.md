@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-09-08T07:50:38+02:00
+generated: 2026-09-08T08:39:17+02:00
 type: memory-bank
-table_count: 94
+table_count: 97
 ---
 
 
@@ -242,6 +242,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_get]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_events_list]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_row]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_fetch_by_id]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_fetch_by_code]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_fetch_honey]] |
@@ -1276,6 +1277,32 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/app_settings.php` | [[modules/app_settings#app_setting_get]] |
 | `includes/app_settings.php` | [[modules/app_settings#app_setting_set]] |
+
+## `rts_stock_in_sessions`
+
+| File | Function |
+|------|----------|
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_row]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_start]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_discard]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_confirm]] |
+
+## `rts_stock_in_session_items`
+
+| File | Function |
+|------|----------|
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_get]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_scan]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_update_qty]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_remove]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_confirm]] |
+
+## `rts_stock_in_session_events`
+
+| File | Function |
+|------|----------|
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_event]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_scan]] |
 
 ## `rts_inventory_rows`
 
