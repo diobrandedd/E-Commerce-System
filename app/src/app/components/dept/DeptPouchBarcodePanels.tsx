@@ -367,7 +367,7 @@ export function DeptPouchRequestsPanel({ productKey, mode = "full" }: DeptPouchP
             value={notes}
             onChange={e => setNotes(e.target.value)}
           />
-          <Button type="button" onClick={() => void submit()} disabled={saving}>
+          <Button type="button" className="min-h-11" onClick={() => void submit()} disabled={saving}>
             {saving ? <Loader2 className="animate-spin" size={16} /> : null}
             Submit request
           </Button>

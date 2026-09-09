@@ -106,7 +106,7 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
           </label>
         </div>
         <textarea className="w-full border rounded-lg px-2 py-2 text-sm" rows={2} placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} />
-        <Button type="button" onClick={() => void submit()} disabled={saving}>
+        <Button type="button" className="min-h-11" onClick={() => void submit()} disabled={saving}>
           {saving ? <Loader2 className="animate-spin" size={16} /> : null}
           Submit request
         </Button>
@@ -277,7 +277,7 @@ export function HoneyBottleScanInPanel() {
               }
             }}
           />
-          <Button type="button" variant="outline" className="gap-1.5 shrink-0" onClick={() => setCameraOpen(true)}>
+          <Button type="button" variant="outline" className="min-h-11 gap-1.5 shrink-0" onClick={() => setCameraOpen(true)}>
             <Camera size={16} /> Camera
           </Button>
         </div>
@@ -302,7 +302,7 @@ export function HoneyBottleScanInPanel() {
                 }}
               />
             </div>
-            <Button type="button" onClick={() => void addSkuBulk()} disabled={!lastSku}>
+            <Button type="button" className="min-h-11" onClick={() => void addSkuBulk()} disabled={!lastSku}>
               Stock in
             </Button>
           </div>
@@ -541,7 +541,7 @@ export function HoneyProductionScanStockInPanel({
           <Button
             type="button"
             variant="outline"
-            className="gap-1.5 shrink-0"
+            className="min-h-11 gap-1.5 shrink-0"
             onClick={() => setCameraOpen(true)}
             disabled={openLots.length === 0}
           >
@@ -569,7 +569,7 @@ export function HoneyProductionScanStockInPanel({
                 }}
               />
             </div>
-            <Button type="button" onClick={() => void addSkuBulk()} disabled={!lastSku || productionRowId < 1}>
+            <Button type="button" className="min-h-11" onClick={() => void addSkuBulk()} disabled={!lastSku || productionRowId < 1}>
               Stock in
             </Button>
           </div>

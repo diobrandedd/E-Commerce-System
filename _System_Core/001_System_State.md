@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-08-26_sku-barcode-inventory]] |
-| **Active Plan** | [[plans/archive/2026-09-08_rts-stock-in-review-session_plan]] |
-| **Status** | `shipped` - RTS stock-in review session (phase 76) |
+| **Active Spec** | [[specs/2026-09-09_raw-materials-ui-fix]] |
+| **Active Plan** | [[plans/archive/2026-09-09_raw-materials-ui-fix_plan]] |
+| **Status** | `shipped` - raw materials mobile/accessibility fix |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

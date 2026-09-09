@@ -738,6 +738,9 @@ Split material tables:
 
 - Page title: **Raw Honey** on all three stages; subtitle names the stage.
 - **`HoneyStageTabs`** — pill nav below header, above tables/actions (not in sidebar only).
+- **Stage handoff** — tab clicks use a shared active-pill View Transition plus a short directional content handoff; unsupported browsers use the motion fallback, and `prefers-reduced-motion` navigates immediately.
+- **Phone inventory lists** — `sm:hidden` stacked cards with one clear action; preserve dense tables at `sm+`. Never require horizontal page scrolling at 360 px.
+- **Touch targets** — stage tabs, pagination, and primary phone actions are at least 44 px high.
 - Sidebar: **Raw Materials → Raw Honey** expands to Warehouse / Production / Packaging.
 - **Products → Honey** (`/inventory/products/honey`) — finished bottled inventory dashboard (`HoneyBottledInventoryPanel`); batch row ops stay on Raw Materials → Packaging.
 
@@ -767,7 +770,9 @@ Header **Guide** on all three raw pages — no inline workflow/yield panels on p
 ### Paragis (pt)
 
 - Stat cards: **raw bags** | **tea bags (WIP)** | **finished pouches**.
-- Actions: Stock in · **Use raw bags** · **Pouch** · WIP waste · Bag waste (advanced: exact tea bag count via guide footer).
+- Raw-production records: Stock in · **Use raw bags** · WIP waste · Bag waste (advanced: exact tea bag count via guide footer).
+- Finished inventory: Request barcode · Generate / print · **Scan pouches to inventory**. Barcode stock-in credits finished pouches only and does **not** require or deduct raw bags, WIP, or packaging.
+- Daily finished-pouch records are informational only and do not mutate inventory.
 - Floor input: **bags opened** (not individual tea bag count) → WIP derived at 500/bag.
 - Modals call `dept_production_preview` for stock-linked formula deduct lines (custom costing lines excluded).
 - **Phone layout:** top bar uses compact actions (`Finished`, `Guide`, `Actions`) and opens `RawActionsModal` for all mutate actions. Do not place 5–7 action buttons directly in header on mobile.

@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
+import { AppErrorBanner } from "@/app/components/layout/appFeedbackMotion";
+import { Button } from "@/app/components/ui/button";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
 import { apiPost, ApiError } from "@/app/lib/api";
 import { HONEY_SIZES, HONEY_VARIANTS } from "@/app/lib/honey";
@@ -101,6 +103,7 @@ export function ExecutiveRowEditModal(props: Props) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [qtyMode, setQtyMode] = useState<QtyEditMode>("current_only");
+  const fieldId = useId();
 
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [variant, setVariant] = useState(
@@ -215,7 +218,7 @@ export function ExecutiveRowEditModal(props: Props) {
         onClose={onClose}
       />
       <AppModalBody className="space-y-3 text-sm">
-          {err && <p className="text-xs text-red-600">{err}</p>}
+          {err && <AppErrorBanner message={err} />}
 
           {stage === "warehouse" && (
             <>
@@ -225,8 +228,8 @@ export function ExecutiveRowEditModal(props: Props) {
                 <p className="text-[10px] text-muted-foreground mt-1 font-mono">Current code: {props.row.supplier_code}</p>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Variant</label>
-                <select value={variant} onChange={e => setVariant(e.target.value)} className="w-full border rounded-lg px-3 py-2">
+                <label htmlFor={`${fieldId}-variant`} className="text-xs text-muted-foreground block mb-1">Variant</label>
+                <select id={`${fieldId}-variant`} value={variant} onChange={e => setVariant(e.target.value)} className="w-full border rounded-lg px-3 py-2">
                   {HONEY_VARIANTS.map(v => (
                     <option key={v} value={v}>
                       {v}
@@ -239,10 +242,10 @@ export function ExecutiveRowEditModal(props: Props) {
               </p>
               <QtyModePicker mode={qtyMode} onChange={setQtyMode} />
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">
+                <label htmlFor={`${fieldId}-qty`} className="text-xs text-muted-foreground block mb-1">
                   {qtyMode === "set_exact" ? "Gallon/s (exact — current & recorded)" : "Gallon/s (current on hand)"}
                 </label>
-                <input type="number" step="0.01" min="0" value={qty} onChange={e => setQty(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+                <input id={`${fieldId}-qty`} type="number" step="0.01" min="0" value={qty} onChange={e => setQty(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
               </div>
             </>
           )}
@@ -251,8 +254,8 @@ export function ExecutiveRowEditModal(props: Props) {
             <>
               <p className="text-xs font-mono text-muted-foreground">Supplier code: {props.row.supplier_code}</p>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Variant</label>
-                <select value={variant} onChange={e => setVariant(e.target.value)} className="w-full border rounded-lg px-3 py-2">
+                <label htmlFor={`${fieldId}-variant`} className="text-xs text-muted-foreground block mb-1">Variant</label>
+                <select id={`${fieldId}-variant`} value={variant} onChange={e => setVariant(e.target.value)} className="w-full border rounded-lg px-3 py-2">
                   {HONEY_VARIANTS.map(v => (
                     <option key={v} value={v}>
                       {v}
@@ -265,10 +268,10 @@ export function ExecutiveRowEditModal(props: Props) {
               </p>
               <QtyModePicker mode={qtyMode} onChange={setQtyMode} />
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">
+                <label htmlFor={`${fieldId}-qty`} className="text-xs text-muted-foreground block mb-1">
                   {qtyMode === "set_exact" ? "Gallon/s (exact — current & recorded)" : "Gallon/s (current on hand)"}
                 </label>
-                <input type="number" step="0.01" min="0" value={qty} onChange={e => setQty(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+                <input id={`${fieldId}-qty`} type="number" step="0.01" min="0" value={qty} onChange={e => setQty(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
               </div>
             </>
           )}
@@ -277,8 +280,8 @@ export function ExecutiveRowEditModal(props: Props) {
             <>
               <p className="text-xs font-mono text-muted-foreground">{props.row.supplier_code} · batch {props.row.batch_no}</p>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Variant</label>
-                <select value={variant} onChange={e => setVariant(e.target.value)} className="w-full border rounded-lg px-3 py-2">
+                <label htmlFor={`${fieldId}-variant`} className="text-xs text-muted-foreground block mb-1">Variant</label>
+                <select id={`${fieldId}-variant`} value={variant} onChange={e => setVariant(e.target.value)} className="w-full border rounded-lg px-3 py-2">
                   {HONEY_VARIANTS.map(v => (
                     <option key={v} value={v}>
                       {v}
@@ -292,10 +295,11 @@ export function ExecutiveRowEditModal(props: Props) {
                   <p className="text-[10px] text-muted-foreground mb-1">
                     {s} now: {fmtPair(packagingCurrent[s] ?? "0", packagingInitial[s] ?? "0", "bottles")}
                   </p>
-                  <label className="text-xs text-muted-foreground block mb-1">
+                  <label htmlFor={`${fieldId}-${s}`} className="text-xs text-muted-foreground block mb-1">
                     {qtyMode === "set_exact" ? `${s} (exact — current & recorded)` : `${s} (current on hand)`}
                   </label>
                   <input
+                    id={`${fieldId}-${s}`}
                     type="number"
                     step="0.01"
                     min="0"
@@ -311,35 +315,35 @@ export function ExecutiveRowEditModal(props: Props) {
           {stage === "dept" && (
             <>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Product label</label>
-                <input value={productLabel} onChange={e => setProductLabel(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+                <label htmlFor={`${fieldId}-product`} className="text-xs text-muted-foreground block mb-1">Product label</label>
+                <input id={`${fieldId}-product`} value={productLabel} onChange={e => setProductLabel(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
               </div>
               <p className="text-xs text-muted-foreground">
                 On hand now: <span className="font-semibold text-foreground">{recordedQty}</span>
               </p>
               <QtyModePicker mode={qtyMode} onChange={setQtyMode} />
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">
+                <label htmlFor={`${fieldId}-qty`} className="text-xs text-muted-foreground block mb-1">
                   {qtyMode === "set_exact" ? "Qty (exact — current & recorded)" : "Qty (current on hand)"}
                 </label>
-                <input type="number" step="0.01" min="0" value={qty} onChange={e => setQty(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
+                <input id={`${fieldId}-qty`} type="number" step="0.01" min="0" value={qty} onChange={e => setQty(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
               </div>
             </>
           )}
 
       </AppModalBody>
       <AppModalFooter>
-        <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border border-border bg-background text-sm">
+        <Button type="button" variant="outline" onClick={onClose} className="min-h-11 flex-1">
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           disabled={busy}
           onClick={() => void submit()}
-          className="flex-1 py-2 rounded-lg text-sm font-bold text-primary-foreground bg-primary disabled:opacity-50"
+          className="min-h-11 flex-1"
         >
           {busy ? <Loader2 className="inline animate-spin" size={14} /> : "Save changes"}
-        </button>
+        </Button>
       </AppModalFooter>
     </AppModal>
   );

@@ -78,7 +78,7 @@ export function ParagisProductionGuideModal({
           </p>
         </GuideSection>
 
-        <GuideSection title="Production workflow">
+        <GuideSection title="Raw production records">
           <ol className="list-decimal pl-4 space-y-1.5">
             <li>
               <strong className="text-foreground">Stock in</strong> — receive sealed 1 kg supplier bags from a supplier. This only increases <strong className="text-foreground">Raw bags</strong>.
@@ -86,12 +86,20 @@ export function ParagisProductionGuideModal({
             <li>
               <strong className="text-foreground">Use raw bags</strong> — enter how many 1 kg bags you opened for production. Raw leaf deducts; <strong className="text-foreground">Tea bags (WIP)</strong> goes up by ~{teaPerBag.toLocaleString()} per bag (2 g each). You do <strong className="text-foreground">not</strong> need to count individual tea bags.
             </li>
-            <li>
-              <strong className="text-foreground">Pouch</strong> — enter how many retail pouches you packed. WIP tea bags and pouch packaging deduct; <strong className="text-foreground">Finished pouches</strong> goes up.
-            </li>
           </ol>
           <p>
-            Materials come from Product Costing formula lines (stock-linked only). After stock-in, use <strong className="text-foreground">Use raw bags</strong> — not Stock in again.
+            These raw-production records are separate from finished inventory stock-in. Use them only when your team is tracking raw bags and WIP.
+          </p>
+        </GuideSection>
+
+        <GuideSection title="Finished pouch inventory">
+          <ol className="list-decimal pl-4 space-y-1.5">
+            <li><strong className="text-foreground">Request barcodes</strong> for the number of pouch labels needed.</li>
+            <li><strong className="text-foreground">Generate / print</strong> the approved request and attach labels to finished pouches.</li>
+            <li><strong className="text-foreground">Scan pouches to inventory</strong> and enter the finished quantity.</li>
+          </ol>
+          <p className="rounded-lg border border-border bg-secondary/25 px-3 py-2 text-foreground">
+            Barcode stock-in adds finished pouches only. It does not require or deduct Raw bags, Tea bags (WIP), or packaging.
           </p>
         </GuideSection>
 

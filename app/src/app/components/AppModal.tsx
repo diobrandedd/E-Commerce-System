@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { X } from "lucide-react";
 import { cn } from "@/app/components/ui/utils";
@@ -38,6 +38,62 @@ export function AppModal({
   instant?: boolean;
 }) {
   const reduce = useReducedMotion();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusableSelector = [
+      "button:not([disabled])",
+      "[href]",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(",");
+    const frame = window.requestAnimationFrame(() => {
+      const panel = panelRef.current;
+      const preferred = panel?.querySelector<HTMLElement>("[data-autofocus], [autofocus]");
+      const first = preferred ?? panel?.querySelector<HTMLElement>(focusableSelector);
+      (first ?? panel)?.focus();
+    });
+    const onKeyDown = (event: KeyboardEvent) => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      const dialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'));
+      if (dialogs.at(-1) !== panel) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(focusableSelector))
+        .filter(element => !element.hasAttribute("disabled") && element.tabIndex !== -1);
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onKeyDown);
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, [open]);
 
   if (instant) {
     if (!open) return null;
@@ -56,9 +112,11 @@ export function AppModal({
           onClick={onClose}
         />
         <div
+          ref={panelRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby={labelledBy}
+          tabIndex={-1}
           className={cn(
             "relative w-full max-w-lg my-4 max-h-[90vh] overflow-hidden flex flex-col",
             appModalPanelClass,
@@ -93,9 +151,11 @@ export function AppModal({
             onClick={onClose}
           />
           <motion.div
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby={labelledBy}
+            tabIndex={-1}
             className={cn(
               "relative w-full max-w-lg my-4 max-h-[90vh] overflow-hidden flex flex-col",
               appModalPanelClass,

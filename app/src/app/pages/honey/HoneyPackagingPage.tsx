@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { AlertTriangle, Loader2, Printer, ScanLine, Tag } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
-import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
+import { HoneyStageContent, HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
 import { BatchTraceabilityDrawer } from "@/app/components/honey/BatchTraceabilityDrawer";
@@ -15,11 +15,14 @@ import {
 } from "@/app/components/dept/DeptPouchBarcodePanels";
 import { HoneyBottleScanInPanel } from "@/app/components/honey/HoneyBottleBarcodePanels";
 import {
+  AppErrorBanner,
   AppPressable,
   AppSectionEnter,
   appHeaderActionClass,
+  appHoverCard,
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
+import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { HONEY_SIZES } from "@/app/lib/honey";
@@ -90,6 +93,7 @@ export function HoneyPackagingPage() {
   const [page, setPage] = useState(1);
   const perPage = 12;
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [traceBatch, setTraceBatch] = useState<string | null>(null);
   const [scanLogRow, setScanLogRow] = useState<PkRow | null>(null);
   const [editRow, setEditRow] = useState<PkRow | null>(null);
@@ -124,6 +128,9 @@ export function HoneyPackagingPage() {
       setByScanner(data.by_scanner ?? []);
       setPage(1);
       await refreshPendingComb();
+      setLoadError(null);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Could not load packaging scan history.");
     } finally {
       setLoading(false);
     }
@@ -139,19 +146,32 @@ export function HoneyPackagingPage() {
   const safePage = Math.min(page, totalPages);
   const start = (safePage - 1) * perPage;
   const pagedRows = rows.slice(start, start + perPage);
-  const colCount = canExecEdit ? 9 : 8;
+  const colCount = 9;
 
   return (
     <PageLayout
       title="Raw Honey"
       subtitle="Packaging — batch rows and scan-in history"
       actions={
-        <input
-          value={traceQ}
-          onChange={e => setTraceQ(e.target.value)}
-          placeholder="Trace batch / supplier…"
-          className="text-xs border rounded-lg px-2 py-1.5 w-full max-w-[11rem] sm:max-w-none"
-        />
+        <form
+          className="flex items-center gap-2"
+          onSubmit={event => {
+            event.preventDefault();
+            if (traceQ.trim()) setTraceBatch(traceQ.trim());
+          }}
+        >
+          <label htmlFor="honey-trace-search" className="sr-only">Trace batch or supplier</label>
+          <input
+            id="honey-trace-search"
+            value={traceQ}
+            onChange={e => setTraceQ(e.target.value)}
+            placeholder="Batch or supplier"
+            className="min-h-11 w-full max-w-[11rem] rounded-lg border border-border bg-card px-3 text-sm sm:max-w-none"
+          />
+          <Button type="submit" variant="outline" className="min-h-11" disabled={!traceQ.trim()}>
+            Trace
+          </Button>
+        </form>
       }
     >
       <div className="space-y-4 mb-6">
@@ -159,7 +179,7 @@ export function HoneyPackagingPage() {
         {canBottleScan && (
           <AppPressable
             type="button"
-            className={`${appHeaderActionClass} gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
+            className={`${appHeaderActionClass} min-h-11 gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
             onClick={() => setHoneyBottleScanOpen(true)}
           >
             <ScanLine size={14} /> Scan bottle stock in
@@ -168,20 +188,21 @@ export function HoneyPackagingPage() {
         {canLeakDamage && (
           <Link
             to="/inventory/leak-damage"
-            className="inline-flex items-center gap-2 py-2 px-3 text-sm font-semibold border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors w-fit"
+            className="inline-flex min-h-11 items-center gap-2 py-2 px-3 text-sm font-semibold border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors w-fit"
           >
             <AlertTriangle size={16} /> Leak / damage scan
           </Link>
         )}
       </div>
-      {traceQ && (
-        <button
-          type="button"
-          onClick={() => setTraceBatch(traceQ)}
-          className="text-xs text-blue-600 underline mb-3"
-        >
-          Search traceability
-        </button>
+      <HoneyStageContent>
+        <div>
+      {loadError && (
+        <div className="mb-3">
+          <AppErrorBanner message={loadError} />
+          <Button type="button" variant="outline" className="min-h-11" onClick={() => void refresh()}>
+            Retry loading
+          </Button>
+        </div>
       )}
 
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -189,7 +210,7 @@ export function HoneyPackagingPage() {
           <h2 className="text-sm font-semibold mb-1">Scanned into inventory</h2>
           <p className="text-xs text-muted-foreground">
             Gross bottle scans only — packing, sales, defects, and other deductions do not reduce these totals.
-            Tap a row for sticker details.
+            Use Details to review the stickers scanned into each batch.
           </p>
         </div>
         <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold shrink-0">
@@ -197,7 +218,7 @@ export function HoneyPackagingPage() {
           <select
             value={scanDate}
             onChange={e => setScanDate(e.target.value)}
-            className="mt-1 block min-w-[10.5rem] rounded-lg border border-border bg-card px-2.5 py-2 text-sm normal-case"
+            className="mt-1 block min-h-11 min-w-[10.5rem] rounded-lg border border-border bg-card px-2.5 py-2 text-sm normal-case"
           >
             <option value={localToday()}>Today · {scanDateLabel(localToday())}</option>
             {scanDates
@@ -259,7 +280,56 @@ export function HoneyPackagingPage() {
           </ul>
         </div>
       )}
-      <div className="bg-card rounded-xl border overflow-x-auto">
+      <div className="sm:hidden space-y-3" data-testid="honey-packaging-mobile-cards">
+        {loading ? (
+          <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+            <Loader2 className="mr-2 inline animate-spin" size={18} />
+            Loading scanned batches…
+          </div>
+        ) : pagedRows.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+            No bottles scanned into inventory {scanDate === "all" ? "yet." : `on ${scanDate}.`}
+          </div>
+        ) : (
+          pagedRows.map(r => (
+            <article key={r.id} className={`rounded-xl border border-border bg-card p-4 ${appHoverCard}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Batch</p>
+                  <p className="font-semibold">{r.batch_no}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{r.bottling_date} · <span className="capitalize">{r.variant}</span></p>
+                </div>
+                {showSupplierProfile ? (
+                  <SupplierCodeButton code={r.supplier_code} className="min-h-11 text-xs" />
+                ) : (
+                  <span className="font-mono text-xs">{r.supplier_code}</span>
+                )}
+              </div>
+              <dl className="mt-3 grid grid-cols-2 gap-2">
+                {HONEY_SIZES.map(size => (
+                  <div key={size} className="rounded-lg bg-secondary/30 px-3 py-2">
+                    <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{size}</dt>
+                    <dd className="mt-0.5 text-base font-semibold tabular-nums">
+                      {grossQty(r[`scanned_${size}` as keyof PkRow] as string)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="mt-3 flex gap-2">
+                <Button type="button" className="min-h-11 flex-1" onClick={() => setScanLogRow(r)}>
+                  View scan details
+                </Button>
+                {canExecEdit && (
+                  <Button type="button" className="min-h-11" variant="outline" onClick={() => setEditRow(r)}>
+                    Edit
+                  </Button>
+                )}
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+      <div className="hidden sm:block bg-card rounded-xl border overflow-x-auto" data-testid="honey-packaging-desktop-table">
         <table className="w-full text-sm min-w-[36rem]">
           <thead>
             <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
@@ -272,7 +342,7 @@ export function HoneyPackagingPage() {
                   {s}
                 </th>
               ))}
-              {canExecEdit && <th className="px-3 py-2">Actions</th>}
+              <th className="px-3 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -284,12 +354,8 @@ export function HoneyPackagingPage() {
               </tr>
             )}
             {pagedRows.map(r => (
-              <tr
-                key={r.id}
-                className={`border-b cursor-pointer ${appHoverRow}`}
-                onClick={() => setScanLogRow(r)}
-              >
-                <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
+              <tr key={r.id} className={`border-b ${appHoverRow}`}>
+                <td className="px-3 py-2">
                   {showSupplierProfile ? (
                     <SupplierCodeButton code={r.supplier_code} className="text-xs" />
                   ) : (
@@ -303,17 +369,16 @@ export function HoneyPackagingPage() {
                 <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_250ml)}</td>
                 <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_350ml)}</td>
                 <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_gallon)}</td>
-                {canExecEdit && (
-                  <td className="px-3 py-2 whitespace-nowrap" onClick={e => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => setEditRow(r)}
-                      className="text-xs font-semibold text-muted-foreground hover:text-foreground"
-                    >
+                <td className="px-3 py-2 whitespace-nowrap">
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setScanLogRow(r)}>
+                    Details
+                  </Button>
+                  {canExecEdit && (
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setEditRow(r)}>
                       Edit
-                    </button>
-                  </td>
-                )}
+                    </Button>
+                  )}
+                </td>
               </tr>
             ))}
             {!loading && pagedRows.length === 0 && (
@@ -336,7 +401,7 @@ export function HoneyPackagingPage() {
               type="button"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={safePage <= 1}
-              className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+              className="min-h-11 text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Previous
             </button>
@@ -347,7 +412,7 @@ export function HoneyPackagingPage() {
               type="button"
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
-              className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+              className="min-h-11 text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next
             </button>
@@ -377,7 +442,7 @@ export function HoneyPackagingPage() {
             <div className="flex flex-wrap items-center gap-2 shrink-0">
               <AppPressable
                 type="button"
-                className={`${appHeaderActionClass} gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
+                className={`${appHeaderActionClass} min-h-11 gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
                 onClick={() => {
                   document.getElementById("honey-comb-barcodes")?.scrollIntoView({ behavior: "smooth" });
                 }}
@@ -386,14 +451,14 @@ export function HoneyPackagingPage() {
               </AppPressable>
               <AppPressable
                 type="button"
-                className={`${appHeaderActionClass} gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
+                className={`${appHeaderActionClass} min-h-11 gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
                 onClick={() => setCombModal("scan")}
               >
                 <ScanLine size={13} /> Scan
               </AppPressable>
               <AppPressable
                 type="button"
-                className={`${appHeaderActionClass} relative gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
+                className={`${appHeaderActionClass} relative min-h-11 gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
                 onClick={() => setCombModal("admin")}
               >
                 <Printer size={13} /> Generate / print
@@ -408,6 +473,8 @@ export function HoneyPackagingPage() {
           <DeptPouchRequestsPanel productKey={HONEY_COMB_KEY} productLabel={HONEY_COMB_LABEL} />
         </AppSectionEnter>
       ) : null}
+        </div>
+      </HoneyStageContent>
 
       {honeyBottleScanOpen && (
         <AppModal
@@ -497,7 +564,7 @@ export function HoneyPackagingPage() {
           stage="packaging"
           row={editRow}
           onClose={() => setEditRow(null)}
-          onDone={() => {
+          onSaved={() => {
             setEditRow(null);
             void refresh();
           }}

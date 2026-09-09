@@ -49,5 +49,5 @@ Enforce in `material_inventory.php` helpers + `materials.php` API. Return `permi
 1. PHP role helper → API gate → `permissions` in detail response
 2. SPA buttons driven by permissions
 3. Update the page `*GuideModal` (`PackagingInventoryGuideModal`, `SuppliesInventoryGuideModal`, `InventoryRequestsGuideModal`, `ParagisProductionGuideModal`, `DeptRawProduceGuideModal`) for affected roles
-4. **Dept raw materials** (`RawDeptMaterialPage`): Paragis = Use raw bags → Pouch (not tea-bag counting); BRC/Jar = single Produce. Guides: [[fixes/dept-raw-material-guides]] · session rollup [[records/2026-06-12_dept-raw-ux-session]]
+4. **Dept raw materials** (`RawDeptMaterialPage`): Paragis raw/WIP records are separate from finished barcode stock-in. Scanning pouches credits finished inventory only and does not require or deduct raw bags, WIP, or packaging. BRC/Jar retain their existing barcode stock-in behavior. Guides: [[fixes/dept-raw-guidance-and-mobile-honey]] · [[records/2026-09-09_raw-materials-ui-fix]]
 5. Append `_System_Core/002_Memory_Bank.md` + fix note under `problems/fixes/` if pattern is reusable
