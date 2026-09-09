@@ -1,7 +1,7 @@
 ---
 title: rts_claim_status
 source: includes/rts_claim_status.php
-generated: 2026-09-07T10:45:00+02:00
+generated: 2026-09-08T11:59:52+02:00
 type: module
 function_count: 3
 ---

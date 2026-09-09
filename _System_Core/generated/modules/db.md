@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-09-07T10:44:24+02:00
+generated: 2026-09-08T11:59:18+02:00
 type: module
 function_count: 4
 ---
