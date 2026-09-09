@@ -6,6 +6,7 @@ require_once __DIR__ . '/_bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/rts_inventory_sync.php';
 require_once dirname(__DIR__, 2) . '/includes/rts_damaged_use.php';
 require_once dirname(__DIR__, 2) . '/includes/honey_inventory.php';
+require_once dirname(__DIR__, 2) . '/includes/rts_stock_in_sessions.php';
 
 /**
  * RTS bridge API.
@@ -32,6 +33,13 @@ api_dispatch([
     'inventory_set_honey' => 'api_rts_inventory_set_honey',
     'inventory_set_other' => 'api_rts_inventory_set_other',
     'stock_in_scan' => 'api_rts_stock_in_scan',
+    'stock_in_session_start' => 'api_rts_stock_in_session_start',
+    'stock_in_session_get' => 'api_rts_stock_in_session_get',
+    'stock_in_session_scan' => 'api_rts_stock_in_session_scan',
+    'stock_in_session_update' => 'api_rts_stock_in_session_update',
+    'stock_in_session_remove' => 'api_rts_stock_in_session_remove',
+    'stock_in_session_cancel' => 'api_rts_stock_in_session_cancel',
+    'stock_in_session_confirm' => 'api_rts_stock_in_session_confirm',
     'use_damaged' => 'api_rts_use_damaged',
     'damaged_use_log' => 'api_rts_damaged_use_log',
     'sync_status' => 'api_rts_sync_status_action',
@@ -181,47 +189,136 @@ function api_rts_stock_in_scan(): void
     if (!api_rts_role_can_mutate($user)) {
         api_fail('Forbidden.', 403);
     }
-    $code = trim((string) ($input['code'] ?? ''));
-    if ($code === '') {
-        api_fail('Barcode is required.');
+    api_fail('Direct RTS stock-in is disabled. Start or resume a review session.', 410);
+}
+
+/** @return array<string,mixed> */
+function api_rts_stock_session_user(): array
+{
+    $user = api_require_ims_user();
+    if (!api_rts_role_can_mutate($user)) {
+        api_fail('Forbidden.', 403);
     }
-    $qty = isset($input['qty']) ? (int) $input['qty'] : null;
-    require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
-    require_once dirname(__DIR__, 2) . '/includes/dept_pouch_barcodes.php';
-    require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
+
+    return $user;
+}
+
+function api_rts_stock_in_session_start(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_rts_stock_session_user();
     try {
-        $sku = sku_barcode_fetch_by_code(ims_pdo(), $code);
-        if ($sku !== null) {
-            if ($qty === null || $qty < 1) {
-                api_fail('Enter how many to stock into RTS for this SKU.', 422);
-            }
-            api_ok([
-                'kind' => (string) $sku['kind'],
-                'lookup_kind' => 'sku',
-                'unit' => sku_barcode_rts_stock_in(
-                    ims_pdo(),
-                    (int) $user['id'],
-                    (string) $sku['kind'],
-                    (string) ($sku['variant'] ?? ''),
-                    (string) ($sku['size'] ?? ''),
-                    (string) ($sku['product_key'] ?? ''),
-                    $qty
-                ),
-            ]);
-        }
-        $honeyRow = honey_bottle_fetch_code_row(ims_pdo(), $code);
-        if ($honeyRow !== null) {
-            api_ok([
-                'kind' => 'honey',
-                'lookup_kind' => 'unique_honey',
-                'unit' => honey_bottle_rts_stock_in_scan(ims_pdo(), (int) $user['id'], $code),
-            ]);
-        }
+        api_ok(['session' => rts_stock_in_session_start(ims_pdo(), (int) $user['id'])]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_rts_stock_in_session_get(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_rts_stock_session_user();
+    try {
         api_ok([
-            'kind' => 'dept',
-            'lookup_kind' => 'unique_dept',
-            'unit' => dept_pouch_rts_stock_in_scan(ims_pdo(), (int) $user['id'], $code),
+            'session' => rts_stock_in_session_get(
+                ims_pdo(),
+                (int) ($_GET['session_id'] ?? 0),
+                (int) $user['id']
+            ),
         ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_rts_stock_in_session_scan(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_rts_stock_session_user();
+    try {
+        api_ok(rts_stock_in_session_scan(
+            ims_pdo(),
+            (int) ($input['session_id'] ?? 0),
+            (int) $user['id'],
+            (string) ($input['code'] ?? ''),
+            max(1, (int) ($input['qty'] ?? 1)),
+            (string) ($input['request_key'] ?? '')
+        ));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_rts_stock_in_session_update(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_rts_stock_session_user();
+    try {
+        api_ok(['session' => rts_stock_in_session_update_qty(
+            ims_pdo(),
+            (int) ($input['session_id'] ?? 0),
+            (int) ($input['item_id'] ?? 0),
+            (int) $user['id'],
+            (int) ($input['qty'] ?? 0)
+        )]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_rts_stock_in_session_remove(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_rts_stock_session_user();
+    try {
+        api_ok(['session' => rts_stock_in_session_remove(
+            ims_pdo(),
+            (int) ($input['session_id'] ?? 0),
+            (int) ($input['item_id'] ?? 0),
+            (int) $user['id']
+        )]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_rts_stock_in_session_cancel(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_rts_stock_session_user();
+    try {
+        api_ok(['session' => rts_stock_in_session_discard(
+            ims_pdo(),
+            (int) ($input['session_id'] ?? 0),
+            (int) $user['id']
+        )]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_rts_stock_in_session_confirm(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_rts_stock_session_user();
+    try {
+        api_ok(['session' => rts_stock_in_session_confirm(
+            ims_pdo(),
+            (int) ($input['session_id'] ?? 0),
+            (int) $user['id']
+        )]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

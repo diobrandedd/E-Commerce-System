@@ -39,7 +39,7 @@ Retail stores that buy from us map barcodes to price in SKU/POS systems. Unique 
 1. **Catalog** — honey: variant × size (12); dept: `pt`, `brc`, `jar_cacao`, `honey_comb`.
 2. **Lookup order** — trim scan → `product_sku_barcodes.code` → else unique-unit lookup → else unknown.
 3. **Print** — N copies of the same Code128; no unique-code generator for new labels.
-4. **Stock-in** — SKU + qty onto packaging row / dept finished / RTS sellable; no unit insert. Continuous re-scan of the same SKU adds +1 each time; typed Quantity + Stock in / Add adds +N (batch number required for honey packaging stock-in).
+4. **Stock-in** — SKU + qty onto packaging row / dept finished / RTS sellable; no unit insert. Packaging and finished-goods stock-in keep their existing behavior. **RTS stock-in uses a persistent draft review session:** continuous scans add draft lines only; users may edit SKU quantities or remove lines, cancel without changing inventory, or confirm all lines atomically.
 5. **Pack / inventory check** — same continuous +1 / optional typed +N; unique leftovers keep unit lifecycle (+1 per distinct code). Pack confirm still finalizes deductions.
 6. **POS** — SKU lines still use qty prompt at checkout (unchanged).
 7. **Price hint** — Settings may show selling price as a hint; never overwrite barcode from price.
@@ -55,6 +55,8 @@ Retail stores that buy from us map barcodes to price in SKU/POS systems. Unique 
 
 1. Encoded value = short string from settings (typically price) — **yes** (2026-08-26)
 2. All flows scan → enter qty; keep old unique codes until gone — **yes** (2026-08-26); **amended 2026-09-04**: Pack, packaging stock-in, and inventory check also support continuous SKU re-scan (+1) with optional typed +N (not modal-only).
+3. RTS stock-in review — **approved 2026-09-08**: scans stay continuous but are staged in an editable server-backed session. Cancel applies nothing; Confirm applies every valid line in one transaction.
+4. RTS same-code handling — **approved 2026-09-08**: no time-based duplicate cooldown. Accept once while a barcode remains presented; rearm after it leaves view so presenting the same SKU again immediately adds another +1.
 
 ## Approval to plan
 

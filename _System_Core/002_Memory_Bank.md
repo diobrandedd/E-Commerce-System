@@ -4,11 +4,14 @@
 
 ## 📅 Recent Log Entries
 
-### 2026-09-07 — Scan history cross-account
-**Change:** Finished scan history shows by-person totals for all accounts and product tabs (Paragis / BRC / Cacao / Honey Comb / Honey bottles). → [[problems/records/2026-09-07_scan-history-cross-account]]
+### 2026-09-08 — RTS stock-in review session
+**Change:** RTS stock-in now stages continuous scans in an editable owned draft; users can change SKU qty, remove lines, cancel without mutation, or confirm atomically. RTS camera uses presentation-edge repeats with no time cooldown. Run phase 76. → [[problems/records/2026-09-08_rts-stock-in-review-session]]
 
-### 2026-09-07 — Pack scan today pool counters
-**Change:** Pack scan shows per-user daily Packaging vs RTS sellable unit totals (confirmed today + open draft). → [[problems/records/2026-09-07_pack-scan-today-pool-stats]]
+### 2026-09-05 — Inventory audit Add-to-list UX
+**Change:** Check Inventory redesigned — Add-to-list modal (scan/qty/batch), editable session list, Complete → compare preview → Go back or finalize to history. → [[problems/records/2026-09-05_inventory-audit-list-ux]]
+
+### 2026-09-04 — Production bottle scan stock-in + ml/gal setting
+**Change:** Production scan stock-in requires a gallon lot, credits packaging, deducts production gallons; Settings `honey.ml_per_gallon` (phase 75 `app_settings`). → [[problems/records/2026-09-04_production-bottle-scan-stock-in]]
 
 ### 2026-09-04 — Sales history reprint
 **Change:** Executive Sales walk-in history expanded row has **Reprint** — rebuilds receipt from `pos_sales` / `pos_receipt_items` and opens Chrome print (no PDF storage).

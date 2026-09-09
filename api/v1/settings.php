@@ -10,12 +10,16 @@ require_once __DIR__ . '/_bootstrap.php';
  *   GET  ?action=pos_pins_list
  *   POST ?action=pos_pin_update   -> { id, pin, pin_confirm, label?, is_active? }
  *   POST ?action=pos_pin_create   -> { pin, pin_confirm, label? }
+ *   GET  ?action=honey_volume_get
+ *   POST ?action=honey_volume_save -> { ml_per_gallon }
  */
 
 api_dispatch([
     'pos_pins_list' => 'api_settings_pos_pins_list',
     'pos_pin_update' => 'api_settings_pos_pin_update',
     'pos_pin_create' => 'api_settings_pos_pin_create',
+    'honey_volume_get' => 'api_settings_honey_volume_get',
+    'honey_volume_save' => 'api_settings_honey_volume_save',
 ]);
 
 function api_settings_require_executive(): void
@@ -147,4 +151,41 @@ function api_settings_pos_pin_create(): void
     $row = $st->fetch(PDO::FETCH_ASSOC);
 
     api_ok(['pin' => $row ? api_settings_serialize_pos_pin($row) : null]);
+}
+
+function api_settings_honey_volume_get(): void
+{
+    api_method_allowed(['GET']);
+    // Readable by any IMS user so Production scan preview matches server math.
+    api_require_ims_user();
+    require_once dirname(__DIR__, 2) . '/includes/honey_volume.php';
+    $pdo = ims_pdo();
+    api_ok([
+        'ml_per_gallon' => honey_ml_per_gallon($pdo),
+        'default_ml_per_gallon' => HONEY_ML_PER_US_GALLON,
+        'min' => HONEY_ML_PER_GALLON_MIN,
+        'max' => HONEY_ML_PER_GALLON_MAX,
+    ]);
+}
+
+function api_settings_honey_volume_save(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/honey_volume.php';
+
+    $ml = isset($input['ml_per_gallon']) ? (float) $input['ml_per_gallon'] : 0.0;
+    $user = api_require_ims_user();
+    try {
+        $saved = honey_ml_per_gallon_save(ims_pdo(), $ml, (int) ($user['id'] ?? 0) ?: null);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+
+    api_ok([
+        'ml_per_gallon' => $saved,
+        'default_ml_per_gallon' => HONEY_ML_PER_US_GALLON,
+    ]);
 }

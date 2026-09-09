@@ -6,6 +6,7 @@ import { HoneyStockStatusBadge } from "@/app/components/honey/HoneyStockStatusBa
 import {
   HoneyBottleAdminPanel,
   HoneyBottleRequestsPanel,
+  HoneyProductionScanStockInPanel,
 } from "@/app/components/honey/HoneyBottleBarcodePanels";
 import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
@@ -149,6 +150,9 @@ export function HoneyProductionPage() {
             <AlertTriangle size={16} /> Leak / damage scan
           </Link>
         )}
+        {!isCsrOnly && (
+          <HoneyProductionScanStockInPanel lots={rows} onStocked={() => void refresh()} />
+        )}
         <div className="bg-card rounded-xl border overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -246,7 +250,7 @@ export function HoneyProductionPage() {
         <AppModalHeader title="Honey bottle barcodes" onClose={closeModal} />
         <AppModalBody className="space-y-3 text-sm text-muted-foreground">
           <p>Honey staff request labels. Executives and CSR generate unique barcodes and print an A4 sheet (68 labels per page, 4×17 — barcode plus the code text underneath for manual entry, cut on dashed guides). Print at 100% scale so the bars stay camera-scannable.</p>
-          <p>Sticker bottles, then Scan to inventory. Packaging totals only move when a bottle is scanned.</p>
+          <p>Sticker bottles, then use Production → scan stock-in: pick the supplier gallon lot, scan SKU/unique barcodes, and packaging gains bottles while production gallons drop.</p>
           <p>Courier packing uses Deliveries → Pack scan. Waybill + photo ships without deducting stock.</p>
         </AppModalBody>
       </AppModal>

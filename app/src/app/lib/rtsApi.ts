@@ -251,11 +251,105 @@ export interface RtsStockInScanResult {
   };
 }
 
-/** Scan a honey or dept barcode into RTS sellable inventory. SKU codes require qty. */
+/** @deprecated Direct stock-in is disabled; use an RTS stock-in review session. */
 export function rtsStockInScan(code: string, qty?: number) {
   return apiPost<RtsStockInScanResult>("rts.php", "stock_in_scan", {
     code: code.trim(),
     ...(qty != null ? { qty } : {}),
+  });
+}
+
+export interface RtsStockInSessionItem {
+  id: number;
+  kind: "honey" | "dept";
+  lookup_kind: "sku" | "unique_honey" | "unique_dept";
+  code: string;
+  sku_id: number | null;
+  variant: string | null;
+  size: string | null;
+  size_label: string | null;
+  product_key: string | null;
+  product_label: string;
+  qty: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RtsStockInSession {
+  id: number;
+  status: "draft" | "confirmed" | "discarded";
+  started_by: number;
+  started_by_name: string;
+  confirmed_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+  confirmed_at: string | null;
+  discarded_at: string | null;
+  items: RtsStockInSessionItem[];
+  line_count: number;
+  total_qty: number;
+}
+
+export interface RtsStockInSessionScanResult {
+  result: "ok" | "duplicate_session" | "replayed";
+  session: RtsStockInSession;
+  lookup: {
+    kind: "honey" | "dept";
+    lookup_kind: "sku" | "unique_honey" | "unique_dept";
+    code: string;
+    product_label: string;
+    variant?: string | null;
+    size?: string | null;
+    size_label?: string | null;
+    product_key?: string | null;
+    qty: number;
+    added_qty: number;
+  } | null;
+}
+
+export function rtsStockInSessionStart() {
+  return apiPost<{ session: RtsStockInSession }>("rts.php", "stock_in_session_start");
+}
+
+export function rtsStockInSessionGet(sessionId: number) {
+  return apiGet<{ session: RtsStockInSession }>("rts.php", "stock_in_session_get", {
+    session_id: sessionId,
+  });
+}
+
+export function rtsStockInSessionScan(sessionId: number, code: string, qty = 1, requestKey: string) {
+  return apiPost<RtsStockInSessionScanResult>("rts.php", "stock_in_session_scan", {
+    session_id: sessionId,
+    code: code.trim(),
+    qty,
+    request_key: requestKey,
+  });
+}
+
+export function rtsStockInSessionUpdate(sessionId: number, itemId: number, qty: number) {
+  return apiPost<{ session: RtsStockInSession }>("rts.php", "stock_in_session_update", {
+    session_id: sessionId,
+    item_id: itemId,
+    qty,
+  });
+}
+
+export function rtsStockInSessionRemove(sessionId: number, itemId: number) {
+  return apiPost<{ session: RtsStockInSession }>("rts.php", "stock_in_session_remove", {
+    session_id: sessionId,
+    item_id: itemId,
+  });
+}
+
+export function rtsStockInSessionCancel(sessionId: number) {
+  return apiPost<{ session: RtsStockInSession }>("rts.php", "stock_in_session_cancel", {
+    session_id: sessionId,
+  });
+}
+
+export function rtsStockInSessionConfirm(sessionId: number) {
+  return apiPost<{ session: RtsStockInSession }>("rts.php", "stock_in_session_confirm", {
+    session_id: sessionId,
   });
 }
 

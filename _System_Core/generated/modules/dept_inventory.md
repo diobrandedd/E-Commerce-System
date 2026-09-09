@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-09-08T11:59:19+02:00
+generated: 2026-09-08T09:45:27+02:00
 type: module
 function_count: 17
 ---
@@ -35,7 +35,7 @@ function_count: 17
 - `includes/dept_production.php`:964 — `$finished = dept_inventory_fetch_row($pdo, 'brc');`
 - `includes/dept_production.php`:1017 — `$finished = dept_inventory_fetch_row($pdo, 'jar_cacao');`
 - `includes/dept_production.php`:1047 — `$finished = dept_inventory_fetch_row($pdo, 'honey_comb');`
-- `includes/inventory_check.php`:845 — `$row = dept_inventory_fetch_row($pdo, $productKey);`
+- `includes/inventory_check.php`:1121 — `$row = dept_inventory_fetch_row($pdo, $productKey);`
 
 ## dept_inventory_ensure_row {#dept_inventory_ensure_row}
 
@@ -155,9 +155,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/dept_pos.php`:268 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
 - `includes/dept_pos.php`:421 — `dept_inventory_deduct($pdo, $line['product_key'], (float) $line['qty']);`
-- `includes/dept_pouch_barcodes.php`:1164 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
+- `includes/dept_pouch_barcodes.php`:1081 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
 - `includes/finished_leak_damage.php`:231 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
-- `includes/honey_bottle_barcodes.php`:2061 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
+- `includes/honey_bottle_barcodes.php`:2040 — `dept_inventory_deduct($pdo, $productKey, 1.0);`
 - `includes/honey_parcel_inventory.php`:88 — `$deducted = dept_inventory_deduct($pdo, $productKey, (float) $qty);`
 - `includes/sku_barcodes.php`:1245 — `dept_inventory_deduct($pdo, $productKey, (float) $qty);`
 

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
-import { Camera, ClipboardCheck, Loader2, Scale, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Camera, ClipboardCheck, Loader2, Plus, Scale, Trash2, XCircle } from "lucide-react";
+import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -7,11 +8,9 @@ import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScan
 import {
   AppErrorBanner,
   AppSectionEnter,
-  AppStepSwitch,
   AppSuccessNotice,
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
-import { InventoryCheckScanLogModal } from "@/app/components/inventory/InventoryCheckScanLogModal";
 import { ApiError } from "@/app/lib/api";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
@@ -19,14 +18,11 @@ import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
 import {
   inventoryCheckApi,
   type InventoryCheckCompareResult,
-  type InventoryCheckCompareRun,
   type InventoryCheckContext,
+  type InventoryCheckEvent,
   type InventoryCheckScan,
   type InventoryCheckSummary,
-  type InventoryCheckSummaryRow,
 } from "@/app/lib/inventoryCheck";
-
-type Tab = "scan" | "summary" | "compare" | "history";
 
 function varianceTone(variance: number): string {
   if (Math.abs(variance) < 0.001) return "text-muted-foreground";
@@ -39,216 +35,412 @@ function formatQty(value: number): string {
 
 export function InventoryCheckPage() {
   const cameraTitleId = useId();
-  const [tab, setTab] = useState<Tab>("scan");
+  const addCameraTitleId = useId();
   const [ctx, setCtx] = useState<InventoryCheckContext | null>(null);
   const [summary, setSummary] = useState<InventoryCheckSummary | null>(null);
+  const [lines, setLines] = useState<InventoryCheckScan[]>([]);
+  const [history, setHistory] = useState<InventoryCheckEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [code, setCode] = useState("");
   const [ok, setOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const [addOpen, setAddOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [recent, setRecent] = useState<InventoryCheckScan[]>([]);
-  const [detailRow, setDetailRow] = useState<InventoryCheckSummaryRow | null>(null);
+  const [code, setCode] = useState("");
+  /** Batch required for SKU continuous scan. */
+  const [stickyBatch, setStickyBatch] = useState("");
+  /** Last successful scan — close camera and set qty here for SKUs. */
+  const [lastItem, setLastItem] = useState<{
+    scanId: number;
+    code: string;
+    label: string;
+    isSku: boolean;
+    batch: string;
+    countedQty: number;
+  } | null>(null);
+  const [lastQty, setLastQty] = useState("1");
+  const [qtyBusy, setQtyBusy] = useState(false);
+  const [scanFlash, setScanFlash] = useState<"ok" | "err" | "dup" | null>(null);
+  const [scanFlashMsg, setScanFlashMsg] = useState<string | null>(null);
+  const qtyInputRef = useRef<HTMLInputElement>(null);
+  const lastItemRef = useRef(lastItem);
+  lastItemRef.current = lastItem;
+
+  const [compareOpen, setCompareOpen] = useState(false);
   const [compare, setCompare] = useState<InventoryCheckCompareResult | null>(null);
-  const [runs, setRuns] = useState<InventoryCheckCompareRun[]>([]);
-  const [history, setHistory] = useState<InventoryCheckContext["event"][]>([]);
-  const [skuQty, setSkuQty] = useState("1");
-  const [lastSku, setLastSku] = useState<{ code: string; label: string } | null>(null);
-  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen && tab === "scan", tab);
+
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editQty, setEditQty] = useState("");
+  const [editBatch, setEditBatch] = useState("");
+
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, addOpen);
 
   const event = ctx?.event ?? null;
   const canViewAll = ctx?.can_view_all ?? false;
   const canManage = ctx?.can_manage ?? false;
+  const userId = ctx?.user_id ?? 0;
+  const sessionOpen = event !== null && event.status === "open";
 
-  const loadContext = useCallback(async () => {
-    setLoading(true);
+  const flash = (kind: "ok" | "err" | "dup", message: string) => {
+    setScanFlash(kind);
+    setScanFlashMsg(message);
+    window.setTimeout(() => {
+      setScanFlash(null);
+    }, 900);
+  };
+
+  const loadLines = useCallback(async (eventId: number) => {
+    const res = await inventoryCheckApi.scanLog(eventId, {}, 1, 500);
+    setLines(res.rows);
+  }, []);
+
+  const loadContext = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     try {
       const res = await inventoryCheckApi.context();
       setCtx(res);
       setSummary(res.summary);
+      if (res.event) {
+        await loadLines(res.event.id);
+      } else {
+        setLines([]);
+      }
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not load the inventory count.");
+      setError(e instanceof ApiError ? e.message : "Could not load the inventory audit.");
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
-  }, []);
+  }, [loadLines]);
 
   useEffect(() => {
     void loadContext();
   }, [loadContext]);
 
   useEffect(() => {
-    if (tab !== "history" || !canViewAll) return;
+    if (!showHistory || !canViewAll) return;
     void (async () => {
       try {
         const res = await inventoryCheckApi.eventList(1);
         setHistory(res.rows);
       } catch (e) {
-        setError(e instanceof ApiError ? e.message : "Could not load count history.");
+        setError(e instanceof ApiError ? e.message : "Could not load audit history.");
       }
     })();
-  }, [tab, canViewAll]);
-
-  useEffect(() => {
-    if (tab !== "compare" || !canViewAll || event === null) return;
-    void (async () => {
-      try {
-        const res = await inventoryCheckApi.compareList(event.id);
-        setRuns(res.runs);
-      } catch {
-        setRuns([]);
-      }
-    })();
-  }, [tab, canViewAll, event]);
-
-  const tabs = useMemo<Tab[]>(
-    () => (canViewAll ? ["scan", "summary", "compare", "history"] : ["scan"]),
-    [canViewAll],
-  );
+  }, [showHistory, canViewAll]);
 
   const openCount = async () => {
     setBusy(true);
     setError(null);
     try {
       await inventoryCheckApi.openEvent();
-      setOk("Today's inventory count is open — everyone can scan now.");
-      await loadContext();
+      setOk("Audit session started — add products to the list.");
+      await loadContext({ silent: true });
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not open the count.");
+      setError(e instanceof ApiError ? e.message : "Could not start the audit.");
     } finally {
       setBusy(false);
     }
   };
 
-  const closeCount = async () => {
-    if (event === null) return;
+  const resetAddForm = () => {
+    setCode("");
+    setStickyBatch("");
+    setLastItem(null);
+    setLastQty("1");
+    setQtyBusy(false);
+    setScanFlash(null);
+    setScanFlashMsg(null);
+  };
+
+  const closeAddModal = () => {
+    setAddOpen(false);
+    setCameraOpen(false);
+    resetAddForm();
+  };
+
+  const closeCamera = () => {
+    setCameraOpen(false);
+    window.setTimeout(() => {
+      if (lastItemRef.current?.isSku) {
+        qtyInputRef.current?.focus();
+        qtyInputRef.current?.select();
+      } else {
+        refocus();
+      }
+    }, 50);
+  };
+
+  const cancelSession = async () => {
+    if (!event) return;
+    if (
+      !window.confirm(
+        "Cancel this audit session? All scanned lines will be discarded and nothing is saved to history.",
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      await inventoryCheckApi.closeEvent(event.id);
-      setOk("Count closed. Scanning is now locked for this date.");
-      await loadContext();
+      await inventoryCheckApi.cancelEvent(event.id);
+      setOk("Audit session cancelled.");
+      setCompareOpen(false);
+      closeAddModal();
+      await loadContext({ silent: true });
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not close the count.");
+      setError(e instanceof ApiError ? e.message : "Could not cancel the session.");
     } finally {
       setBusy(false);
     }
   };
 
-  const submitScan = async (
+  /** Continuous commit: SKU +1; unique once. No page reload. */
+  const commitScan = async (
     value: string,
-    qty?: number,
-  ): Promise<ScannerDecodeFeedback | void> => {
-    if (event === null) return;
+    opts: { qty: number; batch: string; label: string; isSku: boolean },
+  ): Promise<boolean> => {
+    if (!event) return false;
     try {
-      const res = await inventoryCheckApi.scan(event.id, value, qty);
-      setSummary(res.summary);
-      if (res.result === "unknown" || res.result === "duplicate_event") {
+      const res = await inventoryCheckApi.scan(event.id, value, {
+        qty: opts.qty,
+        batch_no: opts.batch,
+      });
+      if (res.result === "unknown") {
         playScanBeep("bad");
-        setError(res.message);
-        refocus();
-        return { kind: "error", message: res.message };
+        flash("err", res.message);
+        return false;
+      }
+      if (res.result === "duplicate_event") {
+        playScanBeep("dup");
+        flash("dup", opts.isSku ? res.message : "Already counted (unique barcode).");
+        return false;
       }
       playScanBeep("ok");
-      if (res.scan !== null) {
-        setRecent(prev => {
-          const next = [res.scan as InventoryCheckScan, ...prev.filter(r => r.id !== res.scan!.id)];
-          return next.slice(0, 25);
-        });
+      const total = res.scan?.counted_qty ?? opts.qty;
+      const msg = opts.isSku
+        ? `${opts.label} · +${opts.qty} (total ${total}) · ${opts.batch}`
+        : `${opts.label} · counted · ${opts.batch}`;
+      flash("ok", msg);
+      if (res.summary) {
+        setSummary(res.summary);
+        setCtx(prev =>
+          prev
+            ? {
+                ...prev,
+                event: res.summary.event ?? prev.event,
+                summary: res.summary,
+              }
+            : prev,
+        );
       }
-      const label = res.scan
-        ? `${res.scan.product_label}${res.scan.size_label ? ` ${res.scan.size_label}` : ""}`
-        : value;
-      const qtyNote =
-        res.scan?.counted_qty != null && res.scan.counted_qty !== 1
-          ? ` ×${res.scan.counted_qty}`
-          : "";
-      setOk(`${label}${qtyNote} — ${res.message}`);
-      refocus();
-      return { kind: "success", message: label };
+      if (res.scan) {
+        const scanned = res.scan;
+        setLines(prev => {
+          const idx = prev.findIndex(r => r.id === scanned.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = scanned;
+            return next;
+          }
+          return [scanned, ...prev];
+        });
+        setLastItem({
+          scanId: scanned.id,
+          code: scanned.code,
+          label: opts.label,
+          isSku: opts.isSku,
+          batch: opts.batch,
+          countedQty: scanned.counted_qty ?? opts.qty,
+        });
+        setLastQty(String(scanned.counted_qty ?? opts.qty));
+      }
+      return true;
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "Scan failed.";
+      const reason = e instanceof ApiError ? e.message : "Scan failed.";
       playScanBeep("bad");
-      setError(msg);
+      flash("err", reason);
+      return false;
+    }
+  };
+
+  /** Always continuous: each scan commits immediately. */
+  const onAddScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
+    const value = (raw ?? code).trim();
+    if (!value || !event) return;
+    setCode("");
+
+    try {
+      const looked = await skuBarcodesApi.lookup(value);
+      const lookup = looked.lookup;
+
+      if (lookup.lookup_kind === "sku") {
+        const label = lookup.label ?? lookup.product_label ?? value;
+        const batch = stickyBatch.trim().toUpperCase();
+        if (!batch) {
+          playScanBeep("bad");
+          flash("err", "Enter batch number first, then keep scanning.");
+          refocus();
+          return { kind: "error", message: "Batch number required." };
+        }
+        const okAdd = await commitScan(value, { qty: 1, batch, label, isSku: true });
+        refocus();
+        return okAdd
+          ? { kind: "success", message: `${label} · +1` }
+          : { kind: "error", message: "Not added." };
+      }
+
+      if (lookup.lookup_kind === "unique_honey" || lookup.lookup_kind === "unique_dept") {
+        const label =
+          lookup.label ??
+          ([lookup.product_label, lookup.size_label, lookup.variant].filter(Boolean).join(" · ") ||
+            value);
+        const suggested = String(lookup.batch_no ?? "").toUpperCase();
+        const batch = suggested || stickyBatch.trim().toUpperCase();
+        if (!batch) {
+          playScanBeep("bad");
+          flash("err", "This barcode has no batch — enter batch number first.");
+          refocus();
+          return { kind: "error", message: "Batch required." };
+        }
+        if (suggested) setStickyBatch(suggested);
+        const okAdd = await commitScan(value, { qty: 1, batch, label, isSku: false });
+        refocus();
+        return okAdd
+          ? { kind: "success", message: `${label} · counted` }
+          : { kind: "error", message: "Not added." };
+      }
+
+      playScanBeep("bad");
+      flash("err", "Unknown barcode.");
+      refocus();
+      return { kind: "error", message: "Unknown barcode." };
+    } catch (e) {
+      playScanBeep("bad");
+      const msg = e instanceof ApiError ? e.message : "Unknown barcode.";
+      flash("err", msg);
       refocus();
       return { kind: "error", message: msg };
     }
   };
 
-  const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
-    const value = (raw ?? code).trim();
-    if (!value || event === null) return;
-    setCode("");
-    setOk(null);
-    setError(null);
+  /** After continuous scan: set how many for the SKU just scanned. */
+  const applyLastQty = async () => {
+    if (!event || !lastItem?.isSku) return;
+    const n = Math.max(1, parseInt(lastQty, 10) || 1);
+    setQtyBusy(true);
     try {
-      const looked = await skuBarcodesApi.lookup(value);
-      const lookup = looked.lookup;
-      if (lookup.lookup_kind === "sku" || lookup.requires_qty) {
-        const label = lookup.label ?? lookup.product_label ?? value;
-        setLastSku({ code: value, label });
-        return await submitScan(value, 1);
+      const res = await inventoryCheckApi.scanUpdate(event.id, lastItem.scanId, {
+        qty: n,
+        batch_no: lastItem.batch,
+      });
+      if (res.summary) {
+        setSummary(res.summary);
+        setCtx(prev =>
+          prev
+            ? { ...prev, event: res.summary.event ?? prev.event, summary: res.summary }
+            : prev,
+        );
       }
-      return await submitScan(value);
-    } catch {
-      // Unknown to SKU catalog — try unique leftover scan immediately
-      return await submitScan(value);
-    }
-  };
-
-  const addSkuBulk = async () => {
-    if (!lastSku) {
-      setError("Scan a SKU barcode first, then use Quantity + Add for bulk.");
+      setLines(prev => prev.map(r => (r.id === lastItem.scanId ? res.scan : r)));
+      setLastItem(prev => (prev ? { ...prev, countedQty: n } : prev));
+      setLastQty(String(n));
+      playScanBeep("ok");
+      flash("ok", `${lastItem.label} · set to ${n}`);
       refocus();
-      return;
+    } catch (e) {
+      const reason = e instanceof ApiError ? e.message : "Could not update quantity.";
+      playScanBeep("bad");
+      flash("err", reason);
+    } finally {
+      setQtyBusy(false);
     }
-    const qty = Math.max(1, parseInt(skuQty, 10) || 1);
-    setOk(null);
-    setError(null);
-    await submitScan(lastSku.code, qty);
   };
 
   const removeScan = async (scanId: number) => {
-    if (event === null) return;
+    if (!event) return;
     setError(null);
     try {
       const res = await inventoryCheckApi.scanRemove(event.id, scanId);
-      if (res.summary) setSummary(res.summary);
-      setRecent(prev => prev.filter(r => r.id !== scanId));
-      setOk("Scan removed from the count.");
+      if (res.summary) {
+        setSummary(res.summary);
+        setCtx(prev =>
+          prev
+            ? { ...prev, event: res.summary.event ?? prev.event, summary: res.summary }
+            : prev,
+        );
+      }
+      setLines(prev => prev.filter(r => r.id !== scanId));
+      setOk("Line removed.");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not remove that scan.");
+      setError(e instanceof ApiError ? e.message : "Could not remove that line.");
     }
   };
 
-  const runCompare = async () => {
-    if (event === null) return;
+  const startEdit = (row: InventoryCheckScan) => {
+    setEditId(row.id);
+    setEditQty(String(row.counted_qty ?? 1));
+    setEditBatch((row.batch_no ?? "").toUpperCase());
+  };
+
+  const saveEdit = async () => {
+    if (!event || editId == null) return;
+    const n = Math.max(1, parseInt(editQty, 10) || 1);
+    const batch = editBatch.trim().toUpperCase();
+    if (!batch) {
+      setError("Batch number is required.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const res = await inventoryCheckApi.compareRun(event.id);
-      setCompare(res);
-      setRuns(prev => [res.run, ...prev]);
-      setTab("compare");
-      setOk(
-        res.run.mismatch_count === 0
-          ? "Everything counted matches system inventory."
-          : `${res.run.mismatch_count} of ${res.run.line_count} lines do not match.`,
-      );
+      const res = await inventoryCheckApi.scanUpdate(event.id, editId, { qty: n, batch_no: batch });
+      if (res.summary) {
+        setSummary(res.summary);
+        setCtx(prev =>
+          prev
+            ? { ...prev, event: res.summary.event ?? prev.event, summary: res.summary }
+            : prev,
+        );
+      }
+      setLines(prev => prev.map(r => (r.id === editId ? res.scan : r)));
+      setEditId(null);
+      setOk("Line updated.");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not compare with current inventory.");
+      setError(e instanceof ApiError ? e.message : "Could not update that line.");
     } finally {
       setBusy(false);
     }
   };
 
-  const loadRun = async (runId: number) => {
+  const openComplete = async () => {
+    if (!event) return;
     setBusy(true);
+    setError(null);
     try {
-      setCompare(await inventoryCheckApi.compareGet(runId));
+      const preview = await inventoryCheckApi.comparePreview(event.id);
+      setCompare(preview);
+      setCompareOpen(true);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not load that comparison.");
+      setError(e instanceof ApiError ? e.message : "Could not build comparison.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const finalize = async () => {
+    if (!event) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await inventoryCheckApi.finalize(event.id);
+      setCompare(res.compare);
+      setOk("Audit saved to history.");
+      setCompareOpen(false);
+      await loadContext();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not save the audit.");
     } finally {
       setBusy(false);
     }
@@ -256,7 +448,7 @@ export function InventoryCheckPage() {
 
   if (loading) {
     return (
-      <PageLayout title="Check inventory" subtitle="Physical stock take against system inventory.">
+      <PageLayout title="Check inventory" subtitle="Audit finished products against system inventory.">
         <p className="text-sm text-muted-foreground flex items-center gap-2">
           <Loader2 className="animate-spin" size={16} /> Loading…
         </p>
@@ -267,19 +459,20 @@ export function InventoryCheckPage() {
   return (
     <PageLayout
       title="Check inventory"
-      subtitle="Scan the finished products physically on hand, then compare the count with system inventory."
+      subtitle="Audit finished products on hand. Counting never changes stock."
     >
       <AppSectionEnter className="space-y-4">
         <div className="rounded-xl border border-border bg-card px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             {event === null ? (
               <p className="text-sm text-muted-foreground">
-                No count is open. {canManage ? "Start one to let everyone scan." : "Ask a manager to open today's count."}
+                No audit session is open.{" "}
+                {canManage ? "Start one to begin counting." : "Ask a manager to start today's audit."}
               </p>
             ) : (
               <>
                 <p className="text-sm font-semibold">
-                  Count for {event.count_date}
+                  Audit for {event.count_date}
                   <span
                     className={`ml-2 text-xs font-medium rounded-full px-2 py-0.5 ${
                       event.status === "open"
@@ -291,333 +484,387 @@ export function InventoryCheckPage() {
                   </span>
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Opened by {event.opened_by_name} · {event.scan_count} unit
-                  {event.scan_count === 1 ? "" : "s"} counted by {event.scanner_count} staff
+                  Opened by {event.opened_by_name}
+                  {event.closed_by_name ? ` · Closed by ${event.closed_by_name}` : ""} · {event.scan_count}{" "}
+                  line{event.scan_count === 1 ? "" : "s"} · {event.scanner_count} staff
                 </p>
               </>
             )}
           </div>
-          {canManage && (
-            <div className="flex gap-2">
-              {event === null || event.status === "closed" ? (
-                <Button type="button" onClick={() => void openCount()} disabled={busy}>
-                  <ClipboardCheck size={16} className="mr-1" /> Start today's count
-                </Button>
-              ) : (
-                <Button type="button" variant="outline" onClick={() => void closeCount()} disabled={busy}>
-                  Close count
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {tabs.length > 1 && (
           <div className="flex flex-wrap gap-2">
-            {tabs.map(t => (
-              <Button
-                key={t}
-                type="button"
-                size="sm"
-                variant={tab === t ? "default" : "outline"}
-                onClick={() => setTab(t)}
-              >
-                {t === "scan" ? "Scan" : t === "summary" ? "Summary" : t === "compare" ? "Compare" : "History"}
+            {canViewAll && (
+              <Button type="button" size="sm" variant="outline" onClick={() => setShowHistory(h => !h)}>
+                {showHistory ? "Session" : "History"}
               </Button>
-            ))}
+            )}
+            {canManage && (event === null || event.status === "closed") && (
+              <Button type="button" onClick={() => void openCount()} disabled={busy}>
+                <ClipboardCheck size={16} className="mr-1" /> Start audit
+              </Button>
+            )}
+            {canManage && sessionOpen && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="text-destructive border-destructive/40"
+                  onClick={() => void cancelSession()}
+                  disabled={busy}
+                >
+                  <XCircle size={16} className="mr-1" /> Cancel session
+                </Button>
+                <Button type="button" onClick={() => void openComplete()} disabled={busy || lines.length === 0}>
+                  <Scale size={16} className="mr-1" /> Complete
+                </Button>
+              </>
+            )}
           </div>
-        )}
+        </div>
 
         {ok && <AppSuccessNotice message={ok} />}
         {error && <AppErrorBanner message={error} />}
 
-        <AppStepSwitch stepKey={tab}>
-          {tab === "scan" ? (
-            <div className="space-y-4">
-              {event === null || event.status !== "open" ? (
+        {showHistory && canViewAll ? (
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Audit history</p>
+            {history.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No audits recorded yet.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
+                      <th className="px-3 py-2">Date</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2">Opened by</th>
+                      <th className="px-3 py-2">Closed</th>
+                      <th className="px-3 py-2 text-right">Lines</th>
+                      <th className="px-3 py-2 text-right">Comparisons</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map(h => (
+                      <tr key={h.id} className={appHoverRow}>
+                        <td className="px-3 py-2 whitespace-nowrap">{h.count_date}</td>
+                        <td className="px-3 py-2">{h.status === "open" ? "Open" : "Closed"}</td>
+                        <td className="px-3 py-2">{h.opened_by_name}</td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">
+                          {h.closed_at
+                            ? `${h.closed_by_name ?? "—"} · ${new Date(h.closed_at.replace(" ", "T")).toLocaleString()}`
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right">{h.scan_count}</td>
+                        <td className="px-3 py-2 text-right">{h.compare_run_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {sessionOpen && (
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">
-                  Scanning opens once a manager starts the count.
+                  Scan continuously, or close the camera and set quantity for the SKU you just scanned.
                 </p>
-              ) : (
-                <>
-                  <div className="flex gap-2 max-w-xl">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    resetAddForm();
+                    setAddOpen(true);
+                  }}
+                >
+                  <Plus size={16} className="mr-1" /> Add to list
+                </Button>
+              </div>
+            )}
+
+            {!sessionOpen && event === null && (
+              <p className="text-sm text-muted-foreground">Start an audit to build a count list.</p>
+            )}
+
+            {lines.length === 0 && sessionOpen ? (
+              <p className="text-sm text-muted-foreground">No products added yet.</p>
+            ) : lines.length > 0 ? (
+              <div className="overflow-x-auto rounded-xl border border-border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
+                      <th className="px-3 py-2">Product</th>
+                      <th className="px-3 py-2">Code</th>
+                      <th className="px-3 py-2">Batch</th>
+                      <th className="px-3 py-2 text-right">Qty</th>
+                      <th className="px-3 py-2">By</th>
+                      <th className="px-3 py-2 w-28" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lines.map(r => {
+                      const canEditRow = sessionOpen && (canManage || r.scanned_by === userId);
+                      const editing = editId === r.id;
+                      return (
+                        <tr key={r.id} className={appHoverRow}>
+                          <td className="px-3 py-2">
+                            {r.product_label}
+                            {r.size_label ? ` · ${r.size_label}` : ""}
+                            {r.variant ? ` · ${r.variant}` : ""}
+                            {r.flag !== "ok" ? (
+                              <span className="ml-1 text-xs text-destructive">{r.flag.replace(/_/g, " ")}</span>
+                            ) : null}
+                          </td>
+                          <td className="px-3 py-2 font-mono text-xs">{r.code}</td>
+                          <td className="px-3 py-2">
+                            {editing ? (
+                              <input
+                                className="w-28 border rounded-lg px-2 py-1 text-sm uppercase"
+                                value={editBatch}
+                                onChange={e => setEditBatch(e.target.value.toUpperCase())}
+                                readOnly={!r.sku_id}
+                              />
+                            ) : (
+                              r.batch_no ?? "—"
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            {editing ? (
+                              <input
+                                type="number"
+                                min={1}
+                                className="w-20 border rounded-lg px-2 py-1 text-sm text-right ml-auto"
+                                value={editQty}
+                                onChange={e => setEditQty(e.target.value)}
+                              />
+                            ) : (
+                              <span className="font-semibold">{r.counted_qty ?? 1}</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-xs text-muted-foreground">
+                            {r.scanned_by_name}
+                            <br />
+                            {new Date(r.scanned_at.replace(" ", "T")).toLocaleString()}
+                          </td>
+                          <td className="px-3 py-2">
+                            {canEditRow && (
+                              <div className="flex justify-end gap-1">
+                                {editing ? (
+                                  <>
+                                    <Button type="button" size="sm" onClick={() => void saveEdit()} disabled={busy}>
+                                      Save
+                                    </Button>
+                                    <Button type="button" size="sm" variant="ghost" onClick={() => setEditId(null)}>
+                                      Cancel
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button type="button" size="sm" variant="outline" onClick={() => startEdit(r)}>
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => void removeScan(r.id)}
+                                      aria-label="Remove line"
+                                    >
+                                      <Trash2 size={15} />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+
+            {summary && summary.rows.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Session total: {summary.total_units} unit{summary.total_units === 1 ? "" : "s"}
+                {summary.flagged_units > 0 ? ` · ${summary.flagged_units} flagged` : ""}
+              </p>
+            )}
+          </div>
+        )}
+      </AppSectionEnter>
+
+      <AppModal open={addOpen} onClose={closeAddModal} panelClassName="max-w-lg w-full">
+        <AppModalHeader title="Add to list" onClose={closeAddModal} />
+        <AppModalBody className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Open the camera and keep scanning. Each SKU is +1; unique stickers count once. Close the camera when you
+            want to type how many for the SKU you just scanned.
+          </p>
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block">
+            Batch number (required for SKU)
+            <input
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm uppercase"
+              value={stickyBatch}
+              onChange={e => setStickyBatch(e.target.value.toUpperCase())}
+              placeholder="e.g. NF082826"
+              autoComplete="off"
+            />
+          </label>
+          <div className="flex gap-2">
+            <input
+              ref={inputRef}
+              {...inputProps}
+              className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide"
+              placeholder="Scan continuously…"
+              value={code}
+              onChange={e => setCode(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void onAddScan();
+                }
+              }}
+            />
+            <Button type="button" variant="outline" className="shrink-0" onClick={() => setCameraOpen(true)}>
+              <Camera size={16} className="mr-1" /> Camera
+            </Button>
+          </div>
+          <div
+            className={`h-16 rounded-xl border flex items-center justify-center px-3 text-sm font-medium text-center transition-colors ${
+              scanFlash === "ok"
+                ? "bg-green-100 border-green-300 text-green-800"
+                : scanFlash === "dup"
+                  ? "bg-amber-100 border-amber-300 text-amber-900"
+                  : scanFlash === "err"
+                    ? "bg-red-100 border-red-300 text-red-800"
+                    : "bg-secondary/30 border-border text-muted-foreground"
+            }`}
+          >
+            {scanFlash === "ok"
+              ? (scanFlashMsg ?? "Added")
+              : scanFlash === "dup"
+                ? (scanFlashMsg ?? "Already counted")
+                : scanFlash === "err"
+                  ? (scanFlashMsg ?? "Not accepted")
+                  : "Ready — keep scanning"}
+          </div>
+          {lastItem ? (
+            <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Just scanned</p>
+              <p className="text-sm font-semibold">{lastItem.label}</p>
+              <p className="font-mono text-xs text-muted-foreground">
+                {lastItem.code} · {lastItem.batch} · now {lastItem.countedQty}
+              </p>
+              {lastItem.isSku ? (
+                <div className="flex gap-2 items-end">
+                  <div className="w-28">
+                    <label className="text-xs text-muted-foreground">How many</label>
                     <input
-                      ref={inputRef}
-                      {...inputProps}
-                      className="flex-1 border rounded-lg px-3 py-2 text-sm"
-                      placeholder="Scan any finished product barcode"
-                      value={code}
-                      onChange={e => setCode(e.target.value)}
+                      ref={qtyInputRef}
+                      className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                      type="number"
+                      min={1}
+                      value={lastQty}
+                      onChange={e => setLastQty(e.target.value)}
                       onKeyDown={e => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          void onScan();
+                          void applyLastQty();
                         }
                       }}
                     />
-                    <Button type="button" variant="outline" onClick={() => setCameraOpen(true)}>
-                      <Camera size={16} className="mr-1" /> Camera
-                    </Button>
                   </div>
-
-                  <div className="rounded-lg border border-border bg-card p-3 space-y-2 max-w-xl">
-                    <p className="text-xs text-muted-foreground">
-                      SKU barcodes: each scan adds +1 to the count. Or type a quantity and Add
-                      {lastSku ? ` (last: ${lastSku.label})` : ""}.
-                    </p>
-                    <div className="flex flex-wrap gap-2 items-end">
-                      <label className="text-xs text-muted-foreground block w-24">
-                        Quantity
-                        <input
-                          type="number"
-                          min={1}
-                          className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                          value={skuQty}
-                          onChange={e => setSkuQty(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              void addSkuBulk();
-                            }
-                          }}
-                        />
-                      </label>
-                      <Button type="button" variant="outline" onClick={() => void addSkuBulk()} disabled={!lastSku}>
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    Counting never changes stock. Honey and every department line can be scanned here.
-                  </p>
-
-                  {recent.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        Just scanned
-                      </p>
-                      <ul className="divide-y rounded-xl border border-border overflow-hidden">
-                        {recent.map(r => (
-                          <li
-                            key={r.id}
-                            className={`px-3 py-2 flex items-center justify-between gap-3 ${appHoverRow}`}
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium">
-                                {r.product_label}
-                                {r.size_label ? ` · ${r.size_label}` : ""}
-                                {r.batch_no ? ` · ${r.batch_no}` : ""}
-                                {r.counted_qty != null && r.counted_qty !== 1
-                                  ? ` · qty ${r.counted_qty}`
-                                  : ""}
-                              </p>
-                              <p className="font-mono text-xs text-muted-foreground">
-                                {r.code}
-                                {r.flag !== "ok" ? ` · ${r.flag.replace(/_/g, " ")}` : ""}
-                              </p>
-                            </div>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => void removeScan(r.id)}
-                              aria-label={`Remove ${r.code}`}
-                            >
-                              <Trash2 size={15} />
-                            </Button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {summary && summary.rows.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    {summary.scoped_to_user ? "What you counted today" : "Counted today"} ·{" "}
-                    {summary.total_units} unit{summary.total_units === 1 ? "" : "s"}
-                  </p>
-                  <SummaryTable
-                    summary={summary}
-                    onRowClick={canViewAll ? setDetailRow : undefined}
-                  />
+                  <Button type="button" onClick={() => void applyLastQty()} disabled={qtyBusy}>
+                    {qtyBusy ? <Loader2 className="animate-spin" size={16} /> : "Set quantity"}
+                  </Button>
                 </div>
-              )}
-            </div>
-          ) : tab === "summary" ? (
-            <div className="space-y-4">
-              {summary === null || summary.rows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nothing has been counted yet.</p>
               ) : (
-                <>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <StatCard label="Units counted" value={String(summary.total_units)} />
-                    <StatCard label="Lines" value={String(summary.rows.length)} />
-                    <StatCard
-                      label="Flagged units"
-                      value={String(summary.flagged_units)}
-                      tone={summary.flagged_units > 0 ? "warn" : "plain"}
-                    />
-                  </div>
-                  <SummaryTable summary={summary} onRowClick={setDetailRow} />
-                  <div className="flex justify-end">
-                    <Button type="button" onClick={() => void runCompare()} disabled={busy}>
-                      <Scale size={16} className="mr-1" /> Compare with current inventory
-                    </Button>
-                  </div>
-                </>
+                <p className="text-xs text-muted-foreground">Unique sticker — already counted as 1.</p>
               )}
             </div>
-          ) : tab === "compare" ? (
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm text-muted-foreground">
-                  Compares only the product lines that were counted.
-                </p>
-                <Button type="button" onClick={() => void runCompare()} disabled={busy || event === null}>
-                  <Scale size={16} className="mr-1" /> Run comparison
+          ) : null}
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" onClick={closeAddModal}>
+              Done
+            </Button>
+          </div>
+        </AppModalBody>
+      </AppModal>
+
+      {cameraOpen && addOpen ? (
+        <BarcodeCameraScannerModal
+          titleId={addCameraTitleId || cameraTitleId}
+          title="Continuous scan"
+          continuous
+          scanPrompt="Keep pointing at barcodes. Close camera to type quantity for the last SKU."
+          onClose={closeCamera}
+          onDecoded={decoded => onAddScan(decoded)}
+        />
+      ) : null}
+
+      <AppModal open={compareOpen} onClose={() => setCompareOpen(false)} panelClassName="max-w-3xl w-full">
+        <AppModalHeader title="Audit vs system inventory" onClose={() => setCompareOpen(false)} />
+        <AppModalBody className="space-y-4">
+          {compare ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-4">
+                <StatCard label="Scope" value={compare.run.scope || "—"} />
+                <StatCard label="Audited" value={String(compare.run.counted_total)} />
+                <StatCard label="System" value={String(compare.run.system_total)} />
+                <StatCard
+                  label="Mismatched"
+                  value={String(compare.run.mismatch_count)}
+                  tone={compare.run.mismatch_count > 0 ? "warn" : "plain"}
+                />
+              </div>
+              <div className="overflow-x-auto rounded-xl border border-border max-h-[50vh]">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
+                      <th className="px-3 py-2">Product</th>
+                      <th className="px-3 py-2">Batch</th>
+                      <th className="px-3 py-2">Size</th>
+                      <th className="px-3 py-2 text-right">Audited</th>
+                      <th className="px-3 py-2 text-right">System</th>
+                      <th className="px-3 py-2 text-right">Variance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {compare.lines.map(l => (
+                      <tr key={l.id} className={appHoverRow}>
+                        <td className="px-3 py-2">
+                          {l.product_label}
+                          {l.variant ? ` · ${l.variant}` : ""}
+                        </td>
+                        <td className="px-3 py-2">{l.batch_no ?? "—"}</td>
+                        <td className="px-3 py-2">{l.size_label ?? "—"}</td>
+                        <td className="px-3 py-2 text-right">{l.counted_qty}</td>
+                        <td className="px-3 py-2 text-right">{formatQty(l.system_qty)}</td>
+                        <td className={`px-3 py-2 text-right font-semibold ${varianceTone(l.variance)}`}>
+                          {l.variance > 0 ? `+${formatQty(l.variance)}` : formatQty(l.variance)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setCompareOpen(false)} disabled={busy}>
+                  Go back
+                </Button>
+                <Button type="button" onClick={() => void finalize()} disabled={busy}>
+                  {busy ? <Loader2 className="animate-spin" size={16} /> : "Confirm and save"}
                 </Button>
               </div>
-
-              {compare && (
-                <div className="space-y-3">
-                  <div className="grid gap-3 sm:grid-cols-4">
-                    <StatCard label="Scope" value={compare.run.scope || "—"} />
-                    <StatCard label="Counted" value={String(compare.run.counted_total)} />
-                    <StatCard label="System" value={String(compare.run.system_total)} />
-                    <StatCard
-                      label="Mismatched lines"
-                      value={String(compare.run.mismatch_count)}
-                      tone={compare.run.mismatch_count > 0 ? "warn" : "plain"}
-                    />
-                  </div>
-                  <div className="overflow-x-auto rounded-xl border border-border">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
-                          <th className="px-3 py-2">Product</th>
-                          <th className="px-3 py-2">Batch</th>
-                          <th className="px-3 py-2">Bottled</th>
-                          <th className="px-3 py-2">Size</th>
-                          <th className="px-3 py-2 text-right">Counted</th>
-                          <th className="px-3 py-2 text-right">System</th>
-                          <th className="px-3 py-2 text-right">Variance</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {compare.lines.map(l => (
-                          <tr key={l.id} className={appHoverRow}>
-                            <td className="px-3 py-2">{l.product_label}</td>
-                            <td className="px-3 py-2">
-                              {l.batch_no ?? "—"}
-                              {l.supplier_code ? (
-                                <span className="text-xs text-muted-foreground"> · {l.supplier_code}</span>
-                              ) : null}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap">{l.bottling_date ?? "—"}</td>
-                            <td className="px-3 py-2">{l.size_label ?? "—"}</td>
-                            <td className="px-3 py-2 text-right">{l.counted_qty}</td>
-                            <td className="px-3 py-2 text-right">{formatQty(l.system_qty)}</td>
-                            <td className={`px-3 py-2 text-right font-semibold ${varianceTone(l.variance)}`}>
-                              {l.variance > 0 ? `+${formatQty(l.variance)}` : formatQty(l.variance)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {runs.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Comparison runs for this count
-                  </p>
-                  <ul className="divide-y rounded-xl border border-border overflow-hidden">
-                    {runs.map(r => (
-                      <li key={r.id}>
-                        <button
-                          type="button"
-                          onClick={() => void loadRun(r.id)}
-                          className={`w-full text-left px-3 py-2 flex items-center justify-between gap-3 ${appHoverRow}`}
-                        >
-                          <span className="text-sm">
-                            {new Date(r.run_at.replace(" ", "T")).toLocaleString()} · {r.run_by_name}
-                          </span>
-                          <span
-                            className={`text-xs font-medium ${
-                              r.mismatch_count > 0 ? "text-destructive" : "text-emerald-600"
-                            }`}
-                          >
-                            {r.mismatch_count > 0 ? `${r.mismatch_count} mismatched` : "All matched"}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+            </>
           ) : (
-            <div className="space-y-2">
-              {history.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No inventory counts recorded yet.</p>
-              ) : (
-                <div className="overflow-x-auto rounded-xl border border-border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
-                        <th className="px-3 py-2">Date</th>
-                        <th className="px-3 py-2">Status</th>
-                        <th className="px-3 py-2">Opened by</th>
-                        <th className="px-3 py-2 text-right">Units</th>
-                        <th className="px-3 py-2 text-right">Staff</th>
-                        <th className="px-3 py-2 text-right">Comparisons</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history.filter(Boolean).map(h => (
-                        <tr key={h!.id} className={appHoverRow}>
-                          <td className="px-3 py-2 whitespace-nowrap">{h!.count_date}</td>
-                          <td className="px-3 py-2">{h!.status === "open" ? "Open" : "Closed"}</td>
-                          <td className="px-3 py-2">{h!.opened_by_name}</td>
-                          <td className="px-3 py-2 text-right">{h!.scan_count}</td>
-                          <td className="px-3 py-2 text-right">{h!.scanner_count}</td>
-                          <td className="px-3 py-2 text-right">{h!.compare_run_count}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="animate-spin" size={16} /> Building comparison…
+            </p>
           )}
-        </AppStepSwitch>
-      </AppSectionEnter>
-
-      {cameraOpen ? (
-        <BarcodeCameraScannerModal
-          titleId={cameraTitleId}
-          title="Count inventory"
-          continuous
-          scanPrompt="Point at a honey bottle or pouch/jar sticker."
-          onClose={() => setCameraOpen(false)}
-          onDecoded={onScan}
-        />
-      ) : null}
-
-      {detailRow && event ? (
-        <InventoryCheckScanLogModal
-          eventId={event.id}
-          countDate={event.count_date}
-          row={detailRow}
-          onClose={() => setDetailRow(null)}
-        />
-      ) : null}
+        </AppModalBody>
+      </AppModal>
     </PageLayout>
   );
 }
@@ -634,62 +881,7 @@ function StatCard({
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-3">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`text-lg font-semibold mt-1 ${tone === "warn" ? "text-destructive" : ""}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function SummaryTable({
-  summary,
-  onRowClick,
-}: {
-  summary: InventoryCheckSummary;
-  onRowClick?: (row: InventoryCheckSummaryRow) => void;
-}) {
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
-            <th className="px-3 py-2">Product</th>
-            <th className="px-3 py-2">Supplier / batch</th>
-            <th className="px-3 py-2">Bottled</th>
-            <th className="px-3 py-2">Variant</th>
-            <th className="px-3 py-2">Size</th>
-            <th className="px-3 py-2 text-right">Counted</th>
-            <th className="px-3 py-2">Scanned by</th>
-          </tr>
-        </thead>
-        <tbody>
-          {summary.rows.map(r => (
-            <tr
-              key={`${r.kind}-${r.product_key}-${r.packaging_row_id ?? 0}-${r.batch_no ?? ""}-${r.size ?? ""}`}
-              className={`${appHoverRow} ${onRowClick ? "cursor-pointer" : ""}`}
-              onClick={onRowClick ? () => onRowClick(r) : undefined}
-            >
-              <td className="px-3 py-2">{r.product_label}</td>
-              <td className="px-3 py-2">
-                {r.supplier_code && r.supplier_code !== r.batch_no ? `${r.supplier_code} · ` : ""}
-                {r.batch_no ?? "—"}
-              </td>
-              <td className="px-3 py-2 whitespace-nowrap">{r.bottling_date ?? "—"}</td>
-              <td className="px-3 py-2 capitalize">{r.variant ?? "—"}</td>
-              <td className="px-3 py-2">{r.size_label ?? "—"}</td>
-              <td className="px-3 py-2 text-right font-semibold">
-                {r.qty}
-                {r.flagged_qty > 0 ? (
-                  <span className="ml-1 text-xs font-normal text-destructive">
-                    ({r.flagged_qty} flagged)
-                  </span>
-                ) : null}
-              </td>
-              <td className="px-3 py-2 text-xs text-muted-foreground">{r.scanner_names || "—"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <p className={`text-lg font-semibold mt-1 ${tone === "warn" ? "text-destructive" : ""}`}>{value}</p>
     </div>
   );
 }

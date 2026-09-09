@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-08T11:59:11+02:00
+generated: 2026-09-08T09:45:20+02:00
 type: memory-bank
 ---
 
@@ -82,7 +82,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `print_sheet` | `api_bottle_print_sheet()` | `honey_bottle_label_sheet_html()`, `ims_pdo()` |
 | `void` | `api_bottle_void()` | `honey_bottle_void_code()`, `ims_pdo()` |
 | `lookup` | `api_bottle_lookup()` | `honey_bottle_lookup()`, `ims_pdo()` |
-| `scan_stock_in` | `api_bottle_scan_stock_in()` | `sku_barcode_fetch_by_code()`, `ims_pdo()`, `honey_bottle_create_custom_packaging()`, `sku_barcode_honey_stock_in()`, `honey_bottle_size_label()`, `honey_bottle_request_get()`, `honey_bottle_scan_stock_in()` |
+| `scan_stock_in` | `api_bottle_scan_stock_in()` | `ims_pdo()`, `sku_barcode_fetch_by_code()`, `honey_production_bottle_stock_in()`, `honey_bottle_size_label()`, `honey_bottle_request_get()`, `honey_bottle_create_custom_packaging()`, `sku_barcode_honey_stock_in()`, `honey_bottle_lookup()`, … |
 | `pack_start` | `api_bottle_pack_start()` | `honey_bottle_pack_session_start()`, `ims_pdo()` |
 | `pack_get` | `api_bottle_pack_get()` | `honey_bottle_pack_session_get()`, `ims_pdo()` |
 | `pack_session_list` | `api_bottle_pack_session_list()` | `honey_bottle_pack_session_list()`, `ims_pdo()` |
@@ -345,14 +345,18 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `context` | `api_inventory_check_context()` | `ims_pdo()`, `inventory_check_event_current()`, `inventory_check_can_view_all()`, `inventory_check_can_manage()`, `inventory_check_summary()` |
 | `event_open` | `api_inventory_check_event_open()` | `inventory_check_event_open()`, `ims_pdo()` |
 | `event_close` | `api_inventory_check_event_close()` | `inventory_check_event_close()`, `ims_pdo()` |
+| `event_cancel` | `api_inventory_check_event_cancel()` | `inventory_check_event_cancel()`, `ims_pdo()` |
 | `event_list` | `api_inventory_check_event_list()` | `inventory_check_event_list()`, `ims_pdo()` |
 | `scan` | `api_inventory_check_scan()` | `ims_pdo()`, `inventory_check_scan()`, `inventory_check_summary()`, `inventory_check_can_view_all()` |
+| `scan_update` | `api_inventory_check_scan_update()` | `ims_pdo()`, `inventory_check_scan_update()`, `inventory_check_can_manage()`, `inventory_check_summary()`, `inventory_check_can_view_all()` |
 | `scan_remove` | `api_inventory_check_scan_remove()` | `ims_pdo()`, `inventory_check_scan_remove()`, `inventory_check_can_manage()`, `inventory_check_summary()`, `inventory_check_can_view_all()` |
 | `summary` | `api_inventory_check_summary()` | `inventory_check_can_view_all()`, `inventory_check_summary()`, `ims_pdo()` |
 | `scan_log` | `api_inventory_check_scan_log()` | `inventory_check_can_view_all()`, `inventory_check_scan_log()`, `ims_pdo()` |
+| `compare_preview` | `api_inventory_check_compare_preview()` | `inventory_check_can_manage()`, `inventory_check_can_view_all()`, `inventory_check_compare_preview()`, `ims_pdo()` |
 | `compare_run` | `api_inventory_check_compare_run()` | `inventory_check_compare_run()`, `ims_pdo()` |
 | `compare_get` | `api_inventory_check_compare_get()` | `inventory_check_compare_get()`, `ims_pdo()` |
 | `compare_list` | `api_inventory_check_compare_list()` | `inventory_check_compare_list()`, `ims_pdo()` |
+| `finalize` | `api_inventory_check_finalize()` | `ims_pdo()`, `inventory_check_compare_run()`, `inventory_check_event_close()` |
 
 ### `materials.php`
 
@@ -548,7 +552,14 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `inventory_use_log` | `api_rts_inventory_use_log()` | `rts_pool_use_log_list()`, `ims_pdo()` |
 | `inventory_set_honey` | `api_rts_inventory_set_honey()` | `ims_pdo()`, `rts_inventory_set_honey_variant_totals()` |
 | `inventory_set_other` | `api_rts_inventory_set_other()` | `ims_pdo()`, `rts_inventory_set_other_label_total()` |
-| `stock_in_scan` | `api_rts_stock_in_scan()` | `sku_barcode_fetch_by_code()`, `ims_pdo()`, `sku_barcode_rts_stock_in()`, `honey_bottle_fetch_code_row()`, `honey_bottle_rts_stock_in_scan()`, `dept_pouch_rts_stock_in_scan()` |
+| `stock_in_scan` | `api_rts_stock_in_scan()` | — |
+| `stock_in_session_start` | `api_rts_stock_in_session_start()` | `rts_stock_in_session_start()`, `ims_pdo()` |
+| `stock_in_session_get` | `api_rts_stock_in_session_get()` | `rts_stock_in_session_get()`, `ims_pdo()` |
+| `stock_in_session_scan` | `api_rts_stock_in_session_scan()` | `rts_stock_in_session_scan()`, `ims_pdo()` |
+| `stock_in_session_update` | `api_rts_stock_in_session_update()` | `rts_stock_in_session_update_qty()`, `ims_pdo()` |
+| `stock_in_session_remove` | `api_rts_stock_in_session_remove()` | `rts_stock_in_session_remove()`, `ims_pdo()` |
+| `stock_in_session_cancel` | `api_rts_stock_in_session_cancel()` | `rts_stock_in_session_discard()`, `ims_pdo()` |
+| `stock_in_session_confirm` | `api_rts_stock_in_session_confirm()` | `rts_stock_in_session_confirm()`, `ims_pdo()` |
 | `use_damaged` | `api_rts_use_damaged()` | `rts_damaged_use_apply()`, `ims_pdo()` |
 | `damaged_use_log` | `api_rts_damaged_use_log()` | `rts_damaged_use_events_list()`, `ims_pdo()` |
 | `sync_status` | `api_rts_sync_status_action()` | `rts_inventory_sync_status()`, `ims_pdo()` |
@@ -624,6 +635,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pos_pins_list` | `api_settings_pos_pins_list()` | `ims_pdo()` |
 | `pos_pin_update` | `api_settings_pos_pin_update()` | `ims_pdo()` |
 | `pos_pin_create` | `api_settings_pos_pin_create()` | `ims_pdo()` |
+| `honey_volume_get` | `api_settings_honey_volume_get()` | `ims_pdo()`, `honey_ml_per_gallon()` |
+| `honey_volume_save` | `api_settings_honey_volume_save()` | `honey_ml_per_gallon_save()`, `ims_pdo()` |
 
 ### `sku_barcodes.php`
 
