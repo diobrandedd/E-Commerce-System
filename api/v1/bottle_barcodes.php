@@ -81,6 +81,7 @@ api_dispatch([
     'pack_today_stats' => 'api_bottle_pack_today_stats',
     'pack_scan' => 'api_bottle_pack_scan',
     'pack_remove_item' => 'api_bottle_pack_remove_item',
+    'pack_set_item_qty' => 'api_bottle_pack_set_item_qty',
     'pack_confirm' => 'api_bottle_pack_confirm',
     'pack_discard' => 'api_bottle_pack_discard',
     'pos_lookup' => 'api_bottle_pos_lookup',
@@ -138,9 +139,11 @@ function api_bottle_packaging_scan_report(): void
     api_method_allowed(['GET']);
     api_bottle_require_request();
     $scanDate = trim((string) ($_GET['scan_date'] ?? ''));
+    $bottlingDate = trim((string) ($_GET['bottling_date'] ?? ''));
     api_ok(honey_bottle_packaging_scan_report(
         ims_pdo(),
-        $scanDate !== '' ? $scanDate : null
+        $scanDate !== '' ? $scanDate : null,
+        $bottlingDate !== '' ? $bottlingDate : null
     ));
 }
 
@@ -151,7 +154,7 @@ function api_bottle_ensure_packaging_shell(): void
     $user = api_bottle_require_generate();
     $in = api_input();
     $productionRowId = (int) ($in['production_row_id'] ?? 0);
-    $before = honey_fetch_packaging_by_production(ims_pdo(), $productionRowId);
+    $before = honey_fetch_packaging_by_production(ims_pdo(), $productionRowId, date('Y-m-d'));
     $pk = honey_bottle_ensure_packaging_shell(ims_pdo(), (int) $user['id'], $productionRowId);
     api_ok([
         'packaging' => honey_bottle_serialize_packaging_option($pk, $before === null),
@@ -516,21 +519,20 @@ function api_bottle_scan_stock_in(): void
     if ($productionRowId > 0) {
         try {
             require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
-            $lookup = honey_bottle_lookup($pdo, $code);
-            $packFromCode = (int) ($lookup['packaging_row_id'] ?? 0);
-            if ($packFromCode < 1) {
-                api_fail('Barcode is not tied to a packaging batch.', 422);
-            }
             $pdo->beginTransaction();
             try {
+                $scanned = honey_bottle_scan_stock_in($pdo, (int) $user['id'], $code, $adopt);
+                $packFromScan = (int) ($scanned['packaging_row_id'] ?? 0);
+                if ($packFromScan < 1) {
+                    throw new RuntimeException('Barcode is not tied to a packaging batch.');
+                }
                 $deduct = honey_production_deduct_for_unique_stock_in(
                     $pdo,
                     (int) $user['id'],
                     $productionRowId,
-                    $packFromCode,
-                    (string) $lookup['size']
+                    $packFromScan,
+                    (string) ($scanned['size'] ?? '')
                 );
-                $scanned = honey_bottle_scan_stock_in($pdo, (int) $user['id'], $code, $adopt);
                 $pdo->commit();
             } catch (Throwable $e) {
                 if ($pdo->inTransaction()) {
@@ -617,6 +619,25 @@ function api_bottle_pack_remove_item(): void
             (int) ($in['session_id'] ?? 0),
             (string) ($in['kind'] ?? 'honey'),
             (int) ($in['item_id'] ?? 0)
+        )]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_bottle_pack_set_item_qty(): void
+{
+    api_method_allowed(['POST']);
+    api_bottle_require_csrf();
+    api_bottle_require_pack_scan();
+    $in = api_input();
+    try {
+        api_ok(['session' => honey_bottle_pack_session_set_item_qty(
+            ims_pdo(),
+            (int) ($in['session_id'] ?? 0),
+            (string) ($in['kind'] ?? 'honey'),
+            (int) ($in['item_id'] ?? 0),
+            (int) ($in['qty'] ?? 0)
         )]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);

@@ -1,7 +1,7 @@
 ---
 title: permissions
 source: includes/permissions.php
-generated: 2026-09-09T10:17:35+02:00
+generated: 2026-09-10T05:04:52+02:00
 type: module
 function_count: 18
 ---
@@ -109,10 +109,10 @@ function_count: 18
 - `api/v1/honey.php`:330 — `if (!ims_user_can($user, 'honey.warehouse_barcode.request')) {`
 - `api/v1/honey.php`:352 — `if (!ims_user_can($user, 'honey.warehouse_barcode.generate')) {`
 - `api/v1/honey.php`:375 — `if (!ims_user_can($user, 'honey.warehouse_barcode.generate')) {`
-- `api/v1/honey.php`:590 — `$canApprove = ims_user_can($user, 'inventory.requests.approve');`
-- `api/v1/honey.php`:591 — `$canViewAllReadonly = ims_user_can($user, 'inventory.requests.view') && !$canApprove;`
-- `api/v1/honey.php`:630 — `if (!ims_user_can($user, 'inventory.requests.approve') && !ims_user_can($user, 'honey.executive_edit')) {`
-- `api/v1/honey.php`:648 — `if (!ims_user_can($user, 'inventory.requests.approve') && !ims_user_can($user, 'honey.executive_edit')) {`
+- `api/v1/honey.php`:597 — `$canApprove = ims_user_can($user, 'inventory.requests.approve');`
+- `api/v1/honey.php`:598 — `$canViewAllReadonly = ims_user_can($user, 'inventory.requests.view') && !$canApprove;`
+- `api/v1/honey.php`:637 — `if (!ims_user_can($user, 'inventory.requests.approve') && !ims_user_can($user, 'honey.executive_edit')) {`
+- `api/v1/honey.php`:655 — `if (!ims_user_can($user, 'inventory.requests.approve') && !ims_user_can($user, 'honey.executive_edit')) {`
 - `api/v1/materials.php`:63 — `if (!ims_user_can($user, 'honey.pricing.view_cost')) {`
 - `api/v1/materials.php`:92 — `} elseif (!ims_user_can($user, 'packaging.catalog')) {`
 - _… and 76 more (run impact.php for full list)_
@@ -121,9 +121,9 @@ function_count: 18
 
 **Callers (5):**
 
-- `api/v1/honey.php`:778 — `if ($productKey !== '' && !ims_user_can_dept_line($user, $productKey, 'view')) {`
-- `api/v1/honey.php`:789 — `static fn(array $item): bool => ims_user_can_dept_line($user, (string) $item['key'], 'view')`
-- `api/v1/honey.php`:872 — `if (!ims_user_can_dept_line($user, $productKey, 'view')) {`
+- `api/v1/honey.php`:785 — `if ($productKey !== '' && !ims_user_can_dept_line($user, $productKey, 'view')) {`
+- `api/v1/honey.php`:796 — `static fn(array $item): bool => ims_user_can_dept_line($user, (string) $item['key'], 'view')`
+- `api/v1/honey.php`:879 — `if (!ims_user_can_dept_line($user, $productKey, 'view')) {`
 - `includes/dept_pouch_barcodes.php`:21 — `return ims_user_can_dept_line($user, $productKey, 'barcodes');`
 - `includes/honey_inventory.php`:44 — `return ims_user_can_dept_line($user, $productKey, 'produce');`
 

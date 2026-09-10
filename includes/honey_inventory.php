@@ -108,20 +108,43 @@ function honey_normalize_variant(string $v): string
 }
 
 /**
- * Allocate a packaging batch_no that is unique for this variant only.
- * The same human label (e.g. JR063026) may exist on dark and amber separately.
- * Appends -2, -3… only when the same base already exists for that variant.
+ * Normalize bottling date to Y-m-d (server local calendar). Empty → today.
  */
-function honey_unique_packaging_batch_no(PDO $pdo, string $base, string $variant): string
+function honey_normalize_bottling_date(?string $date = null): string
 {
+    $date = $date !== null ? trim($date) : '';
+    if ($date === '') {
+        return date('Y-m-d');
+    }
+    $ts = strtotime($date);
+    if ($ts === false) {
+        throw new RuntimeException('Invalid bottling date.');
+    }
+
+    return date('Y-m-d', $ts);
+}
+
+/**
+ * Allocate a packaging batch_no unique for (variant, bottling_date).
+ * The same human label may exist on other variants or other bottling dates.
+ * Appends -2, -3… only when the same base already exists for that variant+date.
+ */
+function honey_unique_packaging_batch_no(
+    PDO $pdo,
+    string $base,
+    string $variant,
+    ?string $bottlingDate = null
+): string {
     $variant = honey_normalize_variant($variant);
+    $bottlingDate = honey_normalize_bottling_date($bottlingDate);
     $candidate = $base;
     $n = 2;
     $st = $pdo->prepare(
-        'SELECT 1 FROM honey_packaging_rows WHERE batch_no = ? AND variant = ? LIMIT 1'
+        'SELECT 1 FROM honey_packaging_rows
+         WHERE batch_no = ? AND variant = ? AND bottling_date = ? LIMIT 1'
     );
     while (true) {
-        $st->execute([$candidate, $variant]);
+        $st->execute([$candidate, $variant, $bottlingDate]);
         if ($st->fetchColumn() === false) {
             return $candidate;
         }
@@ -131,6 +154,75 @@ function honey_unique_packaging_batch_no(PDO $pdo, string $base, string $variant
         $candidate = $base . '-' . $n;
         $n++;
     }
+}
+
+/** @return array<string, mixed>|null */
+function honey_fetch_packaging_by_batch_variant_date(
+    PDO $pdo,
+    string $batchNo,
+    string $variant,
+    ?string $bottlingDate = null
+): ?array {
+    $variant = honey_normalize_variant($variant);
+    $bottlingDate = honey_normalize_bottling_date($bottlingDate);
+    $st = $pdo->prepare(
+        'SELECT * FROM honey_packaging_rows
+         WHERE batch_no = ? AND variant = ? AND bottling_date = ? LIMIT 1'
+    );
+    $st->execute([trim($batchNo), $variant, $bottlingDate]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+
+    return $row ?: null;
+}
+
+/**
+ * Find or create a packaging lot for stock-in on a bottling date (default today).
+ * Does not rewrite an existing row's bottling_date.
+ *
+ * @return array<string, mixed>
+ */
+function honey_ensure_packaging_row_for_stock_in(
+    PDO $pdo,
+    int $userId,
+    string $batchNo,
+    string $variant,
+    string $supplierCode,
+    ?string $bottlingDate = null,
+    ?int $productionRowId = null
+): array {
+    $variant = honey_normalize_variant($variant);
+    $bottlingDate = honey_normalize_bottling_date($bottlingDate);
+    $batchNo = trim($batchNo);
+    if ($batchNo === '') {
+        throw new RuntimeException('Batch number is required.');
+    }
+    $existing = honey_fetch_packaging_by_batch_variant_date($pdo, $batchNo, $variant, $bottlingDate);
+    if ($existing !== null) {
+        return $existing;
+    }
+
+    $prodId = ($productionRowId !== null && $productionRowId > 0) ? $productionRowId : null;
+    $ins = $pdo->prepare(
+        'INSERT INTO honey_packaging_rows (
+            production_row_id, supplier_code, batch_no, bottling_date, variant,
+            current_liter, initial_liter, current_250ml, initial_250ml,
+            current_350ml, initial_350ml, current_gallon, initial_gallon, created_by
+         ) VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?)'
+    );
+    $ins->execute([
+        $prodId,
+        $supplierCode,
+        $batchNo,
+        $bottlingDate,
+        $variant,
+        $userId,
+    ]);
+    $pack = honey_fetch_packaging($pdo, (int) $pdo->lastInsertId());
+    if ($pack === null) {
+        throw new RuntimeException('Could not create packaging lot.');
+    }
+
+    return $pack;
 }
 
 function honey_packaging_size_columns(string $size): array
@@ -174,12 +266,38 @@ function honey_fetch_packaging(PDO $pdo, int $id): ?array
     return $row ?: null;
 }
 
-/** @return array<string, mixed>|null */
-function honey_fetch_packaging_by_production(PDO $pdo, int $productionRowId): ?array
-{
-    $st = $pdo->prepare('SELECT * FROM honey_packaging_rows WHERE production_row_id = ? LIMIT 1');
-    $st->execute([$productionRowId]);
-    $row = $st->fetch();
+/**
+ * Packaging row for a production lot on a bottling date (default today).
+ * When $bottlingDate is null, prefers today's row, else the newest dated row.
+ *
+ * @return array<string, mixed>|null
+ */
+function honey_fetch_packaging_by_production(
+    PDO $pdo,
+    int $productionRowId,
+    ?string $bottlingDate = null
+): ?array {
+    if ($bottlingDate !== null && trim($bottlingDate) !== '') {
+        $date = honey_normalize_bottling_date($bottlingDate);
+        $st = $pdo->prepare(
+            'SELECT * FROM honey_packaging_rows
+             WHERE production_row_id = ? AND bottling_date = ? LIMIT 1'
+        );
+        $st->execute([$productionRowId, $date]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    $today = date('Y-m-d');
+    $st = $pdo->prepare(
+        'SELECT * FROM honey_packaging_rows
+         WHERE production_row_id = ?
+         ORDER BY (bottling_date = ?) DESC, bottling_date DESC, id DESC
+         LIMIT 1'
+    );
+    $st->execute([$productionRowId, $today]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
 
     return $row ?: null;
 }
@@ -412,15 +530,22 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
     $ml350 = $sizeQtys['350ml'];
     $gallon = $sizeQtys['gallon'];
 
-    $existing = honey_fetch_packaging_by_production($pdo, $productionRowId);
+    $existing = honey_fetch_packaging_by_production($pdo, $productionRowId, date('Y-m-d'));
     $isNew = $existing === null;
     if ($isNew) {
         $bottlingDate = date('Y-m-d');
-        $batchNo = honey_unique_packaging_batch_no(
-            $pdo,
-            honey_batch_no((string) $pr['supplier_code'], $bottlingDate),
-            (string) $pr['variant']
-        );
+        $prior = honey_fetch_packaging_by_production($pdo, $productionRowId);
+        if ($prior !== null) {
+            // Same production lot bottled on a later day keeps the same batch label.
+            $batchNo = (string) $prior['batch_no'];
+        } else {
+            $batchNo = honey_unique_packaging_batch_no(
+                $pdo,
+                honey_batch_no((string) $pr['supplier_code'], $bottlingDate),
+                (string) $pr['variant'],
+                $bottlingDate
+            );
+        }
     } else {
         $bottlingDate = (string) $existing['bottling_date'];
         $batchNo = (string) $existing['batch_no'];
@@ -482,7 +607,9 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
 }
 
 /**
- * Ensure packaging row exists for a production lot (create if missing).
+ * Ensure packaging row exists for a production lot on today's bottling date.
+ * A gallon lot bottled across multiple calendar days gets one row per day
+ * (same batch_no / production_row_id, different bottling_date).
  *
  * @return array{packaging_row_id:int, batch_no:string, bottling_date:string, is_new:bool, production:array<string,mixed>}
  */
@@ -492,7 +619,8 @@ function honey_production_ensure_packaging_row(PDO $pdo, int $userId, int $produ
     if (!$pr) {
         throw new RuntimeException('Production row not found.');
     }
-    $existing = honey_fetch_packaging_by_production($pdo, $productionRowId);
+    $bottlingDate = date('Y-m-d');
+    $existing = honey_fetch_packaging_by_production($pdo, $productionRowId, $bottlingDate);
     if ($existing !== null) {
         return [
             'packaging_row_id' => (int) $existing['id'],
@@ -503,12 +631,17 @@ function honey_production_ensure_packaging_row(PDO $pdo, int $userId, int $produ
         ];
     }
 
-    $bottlingDate = date('Y-m-d');
-    $batchNo = honey_unique_packaging_batch_no(
-        $pdo,
-        honey_batch_no((string) $pr['supplier_code'], $bottlingDate),
-        (string) $pr['variant']
-    );
+    $prior = honey_fetch_packaging_by_production($pdo, $productionRowId);
+    if ($prior !== null) {
+        $batchNo = (string) $prior['batch_no'];
+    } else {
+        $batchNo = honey_unique_packaging_batch_no(
+            $pdo,
+            honey_batch_no((string) $pr['supplier_code'], $bottlingDate),
+            (string) $pr['variant'],
+            $bottlingDate
+        );
+    }
     $ins = $pdo->prepare(
         'INSERT INTO honey_packaging_rows (
             production_row_id, supplier_code, batch_no, bottling_date, variant,
@@ -1779,7 +1912,8 @@ function honey_executive_seed_packaging_row(
     $batchNo = honey_unique_packaging_batch_no(
         $pdo,
         honey_batch_no((string) $pr['supplier_code'], $bottlingDate),
-        (string) $pr['variant']
+        (string) $pr['variant'],
+        $bottlingDate
     );
     $ins = $pdo->prepare(
         'INSERT INTO honey_packaging_rows (

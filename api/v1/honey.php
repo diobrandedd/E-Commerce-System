@@ -479,13 +479,20 @@ function api_honey_packaging_list(): void
     api_method_allowed(['GET']);
     api_honey_require_view();
     $pdo = ims_pdo();
-    $st = $pdo->query(
-        'SELECT id, production_row_id, supplier_code, batch_no, bottling_date, variant,
+    $bottlingDate = trim((string) ($_GET['bottling_date'] ?? ''));
+    $sql = 'SELECT id, production_row_id, supplier_code, batch_no, bottling_date, variant,
                 current_liter, initial_liter, current_250ml, initial_250ml,
                 current_350ml, initial_350ml, current_gallon, initial_gallon, created_at
-         FROM honey_packaging_rows ORDER BY bottling_date DESC, id DESC'
-    );
-    api_ok(['rows' => $st ? $st->fetchAll() : []]);
+         FROM honey_packaging_rows';
+    $params = [];
+    if ($bottlingDate !== '' && strtolower($bottlingDate) !== 'all') {
+        $sql .= ' WHERE bottling_date = ?';
+        $params[] = honey_normalize_bottling_date($bottlingDate);
+    }
+    $sql .= ' ORDER BY bottling_date DESC, id DESC';
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+    api_ok(['rows' => $st->fetchAll() ?: []]);
 }
 
 function api_honey_packaging_total_inventory(): void

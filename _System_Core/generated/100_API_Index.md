@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-09T10:16:57+02:00
+generated: 2026-09-10T05:04:17+02:00
 type: memory-bank
 ---
 
@@ -82,13 +82,14 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `print_sheet` | `api_bottle_print_sheet()` | `honey_bottle_label_sheet_html()`, `ims_pdo()` |
 | `void` | `api_bottle_void()` | `honey_bottle_void_code()`, `ims_pdo()` |
 | `lookup` | `api_bottle_lookup()` | `honey_bottle_lookup()`, `ims_pdo()` |
-| `scan_stock_in` | `api_bottle_scan_stock_in()` | `ims_pdo()`, `sku_barcode_fetch_by_code()`, `honey_production_bottle_stock_in()`, `honey_bottle_size_label()`, `honey_bottle_request_get()`, `honey_bottle_create_custom_packaging()`, `sku_barcode_honey_stock_in()`, `honey_bottle_lookup()`, … |
+| `scan_stock_in` | `api_bottle_scan_stock_in()` | `ims_pdo()`, `sku_barcode_fetch_by_code()`, `honey_production_bottle_stock_in()`, `honey_bottle_size_label()`, `honey_bottle_request_get()`, `honey_bottle_create_custom_packaging()`, `sku_barcode_honey_stock_in()`, `honey_bottle_scan_stock_in()`, … |
 | `pack_start` | `api_bottle_pack_start()` | `honey_bottle_pack_session_start()`, `ims_pdo()` |
 | `pack_get` | `api_bottle_pack_get()` | `honey_bottle_pack_session_get()`, `ims_pdo()` |
 | `pack_session_list` | `api_bottle_pack_session_list()` | `honey_bottle_pack_session_list()`, `ims_pdo()` |
 | `pack_today_stats` | `api_bottle_pack_today_stats()` | `honey_bottle_pack_session_today_stats()`, `ims_pdo()` |
 | `pack_scan` | `api_bottle_pack_scan()` | `honey_bottle_pack_session_scan()`, `ims_pdo()` |
 | `pack_remove_item` | `api_bottle_pack_remove_item()` | `honey_bottle_pack_session_remove_item()`, `ims_pdo()` |
+| `pack_set_item_qty` | `api_bottle_pack_set_item_qty()` | `honey_bottle_pack_session_set_item_qty()`, `ims_pdo()` |
 | `pack_confirm` | `api_bottle_pack_confirm()` | `honey_bottle_pack_session_confirm()`, `ims_pdo()` |
 | `pack_discard` | `api_bottle_pack_discard()` | `honey_bottle_pack_session_discard()`, `ims_pdo()` |
 | `pos_lookup` | `api_bottle_pos_lookup()` | `honey_bottle_pos_lookup()`, `ims_pdo()` |
@@ -289,7 +290,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `warehouse_barcode_stock_out` | `api_honey_warehouse_barcode_stock_out()` | `honey_warehouse_barcode_stock_out()`, `ims_pdo()` |
 | `production_list` | `api_honey_production_list()` | `ims_pdo()` |
 | `production_stock_out` | `api_honey_production_stock_out()` | `honey_parse_bottle_lines_from_input()`, `honey_production_stock_out()`, `ims_pdo()` |
-| `packaging_list` | `api_honey_packaging_list()` | `ims_pdo()` |
+| `packaging_list` | `api_honey_packaging_list()` | `ims_pdo()`, `honey_normalize_bottling_date()` |
 | `packaging_total_inventory` | `api_honey_packaging_total_inventory()` | `honey_packaging_total_inventory_snapshot()`, `ims_pdo()` |
 | `packaging_stock_out` | `api_honey_packaging_stock_out()` | `honey_packaging_stock_out_sold()`, `ims_pdo()` |
 | `traceability` | `api_honey_traceability()` | `honey_traceability()`, `ims_pdo()` |

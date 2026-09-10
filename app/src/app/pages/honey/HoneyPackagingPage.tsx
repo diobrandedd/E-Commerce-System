@@ -68,6 +68,31 @@ function scanDateLabel(date: string): string {
   });
 }
 
+function filterAxisLabel(kind: "scan" | "bottling", value: string): string {
+  if (value === "all") {
+    return kind === "scan" ? "All scan dates" : "All bottling dates";
+  }
+  if (value === localToday()) {
+    return kind === "scan" ? `Stock-in · Today (${scanDateLabel(value)})` : `Lot · Today (${scanDateLabel(value)})`;
+  }
+  return kind === "scan" ? `Stock-in · ${scanDateLabel(value)}` : `Lot · ${scanDateLabel(value)}`;
+}
+
+function emptyFilterMessage(scanDate: string, bottlingDate: string): string {
+  const scanPart =
+    scanDate === "all" ? "any scan date" : scanDate === localToday() ? "today’s stock-in" : `stock-in on ${scanDateLabel(scanDate)}`;
+  const bottlePart =
+    bottlingDate === "all"
+      ? "any bottling date"
+      : bottlingDate === localToday()
+        ? "today’s bottling lots"
+        : `lots bottled ${scanDateLabel(bottlingDate)}`;
+  if (scanDate === "all" && bottlingDate === "all") {
+    return "No bottles scanned into inventory yet.";
+  }
+  return `No bottles match ${scanPart} and ${bottlePart}. Try clearing one filter.`;
+}
+
 function grossQty(value: string | number): string {
   const qty = Number(value);
   return Number.isFinite(qty) ? qty.toLocaleString() : String(value);
@@ -83,6 +108,8 @@ export function HoneyPackagingPage() {
   const [rows, setRows] = useState<PkRow[]>([]);
   const [scanDate, setScanDate] = useState(localToday);
   const [scanDates, setScanDates] = useState<string[]>([]);
+  const [bottlingDate, setBottlingDate] = useState("all");
+  const [bottlingDates, setBottlingDates] = useState<string[]>([]);
   const [variantTotals, setVariantTotals] = useState<
     { variant: string; total: number; liter: number; "250ml": number; "350ml": number; gallon: number }[]
   >([]);
@@ -120,9 +147,10 @@ export function HoneyPackagingPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await bottleBarcodesApi.packagingScanReport(scanDate);
+      const data = await bottleBarcodesApi.packagingScanReport(scanDate, bottlingDate);
       setRows(data.rows);
       setScanDates(data.dates);
+      setBottlingDates(data.bottling_dates ?? []);
       setVariantTotals(data.totals?.by_variant ?? []);
       setScannedGrandTotal(data.totals?.total ?? 0);
       setByScanner(data.by_scanner ?? []);
@@ -134,7 +162,7 @@ export function HoneyPackagingPage() {
     } finally {
       setLoading(false);
     }
-  }, [refreshPendingComb, scanDate]);
+  }, [bottlingDate, refreshPendingComb, scanDate]);
 
   useEffect(() => {
     void refresh();
@@ -147,6 +175,14 @@ export function HoneyPackagingPage() {
   const start = (safePage - 1) * perPage;
   const pagedRows = rows.slice(start, start + perPage);
   const colCount = 9;
+  const filtersNarrowed = scanDate !== "all" || bottlingDate !== "all";
+  const showTotalsBand = filtersNarrowed && !loading;
+  const totalsBandTitle = [
+    scanDate !== "all" ? filterAxisLabel("scan", scanDate) : null,
+    bottlingDate !== "all" ? filterAxisLabel("bottling", bottlingDate) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <PageLayout
@@ -205,37 +241,112 @@ export function HoneyPackagingPage() {
         </div>
       )}
 
-      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold mb-1">Scanned into inventory</h2>
           <p className="text-xs text-muted-foreground">
             Gross bottle scans only — packing, sales, defects, and other deductions do not reduce these totals.
             Use Details to review the stickers scanned into each batch.
+            Scan date is when stock-in happened; bottling date is the lot date on the packaging row.
           </p>
         </div>
-        <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold shrink-0">
-          Scan date
-          <select
-            value={scanDate}
-            onChange={e => setScanDate(e.target.value)}
-            className="mt-1 block min-h-11 min-w-[10.5rem] rounded-lg border border-border bg-card px-2.5 py-2 text-sm normal-case"
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <label
+            htmlFor="packaging-scan-date-filter"
+            className="text-xs uppercase tracking-wide text-muted-foreground font-semibold shrink-0"
           >
-            <option value={localToday()}>Today · {scanDateLabel(localToday())}</option>
-            {scanDates
-              .filter(date => date !== localToday())
-              .map(date => (
-                <option key={date} value={date}>
-                  {scanDateLabel(date)}
-                </option>
-              ))}
-            <option value="all">All dates</option>
-          </select>
-        </label>
+            Scan date (stock-in)
+            <select
+              id="packaging-scan-date-filter"
+              name="packaging_scan_date"
+              value={scanDate}
+              onChange={e => setScanDate(e.target.value)}
+              className="mt-1 block min-h-11 min-w-[10.5rem] rounded-lg border border-border bg-card px-2.5 py-2 text-sm normal-case"
+              data-testid="packaging-scan-date-filter"
+            >
+              <option value={localToday()}>Today (stock-in) · {scanDateLabel(localToday())}</option>
+              {scanDates
+                .filter(date => date !== localToday())
+                .map(date => (
+                  <option key={date} value={date}>
+                    {scanDateLabel(date)}
+                  </option>
+                ))}
+              <option value="all">All scan dates</option>
+            </select>
+          </label>
+          <label
+            htmlFor="packaging-bottling-date-filter"
+            className="text-xs uppercase tracking-wide text-muted-foreground font-semibold shrink-0"
+          >
+            Bottling date (lot)
+            <select
+              id="packaging-bottling-date-filter"
+              name="packaging_bottling_date"
+              value={bottlingDate}
+              onChange={e => setBottlingDate(e.target.value)}
+              className="mt-1 block min-h-11 min-w-[10.5rem] rounded-lg border border-border bg-card px-2.5 py-2 text-sm normal-case"
+              data-testid="packaging-bottling-date-filter"
+            >
+              <option value="all">All bottling dates</option>
+              <option value={localToday()}>Today (lot) · {scanDateLabel(localToday())}</option>
+              {bottlingDates
+                .filter(date => date !== localToday())
+                .map(date => (
+                  <option key={date} value={date}>
+                    {scanDateLabel(date)}
+                  </option>
+                ))}
+            </select>
+          </label>
+        </div>
       </div>
-      {scanDate !== "all" && !loading && (
-        <div className="mb-3 rounded-xl border border-border bg-card px-4 py-3">
+      {filtersNarrowed && (
+        <div
+          className="mb-3 flex flex-wrap items-center gap-2"
+          data-testid="packaging-active-filters"
+          aria-live="polite"
+        >
+          <span className="text-xs text-muted-foreground">Showing</span>
+          {scanDate !== "all" && (
+            <AppPressable
+              type="button"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium"
+              onClick={() => setScanDate("all")}
+            >
+              {filterAxisLabel("scan", scanDate)}
+              <span className="text-muted-foreground">×</span>
+            </AppPressable>
+          )}
+          {bottlingDate !== "all" && (
+            <AppPressable
+              type="button"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium"
+              onClick={() => setBottlingDate("all")}
+            >
+              {filterAxisLabel("bottling", bottlingDate)}
+              <span className="text-muted-foreground">×</span>
+            </AppPressable>
+          )}
+          {(scanDate !== "all" || bottlingDate !== "all") && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-9 px-2 text-xs"
+              onClick={() => {
+                setScanDate("all");
+                setBottlingDate("all");
+              }}
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
+      )}
+      {showTotalsBand && (
+        <div className="mb-3 rounded-xl border border-border bg-card px-4 py-3" aria-live="polite">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
-            Total scanned · {scanDate === localToday() ? "Today" : scanDateLabel(scanDate)}
+            Total scanned · {totalsBandTitle}
           </p>
           {variantTotals.length === 0 ? (
             <p className="text-sm text-muted-foreground mt-1">0 bottles</p>
@@ -263,7 +374,7 @@ export function HoneyPackagingPage() {
       {!loading && byScanner.length > 0 && (
         <div className="mb-3 rounded-xl border border-border bg-secondary/20 px-4 py-3">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
-            By person · all accounts
+            By person · current filters
           </p>
           <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {byScanner.map(row => (
@@ -280,15 +391,19 @@ export function HoneyPackagingPage() {
           </ul>
         </div>
       )}
-      <div className="sm:hidden space-y-3" data-testid="honey-packaging-mobile-cards">
+      <div
+        className="sm:hidden space-y-3"
+        data-testid="honey-packaging-mobile-cards"
+        aria-busy={loading || undefined}
+      >
         {loading ? (
           <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
-            <Loader2 className="mr-2 inline animate-spin" size={18} />
+            <Loader2 className="mr-2 inline animate-spin" size={18} aria-hidden />
             Loading scanned batches…
           </div>
         ) : pagedRows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
-            No bottles scanned into inventory {scanDate === "all" ? "yet." : `on ${scanDate}.`}
+            {emptyFilterMessage(scanDate, bottlingDate)}
           </div>
         ) : (
           pagedRows.map(r => (
@@ -297,7 +412,9 @@ export function HoneyPackagingPage() {
                 <div className="min-w-0">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Batch</p>
                   <p className="font-semibold">{r.batch_no}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{r.bottling_date} · <span className="capitalize">{r.variant}</span></p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Bottled {scanDateLabel(r.bottling_date)} · <span className="capitalize">{r.variant}</span>
+                  </p>
                 </div>
                 {showSupplierProfile ? (
                   <SupplierCodeButton code={r.supplier_code} className="min-h-11 text-xs" />
@@ -329,27 +446,33 @@ export function HoneyPackagingPage() {
           ))
         )}
       </div>
-      <div className="hidden sm:block bg-card rounded-xl border overflow-x-auto" data-testid="honey-packaging-desktop-table">
+      <div
+        className="hidden sm:block bg-card rounded-xl border overflow-x-auto"
+        data-testid="honey-packaging-desktop-table"
+        aria-busy={loading || undefined}
+      >
         <table className="w-full text-sm min-w-[36rem]">
+          <caption className="sr-only">Honey bottles scanned into packaging inventory</caption>
           <thead>
             <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
-              <th className="px-3 py-2 text-left">Supplier</th>
-              <th className="px-3 py-2 text-left">Batch</th>
-              <th className="px-3 py-2 text-left">Date</th>
-              <th className="px-3 py-2 text-left">Variant</th>
+              <th scope="col" className="px-3 py-2 text-left">Supplier</th>
+              <th scope="col" className="px-3 py-2 text-left">Batch</th>
+              <th scope="col" className="px-3 py-2 text-left">Bottling date</th>
+              <th scope="col" className="px-3 py-2 text-left">Variant</th>
               {HONEY_SIZES.map(s => (
-                <th key={s} className="px-3 py-2 text-left whitespace-nowrap">
+                <th scope="col" key={s} className="px-3 py-2 text-left whitespace-nowrap">
                   {s}
                 </th>
               ))}
-              <th className="px-3 py-2">Actions</th>
+              <th scope="col" className="px-3 py-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={colCount} className="py-8 text-center">
-                  <Loader2 className="inline animate-spin" size={14} />
+                <td colSpan={colCount} className="py-8 text-center text-sm text-muted-foreground">
+                  <Loader2 className="mr-2 inline animate-spin" size={14} aria-hidden />
+                  Loading scanned batches…
                 </td>
               </tr>
             )}
@@ -363,7 +486,7 @@ export function HoneyPackagingPage() {
                   )}
                 </td>
                 <td className="px-3 py-2 font-medium whitespace-nowrap">{r.batch_no}</td>
-                <td className="px-3 py-2 whitespace-nowrap">{r.bottling_date}</td>
+                <td className="px-3 py-2 whitespace-nowrap">{scanDateLabel(r.bottling_date)}</td>
                 <td className="px-3 py-2 capitalize">{r.variant}</td>
                 <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_liter)}</td>
                 <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_250ml)}</td>
@@ -384,7 +507,7 @@ export function HoneyPackagingPage() {
             {!loading && pagedRows.length === 0 && (
               <tr>
                 <td colSpan={colCount} className="py-10 text-center text-sm text-muted-foreground">
-                  No bottles scanned into inventory {scanDate === "all" ? "yet." : `on ${scanDate}.`}
+                  {emptyFilterMessage(scanDate, bottlingDate)}
                 </td>
               </tr>
             )}

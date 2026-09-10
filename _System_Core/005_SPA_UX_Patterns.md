@@ -741,6 +741,7 @@ Split material tables:
 - **Stage handoff** — tab clicks use a shared active-pill View Transition plus a short directional content handoff; unsupported browsers use the motion fallback, and `prefers-reduced-motion` navigates immediately.
 - **Phone inventory lists** — `sm:hidden` stacked cards with one clear action; preserve dense tables at `sm+`. Never require horizontal page scrolling at 360 px.
 - **Touch targets** — stage tabs, pagination, and primary phone actions are at least 44 px high.
+- **Packaging filters** — **Scan date (stock-in)** filters by `scanned_at`; **Bottling date (lot)** filters by `honey_packaging_rows.bottling_date`. Lots are unique by `(batch_no, variant, bottling_date)` — show batch · variant · bottling date in pickers.
 - Sidebar: **Raw Materials → Raw Honey** expands to Warehouse / Production / Packaging.
 - **Products → Honey** (`/inventory/products/honey`) — finished bottled inventory dashboard (`HoneyBottledInventoryPanel`); batch row ops stay on Raw Materials → Packaging.
 

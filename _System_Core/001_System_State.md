@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-09-09_raw-materials-ui-fix]] |
-| **Active Plan** | [[plans/archive/2026-09-09_raw-materials-ui-fix_plan]] |
-| **Status** | `shipped` - raw materials mobile/accessibility fix |
+| **Active Spec** | [[specs/2026-09-10_packaging-bottling-date-unique]] |
+| **Active Plan** | [[plans/archive/2026-09-10_packaging-bottling-date-unique_plan]] |
+| **Status** | `shipped` — packaging lots unique by bottling date (phase77) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending
