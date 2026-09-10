@@ -222,8 +222,9 @@ function dept_raw_material_snapshot(PDO $pdo, string $slug): ?array
     }
     $finished = dept_inventory_fetch_row($pdo, $productKey);
     $stockName = dept_pricing_leaf_stock_name($productKey);
-
-    return [
+    $bagsOnHand = dept_raw_bags_on_hand($pdo, $productKey);
+    $bagsGross = dept_raw_bags_received_gross($pdo, $productKey);
+    $out = [
         'slug' => trim($slug),
         'product_key' => $productKey,
         'title' => match ($productKey) {
@@ -237,11 +238,32 @@ function dept_raw_material_snapshot(PDO $pdo, string $slug): ?array
         'unit' => (string) $def['stock_in_unit'],
         'inventory_unit' => (string) $def['inventory_unit'],
         'sell_units_per_bag' => dept_product_sell_units_per_bag($productKey),
-        'bags_on_hand' => dept_raw_bags_on_hand($pdo, $productKey),
+        'bags_on_hand' => $bagsOnHand,
         'finished_on_hand' => $finished !== null ? round((float) $finished['current_qty'], 2) : 0.0,
         'finished_label' => (string) $def['label'],
         'entries' => dept_raw_recent_entries($pdo, $productKey, 25),
     ];
+    if ($productKey === 'pt') {
+        require_once __DIR__ . '/dept_pt_settings.php';
+        $bom = dept_pt_bom_snapshot($pdo);
+        $gramsRemaining = round($bagsOnHand * (float) PT_GRAMS_PER_BAG, 2);
+        $gramsCapacity = round($bagsGross * (float) PT_GRAMS_PER_BAG, 2);
+        $out['sell_units_per_bag'] = $bom['pouches_per_bag'];
+        $out['bag_pool'] = [
+            'bags_on_hand' => $bagsOnHand,
+            'bags_received_gross' => $bagsGross,
+            'grams_remaining' => $gramsRemaining,
+            'grams_capacity' => $gramsCapacity,
+            'grams_per_bag' => $bom['grams_per_bag'],
+            'grams_per_pouch' => $bom['grams_per_pouch'],
+            'grams_per_tea_bag' => $bom['grams_per_tea_bag'],
+            'tea_bags_per_pouch' => $bom['tea_bags_per_pouch'],
+            'pouches_per_bag' => $bom['pouches_per_bag'],
+            'overdrawn' => $bagsOnHand < -0.0001,
+        ];
+    }
+
+    return $out;
 }
 
 /**
@@ -359,6 +381,117 @@ function dept_raw_deduct_bags_fifo(
     }
 
     return $allocations;
+}
+
+/**
+ * Deduct raw bags FIFO; if short, post the remainder as an overdraft (negative pool allowed).
+ *
+ * @return array{
+ *   allocations: list<array{stock_id: int, qty: float}>,
+ *   bags_deducted: float,
+ *   bags_on_hand: float,
+ *   warned: bool,
+ *   shortfall_bags: float
+ * }
+ */
+function dept_raw_deduct_bags_allow_negative(
+    PDO $pdo,
+    int $userId,
+    string $productKey,
+    float $qtyBags,
+    string $entryLabel
+): array {
+    if ($qtyBags <= 0) {
+        throw new RuntimeException('Quantity must be > 0.');
+    }
+    $stockName = dept_pricing_leaf_stock_name($productKey);
+    $def = dept_product_by_key($productKey);
+    if ($stockName === null || $def === null) {
+        throw new RuntimeException('Unknown product.');
+    }
+    $deptId = dept_product_dept_id($pdo, (string) $def['dept']);
+    $before = dept_raw_bags_on_hand($pdo, $productKey);
+    $warned = $before + 1e-9 < $qtyBags;
+    $shortfall = $warned ? round(max(0, $qtyBags - max(0, $before)), 6) : 0.0;
+
+    $st = $pdo->prepare(
+        'SELECT s.id,
+                (SELECT COALESCE(SUM(se.qty), 0) FROM stock_entries se WHERE se.stock_id = s.id) AS balance,
+                (SELECT MIN(se.batching_date) FROM stock_entries se WHERE se.stock_id = s.id AND se.qty > 0) AS first_in
+         FROM stocks s
+         WHERE s.dept_id = ? AND s.name = ?
+         ORDER BY first_in IS NULL ASC, first_in ASC, s.id ASC'
+    );
+    $st->execute([$deptId, $stockName]);
+    $stocks = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    if ($stocks === []) {
+        throw new RuntimeException(
+            'No raw leaf stock row exists yet. Stock in raw bags before scanning pouches.'
+        );
+    }
+
+    $remaining = $qtyBags;
+    $allocations = [];
+    $insEntry = $pdo->prepare(
+        'INSERT INTO stock_entries (stock_id, dept_id, qty, batching_date, supplier_batch_no, entered_by)
+         VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    $batching = date('Y-m-d H:i:s');
+    $label = substr(trim($entryLabel), 0, 120);
+    $label = $label !== '' ? $label : 'pouch_scan';
+
+    foreach ($stocks as $stock) {
+        if ($remaining <= 0.0001) {
+            break;
+        }
+        $balance = round((float) $stock['balance'], 6);
+        if ($balance <= 0.0001) {
+            continue;
+        }
+        $take = min($remaining, $balance);
+        $stockId = (int) $stock['id'];
+        $insEntry->execute([$stockId, $deptId, -$take, $batching, $label, $userId]);
+        $allocations[] = ['stock_id' => $stockId, 'qty' => $take];
+        $remaining = round($remaining - $take, 6);
+    }
+
+    if ($remaining > 0.0001) {
+        // Overdraft on the newest leaf stock (or first available).
+        $overdraftStockId = (int) $stocks[count($stocks) - 1]['id'];
+        $insEntry->execute([$overdraftStockId, $deptId, -$remaining, $batching, $label . ':overdraft', $userId]);
+        $allocations[] = ['stock_id' => $overdraftStockId, 'qty' => $remaining];
+        $remaining = 0.0;
+    }
+
+    return [
+        'allocations' => $allocations,
+        'bags_deducted' => $qtyBags,
+        'bags_on_hand' => dept_raw_bags_on_hand($pdo, $productKey),
+        'warned' => $warned,
+        'shortfall_bags' => $shortfall,
+    ];
+}
+
+/**
+ * Gross positive bag receipts (capacity) for progress UI.
+ */
+function dept_raw_bags_received_gross(PDO $pdo, string $productKey): float
+{
+    $stockName = dept_pricing_leaf_stock_name($productKey);
+    $def = dept_product_by_key($productKey);
+    if ($stockName === null || $def === null) {
+        return 0.0;
+    }
+    $deptId = dept_product_dept_id($pdo, (string) $def['dept']);
+    $st = $pdo->prepare(
+        'SELECT COALESCE(SUM(se.qty), 0)
+         FROM stock_entries se
+         INNER JOIN stocks s ON s.id = se.stock_id
+         WHERE s.dept_id = ? AND s.name = ? AND se.qty > 0'
+    );
+    $st->execute([$deptId, $stockName]);
+
+    return round((float) $st->fetchColumn(), 4);
 }
 
 /** @return array<string, mixed> */

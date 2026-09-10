@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, ShoppingCart, Tag, Droplets } from "lucide-react";
+import { Loader2, ShoppingCart, Tag, Droplets, Leaf } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import {
@@ -68,6 +68,16 @@ export function SettingsPage() {
   const [mlOk, setMlOk] = useState<string | null>(null);
   const [mlErr, setMlErr] = useState<string | null>(null);
 
+  const [ptGramsTea, setPtGramsTea] = useState("2");
+  const [ptBagsPouch, setPtBagsPouch] = useState("24");
+  const [ptDefaultGrams, setPtDefaultGrams] = useState(2);
+  const [ptDefaultBags, setPtDefaultBags] = useState(24);
+  const [ptGramsPouch, setPtGramsPouch] = useState(48);
+  const [ptLoading, setPtLoading] = useState(true);
+  const [ptSaving, setPtSaving] = useState(false);
+  const [ptOk, setPtOk] = useState<string | null>(null);
+  const [ptErr, setPtErr] = useState<string | null>(null);
+
   const loadPins = useCallback(async () => {
     setPinsLoading(true);
     try {
@@ -124,11 +134,35 @@ export function SettingsPage() {
     }
   }, []);
 
+  const loadPtBom = useCallback(async () => {
+    setPtLoading(true);
+    setPtErr(null);
+    try {
+      const data = await apiGet<{
+        grams_per_tea_bag: number;
+        tea_bags_per_pouch: number;
+        grams_per_pouch: number;
+        default_grams_per_tea_bag: number;
+        default_tea_bags_per_pouch: number;
+      }>("settings.php", "pt_bom_get");
+      setPtGramsTea(String(data.grams_per_tea_bag));
+      setPtBagsPouch(String(data.tea_bags_per_pouch));
+      setPtGramsPouch(data.grams_per_pouch);
+      setPtDefaultGrams(data.default_grams_per_tea_bag);
+      setPtDefaultBags(data.default_tea_bags_per_pouch);
+    } catch (e) {
+      setPtErr(e instanceof ApiError ? e.message : "Could not load Paragis BOM settings.");
+    } finally {
+      setPtLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadPins();
     void loadSkuRows();
     void loadHoneyVolume();
-  }, [loadPins, loadSkuRows, loadHoneyVolume]);
+    void loadPtBom();
+  }, [loadPins, loadSkuRows, loadHoneyVolume, loadPtBom]);
 
   const saveHoneyVolume = async () => {
     setMlSaving(true);
@@ -145,6 +179,30 @@ export function SettingsPage() {
       setMlErr(e instanceof ApiError ? e.message : "Could not save honey volume.");
     } finally {
       setMlSaving(false);
+    }
+  };
+
+  const savePtBom = async () => {
+    setPtSaving(true);
+    setPtOk(null);
+    setPtErr(null);
+    try {
+      const res = await apiPost<{
+        grams_per_tea_bag: number;
+        tea_bags_per_pouch: number;
+        grams_per_pouch: number;
+      }>("settings.php", "pt_bom_save", {
+        grams_per_tea_bag: Number(ptGramsTea),
+        tea_bags_per_pouch: Number(ptBagsPouch),
+      });
+      setPtGramsTea(String(res.grams_per_tea_bag));
+      setPtBagsPouch(String(res.tea_bags_per_pouch));
+      setPtGramsPouch(res.grams_per_pouch);
+      setPtOk(`Saved Paragis BOM (${res.grams_per_pouch} g per pouch).`);
+    } catch (e) {
+      setPtErr(e instanceof ApiError ? e.message : "Could not save Paragis BOM.");
+    } finally {
+      setPtSaving(false);
     }
   };
 
@@ -252,6 +310,8 @@ export function SettingsPage() {
         {skuErr && <AppErrorBanner message={skuErr} />}
         {mlOk && <AppSuccessNotice message={mlOk} />}
         {mlErr && <AppErrorBanner message={mlErr} />}
+        {ptOk && <AppSuccessNotice message={ptOk} />}
+        {ptErr && <AppErrorBanner message={ptErr} />}
 
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
           <div className="px-6 py-4 border-b border-border flex items-center gap-2">
@@ -295,6 +355,91 @@ export function SettingsPage() {
                 variant="outline"
                 disabled={mlSaving}
                 onClick={() => setMlPerGallon(String(mlDefault))}
+              >
+                Reset to default
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <Leaf size={18} className="text-[#C8900A]" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Paragis pouch BOM</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Leaf grams per tea bag and tea bags per sellable pouch. Scan deducts grams_per_tea_bag × tea_bags_per_pouch
+                from the bag pool (1 kg bags). Defaults {ptDefaultGrams} g × {ptDefaultBags} = {ptDefaultGrams * ptDefaultBags} g.
+              </p>
+            </div>
+          </div>
+          {ptLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="px-6 py-5 flex flex-wrap items-end gap-3">
+              <div className="w-40">
+                <label htmlFor="pt-grams-tea" className="text-xs text-muted-foreground">
+                  g per tea bag
+                </label>
+                <input
+                  id="pt-grams-tea"
+                  type="number"
+                  min={0.1}
+                  max={50}
+                  step="any"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={ptGramsTea}
+                  onChange={e => {
+                    setPtGramsTea(e.target.value);
+                    const g = Number(e.target.value);
+                    const n = Number(ptBagsPouch);
+                    if (Number.isFinite(g) && Number.isFinite(n)) setPtGramsPouch(g * n);
+                  }}
+                />
+              </div>
+              <div className="w-40">
+                <label htmlFor="pt-bags-pouch" className="text-xs text-muted-foreground">
+                  tea bags per pouch
+                </label>
+                <input
+                  id="pt-bags-pouch"
+                  type="number"
+                  min={1}
+                  max={500}
+                  step="1"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={ptBagsPouch}
+                  onChange={e => {
+                    setPtBagsPouch(e.target.value);
+                    const n = Number(e.target.value);
+                    const g = Number(ptGramsTea);
+                    if (Number.isFinite(g) && Number.isFinite(n)) setPtGramsPouch(g * n);
+                  }}
+                />
+              </div>
+              <div className="min-w-[8rem]">
+                <p className="text-xs text-muted-foreground">g per pouch</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums">{ptGramsPouch}</p>
+              </div>
+              <Button
+                type="button"
+                disabled={ptSaving}
+                onClick={() => void savePtBom()}
+                className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+              >
+                {ptSaving ? <Loader2 className="animate-spin" size={14} /> : "Save"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={ptSaving}
+                onClick={() => {
+                  setPtGramsTea(String(ptDefaultGrams));
+                  setPtBagsPouch(String(ptDefaultBags));
+                  setPtGramsPouch(ptDefaultGrams * ptDefaultBags);
+                }}
               >
                 Reset to default
               </Button>

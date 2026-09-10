@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-09-10T05:23:52+02:00
+generated: 2026-09-10T07:10:10+02:00
 type: module
 function_count: 13
 ---
@@ -36,9 +36,9 @@ function_count: 13
 - `includes/delivery_edit_requests.php`:264 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
 - `includes/delivery_edit_requests.php`:363 — `if (rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')) {`
 - `includes/delivery_edit_requests.php`:418 — `$hasLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
-- `includes/dept_pouch_barcodes.php`:1124 — `$hasPool = rts_db_has_column($pdo, 'dept_pouch_units', 'pool');`
-- `includes/dept_pouch_barcodes.php`:1178 — `$hasPool = rts_db_has_column($pdo, 'dept_pouch_units', 'pool');`
-- `includes/dept_pouch_barcodes.php`:1244 — `if (!rts_db_has_column($pdo, 'dept_pouch_units', 'pool')) {`
+- `includes/dept_pouch_barcodes.php`:1154 — `$hasPool = rts_db_has_column($pdo, 'dept_pouch_units', 'pool');`
+- `includes/dept_pouch_barcodes.php`:1208 — `$hasPool = rts_db_has_column($pdo, 'dept_pouch_units', 'pool');`
+- `includes/dept_pouch_barcodes.php`:1274 — `if (!rts_db_has_column($pdo, 'dept_pouch_units', 'pool')) {`
 - `includes/fulfillment_packing.php`:242 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
 - `includes/fulfillment_packing.php`:552 — `if (rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {`
 - `includes/fulfillment_packing.php`:581 — `if (rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'source_stock_id')) {`

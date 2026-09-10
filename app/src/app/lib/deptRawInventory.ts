@@ -33,6 +33,19 @@ export interface DeptProductionPreviewLine {
   pool_yield_unit?: string | null;
 }
 
+export interface DeptBagPool {
+  bags_on_hand: number;
+  bags_received_gross: number;
+  grams_remaining: number;
+  grams_capacity: number;
+  grams_per_bag: number;
+  grams_per_pouch: number;
+  grams_per_tea_bag: number;
+  tea_bags_per_pouch: number;
+  pouches_per_bag: number;
+  overdrawn: boolean;
+}
+
 export interface DeptRawSnapshot {
   slug: string;
   product_key: string;
@@ -47,6 +60,8 @@ export interface DeptRawSnapshot {
   wip_tea_bags: number | null;
   tea_bags_per_pouch: number | null;
   supports_wip: boolean;
+  bag_pool_workflow?: boolean;
+  bag_pool?: DeptBagPool;
   produce_action: string | null;
   entries: DeptRawEntry[];
   production_entries: DeptProductionEntry[];

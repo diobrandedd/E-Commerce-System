@@ -12,6 +12,8 @@ require_once __DIR__ . '/_bootstrap.php';
  *   POST ?action=pos_pin_create   -> { pin, pin_confirm, label? }
  *   GET  ?action=honey_volume_get
  *   POST ?action=honey_volume_save -> { ml_per_gallon }
+ *   GET  ?action=pt_bom_get
+ *   POST ?action=pt_bom_save -> { grams_per_tea_bag, tea_bags_per_pouch }
  */
 
 api_dispatch([
@@ -20,6 +22,8 @@ api_dispatch([
     'pos_pin_create' => 'api_settings_pos_pin_create',
     'honey_volume_get' => 'api_settings_honey_volume_get',
     'honey_volume_save' => 'api_settings_honey_volume_save',
+    'pt_bom_get' => 'api_settings_pt_bom_get',
+    'pt_bom_save' => 'api_settings_pt_bom_save',
 ]);
 
 function api_settings_require_executive(): void
@@ -188,4 +192,35 @@ function api_settings_honey_volume_save(): void
         'ml_per_gallon' => $saved,
         'default_ml_per_gallon' => HONEY_ML_PER_US_GALLON,
     ]);
+}
+
+function api_settings_pt_bom_get(): void
+{
+    api_method_allowed(['GET']);
+    api_require_ims_user();
+    require_once dirname(__DIR__, 2) . '/includes/dept_pt_settings.php';
+    api_ok(dept_pt_bom_snapshot(ims_pdo()));
+}
+
+function api_settings_pt_bom_save(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/dept_pt_settings.php';
+
+    $user = api_require_ims_user();
+    try {
+        $saved = dept_pt_bom_save(
+            ims_pdo(),
+            (float) ($input['grams_per_tea_bag'] ?? 0),
+            (float) ($input['tea_bags_per_pouch'] ?? 0),
+            (int) ($user['id'] ?? 0) ?: null
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+
+    api_ok(array_merge($saved, dept_pt_bom_snapshot(ims_pdo())));
 }

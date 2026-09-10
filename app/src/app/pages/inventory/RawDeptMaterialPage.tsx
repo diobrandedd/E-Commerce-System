@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, AlertTriangle, History, Loader2, Minus, MoreHorizontal, Plus, Factory, Package, Printer, ScanLine, Tag } from "lucide-react";
+import { BookOpen, AlertTriangle, History, Loader2, Minus, MoreHorizontal, Plus, Package, Printer, ScanLine, Tag } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
@@ -46,6 +46,7 @@ import {
   DeptPouchRequestsPanel,
   DeptPouchScanInPanel,
 } from "@/app/components/dept/DeptPouchBarcodePanels";
+import { ParagisBagPoolStrip } from "@/app/components/dept/ParagisBagPoolStrip";
 import { DeptRawProduceGuideModal } from "@/app/components/inventory/DeptRawProduceGuideModal";
 import { ParagisProductionGuideModal } from "@/app/components/inventory/ParagisProductionGuideModal";
 import { runDeptRawProduceTour } from "@/app/components/tour/guides/deptRawProduceTour";
@@ -221,21 +222,12 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
               . Use this page for stock-in raw bags and bag waste only.
             </div>
           )}
-          <div className={`grid gap-3 ${isParagis ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`} data-tour="raw-dept-metrics">
+          <div className={`grid gap-3 ${isParagis ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`} data-tour="raw-dept-metrics">
             <div className="rounded-xl border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Raw bags</p>
               <p className="text-2xl font-semibold mt-1">{data.bags_on_hand.toLocaleString()}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{data.unit}s sealed</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{data.unit}s in bag pool</p>
             </div>
-            {isParagis && (
-              <div className="rounded-xl border bg-card px-4 py-3">
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Tea bags (WIP)</p>
-                <p className="text-2xl font-semibold mt-1">{wipTeaBags.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  ≈ {maxPouchesFromWip} pouch{maxPouchesFromWip === 1 ? "" : "es"} packable
-                </p>
-              </div>
-            )}
             {showPouchBarcodes ? (
               <button
                 type="button"
@@ -265,25 +257,24 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             </div>
           </div>
 
+          {isParagis && data.bag_pool ? <ParagisBagPoolStrip pool={data.bag_pool} /> : null}
+
           {(canMutate || showPouchBarcodes) && (
             <RawDeptInlineActions
                 isParagis={isParagis}
                 finishedProductPath={route.finishedProductPath}
                 finishedTitle={route.finishedTitle}
                 bagsOnHand={data.bags_on_hand}
-                wipTeaBags={wipTeaBags}
                 canMutate={canMutate}
                 showPouchBarcodes={showPouchBarcodes}
                 unitSingular={pouchUnit.singular}
                 unitPlural={pouchUnit.plural}
                 onStockIn={() => setShowStockIn(true)}
-                onUseRawBags={() => setShowUseRawBags(true)}
                 onRequestBarcodes={() => setPouchModal("request")}
                 onScanPouches={() => setPouchModal("scan")}
                 onScanHistory={() => setPouchModal("history")}
                 onGeneratePrint={() => setPouchModal("admin")}
                 pendingPouchLabels={pendingPouchLabels}
-                onWipWaste={() => setShowWipWaste(true)}
                 onBagWaste={() => setShowWarehouseWaste(true)}
             />
           )}
@@ -398,12 +389,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           open={guideOpen}
           onClose={() => setGuideOpen(false)}
           role={user?.role}
-          canMutate={canMutate}
-          onOpenExactTeaBagCount={
-            canMutate && (data?.bags_on_hand ?? 0) > 0
-              ? () => setShowMakeTeaBagsAdvanced(true)
-              : undefined
-          }
           onStartTour={() => {
             setGuideOpen(false);
             startPageTourAfterModalClose(() => runParagisProductionTour());
@@ -526,42 +511,34 @@ function RawDeptInlineActions({
   finishedProductPath,
   finishedTitle,
   bagsOnHand,
-  wipTeaBags,
   canMutate,
   showPouchBarcodes,
   unitSingular,
   unitPlural,
   onStockIn,
-  onUseRawBags,
   onRequestBarcodes,
   onScanPouches,
   onScanHistory,
   onGeneratePrint,
   pendingPouchLabels,
-  onWipWaste,
   onBagWaste,
 }: {
   isParagis: boolean;
   finishedProductPath: string;
   finishedTitle: string;
   bagsOnHand: number;
-  wipTeaBags: number;
   canMutate: boolean;
   showPouchBarcodes: boolean;
   unitSingular: string;
   unitPlural: string;
   onStockIn: () => void;
-  onUseRawBags: () => void;
   onRequestBarcodes: () => void;
   onScanPouches: () => void;
   onScanHistory: () => void;
   onGeneratePrint: () => void;
   pendingPouchLabels: number;
-  onWipWaste: () => void;
   onBagWaste: () => void;
 }) {
-  const canUseRaw = bagsOnHand > 0;
-  const canWip = wipTeaBags > 0;
   const canBags = bagsOnHand > 0;
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const runMobileAction = (action: () => void) => {
@@ -578,7 +555,7 @@ function RawDeptInlineActions({
         <p className="text-sm font-semibold">Do next</p>
         <p className="text-xs text-muted-foreground mt-0.5">
           {isParagis && showPouchBarcodes
-            ? "Raw production records and finished inventory are separate. Barcode stock-in does not deduct raw bags, WIP, or packaging."
+            ? "Stock raw bags into the bag pool, then scan pouches — each scan deducts leaf from the pool."
             : "Production steps — choose the action you need."}
         </p>
       </div>
@@ -627,20 +604,6 @@ function RawDeptInlineActions({
             <Plus size={16} /> Stock in raw bags
           </AppPressable>
         )}
-        {isParagis ? (
-          <>
-            {canMutate && (
-              <AppPressable
-                variant="outline"
-                disabled={!canUseRaw}
-                onClick={onUseRawBags}
-                className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
-              >
-                <Factory size={16} /> Use raw bags → tea bags
-              </AppPressable>
-            )}
-          </>
-        ) : null}
         {showPouchBarcodes && (
           <>
             <AppPressable
@@ -686,16 +649,6 @@ function RawDeptInlineActions({
             </AppPressable>
           </>
         )}
-        {isParagis && canMutate && (
-          <AppPressable
-            variant="outline"
-            disabled={!canWip}
-            onClick={onWipWaste}
-            className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold"
-          >
-            <Minus size={16} /> WIP waste
-          </AppPressable>
-        )}
         {canMutate && (
           <AppPressable
             variant="outline"
@@ -722,20 +675,10 @@ function RawDeptInlineActions({
         <AppModalHeader
           title="Raw material actions"
           titleId="raw-dept-mobile-actions-title"
-          subtitle="Production records, barcode tools, waste, and history."
+          subtitle="Barcode tools, waste, and finished product."
           onClose={() => setMobileActionsOpen(false)}
         />
         <AppModalBody className="space-y-2">
-          {isParagis && canMutate ? (
-            <AppPressable
-              variant="outline"
-              disabled={!canUseRaw}
-              onClick={() => runMobileAction(onUseRawBags)}
-              className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
-            >
-              <Factory size={16} /> Use raw bags → tea bags
-            </AppPressable>
-          ) : null}
           {showPouchBarcodes ? (
             <>
               <AppPressable
@@ -771,16 +714,6 @@ function RawDeptInlineActions({
                 <AlertTriangle size={16} /> Leak / damage scan
               </Link>
             </>
-          ) : null}
-          {isParagis && canMutate ? (
-            <AppPressable
-              variant="outline"
-              disabled={!canWip}
-              onClick={() => runMobileAction(onWipWaste)}
-              className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
-            >
-              <Minus size={16} /> WIP waste
-            </AppPressable>
           ) : null}
           {canMutate ? (
             <AppPressable

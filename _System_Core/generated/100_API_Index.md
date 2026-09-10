@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-10T05:23:10+02:00
+generated: 2026-09-10T07:09:27+02:00
 type: memory-bank
 ---
 
@@ -638,6 +638,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pos_pin_create` | `api_settings_pos_pin_create()` | `ims_pdo()` |
 | `honey_volume_get` | `api_settings_honey_volume_get()` | `ims_pdo()`, `honey_ml_per_gallon()` |
 | `honey_volume_save` | `api_settings_honey_volume_save()` | `honey_ml_per_gallon_save()`, `ims_pdo()` |
+| `pt_bom_get` | `api_settings_pt_bom_get()` | `dept_pt_bom_snapshot()`, `ims_pdo()` |
+| `pt_bom_save` | `api_settings_pt_bom_save()` | `dept_pt_bom_save()`, `ims_pdo()`, `dept_pt_bom_snapshot()` |
 
 ### `sku_barcodes.php`
 

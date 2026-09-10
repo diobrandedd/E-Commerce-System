@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-10 — stock_entries.qty pouch rounding
+**Change:** Widen `stock_entries.qty` to DECIMAL(14,6) so Paragis 0.048-bag (48 g) pouch deducts no longer round to 0.05 (50 g). → [[problems/records/2026-09-10_stock-entries-qty-pouch-round]]
+
+### 2026-09-10 — Paragis bag pool → pouch scan
+**Change:** Skip WIP; stock bags into a leaf pool; pouch/SKU scans deduct Settings BOM grams (allow negative with warning); bag-pool progress UI + Settings BOM fields. → [[problems/records/2026-09-10_paragis-bag-pool-pouch-scan]]
+
 ### 2026-09-10 — SKU stock-in uses today’s bottling lot
 **Change:** Non-unique honey SKU stock-in remaps the picked packaging batch to today’s `(batch_no, variant, bottling_date)` row (same as unique stickers). → [[problems/records/2026-09-10_sku-stock-in-today-bottling-date]]
 

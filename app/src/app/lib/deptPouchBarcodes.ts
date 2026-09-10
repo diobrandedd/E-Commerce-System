@@ -148,6 +148,15 @@ export const deptPouchBarcodesApi = {
       lookup_kind?: string;
       qty?: number;
       label?: string;
+      bag_pool?: {
+        bags_deducted: number;
+        bags_on_hand: number;
+        grams_deducted: number;
+        grams_remaining: number;
+        warned: boolean;
+        shortfall_bags: number;
+        warning: string | null;
+      };
     }>(ENDPOINT, "scan_stock_in", {
       product_key: productKey,
       code,

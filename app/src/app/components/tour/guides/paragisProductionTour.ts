@@ -1,14 +1,13 @@
 import type { DriveStep } from "driver.js";
-import { PT_TEA_BAGS_PER_POUCH, ptTeaBagsPerBag } from "@/app/lib/deptProducts";
+import { PT_TEA_BAGS_PER_POUCH } from "@/app/lib/deptProducts";
 import { runPageTour } from "@/app/components/tour/runPageTour";
 
 function buildSteps(): DriveStep[] {
-  const teaPerBag = ptTeaBagsPerBag();
   return [
     {
       popover: {
-        title: "Dried Paragis — raw production",
-        description: `Three stages: raw bags → tea bags (WIP) → finished pouches (${PT_TEA_BAGS_PER_POUCH} tea bags each).`,
+        title: "Dried Paragis — bag pool",
+        description: `Two stages: stock raw bags into the leaf pool → scan finished pouches (${PT_TEA_BAGS_PER_POUCH} tea bags each). No WIP tea-bag step.`,
         side: "over",
         align: "center",
       },
@@ -18,17 +17,27 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Live counts",
         description:
-          "Raw bags (sealed 1 kg), WIP tea bags, finished pouches, and the linked costing stock name. Raw production records and finished barcode stock-in are separate.",
+          "Raw bags in the pool, finished pouches on hand, and the linked costing stock name.",
         side: "bottom",
         align: "start",
       },
     },
     {
-      element: "[data-tour='raw-dept-production-log']",
+      element: "[data-testid='paragis-bag-pool']",
       popover: {
-        title: "Production activity",
+        title: "Bag pool progress",
         description:
-          "Audit log of raw-production and waste records. Finished barcode stock-in has its own scan history.",
+          "Remaining leaf grams vs stocked capacity. Each pouch scan deducts the Settings BOM (default 48 g). Overdrawn is allowed with a warning.",
+        side: "bottom",
+        align: "start",
+      },
+    },
+    {
+      element: "[data-tour='raw-dept-inline-actions']",
+      popover: {
+        title: "Do next",
+        description:
+          "Stock in raw bags to fill the pool, then Request → Generate / print → Scan pouches. Scanning deducts leaf; packaging is not deducted.",
         side: "top",
         align: "start",
       },
@@ -40,14 +49,6 @@ function buildSteps(): DriveStep[] {
         description: "Stock-in and bag waste history per supplier lot.",
         side: "top",
         align: "start",
-      },
-    },
-    {
-      popover: {
-        title: "Choose the record you need",
-        description: `Raw tracking uses Stock in → Use raw bags (~${teaPerBag.toLocaleString()} tea bags per bag opened). Finished stock uses Request → Generate / print → Scan pouches. Scanning adds finished inventory without deducting raw bags, WIP, or packaging.`,
-        side: "over",
-        align: "center",
       },
     },
   ];
