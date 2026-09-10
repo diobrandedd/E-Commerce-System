@@ -246,19 +246,58 @@ function dept_raw_material_snapshot(PDO $pdo, string $slug): ?array
     if ($productKey === 'pt') {
         require_once __DIR__ . '/dept_pt_settings.php';
         $bom = dept_pt_bom_snapshot($pdo);
-        $gramsRemaining = round($bagsOnHand * (float) PT_GRAMS_PER_BAG, 2);
-        $gramsCapacity = round($bagsGross * (float) PT_GRAMS_PER_BAG, 2);
+        $gramsPerBag = (float) $bom['grams_per_bag'];
+        $gramsRemaining = round($bagsOnHand * $gramsPerBag, 2);
+        $gramsCapacity = round($bagsGross * $gramsPerBag, 2);
         $out['sell_units_per_bag'] = $bom['pouches_per_bag'];
         $out['bag_pool'] = [
             'bags_on_hand' => $bagsOnHand,
             'bags_received_gross' => $bagsGross,
             'grams_remaining' => $gramsRemaining,
             'grams_capacity' => $gramsCapacity,
-            'grams_per_bag' => $bom['grams_per_bag'],
+            'grams_per_bag' => $gramsPerBag,
             'grams_per_pouch' => $bom['grams_per_pouch'],
             'grams_per_tea_bag' => $bom['grams_per_tea_bag'],
             'tea_bags_per_pouch' => $bom['tea_bags_per_pouch'],
             'pouches_per_bag' => $bom['pouches_per_bag'],
+            'overdrawn' => $bagsOnHand < -0.0001,
+        ];
+    } elseif ($productKey === 'brc') {
+        require_once __DIR__ . '/dept_brc_settings.php';
+        $bom = dept_brc_bom_snapshot($pdo);
+        $gramsPerBag = (float) $bom['grams_per_bag'];
+        $gramsRemaining = round($bagsOnHand * $gramsPerBag, 2);
+        $gramsCapacity = round($bagsGross * $gramsPerBag, 2);
+        $out['sell_units_per_bag'] = $bom['pouches_per_bag'];
+        $out['bag_pool'] = [
+            'bags_on_hand' => $bagsOnHand,
+            'bags_received_gross' => $bagsGross,
+            'grams_remaining' => $gramsRemaining,
+            'grams_capacity' => $gramsCapacity,
+            'grams_per_bag' => $gramsPerBag,
+            'grams_per_pouch' => $bom['grams_per_pouch'],
+            'grams_per_tea_bag' => null,
+            'tea_bags_per_pouch' => null,
+            'pouches_per_bag' => $bom['pouches_per_bag'],
+            'overdrawn' => $bagsOnHand < -0.0001,
+        ];
+    } elseif ($productKey === 'jar_cacao') {
+        require_once __DIR__ . '/dept_jar_cacao_settings.php';
+        $bom = dept_jar_cacao_bom_snapshot($pdo);
+        $gramsPerBag = (float) $bom['grams_per_bag'];
+        $gramsRemaining = round($bagsOnHand * $gramsPerBag, 2);
+        $gramsCapacity = round($bagsGross * $gramsPerBag, 2);
+        $out['sell_units_per_bag'] = $bom['jars_per_bag'];
+        $out['bag_pool'] = [
+            'bags_on_hand' => $bagsOnHand,
+            'bags_received_gross' => $bagsGross,
+            'grams_remaining' => $gramsRemaining,
+            'grams_capacity' => $gramsCapacity,
+            'grams_per_bag' => $gramsPerBag,
+            'grams_per_pouch' => $bom['grams_per_jar'],
+            'grams_per_tea_bag' => null,
+            'tea_bags_per_pouch' => null,
+            'pouches_per_bag' => $bom['jars_per_bag'],
             'overdrawn' => $bagsOnHand < -0.0001,
         ];
     }

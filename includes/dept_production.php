@@ -988,16 +988,32 @@ function dept_raw_detail_enriched(PDO $pdo, string $slug): ?array
         // Floor workflow skips WIP; keep historical wip_tea_bags for reference only.
         $snap['supports_wip'] = false;
         $snap['bag_pool_workflow'] = true;
+        $snap['bag_pool_deduct_enabled'] = !empty($bom['bag_pool_deduct']);
+    } elseif ($productKey === 'brc') {
+        require_once __DIR__ . '/dept_brc_settings.php';
+        $bom = dept_brc_bom_snapshot($pdo);
+        $snap['tea_bags_per_pouch'] = null;
+        $snap['supports_wip'] = false;
+        $snap['bag_pool_workflow'] = true;
+        $snap['sell_units_per_bag'] = $bom['pouches_per_bag'];
+        $snap['bag_pool_deduct_enabled'] = !empty($bom['bag_pool_deduct']);
+    } elseif ($productKey === 'jar_cacao') {
+        require_once __DIR__ . '/dept_jar_cacao_settings.php';
+        $bom = dept_jar_cacao_bom_snapshot($pdo);
+        $snap['tea_bags_per_pouch'] = null;
+        $snap['supports_wip'] = false;
+        $snap['bag_pool_workflow'] = true;
+        $snap['sell_units_per_bag'] = $bom['jars_per_bag'];
+        $snap['bag_pool_deduct_enabled'] = !empty($bom['bag_pool_deduct']);
     } else {
         $snap['tea_bags_per_pouch'] = null;
         $snap['supports_wip'] = false;
         $snap['bag_pool_workflow'] = false;
+        $snap['bag_pool_deduct_enabled'] = false;
     }
     $snap['production_entries'] = dept_production_recent_entries($pdo, $productKey, 20);
     $snap['produce_action'] = match ($productKey) {
-        'pt' => null,
-        'brc' => 'produce_brc',
-        'jar_cacao' => 'produce_jar',
+        'pt', 'brc', 'jar_cacao' => null,
         'honey_comb' => 'produce_comb',
         default => null,
     };

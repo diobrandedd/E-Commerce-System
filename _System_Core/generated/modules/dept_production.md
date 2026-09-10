@@ -1,7 +1,7 @@
 ---
 title: dept_production
 source: includes/dept_production.php
-generated: 2026-09-10T07:09:36+02:00
+generated: 2026-09-10T08:17:11+02:00
 type: module
 function_count: 29
 ---
@@ -19,6 +19,8 @@ function_count: 29
 - `includes/material_inventory.php`
 - `includes/catalog_bootstrap.php`
 - `includes/dept_pt_settings.php`
+- `includes/dept_brc_settings.php`
+- `includes/dept_jar_cacao_settings.php`
 
 ## dept_production_tables_ready {#dept_production_tables_ready}
 
@@ -92,8 +94,8 @@ function_count: 29
 - `includes/dept_production.php`:869 — `$deductPlan = dept_production_formula_deduct_lines($pdo, 'pt', 'make_tea_bags', $teaBags);`
 - `includes/dept_production.php`:898 — `$deductPlan = dept_production_formula_deduct_lines($pdo, 'pt', 'pouch', $pouches);`
 - `includes/dept_production.php`:952 — `$deductPlan = dept_production_formula_deduct_lines($pdo, 'brc', 'produce', $pouches);`
-- `includes/dept_production.php`:1015 — `$deductPlan = dept_production_formula_deduct_lines($pdo, 'jar_cacao', 'produce', $jars);`
-- `includes/dept_production.php`:1045 — `$deductPlan = dept_production_formula_deduct_lines($pdo, 'honey_comb', 'produce', $jars);`
+- `includes/dept_production.php`:1031 — `$deductPlan = dept_production_formula_deduct_lines($pdo, 'jar_cacao', 'produce', $jars);`
+- `includes/dept_production.php`:1061 — `$deductPlan = dept_production_formula_deduct_lines($pdo, 'honey_comb', 'produce', $jars);`
 
 ## dept_packaging_deduct {#dept_packaging_deduct}
 
@@ -102,8 +104,8 @@ function_count: 29
 **Callers (4):**
 
 - `includes/dept_production.php`:375 — `$res = dept_packaging_deduct($pdo, $stockId, (float) $line['qty'], $userId, $label);`
-- `includes/honey_inventory.php`:881 — `$res = dept_packaging_deduct($pdo, $stockId, $qty, $userId, 'bottling: ' . substr($label, 0, 100));`
-- `includes/honey_inventory.php`:896 — `$res = dept_packaging_deduct($pdo, $stickerId, $totalBottles, $userId, 'bottling: ' . substr($label, 0, 100));`
+- `includes/honey_inventory.php`:887 — `$res = dept_packaging_deduct($pdo, $stockId, $qty, $userId, 'bottling: ' . substr($label, 0, 100));`
+- `includes/honey_inventory.php`:902 — `$res = dept_packaging_deduct($pdo, $stickerId, $totalBottles, $userId, 'bottling: ' . substr($label, 0, 100));`
 - `includes/rts_damaged_use.php`:140 — `$res = dept_packaging_deduct($pdo, $stockId, $bottleCount, $userId, $label);`
 
 ## dept_production_apply_deduct_lines {#dept_production_apply_deduct_lines}
@@ -114,8 +116,8 @@ function_count: 29
 - `includes/dept_production.php`:870 — `$applied = dept_production_apply_deduct_lines($pdo, $userId, 'pt', $deductPlan, $label);`
 - `includes/dept_production.php`:899 — `$applied = dept_production_apply_deduct_lines($pdo, $userId, 'pt', $deductPlan, $label);`
 - `includes/dept_production.php`:953 — `$applied = dept_production_apply_deduct_lines($pdo, $userId, 'brc', $deductPlan, $label);`
-- `includes/dept_production.php`:1016 — `$applied = dept_production_apply_deduct_lines($pdo, $userId, 'jar_cacao', $deductPlan, $label);`
-- `includes/dept_production.php`:1046 — `$applied = dept_production_apply_deduct_lines($pdo, $userId, 'honey_comb', $deductPlan, $label);`
+- `includes/dept_production.php`:1032 — `$applied = dept_production_apply_deduct_lines($pdo, $userId, 'jar_cacao', $deductPlan, $label);`
+- `includes/dept_production.php`:1062 — `$applied = dept_production_apply_deduct_lines($pdo, $userId, 'honey_comb', $deductPlan, $label);`
 
 ## dept_wip_fetch_row {#dept_wip_fetch_row}
 
@@ -161,8 +163,8 @@ function_count: 29
 - `includes/dept_production.php`:915 — `$entryId = dept_production_log_entry($pdo, 'pt', 'pouch', $pouches, $userId, $note, $applied);`
 - `includes/dept_production.php`:936 — `$entryId = dept_production_log_entry($pdo, 'pt', 'wip_waste', $teaBags, $userId, $note, []);`
 - `includes/dept_production.php`:963 — `$entryId = dept_production_log_entry($pdo, 'brc', 'produce_brc', $pouches, $userId, $note, $applied);`
-- `includes/dept_production.php`:1026 — `$entryId = dept_production_log_entry($pdo, 'jar_cacao', 'produce_jar', $jars, $userId, $note, $applied);`
-- `includes/dept_production.php`:1056 — `$entryId = dept_production_log_entry($pdo, 'honey_comb', 'produce_comb', $jars, $userId, $note, $applied);`
+- `includes/dept_production.php`:1042 — `$entryId = dept_production_log_entry($pdo, 'jar_cacao', 'produce_jar', $jars, $userId, $note, $applied);`
+- `includes/dept_production.php`:1072 — `$entryId = dept_production_log_entry($pdo, 'honey_comb', 'produce_comb', $jars, $userId, $note, $applied);`
 
 ## dept_production_format_entry_row {#dept_production_format_entry_row}
 
@@ -176,7 +178,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/dept_production.php`:996 — `$snap['production_entries'] = dept_production_recent_entries($pdo, $productKey, 20);`
+- `includes/dept_production.php`:1014 — `$snap['production_entries'] = dept_production_recent_entries($pdo, $productKey, 20);`
 
 ## dept_production_list_entries {#dept_production_list_entries}
 

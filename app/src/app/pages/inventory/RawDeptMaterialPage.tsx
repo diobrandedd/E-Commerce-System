@@ -46,7 +46,7 @@ import {
   DeptPouchRequestsPanel,
   DeptPouchScanInPanel,
 } from "@/app/components/dept/DeptPouchBarcodePanels";
-import { ParagisBagPoolStrip } from "@/app/components/dept/ParagisBagPoolStrip";
+import { DeptBagPoolStrip } from "@/app/components/dept/DeptBagPoolStrip";
 import { DeptRawProduceGuideModal } from "@/app/components/inventory/DeptRawProduceGuideModal";
 import { ParagisProductionGuideModal } from "@/app/components/inventory/ParagisProductionGuideModal";
 import { runDeptRawProduceTour } from "@/app/components/tour/guides/deptRawProduceTour";
@@ -105,8 +105,11 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const canPouchBarcodes = canDeptPouchBarcodeOps(user, route.productKey);
   const productKey = route.productKey;
   const isParagis = productKey === "pt";
+  const isBrc = productKey === "brc";
+  const isCacao = productKey === "jar_cacao";
   const isSingleStageProduce = productKey === "brc" || productKey === "jar_cacao" || productKey === "honey_comb";
   const showGuide = isParagis || isSingleStageProduce;
+  const bagPoolWorkflow = isParagis || isBrc || isCacao;
   /** Products stocked in by scanning pouch stickers instead of a Produce/Pouch button. */
   const hasPouchBarcodes = deptPouchBarcodesEnabled(productKey);
   /**
@@ -116,13 +119,11 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const showPouchBarcodes = hasPouchBarcodes && canPouchBarcodes && productKey !== "honey_comb";
   const pouchUnit = deptPouchUnitLabel(productKey);
   const dailyProduce =
-    productKey === "pt"
+    productKey === "pt" || productKey === "brc"
       ? { logAction: "pouch", title: "Daily finished pouch record", unitPlural: "pouches", unitSingular: "pouch" }
-      : productKey === "brc"
-        ? { logAction: "produce_brc", title: "Pouch creation", unitPlural: "pouches", unitSingular: "pouch" }
-        : productKey === "jar_cacao"
-          ? { logAction: "produce_jar", title: "Jar creation", unitPlural: "jars", unitSingular: "jar" }
-          : null;
+      : productKey === "jar_cacao"
+        ? { logAction: "pouch", title: "Daily finished jar record", unitPlural: "jars", unitSingular: "jar" }
+        : null;
   const [data, setData] = useState<DeptRawSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -226,7 +227,9 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             <div className="rounded-xl border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Raw bags</p>
               <p className="text-2xl font-semibold mt-1">{data.bags_on_hand.toLocaleString()}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{data.unit}s in bag pool</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {bagPoolWorkflow ? `${data.unit}s in bag pool` : `${data.unit}s on hand`}
+              </p>
             </div>
             {showPouchBarcodes ? (
               <button
@@ -257,11 +260,20 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
             </div>
           </div>
 
-          {isParagis && data.bag_pool ? <ParagisBagPoolStrip pool={data.bag_pool} /> : null}
+          {data.bag_pool ? (
+            <DeptBagPoolStrip
+              pool={data.bag_pool}
+              testId={
+                isParagis ? "paragis-bag-pool" : isBrc ? "brc-bag-pool" : isCacao ? "cacao-bag-pool" : "dept-bag-pool"
+              }
+              sellUnit={isCacao ? "jar" : "pouch"}
+              deductEnabled={data.bag_pool_deduct_enabled !== false}
+            />
+          ) : null}
 
           {(canMutate || showPouchBarcodes) && (
             <RawDeptInlineActions
-                isParagis={isParagis}
+                bagPoolWorkflow={bagPoolWorkflow}
                 finishedProductPath={route.finishedProductPath}
                 finishedTitle={route.finishedTitle}
                 bagsOnHand={data.bags_on_hand}
@@ -507,7 +519,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
 }
 
 function RawDeptInlineActions({
-  isParagis,
+  bagPoolWorkflow,
   finishedProductPath,
   finishedTitle,
   bagsOnHand,
@@ -523,7 +535,7 @@ function RawDeptInlineActions({
   pendingPouchLabels,
   onBagWaste,
 }: {
-  isParagis: boolean;
+  bagPoolWorkflow: boolean;
   finishedProductPath: string;
   finishedTitle: string;
   bagsOnHand: number;
@@ -554,8 +566,8 @@ function RawDeptInlineActions({
       <div className="px-4 py-3 border-b bg-secondary/30">
         <p className="text-sm font-semibold">Do next</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {isParagis && showPouchBarcodes
-            ? "Stock raw bags into the bag pool, then scan pouches — each scan deducts leaf from the pool."
+          {bagPoolWorkflow && showPouchBarcodes
+            ? `Stock raw bags into the bag pool, then scan ${unitPlural} — each scan deducts leaf from the pool.`
             : "Production steps — choose the action you need."}
         </p>
       </div>

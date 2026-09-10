@@ -4,6 +4,18 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-10 — Bag-pool deduct Settings toggles
+**Change:** Executive can turn PT/BRC/Cacao raw bag deduct on finished stock-in on/off via Settings BOM cards. → [[problems/records/2026-09-10_bag-pool-deduct-toggle]]
+
+### 2026-09-10 — Honey lot gallon progress + production overdraw
+**Change:** Per-row gallon progress on Production/Warehouse; bottle scan warns but allows negative production gallons. → [[problems/records/2026-09-10_honey-lot-gallon-progress]]
+
+### 2026-09-10 — Jar Cacao bag pool → jar scan
+**Change:** Cacao bag pool + 220 g (settings) jar/SKU deduct; progress strip jar labels; Settings BOM grams/jar + grams/bag. → [[problems/records/2026-09-10_jar-cacao-bag-pool-jar-scan]]
+
+### 2026-09-10 — BRC bag pool → pouch scan
+**Change:** Black Rice bag pool + 100 g (settings) pouch/SKU deduct; shared progress strip; Settings BOM grams/pouch + grams/bag. → [[problems/records/2026-09-10_brc-bag-pool-pouch-scan]]
+
 ### 2026-09-10 — stock_entries.qty pouch rounding
 **Change:** Widen `stock_entries.qty` to DECIMAL(14,6) so Paragis 0.048-bag (48 g) pouch deducts no longer round to 0.05 (50 g). → [[problems/records/2026-09-10_stock-entries-qty-pouch-round]]
 

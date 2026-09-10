@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-10T07:09:27+02:00
+generated: 2026-09-10T08:17:02+02:00
 type: memory-bank
 table_count: 97
 ---

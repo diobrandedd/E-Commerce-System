@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-09-10_paragis-bag-pool-pouch-scan]] |
-| **Active Plan** | [[plans/archive/2026-09-10_paragis-bag-pool-pouch-scan_plan]] |
-| **Status** | `shipped` — Paragis bag pool → pouch scan |
+| **Active Spec** | [[specs/2026-09-10_bag-pool-deduct-toggle]] |
+| **Active Plan** | [[plans/archive/2026-09-10_bag-pool-deduct-toggle_plan]] |
+| **Status** | `shipped` — Bag-pool deduct Settings toggles |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

@@ -1,7 +1,7 @@
 ---
 title: permissions
 source: includes/permissions.php
-generated: 2026-09-10T07:10:03+02:00
+generated: 2026-09-10T08:17:38+02:00
 type: module
 function_count: 18
 ---

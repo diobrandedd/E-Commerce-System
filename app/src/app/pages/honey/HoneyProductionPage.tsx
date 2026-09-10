@@ -9,7 +9,7 @@ import {
   HoneyProductionScanStockInPanel,
 } from "@/app/components/honey/HoneyBottleBarcodePanels";
 import { HoneyStageContent, HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
-import { QtyCounter } from "@/app/components/honey/QtyCounter";
+import { HoneyLotGallonProgress } from "@/app/components/honey/HoneyLotGallonProgress";
 import { PageLayout } from "@/app/components/PageLayout";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
 import { Button } from "@/app/components/ui/button";
@@ -201,7 +201,14 @@ export function HoneyProductionPage() {
                 </div>
                 <div className="mt-2 rounded-lg border border-border px-3 py-2">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Gallons on hand</p>
-                  <div className="mt-1 text-sm font-semibold"><QtyCounter current={r.current_qty} initial={r.initial_qty} /></div>
+                  <div className="mt-1">
+                    <HoneyLotGallonProgress
+                      current={r.current_qty}
+                      initial={r.initial_qty}
+                      testId={`honey-production-gal-progress-${r.id}`}
+                      className="max-w-none"
+                    />
+                  </div>
                 </div>
               </article>
             ))
@@ -246,7 +253,11 @@ export function HoneyProductionPage() {
                   <td className="px-4 py-3">{r.stock_out_date ?? "—"}</td>
                   <td className="px-4 py-3 capitalize">{r.variant}</td>
                   <td className="px-4 py-3">
-                    <QtyCounter current={r.current_qty} initial={r.initial_qty} />
+                    <HoneyLotGallonProgress
+                      current={r.current_qty}
+                      initial={r.initial_qty}
+                      testId={`honey-production-gal-progress-${r.id}`}
+                    />
                   </td>
                   <td className="px-4 py-3">
                     <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />

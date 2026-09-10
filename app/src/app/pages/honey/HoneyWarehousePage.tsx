@@ -3,6 +3,7 @@ import { Camera, Plus, Loader2, ScanLine, Printer } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { HoneyStageContent, HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
+import { HoneyLotGallonProgress } from "@/app/components/honey/HoneyLotGallonProgress";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { HoneyStockStatusBadge } from "@/app/components/honey/HoneyStockStatusBadge";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -142,7 +143,14 @@ export function HoneyWarehousePage() {
                 </div>
                 <div className="mt-3 rounded-lg bg-secondary/30 px-3 py-2">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Gallons on hand</p>
-                  <div className="mt-1 text-sm font-semibold"><QtyCounter current={r.current_qty} initial={r.initial_qty} /></div>
+                  <div className="mt-1">
+                    <HoneyLotGallonProgress
+                      current={r.current_qty}
+                      initial={r.initial_qty}
+                      testId={`honey-warehouse-gal-progress-${r.id}`}
+                      className="max-w-none"
+                    />
+                  </div>
                 </div>
                 {(canMutate || canExecEdit) && (
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -206,7 +214,11 @@ export function HoneyWarehousePage() {
                     <td className="px-4 py-3">{r.arrival_date}</td>
                     <td className="px-4 py-3 capitalize">{r.variant}</td>
                     <td className="px-4 py-3">
-                      <QtyCounter current={r.current_qty} initial={r.initial_qty} />
+                      <HoneyLotGallonProgress
+                        current={r.current_qty}
+                        initial={r.initial_qty}
+                        testId={`honey-warehouse-gal-progress-${r.id}`}
+                      />
                     </td>
                     <td className="px-4 py-3">
                       <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />

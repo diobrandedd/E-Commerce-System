@@ -14,14 +14,19 @@ function buildSteps(productKey: DeptRawTourKey): DriveStep[] {
       : `about ${jarCacaoJarsPerBag().toFixed(2)} jars per full bag at yield.`;
 
   const usesPouchBarcodes = deptPouchBarcodesEnabled(productKey);
+  const bagPool = productKey === "brc" || productKey === "jar_cacao";
+  const defaultGrams = productKey === "brc" ? 100 : 220;
+  const poolTestId = productKey === "brc" ? "brc-bag-pool" : "cacao-bag-pool";
 
   return [
     {
       popover: {
-        title: productKey === "brc" ? "Black Rice Coffee — raw" : "Jar Cacao — raw",
-        description: usesPouchBarcodes
-          ? `Two stages: sealed raw bags → finished ${sellUnit}s. Finished stock comes from scanning a barcode sticker on each ${sellUnit}.`
-          : `Two stages: sealed raw bags → finished ${sellUnit}s. No WIP step — Produce goes straight from raw to retail units.`,
+        title: productKey === "brc" ? "Black Rice Coffee — bag pool" : "Jar Cacao — bag pool",
+        description: bagPool
+          ? `Stock raw bags into the leaf pool → scan finished ${sellUnit}s. Each scan deducts Settings BOM grams (default ${defaultGrams} g). ${yieldExample}`
+          : usesPouchBarcodes
+            ? `Two stages: sealed raw bags → finished ${sellUnit}s. Finished stock comes from scanning a barcode sticker on each ${sellUnit}.`
+            : `Two stages: sealed raw bags → finished ${sellUnit}s. No WIP step — Produce goes straight from raw to retail units.`,
         side: "over",
         align: "center",
       },
@@ -30,11 +35,26 @@ function buildSteps(productKey: DeptRawTourKey): DriveStep[] {
       element: "[data-tour='raw-dept-metrics']",
       popover: {
         title: "Live counts",
-        description: `Raw bags on hand, finished ${sellUnit}s ready to sell, and costing stock link.`,
+        description: bagPool
+          ? `Raw bags in the pool, finished ${sellUnit}s on hand, and the linked costing stock name.`
+          : `Raw bags on hand, finished ${sellUnit}s ready to sell, and costing stock link.`,
         side: "bottom",
         align: "start",
       },
     },
+    ...(bagPool
+      ? [
+          {
+            element: `[data-testid='${poolTestId}']`,
+            popover: {
+              title: "Bag pool progress",
+              description: `Remaining leaf grams vs stocked capacity. Each ${sellUnit} scan deducts the Settings BOM. Overdrawn is allowed with a warning.`,
+              side: "bottom" as const,
+              align: "start" as const,
+            },
+          },
+        ]
+      : []),
     {
       element: "[data-tour='raw-dept-production-log']",
       popover: {
@@ -57,10 +77,12 @@ function buildSteps(productKey: DeptRawTourKey): DriveStep[] {
     },
     {
       popover: {
-        title: "Header actions",
-        description: usesPouchBarcodes
-          ? `Stock in supplier bags (${yieldExample}), request barcodes for the batch, print the A4 sticker sheet, then scan each sticker to add finished ${sellUnit}s. Bag waste removes sealed bags never opened.`
-          : `Stock in supplier bags, then Produce ${sellUnit}s (${yieldExample}). Produce preview shows formula deduct lines before you confirm. Bag waste removes sealed bags never opened.`,
+        title: bagPool ? "Do next" : "Header actions",
+        description: bagPool
+          ? `Stock in raw bags to fill the pool, then Request → Generate / print → Scan ${sellUnit}s. Scanning deducts leaf; packaging is not deducted.`
+          : usesPouchBarcodes
+            ? `Stock in supplier bags (${yieldExample}), request barcodes for the batch, print the A4 sticker sheet, then scan each sticker to add finished ${sellUnit}s. Bag waste removes sealed bags never opened.`
+            : `Stock in supplier bags, then Produce ${sellUnit}s (${yieldExample}). Produce preview shows formula deduct lines before you confirm. Bag waste removes sealed bags never opened.`,
         side: "over",
         align: "center",
       },

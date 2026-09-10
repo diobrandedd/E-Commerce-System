@@ -1,7 +1,7 @@
 ---
 title: finished_leak_damage
 source: includes/finished_leak_damage.php
-generated: 2026-09-10T07:09:38+02:00
+generated: 2026-09-10T08:17:13+02:00
 type: module
 function_count: 8
 ---
@@ -52,7 +52,7 @@ function_count: 8
 **Callers (2):**
 
 - `api/v1/finished_leak_damage.php`:37 — `api_ok(['row' => finished_leak_damage_scan(ims_pdo(), (int) $user['id'], $code, $reason, $note)]);`
-- `includes/dept_pouch_barcodes.php`:1372 — `return finished_leak_damage_scan($pdo, $userId, $code, 'damaged', $note);`
+- `includes/dept_pouch_barcodes.php`:1461 — `return finished_leak_damage_scan($pdo, $userId, $code, 'damaged', $note);`
 
 ## finished_leak_damage_scan_honey {#finished_leak_damage_scan_honey}
 

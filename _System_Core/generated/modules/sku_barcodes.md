@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-09-10T07:10:12+02:00
+generated: 2026-09-10T08:17:49+02:00
 type: module
 function_count: 40
 ---
@@ -29,6 +29,8 @@ function_count: 40
 - `includes/dept_pouch_barcodes.php`
 - `includes/honey_bottle_barcodes.php`
 - `includes/dept_pt_settings.php`
+- `includes/dept_brc_settings.php`
+- `includes/dept_jar_cacao_settings.php`
 - `includes/rts_inventory_sync.php`
 - `includes/dept_pouch_barcodes.php`
 - `includes/honey_bottle_barcodes.php`
@@ -116,9 +118,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/sku_barcodes.php`:205 — `$sku = sku_barcode_fetch_by_id($pdo, (int) $input['sku_id']);`
 - `includes/sku_barcodes.php`:584 — `$row = sku_barcode_fetch_by_id($pdo, $id);`
-- `includes/sku_barcodes.php`:1343 — `if (sku_barcode_fetch_by_id($pdo, $skuId) === null) {`
-- `includes/sku_barcodes.php`:1666 — `$row = sku_barcode_fetch_by_id($pdo, $skuId);`
-- `includes/sku_barcodes.php`:1709 — `if (sku_barcode_fetch_by_id($pdo, $skuId) === null) {`
+- `includes/sku_barcodes.php`:1420 — `if (sku_barcode_fetch_by_id($pdo, $skuId) === null) {`
+- `includes/sku_barcodes.php`:1743 — `$row = sku_barcode_fetch_by_id($pdo, $skuId);`
+- `includes/sku_barcodes.php`:1786 — `if (sku_barcode_fetch_by_id($pdo, $skuId) === null) {`
 
 ## sku_barcode_fetch_by_code {#sku_barcode_fetch_by_code}
 
@@ -146,7 +148,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/bottle_barcodes.php`:267 — `$sku = sku_barcode_fetch_honey(ims_pdo(), (string) $req['variant'], (string) $req['size']);`
 - `api/v1/bottle_barcodes.php`:321 — `$sku = sku_barcode_fetch_honey($pdo, (string) $req['variant'], (string) $req['size']);`
-- `includes/honey_inventory.php`:749 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
+- `includes/honey_inventory.php`:750 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
 - `includes/rts_barcode_labels.php`:255 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
 - `includes/rts_barcode_labels.php`:439 — `$sku = sku_barcode_fetch_honey(`
 - `includes/sku_barcodes.php`:121 — `return sku_barcode_fetch_honey($pdo, $variant, $size);`
@@ -165,7 +167,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/rts_barcode_labels.php`:445 — `$sku = sku_barcode_fetch_dept($pdo, (string) ($line['product_key'] ?? ''));`
 - `includes/sku_barcodes.php`:124 — `return sku_barcode_fetch_dept($pdo, $productKey);`
 - `includes/sku_barcodes.php`:505 — `: sku_barcode_fetch_dept($pdo, $productKey);`
-- `includes/sku_barcodes.php`:1086 — `$sku = sku_barcode_fetch_dept($pdo, $productKey);`
+- `includes/sku_barcodes.php`:1163 — `$sku = sku_barcode_fetch_dept($pdo, $productKey);`
 
 ## sku_barcode_selling_price_hint {#sku_barcode_selling_price_hint}
 
@@ -228,7 +230,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/honey_inventory.php`:751 — `$credit = sku_barcode_credit_honey_requests(`
+- `includes/honey_inventory.php`:752 — `$credit = sku_barcode_credit_honey_requests(`
 - `includes/sku_barcodes.php`:1022 — `$credit = sku_barcode_credit_honey_requests(`
 
 ## sku_barcode_refresh_honey_request_status {#sku_barcode_refresh_honey_request_status}
@@ -245,7 +247,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/sku_barcodes.php`:1089 — `$credit = sku_barcode_credit_dept_requests(`
+- `includes/sku_barcodes.php`:1166 — `$credit = sku_barcode_credit_dept_requests(`
 
 ## sku_barcode_refresh_dept_request_status {#sku_barcode_refresh_dept_request_status}
 
@@ -336,8 +338,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (3):**
 
 - `includes/rts_barcode_labels.php`:421 — `$bannerText = sku_barcode_product_info_text($line);`
-- `includes/sku_barcodes.php`:1419 — `$topText = sku_barcode_product_info_text($product);`
-- `includes/sku_barcodes.php`:1676 — `: sku_barcode_product_info_text($row);`
+- `includes/sku_barcodes.php`:1496 — `$topText = sku_barcode_product_info_text($product);`
+- `includes/sku_barcodes.php`:1753 — `: sku_barcode_product_info_text($row);`
 
 ## sku_barcode_label_cell_html {#sku_barcode_label_cell_html}
 
@@ -345,14 +347,14 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/honey_warehouse_barcodes.php`:346 — `$stream[] = ['slots' => 1, 'html' => sku_barcode_label_cell_html($code)];`
 - `includes/rts_barcode_labels.php`:460 — `'html' => sku_barcode_label_cell_html((string) $row['code'], $line),`
-- `includes/sku_barcodes.php`:1689 — `'html' => sku_barcode_label_cell_html($code, $row),`
+- `includes/sku_barcodes.php`:1766 — `'html' => sku_barcode_label_cell_html($code, $row),`
 
 ## sku_barcode_label_banner_html {#sku_barcode_label_banner_html}
 
 **Callers (2):**
 
 - `includes/rts_barcode_labels.php`:427 — `'html' => sku_barcode_label_banner_html($bannerText),`
-- `includes/sku_barcodes.php`:1683 — `'html' => sku_barcode_label_banner_html($bannerText),`
+- `includes/sku_barcodes.php`:1760 — `'html' => sku_barcode_label_banner_html($bannerText),`
 
 ## sku_barcode_render_packed_label_sheet {#sku_barcode_render_packed_label_sheet}
 
@@ -360,14 +362,14 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/honey_warehouse_barcodes.php`:349 — `return sku_barcode_render_packed_label_sheet(`
 - `includes/rts_barcode_labels.php`:468 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
-- `includes/sku_barcodes.php`:1701 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
+- `includes/sku_barcodes.php`:1778 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
 
 ## sku_barcode_combined_label_sheet_html {#sku_barcode_combined_label_sheet_html}
 
 **Callers (2):**
 
 - `api/v1/sku_barcodes.php`:125 — `$html = sku_barcode_combined_label_sheet_html($pdo, $groups);`
-- `includes/sku_barcodes.php`:1713 — `return sku_barcode_combined_label_sheet_html($pdo, [`
+- `includes/sku_barcodes.php`:1790 — `return sku_barcode_combined_label_sheet_html($pdo, [`
 
 ## sku_barcode_label_sheet_html {#sku_barcode_label_sheet_html}
 

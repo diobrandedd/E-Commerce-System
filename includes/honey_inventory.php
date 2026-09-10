@@ -669,6 +669,7 @@ function honey_production_ensure_packaging_row(PDO $pdo, int $userId, int $produ
 
 /**
  * Deduct production gallons for bottled volume (caller must be in a transaction when needed).
+ * Allows negative remaining so ops can finish bottling while the shortfall stays visible.
  */
 function honey_production_deduct_gallons(PDO $pdo, int $productionRowId, float $usedGallons): void
 {
@@ -676,9 +677,9 @@ function honey_production_deduct_gallons(PDO $pdo, int $productionRowId, float $
         throw new RuntimeException('Bottle volume must be greater than zero.');
     }
     $upd = $pdo->prepare(
-        'UPDATE honey_production_rows SET current_qty = current_qty - ? WHERE id = ? AND current_qty >= ?'
+        'UPDATE honey_production_rows SET current_qty = current_qty - ? WHERE id = ?'
     );
-    $upd->execute([$usedGallons, $productionRowId, $usedGallons]);
+    $upd->execute([$usedGallons, $productionRowId]);
     if ($upd->rowCount() < 1) {
         throw new RuntimeException('Could not deduct production quantity.');
     }
@@ -723,12 +724,12 @@ function honey_production_bottle_stock_in(
     }
 
     $available = (float) $pr['current_qty'];
-    if ($usedGallons > $available + 1e-9) {
-        $usedFriendly = round($usedGallons, 1);
-        $availFriendly = round($available, 1);
-        throw new RuntimeException(
-            "Bottled volume uses {$usedFriendly} gallon/s but only {$availFriendly} gallon/s remain in production."
-        );
+    $overdrawn = $usedGallons > $available + 1e-9;
+    $warning = null;
+    if ($overdrawn) {
+        $usedFriendly = round($usedGallons, 4);
+        $availFriendly = round($available, 4);
+        $warning = "Bottled volume uses {$usedFriendly} gallon/s but only {$availFriendly} gallon/s remain — lot may go negative.";
     }
 
     $packagingDeduct = [];
@@ -783,7 +784,9 @@ function honey_production_bottle_stock_in(
         'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),
         'primary_request_id' => $credit['primary_request_id'] ?? null,
         'used_gallons' => round($usedGallons, 4),
-        'remaining_production_gallons' => round(max(0, $remaining), 4),
+        'remaining_production_gallons' => round($remaining, 4),
+        'production_overdrawn' => $overdrawn || $remaining < -1e-9,
+        'warning' => $warning,
         'is_new_packaging_row' => !empty($ensured['is_new']),
         'packaging_deduct' => $packagingDeduct,
         'ml_per_gallon' => $mlPerGallon,
@@ -794,7 +797,7 @@ function honey_production_bottle_stock_in(
 /**
  * Deduct production gallons for a unique bottle sticker already tied to that lot's packaging.
  *
- * @return array{used_gallons:float, remaining_production_gallons:float, ml_per_gallon:float, packaging_row_id:int}
+ * @return array{used_gallons:float, remaining_production_gallons:float, production_overdrawn:bool, warning:?string, ml_per_gallon:float, packaging_row_id:int}
  */
 function honey_production_deduct_for_unique_stock_in(
     PDO $pdo,
@@ -819,12 +822,13 @@ function honey_production_deduct_for_unique_stock_in(
     $mlPerGallon = honey_ml_per_gallon($pdo);
     $usedGallons = honey_lines_to_gallons([['size' => $size, 'qty' => 1]], $mlPerGallon);
     $available = (float) $pr['current_qty'];
-    if ($usedGallons > $available + 1e-9) {
-        $usedFriendly = round($usedGallons, 1);
-        $availFriendly = round($available, 1);
-        throw new RuntimeException(
-            "Bottled volume uses {$usedFriendly} gallon/s but only {$availFriendly} gallon/s remain in production."
-        );
+    $remaining = $available - $usedGallons;
+    $overdrawn = $usedGallons > $available + 1e-9;
+    $warning = null;
+    if ($overdrawn) {
+        $usedFriendly = round($usedGallons, 4);
+        $availFriendly = round($available, 4);
+        $warning = "Bottled volume uses {$usedFriendly} gallon/s but only {$availFriendly} gallon/s remain — lot may go negative.";
     }
 
     honey_production_deduct_gallons($pdo, $productionRowId, $usedGallons);
@@ -837,7 +841,9 @@ function honey_production_deduct_for_unique_stock_in(
 
     return [
         'used_gallons' => round($usedGallons, 4),
-        'remaining_production_gallons' => round(max(0, $available - $usedGallons), 4),
+        'remaining_production_gallons' => round($remaining, 4),
+        'production_overdrawn' => $overdrawn || $remaining < -1e-9,
+        'warning' => $warning,
         'ml_per_gallon' => $mlPerGallon,
         'packaging_row_id' => $packagingRowId,
     ];

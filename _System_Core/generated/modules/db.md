@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-09-10T07:09:31+02:00
+generated: 2026-09-10T08:17:07+02:00
 type: module
 function_count: 4
 ---
@@ -62,7 +62,7 @@ function_count: 4
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (352):**
+**Callers (358):**
 
 - `api/v1/_bootstrap.php`:191 — `$pdo = ims_pdo();`
 - `api/v1/ar.php`:33 — `api_ok(['products' => ar_credits_sellable_products(ims_pdo())]);`
@@ -89,5 +89,5 @@ function_count: 4
 - `api/v1/bottle_barcodes.php`:285 — `ims_pdo()->prepare(`
 - `api/v1/bottle_barcodes.php`:292 — `'request' => honey_bottle_request_get(ims_pdo(), $requestId),`
 - `api/v1/bottle_barcodes.php`:308 — `$pdo = ims_pdo();`
-- _… and 327 more (run impact.php for full list)_
+- _… and 333 more (run impact.php for full list)_
 

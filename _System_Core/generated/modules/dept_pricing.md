@@ -1,7 +1,7 @@
 ---
 title: dept_pricing
 source: includes/dept_pricing.php
-generated: 2026-09-10T07:09:35+02:00
+generated: 2026-09-10T08:17:11+02:00
 type: module
 function_count: 8
 ---
@@ -25,7 +25,7 @@ function_count: 8
 
 **Callers (2):**
 
-- `includes/dept_inventory.php`:292 — `$priceRow = dept_pricing_resolve_active_price($pdo, $supplierId, $productKey, $arrivalDate);`
+- `includes/dept_inventory.php`:331 — `$priceRow = dept_pricing_resolve_active_price($pdo, $supplierId, $productKey, $arrivalDate);`
 - `includes/dept_pricing.php`:175 — `$priceRow = dept_pricing_resolve_active_price($pdo, $supplierId, $productKey, $asOf);`
 
 ## dept_pricing_stocks_has_supplier_id {#dept_pricing_stocks_has_supplier_id}
@@ -41,10 +41,10 @@ function_count: 8
 - `includes/dept_inventory.php`:144 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_inventory.php`:167 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_inventory.php`:224 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
-- `includes/dept_inventory.php`:333 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
-- `includes/dept_inventory.php`:407 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
-- `includes/dept_inventory.php`:480 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
-- `includes/dept_inventory.php`:760 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
+- `includes/dept_inventory.php`:372 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
+- `includes/dept_inventory.php`:446 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
+- `includes/dept_inventory.php`:519 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
+- `includes/dept_inventory.php`:799 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_pricing.php`:170 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_pricing.php`:238 — `$stockName = dept_pricing_leaf_stock_name($productKey);`
 - `includes/dept_production.php`:99 — `$leaf = dept_pricing_leaf_stock_name($productKey);`
@@ -71,7 +71,7 @@ function_count: 8
 
 **Callers (2):**
 
-- `includes/dept_inventory.php`:297 — `dept_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`
+- `includes/dept_inventory.php`:336 — `dept_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`
 - `includes/dept_pricing.php`:136 — `dept_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);`
 
 ## dept_pricing_recalc_products_using_stock {#dept_pricing_recalc_products_using_stock}
@@ -86,5 +86,5 @@ function_count: 8
 
 **Callers (1):**
 
-- `includes/dept_inventory.php`:298 — `$leafStockId = dept_pricing_leaf_stock_id($pdo, $supplierId, $productKey);`
+- `includes/dept_inventory.php`:337 — `$leafStockId = dept_pricing_leaf_stock_id($pdo, $supplierId, $productKey);`
 

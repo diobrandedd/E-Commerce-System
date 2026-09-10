@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-09-10T07:09:37+02:00
+generated: 2026-09-10T08:17:12+02:00
 type: module
 function_count: 23
 ---
@@ -17,7 +17,7 @@ function_count: 23
 
 **Callers (7):**
 
-- `includes/dept_inventory.php`:711 — `'tea_bags_per_bag' => $def['key'] === 'pt' ? dept_pt_tea_bags_per_bag() : null,`
+- `includes/dept_inventory.php`:750 — `'tea_bags_per_bag' => $def['key'] === 'pt' ? dept_pt_tea_bags_per_bag() : null,`
 - `includes/dept_production.php`:249 — `$teaBagsDerived = round($qty * dept_pt_tea_bags_per_bag(), 6);`
 - `includes/dept_production.php`:772 — `$consumeQty = round($qty * dept_pt_tea_bags_per_bag(), 6);`
 - `includes/dept_production.php`:817 — `$derivedTeaBags = round($qty * dept_pt_tea_bags_per_bag(), 2);`
@@ -36,7 +36,7 @@ function_count: 23
 **Callers (2):**
 
 - `includes/dept_products.php`:123 — `'pt' => dept_pt_bags_per_pouch(),`
-- `includes/dept_pt_settings.php`:67 — `return dept_pt_bags_per_pouch();`
+- `includes/dept_pt_settings.php`:94 — `return dept_pt_bags_per_pouch();`
 
 ## dept_brc_pouches_per_bag {#dept_brc_pouches_per_bag}
 
@@ -46,8 +46,9 @@ function_count: 23
 
 ## dept_brc_bags_per_pouch {#dept_brc_bags_per_pouch}
 
-**Callers (2):**
+**Callers (3):**
 
+- `includes/dept_brc_settings.php`:87 — `return dept_brc_bags_per_pouch();`
 - `includes/dept_production.php`:158 — `'qty' => round($qty * dept_brc_bags_per_pouch(), 6),`
 - `includes/dept_products.php`:124 — `'brc' => dept_brc_bags_per_pouch(),`
 
@@ -59,8 +60,9 @@ function_count: 23
 
 ## dept_jar_cacao_bags_per_jar {#dept_jar_cacao_bags_per_jar}
 
-**Callers (2):**
+**Callers (3):**
 
+- `includes/dept_jar_cacao_settings.php`:90 — `return dept_jar_cacao_bags_per_jar();`
 - `includes/dept_production.php`:176 — `'qty' => round($qty * dept_jar_cacao_bags_per_jar(), 6),`
 - `includes/dept_products.php`:125 — `'jar_cacao' => dept_jar_cacao_bags_per_jar(),`
 
@@ -90,9 +92,9 @@ function_count: 23
 **Callers (6):**
 
 - `includes/dept_inventory.php`:240 — `'sell_units_per_bag' => dept_product_sell_units_per_bag($productKey),`
-- `includes/dept_inventory.php`:531 — `$sellUnitsAdded = round($qtyBags * dept_product_sell_units_per_bag($productKey), 2);`
-- `includes/dept_inventory.php`:727 — `? dept_product_sell_units_per_bag((string) $def['key'])`
-- `includes/dept_inventory.php`:730 — `? dept_product_sell_units_per_bag((string) $def['key'])`
+- `includes/dept_inventory.php`:570 — `$sellUnitsAdded = round($qtyBags * dept_product_sell_units_per_bag($productKey), 2);`
+- `includes/dept_inventory.php`:766 — `? dept_product_sell_units_per_bag((string) $def['key'])`
+- `includes/dept_inventory.php`:769 — `? dept_product_sell_units_per_bag((string) $def['key'])`
 - `includes/dept_products.php`:114 — `/** @deprecated Use dept_product_sell_units_per_bag() */`
 - `includes/dept_products.php`:117 — `return dept_product_sell_units_per_bag($key);`
 
@@ -121,7 +123,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (7):**
 
 - `includes/dashboard_inventory.php`:141 — `foreach (dept_product_catalog() as $def) {`
-- `includes/dept_inventory.php`:683 — `foreach (dept_product_catalog() as $def) {`
+- `includes/dept_inventory.php`:722 — `foreach (dept_product_catalog() as $def) {`
 - `includes/dept_pricing.php`:161 — `foreach (dept_product_catalog() as $def) {`
 - `includes/dept_products.php`:212 — `foreach (dept_product_catalog() as $def) {`
 - `includes/dept_products.php`:234 — `foreach (dept_product_catalog() as $def) {`
@@ -139,12 +141,12 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_inventory.php`:148 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:168 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:219 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_inventory.php`:334 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_inventory.php`:408 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_inventory.php`:481 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_inventory.php`:523 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_inventory.php`:638 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_inventory.php`:759 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_inventory.php`:373 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_inventory.php`:447 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_inventory.php`:520 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_inventory.php`:562 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_inventory.php`:677 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_inventory.php`:798 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pos.php`:128 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pos.php`:137 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pouch_barcodes.php`:53 — `$product = dept_product_by_key($productKey);`
@@ -153,8 +155,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_production.php`:393 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_production.php`:422 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_production.php`:956 — `$def = dept_product_by_key('brc');`
-- `includes/dept_production.php`:1019 — `$def = dept_product_by_key('jar_cacao');`
-- `includes/dept_production.php`:1049 — `$def = dept_product_by_key('honey_comb');`
+- `includes/dept_production.php`:1035 — `$def = dept_product_by_key('jar_cacao');`
+- `includes/dept_production.php`:1065 — `$def = dept_product_by_key('honey_comb');`
 - `includes/dept_products.php`:98 — `$def = dept_product_by_key($key);`
 - `includes/dept_products.php`:223 — `return dept_product_by_key($key) !== null;`
 - _… and 11 more (run impact.php for full list)_
@@ -174,7 +176,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/dept_inventory.php`:674 — `$def = dept_product_resolve_label($label);`
+- `includes/dept_inventory.php`:713 — `$def = dept_product_resolve_label($label);`
 - `includes/dept_products.php`:275 — `return dept_product_resolve_label($segment);`
 
 ## dept_product_resolve_segment {#dept_product_resolve_segment}
@@ -199,13 +201,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_inventory.php`:44 — `$deptId = dept_product_dept_id($pdo, $def['dept']);`
 - `includes/dept_inventory.php`:152 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_inventory.php`:172 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
-- `includes/dept_inventory.php`:299 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_inventory.php`:338 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
-- `includes/dept_inventory.php`:412 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
-- `includes/dept_inventory.php`:485 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
-- `includes/dept_inventory.php`:581 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
-- `includes/dept_inventory.php`:692 — `$deptId = dept_product_dept_id($pdo, $def['dept']);`
-- `includes/dept_inventory.php`:764 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
+- `includes/dept_inventory.php`:377 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
+- `includes/dept_inventory.php`:451 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
+- `includes/dept_inventory.php`:524 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
+- `includes/dept_inventory.php`:620 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
+- `includes/dept_inventory.php`:731 — `$deptId = dept_product_dept_id($pdo, $def['dept']);`
+- `includes/dept_inventory.php`:803 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_pricing.php`:180 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_pricing.php`:242 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_production.php`:397 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`

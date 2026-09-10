@@ -40,8 +40,8 @@ export interface DeptBagPool {
   grams_capacity: number;
   grams_per_bag: number;
   grams_per_pouch: number;
-  grams_per_tea_bag: number;
-  tea_bags_per_pouch: number;
+  grams_per_tea_bag?: number | null;
+  tea_bags_per_pouch?: number | null;
   pouches_per_bag: number;
   overdrawn: boolean;
 }
@@ -61,6 +61,7 @@ export interface DeptRawSnapshot {
   tea_bags_per_pouch: number | null;
   supports_wip: boolean;
   bag_pool_workflow?: boolean;
+  bag_pool_deduct_enabled?: boolean;
   bag_pool?: DeptBagPool;
   produce_action: string | null;
   entries: DeptRawEntry[];

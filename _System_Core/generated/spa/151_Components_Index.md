@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-09-10T07:10:17+02:00
+generated: 2026-09-10T08:17:54+02:00
 type: spa
 ---
 
@@ -34,8 +34,9 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/csr/onlineOrders/ItemResolverCarousel.tsx`
 - `app/src/app/components/csr/orderRemarksMotion.tsx`
 - `app/src/app/components/dashboard/DashboardShippedSection.tsx`
-- `app/src/app/components/dept/ParagisBagPoolStrip.tsx`
+- `app/src/app/components/dept/DeptBagPoolStrip.tsx`
 - `app/src/app/components/exec/StaffPermissionsModal.tsx`
+- `app/src/app/components/honey/HoneyLotGallonProgress.tsx`
 - `app/src/app/components/honey/HoneyStageTabs.tsx`
 - `app/src/app/components/layout/appFeedbackMotion.tsx`
 - `app/src/app/components/layout/sidebarNavMotion.tsx`
