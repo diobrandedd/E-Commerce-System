@@ -779,6 +779,7 @@ function honey_production_bottle_stock_in(
         'qty' => $qty,
         'packaging_row_id' => $packId,
         'batch_no' => $batchNo,
+        'bottling_date' => (string) ($ensured['bottling_date'] ?? date('Y-m-d')),
         'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),
         'primary_request_id' => $credit['primary_request_id'] ?? null,
         'used_gallons' => round($usedGallons, 4),

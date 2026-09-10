@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-09-10T05:04:40+02:00
+generated: 2026-09-10T05:23:33+02:00
 type: module
 function_count: 10
 ---
@@ -30,7 +30,7 @@ function_count: 10
 - `api/v1/settings.php`:164 — `'ml_per_gallon' => honey_ml_per_gallon($pdo),`
 - `includes/honey_inventory.php`:513 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
 - `includes/honey_inventory.php`:719 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
-- `includes/honey_inventory.php`:818 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
+- `includes/honey_inventory.php`:819 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
 - `includes/rts_damaged_use.php`:313 — `$volumeGallons = honey_lines_to_gallons($deductLines, honey_ml_per_gallon($pdo));`
 
 ## honey_ml_per_gallon_save {#honey_ml_per_gallon_save}
@@ -47,7 +47,7 @@ function_count: 10
 - `includes/catalog_bootstrap.php`:27 — `$norm = honey_normalize_bottle_size($size);`
 - `includes/catalog_bootstrap.php`:50 — `return honey_bottle_size_ml(honey_normalize_bottle_size($size)) / 1000.0;`
 - `includes/honey_inventory.php`:704 — `$size = honey_normalize_bottle_size($size);`
-- `includes/honey_inventory.php`:817 — `$size = honey_normalize_bottle_size($size);`
+- `includes/honey_inventory.php`:818 — `$size = honey_normalize_bottle_size($size);`
 - `includes/honey_volume.php`:78 — `return match (honey_normalize_bottle_size($size)) {`
 - `includes/honey_volume.php`:98 — `$size = honey_normalize_bottle_size((string) ($line['size'] ?? ''));`
 - `includes/honey_volume.php`:168 — `'size' => honey_normalize_bottle_size((string) ($line['size'] ?? '')),`
@@ -67,7 +67,7 @@ function_count: 10
 
 - `includes/honey_inventory.php`:512 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
 - `includes/honey_inventory.php`:718 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
-- `includes/honey_inventory.php`:833 — `honey_aggregate_bottle_lines([['size' => $size, 'qty' => 1]]),`
+- `includes/honey_inventory.php`:834 — `honey_aggregate_bottle_lines([['size' => $size, 'qty' => 1]]),`
 
 ## honey_lines_total_ml {#honey_lines_total_ml}
 
@@ -87,7 +87,7 @@ function_count: 10
 
 - `includes/honey_inventory.php`:514 — `$usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);`
 - `includes/honey_inventory.php`:720 — `$usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);`
-- `includes/honey_inventory.php`:819 — `$usedGallons = honey_lines_to_gallons([['size' => $size, 'qty' => 1]], $mlPerGallon);`
+- `includes/honey_inventory.php`:820 — `$usedGallons = honey_lines_to_gallons([['size' => $size, 'qty' => 1]], $mlPerGallon);`
 - `includes/rts_damaged_use.php`:313 — `$volumeGallons = honey_lines_to_gallons($deductLines, honey_ml_per_gallon($pdo));`
 
 ## honey_parse_bottle_lines_from_input {#honey_parse_bottle_lines_from_input}

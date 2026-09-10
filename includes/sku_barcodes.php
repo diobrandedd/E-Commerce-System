@@ -996,13 +996,24 @@ function sku_barcode_honey_stock_in(
     if ($packagingRowId < 1) {
         throw new RuntimeException('Pick a packaging batch before stocking in.');
     }
-    $pk = honey_fetch_packaging($pdo, $packagingRowId);
-    if ($pk === null) {
+    $sourcePk = honey_fetch_packaging($pdo, $packagingRowId);
+    if ($sourcePk === null) {
         throw new RuntimeException('Packaging row not found.');
     }
-    if (honey_normalize_variant((string) $pk['variant']) !== $variant) {
+    if (honey_normalize_variant((string) $sourcePk['variant']) !== $variant) {
         throw new RuntimeException('SKU variant does not match the packaging batch.');
     }
+    // Same rule as unique stickers: picked batch identity + today's bottling date.
+    $todayPk = honey_ensure_packaging_row_for_stock_in(
+        $pdo,
+        $userId,
+        (string) $sourcePk['batch_no'],
+        $variant,
+        (string) $sourcePk['supplier_code'],
+        date('Y-m-d'),
+        isset($sourcePk['production_row_id']) ? (int) $sourcePk['production_row_id'] : null
+    );
+    $packagingRowId = (int) $todayPk['id'];
     honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, (float) $qty);
 
     $sku = sku_barcode_fetch_honey($pdo, $variant, $size);
@@ -1026,7 +1037,8 @@ function sku_barcode_honey_stock_in(
         'size_label' => honey_bottle_size_label($size),
         'qty' => $qty,
         'packaging_row_id' => $packagingRowId,
-        'batch_no' => (string) $pk['batch_no'],
+        'batch_no' => (string) $todayPk['batch_no'],
+        'bottling_date' => (string) $todayPk['bottling_date'],
         'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),
         'primary_request_id' => $credit['primary_request_id'],
     ];

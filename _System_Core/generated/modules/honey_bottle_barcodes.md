@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-09-10T05:04:31+02:00
+generated: 2026-09-10T05:23:25+02:00
 type: module
 function_count: 62
 ---
@@ -45,7 +45,7 @@ function_count: 62
 - `includes/honey_bottle_barcodes.php`:1748 — `'size_label' => honey_bottle_size_label($size),`
 - `includes/honey_bottle_barcodes.php`:2682 — `'size_label' => honey_bottle_size_label((string) $row['size']),`
 - `includes/honey_inventory.php`:778 — `'size_label' => honey_bottle_size_label($size),`
-- `includes/honey_inventory.php`:782 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`
+- `includes/honey_inventory.php`:783 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`
 - `includes/inventory_check.php`:234 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
 - `includes/inventory_check.php`:776 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
 - `includes/inventory_check.php`:1104 — `'size_label' => $size !== '' ? honey_bottle_size_label($size) : null,`
@@ -157,10 +157,10 @@ function_count: 62
 - `includes/honey_bottle_barcodes.php`:2438 — `honey_bottle_adjust_aggregate($pdo, $packId, (string) $unit['size'], 1);`
 - `includes/honey_inventory.php`:746 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, (float) $qty);`
 - `includes/pack_cancel_restock.php`:542 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, 1.0);`
-- `includes/sku_barcodes.php`:1006 — `honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, (float) $qty);`
-- `includes/sku_barcodes.php`:1188 — `honey_bottle_adjust_aggregate($pdo, (int) $row['id'], $size, -(float) $take);`
-- `includes/sku_barcodes.php`:1197 — `honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, -(float) $qty);`
-- `includes/sku_barcodes.php`:1269 — `honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, (float) $qty);`
+- `includes/sku_barcodes.php`:1017 — `honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, (float) $qty);`
+- `includes/sku_barcodes.php`:1200 — `honey_bottle_adjust_aggregate($pdo, (int) $row['id'], $size, -(float) $take);`
+- `includes/sku_barcodes.php`:1209 — `honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, -(float) $qty);`
+- `includes/sku_barcodes.php`:1281 — `honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, (float) $qty);`
 
 ## honey_bottle_deduct_packaging_one {#honey_bottle_deduct_packaging_one}
 
@@ -295,7 +295,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/bottle_barcodes.php`:430 — `api_ok(['barcode' => honey_bottle_lookup(ims_pdo(), $code)]);`
 - `includes/honey_bottle_barcodes.php`:2461 — `return honey_bottle_lookup($pdo, $code);`
-- `includes/honey_inventory.php`:1176 — `$lookup = honey_bottle_lookup($pdo, strtoupper($query));`
+- `includes/honey_inventory.php`:1177 — `$lookup = honey_bottle_lookup($pdo, strtoupper($query));`
 
 ## honey_bottle_serialize_lookup {#honey_bottle_serialize_lookup}
 
@@ -480,7 +480,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_bottle_barcodes.php`:2384 — `honey_bottle_write_sale_log($pdo, [`
 - `includes/honey_bottle_barcodes.php`:2440 — `honey_bottle_write_sale_log($pdo, [`
 - `includes/pack_cancel_restock.php`:552 — `honey_bottle_write_sale_log($pdo, [`
-- `includes/sku_barcodes.php`:1202 — `honey_bottle_write_sale_log($pdo, [`
+- `includes/sku_barcodes.php`:1214 — `honey_bottle_write_sale_log($pdo, [`
 
 ## honey_bottle_pos_lookup {#honey_bottle_pos_lookup}
 
@@ -562,7 +562,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/dept_pouch_barcodes.php`:968 — `$svg = honey_bottle_code128_svg($code);`
 - `includes/honey_bottle_barcodes.php`:2862 — `$svg = honey_bottle_code128_svg($code);`
-- `includes/sku_barcodes.php`:1374 — `$svg = honey_bottle_code128_svg($code);`
+- `includes/sku_barcodes.php`:1386 — `$svg = honey_bottle_code128_svg($code);`
 
 ## honey_bottle_batch_codes {#honey_bottle_batch_codes}
 

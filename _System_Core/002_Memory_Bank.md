@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-10 — SKU stock-in uses today’s bottling lot
+**Change:** Non-unique honey SKU stock-in remaps the picked packaging batch to today’s `(batch_no, variant, bottling_date)` row (same as unique stickers). → [[problems/records/2026-09-10_sku-stock-in-today-bottling-date]]
+
 ### 2026-09-10 — Packaging lots unique by bottling date
 **Change:** Honey packaging uniqueness is now `(batch_no, variant, bottling_date)`; stock-in credits/creates today’s lot; Packaging filters by scan date and bottling date. Run phase77. → [[problems/records/2026-09-10_packaging-bottling-date-unique]]
 
