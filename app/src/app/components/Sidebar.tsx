@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
   Truck, DollarSign, RotateCcw, ClipboardList, Factory,
-  CalendarDays, FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, UserCog, Tag, ScanLine,
+  FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, UserCog, Tag, ScanLine,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import {
@@ -256,8 +256,6 @@ function getNavItems(role: Role, _dept: string, pendingCorrections: number, labe
   if (role !== "executive") {
     items.push(
       { icon: PlusCircle, label: "Stock Input", to: "/stock-input" },
-      { icon: CalendarDays, label: "Daily Count", to: "/daily-count" },
-      { icon: ClipboardList, label: "Beginning Inventory", to: "/beginning-inventory" },
       { icon: FileEdit, label: "Edit Requests", to: "/edit-requests" },
     );
   }

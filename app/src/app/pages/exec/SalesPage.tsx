@@ -27,9 +27,9 @@ interface CheckoutItem {
   label?: string;
   qty: number;
   list_unit_price?: number;
-  unit_price: number;
+  unit_price?: number;
   line_subtotal?: number;
-  line_total: number;
+  line_total?: number;
   name?: string;
   barcodes?: CheckoutBarcode[];
 }
@@ -41,7 +41,7 @@ interface CheckoutRow {
   subtotal_amount?: number;
   discount_percent?: number | null;
   discount_amount?: number;
-  total_amount: number;
+  total_amount?: number;
   buyer_name: string;
   buyer_credentials?: string | null;
   sold_by_name?: string | null;
@@ -94,9 +94,9 @@ interface SalesSnapshot {
   summary?: {
     total_bottles_regular: number;
     total_bottles_discounted: number;
-    revenue_regular: number;
-    revenue_discounted: number;
-    discounts_given: number;
+    revenue_regular?: number;
+    revenue_discounted?: number;
+    discounts_given?: number;
     revenue_ar?: number;
   };
   variants_all: VariantChart[];
@@ -104,6 +104,7 @@ interface SalesSnapshot {
   variants_discount_10: VariantChart[];
   variants_discount_20: VariantChart[];
   checkouts: CheckoutsPage;
+  can_view_amounts?: boolean;
 }
 
 const PERIOD_OPTIONS: { value: PeriodFilter; label: string }[] = [
@@ -145,7 +146,7 @@ function itemSummary(items: CheckoutItem[]): string {
 function checkoutToThermalReceipt(row: CheckoutRow): PosThermalReceipt {
   return {
     receipt_no: row.receipt_no,
-    total: row.total_amount,
+    total: row.total_amount ?? 0,
     buyer_name: row.buyer_name?.trim() || "Walk-in",
     seller_name: row.sold_by_name?.trim() || "POS",
     subtotal: row.subtotal_amount,
@@ -158,9 +159,9 @@ function checkoutToThermalReceipt(row: CheckoutRow): PosThermalReceipt {
       size: it.size_label || it.size || undefined,
       qty: it.qty,
       list_unit_price: it.list_unit_price,
-      unit_price: it.unit_price,
+      unit_price: it.unit_price ?? 0,
       line_subtotal: it.line_subtotal,
-      line_total: it.line_total,
+      line_total: it.line_total ?? 0,
     })),
   };
 }
@@ -281,6 +282,8 @@ export function SalesPage() {
     discounts_given: 0,
     revenue_ar: 0,
   }, [data]);
+
+  const canViewAmounts = data?.can_view_amounts === true;
 
   const applyProductFilter = (next: ProductFilter) => {
     setProductFilter(next);
@@ -454,25 +457,33 @@ export function SalesPage() {
         )}
 
         {channel !== "online" && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className={`grid grid-cols-1 gap-3 ${canViewAmounts ? "md:grid-cols-4" : "md:grid-cols-2"}`}>
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Honey regular sales</p>
             <p className="text-xl font-bold mt-1">{fmtQty(summary.total_bottles_regular)} bottles</p>
-            <p className="text-sm text-muted-foreground mt-1">{peso(summary.revenue_regular)}</p>
+            {canViewAmounts ? (
+              <p className="text-sm text-muted-foreground mt-1">{peso(summary.revenue_regular ?? 0)}</p>
+            ) : null}
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Honey discounted sales</p>
             <p className="text-xl font-bold mt-1">{fmtQty(summary.total_bottles_discounted)} bottles</p>
-            <p className="text-sm text-muted-foreground mt-1">{peso(summary.revenue_discounted)}</p>
+            {canViewAmounts ? (
+              <p className="text-sm text-muted-foreground mt-1">{peso(summary.revenue_discounted ?? 0)}</p>
+            ) : null}
           </div>
-          <div className="rounded-xl border border-red-200 bg-red-50/40 p-4">
-            <p className="text-xs uppercase tracking-wide text-red-700">AR sales</p>
-            <p className="text-xl font-bold mt-1 text-red-700">{peso(summary.revenue_ar ?? 0)}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Discount given</p>
-            <p className="text-xl font-bold mt-1">{peso(summary.discounts_given)}</p>
-          </div>
+          {canViewAmounts ? (
+            <>
+              <div className="rounded-xl border border-red-200 bg-red-50/40 p-4">
+                <p className="text-xs uppercase tracking-wide text-red-700">AR sales</p>
+                <p className="text-xl font-bold mt-1 text-red-700">{peso(summary.revenue_ar ?? 0)}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Discount given</p>
+                <p className="text-xl font-bold mt-1">{peso(summary.discounts_given ?? 0)}</p>
+              </div>
+            </>
+          ) : null}
         </div>
         )}
 
@@ -588,7 +599,9 @@ export function SalesPage() {
                       <th className="px-3 py-2 font-semibold">Sold to</th>
                       <th className="px-3 py-2 font-semibold">Items</th>
                       <th className="px-3 py-2 font-semibold">Type</th>
-                      <th className="px-3 py-2 font-semibold text-right">Total</th>
+                      {canViewAmounts ? (
+                        <th className="px-3 py-2 font-semibold text-right">Total</th>
+                      ) : null}
                     </tr>
                   </thead>
                   <tbody>
@@ -631,13 +644,15 @@ export function SalesPage() {
                                 </span>
                               )}
                             </td>
-                            <td className="px-3 py-2.5 text-right font-semibold" style={{ color: "#C8900A" }}>
-                              {peso(row.total_amount)}
-                            </td>
+                            {canViewAmounts ? (
+                              <td className="px-3 py-2.5 text-right font-semibold" style={{ color: "#C8900A" }}>
+                                {peso(row.total_amount ?? 0)}
+                              </td>
+                            ) : null}
                           </tr>
                           {expanded && (
                             <tr key={`${row.sale_id}-detail`} className="border-b border-border/60 bg-secondary/10">
-                              <td colSpan={8} className="px-4 py-3">
+                              <td colSpan={canViewAmounts ? 8 : 7} className="px-4 py-3">
                                 <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                                   <p className="text-xs text-muted-foreground">
                                     Sold by: <span className="text-foreground font-medium">{row.sold_by_name || "POS"}</span>
@@ -649,23 +664,25 @@ export function SalesPage() {
                                       </span>
                                     ) : null}
                                   </p>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    className="gap-1.5 shrink-0"
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      printPosThermalReceipt(checkoutToThermalReceipt(row), pyxLogo);
-                                    }}
-                                  >
-                                    <Printer size={14} />
-                                    Reprint
-                                  </Button>
+                                  {canViewAmounts ? (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="gap-1.5 shrink-0"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        printPosThermalReceipt(checkoutToThermalReceipt(row), pyxLogo);
+                                      }}
+                                    >
+                                      <Printer size={14} />
+                                      Reprint
+                                    </Button>
+                                  ) : null}
                                 </div>
-                                {row.discount_percent ? (
+                                {canViewAmounts && row.discount_percent ? (
                                   <p className="text-xs text-muted-foreground mb-2">
-                                    Subtotal {peso(row.subtotal_amount ?? row.total_amount)} · Discount {row.discount_percent}% (
+                                    Subtotal {peso(row.subtotal_amount ?? row.total_amount ?? 0)} · Discount {row.discount_percent}% (
                                     -{peso(row.discount_amount ?? 0)})
                                   </p>
                                 ) : null}
@@ -696,16 +713,18 @@ export function SalesPage() {
                                           </span>
                                         ) : null}
                                       </span>
-                                      <span className="font-semibold whitespace-nowrap self-start">
-                                        {item.line_subtotal != null && item.line_subtotal > item.line_total ? (
-                                          <>
-                                            <span className="line-through text-muted-foreground mr-1">{peso(item.line_subtotal)}</span>
-                                            {peso(item.line_total)}
-                                          </>
-                                        ) : (
-                                          peso(item.line_total)
-                                        )}
-                                      </span>
+                                      {canViewAmounts ? (
+                                        <span className="font-semibold whitespace-nowrap self-start">
+                                          {item.line_subtotal != null && item.line_total != null && item.line_subtotal > item.line_total ? (
+                                            <>
+                                              <span className="line-through text-muted-foreground mr-1">{peso(item.line_subtotal)}</span>
+                                              {peso(item.line_total)}
+                                            </>
+                                          ) : (
+                                            peso(item.line_total ?? 0)
+                                          )}
+                                        </span>
+                                      ) : null}
                                     </li>
                                   ))}
                                 </ul>

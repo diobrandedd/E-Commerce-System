@@ -1,7 +1,7 @@
 ---
 title: material_inventory
 source: includes/material_inventory.php
-generated: 2026-09-10T10:09:00+02:00
+generated: 2026-09-10T10:21:27+02:00
 type: module
 function_count: 64
 ---

@@ -81,6 +81,7 @@ export type PermissionKey =
   | "rts.view"
   | "sales.bulk_orders"
   | "sales.view"
+  | "sales.view_amounts"
   | "settings.manage"
   | "staff.manage"
   | "suppliers.manage"
@@ -173,6 +174,7 @@ export const PERMISSION_KEYS: readonly PermissionKey[] = [
   "rts.view",
   "sales.bulk_orders",
   "sales.view",
+  "sales.view_amounts",
   "settings.manage",
   "staff.manage",
   "suppliers.manage",

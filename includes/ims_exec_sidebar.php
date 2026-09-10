@@ -20,7 +20,6 @@ if (!function_exists('ims_render_exec_sidebar')) {
             ['id' => 'edit_requests', 'href' => 'edit_requests.php', 'label' => 'Edit requests', 'badge' => $pendingCount],
             ['id' => 'stock_entries', 'href' => '../dept/stock_entries.php', 'label' => 'Stock entries'],
             ['id' => 'products', 'href' => '../dept/products.php', 'label' => 'Costing module'],
-            ['id' => 'beginning_inventory', 'href' => '../dept/beginning_inventory.php', 'label' => 'Beginning inventory'],
             ['id' => 'settings', 'href' => '../auth/settings.php', 'label' => 'Settings'],
             ['id' => 'logout', 'href' => '../auth/logout.php', 'label' => 'Logout'],
         ];

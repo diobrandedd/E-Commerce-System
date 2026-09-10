@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-10 — Sales view amounts permission
+**Change:** `sales.view_amounts` gates ₱ on Sales; API strips money when denied; phase 79 continuity grant. → [[problems/records/2026-09-10_sales-view-amounts]]
+
 ### 2026-09-10 — Supplier Master prices Forbidden with Manage suppliers
 **Change:** Inline honey/dept purchase price APIs accept `suppliers.manage` (or `honey.executive_edit`). → [[problems/records/2026-09-10_supplier-prices-forbidden-manage]]
 

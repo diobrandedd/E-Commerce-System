@@ -108,7 +108,8 @@ function ims_permission_catalog(): array
         'rts.sync.run' => ['label' => 'Run RTS sync', 'group' => 'RTS', 'description' => 'Run RTS inventory sync jobs.'],
         'rts.barcode_labels' => ['label' => 'RTS barcode labels', 'group' => 'RTS', 'description' => 'Generate and print barcodes for unlabeled RTS units (batch generate).'],
 
-        'sales.view' => ['label' => 'View sales', 'group' => 'Sales & AR', 'description' => 'View sales reports and summaries.'],
+        'sales.view' => ['label' => 'View sales', 'group' => 'Sales & AR', 'description' => 'View sales reports and summaries (units and channels).'],
+        'sales.view_amounts' => ['label' => 'View sales amounts', 'group' => 'Sales & AR', 'description' => 'See peso totals and receipt money on Sales.'],
         'sales.bulk_orders' => ['label' => 'Bulk honey orders', 'group' => 'Sales & AR', 'description' => 'Manage bulk honey order batches.'],
         'pos.sell' => ['label' => 'Walk-in POS', 'group' => 'Sales & AR', 'description' => 'Open the POS terminal and complete walk-in sales, including 10%/20% discounts.'],
         'pos.discounts.approve' => ['label' => 'Approve POS discounts', 'group' => 'Sales & AR', 'description' => 'Approve leftover POS discount requests. New sales apply 10%/20% at checkout.'],
@@ -216,7 +217,7 @@ function ims_permission_preset_for_role(string $role, ?string $deptKey = null): 
             'csr.parcels.view',
             'csr.reconcile.partner_sold', 'csr.reconcile.courier_soa', 'csr.historical_import',
             'rts.view', 'rts.record', 'rts.damaged.use', 'rts.sync.run', 'rts.admin', 'rts.barcode_labels',
-            'sales.view', 'reports.view',
+            'sales.view', 'sales.view_amounts', 'reports.view',
             'ar.take', 'ar.view_all',
             'suppliers.view',
         ]),
