@@ -6,13 +6,13 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-09-10_packaging-bottling-date-unique]] |
-| **Active Plan** | [[plans/archive/2026-09-10_packaging-bottling-date-unique_plan]] |
-| **Status** | `shipped` — packaging lots unique by bottling date (phase77) |
+| **Active Spec** | _(none)_ |
+| **Active Plan** | _(none)_ |
+| **Status** | idle — last shipped [[specs/2026-09-10_sales-view-amounts]] |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending
-- **Latest shipped:** [[specs/2026-06-18_costing-parcel-packaging-session]] Â· [[problems/records/2026-06-18_costing-dept-paragis-vs-cacao-brc]] Â· [[problems/records/2026-06-18_costing-hub-parcel-recipes-table]]
+- **Latest shipped:** [[specs/2026-09-10_sales-view-amounts]] · [[problems/records/2026-09-10_sales-view-amounts]] · [[specs/2026-09-10_inventory-check-scan-only]]
 - **Agent entry:** [[problems/records/2026-06-12_dept-raw-ux-session]] â€” checklist for next dept raw / PageLayout work
 
 ## ðŸ› ï¸ Current Todo List
@@ -21,7 +21,7 @@
 - [x] **Jar Cacao BOM:** 220 g/jar, formula 0.22 â€” phase 22 (2026-06-11)
 - [x] **Costing UI + custom formula lines** â€” phase 24 (2026-06-11)
 - [ ] **Run** phase 33 on prod + `php tools/seed_fulfillment_pack_tiers.php`; stock-in fulfillment SKUs before ship E2E
-- [ ] Manual E2E: Paragis â€” stock in bags â†’ Use raw bags â†’ Pouch â†’ verify WIP + finished + packaging deduct
+- [ ] Manual E2E: Paragis — stock in bags → scan pouches → verify bag pool grams drop (overdrawn warn OK; no packaging deduct)
 - [ ] Manual E2E: PT (~20.83 pouches/bag) + BRC (10 pouches/bag) + Jar Cacao (~4.55 jars/bag) â†’ costing â†’ custom labor line â†’ parcel â†’ POS
 - [ ] Manual E2E: RTS SPA â€” create case, append lines, sync inventory, void/claim, dashboard counts
 - [ ] Manual E2E: Shopee SPX **packing list Excel + PDF** â€” import â†’ B2T1 350ml variant pick â†’ master Excel has Order No. + Name + Item/s

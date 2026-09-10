@@ -1,4 +1,4 @@
-import { CalendarDays, ClipboardList, FileEdit, PlusCircle } from "lucide-react";
+import { FileEdit, PlusCircle, ClipboardList } from "lucide-react";
 import { AppSectionEnter } from "@/app/components/layout/appFeedbackMotion";
 import { DashboardQuickActions } from "@/app/components/dashboard/DashboardQuickActions";
 import { DashboardEditRequestsPanel } from "@/app/components/dashboard/DashboardEditRequestsPanel";
@@ -18,12 +18,6 @@ export function DashboardStaffSection({ pendingCount, editRequests, loading }: D
       label: "Stock Input",
       description: "Log new stock entries",
       to: "/stock-input",
-    },
-    {
-      icon: CalendarDays,
-      label: "Daily Count",
-      description: "Submit today's count",
-      to: "/daily-count",
     },
     {
       icon: FileEdit,

@@ -770,11 +770,12 @@ Header **Guide** on all three raw pages — no inline workflow/yield panels on p
 
 ### Paragis (pt)
 
-- Stat cards: **raw bags** | **tea bags (WIP)** | **finished pouches**.
-- Raw-production records: Stock in · **Use raw bags** · WIP waste · Bag waste (advanced: exact tea bag count via guide footer).
-- Finished inventory: Request barcode · Generate / print · **Scan pouches to inventory**. Barcode stock-in credits finished pouches only and does **not** require or deduct raw bags, WIP, or packaging.
+- Stat cards: **raw bags** | **finished pouches** (no WIP tea-bag card).
+- **Bag pool** strip: remaining grams + progress vs gross stocked; overdrawn state allowed.
+- Raw-production records: Stock in · Bag waste (Use raw bags / WIP waste hidden).
+- Finished inventory: Request barcode · Generate / print · **Scan pouches to inventory** (deducts bag pool via Settings BOM).
 - Daily finished-pouch records are informational only and do not mutate inventory.
-- Floor input: **bags opened** (not individual tea bag count) → WIP derived at 500/bag.
+- Floor input: bags into pool; pouch scans burn Settings `pt.grams_per_tea_bag` × `pt.tea_bags_per_pouch`.
 - Modals call `dept_production_preview` for stock-linked formula deduct lines (custom costing lines excluded).
 - **Phone layout:** top bar uses compact actions (`Finished`, `Guide`, `Actions`) and opens `RawActionsModal` for all mutate actions. Do not place 5–7 action buttons directly in header on mobile.
 - **Phone activity lists:** show stacked cards (`When`, `Action`, `Qty`, `Note`) on small screens; keep desktop table only at `sm+`.

@@ -84,6 +84,15 @@ export function canViewSupplierProfile(user: AuthUser | null | undefined): boole
   return hasPermission(perms(user), user?.role, "suppliers.view");
 }
 
+export function canManageSuppliers(user: AuthUser | null | undefined): boolean {
+  return hasPermission(perms(user), user?.role, "suppliers.manage");
+}
+
+/** Supplier Master inline purchase prices (honey + dept bags). */
+export function canEditSupplierPurchasePrices(user: AuthUser | null | undefined): boolean {
+  return canManageSuppliers(user) || canExecutiveDirectEdit(user);
+}
+
 /** @deprecated use AuthUser overload — role-only checks ignore granular permissions */
 export function canMutateHoneyInventoryRole(role: Role | undefined): boolean {
   return role === "executive" || role === "prod_manager";

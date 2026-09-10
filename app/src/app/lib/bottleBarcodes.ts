@@ -259,6 +259,8 @@ export const bottleBarcodesApi = {
         qty?: number;
         used_gallons?: number;
         remaining_production_gallons?: number;
+        production_overdrawn?: boolean;
+        warning?: string | null;
         ml_per_gallon?: number;
         production_row_id?: number;
         batch_no?: string;

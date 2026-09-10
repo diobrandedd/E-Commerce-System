@@ -21,6 +21,8 @@ import {
 } from "@/app/lib/suppliers";
 import { ApiError } from "@/app/lib/api";
 import { cn } from "@/app/components/ui/utils";
+import { useAuth } from "@/app/context/AuthContext";
+import { canEditSupplierPurchasePrices, canManageSuppliers } from "@/app/lib/honeyPermissions";
 
 type SupplierSortKey = "name" | "category" | "contact" | "payment" | "address" | "status";
 type SortDir = "asc" | "desc";
@@ -52,6 +54,9 @@ function supplierSortValue(s: Supplier, key: SupplierSortKey): string {
 }
 
 export function SuppliersPage() {
+  const { user } = useAuth();
+  const canManage = canManageSuppliers(user);
+  const canEditPrices = canEditSupplierPurchasePrices(user);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -168,14 +173,16 @@ export function SuppliersPage() {
                 className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-background outline-none focus:border-[#C8900A] transition-colors"
               />
             </div>
-            <button
-              type="button"
-              onClick={() => setModal("add")}
-              className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg text-white"
-              style={{ background: "#C8900A" }}
-            >
-              <Plus size={15} /> Add Supplier
-            </button>
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => setModal("add")}
+                className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg text-white"
+                style={{ background: "#C8900A" }}
+              >
+                <Plus size={15} /> Add Supplier
+              </button>
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -227,7 +234,7 @@ export function SuppliersPage() {
                   const isBlackRice = s.category === "black_rice";
                   const isCacao = s.category === "cacao";
                   const isHoneyComb = s.category === "honey_comb";
-                  const hasPricing = supplierHasInlinePricing(s);
+                  const hasPricing = canEditPrices && supplierHasInlinePricing(s);
                   const isExpanded = hasPricing && expandedPricingId === s.id;
                   return (
                     <Fragment key={s.id}>
@@ -290,12 +297,16 @@ export function SuppliersPage() {
                           {s.valid_id_url && (
                             <a href={s.valid_id_url} target="_blank" rel="noreferrer" className="text-xs text-[#C8900A] underline">ID</a>
                           )}
-                          <button type="button" onClick={() => setModal(s)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground inline-flex">
-                            <Edit2 size={14} />
-                          </button>
-                          <button type="button" onClick={() => toggleActive(s)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
-                            {s.is_active ? "Deactivate" : "Activate"}
-                          </button>
+                          {canManage && (
+                            <>
+                              <button type="button" onClick={() => setModal(s)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground inline-flex">
+                                <Edit2 size={14} />
+                              </button>
+                              <button type="button" onClick={() => toggleActive(s)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+                                {s.is_active ? "Deactivate" : "Activate"}
+                              </button>
+                            </>
+                          )}
                         </td>
                       </tr>
                       {isExpanded && isHoney && (

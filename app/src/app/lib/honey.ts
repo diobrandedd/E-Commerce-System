@@ -13,11 +13,11 @@ export function isDepleted(current: string | number): boolean {
   return Number(current) <= 0;
 }
 
-export type HoneyStockLevel = "full" | "medium" | "low" | "depleted";
+export type HoneyStockLevel = "full" | "medium" | "low" | "depleted" | "overdrawn";
 
 export interface HoneyStockStatusResult {
   level: HoneyStockLevel;
-  label: "Available" | "Out of stock";
+  label: "Available" | "Out of stock" | "Overdrawn";
 }
 
 /** Stock level from current vs initial qty (warehouse / production rows). */
@@ -27,6 +27,9 @@ export function honeyStockStatus(
 ): HoneyStockStatusResult {
   const c = Number(current);
   const i = Number(initial);
+  if (Number.isFinite(c) && c < -1e-9) {
+    return { level: "overdrawn", label: "Overdrawn" };
+  }
   if (!Number.isFinite(c) || c <= 0 || !Number.isFinite(i) || i <= 0) {
     return { level: "depleted", label: "Out of stock" };
   }

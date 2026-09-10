@@ -1,7 +1,7 @@
 ---
 title: rts_storage
 source: includes/rts_storage.php
-generated: 2026-09-10T08:42:13+02:00
+generated: 2026-09-10T10:27:44+02:00
 type: module
 function_count: 16
 ---

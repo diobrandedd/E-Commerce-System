@@ -1,7 +1,7 @@
 ---
 title: honey_sales_report
 source: includes/honey_sales_report.php
-generated: 2026-09-10T08:41:49+02:00
+generated: 2026-09-10T10:27:20+02:00
 type: module
 function_count: 15
 ---
@@ -128,5 +128,5 @@ function_count: 15
 
 **Callers (1):**
 
-- `api/v1/sales.php`:38 — `$data = honey_sales_sold_snapshot(`
+- `api/v1/sales.php`:82 — `$data = honey_sales_sold_snapshot(`
 

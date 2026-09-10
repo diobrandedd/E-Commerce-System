@@ -1065,6 +1065,101 @@ function sku_barcode_dept_stock_in(PDO $pdo, int $userId, string $productKey, in
          WHERE id = ?'
     )->execute([$qty, $qty, $label, (int) $fin['id']]);
 
+    $bagPool = null;
+    if ($productKey === 'pt') {
+        require_once __DIR__ . '/dept_pt_settings.php';
+        if (dept_pt_setting_bag_pool_deduct_enabled($pdo)) {
+            $bags = dept_pt_setting_bags_per_pouch($pdo) * $qty;
+            $deduct = dept_raw_deduct_bags_allow_negative($pdo, $userId, 'pt', $bags, 'sku_pouch_scan');
+            $bagPool = [
+                'bags_deducted' => $deduct['bags_deducted'],
+                'bags_on_hand' => $deduct['bags_on_hand'],
+                'grams_deducted' => round(dept_pt_setting_grams_per_pouch($pdo) * $qty, 2),
+                'grams_remaining' => round($deduct['bags_on_hand'] * (float) PT_GRAMS_PER_BAG, 2),
+                'warned' => $deduct['warned'],
+                'shortfall_bags' => $deduct['shortfall_bags'],
+                'warning' => $deduct['warned']
+                    ? 'Bag pool was short for this SKU stock-in; pool may be negative. Stock in more raw bags when you can.'
+                    : null,
+                'deduct_enabled' => true,
+            ];
+        } else {
+            $onHand = dept_raw_bags_on_hand($pdo, 'pt');
+            $bagPool = [
+                'bags_deducted' => 0.0,
+                'bags_on_hand' => $onHand,
+                'grams_deducted' => 0.0,
+                'grams_remaining' => round($onHand * (float) PT_GRAMS_PER_BAG, 2),
+                'warned' => false,
+                'shortfall_bags' => 0.0,
+                'warning' => null,
+                'deduct_enabled' => false,
+            ];
+        }
+    } elseif ($productKey === 'brc') {
+        require_once __DIR__ . '/dept_brc_settings.php';
+        $gramsPerBag = dept_brc_setting_grams_per_bag($pdo);
+        if (dept_brc_setting_bag_pool_deduct_enabled($pdo)) {
+            $bags = dept_brc_setting_bags_per_pouch($pdo) * $qty;
+            $deduct = dept_raw_deduct_bags_allow_negative($pdo, $userId, 'brc', $bags, 'sku_pouch_scan');
+            $bagPool = [
+                'bags_deducted' => $deduct['bags_deducted'],
+                'bags_on_hand' => $deduct['bags_on_hand'],
+                'grams_deducted' => round(dept_brc_setting_grams_per_pouch($pdo) * $qty, 2),
+                'grams_remaining' => round($deduct['bags_on_hand'] * $gramsPerBag, 2),
+                'warned' => $deduct['warned'],
+                'shortfall_bags' => $deduct['shortfall_bags'],
+                'warning' => $deduct['warned']
+                    ? 'Bag pool was short for this SKU stock-in; pool may be negative. Stock in more raw bags when you can.'
+                    : null,
+                'deduct_enabled' => true,
+            ];
+        } else {
+            $onHand = dept_raw_bags_on_hand($pdo, 'brc');
+            $bagPool = [
+                'bags_deducted' => 0.0,
+                'bags_on_hand' => $onHand,
+                'grams_deducted' => 0.0,
+                'grams_remaining' => round($onHand * $gramsPerBag, 2),
+                'warned' => false,
+                'shortfall_bags' => 0.0,
+                'warning' => null,
+                'deduct_enabled' => false,
+            ];
+        }
+    } elseif ($productKey === 'jar_cacao') {
+        require_once __DIR__ . '/dept_jar_cacao_settings.php';
+        $gramsPerBag = dept_jar_cacao_setting_grams_per_bag($pdo);
+        if (dept_jar_cacao_setting_bag_pool_deduct_enabled($pdo)) {
+            $bags = dept_jar_cacao_setting_bags_per_jar($pdo) * $qty;
+            $deduct = dept_raw_deduct_bags_allow_negative($pdo, $userId, 'jar_cacao', $bags, 'sku_jar_scan');
+            $bagPool = [
+                'bags_deducted' => $deduct['bags_deducted'],
+                'bags_on_hand' => $deduct['bags_on_hand'],
+                'grams_deducted' => round(dept_jar_cacao_setting_grams_per_jar($pdo) * $qty, 2),
+                'grams_remaining' => round($deduct['bags_on_hand'] * $gramsPerBag, 2),
+                'warned' => $deduct['warned'],
+                'shortfall_bags' => $deduct['shortfall_bags'],
+                'warning' => $deduct['warned']
+                    ? 'Bag pool was short for this SKU stock-in; pool may be negative. Stock in more raw bags when you can.'
+                    : null,
+                'deduct_enabled' => true,
+            ];
+        } else {
+            $onHand = dept_raw_bags_on_hand($pdo, 'jar_cacao');
+            $bagPool = [
+                'bags_deducted' => 0.0,
+                'bags_on_hand' => $onHand,
+                'grams_deducted' => 0.0,
+                'grams_remaining' => round($onHand * $gramsPerBag, 2),
+                'warned' => false,
+                'shortfall_bags' => 0.0,
+                'warning' => null,
+                'deduct_enabled' => false,
+            ];
+        }
+    }
+
     $sku = sku_barcode_fetch_dept($pdo, $productKey);
     $credit = ['primary_request_id' => null, 'credited' => $qty];
     if ($sku !== null) {
@@ -1077,7 +1172,7 @@ function sku_barcode_dept_stock_in(PDO $pdo, int $userId, string $productKey, in
         );
     }
 
-    return [
+    $out = [
         'kind' => 'dept',
         'product_key' => $productKey,
         'product_label' => $label,
@@ -1085,6 +1180,11 @@ function sku_barcode_dept_stock_in(PDO $pdo, int $userId, string $productKey, in
         'qty' => $qty,
         'primary_request_id' => $credit['primary_request_id'],
     ];
+    if ($bagPool !== null) {
+        $out['bag_pool'] = $bagPool;
+    }
+
+    return $out;
 }
 
 /**

@@ -1,7 +1,7 @@
 ---
 title: app_settings
 source: includes/app_settings.php
-generated: 2026-09-10T08:41:19+02:00
+generated: 2026-09-10T10:26:55+02:00
 type: module
 function_count: 3
 ---
@@ -24,15 +24,33 @@ function_count: 3
 
 **Tables:** `app_settings`
 
-**Callers (1):**
+**Callers (10):**
 
+- `includes/dept_brc_settings.php`:44 — `return dept_brc_setting_parse_bool(app_setting_get($pdo, BRC_BAG_POOL_DEDUCT_SETTING_KEY, null), true);`
+- `includes/dept_brc_settings.php`:52 — `$raw = app_setting_get($pdo, BRC_GRAMS_PER_POUCH_SETTING_KEY, null);`
+- `includes/dept_brc_settings.php`:69 — `$raw = app_setting_get($pdo, BRC_GRAMS_PER_BAG_SETTING_KEY, null);`
+- `includes/dept_jar_cacao_settings.php`:45 — `app_setting_get($pdo, JAR_CACAO_BAG_POOL_DEDUCT_SETTING_KEY, null),`
+- `includes/dept_jar_cacao_settings.php`:55 — `$raw = app_setting_get($pdo, JAR_CACAO_GRAMS_PER_JAR_SETTING_KEY, null);`
+- `includes/dept_jar_cacao_settings.php`:72 — `$raw = app_setting_get($pdo, JAR_CACAO_GRAMS_PER_BAG_SETTING_KEY, null);`
+- `includes/dept_pt_settings.php`:44 — `return dept_pt_setting_parse_bool(app_setting_get($pdo, PT_BAG_POOL_DEDUCT_SETTING_KEY, null), true);`
+- `includes/dept_pt_settings.php`:52 — `$raw = app_setting_get($pdo, PT_GRAMS_PER_TEA_BAG_SETTING_KEY, null);`
+- `includes/dept_pt_settings.php`:69 — `$raw = app_setting_get($pdo, PT_TEA_BAGS_PER_POUCH_SETTING_KEY, null);`
 - `includes/honey_volume.php`:30 — `$raw = app_setting_get($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, null);`
 
 ## app_setting_set {#app_setting_set}
 
 **Tables:** `app_settings`
 
-**Callers (1):**
+**Callers (10):**
 
+- `includes/dept_brc_settings.php`:143 — `app_setting_set($pdo, BRC_GRAMS_PER_POUCH_SETTING_KEY, (string) $gramsPerPouch, $userId);`
+- `includes/dept_brc_settings.php`:144 — `app_setting_set($pdo, BRC_GRAMS_PER_BAG_SETTING_KEY, (string) $gramsPerBag, $userId);`
+- `includes/dept_brc_settings.php`:145 — `app_setting_set($pdo, BRC_BAG_POOL_DEDUCT_SETTING_KEY, $bagPoolDeduct ? '1' : '0', $userId);`
+- `includes/dept_jar_cacao_settings.php`:146 — `app_setting_set($pdo, JAR_CACAO_GRAMS_PER_JAR_SETTING_KEY, (string) $gramsPerJar, $userId);`
+- `includes/dept_jar_cacao_settings.php`:147 — `app_setting_set($pdo, JAR_CACAO_GRAMS_PER_BAG_SETTING_KEY, (string) $gramsPerBag, $userId);`
+- `includes/dept_jar_cacao_settings.php`:148 — `app_setting_set($pdo, JAR_CACAO_BAG_POOL_DEDUCT_SETTING_KEY, $bagPoolDeduct ? '1' : '0', $userId);`
+- `includes/dept_pt_settings.php`:150 — `app_setting_set($pdo, PT_GRAMS_PER_TEA_BAG_SETTING_KEY, (string) $gramsPerTeaBag, $userId);`
+- `includes/dept_pt_settings.php`:151 — `app_setting_set($pdo, PT_TEA_BAGS_PER_POUCH_SETTING_KEY, (string) $teaBagsPerPouch, $userId);`
+- `includes/dept_pt_settings.php`:152 — `app_setting_set($pdo, PT_BAG_POOL_DEDUCT_SETTING_KEY, $bagPoolDeduct ? '1' : '0', $userId);`
 - `includes/honey_volume.php`:54 — `app_setting_set($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, $stored, $userId);`
 

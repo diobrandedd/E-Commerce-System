@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, ShoppingCart, Tag, Droplets } from "lucide-react";
+import { Loader2, ShoppingCart, Tag, Droplets, Leaf } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
+import { Switch } from "@/app/components/ui/switch";
 import {
   AppErrorBanner,
   AppSuccessNotice,
@@ -68,6 +69,39 @@ export function SettingsPage() {
   const [mlOk, setMlOk] = useState<string | null>(null);
   const [mlErr, setMlErr] = useState<string | null>(null);
 
+  const [ptGramsTea, setPtGramsTea] = useState("2");
+  const [ptBagsPouch, setPtBagsPouch] = useState("24");
+  const [ptDefaultGrams, setPtDefaultGrams] = useState(2);
+  const [ptDefaultBags, setPtDefaultBags] = useState(24);
+  const [ptGramsPouch, setPtGramsPouch] = useState(48);
+  const [ptBagPoolDeduct, setPtBagPoolDeduct] = useState(true);
+  const [ptLoading, setPtLoading] = useState(true);
+  const [ptSaving, setPtSaving] = useState(false);
+  const [ptOk, setPtOk] = useState<string | null>(null);
+  const [ptErr, setPtErr] = useState<string | null>(null);
+
+  const [brcGramsPouch, setBrcGramsPouch] = useState("100");
+  const [brcGramsBag, setBrcGramsBag] = useState("1000");
+  const [brcDefaultPouch, setBrcDefaultPouch] = useState(100);
+  const [brcDefaultBag, setBrcDefaultBag] = useState(1000);
+  const [brcPouchesPerBag, setBrcPouchesPerBag] = useState(10);
+  const [brcBagPoolDeduct, setBrcBagPoolDeduct] = useState(true);
+  const [brcLoading, setBrcLoading] = useState(true);
+  const [brcSaving, setBrcSaving] = useState(false);
+  const [brcOk, setBrcOk] = useState<string | null>(null);
+  const [brcErr, setBrcErr] = useState<string | null>(null);
+
+  const [cacaoGramsJar, setCacaoGramsJar] = useState("220");
+  const [cacaoGramsBag, setCacaoGramsBag] = useState("1000");
+  const [cacaoDefaultJar, setCacaoDefaultJar] = useState(220);
+  const [cacaoDefaultBag, setCacaoDefaultBag] = useState(1000);
+  const [cacaoJarsPerBag, setCacaoJarsPerBag] = useState(1000 / 220);
+  const [cacaoBagPoolDeduct, setCacaoBagPoolDeduct] = useState(true);
+  const [cacaoLoading, setCacaoLoading] = useState(true);
+  const [cacaoSaving, setCacaoSaving] = useState(false);
+  const [cacaoOk, setCacaoOk] = useState<string | null>(null);
+  const [cacaoErr, setCacaoErr] = useState<string | null>(null);
+
   const loadPins = useCallback(async () => {
     setPinsLoading(true);
     try {
@@ -124,11 +158,89 @@ export function SettingsPage() {
     }
   }, []);
 
+  const loadPtBom = useCallback(async () => {
+    setPtLoading(true);
+    setPtErr(null);
+    try {
+      const data = await apiGet<{
+        grams_per_tea_bag: number;
+        tea_bags_per_pouch: number;
+        grams_per_pouch: number;
+        bag_pool_deduct: boolean;
+        default_grams_per_tea_bag: number;
+        default_tea_bags_per_pouch: number;
+      }>("settings.php", "pt_bom_get");
+      setPtGramsTea(String(data.grams_per_tea_bag));
+      setPtBagsPouch(String(data.tea_bags_per_pouch));
+      setPtGramsPouch(data.grams_per_pouch);
+      setPtBagPoolDeduct(data.bag_pool_deduct !== false);
+      setPtDefaultGrams(data.default_grams_per_tea_bag);
+      setPtDefaultBags(data.default_tea_bags_per_pouch);
+    } catch (e) {
+      setPtErr(e instanceof ApiError ? e.message : "Could not load Paragis BOM settings.");
+    } finally {
+      setPtLoading(false);
+    }
+  }, []);
+
+  const loadBrcBom = useCallback(async () => {
+    setBrcLoading(true);
+    setBrcErr(null);
+    try {
+      const data = await apiGet<{
+        grams_per_pouch: number;
+        grams_per_bag: number;
+        pouches_per_bag: number;
+        bag_pool_deduct: boolean;
+        default_grams_per_pouch: number;
+        default_grams_per_bag: number;
+      }>("settings.php", "brc_bom_get");
+      setBrcGramsPouch(String(data.grams_per_pouch));
+      setBrcGramsBag(String(data.grams_per_bag));
+      setBrcPouchesPerBag(data.pouches_per_bag);
+      setBrcBagPoolDeduct(data.bag_pool_deduct !== false);
+      setBrcDefaultPouch(data.default_grams_per_pouch);
+      setBrcDefaultBag(data.default_grams_per_bag);
+    } catch (e) {
+      setBrcErr(e instanceof ApiError ? e.message : "Could not load Black Rice BOM settings.");
+    } finally {
+      setBrcLoading(false);
+    }
+  }, []);
+
+  const loadCacaoBom = useCallback(async () => {
+    setCacaoLoading(true);
+    setCacaoErr(null);
+    try {
+      const data = await apiGet<{
+        grams_per_jar: number;
+        grams_per_bag: number;
+        jars_per_bag: number;
+        bag_pool_deduct: boolean;
+        default_grams_per_jar: number;
+        default_grams_per_bag: number;
+      }>("settings.php", "jar_cacao_bom_get");
+      setCacaoGramsJar(String(data.grams_per_jar));
+      setCacaoGramsBag(String(data.grams_per_bag));
+      setCacaoJarsPerBag(data.jars_per_bag);
+      setCacaoBagPoolDeduct(data.bag_pool_deduct !== false);
+      setCacaoDefaultJar(data.default_grams_per_jar);
+      setCacaoDefaultBag(data.default_grams_per_bag);
+    } catch (e) {
+      setCacaoErr(e instanceof ApiError ? e.message : "Could not load Jar Cacao BOM settings.");
+    } finally {
+      setCacaoLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadPins();
     void loadSkuRows();
     void loadHoneyVolume();
-  }, [loadPins, loadSkuRows, loadHoneyVolume]);
+    void loadPtBom();
+    void loadBrcBom();
+    void loadCacaoBom();
+  }, [loadPins, loadSkuRows, loadHoneyVolume, loadPtBom, loadBrcBom, loadCacaoBom]);
 
   const saveHoneyVolume = async () => {
     setMlSaving(true);
@@ -145,6 +257,93 @@ export function SettingsPage() {
       setMlErr(e instanceof ApiError ? e.message : "Could not save honey volume.");
     } finally {
       setMlSaving(false);
+    }
+  };
+
+  const savePtBom = async () => {
+    setPtSaving(true);
+    setPtOk(null);
+    setPtErr(null);
+    try {
+      const res = await apiPost<{
+        grams_per_tea_bag: number;
+        tea_bags_per_pouch: number;
+        grams_per_pouch: number;
+        bag_pool_deduct: boolean;
+      }>("settings.php", "pt_bom_save", {
+        grams_per_tea_bag: Number(ptGramsTea),
+        tea_bags_per_pouch: Number(ptBagsPouch),
+        bag_pool_deduct: ptBagPoolDeduct ? 1 : 0,
+      });
+      setPtGramsTea(String(res.grams_per_tea_bag));
+      setPtBagsPouch(String(res.tea_bags_per_pouch));
+      setPtGramsPouch(res.grams_per_pouch);
+      setPtBagPoolDeduct(res.bag_pool_deduct !== false);
+      setPtOk(
+        `Saved Paragis BOM (${res.grams_per_pouch} g per pouch · deduct ${res.bag_pool_deduct ? "on" : "off"}).`,
+      );
+    } catch (e) {
+      setPtErr(e instanceof ApiError ? e.message : "Could not save Paragis BOM.");
+    } finally {
+      setPtSaving(false);
+    }
+  };
+
+  const saveBrcBom = async () => {
+    setBrcSaving(true);
+    setBrcOk(null);
+    setBrcErr(null);
+    try {
+      const res = await apiPost<{
+        grams_per_pouch: number;
+        grams_per_bag: number;
+        pouches_per_bag: number;
+        bag_pool_deduct: boolean;
+      }>("settings.php", "brc_bom_save", {
+        grams_per_pouch: Number(brcGramsPouch),
+        grams_per_bag: Number(brcGramsBag),
+        bag_pool_deduct: brcBagPoolDeduct ? 1 : 0,
+      });
+      setBrcGramsPouch(String(res.grams_per_pouch));
+      setBrcGramsBag(String(res.grams_per_bag));
+      setBrcPouchesPerBag(res.pouches_per_bag);
+      setBrcBagPoolDeduct(res.bag_pool_deduct !== false);
+      setBrcOk(
+        `Saved Black Rice BOM (${res.grams_per_pouch} g per pouch · deduct ${res.bag_pool_deduct ? "on" : "off"}).`,
+      );
+    } catch (e) {
+      setBrcErr(e instanceof ApiError ? e.message : "Could not save Black Rice BOM.");
+    } finally {
+      setBrcSaving(false);
+    }
+  };
+
+  const saveCacaoBom = async () => {
+    setCacaoSaving(true);
+    setCacaoOk(null);
+    setCacaoErr(null);
+    try {
+      const res = await apiPost<{
+        grams_per_jar: number;
+        grams_per_bag: number;
+        jars_per_bag: number;
+        bag_pool_deduct: boolean;
+      }>("settings.php", "jar_cacao_bom_save", {
+        grams_per_jar: Number(cacaoGramsJar),
+        grams_per_bag: Number(cacaoGramsBag),
+        bag_pool_deduct: cacaoBagPoolDeduct ? 1 : 0,
+      });
+      setCacaoGramsJar(String(res.grams_per_jar));
+      setCacaoGramsBag(String(res.grams_per_bag));
+      setCacaoJarsPerBag(res.jars_per_bag);
+      setCacaoBagPoolDeduct(res.bag_pool_deduct !== false);
+      setCacaoOk(
+        `Saved Jar Cacao BOM (${res.grams_per_jar} g per jar · deduct ${res.bag_pool_deduct ? "on" : "off"}).`,
+      );
+    } catch (e) {
+      setCacaoErr(e instanceof ApiError ? e.message : "Could not save Jar Cacao BOM.");
+    } finally {
+      setCacaoSaving(false);
     }
   };
 
@@ -252,6 +451,12 @@ export function SettingsPage() {
         {skuErr && <AppErrorBanner message={skuErr} />}
         {mlOk && <AppSuccessNotice message={mlOk} />}
         {mlErr && <AppErrorBanner message={mlErr} />}
+        {ptOk && <AppSuccessNotice message={ptOk} />}
+        {ptErr && <AppErrorBanner message={ptErr} />}
+        {brcOk && <AppSuccessNotice message={brcOk} />}
+        {brcErr && <AppErrorBanner message={brcErr} />}
+        {cacaoOk && <AppSuccessNotice message={cacaoOk} />}
+        {cacaoErr && <AppErrorBanner message={cacaoErr} />}
 
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
           <div className="px-6 py-4 border-b border-border flex items-center gap-2">
@@ -298,6 +503,324 @@ export function SettingsPage() {
               >
                 Reset to default
               </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <Leaf size={18} className="text-[#C8900A]" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Paragis pouch BOM</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Leaf grams per tea bag and tea bags per sellable pouch. Scan deducts grams_per_tea_bag × tea_bags_per_pouch
+                from the bag pool (1 kg bags). Defaults {ptDefaultGrams} g × {ptDefaultBags} = {ptDefaultGrams * ptDefaultBags} g.
+              </p>
+            </div>
+          </div>
+          {ptLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Deduct raw bags on finished stock-in</p>
+                  <p className="text-xs text-muted-foreground">
+                    When off, pouch scans credit finished inventory without using the bag pool.
+                  </p>
+                </div>
+                <Switch
+                  checked={ptBagPoolDeduct}
+                  onCheckedChange={setPtBagPoolDeduct}
+                  data-testid="pt-bag-pool-deduct-switch"
+                  className="data-[state=checked]:bg-[#C8900A]"
+                  aria-label="Deduct raw bags on finished stock-in"
+                />
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+              <div className="w-40">
+                <label htmlFor="pt-grams-tea" className="text-xs text-muted-foreground">
+                  g per tea bag
+                </label>
+                <input
+                  id="pt-grams-tea"
+                  type="number"
+                  min={0.1}
+                  max={50}
+                  step="any"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={ptGramsTea}
+                  onChange={e => {
+                    setPtGramsTea(e.target.value);
+                    const g = Number(e.target.value);
+                    const n = Number(ptBagsPouch);
+                    if (Number.isFinite(g) && Number.isFinite(n)) setPtGramsPouch(g * n);
+                  }}
+                />
+              </div>
+              <div className="w-40">
+                <label htmlFor="pt-bags-pouch" className="text-xs text-muted-foreground">
+                  tea bags per pouch
+                </label>
+                <input
+                  id="pt-bags-pouch"
+                  type="number"
+                  min={1}
+                  max={500}
+                  step="1"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={ptBagsPouch}
+                  onChange={e => {
+                    setPtBagsPouch(e.target.value);
+                    const n = Number(e.target.value);
+                    const g = Number(ptGramsTea);
+                    if (Number.isFinite(g) && Number.isFinite(n)) setPtGramsPouch(g * n);
+                  }}
+                />
+              </div>
+              <div className="min-w-[8rem]">
+                <p className="text-xs text-muted-foreground">g per pouch</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums">{ptGramsPouch}</p>
+              </div>
+              <Button
+                type="button"
+                disabled={ptSaving}
+                onClick={() => void savePtBom()}
+                className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+              >
+                {ptSaving ? <Loader2 className="animate-spin" size={14} /> : "Save"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={ptSaving}
+                onClick={() => {
+                  setPtGramsTea(String(ptDefaultGrams));
+                  setPtBagsPouch(String(ptDefaultBags));
+                  setPtGramsPouch(ptDefaultGrams * ptDefaultBags);
+                  setPtBagPoolDeduct(true);
+                }}
+              >
+                Reset to default
+              </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <Leaf size={18} className="text-[#C8900A]" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Black Rice pouch BOM</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Grams deducted per pouch scan and supplier bag size for the bag pool. Defaults{" "}
+                {brcDefaultPouch} g / pouch · {brcDefaultBag} g / bag ({brcDefaultBag / brcDefaultPouch} pouches/bag).
+              </p>
+            </div>
+          </div>
+          {brcLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Deduct raw bags on finished stock-in</p>
+                  <p className="text-xs text-muted-foreground">
+                    When off, pouch scans credit finished inventory without using the bag pool.
+                  </p>
+                </div>
+                <Switch
+                  checked={brcBagPoolDeduct}
+                  onCheckedChange={setBrcBagPoolDeduct}
+                  data-testid="brc-bag-pool-deduct-switch"
+                  className="data-[state=checked]:bg-[#C8900A]"
+                  aria-label="Deduct raw bags on finished stock-in"
+                />
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+              <div className="w-40">
+                <label htmlFor="brc-grams-pouch" className="text-xs text-muted-foreground">
+                  g per pouch
+                </label>
+                <input
+                  id="brc-grams-pouch"
+                  type="number"
+                  min={1}
+                  max={2000}
+                  step="any"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={brcGramsPouch}
+                  onChange={e => {
+                    setBrcGramsPouch(e.target.value);
+                    const g = Number(e.target.value);
+                    const bag = Number(brcGramsBag);
+                    if (Number.isFinite(g) && Number.isFinite(bag) && g > 0) {
+                      setBrcPouchesPerBag(Math.round((bag / g) * 10000) / 10000);
+                    }
+                  }}
+                />
+              </div>
+              <div className="w-40">
+                <label htmlFor="brc-grams-bag" className="text-xs text-muted-foreground">
+                  g per bag
+                </label>
+                <input
+                  id="brc-grams-bag"
+                  type="number"
+                  min={100}
+                  max={50000}
+                  step="any"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={brcGramsBag}
+                  onChange={e => {
+                    setBrcGramsBag(e.target.value);
+                    const bag = Number(e.target.value);
+                    const g = Number(brcGramsPouch);
+                    if (Number.isFinite(g) && Number.isFinite(bag) && g > 0) {
+                      setBrcPouchesPerBag(Math.round((bag / g) * 10000) / 10000);
+                    }
+                  }}
+                />
+              </div>
+              <div className="min-w-[8rem]">
+                <p className="text-xs text-muted-foreground">pouches per bag</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums">{brcPouchesPerBag}</p>
+              </div>
+              <Button
+                type="button"
+                disabled={brcSaving}
+                onClick={() => void saveBrcBom()}
+                className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+              >
+                {brcSaving ? <Loader2 className="animate-spin" size={14} /> : "Save"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={brcSaving}
+                onClick={() => {
+                  setBrcGramsPouch(String(brcDefaultPouch));
+                  setBrcGramsBag(String(brcDefaultBag));
+                  setBrcPouchesPerBag(brcDefaultBag / brcDefaultPouch);
+                  setBrcBagPoolDeduct(true);
+                }}
+              >
+                Reset to default
+              </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <Leaf size={18} className="text-[#C8900A]" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Jar Cacao BOM</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Grams deducted per jar scan and supplier bag size for the bag pool. Defaults{" "}
+                {cacaoDefaultJar} g / jar · {cacaoDefaultBag} g / bag (
+                {(cacaoDefaultBag / cacaoDefaultJar).toFixed(2)} jars/bag).
+              </p>
+            </div>
+          </div>
+          {cacaoLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Deduct raw bags on finished stock-in</p>
+                  <p className="text-xs text-muted-foreground">
+                    When off, jar scans credit finished inventory without using the bag pool.
+                  </p>
+                </div>
+                <Switch
+                  checked={cacaoBagPoolDeduct}
+                  onCheckedChange={setCacaoBagPoolDeduct}
+                  data-testid="cacao-bag-pool-deduct-switch"
+                  className="data-[state=checked]:bg-[#C8900A]"
+                  aria-label="Deduct raw bags on finished stock-in"
+                />
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+              <div className="w-40">
+                <label htmlFor="cacao-grams-jar" className="text-xs text-muted-foreground">
+                  g per jar
+                </label>
+                <input
+                  id="cacao-grams-jar"
+                  type="number"
+                  min={1}
+                  max={2000}
+                  step="any"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={cacaoGramsJar}
+                  onChange={e => {
+                    setCacaoGramsJar(e.target.value);
+                    const g = Number(e.target.value);
+                    const bag = Number(cacaoGramsBag);
+                    if (Number.isFinite(g) && Number.isFinite(bag) && g > 0) {
+                      setCacaoJarsPerBag(Math.round((bag / g) * 10000) / 10000);
+                    }
+                  }}
+                />
+              </div>
+              <div className="w-40">
+                <label htmlFor="cacao-grams-bag" className="text-xs text-muted-foreground">
+                  g per bag
+                </label>
+                <input
+                  id="cacao-grams-bag"
+                  type="number"
+                  min={100}
+                  max={50000}
+                  step="any"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={cacaoGramsBag}
+                  onChange={e => {
+                    setCacaoGramsBag(e.target.value);
+                    const bag = Number(e.target.value);
+                    const g = Number(cacaoGramsJar);
+                    if (Number.isFinite(g) && Number.isFinite(bag) && g > 0) {
+                      setCacaoJarsPerBag(Math.round((bag / g) * 10000) / 10000);
+                    }
+                  }}
+                />
+              </div>
+              <div className="min-w-[8rem]">
+                <p className="text-xs text-muted-foreground">jars per bag</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums">{cacaoJarsPerBag}</p>
+              </div>
+              <Button
+                type="button"
+                disabled={cacaoSaving}
+                onClick={() => void saveCacaoBom()}
+                className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+              >
+                {cacaoSaving ? <Loader2 className="animate-spin" size={14} /> : "Save"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={cacaoSaving}
+                onClick={() => {
+                  setCacaoGramsJar(String(cacaoDefaultJar));
+                  setCacaoGramsBag(String(cacaoDefaultBag));
+                  setCacaoJarsPerBag(cacaoDefaultBag / cacaoDefaultJar);
+                  setCacaoBagPoolDeduct(true);
+                }}
+              >
+                Reset to default
+              </Button>
+              </div>
             </div>
           )}
         </div>

@@ -20,10 +20,54 @@ function api_sales_require(): array
     return api_require_permission('sales.view');
 }
 
+/**
+ * Remove peso fields when the caller lacks sales.view_amounts.
+ *
+ * @param array<string, mixed> $data
+ * @return array<string, mixed>
+ */
+function api_sales_strip_money_fields(array $data): array
+{
+    if (isset($data['summary']) && is_array($data['summary'])) {
+        unset(
+            $data['summary']['revenue_regular'],
+            $data['summary']['revenue_discounted'],
+            $data['summary']['discounts_given'],
+            $data['summary']['revenue_ar']
+        );
+    }
+
+    if (isset($data['checkouts']['rows']) && is_array($data['checkouts']['rows'])) {
+        foreach ($data['checkouts']['rows'] as $i => $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            unset($row['subtotal_amount'], $row['discount_amount'], $row['total_amount']);
+            if (isset($row['items']) && is_array($row['items'])) {
+                foreach ($row['items'] as $j => $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+                    unset(
+                        $item['list_unit_price'],
+                        $item['unit_price'],
+                        $item['line_subtotal'],
+                        $item['line_total']
+                    );
+                    $row['items'][$j] = $item;
+                }
+            }
+            $data['checkouts']['rows'][$i] = $row;
+        }
+    }
+
+    return $data;
+}
+
 function api_sales_honey_sold(): void
 {
     api_method_allowed(['GET']);
-    api_sales_require();
+    $user = api_sales_require();
 
     $period = trim((string) ($_GET['period'] ?? 'all'));
     $from = trim((string) ($_GET['from'] ?? ''));
@@ -51,6 +95,12 @@ function api_sales_honey_sold(): void
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }
+
+    $canViewAmounts = ims_user_can($user, 'sales.view_amounts');
+    if (!$canViewAmounts) {
+        $data = api_sales_strip_money_fields($data);
+    }
+    $data['can_view_amounts'] = $canViewAmounts;
 
     api_ok($data);
 }

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-09-10T08:41:15+02:00
+generated: 2026-09-10T10:26:53+02:00
 type: memory-bank
 ---
 
@@ -29,12 +29,15 @@ type: memory-bank
 | [[modules/deliveries_upload]] | 3 |
 | [[modules/delivery_duplicates]] | 1 |
 | [[modules/delivery_edit_requests]] | 15 |
-| [[modules/dept_inventory]] | 17 |
+| [[modules/dept_brc_settings]] | 7 |
+| [[modules/dept_inventory]] | 19 |
+| [[modules/dept_jar_cacao_settings]] | 7 |
 | [[modules/dept_pos]] | 5 |
 | [[modules/dept_pouch_barcodes]] | 37 |
 | [[modules/dept_pricing]] | 8 |
 | [[modules/dept_production]] | 29 |
 | [[modules/dept_products]] | 23 |
+| [[modules/dept_pt_settings]] | 8 |
 | [[modules/finished_leak_damage]] | 8 |
 | [[modules/forwarding]] | 15 |
 | [[modules/fulfillment_pack_tier_seed]] | 3 |

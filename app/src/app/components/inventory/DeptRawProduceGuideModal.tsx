@@ -108,17 +108,17 @@ export function DeptRawProduceGuideModal({
         <GuideSection title="Two stages">
           {productKey === "brc" ? (
             <p>
-              <strong className="text-foreground">Raw bags</strong> — sealed 1 kg supplier bags of black rice coffee.
+              <strong className="text-foreground">Bag pool</strong> — leaf from stocked 1 kg supplier bags, tracked as remaining grams (progress bar on this page).
               {" "}
-              <strong className="text-foreground">Finished pouches</strong> — retail packs ready to sell ({BRC_GRAMS_PER_POUCH} g each).
-              There is no WIP step — production goes straight from raw to finished.
+              <strong className="text-foreground">Finished pouches</strong> — retail packs ready to sell (default {BRC_GRAMS_PER_POUCH} g each).
+              There is no inventorial Produce step — stock bags, then scan pouches.
             </p>
           ) : productKey === "jar_cacao" ? (
             <p>
-              <strong className="text-foreground">Raw bags</strong> — sealed 1 kg supplier bags of cacao.
+              <strong className="text-foreground">Bag pool</strong> — cacao from stocked 1 kg supplier bags, tracked as remaining grams (progress bar on this page).
               {" "}
-              <strong className="text-foreground">Finished jars</strong> — retail jars ready to sell ({JAR_CACAO_GRAMS_PER_JAR} g cacao, {JAR_CACAO_TABLETS_PER_JAR} tablets inside each).
-              There is no WIP step — production goes straight from raw to finished.
+              <strong className="text-foreground">Finished jars</strong> — retail jars ready to sell (default {JAR_CACAO_GRAMS_PER_JAR} g cacao, {JAR_CACAO_TABLETS_PER_JAR} tablets inside each).
+              There is no inventorial Produce step — stock bags, then scan jars.
             </p>
           ) : (
             <p>
@@ -157,7 +157,8 @@ export function DeptRawProduceGuideModal({
             <>
               <ol className="list-decimal pl-4 space-y-1.5">
                 <li>
-                  <strong className="text-foreground">Stock in raw bags</strong> — receive sealed 1 kg supplier bags. This only increases <strong className="text-foreground">Raw bags</strong>.
+                  <strong className="text-foreground">Stock in raw bags</strong> — receive sealed 1 kg supplier bags
+                  {productKey === "brc" || productKey === "jar_cacao" ? " into the bag pool" : ""}.
                 </li>
                 <li>
                   <strong className="text-foreground">Request barcodes</strong> — give the batch code and how many {meta.sellUnit}s you are packing.
@@ -166,7 +167,14 @@ export function DeptRawProduceGuideModal({
                   <strong className="text-foreground">Generate / print</strong> — print the A4 sticker sheet (68 per page) and stick one on each {meta.sellUnit}.
                 </li>
                 <li>
-                  <strong className="text-foreground">Scan to inventory</strong> — scan each sticker. Every scan adds one to <strong className="text-foreground">Finished {meta.sellUnit}s</strong>.
+                  <strong className="text-foreground">Scan to inventory</strong> — scan each sticker. Every scan adds one to{" "}
+                  <strong className="text-foreground">Finished {meta.sellUnit}s</strong>
+                  {productKey === "brc"
+                    ? " and deducts leaf grams from the bag pool (Settings BOM, default 100 g)"
+                    : productKey === "jar_cacao"
+                      ? " and deducts cacao grams from the bag pool (Settings BOM, default 220 g)"
+                      : ""}
+                  .
                 </li>
                 <li>
                   <strong className="text-foreground">Scan history</strong> — open from the header or tap the Finished card. Switch product tabs (Paragis, BRC, Cacao, Honey Comb, Honey bottles) to see stock-in from every account. Defaults to today; pick another date or All dates, then tap a batch for each sticker and scanner.
@@ -177,8 +185,10 @@ export function DeptRawProduceGuideModal({
                   </li>
                 )}
               </ol>
-              <p>
-                Each sticker is unique and can only be scanned once, so the finished count matches the {meta.sellUnit}s that physically exist. Scanning does not deduct raw bags or packaging.
+              <p className={productKey === "brc" || productKey === "jar_cacao" ? "rounded-lg border border-[#C8900A]/25 bg-[#C8900A]/5 px-3 py-2 text-[#8a6506]" : undefined}>
+                {productKey === "brc" || productKey === "jar_cacao"
+                  ? "Short pool still allows scanning — the bar shows overdrawn so you know to stock more bags. Packaging materials are not deducted."
+                  : `Each sticker is unique and can only be scanned once, so the finished count matches the ${meta.sellUnit}s that physically exist. Scanning does not deduct raw bags or packaging.`}
               </p>
             </>
           ) : (

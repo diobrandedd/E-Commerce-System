@@ -546,13 +546,21 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
       playScanBeep("ok");
       setFlash("ok");
       const qtyBit = res.qty ? ` ×${res.qty}` : "";
-      setMsg(`${res.batch_no ?? productLabel} · ${res.code}${qtyBit}`);
+      const poolWarn = res.bag_pool?.warned ? ` · ${res.bag_pool.warning ?? "Bag pool short"}` : "";
+      const poolLeft =
+        res.bag_pool != null
+          ? ` · pool ${res.bag_pool.grams_remaining.toLocaleString()} g`
+          : "";
+      setMsg(`${res.batch_no ?? productLabel} · ${res.code}${qtyBit}${poolLeft}${poolWarn}`);
+      if (res.bag_pool?.warned) {
+        setFlash("err");
+      }
       if (res.request) {
         setProgress(
           `${res.request.scanned_count} / ${res.request.generated_count || res.request.quantity} scanned`,
         );
       }
-      window.setTimeout(() => setFlash(null), 700);
+      window.setTimeout(() => setFlash(null), res.bag_pool?.warned ? 1600 : 700);
       triggerLiveRefresh();
       return { kind: "success", message: `Stocked ${res.code}${qtyBit}` };
     } catch (e) {
@@ -600,7 +608,9 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
   return (
     <AppSectionEnter className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        SKU barcodes: scan → enter how many into finished {productLabel}. Leftover unique stickers still scan one at a time.
+        {productKey === "pt"
+          ? "Each pouch scan adds finished stock and deducts leaf from the bag pool (Settings BOM). Short pool warns but still stocks in."
+          : `SKU barcodes: scan → enter how many into finished ${productLabel}. Leftover unique stickers still scan one at a time.`}
       </p>
       <div className="flex flex-wrap gap-2">
         <input

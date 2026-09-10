@@ -4,6 +4,33 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-10 — Sales view amounts permission
+**Change:** `sales.view_amounts` gates ₱ on Sales; API strips money when denied; phase 79 continuity grant. → [[problems/records/2026-09-10_sales-view-amounts]]
+
+### 2026-09-10 — Supplier Master prices Forbidden with Manage suppliers
+**Change:** Inline honey/dept purchase price APIs accept `suppliers.manage` (or `honey.executive_edit`). → [[problems/records/2026-09-10_supplier-prices-forbidden-manage]]
+
+### 2026-09-10 — Check Inventory scan-only (no batch)
+**Change:** Drop required batch on Add-to-list; honey compare by variant+size finished on-hand; 500ms scan cooldown + item success popup. → [[problems/records/2026-09-10_inventory-check-scan-only]]
+
+### 2026-09-10 — Bag-pool deduct Settings toggles
+**Change:** Executive can turn PT/BRC/Cacao raw bag deduct on finished stock-in on/off via Settings BOM cards. → [[problems/records/2026-09-10_bag-pool-deduct-toggle]]
+
+### 2026-09-10 — Honey lot gallon progress + production overdraw
+**Change:** Per-row gallon progress on Production/Warehouse; bottle scan warns but allows negative production gallons. → [[problems/records/2026-09-10_honey-lot-gallon-progress]]
+
+### 2026-09-10 — Jar Cacao bag pool → jar scan
+**Change:** Cacao bag pool + 220 g (settings) jar/SKU deduct; progress strip jar labels; Settings BOM grams/jar + grams/bag. → [[problems/records/2026-09-10_jar-cacao-bag-pool-jar-scan]]
+
+### 2026-09-10 — BRC bag pool → pouch scan
+**Change:** Black Rice bag pool + 100 g (settings) pouch/SKU deduct; shared progress strip; Settings BOM grams/pouch + grams/bag. → [[problems/records/2026-09-10_brc-bag-pool-pouch-scan]]
+
+### 2026-09-10 — stock_entries.qty pouch rounding
+**Change:** Widen `stock_entries.qty` to DECIMAL(14,6) so Paragis 0.048-bag (48 g) pouch deducts no longer round to 0.05 (50 g). → [[problems/records/2026-09-10_stock-entries-qty-pouch-round]]
+
+### 2026-09-10 — Paragis bag pool → pouch scan
+**Change:** Skip WIP; stock bags into a leaf pool; pouch/SKU scans deduct Settings BOM grams (allow negative with warning); bag-pool progress UI + Settings BOM fields. → [[problems/records/2026-09-10_paragis-bag-pool-pouch-scan]]
+
 ### 2026-09-10 — SKU stock-in uses today’s bottling lot
 **Change:** Non-unique honey SKU stock-in remaps the picked packaging batch to today’s `(batch_no, variant, bottling_date)` row (same as unique stickers). → [[problems/records/2026-09-10_sku-stock-in-today-bottling-date]]
 

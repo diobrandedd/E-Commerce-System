@@ -1,7 +1,7 @@
 ---
 title: inventory_edit_log
 source: includes/inventory_edit_log.php
-generated: 2026-09-10T08:41:52+02:00
+generated: 2026-09-10T10:27:23+02:00
 type: module
 function_count: 3
 ---
@@ -33,8 +33,8 @@ function_count: 3
 
 **Callers (8):**
 
-- `includes/dept_inventory.php`:673 — `inventory_edit_log_write(`
-- `includes/honey_inventory.php`:1163 — `inventory_edit_log_write($pdo, $userId, $rowTable, $rowId, $field, $old, $new, $source);`
+- `includes/dept_inventory.php`:845 — `inventory_edit_log_write(`
+- `includes/honey_inventory.php`:1169 — `inventory_edit_log_write($pdo, $userId, $rowTable, $rowId, $field, $old, $new, $source);`
 - `includes/material_inventory.php`:941 — `inventory_edit_log_write(`
 - `includes/material_inventory.php`:1412 — `inventory_edit_log_write(`
 - `includes/rts_inventory_sync.php`:741 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, $curCol, (string) $old, (string) $new, 'monthly_inventory');`
@@ -48,5 +48,5 @@ function_count: 3
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1351 — `$result = inventory_edit_log_list(`
+- `api/v1/honey.php`:1352 — `$result = inventory_edit_log_list(`
 

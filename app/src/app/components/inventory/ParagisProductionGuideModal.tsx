@@ -5,7 +5,6 @@ import type { Role } from "@/app/context/AuthContext";
 import {
   PT_TEA_BAGS_PER_POUCH,
   deptStockInYieldHint,
-  ptTeaBagsPerBag,
 } from "@/app/lib/deptProducts";
 
 const ROLE_LABELS: Partial<Record<Role, string>> = {
@@ -29,7 +28,6 @@ interface ParagisProductionGuideModalProps {
   onClose: () => void;
   role: Role | undefined;
   canMutate?: boolean;
-  onOpenExactTeaBagCount?: () => void;
   onStartTour: () => void;
 }
 
@@ -37,13 +35,10 @@ export function ParagisProductionGuideModal({
   open,
   onClose,
   role,
-  canMutate = false,
-  onOpenExactTeaBagCount,
   onStartTour,
 }: ParagisProductionGuideModalProps) {
   const roleLabel = role ? ROLE_LABELS[role] : undefined;
   const yieldHint = deptStockInYieldHint("pt");
-  const teaPerBag = ptTeaBagsPerBag();
 
   return (
     <AppModal
@@ -68,38 +63,42 @@ export function ParagisProductionGuideModal({
         onClose={onClose}
       />
       <AppModalBody className="flex flex-col min-h-0 overflow-y-auto overscroll-contain gap-5 py-4">
-        <GuideSection title="Three stages">
+        <GuideSection title="Two stages">
           <p>
-            <strong className="text-foreground">Raw bags</strong> — sealed 1 kg supplier leaf in the warehouse.
+            <strong className="text-foreground">Bag pool</strong> — leaf from stocked 1 kg supplier bags,
+            tracked as remaining grams (progress bar on this page).
             {" "}
-            <strong className="text-foreground">Tea bags (WIP)</strong> — loose filled tea bags waiting to be pouched.
-            {" "}
-            <strong className="text-foreground">Finished pouches</strong> — retail packs ready to sell ({PT_TEA_BAGS_PER_POUCH} tea bags each).
+            <strong className="text-foreground">Finished pouches</strong> — retail packs ready to sell (
+            {PT_TEA_BAGS_PER_POUCH} tea bags each). There is no tea-bag WIP step.
           </p>
         </GuideSection>
 
-        <GuideSection title="Raw production records">
+        <GuideSection title="Day-to-day flow">
           <ol className="list-decimal pl-4 space-y-1.5">
             <li>
-              <strong className="text-foreground">Stock in</strong> — receive sealed 1 kg supplier bags from a supplier. This only increases <strong className="text-foreground">Raw bags</strong>.
+              <strong className="text-foreground">Stock in raw bags</strong> — receive sealed 1 kg bags.
+              This fills the bag pool.
             </li>
             <li>
-              <strong className="text-foreground">Use raw bags</strong> — enter how many 1 kg bags you opened for production. Raw leaf deducts; <strong className="text-foreground">Tea bags (WIP)</strong> goes up by ~{teaPerBag.toLocaleString()} per bag (2 g each). You do <strong className="text-foreground">not</strong> need to count individual tea bags.
+              <strong className="text-foreground">Request / print pouch barcodes</strong> — label finished
+              pouches when ready.
+            </li>
+            <li>
+              <strong className="text-foreground">Scan pouches to inventory</strong> — each scan adds
+              finished stock and deducts leaf from the bag pool (default 48 g = 2 g × 24 tea bags).
             </li>
           </ol>
-          <p>
-            These raw-production records are separate from finished inventory stock-in. Use them only when your team is tracking raw bags and WIP.
+          <p className="rounded-lg border border-[#C8900A]/25 bg-[#C8900A]/5 px-3 py-2 text-[#8a6506]">
+            Short pool still allows scanning — the bar shows overdrawn so you know to stock more bags.
+            Packaging materials are not deducted.
           </p>
         </GuideSection>
 
-        <GuideSection title="Finished pouch inventory">
-          <ol className="list-decimal pl-4 space-y-1.5">
-            <li><strong className="text-foreground">Request barcodes</strong> for the number of pouch labels needed.</li>
-            <li><strong className="text-foreground">Generate / print</strong> the approved request and attach labels to finished pouches.</li>
-            <li><strong className="text-foreground">Scan pouches to inventory</strong> and enter the finished quantity.</li>
-          </ol>
-          <p className="rounded-lg border border-border bg-secondary/25 px-3 py-2 text-foreground">
-            Barcode stock-in adds finished pouches only. It does not require or deduct Raw bags, Tea bags (WIP), or packaging.
+        <GuideSection title="Settings">
+          <p>
+            Executives can edit <strong className="text-foreground">g per tea bag</strong> and{" "}
+            <strong className="text-foreground">tea bags per pouch</strong> under Settings → Paragis pouch BOM.
+            That changes how many grams each scan deducts.
           </p>
         </GuideSection>
 
@@ -107,45 +106,18 @@ export function ParagisProductionGuideModal({
           <p className="rounded-lg border border-[#C8900A]/25 bg-[#C8900A]/5 px-3 py-2 text-[#8a6506]">{yieldHint}</p>
         </GuideSection>
 
-        <GuideSection title="Waste & corrections">
+        <GuideSection title="Waste">
           <ul className="list-disc pl-4 space-y-1.5">
             <li>
-              <strong className="text-foreground">WIP waste</strong> — loose tea bags lost or spoiled before pouching (reduces WIP only).
-            </li>
-            <li>
-              <strong className="text-foreground">Bag waste</strong> — sealed raw bags discarded before opening (reduces Raw bags).
+              <strong className="text-foreground">Bag waste</strong> — sealed raw bags discarded before use
+              (reduces the bag pool).
             </li>
           </ul>
         </GuideSection>
 
-        {canMutate && (
-          <GuideSection title="Advanced">
-            <p>
-              If you have an exact count of individual tea bags (small batch only), use <strong className="text-foreground">exact tea bag count</strong> instead of Use raw bags.
-            </p>
-          </GuideSection>
-        )}
-
         <GuideWalkthroughSection />
       </AppModalBody>
-      <GuideTourFooter
-        onStartTour={onStartTour}
-        onClose={onClose}
-        extraLeft={
-          canMutate && onOpenExactTeaBagCount ? (
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onOpenExactTeaBagCount();
-              }}
-              className="text-xs font-medium text-[#8a6506] hover:underline"
-            >
-              Open exact tea bag count…
-            </button>
-          ) : undefined
-        }
-      />
+      <GuideTourFooter onStartTour={onStartTour} onClose={onClose} />
     </AppModal>
   );
 }

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-10T08:41:14+02:00
+generated: 2026-09-10T10:26:51+02:00
 type: memory-bank
 ---
 
@@ -623,7 +623,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `honey_sold` | `api_sales_honey_sold()` | `honey_sales_sold_snapshot()`, `ims_pdo()` |
+| `honey_sold` | `api_sales_honey_sold()` | `honey_sales_sold_snapshot()`, `ims_pdo()`, `ims_user_can()` |
 
 ### `settings.php`
 
@@ -638,6 +638,12 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pos_pin_create` | `api_settings_pos_pin_create()` | `ims_pdo()` |
 | `honey_volume_get` | `api_settings_honey_volume_get()` | `ims_pdo()`, `honey_ml_per_gallon()` |
 | `honey_volume_save` | `api_settings_honey_volume_save()` | `honey_ml_per_gallon_save()`, `ims_pdo()` |
+| `pt_bom_get` | `api_settings_pt_bom_get()` | `dept_pt_bom_snapshot()`, `ims_pdo()` |
+| `pt_bom_save` | `api_settings_pt_bom_save()` | `dept_pt_bom_save()`, `ims_pdo()`, `dept_pt_bom_snapshot()` |
+| `brc_bom_get` | `api_settings_brc_bom_get()` | `dept_brc_bom_snapshot()`, `ims_pdo()` |
+| `brc_bom_save` | `api_settings_brc_bom_save()` | `dept_brc_bom_save()`, `ims_pdo()`, `dept_brc_bom_snapshot()` |
+| `jar_cacao_bom_get` | `api_settings_jar_cacao_bom_get()` | `dept_jar_cacao_bom_snapshot()`, `ims_pdo()` |
+| `jar_cacao_bom_save` | `api_settings_jar_cacao_bom_save()` | `dept_jar_cacao_bom_save()`, `ims_pdo()`, `dept_jar_cacao_bom_snapshot()` |
 
 ### `sku_barcodes.php`
 

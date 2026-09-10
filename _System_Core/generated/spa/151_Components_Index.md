@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-09-10T08:42:19+02:00
+generated: 2026-09-10T10:27:50+02:00
 type: spa
 ---
 
@@ -34,7 +34,9 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/csr/onlineOrders/ItemResolverCarousel.tsx`
 - `app/src/app/components/csr/orderRemarksMotion.tsx`
 - `app/src/app/components/dashboard/DashboardShippedSection.tsx`
+- `app/src/app/components/dept/DeptBagPoolStrip.tsx`
 - `app/src/app/components/exec/StaffPermissionsModal.tsx`
+- `app/src/app/components/honey/HoneyLotGallonProgress.tsx`
 - `app/src/app/components/honey/HoneyStageTabs.tsx`
 - `app/src/app/components/layout/appFeedbackMotion.tsx`
 - `app/src/app/components/layout/sidebarNavMotion.tsx`
@@ -45,6 +47,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/scan/BarcodeCameraScannerModal.tsx`
 - `app/src/app/components/scan/TrackingQrScannerModal.tsx`
 - `app/src/app/pages/csr/OrderRemarksPage.tsx`
+- `app/src/app/pages/inventory/InventoryCheckPage.tsx`
 - `app/src/app/pages/pos/POSCategoryPage.tsx`
 - `app/src/app/pages/rts/RTSBarcodeLabelsPage.tsx`
 

@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-09-10T08:42:09+02:00
+generated: 2026-09-10T10:27:40+02:00
 type: module
 function_count: 25
 ---
@@ -94,8 +94,8 @@ function_count: 25
 - `includes/honey_bottle_barcodes.php`:1188 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
 - `includes/honey_bottle_barcodes.php`:1208 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
 - `includes/pack_cancel_restock.php`:540 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
-- `includes/sku_barcodes.php`:1112 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, (float) $qty);`
-- `includes/sku_barcodes.php`:1279 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, (float) $qty);`
+- `includes/sku_barcodes.php`:1212 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, (float) $qty);`
+- `includes/sku_barcodes.php`:1379 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, (float) $qty);`
 
 ## rts_inventory_credit_sellable_other {#rts_inventory_credit_sellable_other}
 
@@ -103,11 +103,11 @@ function_count: 25
 
 **Callers (5):**
 
-- `includes/dept_pouch_barcodes.php`:1299 — `rts_inventory_credit_sellable_other($pdo, $label, 1.0);`
-- `includes/dept_pouch_barcodes.php`:1309 — `rts_inventory_credit_sellable_other($pdo, $label, 1.0);`
+- `includes/dept_pouch_barcodes.php`:1418 — `rts_inventory_credit_sellable_other($pdo, $label, 1.0);`
+- `includes/dept_pouch_barcodes.php`:1428 — `rts_inventory_credit_sellable_other($pdo, $label, 1.0);`
 - `includes/pack_cancel_restock.php`:590 — `rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), 1.0);`
-- `includes/sku_barcodes.php`:1130 — `rts_inventory_credit_sellable_other($pdo, $label, (float) $qty);`
-- `includes/sku_barcodes.php`:1295 — `rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), (float) $qty);`
+- `includes/sku_barcodes.php`:1230 — `rts_inventory_credit_sellable_other($pdo, $label, (float) $qty);`
+- `includes/sku_barcodes.php`:1395 — `rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), (float) $qty);`
 
 ## rts_inventory_pool_filter_sql {#rts_inventory_pool_filter_sql}
 
@@ -152,7 +152,7 @@ function_count: 25
 - `includes/honey_bottle_barcodes.php`:2370 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_pos.php`:418 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_pos.php`:649 — `rts_inventory_deduct_sell_honey_variant(`
-- `includes/sku_barcodes.php`:1167 — `rts_inventory_deduct_sell_honey_variant(`
+- `includes/sku_barcodes.php`:1267 — `rts_inventory_deduct_sell_honey_variant(`
 
 ## rts_inventory_deduct_sell_other_label {#rts_inventory_deduct_sell_other_label}
 
@@ -163,9 +163,9 @@ function_count: 25
 - `api/v1/rts.php`:400 — `rts_inventory_deduct_sell_other_label(`
 - `includes/dept_pos.php`:250 — `rts_inventory_deduct_sell_other_label(`
 - `includes/dept_pos.php`:403 — `rts_inventory_deduct_sell_other_label(`
-- `includes/dept_pouch_barcodes.php`:1151 — `rts_inventory_deduct_sell_other_label(`
+- `includes/dept_pouch_barcodes.php`:1270 — `rts_inventory_deduct_sell_other_label(`
 - `includes/honey_bottle_barcodes.php`:2113 — `rts_inventory_deduct_sell_other_label(`
-- `includes/sku_barcodes.php`:1244 — `rts_inventory_deduct_sell_other_label(`
+- `includes/sku_barcodes.php`:1344 — `rts_inventory_deduct_sell_other_label(`
 
 ## rts_inventory_deduct_sell {#rts_inventory_deduct_sell}
 

@@ -1153,7 +1153,8 @@ function api_honey_dept_add_row(): void
 function api_honey_supplier_dept_prices(): void
 {
     api_method_allowed(['GET']);
-    api_require_permission('honey.executive_edit');
+    // Supplier Master manage includes inline purchase prices (not only honey.executive_edit).
+    api_require_permission('suppliers.manage', 'honey.executive_edit');
     $supplierId = isset($_GET['supplier_id']) ? (int) $_GET['supplier_id'] : 0;
     $productKey = trim((string) ($_GET['product_key'] ?? ''));
     $pdo = ims_pdo();
@@ -1197,7 +1198,7 @@ function api_honey_supplier_dept_prices_save(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_permission('honey.executive_edit');
+    $user = api_require_permission('suppliers.manage', 'honey.executive_edit');
     $supplierId = (int) ($input['supplier_id'] ?? 0);
     $effectiveFrom = trim((string) ($input['effective_from'] ?? date('Y-m-d')));
     $products = is_array($input['products'] ?? null) ? $input['products'] : [];
@@ -1220,7 +1221,7 @@ function api_honey_supplier_dept_prices_save(): void
 function api_honey_supplier_honey_prices(): void
 {
     api_method_allowed(['GET']);
-    api_require_permission('honey.executive_edit');
+    api_require_permission('suppliers.manage', 'honey.executive_edit');
     $supplierId = isset($_GET['supplier_id']) ? (int) $_GET['supplier_id'] : 0;
     $pdo = ims_pdo();
     $prices = honey_pricing_list_supplier_prices($pdo, $supplierId > 0 ? $supplierId : null);
@@ -1260,7 +1261,7 @@ function api_honey_supplier_honey_prices_save(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    $user = api_require_permission('honey.executive_edit');
+    $user = api_require_permission('suppliers.manage', 'honey.executive_edit');
     $supplierId = (int) ($input['supplier_id'] ?? 0);
     $effectiveFrom = trim((string) ($input['effective_from'] ?? date('Y-m-d')));
     $variants = is_array($input['variants'] ?? null) ? $input['variants'] : [];

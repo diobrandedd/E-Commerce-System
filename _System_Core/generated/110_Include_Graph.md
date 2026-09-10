@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-09-10T08:41:15+02:00
+generated: 2026-09-10T10:26:53+02:00
 type: memory-bank
-edge_count: 402
+edge_count: 420
 ---
 
 
@@ -146,9 +146,16 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/delivery_edit_requests.php` | `includes/honey_parcel_inventory.php` |
 | `includes/delivery_edit_requests.php` | `includes/online_order_parcels.php` |
 | `includes/delivery_edit_requests.php` | `includes/rts_storage.php` |
+| `includes/dept_brc_settings.php` | `includes/app_settings.php` |
+| `includes/dept_brc_settings.php` | `includes/dept_products.php` |
+| `includes/dept_inventory.php` | `includes/dept_brc_settings.php` |
+| `includes/dept_inventory.php` | `includes/dept_jar_cacao_settings.php` |
 | `includes/dept_inventory.php` | `includes/dept_pricing.php` |
 | `includes/dept_inventory.php` | `includes/dept_products.php` |
+| `includes/dept_inventory.php` | `includes/dept_pt_settings.php` |
 | `includes/dept_inventory.php` | `includes/inventory_edit_log.php` |
+| `includes/dept_jar_cacao_settings.php` | `includes/app_settings.php` |
+| `includes/dept_jar_cacao_settings.php` | `includes/dept_products.php` |
 | `includes/dept_pos.php` | `includes/ar_credits.php` |
 | `includes/dept_pos.php` | `includes/dept_inventory.php` |
 | `includes/dept_pos.php` | `includes/dept_pouch_barcodes.php` |
@@ -160,9 +167,12 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_pos.php` | `includes/rts_inventory_sync.php` |
 | `includes/dept_pos.php` | `includes/rts_inventory_sync.php` |
 | `includes/dept_pos.php` | `includes/rts_inventory_sync.php` |
+| `includes/dept_pouch_barcodes.php` | `includes/dept_brc_settings.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/dept_inventory.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/dept_inventory.php` |
+| `includes/dept_pouch_barcodes.php` | `includes/dept_jar_cacao_settings.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/dept_production.php` |
+| `includes/dept_pouch_barcodes.php` | `includes/dept_pt_settings.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/finished_leak_damage.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/dept_pouch_barcodes.php` | `includes/rts_inventory_sync.php` |
@@ -172,8 +182,13 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_pricing.php` | `includes/honey_inventory.php` |
 | `includes/dept_pricing.php` | `includes/suppliers.php` |
 | `includes/dept_production.php` | `includes/catalog_bootstrap.php` |
+| `includes/dept_production.php` | `includes/dept_brc_settings.php` |
 | `includes/dept_production.php` | `includes/dept_inventory.php` |
+| `includes/dept_production.php` | `includes/dept_jar_cacao_settings.php` |
+| `includes/dept_production.php` | `includes/dept_pt_settings.php` |
 | `includes/dept_production.php` | `includes/material_inventory.php` |
+| `includes/dept_pt_settings.php` | `includes/app_settings.php` |
+| `includes/dept_pt_settings.php` | `includes/dept_products.php` |
 | `includes/finished_leak_damage.php` | `includes/dept_inventory.php` |
 | `includes/finished_leak_damage.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/finished_leak_damage.php` | `includes/honey_bottle_barcodes.php` |
@@ -350,7 +365,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/shopee_spx_packing_list.php` | `includes/pdf_to_excel.php` |
 | `includes/shopee_spx_packing_list.php` | `includes/shopee_spx_product_info.php` |
 | `includes/shopee_spx_packing_list.php` | `includes/waybill_stamper.php` |
+| `includes/sku_barcodes.php` | `includes/dept_brc_settings.php` |
 | `includes/sku_barcodes.php` | `includes/dept_inventory.php` |
+| `includes/sku_barcodes.php` | `includes/dept_jar_cacao_settings.php` |
 | `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
@@ -358,6 +375,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/sku_barcodes.php` | `includes/dept_products.php` |
+| `includes/sku_barcodes.php` | `includes/dept_pt_settings.php` |
 | `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |

@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-10T08:41:15+02:00
+generated: 2026-09-10T10:26:53+02:00
 type: memory-bank
 table_count: 97
 ---
@@ -284,6 +284,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_bags_on_hand]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_recent_entries]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_deduct_bags_fifo]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_deduct_bags_allow_negative]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_bags_received_gross]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_set_bags_on_hand]] |
 | `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_upsert_supplier_costing_stocks]] |
@@ -343,6 +345,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_recent_entries]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_stock_in_bags]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_deduct_bags_fifo]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_deduct_bags_allow_negative]] |
+| `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_bags_received_gross]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_stock_in_manual_cost]] |
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_raw_set_bags_on_hand]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_packaging_deduct]] |
