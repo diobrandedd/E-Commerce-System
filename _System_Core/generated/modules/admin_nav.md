@@ -1,7 +1,7 @@
 ---
 title: admin_nav
 source: includes/admin_nav.php
-generated: 2026-09-08T09:45:20+02:00
+generated: 2026-09-09T06:26:51+02:00
 type: module
 function_count: 1
 ---
