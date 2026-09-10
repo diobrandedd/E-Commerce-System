@@ -120,7 +120,7 @@ function ims_permission_catalog(): array
         'costing.view' => ['label' => 'View product costing', 'group' => 'Executive', 'description' => 'View product costing and formulas.'],
         'costing.manage' => ['label' => 'Manage product costing', 'group' => 'Executive', 'description' => 'Edit costing formulas and products.'],
         'suppliers.view' => ['label' => 'View suppliers', 'group' => 'Executive', 'description' => 'View supplier master list.'],
-        'suppliers.manage' => ['label' => 'Manage suppliers', 'group' => 'Executive', 'description' => 'Create and edit suppliers.'],
+        'suppliers.manage' => ['label' => 'Manage suppliers', 'group' => 'Executive', 'description' => 'Create and edit suppliers, including purchase prices on Supplier Master.'],
         'settings.manage' => ['label' => 'System settings', 'group' => 'Executive', 'description' => 'Manage POS pins and system settings.'],
         'staff.manage' => ['label' => 'Staff management', 'group' => 'Executive', 'description' => 'Create users and manage permissions.'],
     ];

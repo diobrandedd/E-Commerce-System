@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-09-10T09:54:04+02:00
+generated: 2026-09-10T10:08:40+02:00
 type: module
 function_count: 19
 ---
@@ -217,5 +217,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1426 — `$result = dept_raw_set_bags_on_hand(`
+- `api/v1/honey.php`:1427 — `$result = dept_raw_set_bags_on_hand(`
 
