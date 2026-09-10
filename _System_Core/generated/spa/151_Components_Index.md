@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-09-09T06:27:49+02:00
+generated: 2026-09-10T05:05:06+02:00
 type: spa
 ---
 
@@ -35,6 +35,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/csr/orderRemarksMotion.tsx`
 - `app/src/app/components/dashboard/DashboardShippedSection.tsx`
 - `app/src/app/components/exec/StaffPermissionsModal.tsx`
+- `app/src/app/components/honey/HoneyStageTabs.tsx`
 - `app/src/app/components/layout/appFeedbackMotion.tsx`
 - `app/src/app/components/layout/sidebarNavMotion.tsx`
 - `app/src/app/components/notifications/BarcodeDesktopAlertBanner.tsx`
@@ -160,6 +161,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/honey/ExecutiveRowEditModal.tsx`
 - `app/src/app/components/honey/PackagingScanLogModal.tsx`
 - `app/src/app/components/inventory/DeptRawProduceGuideModal.tsx`
+- `app/src/app/components/inventory/InventoryCheckHistoryDetailModal.tsx`
 - `app/src/app/components/inventory/InventoryCheckScanLogModal.tsx`
 - `app/src/app/components/inventory/MaterialAdjustModal.tsx`
 - `app/src/app/components/inventory/MaterialCatalogModal.tsx`

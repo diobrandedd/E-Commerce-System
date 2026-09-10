@@ -4,6 +4,18 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-10 — Packaging lots unique by bottling date
+**Change:** Honey packaging uniqueness is now `(batch_no, variant, bottling_date)`; stock-in credits/creates today’s lot; Packaging filters by scan date and bottling date. Run phase77. → [[problems/records/2026-09-10_packaging-bottling-date-unique]]
+
+### 2026-09-10 — Check inventory history detail
+**Change:** Audit history rows open a View modal with Counted summary, saved Comparison, and Scan log (plus per-product Log). → [[problems/records/2026-09-10_inventory-check-history-detail]]
+
+### 2026-09-10 — Pack scan editable SKU qty
+**Change:** Draft Pack scan sessions can edit absolute quantity on non-unique (SKU) lines via `pack_set_item_qty`; unique stickers remain remove-only. Session card shows summed `total_qty`. → [[problems/records/2026-09-10_pack-scan-editable-sku-qty]]
+
+### 2026-09-09 — Raw materials mobile and guidance fix
+**Change:** Paragis now clearly treats barcode stock-in as finished-inventory-only (no raw/WIP/packaging deduct), with scanning primary on phones and secondary tools in an actions modal. Raw Honey Warehouse, Production, and Packaging gained phone cards, semantic actions, accessible dialogs/search, retryable errors, and a fluid reduced-motion-safe stage handoff covered by desktop/mobile Playwright. → [[problems/records/2026-09-09_raw-materials-ui-fix]]
+
 ### 2026-09-08 — RTS stock-in review session
 **Change:** RTS stock-in now stages continuous scans in an editable owned draft; users can change SKU qty, remove lines, cancel without mutation, or confirm atomically. RTS camera uses presentation-edge repeats with no time cooldown. Run phase 76. → [[problems/records/2026-09-08_rts-stock-in-review-session]]
 

@@ -8,15 +8,15 @@ import {
   HoneyBottleRequestsPanel,
   HoneyProductionScanStockInPanel,
 } from "@/app/components/honey/HoneyBottleBarcodePanels";
-import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
+import { HoneyStageContent, HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { PageLayout } from "@/app/components/PageLayout";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
 import { Button } from "@/app/components/ui/button";
-import { appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
+import { AppErrorBanner, appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
-import { apiGet } from "@/app/lib/api";
+import { apiGet, ApiError } from "@/app/lib/api";
 import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
 import { canGenerateHoneyBottleLabels, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
 
@@ -44,6 +44,7 @@ export function HoneyProductionPage() {
   const [page, setPage] = useState(1);
   const perPage = 12;
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalKind>(null);
   const [pendingLabels, setPendingLabels] = useState(0);
 
@@ -67,8 +68,9 @@ export function HoneyProductionPage() {
       setRows(data.rows);
       setPage(1);
       await refreshPending();
-    } catch {
-      /* ignore */
+      setLoadError(null);
+    } catch (error) {
+      setLoadError(error instanceof ApiError ? error.message : "Could not load production lots.");
     } finally {
       setLoading(false);
     }
@@ -100,7 +102,7 @@ export function HoneyProductionPage() {
   const barcodeButtons = (
     <div className="flex flex-wrap items-center gap-2">
       {canRequest && (
-        <Button type="button" size="sm" variant="outline" onClick={() => setModal("request")}>
+        <Button type="button" size="sm" className="min-h-11" variant="outline" onClick={() => setModal("request")}>
           <Tag size={14} /> Request barcodes
         </Button>
       )}
@@ -108,7 +110,7 @@ export function HoneyProductionPage() {
         <Button
           type="button"
           size="sm"
-          className="relative overflow-visible"
+          className="relative min-h-11 overflow-visible"
           onClick={() => setModal("admin")}
         >
           <Printer size={14} />
@@ -142,10 +144,12 @@ export function HoneyProductionPage() {
           {!isCsrOnly && <HoneyStageTabs />}
           {barcodeButtons}
         </div>
+        <HoneyStageContent>
+          <div className="space-y-4">
         {canLeakDamage && (
           <Link
             to="/inventory/leak-damage"
-            className="inline-flex items-center gap-2 py-2 px-3 text-sm font-semibold border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors w-fit"
+            className="inline-flex min-h-11 items-center gap-2 py-2 px-3 text-sm font-semibold border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors w-fit"
           >
             <AlertTriangle size={16} /> Leak / damage scan
           </Link>
@@ -153,7 +157,57 @@ export function HoneyProductionPage() {
         {!isCsrOnly && (
           <HoneyProductionScanStockInPanel lots={rows} onStocked={() => void refresh()} />
         )}
-        <div className="bg-card rounded-xl border overflow-x-auto">
+        {loadError && (
+          <div>
+            <AppErrorBanner message={loadError} />
+            <Button type="button" variant="outline" className="min-h-11" onClick={() => void refresh()}>
+              Retry loading
+            </Button>
+          </div>
+        )}
+        <div className="sm:hidden space-y-3" data-testid="honey-production-mobile-cards">
+          {loading ? (
+            <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-muted-foreground">
+              <Loader2 className="inline animate-spin" size={18} />
+            </div>
+          ) : pagedRows.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+              No production lots yet.
+            </div>
+          ) : (
+            pagedRows.map(r => (
+              <article key={r.id} className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Supplier</p>
+                    {showSupplierProfile ? (
+                      <SupplierCodeButton code={r.supplier_code} className="min-h-11" />
+                    ) : (
+                      <p className="font-mono text-sm font-semibold">{r.supplier_code}</p>
+                    )}
+                    <p className="mt-1 text-xs capitalize text-muted-foreground">{r.variant}</p>
+                  </div>
+                  <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-lg bg-secondary/30 px-3 py-2">
+                    <p className="text-[11px] text-muted-foreground">From warehouse</p>
+                    <p className="mt-0.5 font-medium">{r.arrival_date}</p>
+                  </div>
+                  <div className="rounded-lg bg-secondary/30 px-3 py-2">
+                    <p className="text-[11px] text-muted-foreground">Stocked out</p>
+                    <p className="mt-0.5 font-medium">{r.stock_out_date ?? "—"}</p>
+                  </div>
+                </div>
+                <div className="mt-2 rounded-lg border border-border px-3 py-2">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Gallons on hand</p>
+                  <div className="mt-1 text-sm font-semibold"><QtyCounter current={r.current_qty} initial={r.initial_qty} /></div>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+        <div className="hidden sm:block bg-card rounded-xl border overflow-x-auto" data-testid="honey-production-desktop-table">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-secondary/40">
@@ -212,7 +266,7 @@ export function HoneyProductionPage() {
                 type="button"
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={safePage <= 1}
-                className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+                className="min-h-11 text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
@@ -223,31 +277,33 @@ export function HoneyProductionPage() {
                 type="button"
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={safePage >= totalPages}
-                className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+                className="min-h-11 text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next
               </button>
             </div>
           </div>
         )}
+          </div>
+        </HoneyStageContent>
       </div>
 
-      <AppModal open={modal === "request"} onClose={closeModal} panelClassName="max-w-3xl w-full">
-        <AppModalHeader title="Request barcodes" onClose={closeModal} />
+      <AppModal open={modal === "request"} onClose={closeModal} panelClassName="max-w-3xl w-full" labelledBy="honey-production-request-title">
+        <AppModalHeader title="Request barcodes" titleId="honey-production-request-title" onClose={closeModal} />
         <AppModalBody className="max-h-[75vh] overflow-y-auto">
           <HoneyBottleRequestsPanel canAdmin={canGenerate} />
         </AppModalBody>
       </AppModal>
 
-      <AppModal open={modal === "admin"} onClose={closeModal} panelClassName="max-w-3xl w-full">
-        <AppModalHeader title="Generate / print requests" onClose={closeModal} />
+      <AppModal open={modal === "admin"} onClose={closeModal} panelClassName="max-w-3xl w-full" labelledBy="honey-production-admin-title">
+        <AppModalHeader title="Generate / print requests" titleId="honey-production-admin-title" onClose={closeModal} />
         <AppModalBody className="max-h-[75vh] overflow-y-auto">
           {canGenerate ? <HoneyBottleAdminPanel /> : null}
         </AppModalBody>
       </AppModal>
 
-      <AppModal open={modal === "guide"} onClose={closeModal}>
-        <AppModalHeader title="Honey bottle barcodes" onClose={closeModal} />
+      <AppModal open={modal === "guide"} onClose={closeModal} labelledBy="honey-production-guide-title">
+        <AppModalHeader title="Honey bottle barcodes" titleId="honey-production-guide-title" onClose={closeModal} />
         <AppModalBody className="space-y-3 text-sm text-muted-foreground">
           <p>Honey staff request labels. Executives and CSR generate unique barcodes and print an A4 sheet (68 labels per page, 4×17 — barcode plus the code text underneath for manual entry, cut on dashed guides). Print at 100% scale so the bars stay camera-scannable.</p>
           <p>Sticker bottles, then use Production → scan stock-in: pick the supplier gallon lot, scan SKU/unique barcodes, and packaging gains bottles while production gallons drop.</p>

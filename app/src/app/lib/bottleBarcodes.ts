@@ -115,6 +115,8 @@ export interface HoneyPackSession {
   confirmed_at?: string | null;
   created_at: string;
   item_count: number;
+  /** Sum of line quantities (SKU qty + unique stickers). */
+  total_qty?: number;
   items: HoneyPackSessionItem[];
   grouped: HoneyPackSessionGroup[];
   by_batch?: {
@@ -330,6 +332,13 @@ export const bottleBarcodesApi = {
       kind,
       item_id: itemId,
     }),
+  packSetItemQty: (sessionId: number, kind: "honey" | "dept", itemId: number, qty: number) =>
+    apiPost<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_set_item_qty", {
+      session_id: sessionId,
+      kind,
+      item_id: itemId,
+      qty,
+    }),
   packConfirm: (sessionId: number) =>
     apiPost<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_confirm", { session_id: sessionId }),
   packDiscard: (sessionId: number) =>
@@ -357,11 +366,13 @@ export const bottleBarcodesApi = {
       "bottle_barcodes.php",
       "stock_summary",
     ),
-  packagingScanReport: (scanDate: string) =>
+  packagingScanReport: (scanDate: string, bottlingDate = "all") =>
     apiGet<{
       dates: string[];
+      bottling_dates: string[];
       rows: HoneyPackagingScanReportRow[];
       scan_date: string | null;
+      bottling_date: string | null;
       totals: {
         total: number;
         by_variant: {
@@ -376,6 +387,7 @@ export const bottleBarcodesApi = {
       by_scanner: { user_id: number | null; name: string; qty: number }[];
     }>("bottle_barcodes.php", "packaging_scan_report", {
       scan_date: scanDate,
+      bottling_date: bottlingDate,
     }),
   packagingScanLog: (packagingRowId: number, page = 1, scanDate = "all") =>
     apiGet<{

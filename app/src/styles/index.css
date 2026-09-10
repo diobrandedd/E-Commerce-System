@@ -1,3 +1,66 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+@keyframes honey-stage-out-left {
+  to {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+
+@keyframes honey-stage-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+}
+
+@keyframes honey-stage-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+
+@keyframes honey-stage-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
+html[data-honey-stage-direction]::view-transition-old(root),
+html[data-honey-stage-direction]::view-transition-new(root) {
+  animation: none;
+}
+
+html[data-honey-stage-direction="forward"]::view-transition-old(honey-stage-content) {
+  animation: honey-stage-out-left 140ms ease-in both;
+}
+
+html[data-honey-stage-direction="forward"]::view-transition-new(honey-stage-content) {
+  animation: honey-stage-in-right 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html[data-honey-stage-direction="back"]::view-transition-old(honey-stage-content) {
+  animation: honey-stage-out-right 140ms ease-in both;
+}
+
+html[data-honey-stage-direction="back"]::view-transition-new(honey-stage-content) {
+  animation: honey-stage-in-left 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html[data-honey-stage-direction]::view-transition-old(honey-stage-tab),
+html[data-honey-stage-direction]::view-transition-new(honey-stage-tab) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(honey-stage-content),
+  ::view-transition-group(honey-stage-tab) {
+    animation-duration: 1ms;
+  }
+}

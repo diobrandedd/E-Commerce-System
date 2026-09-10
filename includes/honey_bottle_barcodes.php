@@ -454,8 +454,8 @@ function honey_bottle_generate_batch(
     $batchNo = (string) $pk['batch_no'];
     $supplier = (string) $pk['supplier_code'];
     // Stickers are made on the day the bottles are filled, so each generation run
-    // stamps its own date. The packaging row keeps the lot's original bottling_date —
-    // one lot bottled across several days yields several sticker batches with real dates.
+    // stamps its own date. Packaging lots are unique by (batch_no, variant, bottling_date);
+    // stock-in on a later day credits/creates that day's lot without rewriting older dates.
     // RTS label jobs pass the user-entered bottling date instead.
     if ($batchDateOverride !== null && trim($batchDateOverride) !== '') {
         $ts = strtotime(trim($batchDateOverride));
@@ -743,17 +743,36 @@ function honey_bottle_scan_report_date(?string $scanDate): ?string
  * Gross bottle stock-in events grouped by packaging row and size.
  * Includes both individual sticker scans and aggregated SKU stock-ins.
  * Later unit deductions never alter these counts.
+ * Sticker events attribute to the unit's packaging_row_id when present
+ * (stock-in may credit today's dated lot, not only the sticker batch's original row).
  *
- * @return array{dates: list<string>, rows: list<array<string,mixed>>, scan_date: ?string}
+ * @return array{
+ *   dates: list<string>,
+ *   bottling_dates: list<string>,
+ *   rows: list<array<string,mixed>>,
+ *   scan_date: ?string,
+ *   bottling_date: ?string,
+ *   totals: array{total:int, by_variant: list<array<string,mixed>>},
+ *   by_scanner: list<array<string,mixed>>
+ * }
  */
-function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null): array
-{
+function honey_bottle_packaging_scan_report(
+    PDO $pdo,
+    ?string $scanDate = null,
+    ?string $bottlingDate = null
+): array {
     $scanDate = honey_bottle_scan_report_date($scanDate);
+    $bottlingDateFilter = null;
+    if ($bottlingDate !== null && trim($bottlingDate) !== '' && strtolower(trim($bottlingDate)) !== 'all') {
+        $bottlingDateFilter = honey_normalize_bottling_date($bottlingDate);
+    }
     $scanSourceSql = '(
-        SELECT b.packaging_row_id, c.size, c.scanned_at, c.scanned_by, 1 AS qty
+        SELECT COALESCE(u.packaging_row_id, b.packaging_row_id) AS packaging_row_id,
+               c.size, c.scanned_at, c.scanned_by, 1 AS qty
         FROM honey_bottle_barcodes c
         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
-        WHERE c.scanned_at IS NOT NULL AND b.packaging_row_id IS NOT NULL
+        LEFT JOIN honey_bottle_units u ON u.barcode_id = c.id
+        WHERE c.scanned_at IS NOT NULL AND COALESCE(u.packaging_row_id, b.packaging_row_id) IS NOT NULL
         UNION ALL
         SELECT e.packaging_row_id, s.size, e.scanned_at, e.scanned_by, e.qty
         FROM sku_barcode_stock_events e
@@ -770,13 +789,29 @@ function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null):
         $dates[] = (string) $row['scan_date'];
     }
 
+    $bottlingDatesSt = $pdo->query(
+        "SELECT DISTINCT pk.bottling_date
+         FROM {$scanSourceSql} scan_events
+         INNER JOIN honey_packaging_rows pk ON pk.id = scan_events.packaging_row_id
+         ORDER BY pk.bottling_date DESC"
+    );
+    $bottlingDates = [];
+    foreach (($bottlingDatesSt ? $bottlingDatesSt->fetchAll(PDO::FETCH_ASSOC) : []) as $row) {
+        $bottlingDates[] = (string) $row['bottling_date'];
+    }
+
     $where = 'scan_events.scanned_at IS NOT NULL';
     $params = [];
     if ($scanDate !== null) {
         $from = $scanDate . ' 00:00:00';
         $to = (new DateTimeImmutable($scanDate))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
         $where .= ' AND scan_events.scanned_at >= ? AND scan_events.scanned_at < ?';
-        $params = [$from, $to];
+        $params[] = $from;
+        $params[] = $to;
+    }
+    if ($bottlingDateFilter !== null) {
+        $where .= ' AND pk.bottling_date = ?';
+        $params[] = $bottlingDateFilter;
     }
 
     $st = $pdo->prepare(
@@ -838,6 +873,7 @@ function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null):
                 COALESCE(u.name, IF(scan_events.scanned_by IS NULL, 'Unknown', CONCAT('User #', scan_events.scanned_by))) AS name,
                 SUM(scan_events.qty) AS qty
          FROM {$scanSourceSql} scan_events
+         INNER JOIN honey_packaging_rows pk ON pk.id = scan_events.packaging_row_id
          LEFT JOIN users u ON u.id = scan_events.scanned_by
          WHERE {$where}
          GROUP BY scan_events.scanned_by, u.name
@@ -855,8 +891,10 @@ function honey_bottle_packaging_scan_report(PDO $pdo, ?string $scanDate = null):
 
     return [
         'dates' => $dates,
+        'bottling_dates' => $bottlingDates,
         'rows' => $rows,
         'scan_date' => $scanDate,
+        'bottling_date' => $bottlingDateFilter,
         'totals' => [
             'total' => $grandTotal,
             'by_variant' => $byVariant,
@@ -889,12 +927,13 @@ function honey_bottle_packaging_scan_log(
     $perPage = max(1, min(200, $perPage));
     $scanDate = honey_bottle_scan_report_date($scanDate);
     $scanSourceSql = '(
-        SELECT b.packaging_row_id, c.id AS event_id, c.code, c.size, c.scanned_at, c.scanned_by,
+        SELECT COALESCE(un.packaging_row_id, b.packaging_row_id) AS packaging_row_id,
+               c.id AS event_id, c.code, c.size, c.scanned_at, c.scanned_by,
                un.status AS unit_status, un.pool AS unit_pool, 1 AS qty, "sticker" AS scan_kind
         FROM honey_bottle_barcodes c
         INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
         LEFT JOIN honey_bottle_units un ON un.barcode_id = c.id
-        WHERE c.scanned_at IS NOT NULL AND b.packaging_row_id IS NOT NULL
+        WHERE c.scanned_at IS NOT NULL AND COALESCE(un.packaging_row_id, b.packaging_row_id) IS NOT NULL
         UNION ALL
         SELECT e.packaging_row_id, e.id AS event_id, s.code, s.size, e.scanned_at, e.scanned_by,
                NULL AS unit_status, NULL AS unit_pool, e.qty, "sku" AS scan_kind
@@ -973,7 +1012,10 @@ function honey_bottle_scan_stock_in(PDO $pdo, int $userId, string $code, bool $a
 {
     $code = honey_bottle_normalize_code($code);
     $unitId = 0;
+    $packId = 0;
+    $todayPk = null;
     $shouldIncrement = false;
+    $row = null;
     $owns = !$pdo->inTransaction();
     if ($owns) {
         $pdo->beginTransaction();
@@ -1005,6 +1047,21 @@ function honey_bottle_scan_stock_in(PDO $pdo, int $userId, string $code, bool $a
         if ($packId < 1) {
             throw new RuntimeException('Barcode is not tied to a packaging batch.');
         }
+        $sourcePk = honey_fetch_packaging($pdo, $packId);
+        if ($sourcePk === null) {
+            throw new RuntimeException('Packaging row not found.');
+        }
+        // Stock-in day = bottling date for the credited lot (same batch+variant, today's date).
+        $todayPk = honey_ensure_packaging_row_for_stock_in(
+            $pdo,
+            $userId,
+            (string) $row['batch_no'],
+            honey_normalize_variant((string) $row['variant']),
+            (string) $row['supplier_code'],
+            date('Y-m-d'),
+            isset($sourcePk['production_row_id']) ? (int) $sourcePk['production_row_id'] : null
+        );
+        $packId = (int) $todayPk['id'];
         $shouldIncrement = !$adoptOnly && (string) $row['batch_source'] !== 'backfill';
         $pdo->prepare(
             'UPDATE honey_bottle_barcodes SET status = "scanned", scanned_at = NOW(), scanned_by = ? WHERE id = ?'
@@ -1056,8 +1113,10 @@ function honey_bottle_scan_stock_in(PDO $pdo, int $userId, string $code, bool $a
     $fresh = honey_bottle_fetch_code_row($pdo, $code);
     $out = honey_bottle_serialize_lookup($fresh ?? $row);
     $out['unit_id'] = $unitId;
+    $out['packaging_row_id'] = $packId;
+    $out['bottling_date'] = is_array($todayPk) ? (string) ($todayPk['bottling_date'] ?? date('Y-m-d')) : date('Y-m-d');
     $out['adopted'] = !$shouldIncrement;
-    if (!empty($row['request_id'])) {
+    if (is_array($row) && !empty($row['request_id'])) {
         $out['request'] = honey_bottle_request_get($pdo, (int) $row['request_id']);
     }
 
@@ -1352,6 +1411,11 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
         return ((int) $a['id']) <=> ((int) $b['id']);
     });
 
+    $totalQty = 0;
+    foreach ($items as $it) {
+        $totalQty += max(1, (int) ($it['qty'] ?? 1));
+    }
+
     return [
         'id' => (int) $sess['id'],
         'status' => (string) $sess['status'],
@@ -1362,6 +1426,7 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
         'confirmed_at' => $sess['confirmed_at'] !== null ? (string) $sess['confirmed_at'] : null,
         'created_at' => (string) $sess['created_at'],
         'item_count' => count($items),
+        'total_qty' => $totalQty,
         'items' => $items,
         'grouped' => array_values($grouped),
         'by_batch' => array_values($byBatch),
@@ -2105,6 +2170,70 @@ function honey_bottle_pack_session_remove_item(PDO $pdo, int $sessionId, string 
     return honey_bottle_pack_session_get($pdo, $sessionId);
 }
 
+/**
+ * Set absolute quantity for a non-unique (SKU) draft pack line. Unique stickers stay one-per-row.
+ *
+ * @return array<string, mixed>
+ */
+function honey_bottle_pack_session_set_item_qty(
+    PDO $pdo,
+    int $sessionId,
+    string $kind,
+    int $itemId,
+    int $qty
+): array {
+    $sess = honey_bottle_pack_session_get($pdo, $sessionId);
+    if ($sess['status'] !== 'draft') {
+        throw new RuntimeException('This pack session is already closed.');
+    }
+    if ($itemId < 1) {
+        throw new RuntimeException('Invalid session item.');
+    }
+    if ($qty < 1 || $qty > 5000) {
+        throw new RuntimeException('Quantity must be between 1 and 5000.');
+    }
+    $kind = $kind === 'dept' ? 'dept' : 'honey';
+    if ($kind === 'dept') {
+        $st = $pdo->prepare(
+            'SELECT id, sku_id, unit_id FROM honey_bottle_pack_session_dept_items
+             WHERE id = ? AND session_id = ? LIMIT 1'
+        );
+        $st->execute([$itemId, $sessionId]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row === false) {
+            throw new RuntimeException('That line is not in this session.');
+        }
+        $isSku = $row['sku_id'] !== null && (int) $row['sku_id'] > 0
+            && ($row['unit_id'] === null || (int) $row['unit_id'] < 1);
+        if (!$isSku) {
+            throw new RuntimeException('Only SKU (non-unique) lines can change quantity. Remove unique stickers one by one.');
+        }
+        $pdo->prepare(
+            'UPDATE honey_bottle_pack_session_dept_items SET qty = ? WHERE id = ? AND session_id = ?'
+        )->execute([$qty, $itemId, $sessionId]);
+    } else {
+        $st = $pdo->prepare(
+            'SELECT id, sku_id, unit_id FROM honey_bottle_pack_session_items
+             WHERE id = ? AND session_id = ? LIMIT 1'
+        );
+        $st->execute([$itemId, $sessionId]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row === false) {
+            throw new RuntimeException('That line is not in this session.');
+        }
+        $isSku = $row['sku_id'] !== null && (int) $row['sku_id'] > 0
+            && ($row['unit_id'] === null || (int) $row['unit_id'] < 1);
+        if (!$isSku) {
+            throw new RuntimeException('Only SKU (non-unique) lines can change quantity. Remove unique stickers one by one.');
+        }
+        $pdo->prepare(
+            'UPDATE honey_bottle_pack_session_items SET qty = ? WHERE id = ? AND session_id = ?'
+        )->execute([$qty, $itemId, $sessionId]);
+    }
+
+    return honey_bottle_pack_session_get($pdo, $sessionId);
+}
+
 function honey_bottle_pack_session_discard(PDO $pdo, int $sessionId): void
 {
     $pdo->prepare(
@@ -2592,8 +2721,10 @@ function honey_bottle_batch_codes(PDO $pdo, int $batchId): array
 }
 
 /**
- * Ensure a packaging batch row exists for a production lot without deducting gallons.
- * Bottle counts stay 0 until stock-in scans.
+ * Ensure a packaging batch row exists for a production lot on today's bottling date
+ * without deducting gallons. Bottle counts stay 0 until stock-in scans.
+ * Prior-day rows for the same production keep their dates; a new day gets a new row
+ * (same batch_no + production_row_id).
  *
  * @return array<string, mixed>
  */
@@ -2602,36 +2733,8 @@ function honey_bottle_ensure_packaging_shell(PDO $pdo, int $userId, int $product
     if ($productionRowId < 1) {
         throw new RuntimeException('production_row_id is required.');
     }
-    $existing = honey_fetch_packaging_by_production($pdo, $productionRowId);
-    if ($existing !== null) {
-        return $existing;
-    }
-    $pr = honey_fetch_production($pdo, $productionRowId);
-    if ($pr === null) {
-        throw new RuntimeException('Production row not found.');
-    }
-    $bottlingDate = date('Y-m-d');
-    $batchNo = honey_unique_packaging_batch_no(
-        $pdo,
-        honey_batch_no((string) $pr['supplier_code'], $bottlingDate),
-        (string) $pr['variant']
-    );
-    $ins = $pdo->prepare(
-        'INSERT INTO honey_packaging_rows (
-            production_row_id, supplier_code, batch_no, bottling_date, variant,
-            current_liter, initial_liter, current_250ml, initial_250ml,
-            current_350ml, initial_350ml, current_gallon, initial_gallon, created_by
-         ) VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?)'
-    );
-    $ins->execute([
-        $productionRowId,
-        $pr['supplier_code'],
-        $batchNo,
-        $bottlingDate,
-        $pr['variant'],
-        $userId,
-    ]);
-    $pack = honey_fetch_packaging($pdo, (int) $pdo->lastInsertId());
+    $ensured = honey_production_ensure_packaging_row($pdo, $userId, $productionRowId);
+    $pack = honey_fetch_packaging($pdo, (int) $ensured['packaging_row_id']);
     if ($pack === null) {
         throw new RuntimeException('Could not create packaging batch.');
     }
@@ -2643,9 +2746,10 @@ function honey_bottle_ensure_packaging_shell(PDO $pdo, int $userId, int $product
  * Create a packaging batch with a custom supplier (no production lot).
  * Used when older suppliers/lots are gone but bottles still need stickers.
  *
- * A batch code is reused across sizes and re-counts, so typing one that already
- * exists for this variant returns that row instead of failing — size lives on the
- * label request, not on the packaging row.
+ * A batch code is reused across sizes and re-counts for the same bottling date,
+ * so typing one that already exists for this variant+date returns that row instead
+ * of failing — size lives on the label request, not on the packaging row.
+ * The same code on a different bottling date creates/uses a separate lot.
  *
  * @return array<string, mixed>
  */
@@ -2660,11 +2764,7 @@ function honey_bottle_create_custom_packaging(
 ): array {
     $reused = false;
     $variant = honey_normalize_variant($variant);
-    $ts = strtotime($bottlingDate);
-    if ($ts === false) {
-        throw new RuntimeException('Invalid bottling date.');
-    }
-    $bottlingDate = date('Y-m-d', $ts);
+    $bottlingDate = honey_normalize_bottling_date($bottlingDate);
 
     $manualCode = $manualCode !== null ? strtoupper(trim($manualCode)) : '';
     if ($manualCode !== '') {
@@ -2672,12 +2772,8 @@ function honey_bottle_create_custom_packaging(
         if (!preg_match('/^[A-Z0-9][A-Z0-9-]{2,31}$/', $manualCode)) {
             throw new RuntimeException('Batch code must be 3–32 letters, digits or dashes (e.g. JR073026).');
         }
-        $st = $pdo->prepare(
-            'SELECT * FROM honey_packaging_rows WHERE batch_no = ? AND variant = ? LIMIT 1'
-        );
-        $st->execute([$manualCode, $variant]);
-        $existing = $st->fetch(PDO::FETCH_ASSOC);
-        if ($existing !== false) {
+        $existing = honey_fetch_packaging_by_batch_variant_date($pdo, $manualCode, $variant, $bottlingDate);
+        if ($existing !== null) {
             $reused = true;
 
             return $existing;
@@ -2695,17 +2791,13 @@ function honey_bottle_create_custom_packaging(
         // Custom batch code is just the supplier code (initials + MMDDYY), e.g. JR063026.
         // Same supplier + date + variant means the same batch — reuse it rather than
         // minting JR063026-2 behind the user's back.
-        $st = $pdo->prepare(
-            'SELECT * FROM honey_packaging_rows WHERE batch_no = ? AND variant = ? LIMIT 1'
-        );
-        $st->execute([$supplierCode, $variant]);
-        $existing = $st->fetch(PDO::FETCH_ASSOC);
-        if ($existing !== false) {
+        $existing = honey_fetch_packaging_by_batch_variant_date($pdo, $supplierCode, $variant, $bottlingDate);
+        if ($existing !== null) {
             $reused = true;
 
             return $existing;
         }
-        $batchNo = honey_unique_packaging_batch_no($pdo, $supplierCode, $variant);
+        $batchNo = honey_unique_packaging_batch_no($pdo, $supplierCode, $variant, $bottlingDate);
     }
 
     $ins = $pdo->prepare(
@@ -2736,7 +2828,7 @@ function honey_bottle_create_custom_packaging(
 function honey_bottle_serialize_packaging_option(array $pk, bool $created = false): array
 {
     $custom = !isset($pk['production_row_id']) || $pk['production_row_id'] === null || (int) $pk['production_row_id'] < 1;
-    $label = $pk['batch_no'] . ' · ' . ucfirst((string) $pk['variant']);
+    $label = $pk['batch_no'] . ' · ' . ucfirst((string) $pk['variant']) . ' · ' . (string) $pk['bottling_date'];
     if ($custom) {
         $label .= ' · custom';
     }

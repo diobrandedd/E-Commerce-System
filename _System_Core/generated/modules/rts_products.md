@@ -1,7 +1,7 @@
 ---
 title: rts_products
 source: includes/rts_products.php
-generated: 2026-09-09T06:27:41+02:00
+generated: 2026-09-10T05:04:58+02:00
 type: module
 function_count: 14
 ---

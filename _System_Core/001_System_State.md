@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-08-26_sku-barcode-inventory]] |
-| **Active Plan** | [[plans/archive/2026-09-08_rts-stock-in-review-session_plan]] |
-| **Status** | `shipped` - RTS stock-in review session (phase 76) |
+| **Active Spec** | [[specs/2026-09-10_packaging-bottling-date-unique]] |
+| **Active Plan** | [[plans/archive/2026-09-10_packaging-bottling-date-unique_plan]] |
+| **Status** | `shipped` — packaging lots unique by bottling date (phase77) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

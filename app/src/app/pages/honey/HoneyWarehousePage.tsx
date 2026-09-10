@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Camera, Plus, Loader2, ScanLine, Printer } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
-import { HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
+import { HoneyStageContent, HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { QtyCounter } from "@/app/components/honey/QtyCounter";
 import { HoneyStockStatusBadge } from "@/app/components/honey/HoneyStockStatusBadge";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -10,6 +10,7 @@ import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScan
 import {
   AppErrorBanner,
   AppSuccessNotice,
+  appHoverCard,
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
 import { Button } from "@/app/components/ui/button";
@@ -88,25 +89,85 @@ export function HoneyWarehousePage() {
     <PageLayout title="Raw Honey" subtitle="Warehouse — stock-in and stock-out to production">
       <div className="space-y-4">
         <HoneyStageTabs />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        <HoneyStageContent>
+          <div className="space-y-4">
+        {error && (
+          <div>
+            <AppErrorBanner message={error} />
+            <Button type="button" variant="outline" className="min-h-11" onClick={() => void refresh()}>
+              Retry loading
+            </Button>
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           {canMutate && (
-            <Button type="button" onClick={() => setShowIn(true)}>
+            <Button type="button" className="min-h-11" onClick={() => setShowIn(true)}>
               <Plus size={14} /> Stock in
             </Button>
           )}
           {canRequestBarcode && (
-            <Button type="button" variant="outline" onClick={() => setShowBarcodeRequest(true)}>
+            <Button type="button" className="min-h-11" variant="outline" onClick={() => setShowBarcodeRequest(true)}>
               <Printer size={14} /> Request supplier barcode
             </Button>
           )}
           {canMutate && (
-            <Button type="button" variant="outline" onClick={() => setShowBarcodeScan(true)}>
+            <Button type="button" className="min-h-11" variant="outline" onClick={() => setShowBarcodeScan(true)}>
               <ScanLine size={14} /> Scan stock out
             </Button>
           )}
         </div>
-        <div className="bg-card rounded-xl border border-border overflow-x-auto">
+        <div className="sm:hidden space-y-3" data-testid="honey-warehouse-mobile-cards">
+          {loading ? (
+            <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-muted-foreground">
+              <Loader2 className="inline animate-spin" size={18} />
+            </div>
+          ) : pagedRows.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+              No warehouse lots yet.
+            </div>
+          ) : (
+            pagedRows.map(r => (
+              <article key={r.id} className={`rounded-xl border border-border bg-card p-4 ${appHoverCard}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Supplier</p>
+                    {showSupplierProfile ? (
+                      <SupplierCodeButton code={r.supplier_code} className="min-h-11" />
+                    ) : (
+                      <p className="font-mono text-sm font-semibold">{r.supplier_code}</p>
+                    )}
+                    <p className="mt-1 text-xs text-muted-foreground">{r.arrival_date} · <span className="capitalize">{r.variant}</span></p>
+                  </div>
+                  <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />
+                </div>
+                <div className="mt-3 rounded-lg bg-secondary/30 px-3 py-2">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Gallons on hand</p>
+                  <div className="mt-1 text-sm font-semibold"><QtyCounter current={r.current_qty} initial={r.initial_qty} /></div>
+                </div>
+                {(canMutate || canExecEdit) && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {canMutate && (
+                      <Button
+                        type="button"
+                        className="min-h-11 flex-1"
+                        disabled={Number(r.current_qty) <= 0}
+                        onClick={() => setShowOut(r)}
+                      >
+                        Stock out
+                      </Button>
+                    )}
+                    {canExecEdit && (
+                      <Button type="button" className="min-h-11" variant="outline" onClick={() => setEditRow(r)}>
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </article>
+            ))
+          )}
+        </div>
+        <div className="hidden sm:block bg-card rounded-xl border border-border overflow-x-auto" data-testid="honey-warehouse-desktop-table">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-secondary/40">
@@ -153,14 +214,14 @@ export function HoneyWarehousePage() {
                     {(canMutate || canExecEdit) && (
                       <td className="px-4 py-3 space-x-2">
                         {canExecEdit && (
-                          <button type="button" onClick={() => setEditRow(r)} className="text-xs font-semibold text-muted-foreground hover:text-foreground">
+                          <Button type="button" size="sm" variant="ghost" onClick={() => setEditRow(r)}>
                             Edit
-                          </button>
+                          </Button>
                         )}
                         {canMutate && (
-                          <button disabled={Number(r.current_qty) <= 0} onClick={() => setShowOut(r)} className="text-xs font-semibold text-[#C8900A] disabled:opacity-40">
+                          <Button type="button" size="sm" variant="ghost" disabled={Number(r.current_qty) <= 0} onClick={() => setShowOut(r)}>
                             Stock out
-                          </button>
+                          </Button>
                         )}
                       </td>
                     )}
@@ -180,7 +241,7 @@ export function HoneyWarehousePage() {
                 type="button"
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={safePage <= 1}
-                className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+                className="min-h-11 text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
@@ -191,7 +252,7 @@ export function HoneyWarehousePage() {
                 type="button"
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={safePage >= totalPages}
-                className="text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+                className="min-h-11 text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -206,6 +267,8 @@ export function HoneyWarehousePage() {
           onRequest={() => setShowBarcodeRequest(true)}
         />
       )}
+        </HoneyStageContent>
+      </div>
       {showIn && (
         <StockInModal
           onClose={() => setShowIn(false)}
@@ -244,7 +307,7 @@ export function HoneyWarehousePage() {
           stage="warehouse"
           row={editRow}
           onClose={() => setEditRow(null)}
-          onDone={() => { setEditRow(null); refresh(); }}
+          onSaved={() => { setEditRow(null); refresh(); }}
         />
       )}
     </PageLayout>
@@ -312,7 +375,7 @@ function StockInModal({
               ))}
             </tbody>
           </table>
-          {err && <p className="text-xs text-red-600">{err}</p>}
+          {err && <AppErrorBanner message={err} />}
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={() => setShowConfirm(false)} className="flex-1 py-2 rounded-lg border text-sm">Back</button>
             <button type="button" disabled={busy} onClick={save} className="flex-1 py-2 rounded-lg text-sm font-bold text-white" style={{ background: "#C8900A" }}>
@@ -327,7 +390,7 @@ function StockInModal({
   return (
     <Modal title="Warehouse stock-in" onClose={onClose}>
       <div className="space-y-3">
-        {err && <p className="text-xs text-red-600">{err}</p>}
+        {err && <AppErrorBanner message={err} />}
         <div>
           <label className="text-xs text-muted-foreground block mb-1">Supplier</label>
           <SupplierCombobox value={supplier} onChange={setSupplier} category="honey" />
@@ -336,17 +399,19 @@ function StockInModal({
           <p className="text-xs text-muted-foreground">Supplier code preview: <strong className="font-mono">{codePreview}</strong></p>
         )}
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">Arrival date</label>
-          <input type="date" value={arrival} onChange={e => setArrival(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <label htmlFor="warehouse-arrival-date" className="text-xs text-muted-foreground block mb-1">Arrival date</label>
+          <input id="warehouse-arrival-date" type="date" value={arrival} onChange={e => setArrival(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
         </div>
         <p className="text-xs font-semibold text-muted-foreground">Variants (one row each — qty is always in gallon/s)</p>
         {variants.map((v, i) => (
           <div key={i} className="flex gap-2 items-center">
-            <select value={v.variant} onChange={e => { const n = [...variants]; n[i].variant = e.target.value; setVariants(n); }} className="border rounded-lg px-2 py-2 text-sm flex-1">
+            <label htmlFor={`warehouse-variant-${i}`} className="sr-only">Variant {i + 1}</label>
+            <select id={`warehouse-variant-${i}`} value={v.variant} onChange={e => { const n = [...variants]; n[i].variant = e.target.value; setVariants(n); }} className="border rounded-lg px-2 py-2 text-sm flex-1">
               {HONEY_VARIANTS.map(x => <option key={x} value={x}>{x}</option>)}
             </select>
             <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">Gallon/s</span>
-            <input type="number" step="0.01" min="0" value={v.qty} onChange={e => { const n = [...variants]; n[i].qty = e.target.value; setVariants(n); }} placeholder="0" className="border rounded-lg px-2 py-2 text-sm w-20" required />
+            <label htmlFor={`warehouse-variant-qty-${i}`} className="sr-only">Gallons for variant {i + 1}</label>
+            <input id={`warehouse-variant-qty-${i}`} type="number" step="0.01" min="0" value={v.qty} onChange={e => { const n = [...variants]; n[i].qty = e.target.value; setVariants(n); }} placeholder="0" className="border rounded-lg px-2 py-2 text-sm w-20" required />
             {variants.length > 1 && (
               <button type="button" onClick={() => setVariants(variants.filter((_, j) => j !== i))} className="text-xs text-red-600">Remove</button>
             )}
@@ -370,12 +435,16 @@ function StockInModal({
 function StockOutModal({ row, onClose, onDone }: { row: WhRow; onClose: () => void; onDone: () => void }) {
   const [qty, setQty] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
+    setError(null);
     try {
       await apiPost("honey.php", "warehouse_stock_out", { warehouse_row_id: row.id, qty: parseFloat(qty) });
       onDone();
+    } catch (error) {
+      setError(error instanceof ApiError ? error.message : "Could not move this lot to Production.");
     } finally {
       setBusy(false);
     }
@@ -383,10 +452,12 @@ function StockOutModal({ row, onClose, onDone }: { row: WhRow; onClose: () => vo
   return (
     <Modal title="Stock out → Production" onClose={onClose}>
       <form onSubmit={submit} className="space-y-3 text-sm">
+        {error && <AppErrorBanner message={error} />}
         <p>Code: <strong>{row.supplier_code}</strong> · {row.variant}</p>
         <p>Available: <QtyCounter current={row.current_qty} initial={row.initial_qty} /></p>
-        <input type="number" step="0.01" value={qty} onChange={e => setQty(e.target.value)} placeholder="Quantity" className="w-full border rounded-lg px-3 py-2" required />
-        <button type="submit" disabled={busy} className="w-full py-2.5 rounded-lg font-bold text-white" style={{ background: "#C8900A" }}>Confirm</button>
+        <label htmlFor="warehouse-stock-out-qty" className="text-xs font-medium text-muted-foreground">Gallons to Production</label>
+        <input id="warehouse-stock-out-qty" type="number" step="0.01" min="0.01" max={row.current_qty} value={qty} onChange={e => setQty(e.target.value)} className="w-full border rounded-lg px-3 py-2" required />
+        <Button type="submit" disabled={busy} className="min-h-11 w-full">Confirm stock out</Button>
       </form>
     </Modal>
   );
@@ -461,7 +532,7 @@ function WarehouseBarcodeRequestsPanel({
           </p>
         </div>
         {canRequest && (
-          <Button type="button" size="sm" variant="outline" onClick={onRequest}>
+          <Button type="button" size="sm" className="min-h-11" variant="outline" onClick={onRequest}>
             <Printer size={14} /> Request labels
           </Button>
         )}
@@ -500,6 +571,7 @@ function WarehouseBarcodeRequestsPanel({
                       <Button
                         type="button"
                         size="sm"
+                        className="min-h-11"
                         variant="outline"
                         disabled={busy === row.id}
                         onClick={() => void generate(row.id)}
@@ -512,6 +584,7 @@ function WarehouseBarcodeRequestsPanel({
                       <Button
                         type="button"
                         size="sm"
+                        className="min-h-11"
                         variant="ghost"
                         disabled={busy === row.id}
                         onClick={() => void cancel(row.id)}
@@ -578,8 +651,9 @@ function WarehouseBarcodeRequestModal({
           <SupplierCombobox value={supplier} onChange={setSupplier} category="honey" />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">Arrival date</label>
+          <label htmlFor="warehouse-barcode-arrival" className="text-xs text-muted-foreground block mb-1">Arrival date</label>
           <input
+            id="warehouse-barcode-arrival"
             type="date"
             value={arrival}
             onChange={e => setArrival(e.target.value)}
@@ -594,8 +668,9 @@ function WarehouseBarcodeRequestModal({
           </div>
         )}
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">Number of identical labels</label>
+          <label htmlFor="warehouse-barcode-label-qty" className="text-xs text-muted-foreground block mb-1">Number of identical labels</label>
           <input
+            id="warehouse-barcode-label-qty"
             type="number"
             min={1}
             max={5000}
@@ -713,7 +788,9 @@ function WarehouseBarcodeStockOutModal({
           moving to Production.
         </p>
         <div className="flex flex-wrap gap-2">
+          <label htmlFor="warehouse-barcode-lookup" className="sr-only">Supplier and arrival barcode</label>
           <input
+            id="warehouse-barcode-lookup"
             ref={inputRef}
             {...inputProps}
             value={code}

@@ -1,7 +1,7 @@
 ---
 title: dept_pricing
 source: includes/dept_pricing.php
-generated: 2026-09-09T06:27:03+02:00
+generated: 2026-09-10T05:04:25+02:00
 type: module
 function_count: 8
 ---
@@ -53,7 +53,7 @@ function_count: 8
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1153 — `$prices = dept_pricing_list_supplier_prices(`
+- `api/v1/honey.php`:1160 — `$prices = dept_pricing_list_supplier_prices(`
 
 ## dept_pricing_save_supplier_prices {#dept_pricing_save_supplier_prices}
 
@@ -61,7 +61,7 @@ function_count: 8
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1201 — `$saved = dept_pricing_save_supplier_prices($pdo, $supplierId, $products, $effectiveFrom, (int) $user['id']);`
+- `api/v1/honey.php`:1208 — `$saved = dept_pricing_save_supplier_prices($pdo, $supplierId, $products, $effectiveFrom, (int) $user['id']);`
 
 ## dept_pricing_upsert_supplier_costing_stocks {#dept_pricing_upsert_supplier_costing_stocks}
 

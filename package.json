@@ -1,0 +1,26 @@
+{
+  "name": "rts",
+  "version": "1.0.0",
+  "description": "<p align=\"center\">\r   <img src=\"docs/readme/logo-pyx-food-products.png\" alt=\"Pyx Food Products logo\" width=\"160\" />\r </p>",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diobrandedd/E-Commerce-System.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/diobrandedd/E-Commerce-System/issues"
+  },
+  "homepage": "https://github.com/diobrandedd/E-Commerce-System#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.5.0"
+  }
+}

@@ -18,7 +18,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Live counts",
         description:
-          "Raw bags (sealed 1 kg), WIP tea bags, finished pouches, and the linked costing stock name. These update after each action.",
+          "Raw bags (sealed 1 kg), WIP tea bags, finished pouches, and the linked costing stock name. Raw production records and finished barcode stock-in are separate.",
         side: "bottom",
         align: "start",
       },
@@ -28,7 +28,7 @@ function buildSteps(): DriveStep[] {
       popover: {
         title: "Production activity",
         description:
-          "Audit log of Use raw bags, Pouch, and waste actions — who did what and when.",
+          "Audit log of raw-production and waste records. Finished barcode stock-in has its own scan history.",
         side: "top",
         align: "start",
       },
@@ -44,8 +44,8 @@ function buildSteps(): DriveStep[] {
     },
     {
       popover: {
-        title: "Header actions",
-        description: `Workflow: Stock in → Use raw bags (~${teaPerBag.toLocaleString()} tea bags per bag opened) → Pouch. On mobile, tap Actions for the same buttons. WIP waste and Bag waste correct mistakes.`,
+        title: "Choose the record you need",
+        description: `Raw tracking uses Stock in → Use raw bags (~${teaPerBag.toLocaleString()} tea bags per bag opened). Finished stock uses Request → Generate / print → Scan pouches. Scanning adds finished inventory without deducting raw bags, WIP, or packaging.`,
         side: "over",
         align: "center",
       },

@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-09T06:26:51+02:00
+generated: 2026-09-10T05:04:17+02:00
 type: memory-bank
 table_count: 97
 ---
@@ -814,6 +814,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_scan_honey]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_void_code]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_fetch_code_row]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_report]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_log]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_scan_stock_in]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_rts_stock_in_scan]] |
@@ -857,6 +858,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_scan_honey]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_remove_item]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_set_item_qty]] |
 
 ## `honey_bottle_codes_issued`
 
@@ -947,6 +949,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_scan_dept]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_remove_item]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_set_item_qty]] |
 
 ## `pack_cancel_restock_sessions`
 
@@ -1158,10 +1161,11 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_opened_return_scan]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_backfill_preview]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_reconcile]] |
-| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_ensure_packaging_shell]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_create_custom_packaging]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_options]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_unique_packaging_batch_no]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging_by_batch_variant_date]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_ensure_packaging_row_for_stock_in]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging_by_production]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_stock_out]] |

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useState } from "react";
-import { BookOpen, Camera, CheckCircle2, ChevronDown, ChevronRight, Loader2, Trash2, XCircle } from "lucide-react";
+import { BookOpen, Camera, CheckCircle2, ChevronDown, ChevronRight, Loader2, Pencil, Trash2, XCircle } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -191,11 +191,14 @@ function PackScanLivePanel() {
   const [busy, setBusy] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [editItem, setEditItem] = useState<HoneyPackSessionItem | null>(null);
+  const [editQty, setEditQty] = useState("1");
   const [skuQty, setSkuQty] = useState("1");
   const [skuPool, setSkuPool] = useState<"packaging" | "rts_sellable" | "finished">("packaging");
   const [lastSku, setLastSku] = useState<{ code: string; kind: "honey" | "dept"; label: string } | null>(null);
   const [todayPacked, setTodayPacked] = useState<number | null>(null);
   const cameraTitleId = useId();
+  const editQtyTitleId = useId();
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen, session?.id);
 
   const refreshTodayPacked = useCallback(async () => {
@@ -366,7 +369,8 @@ function PackScanLivePanel() {
     setError(null);
     try {
       const res = await bottleBarcodesApi.packConfirm(session.id);
-      setOk(`Packed ${res.session.item_count} item${res.session.item_count === 1 ? "" : "s"}.`);
+      const packedUnits = res.session.total_qty ?? res.session.grouped.reduce((sum, g) => sum + g.qty, 0);
+      setOk(`Packed ${packedUnits} unit${packedUnits === 1 ? "" : "s"}.`);
       setConfirmOpen(false);
       setLastSku(null);
       await start();
@@ -409,9 +413,45 @@ function PackScanLivePanel() {
     }
   };
 
+  const startEditQty = (item: HoneyPackSessionItem) => {
+    if (item.lookup_kind !== "sku") return;
+    setEditItem(item);
+    setEditQty(String(item.qty ?? 1));
+    setError(null);
+  };
+
+  const saveEditQty = async () => {
+    if (!session || !editItem) return;
+    const qty = parseInt(editQty, 10);
+    if (!Number.isFinite(qty) || qty < 1 || qty > 5000) {
+      setError("Quantity must be between 1 and 5000.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await bottleBarcodesApi.packSetItemQty(
+        session.id,
+        editItem.kind === "dept" ? "dept" : "honey",
+        editItem.id,
+        qty,
+      );
+      setSession(res.session);
+      setMsg(`${editItem.code} set to ×${qty}`);
+      setEditItem(null);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not update quantity.");
+    } finally {
+      setBusy(false);
+      refocus();
+    }
+  };
+
   const toggleGroup = (key: string) => {
     setExpandedGroups(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
   };
+
+  const sessionUnits = session?.total_qty ?? session?.grouped.reduce((sum, g) => sum + g.qty, 0) ?? 0;
 
   const flashClass =
     flash === "ok"
@@ -509,9 +549,9 @@ function PackScanLivePanel() {
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
             In this session
           </p>
-          <p className="text-2xl font-bold mt-1 tabular-nums">{session?.item_count ?? 0}</p>
+          <p className="text-2xl font-bold mt-1 tabular-nums">{sessionUnits}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">
-            {(session?.item_count ?? 0) === 1 ? "item" : "items"} not confirmed yet
+            {sessionUnits === 1 ? "unit" : "units"} not confirmed yet
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card px-4 py-3">
@@ -533,19 +573,33 @@ function PackScanLivePanel() {
           const barcodes = (session?.items ?? []).filter(it => packItemGroupKey(it) === key);
           return (
             <div key={key} className="bg-card border rounded-xl overflow-hidden">
-              <button
-                type="button"
-                className={`w-full text-left px-3 py-2.5 flex items-center gap-2 ${appHoverRow}`}
-                onClick={() => toggleGroup(key)}
-              >
-                <span className="text-muted-foreground shrink-0">
-                  {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-xs text-muted-foreground capitalize">{packItemLabel(g)}</span>
-                  <span className="text-lg font-bold leading-tight">{g.qty}</span>
-                </span>
-              </button>
+              <div className={`flex items-center gap-2 px-3 py-2.5 ${appHoverRow}`}>
+                <button
+                  type="button"
+                  className="min-h-11 flex-1 text-left flex items-center gap-2"
+                  onClick={() => toggleGroup(key)}
+                  aria-expanded={open}
+                >
+                  <span className="text-muted-foreground shrink-0">
+                    {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs text-muted-foreground capitalize">{packItemLabel(g)}</span>
+                    <span className="text-lg font-bold leading-tight tabular-nums">×{g.qty}</span>
+                  </span>
+                </button>
+                {barcodes.length === 1 && barcodes[0]?.lookup_kind === "sku" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="min-h-11 shrink-0"
+                    onClick={() => startEditQty(barcodes[0])}
+                  >
+                    <Pencil size={14} /> Edit qty
+                  </Button>
+                ) : null}
+              </div>
               {open ? (
                 <div className="border-t bg-secondary/20 px-3 py-2 space-y-1">
                   {barcodes.length === 0 ? (
@@ -554,6 +608,7 @@ function PackScanLivePanel() {
                     barcodes.map(it => {
                       const rowKey = `${it.kind ?? "honey"}-${it.id}`;
                       const removing = removingId === rowKey;
+                      const isSku = it.lookup_kind === "sku";
                       return (
                         <div key={rowKey} className="flex items-center gap-2 py-1">
                           <div className="min-w-0 flex-1">
@@ -561,7 +616,27 @@ function PackScanLivePanel() {
                             {it.batch_no ? (
                               <p className="text-[10px] text-muted-foreground font-mono">{it.batch_no}</p>
                             ) : null}
+                            {isSku ? (
+                              <p className="text-[10px] text-muted-foreground">SKU · ×{it.qty ?? 1}</p>
+                            ) : (
+                              <p className="text-[10px] text-muted-foreground">Unique sticker</p>
+                            )}
                           </div>
+                          {isSku ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="min-h-11 shrink-0"
+                              disabled={busy}
+                              onClick={e => {
+                                e.stopPropagation();
+                                startEditQty(it);
+                              }}
+                            >
+                              <Pencil size={14} /> Edit
+                            </Button>
+                          ) : null}
                           <button
                             type="button"
                             className="text-red-400 hover:text-red-600 p-1 transition-colors active:scale-90 disabled:opacity-40"
@@ -585,13 +660,59 @@ function PackScanLivePanel() {
         })}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button type="button" onClick={() => setConfirmOpen(true)} disabled={!session || session.item_count < 1}>
+        <Button type="button" onClick={() => setConfirmOpen(true)} disabled={!session || sessionUnits < 1}>
           Done scanning
         </Button>
-        <Button type="button" variant="outline" onClick={() => void discard()} disabled={!session || session.item_count < 1}>
+        <Button type="button" variant="outline" onClick={() => void discard()} disabled={!session || sessionUnits < 1}>
           Discard session
         </Button>
       </div>
+      <AppModal
+        open={editItem !== null}
+        onClose={() => !busy && setEditItem(null)}
+        panelClassName="max-w-sm w-full"
+        labelledBy={editQtyTitleId}
+      >
+        <AppModalHeader
+          title="Edit pack quantity"
+          titleId={editQtyTitleId}
+          subtitle={editItem ? `${packItemLabel(editItem)} · ${editItem.code}` : undefined}
+          onClose={() => !busy && setEditItem(null)}
+        />
+        <AppModalBody className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Non-unique SKU lines only. Unique stickers stay one scan each — remove them individually.
+          </p>
+          <label htmlFor="pack-session-edit-qty" className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Quantity
+            <input
+              id="pack-session-edit-qty"
+              type="number"
+              min={1}
+              max={5000}
+              value={editQty}
+              onChange={e => setEditQty(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void saveEditQty();
+                }
+              }}
+              className="mt-1 w-full rounded-lg border-2 border-border bg-card px-3 py-2.5 text-sm tabular-nums"
+              autoFocus
+            />
+          </label>
+        </AppModalBody>
+        <AppModalFooter>
+          <Button type="button" variant="outline" disabled={busy} onClick={() => setEditItem(null)}>
+            Cancel
+          </Button>
+          <Button type="button" disabled={busy} onClick={() => void saveEditQty()}>
+            {busy ? <Loader2 className="animate-spin" size={16} /> : null}
+            Save quantity
+          </Button>
+        </AppModalFooter>
+      </AppModal>
       <AppModal open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <AppModalHeader title="Confirm pack deduction" onClose={() => setConfirmOpen(false)} />
         <AppModalBody className="space-y-2">

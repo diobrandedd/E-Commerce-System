@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, AlertTriangle, History, Loader2, Minus, Plus, Factory, Package, Printer, ScanLine, Tag } from "lucide-react";
+import { BookOpen, AlertTriangle, History, Loader2, Minus, MoreHorizontal, Plus, Factory, Package, Printer, ScanLine, Tag } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
@@ -116,7 +116,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const pouchUnit = deptPouchUnitLabel(productKey);
   const dailyProduce =
     productKey === "pt"
-      ? { logAction: "pouch", title: "Pouch creation", unitPlural: "pouches", unitSingular: "pouch" }
+      ? { logAction: "pouch", title: "Daily finished pouch record", unitPlural: "pouches", unitSingular: "pouch" }
       : productKey === "brc"
         ? { logAction: "produce_brc", title: "Pouch creation", unitPlural: "pouches", unitSingular: "pouch" }
         : productKey === "jar_cacao"
@@ -201,7 +201,12 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           <Loader2 className="inline animate-spin" size={20} />
         </div>
       ) : !data ? (
-        <p className="text-sm text-red-600">{loadError ?? "Could not load raw inventory."}</p>
+        <div>
+          <AppErrorBanner message={loadError ?? "Could not load raw inventory."} />
+          <Button type="button" variant="outline" className="min-h-11" onClick={() => void refresh()}>
+            Retry loading
+          </Button>
+        </div>
       ) : (
         <div className="space-y-5">
           {productKey === "honey_comb" && (
@@ -268,7 +273,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 bagsOnHand={data.bags_on_hand}
                 wipTeaBags={wipTeaBags}
                 canMutate={canMutate}
-                hasPouchBarcodes={hasPouchBarcodes}
                 showPouchBarcodes={showPouchBarcodes}
                 unitSingular={pouchUnit.singular}
                 unitPlural={pouchUnit.plural}
@@ -280,7 +284,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 onGeneratePrint={() => setPouchModal("admin")}
                 pendingPouchLabels={pendingPouchLabels}
                 onWipWaste={() => setShowWipWaste(true)}
-                onProduce={() => undefined}
                 onBagWaste={() => setShowWarehouseWaste(true)}
             />
           )}
@@ -525,7 +528,6 @@ function RawDeptInlineActions({
   bagsOnHand,
   wipTeaBags,
   canMutate,
-  hasPouchBarcodes,
   showPouchBarcodes,
   unitSingular,
   unitPlural,
@@ -537,7 +539,6 @@ function RawDeptInlineActions({
   onGeneratePrint,
   pendingPouchLabels,
   onWipWaste,
-  onProduce,
   onBagWaste,
 }: {
   isParagis: boolean;
@@ -546,7 +547,6 @@ function RawDeptInlineActions({
   bagsOnHand: number;
   wipTeaBags: number;
   canMutate: boolean;
-  hasPouchBarcodes: boolean;
   showPouchBarcodes: boolean;
   unitSingular: string;
   unitPlural: string;
@@ -558,12 +558,16 @@ function RawDeptInlineActions({
   onGeneratePrint: () => void;
   pendingPouchLabels: number;
   onWipWaste: () => void;
-  onProduce: () => void;
   onBagWaste: () => void;
 }) {
   const canUseRaw = bagsOnHand > 0;
   const canWip = wipTeaBags > 0;
   const canBags = bagsOnHand > 0;
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+  const runMobileAction = (action: () => void) => {
+    setMobileActionsOpen(false);
+    window.setTimeout(action, 0);
+  };
 
   return (
     <div
@@ -573,10 +577,47 @@ function RawDeptInlineActions({
       <div className="px-4 py-3 border-b bg-secondary/30">
         <p className="text-sm font-semibold">Do next</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Production steps — choose the action you need.
+          {isParagis && showPouchBarcodes
+            ? "Raw production records and finished inventory are separate. Barcode stock-in does not deduct raw bags, WIP, or packaging."
+            : "Production steps — choose the action you need."}
         </p>
       </div>
-      <div className="p-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+      <div className="p-3 sm:hidden space-y-2">
+        {showPouchBarcodes ? (
+          <AppPressable
+            variant="primary"
+            onClick={onScanPouches}
+            className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+          >
+            <ScanLine size={16} /> Scan {unitPlural} to inventory
+          </AppPressable>
+        ) : canMutate ? (
+          <AppPressable
+            variant="primary"
+            onClick={onStockIn}
+            className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+          >
+            <Plus size={16} /> Stock in raw bags
+          </AppPressable>
+        ) : null}
+        {canMutate && showPouchBarcodes ? (
+          <AppPressable
+            variant="outline"
+            onClick={onStockIn}
+            className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+          >
+            <Plus size={16} /> Stock in raw bags
+          </AppPressable>
+        ) : null}
+        <AppPressable
+          variant="outline"
+          onClick={() => setMobileActionsOpen(true)}
+          className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+        >
+          <MoreHorizontal size={16} /> More actions
+        </AppPressable>
+      </div>
+      <div className="hidden p-3 sm:grid sm:grid-cols-2 xl:grid-cols-3 gap-2">
         {canMutate && (
           <AppPressable
             variant="primary"
@@ -599,19 +640,7 @@ function RawDeptInlineActions({
               </AppPressable>
             )}
           </>
-        ) : (
-          canMutate &&
-          !hasPouchBarcodes && (
-            <AppPressable
-              variant="outline"
-              disabled={!canUseRaw}
-              onClick={onProduce}
-              className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
-            >
-              <Factory size={16} /> Produce finished product
-            </AppPressable>
-          )
-        )}
+        ) : null}
         {showPouchBarcodes && (
           <>
             <AppPressable
@@ -684,6 +713,93 @@ function RawDeptInlineActions({
           <Package size={16} /> {finishedTitle} →
         </Link>
       </div>
+      <AppModal
+        open={mobileActionsOpen}
+        onClose={() => setMobileActionsOpen(false)}
+        panelClassName="max-w-md w-full"
+        labelledBy="raw-dept-mobile-actions-title"
+      >
+        <AppModalHeader
+          title="Raw material actions"
+          titleId="raw-dept-mobile-actions-title"
+          subtitle="Production records, barcode tools, waste, and history."
+          onClose={() => setMobileActionsOpen(false)}
+        />
+        <AppModalBody className="space-y-2">
+          {isParagis && canMutate ? (
+            <AppPressable
+              variant="outline"
+              disabled={!canUseRaw}
+              onClick={() => runMobileAction(onUseRawBags)}
+              className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+            >
+              <Factory size={16} /> Use raw bags → tea bags
+            </AppPressable>
+          ) : null}
+          {showPouchBarcodes ? (
+            <>
+              <AppPressable
+                variant="outline"
+                onClick={() => runMobileAction(onRequestBarcodes)}
+                className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+              >
+                <Tag size={16} /> Request {unitSingular} barcodes
+              </AppPressable>
+              <AppPressable
+                variant="outline"
+                onClick={() => runMobileAction(onScanHistory)}
+                className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+              >
+                <History size={16} /> Scan history
+              </AppPressable>
+              <AppPressable
+                variant="outline"
+                onClick={() => runMobileAction(onGeneratePrint)}
+                className="relative min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+              >
+                <Printer size={16} /> Generate / print
+                {pendingPouchLabels > 0 ? (
+                  <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">
+                    {pendingPouchLabels > 99 ? "99+" : pendingPouchLabels}
+                  </span>
+                ) : null}
+              </AppPressable>
+              <Link
+                to="/inventory/leak-damage"
+                className="min-h-11 w-full inline-flex items-center justify-start gap-2 rounded-xl border border-red-300 px-3 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
+              >
+                <AlertTriangle size={16} /> Leak / damage scan
+              </Link>
+            </>
+          ) : null}
+          {isParagis && canMutate ? (
+            <AppPressable
+              variant="outline"
+              disabled={!canWip}
+              onClick={() => runMobileAction(onWipWaste)}
+              className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+            >
+              <Minus size={16} /> WIP waste
+            </AppPressable>
+          ) : null}
+          {canMutate ? (
+            <AppPressable
+              variant="outline"
+              disabled={!canBags}
+              onClick={() => runMobileAction(onBagWaste)}
+              className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+            >
+              <Minus size={16} /> Bag waste
+            </AppPressable>
+          ) : null}
+          <Link
+            to={finishedProductPath}
+            className="min-h-11 w-full inline-flex items-center justify-start gap-2 rounded-xl border border-border px-3 text-sm font-semibold transition-colors hover:bg-secondary"
+          >
+            <Package size={16} /> Open {finishedTitle}
+          </Link>
+        </AppModalBody>
+      </AppModal>
     </div>
   );
 }
@@ -794,15 +910,16 @@ function UseRawBagsModal({
       <AppModalHeader title="Use raw bags" titleId="use-raw-bags-title" onClose={onClose} />
       <form onSubmit={submit}>
         <AppModalBody className="space-y-3">
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <AppErrorBanner message={error} />}
           <p className="text-xs text-muted-foreground">
             Each 1 kg bag yields ~{teaPerBag.toLocaleString()} tea bags at 2 g each. Enter how many bags you opened — no need to count every tea bag.
           </p>
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+            <label htmlFor="use-raw-bags-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
               Bags opened (1 kg each) — max {maxBags.toLocaleString()}
             </label>
             <input
+              id="use-raw-bags-qty"
               type="number"
               step="0.01"
               min="0.01"
@@ -833,8 +950,8 @@ function UseRawBagsModal({
             <ProductionPreviewPanel deductLines={deductPreview} costOnlyLines={costOnlyPreview} />
           )}
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Note (optional)</label>
-            <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={255} className={inputCls} />
+            <label htmlFor="use-raw-bags-note" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Note (optional)</label>
+            <input id="use-raw-bags-note" type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={255} className={inputCls} />
           </div>
         </AppModalBody>
         <AppModalFooter>
@@ -922,13 +1039,14 @@ function ProductionQtyModal({
       <AppModalHeader title={title} titleId="prod-qty-title" onClose={onClose} />
       <form onSubmit={submit}>
         <AppModalBody className="space-y-3">
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <AppErrorBanner message={error} />}
           {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+            <label htmlFor="production-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
               {label}{maxQty != null ? ` — max ${maxQty}` : ""}
             </label>
             <input
+              id="production-qty"
               type="number"
               step="1"
               min="1"
@@ -948,8 +1066,8 @@ function ProductionQtyModal({
             <ProductionPreviewPanel deductLines={deductPreview} costOnlyLines={costOnlyPreview} />
           )}
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Note (optional)</label>
-            <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={255} className={inputCls} />
+            <label htmlFor="production-qty-note" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Note (optional)</label>
+            <input id="production-qty-note" type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={255} className={inputCls} />
           </div>
         </AppModalBody>
         <AppModalFooter>
@@ -1022,15 +1140,15 @@ function RawStockInModal({
       <AppModalHeader title="Stock in raw bags" titleId="raw-stock-in-title" onClose={onClose} />
       <form onSubmit={submit}>
         <AppModalBody className="space-y-3">
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <AppErrorBanner message={error} />}
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Supplier</label>
+            <label htmlFor="raw-stock-in-supplier" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Supplier</label>
             {suppliersLoading ? (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Loader2 size={12} className="animate-spin" /> Loading suppliers…
               </p>
             ) : (
-              <select value={supplierId} onChange={e => setSupplierId(e.target.value)} required className={inputCls}>
+              <select id="raw-stock-in-supplier" value={supplierId} onChange={e => setSupplierId(e.target.value)} required className={inputCls}>
                 <option value="">Select supplier…</option>
                 {suppliers.map(s => (
                   <option key={s.id} value={s.id}>{s.display_name}</option>
@@ -1040,16 +1158,16 @@ function RawStockInModal({
             {yieldHint && <p className="text-xs text-muted-foreground mt-1">Price from Supplier Master (₱/{unit}). {yieldHint}</p>}
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Quantity ({unit}s)</label>
-            <input type="number" step="0.01" min="0.01" value={qty} onChange={e => setQty(e.target.value)} required className={inputCls} />
+            <label htmlFor="raw-stock-in-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Quantity ({unit}s)</label>
+            <input id="raw-stock-in-qty" type="number" step="0.01" min="0.01" value={qty} onChange={e => setQty(e.target.value)} required className={inputCls} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Arrival date</label>
-            <input type="date" value={arrival} onChange={e => setArrival(e.target.value)} required className={inputCls} />
+            <label htmlFor="raw-stock-in-arrival" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Arrival date</label>
+            <input id="raw-stock-in-arrival" type="date" value={arrival} onChange={e => setArrival(e.target.value)} required className={inputCls} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Note (optional)</label>
-            <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={255} className={inputCls} />
+            <label htmlFor="raw-stock-in-note" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Note (optional)</label>
+            <input id="raw-stock-in-note" type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={255} className={inputCls} />
           </div>
         </AppModalBody>
         <AppModalFooter>
@@ -1105,17 +1223,17 @@ function WarehouseWasteModal({
       <AppModalHeader title="Waste sealed bags" titleId="wh-waste-title" onClose={onClose} />
       <form onSubmit={submit}>
         <AppModalBody className="space-y-3">
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <AppErrorBanner message={error} />}
           <p className="text-xs text-muted-foreground">Deduct sealed supplier bags (spoilage, return, etc.).</p>
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+            <label htmlFor="warehouse-waste-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
               Quantity ({unit}s) — max {maxQty.toLocaleString()}
             </label>
-            <input type="number" step="0.01" min="0.01" max={maxQty} value={qty} onChange={e => setQty(e.target.value)} required className={inputCls} />
+            <input id="warehouse-waste-qty" type="number" step="0.01" min="0.01" max={maxQty} value={qty} onChange={e => setQty(e.target.value)} required className={inputCls} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Reason</label>
-            <input type="text" value={reason} onChange={e => setReason(e.target.value)} required maxLength={120} className={inputCls} />
+            <label htmlFor="warehouse-waste-reason" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Reason</label>
+            <input id="warehouse-waste-reason" type="text" value={reason} onChange={e => setReason(e.target.value)} required maxLength={120} className={inputCls} />
           </div>
         </AppModalBody>
         <AppModalFooter>
@@ -1163,17 +1281,17 @@ function WipWasteModal({
       <AppModalHeader title="WIP tea bag waste" titleId="wip-waste-title" onClose={onClose} />
       <form onSubmit={submit}>
         <AppModalBody className="space-y-3">
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <AppErrorBanner message={error} />}
           <p className="text-xs text-muted-foreground">Remove spoiled or unusable filled tea bags from WIP (raw materials already consumed).</p>
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+            <label htmlFor="wip-waste-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
               Tea bags — max {maxQty.toLocaleString()}
             </label>
-            <input type="number" step="1" min="1" max={maxQty} value={qty} onChange={e => setQty(e.target.value)} required className={inputCls} />
+            <input id="wip-waste-qty" type="number" step="1" min="1" max={maxQty} value={qty} onChange={e => setQty(e.target.value)} required className={inputCls} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Reason</label>
-            <input type="text" value={reason} onChange={e => setReason(e.target.value)} required maxLength={120} className={inputCls} />
+            <label htmlFor="wip-waste-reason" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Reason</label>
+            <input id="wip-waste-reason" type="text" value={reason} onChange={e => setReason(e.target.value)} required maxLength={120} className={inputCls} />
           </div>
         </AppModalBody>
         <AppModalFooter>

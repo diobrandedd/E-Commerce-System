@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Camera, ClipboardCheck, Loader2, Plus, Scale, Trash2, XCircle } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
+import { InventoryCheckHistoryDetailModal } from "@/app/components/inventory/InventoryCheckHistoryDetailModal";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
 import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
@@ -70,6 +71,7 @@ export function InventoryCheckPage() {
 
   const [compareOpen, setCompareOpen] = useState(false);
   const [compare, setCompare] = useState<InventoryCheckCompareResult | null>(null);
+  const [historyDetail, setHistoryDetail] = useState<InventoryCheckEvent | null>(null);
 
   const [editId, setEditId] = useState<number | null>(null);
   const [editQty, setEditQty] = useState("");
@@ -530,36 +532,82 @@ export function InventoryCheckPage() {
             {history.length === 0 ? (
               <p className="text-sm text-muted-foreground">No audits recorded yet.</p>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
-                      <th className="px-3 py-2">Date</th>
-                      <th className="px-3 py-2">Status</th>
-                      <th className="px-3 py-2">Opened by</th>
-                      <th className="px-3 py-2">Closed</th>
-                      <th className="px-3 py-2 text-right">Lines</th>
-                      <th className="px-3 py-2 text-right">Comparisons</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.map(h => (
-                      <tr key={h.id} className={appHoverRow}>
-                        <td className="px-3 py-2 whitespace-nowrap">{h.count_date}</td>
-                        <td className="px-3 py-2">{h.status === "open" ? "Open" : "Closed"}</td>
-                        <td className="px-3 py-2">{h.opened_by_name}</td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground">
-                          {h.closed_at
-                            ? `${h.closed_by_name ?? "—"} · ${new Date(h.closed_at.replace(" ", "T")).toLocaleString()}`
-                            : "—"}
-                        </td>
-                        <td className="px-3 py-2 text-right">{h.scan_count}</td>
-                        <td className="px-3 py-2 text-right">{h.compare_run_count}</td>
+              <>
+                <div className="sm:hidden space-y-3">
+                  {history.map(h => (
+                    <article key={h.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold">{h.count_date}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {h.status === "open" ? "Open" : "Closed"} · {h.opened_by_name}
+                          </p>
+                        </div>
+                        <p className="text-xs text-muted-foreground text-right">
+                          {h.scan_count} line{h.scan_count === 1 ? "" : "s"}
+                          <br />
+                          {h.compare_run_count} compare{h.compare_run_count === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {h.closed_at
+                          ? `Closed by ${h.closed_by_name ?? "—"} · ${new Date(h.closed_at.replace(" ", "T")).toLocaleString()}`
+                          : "Not closed yet"}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="min-h-11 w-full"
+                        onClick={() => setHistoryDetail(h)}
+                      >
+                        View session
+                      </Button>
+                    </article>
+                  ))}
+                </div>
+                <div className="hidden sm:block overflow-x-auto rounded-xl border border-border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
+                        <th className="px-3 py-2">Date</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2">Opened by</th>
+                        <th className="px-3 py-2">Closed</th>
+                        <th className="px-3 py-2 text-right">Lines</th>
+                        <th className="px-3 py-2 text-right">Comparisons</th>
+                        <th className="px-3 py-2" />
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {history.map(h => (
+                        <tr key={h.id} className={appHoverRow}>
+                          <td className="px-3 py-2 whitespace-nowrap">{h.count_date}</td>
+                          <td className="px-3 py-2">{h.status === "open" ? "Open" : "Closed"}</td>
+                          <td className="px-3 py-2">{h.opened_by_name}</td>
+                          <td className="px-3 py-2 text-xs text-muted-foreground">
+                            {h.closed_at
+                              ? `${h.closed_by_name ?? "—"} · ${new Date(h.closed_at.replace(" ", "T")).toLocaleString()}`
+                              : "—"}
+                          </td>
+                          <td className="px-3 py-2 text-right">{h.scan_count}</td>
+                          <td className="px-3 py-2 text-right">{h.compare_run_count}</td>
+                          <td className="px-3 py-2 text-right">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="min-h-11"
+                              onClick={() => setHistoryDetail(h)}
+                            >
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </div>
         ) : (
@@ -865,6 +913,10 @@ export function InventoryCheckPage() {
           )}
         </AppModalBody>
       </AppModal>
+
+      {historyDetail ? (
+        <InventoryCheckHistoryDetailModal event={historyDetail} onClose={() => setHistoryDetail(null)} />
+      ) : null}
     </PageLayout>
   );
 }

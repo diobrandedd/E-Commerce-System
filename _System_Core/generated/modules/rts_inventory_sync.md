@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-09-09T06:27:39+02:00
+generated: 2026-09-10T05:04:57+02:00
 type: module
 function_count: 25
 ---
@@ -91,8 +91,8 @@ function_count: 25
 
 **Callers (5):**
 
-- `includes/honey_bottle_barcodes.php`:1129 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
-- `includes/honey_bottle_barcodes.php`:1149 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
+- `includes/honey_bottle_barcodes.php`:1188 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
+- `includes/honey_bottle_barcodes.php`:1208 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
 - `includes/pack_cancel_restock.php`:540 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
 - `includes/sku_barcodes.php`:1100 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, (float) $qty);`
 - `includes/sku_barcodes.php`:1267 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, (float) $qty);`
@@ -148,8 +148,8 @@ function_count: 25
 **Callers (6):**
 
 - `api/v1/rts.php`:390 — `rts_inventory_deduct_sell_honey_variant(`
-- `includes/honey_bottle_barcodes.php`:1981 — `rts_inventory_deduct_sell_honey_variant(`
-- `includes/honey_bottle_barcodes.php`:2241 — `rts_inventory_deduct_sell_honey_variant(`
+- `includes/honey_bottle_barcodes.php`:2046 — `rts_inventory_deduct_sell_honey_variant(`
+- `includes/honey_bottle_barcodes.php`:2370 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_pos.php`:418 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/honey_pos.php`:649 — `rts_inventory_deduct_sell_honey_variant(`
 - `includes/sku_barcodes.php`:1155 — `rts_inventory_deduct_sell_honey_variant(`
@@ -164,7 +164,7 @@ function_count: 25
 - `includes/dept_pos.php`:250 — `rts_inventory_deduct_sell_other_label(`
 - `includes/dept_pos.php`:403 — `rts_inventory_deduct_sell_other_label(`
 - `includes/dept_pouch_barcodes.php`:1151 — `rts_inventory_deduct_sell_other_label(`
-- `includes/honey_bottle_barcodes.php`:2048 — `rts_inventory_deduct_sell_other_label(`
+- `includes/honey_bottle_barcodes.php`:2113 — `rts_inventory_deduct_sell_other_label(`
 - `includes/sku_barcodes.php`:1232 — `rts_inventory_deduct_sell_other_label(`
 
 ## rts_inventory_deduct_sell {#rts_inventory_deduct_sell}

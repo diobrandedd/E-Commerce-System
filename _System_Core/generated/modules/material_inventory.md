@@ -1,7 +1,7 @@
 ---
 title: material_inventory
 source: includes/material_inventory.php
-generated: 2026-09-09T06:27:21+02:00
+generated: 2026-09-10T05:04:42+02:00
 type: module
 function_count: 64
 ---
@@ -137,7 +137,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (4):**
 
 - `includes/fulfillment_packing.php`:713 — `$poolCol = material_inventory_has_pool_columns($pdo) ? ', s.pool_yield_qty, s.pool_yield_unit' : '';`
-- `includes/honey_inventory.php`:720 — `if (!material_inventory_has_pool_columns($pdo)) {`
+- `includes/honey_inventory.php`:853 — `if (!material_inventory_has_pool_columns($pdo)) {`
 - `includes/material_inventory.php`:209 — `$poolCols = material_inventory_has_pool_columns($pdo)`
 - `includes/material_inventory.php`:474 — `if (!material_inventory_has_pool_columns($pdo)) {`
 
@@ -504,7 +504,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/honey.php`:639 — `$count += material_adjustment_pending_count($pdo);`
+- `api/v1/honey.php`:646 — `$count += material_adjustment_pending_count($pdo);`
 - `api/v1/materials.php`:279 — `api_ok(['count' => material_adjustment_pending_count(ims_pdo())]);`
 
 ## material_adjustment_mark_viewed {#material_adjustment_mark_viewed}
