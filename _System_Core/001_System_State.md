@@ -6,13 +6,13 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-09-10_bag-pool-deduct-toggle]] |
-| **Active Plan** | [[plans/archive/2026-09-10_bag-pool-deduct-toggle_plan]] |
-| **Status** | `shipped` — Bag-pool deduct Settings toggles |
+| **Active Spec** | _(none)_ |
+| **Active Plan** | _(none)_ |
+| **Status** | idle — last shipped [[specs/2026-09-10_inventory-check-scan-only]] |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending
-- **Latest shipped:** [[specs/2026-06-18_costing-parcel-packaging-session]] Â· [[problems/records/2026-06-18_costing-dept-paragis-vs-cacao-brc]] Â· [[problems/records/2026-06-18_costing-hub-parcel-recipes-table]]
+- **Latest shipped:** [[specs/2026-09-10_inventory-check-scan-only]] · [[problems/records/2026-09-10_inventory-check-scan-only]] · [[specs/2026-06-18_costing-parcel-packaging-session]]
 - **Agent entry:** [[problems/records/2026-06-12_dept-raw-ux-session]] â€” checklist for next dept raw / PageLayout work
 
 ## ðŸ› ï¸ Current Todo List

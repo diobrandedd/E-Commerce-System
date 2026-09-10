@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-09-10T08:17:08+02:00
+generated: 2026-09-10T09:54:04+02:00
 type: module
 function_count: 19
 ---
@@ -38,7 +38,7 @@ function_count: 19
 - `includes/dept_production.php`:964 — `$finished = dept_inventory_fetch_row($pdo, 'brc');`
 - `includes/dept_production.php`:1043 — `$finished = dept_inventory_fetch_row($pdo, 'jar_cacao');`
 - `includes/dept_production.php`:1073 — `$finished = dept_inventory_fetch_row($pdo, 'honey_comb');`
-- `includes/inventory_check.php`:1121 — `$row = dept_inventory_fetch_row($pdo, $productKey);`
+- `includes/inventory_check.php`:1077 — `$row = dept_inventory_fetch_row($pdo, $productKey);`
 
 ## dept_inventory_ensure_row {#dept_inventory_ensure_row}
 

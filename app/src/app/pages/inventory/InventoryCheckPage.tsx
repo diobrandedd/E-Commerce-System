@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Camera, ClipboardCheck, Loader2, Plus, Scale, Trash2, XCircle } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
@@ -25,6 +26,8 @@ import {
   type InventoryCheckSummary,
 } from "@/app/lib/inventoryCheck";
 
+const SCAN_COOLDOWN_MS = 500;
+
 function varianceTone(variance: number): string {
   if (Math.abs(variance) < 0.001) return "text-muted-foreground";
   return variance > 0 ? "text-emerald-600" : "text-destructive";
@@ -37,6 +40,7 @@ function formatQty(value: number): string {
 export function InventoryCheckPage() {
   const cameraTitleId = useId();
   const addCameraTitleId = useId();
+  const reduceMotion = useReducedMotion();
   const [ctx, setCtx] = useState<InventoryCheckContext | null>(null);
   const [summary, setSummary] = useState<InventoryCheckSummary | null>(null);
   const [lines, setLines] = useState<InventoryCheckScan[]>([]);
@@ -50,24 +54,23 @@ export function InventoryCheckPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [code, setCode] = useState("");
-  /** Batch required for SKU continuous scan. */
-  const [stickyBatch, setStickyBatch] = useState("");
   /** Last successful scan — close camera and set qty here for SKUs. */
   const [lastItem, setLastItem] = useState<{
     scanId: number;
     code: string;
     label: string;
     isSku: boolean;
-    batch: string;
     countedQty: number;
   } | null>(null);
   const [lastQty, setLastQty] = useState("1");
   const [qtyBusy, setQtyBusy] = useState(false);
   const [scanFlash, setScanFlash] = useState<"ok" | "err" | "dup" | null>(null);
   const [scanFlashMsg, setScanFlashMsg] = useState<string | null>(null);
+  const [scanPopup, setScanPopup] = useState<string | null>(null);
   const qtyInputRef = useRef<HTMLInputElement>(null);
   const lastItemRef = useRef(lastItem);
   lastItemRef.current = lastItem;
+  const lastAcceptedScanAtRef = useRef(0);
 
   const [compareOpen, setCompareOpen] = useState(false);
   const [compare, setCompare] = useState<InventoryCheckCompareResult | null>(null);
@@ -88,6 +91,10 @@ export function InventoryCheckPage() {
   const flash = (kind: "ok" | "err" | "dup", message: string) => {
     setScanFlash(kind);
     setScanFlashMsg(message);
+    if (kind === "ok") {
+      setScanPopup(message);
+      window.setTimeout(() => setScanPopup(null), 1400);
+    }
     window.setTimeout(() => {
       setScanFlash(null);
     }, 900);
@@ -148,12 +155,13 @@ export function InventoryCheckPage() {
 
   const resetAddForm = () => {
     setCode("");
-    setStickyBatch("");
     setLastItem(null);
     setLastQty("1");
     setQtyBusy(false);
     setScanFlash(null);
     setScanFlashMsg(null);
+    setScanPopup(null);
+    lastAcceptedScanAtRef.current = 0;
   };
 
   const closeAddModal = () => {
@@ -201,13 +209,12 @@ export function InventoryCheckPage() {
   /** Continuous commit: SKU +1; unique once. No page reload. */
   const commitScan = async (
     value: string,
-    opts: { qty: number; batch: string; label: string; isSku: boolean },
+    opts: { qty: number; label: string; isSku: boolean },
   ): Promise<boolean> => {
     if (!event) return false;
     try {
       const res = await inventoryCheckApi.scan(event.id, value, {
         qty: opts.qty,
-        batch_no: opts.batch,
       });
       if (res.result === "unknown") {
         playScanBeep("bad");
@@ -220,10 +227,11 @@ export function InventoryCheckPage() {
         return false;
       }
       playScanBeep("ok");
+      lastAcceptedScanAtRef.current = Date.now();
       const total = res.scan?.counted_qty ?? opts.qty;
       const msg = opts.isSku
-        ? `${opts.label} · +${opts.qty} (total ${total}) · ${opts.batch}`
-        : `${opts.label} · counted · ${opts.batch}`;
+        ? `${opts.label} · +${opts.qty} (total ${total})`
+        : `${opts.label} · counted`;
       flash("ok", msg);
       if (res.summary) {
         setSummary(res.summary);
@@ -253,7 +261,6 @@ export function InventoryCheckPage() {
           code: scanned.code,
           label: opts.label,
           isSku: opts.isSku,
-          batch: opts.batch,
           countedQty: scanned.counted_qty ?? opts.qty,
         });
         setLastQty(String(scanned.counted_qty ?? opts.qty));
@@ -273,20 +280,18 @@ export function InventoryCheckPage() {
     if (!value || !event) return;
     setCode("");
 
+    const now = Date.now();
+    if (now - lastAcceptedScanAtRef.current < SCAN_COOLDOWN_MS) {
+      return { kind: "error", message: "Wait a moment before the next scan." };
+    }
+
     try {
       const looked = await skuBarcodesApi.lookup(value);
       const lookup = looked.lookup;
 
       if (lookup.lookup_kind === "sku") {
         const label = lookup.label ?? lookup.product_label ?? value;
-        const batch = stickyBatch.trim().toUpperCase();
-        if (!batch) {
-          playScanBeep("bad");
-          flash("err", "Enter batch number first, then keep scanning.");
-          refocus();
-          return { kind: "error", message: "Batch number required." };
-        }
-        const okAdd = await commitScan(value, { qty: 1, batch, label, isSku: true });
+        const okAdd = await commitScan(value, { qty: 1, label, isSku: true });
         refocus();
         return okAdd
           ? { kind: "success", message: `${label} · +1` }
@@ -298,16 +303,7 @@ export function InventoryCheckPage() {
           lookup.label ??
           ([lookup.product_label, lookup.size_label, lookup.variant].filter(Boolean).join(" · ") ||
             value);
-        const suggested = String(lookup.batch_no ?? "").toUpperCase();
-        const batch = suggested || stickyBatch.trim().toUpperCase();
-        if (!batch) {
-          playScanBeep("bad");
-          flash("err", "This barcode has no batch — enter batch number first.");
-          refocus();
-          return { kind: "error", message: "Batch required." };
-        }
-        if (suggested) setStickyBatch(suggested);
-        const okAdd = await commitScan(value, { qty: 1, batch, label, isSku: false });
+        const okAdd = await commitScan(value, { qty: 1, label, isSku: false });
         refocus();
         return okAdd
           ? { kind: "success", message: `${label} · counted` }
@@ -335,7 +331,6 @@ export function InventoryCheckPage() {
     try {
       const res = await inventoryCheckApi.scanUpdate(event.id, lastItem.scanId, {
         qty: n,
-        batch_no: lastItem.batch,
       });
       if (res.summary) {
         setSummary(res.summary);
@@ -390,14 +385,13 @@ export function InventoryCheckPage() {
     if (!event || editId == null) return;
     const n = Math.max(1, parseInt(editQty, 10) || 1);
     const batch = editBatch.trim().toUpperCase();
-    if (!batch) {
-      setError("Batch number is required.");
-      return;
-    }
     setBusy(true);
     setError(null);
     try {
-      const res = await inventoryCheckApi.scanUpdate(event.id, editId, { qty: n, batch_no: batch });
+      const res = await inventoryCheckApi.scanUpdate(event.id, editId, {
+        qty: n,
+        ...(batch ? { batch_no: batch } : { batch_no: "" }),
+      });
       if (res.summary) {
         setSummary(res.summary);
         setCtx(prev =>
@@ -744,21 +738,27 @@ export function InventoryCheckPage() {
 
       <AppModal open={addOpen} onClose={closeAddModal} panelClassName="max-w-lg w-full">
         <AppModalHeader title="Add to list" onClose={closeAddModal} />
-        <AppModalBody className="space-y-4">
+        <AppModalBody className="space-y-4 relative">
           <p className="text-xs text-muted-foreground">
-            Open the camera and keep scanning. Each SKU is +1; unique stickers count once. Close the camera when you
-            want to type how many for the SKU you just scanned.
+            Scan continuously, or type how many for the SKU you just scanned. Counts match finished on-hand
+            (bottles / pouches), not packaging lot batches.
           </p>
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block">
-            Batch number (required for SKU)
-            <input
-              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm uppercase"
-              value={stickyBatch}
-              onChange={e => setStickyBatch(e.target.value.toUpperCase())}
-              placeholder="e.g. NF082826"
-              autoComplete="off"
-            />
-          </label>
+          <AnimatePresence>
+            {scanPopup ? (
+              <motion.div
+                key={scanPopup}
+                initial={reduceMotion ? false : { opacity: 0, y: -8, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+                transition={{ duration: 0.2 }}
+                className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm"
+                role="status"
+                data-testid="inventory-check-scan-success"
+              >
+                {scanPopup}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
           <div className="flex gap-2">
             <input
               ref={inputRef}
@@ -773,6 +773,7 @@ export function InventoryCheckPage() {
                   void onAddScan();
                 }
               }}
+              data-testid="inventory-check-scan-input"
             />
             <Button type="button" variant="outline" className="shrink-0" onClick={() => setCameraOpen(true)}>
               <Camera size={16} className="mr-1" /> Camera
@@ -802,7 +803,7 @@ export function InventoryCheckPage() {
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Just scanned</p>
               <p className="text-sm font-semibold">{lastItem.label}</p>
               <p className="font-mono text-xs text-muted-foreground">
-                {lastItem.code} · {lastItem.batch} · now {lastItem.countedQty}
+                {lastItem.code} · now {lastItem.countedQty}
               </p>
               {lastItem.isSku ? (
                 <div className="flex gap-2 items-end">
@@ -845,6 +846,7 @@ export function InventoryCheckPage() {
           titleId={addCameraTitleId || cameraTitleId}
           title="Continuous scan"
           continuous
+          sameCodeCooldownMs={SCAN_COOLDOWN_MS}
           scanPrompt="Keep pointing at barcodes. Close camera to type quantity for the last SKU."
           onClose={closeCamera}
           onDecoded={decoded => onAddScan(decoded)}

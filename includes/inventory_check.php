@@ -276,9 +276,6 @@ function inventory_check_scan(
         if ($qty < 1 || $qty > 100000) {
             throw new RuntimeException('Enter how many you counted for this product.');
         }
-        if ($batchNo === '') {
-            throw new RuntimeException('Enter the batch number for this product.');
-        }
         $kind = (string) $sku['kind'];
         $productKey = $kind === 'honey' ? 'honey' : (string) $sku['product_key'];
         $variant = $kind === 'honey' ? (string) $sku['variant'] : null;
@@ -286,7 +283,7 @@ function inventory_check_scan(
         $packagingRowId = null;
         $supplierCode = null;
         $bottlingDate = null;
-        if ($kind === 'honey') {
+        if ($kind === 'honey' && $batchNo !== '') {
             $pk = inventory_check_packaging_by_batch($pdo, $batchNo, $variant);
             if ($pk !== null) {
                 $packagingRowId = (int) $pk['id'];
@@ -314,7 +311,7 @@ function inventory_check_scan(
                      packaging_row_id = COALESCE(?, packaging_row_id),
                      supplier_code = COALESCE(?, supplier_code),
                      bottling_date = COALESCE(?, bottling_date),
-                     batch_no = ?
+                     batch_no = COALESCE(NULLIF(?, ""), batch_no)
                  WHERE id = ?'
             )->execute([
                 $totalQty,
@@ -322,7 +319,7 @@ function inventory_check_scan(
                 $packagingRowId,
                 $supplierCode,
                 $bottlingDate,
-                $batchNo,
+                $batchNo !== '' ? $batchNo : null,
                 (int) $dupRow['id'],
             ]);
             $scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);
@@ -346,7 +343,7 @@ function inventory_check_scan(
             $code,
             $packagingRowId,
             $supplierCode,
-            $batchNo,
+            $batchNo !== '' ? $batchNo : null,
             $bottlingDate,
             $variant,
             $size,
@@ -379,16 +376,14 @@ function inventory_check_scan(
         return ['result' => 'unknown', 'scan' => null, 'message' => 'Unknown barcode — not counted.'];
     }
 
+    // Prefer barcode batch metadata; submitted batch is optional and must match if both set.
     $resolvedBatch = strtoupper(trim((string) ($resolved['batch_no'] ?? '')));
-    if ($batchNo === '') {
-        throw new RuntimeException('Enter the batch number for this barcode.');
-    }
-    if ($resolvedBatch !== '' && $batchNo !== $resolvedBatch) {
+    if ($batchNo !== '' && $resolvedBatch !== '' && $batchNo !== $resolvedBatch) {
         throw new RuntimeException(
             'Batch number must match this barcode’s batch (' . $resolvedBatch . ').'
         );
     }
-    if ($resolvedBatch === '') {
+    if ($resolvedBatch === '' && $batchNo !== '') {
         $resolved['batch_no'] = $batchNo;
     }
 
@@ -408,7 +403,9 @@ function inventory_check_scan(
         $code,
         $resolved['packaging_row_id'],
         $resolved['supplier_code'],
-        $resolved['batch_no'],
+        $resolved['batch_no'] !== null && (string) $resolved['batch_no'] !== ''
+            ? (string) $resolved['batch_no']
+            : null,
         $resolved['bottling_date'],
         $resolved['variant'],
         $resolved['size'],
@@ -490,9 +487,7 @@ function inventory_check_scan_update(
     }
 
     $newBatch = $batchNo !== null ? strtoupper(trim($batchNo)) : strtoupper(trim((string) ($row['batch_no'] ?? '')));
-    if ($newBatch === '') {
-        throw new RuntimeException('Batch number is required.');
-    }
+    // Batch is optional metadata for finished-goods audits.
 
     $skuId = (int) ($row['sku_id'] ?? 0);
     $barcodeId = (int) ($row['barcode_id'] ?? 0);
@@ -530,7 +525,7 @@ function inventory_check_scan_update(
          WHERE id = ?'
     )->execute([
         $qty,
-        $newBatch,
+        $newBatch !== '' ? $newBatch : null,
         $packagingRowId,
         $supplierCode,
         $bottlingDate,
@@ -956,15 +951,13 @@ function inventory_check_compare_build(PDO $pdo, int $eventId): array
                 $scope[] = 'honey';
                 $scopeLabels[] = 'Honey';
             }
-            $packId = (int) ($row['packaging_row_id'] ?? 0);
-            $sizeKey = (string) $row['size'];
-            if ($packId > 0) {
-                $key = $packId . '|' . $sizeKey;
-            } else {
-                $key = 'batch:' . strtoupper(trim((string) ($row['batch_no'] ?? ''))) . '|' . $sizeKey;
-            }
+            $variantKey = strtolower(trim((string) ($row['variant'] ?? '')));
+            $sizeKey = strtolower(trim((string) ($row['size'] ?? '')));
+            $key = $variantKey . '|' . $sizeKey;
             $honeyCounted[$key] = ($honeyCounted[$key] ?? 0) + $qty;
-            $honeyMeta[$key] = $row;
+            if (!isset($honeyMeta[$key])) {
+                $honeyMeta[$key] = $row;
+            }
             continue;
         }
 
@@ -1011,10 +1004,9 @@ function inventory_check_compare_build(PDO $pdo, int $eventId): array
 }
 
 /**
- * Honey variance per packaging batch and size. Every batch that still holds stock is
- * included so an uncounted batch shows up as short.
+ * Honey variance by finished-goods variant + size (sum of packaging current_*).
  *
- * @param array<string, int> $countedQty
+ * @param array<string, int> $countedQty keyed "variant|size"
  * @param array<string, array<string, mixed>> $meta
  * @return list<array<string, mixed>>
  */
@@ -1022,86 +1014,50 @@ function inventory_check_compare_honey_lines(PDO $pdo, array $countedQty, array 
 {
     $sizeCols = INVENTORY_CHECK_HONEY_SIZE_COLUMNS;
     $system = [];
-    $rowInfo = [];
 
     $st = $pdo->query(
-        'SELECT id, supplier_code, batch_no, bottling_date, variant,
-                current_250ml, current_350ml, current_liter, current_gallon
-         FROM honey_packaging_rows
-         WHERE batch_no IS NOT NULL AND TRIM(batch_no) <> ""'
+        'SELECT variant, current_250ml, current_350ml, current_liter, current_gallon
+         FROM honey_packaging_rows'
     );
     foreach ($st ? $st->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
-        $rowId = (int) $row['id'];
-        $batchKeyPrefix = 'batch:' . strtoupper(trim((string) $row['batch_no']));
+        $variantKey = strtolower(trim((string) ($row['variant'] ?? '')));
         foreach ($sizeCols as $size => $col) {
             $qty = (float) $row[$col];
-            $key = $rowId . '|' . $size;
-            $batchKey = $batchKeyPrefix . '|' . $size;
-            if ($qty <= 0 && !isset($countedQty[$key]) && !isset($countedQty[$batchKey])) {
+            if ($qty <= 0) {
                 continue;
             }
-            $system[$key] = $qty;
-            $system[$batchKey] = $qty;
-            $rowInfo[$key] = $row;
-            $rowInfo[$batchKey] = $row;
+            $key = $variantKey . '|' . $size;
+            $system[$key] = ($system[$key] ?? 0.0) + $qty;
         }
     }
 
-    // Prefer packaging-row keys; drop duplicate batch: aliases that share the same row+size.
     $keys = array_unique(array_merge(array_keys($countedQty), array_keys($system)));
-    $seenPack = [];
-    $filteredKeys = [];
-    foreach ($keys as $key) {
-        $info = $rowInfo[$key] ?? null;
-        $size = explode('|', (string) $key, 2)[1] ?? '';
-        if ($info !== null) {
-            $packKey = (int) $info['id'] . '|' . $size;
-            if (isset($seenPack[$packKey])) {
-                continue;
-            }
-            $seenPack[$packKey] = true;
-            $filteredKeys[] = $packKey;
-            if (!isset($countedQty[$packKey]) && isset($countedQty[$key])) {
-                $countedQty[$packKey] = $countedQty[$key];
-                $meta[$packKey] = $meta[$key] ?? $meta[$packKey] ?? null;
-            }
-            if (!isset($system[$packKey]) && isset($system[$key])) {
-                $system[$packKey] = $system[$key];
-                $rowInfo[$packKey] = $info;
-            }
-            continue;
-        }
-        $filteredKeys[] = $key;
-    }
-    $keys = array_unique($filteredKeys);
     $lines = [];
     foreach ($keys as $key) {
-        [$rowIdRaw, $size] = array_pad(explode('|', (string) $key, 2), 2, '');
-        $rowId = (int) $rowIdRaw;
-        $info = $rowInfo[$key] ?? null;
+        [$variantKey, $size] = array_pad(explode('|', (string) $key, 2), 2, '');
         $scan = $meta[$key] ?? null;
         $countedQtyValue = (int) ($countedQty[$key] ?? 0);
         $systemQty = (float) ($system[$key] ?? 0.0);
+        if ($countedQtyValue <= 0 && $systemQty <= 0) {
+            continue;
+        }
+
+        $variantLabel = $variantKey !== ''
+            ? $variantKey
+            : ($scan !== null && $scan['variant'] !== null ? (string) $scan['variant'] : null);
+        $sizeLabel = $size !== '' ? honey_bottle_size_label($size) : null;
 
         $lines[] = [
             'kind' => 'honey',
             'product_key' => 'honey',
             'product_label' => 'Honey',
-            'packaging_row_id' => $rowId > 0 ? $rowId : null,
-            'supplier_code' => $info !== null
-                ? (string) $info['supplier_code']
-                : ($scan !== null && $scan['supplier_code'] !== null ? (string) $scan['supplier_code'] : null),
-            'batch_no' => $info !== null
-                ? (string) $info['batch_no']
-                : ($scan !== null && $scan['batch_no'] !== null ? (string) $scan['batch_no'] : null),
-            'bottling_date' => $info !== null
-                ? (string) $info['bottling_date']
-                : ($scan !== null && $scan['bottling_date'] !== null ? (string) $scan['bottling_date'] : null),
-            'variant' => $info !== null
-                ? (string) $info['variant']
-                : ($scan !== null && $scan['variant'] !== null ? (string) $scan['variant'] : null),
+            'packaging_row_id' => null,
+            'supplier_code' => null,
+            'batch_no' => null,
+            'bottling_date' => null,
+            'variant' => $variantLabel,
             'size' => $size !== '' ? $size : null,
-            'size_label' => $size !== '' ? honey_bottle_size_label($size) : null,
+            'size_label' => $sizeLabel,
             'counted_qty' => $countedQtyValue,
             'system_qty' => round($systemQty, 2),
             'variance' => round($countedQtyValue - $systemQty, 2),
@@ -1110,7 +1066,7 @@ function inventory_check_compare_honey_lines(PDO $pdo, array $countedQty, array 
     }
 
     usort($lines, static function (array $a, array $b): int {
-        return [(string) $a['batch_no'], (string) $a['size']] <=> [(string) $b['batch_no'], (string) $b['size']];
+        return [(string) $a['variant'], (string) $a['size']] <=> [(string) $b['variant'], (string) $b['size']];
     });
 
     return $lines;

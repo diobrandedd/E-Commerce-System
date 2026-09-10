@@ -45,6 +45,7 @@ export function BarcodeCameraScannerModal({
   onDecode,
   continuous = false,
   duplicateMode = "cooldown",
+  sameCodeCooldownMs = SAME_CODE_COOLDOWN_MS,
   scanPrompt = "Point at one barcode",
   zIndex,
 }: {
@@ -58,6 +59,8 @@ export function BarcodeCameraScannerModal({
   continuous?: boolean;
   /** `presentationEdge` accepts once while visible, then rearms after the code leaves the frame. */
   duplicateMode?: "cooldown" | "presentationEdge";
+  /** Min ms between accepting the same code again in cooldown mode. */
+  sameCodeCooldownMs?: number;
   scanPrompt?: string;
   zIndex?: string;
 }) {
@@ -130,7 +133,7 @@ export function BarcodeCameraScannerModal({
           missingFrameCountRef.current = 0;
           if (presentedCodeRef.current === text) return;
           presentedCodeRef.current = text;
-        } else if (last?.code === text && now - last.at < SAME_CODE_COOLDOWN_MS) {
+        } else if (last?.code === text && now - last.at < sameCodeCooldownMs) {
           return;
         }
 
@@ -157,7 +160,7 @@ export function BarcodeCameraScannerModal({
       onClose();
       void onDecodedRef.current?.(text);
     },
-    [continuous, duplicateMode, onClose, stopStream],
+    [continuous, duplicateMode, onClose, sameCodeCooldownMs, stopStream],
   );
 
   /** Sample the band under the aiming guide and hand it to the decoder. */

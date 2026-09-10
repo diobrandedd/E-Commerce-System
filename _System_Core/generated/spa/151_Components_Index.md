@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-09-10T08:17:54+02:00
+generated: 2026-09-10T09:54:48+02:00
 type: spa
 ---
 
@@ -47,6 +47,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/scan/BarcodeCameraScannerModal.tsx`
 - `app/src/app/components/scan/TrackingQrScannerModal.tsx`
 - `app/src/app/pages/csr/OrderRemarksPage.tsx`
+- `app/src/app/pages/inventory/InventoryCheckPage.tsx`
 - `app/src/app/pages/pos/POSCategoryPage.tsx`
 - `app/src/app/pages/rts/RTSBarcodeLabelsPage.tsx`
 
