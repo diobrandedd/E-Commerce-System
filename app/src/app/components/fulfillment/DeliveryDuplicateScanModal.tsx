@@ -8,12 +8,15 @@ export function DeliveryDuplicateScanModal({
   recordings,
   onStop,
   onScanDifferent,
+  onContinueAnyway,
 }: {
   open: boolean;
   tracking: string;
   recordings: DeliveryExistingRecording[];
   onStop: () => void;
   onScanDifferent: () => void;
+  /** Optional: allow another documentary photo for the same TN */
+  onContinueAnyway?: () => void;
 }) {
   const latest = recordings[0];
 
@@ -51,7 +54,7 @@ export function DeliveryDuplicateScanModal({
         <div className="px-5 py-4 space-y-4">
           {recordings.length > 0 && (
             <ul className="text-xs text-muted-foreground space-y-1 rounded-lg bg-muted/30 border border-border px-3 py-2">
-              {recordings.slice(0, 3).map((r) => (
+              {recordings.slice(0, 3).map(r => (
                 <li key={r.delivery_item_id}>
                   Record #{r.delivery_item_id} · {r.delivery_date} · {r.item_status}
                   {r.tracking_number ? ` · ${r.tracking_number}` : ""}
@@ -61,7 +64,8 @@ export function DeliveryDuplicateScanModal({
           )}
 
           <p className="text-sm text-muted-foreground">
-            Do not photograph again unless an executive deletes the old row or you scan a different parcel.
+            Usually one photo is enough for RTS. Add another only if you need a second angle or the prior shot is
+            wrong.
           </p>
         </div>
 
@@ -74,9 +78,18 @@ export function DeliveryDuplicateScanModal({
             <ScanLine className="h-5 w-5" />
             Scan a different parcel
           </button>
+          {onContinueAnyway ? (
+            <button
+              type="button"
+              className="w-full rounded-xl border border-border bg-background py-3 text-sm font-semibold hover:bg-secondary/40 transition-colors"
+              onClick={onContinueAnyway}
+            >
+              Add another photo anyway
+            </button>
+          ) : null}
           <button
             type="button"
-            className="w-full rounded-xl border border-border bg-background py-3 text-sm font-semibold"
+            className="w-full rounded-xl border border-border bg-background py-3 text-sm font-semibold hover:bg-secondary/40 transition-colors"
             onClick={onStop}
           >
             Stop scanning

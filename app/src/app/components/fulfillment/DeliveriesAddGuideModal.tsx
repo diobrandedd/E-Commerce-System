@@ -49,30 +49,33 @@ export function DeliveriesAddGuideModal({
       <AppModalBody className="flex flex-col min-h-0 overflow-y-auto overscroll-contain gap-5 py-4">
         <GuideSection title="What this page is for">
           <p>
-            Warehouse fulfillment for online parcels: take a packing photo, scan the waybill, and mark shipped so
-            packaging staging and honey inventory deduct correctly. Also handles sealed-box exceptions — wrong label
-            (on hold) and courier cancel re-waybill.
+            Save a <strong className="text-foreground">before-shipment photo</strong> against the tracking number so
+            RTS can show it later. No CSR parcel list and no inventory or packaging deduct. On hold and Re-waybill
+            still handle sealed-box exceptions.
           </p>
         </GuideSection>
 
-        <GuideSection title="Ship tab (normal flow)">
+        <GuideSection title="Photo tab (normal flow)">
           <ol className="list-decimal pl-4 space-y-1.5">
             <li>Set the <strong className="text-foreground">business date</strong> for today&apos;s batch.</li>
-            <li>Tap <strong className="text-foreground">Add deliveries</strong> and scan the waybill QR (or type tracking).</li>
-            <li>Photograph the wrapped parcel — required before ship.</li>
             <li>
-              Tap <strong className="text-foreground">Done</strong> or <strong className="text-foreground">Scan next parcel</strong>{" "}
-              to ship and deduct inventory.
+              Tap <strong className="text-foreground">Scan tracking</strong> and scan the waybill QR (or type
+              tracking). CSR finalize is not required.
             </li>
-            <li>Rows appear on Deliveries review with the photo for audit.</li>
+            <li>Photograph the wrapped parcel.</li>
+            <li>
+              Tap <strong className="text-foreground">Done</strong> or <strong className="text-foreground">Scan next</strong>{" "}
+              — photo only; stock does not change.
+            </li>
+            <li>Rows appear on Deliveries review; RTS looks up the image by tracking.</li>
           </ol>
         </GuideSection>
 
         <GuideSection title="On hold tab">
           <p>
             Wrong label on a <strong className="text-foreground">sealed</strong> box — scan to mark{" "}
-            <strong className="text-foreground">on hold</strong>. Inventory stays deducted. CSR prints a replacement
-            waybill in Online Orders, then use Re-waybill.
+            <strong className="text-foreground">on hold</strong>. CSR prints a replacement waybill in Online Orders,
+            then use Re-waybill.
           </p>
         </GuideSection>
 
@@ -81,11 +84,8 @@ export function DeliveriesAddGuideModal({
           <ol className="list-decimal pl-4 space-y-1.5">
             <li>Scan the <strong className="text-foreground">old</strong> tracking (on hold or courier cancelled).</li>
             <li>Scan the <strong className="text-foreground">new</strong> waybill from CSR.</li>
-            <li>Take a fresh packing photo and ship on the new number.</li>
+            <li>Take a fresh packing photo on the new number.</li>
           </ol>
-          <p>
-            Ship deduct is skipped when inventory was already committed — safe after on-hold or cancelled paths.
-          </p>
         </GuideSection>
 
         <GuideSection title="Courier cancelled vs on hold">

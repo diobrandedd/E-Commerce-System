@@ -72,7 +72,10 @@ export function OnlineParcelsGuideModal({
             </ol>
           ) : isPm ? (
             <ol className="list-decimal pl-4 space-y-1.5">
-              <li>Confirm parcels are in <strong className="text-foreground">packing</strong> before scan on Add deliveries.</li>
+              <li>
+                Before-shipment photos are saved on <strong className="text-foreground">Add deliveries</strong> by
+                tracking (CSR finalize not required for the photo).
+              </li>
               <li>After ship scan, status becomes <strong className="text-foreground">shipped</strong> — inventory deducts.</li>
               <li>Use Deliveries review for photo audit; Cancelled page for voided parcels.</li>
             </ol>

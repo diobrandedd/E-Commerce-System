@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-11 — Deliveries photo-only (no CSR / no deduct)
+**Change:** Add deliveries Photo tab saves TN + before-shipment photo only; CSR parcel optional; no ship deduct. → [[problems/records/2026-09-11_deliveries-photo-only]]
+
 ### 2026-09-11 — Inventory check required batch + bottling docs
 **Change:** Scan → required batch/date (docs only); compare expandable batch groups; phase 81 unique on code+batch+date. → [[problems/records/2026-09-11_inventory-check-batch-docs]]
 

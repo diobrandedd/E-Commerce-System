@@ -38,7 +38,7 @@ Full-resolution phone photos (multi‑MB) uploaded on a **Confirm** button are t
 
 ## Deliveries delete vs parcel ship state
 
-**Two tables, one workflow:** `delivery_batch_items` (packing photo) and `online_order_parcels` (CSR parcel, `packing` → `shipped` on `ship_parcel`).
+**Two tables, one workflow (updated 2026-09-11):** `delivery_batch_items` holds the **before-shipment photo** (documentary). CSR `online_order_parcels` is optional for the Photo tab — SPA no longer requires a parcel to save a photo and does **not** call `ship_parcel` / deduct inventory from Add deliveries Photo. RTS before-shipment thumbs resolve by **tracking** on `delivery_batch_items`. On hold / Re-waybill remain parcel-based.
 
 - Deleting only the **delivery row** without reverting parcel left **`shipped`** + deducted stock — rescan showed *"already shipped"*.
 - **Now:** `deliveries_delete_item_by_id()` reverts ship + `honey_parcel_revert_deduct()` when **no** active delivery photos remain for that parcel/tracking.

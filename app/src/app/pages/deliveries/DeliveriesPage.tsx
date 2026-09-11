@@ -21,15 +21,14 @@ import {
 import {
   deliveriesBatchForDate,
   deliveriesParcelByTracking,
-  deliveriesShipParcel,
   deliveriesUploadPhoto,
   type DeliveryExistingRecording,
 } from "@/app/lib/deliveriesApi";
-import type { OnlineParcel } from "@/app/lib/parcelsApi";
 import { ApiError } from "@/app/lib/api";
 import { compressDeliveryPhoto } from "@/app/lib/compressDeliveryPhoto";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useAuth } from "@/app/context/AuthContext";
+import { cn } from "@/app/components/ui/utils";
 
 type Step = "idle" | "preview" | "saving" | "done";
 type PhotoUploadState = "idle" | "compressing" | "uploading" | "ready" | "error";
@@ -47,7 +46,7 @@ function applyBatchCountFromUpload(
   if (batchItemCount != null && batchItemCount >= 0) {
     setBatchCount(batchItemCount);
   } else {
-    setBatchCount((c) => c + 1);
+    setBatchCount(c => c + 1);
   }
 }
 
@@ -61,7 +60,6 @@ export function DeliveriesPage() {
   const [batchCount, setBatchCount] = useState(0);
   const [step, setStep] = useState<Step>("idle");
   const [tracking, setTracking] = useState("");
-  const [parcel, setParcel] = useState<OnlineParcel | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoUploadState, setPhotoUploadState] = useState<PhotoUploadState>("idle");
@@ -138,40 +136,38 @@ export function DeliveriesPage() {
     [deliveryDate, uploadPhoto],
   );
 
-  const loadParcel = async (raw: string) => {
+  const enterPreview = (tn: string) => {
+    setTracking(tn);
+    setError(null);
+    playScanBeep("ok");
+    setStep("preview");
+    setScannerOpen(false);
+  };
+
+  const beginTracking = async (raw: string) => {
     const tn = raw.trim();
     if (!tn) return;
     setBusy(true);
     setError(null);
     try {
       const res = await deliveriesParcelByTracking(tn);
-      setTracking(res.tracking_normalized);
-      setParcel(res.parcel);
-      if (!res.parcel) {
-        playScanBeep("bad");
-        setError("No online order parcel for this tracking. Finalize CSR batch first.");
-        setStep("idle");
-        return;
-      }
-      if (res.already_recorded && res.existing_recordings.length > 0 && res.parcel.status === "packing") {
+      const normalized = res.tracking_normalized || tn;
+      setTracking(normalized);
+      if (res.already_recorded && res.existing_recordings.length > 0) {
         playScanBeep("dup");
         setDuplicateRecordings(res.existing_recordings);
         setDuplicateOpen(true);
         setStep("idle");
+        setScannerOpen(false);
         return;
       }
-      if (res.parcel.status === "shipped") {
-        playScanBeep("dup");
-        setError("This parcel is already shipped.");
-      } else {
-        playScanBeep("ok");
-      }
-      setStep("preview");
+      enterPreview(normalized);
     } catch (e) {
-      playScanBeep("bad");
-      setError(e instanceof ApiError ? e.message : "Lookup failed.");
-      setParcel(null);
-      setStep("idle");
+      playScanBeep("ok");
+      setTracking(tn);
+      setStep("preview");
+      setScannerOpen(false);
+      setError(e instanceof ApiError ? `${e.message} — you can still save a photo.` : null);
     } finally {
       setBusy(false);
     }
@@ -197,7 +193,7 @@ export function DeliveriesPage() {
       if (itemId) return itemId;
     }
     if (!photoFile || !tracking) {
-      setError("Capture a parcel photo first.");
+      setError("Capture a before-shipment photo first.");
       return null;
     }
     const gen = ++uploadGenRef.current;
@@ -214,17 +210,27 @@ export function DeliveriesPage() {
     setPhotoPreview(null);
     setPhotoUploadState("idle");
     setDeliveryItemId(null);
-    setParcel(null);
     setTracking("");
     setDoneMessage(null);
+    setError(null);
     setStep("idle");
     if (keepScanning) startScanner();
   };
 
-  const finishParcel = async (scanNext: boolean) => {
-    if (!parcel || !tracking) return;
+  const selectMode = (next: DeliveryMode) => {
+    if (next === mode) return;
+    setMode(next);
+    setScannerOpen(false);
+    setDuplicateOpen(false);
+    if (mode === "ship" || next === "ship") {
+      resetFlow(false);
+    }
+  };
+
+  const finishPhoto = async (scanNext: boolean) => {
+    if (!tracking) return;
     if (!photoFile || !photoPreview) {
-      setError("Take a parcel photo before continuing.");
+      setError("Take a before-shipment photo before continuing.");
       return;
     }
     setStep("saving");
@@ -237,10 +243,7 @@ export function DeliveriesPage() {
         return;
       }
 
-      const ship = await deliveriesShipParcel(tracking, itemId, deliveryDate);
-      const message = ship.already_shipped
-        ? "Already shipped — no extra deduct"
-        : "Parcel shipped — inventory updated";
+      const message = "Before-shipment photo saved for RTS";
 
       uploadGenRef.current += 1;
       uploadPromiseRef.current = null;
@@ -249,7 +252,6 @@ export function DeliveriesPage() {
       setPhotoPreview(null);
       setPhotoUploadState("idle");
       setDeliveryItemId(null);
-      setParcel(null);
       setTracking("");
 
       if (scanNext) {
@@ -261,7 +263,7 @@ export function DeliveriesPage() {
         setStep("done");
       }
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Ship failed.");
+      setError(e instanceof ApiError ? e.message : "Could not save photo.");
       setStep("preview");
     } finally {
       setBusy(false);
@@ -274,83 +276,96 @@ export function DeliveriesPage() {
       ? "Preparing photo…"
       : photoUploadState === "uploading"
         ? "Saving photo…"
-        : "Shipping parcel…";
+        : "Saving…";
+
+  const photoCountLabel =
+    batchCount === 0
+      ? "No photos yet for this date."
+      : `${batchCount} before-shipment photo${batchCount === 1 ? "" : "s"} saved for this date.`;
 
   return (
     <PageLayout
       title="Deliveries"
       subtitle={
         mode === "ship"
-          ? "Pre-dispatch photos · scan label · ship deducts packing staging"
+          ? "Scan tracking · save before-shipment photo · no inventory change"
           : mode === "hold"
             ? "Sealed box, wrong label — not the same as Cancelled"
-            : "Old QR → new waybill → photo → ship (all in this tab)"
+            : "Old QR → new waybill → photo (parcel tools)"
       }
       actions={
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <button type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
             <BookOpen size={13} /> Guide
           </button>
-          <Link
-            to="/deliveries/review"
-            className="sm:hidden text-xs font-semibold rounded-lg border border-border px-2.5 py-1.5 text-muted-foreground"
-          >
+          <Link to="/deliveries/review" className={cn(appHeaderActionClass, "sm:hidden")}>
             Review
           </Link>
-          <div className="hidden sm:flex items-center gap-3">
-            <Link
-              to="/deliveries/review"
-              className="text-xs font-semibold rounded-lg border border-border px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-            >
-              Review batches
-            </Link>
-            <Link
-              to="/deliveries/cancelled"
-              className="text-xs font-semibold rounded-lg border border-border px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-            >
-              Cancelled
-            </Link>
-          </div>
+          <Link to="/deliveries/review" className={cn(appHeaderActionClass, "hidden sm:inline-flex")}>
+            Review batches
+          </Link>
+          <Link to="/deliveries/cancelled" className={cn(appHeaderActionClass, "hidden sm:inline-flex")}>
+            Cancelled
+          </Link>
         </div>
       }
     >
-      <div className="flex gap-2 mb-6 max-w-lg" data-tour="deliveries-add-tabs">
+      <div
+        className="inline-flex w-full max-w-lg rounded-xl border border-border bg-card p-1 gap-1 mb-8"
+        role="tablist"
+        aria-label="Deliveries mode"
+        data-tour="deliveries-add-tabs"
+      >
         {(
           [
-            ["ship", "Ship"],
+            ["ship", "Photo"],
             ["hold", "On hold"],
             ["rewaybill", "Re-waybill"],
           ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setMode(id)}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${
-              mode === id ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+        ).map(([id, label]) => {
+          const active = mode === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => selectMode(id)}
+              className={cn(
+                "flex-1 min-h-11 rounded-lg px-3 text-sm font-semibold transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                active
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+              )}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {(mode === "rewaybill" || mode === "ship") && (
-        <label className="block text-sm text-muted-foreground max-w-lg mb-4" data-tour="deliveries-add-date">
-          Business date
+        <div className="max-w-lg mb-6 space-y-1.5" data-tour="deliveries-add-date">
+          <label htmlFor="deliveries-business-date" className="block text-sm font-medium text-foreground">
+            Business date
+          </label>
           <input
+            id="deliveries-business-date"
             type="date"
-            className="mt-1 w-full rounded-lg border border-border px-3 py-2 bg-card"
+            className={cn(
+              "w-full min-h-11 rounded-xl border border-border bg-card px-3 py-2 text-sm",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-primary",
+            )}
             value={deliveryDate}
-            onChange={(e) => setDeliveryDate(e.target.value)}
+            onChange={e => setDeliveryDate(e.target.value)}
           />
-        </label>
-      )}
-
-      {mode === "ship" && (
-        <p className="text-sm text-muted-foreground max-w-lg -mt-2 mb-4">
-          {batchCount} parcel photo{batchCount === 1 ? "" : "s"} saved for this date.
-        </p>
+          {mode === "ship" ? (
+            <p className="text-sm text-muted-foreground pt-1" aria-live="polite">
+              {photoCountLabel}
+            </p>
+          ) : null}
+        </div>
       )}
 
       {mode !== "ship" ? (
@@ -363,193 +378,203 @@ export function DeliveriesPage() {
           />
         </div>
       ) : (
-      <>
-      <FulfillmentToast message={toast} />
+        <>
+          <FulfillmentToast message={toast} />
 
-      <FulfillmentSectionEnter className="max-w-lg space-y-4">
-        <FulfillmentErrorBanner message={error} />
+          <FulfillmentSectionEnter className="max-w-lg space-y-5">
+            <FulfillmentErrorBanner message={error} />
 
-        <FulfillmentStepSwitch stepKey={step}>
-          {step === "idle" && (
-            <div data-tour="deliveries-add-ship-scan">
-              <FulfillmentPressable
-                variant="primary"
-                className="w-full flex items-center justify-center gap-2 rounded-xl py-3 font-bold"
-                onClick={startScanner}
-                disabled={busy}
-              >
-                <ScanLine className="h-5 w-5" />
-                Add deliveries
-              </FulfillmentPressable>
-            </div>
-          )}
-
-          {step === "preview" && parcel && (
-            <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Tracking</p>
-                <p className="font-mono font-semibold text-lg">{tracking}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Contents</p>
-                <p className="text-sm whitespace-pre-wrap">{parcel.items_raw}</p>
-              </div>
-              <span
-                className={`inline-block text-xs font-semibold px-2 py-0.5 rounded ${
-                  parcel.status === "packing"
-                    ? "bg-amber-100 text-amber-900"
-                    : parcel.status === "shipped"
-                      ? "bg-green-100 text-green-900"
-                      : "bg-red-100 text-red-900"
-                }`}
-              >
-                {parcel.status}
-              </span>
-
-              {!photoPreview ? (
-                <>
-                  <p className="text-sm text-muted-foreground">Photograph the wrapped parcel (required).</p>
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => onPhotoSelected(e.target.files?.[0] ?? null)}
-                  />
-                  <button
-                    type="button"
-                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-border py-3 font-semibold"
-                    onClick={() => photoInputRef.current?.click()}
+            <FulfillmentStepSwitch stepKey={step}>
+              {step === "idle" && (
+                <div data-tour="deliveries-add-ship-scan" className="space-y-3">
+                  <FulfillmentPressable
+                    variant="primary"
+                    className="w-full min-h-12 flex items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold"
+                    onClick={startScanner}
+                    disabled={busy}
                   >
-                    <Camera className="h-5 w-5" />
-                    Take parcel photo
-                  </button>
-                </>
-              ) : (
-                <div className="space-y-2">
-                  <img src={photoPreview} alt="Parcel" className="rounded-lg max-h-48 w-full object-cover" />
-                  {photoUploading && (
-                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      {photoUploadState === "compressing" ? "Preparing photo…" : "Saving photo in background…"}
-                    </p>
-                  )}
-                  {photoUploadState === "ready" && (
-                    <p className="flex items-center gap-1.5 text-xs text-green-700">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Photo saved — tap Done or Scan next when ready
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    className="text-xs font-semibold text-[#C8900A]"
-                    onClick={() => photoInputRef.current?.click()}
-                    disabled={photoUploading || busy}
-                  >
-                    Retake photo
-                  </button>
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => onPhotoSelected(e.target.files?.[0] ?? null)}
-                  />
+                    {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ScanLine className="h-5 w-5" />}
+                    Scan tracking
+                  </FulfillmentPressable>
+                  <p className="text-sm text-muted-foreground text-center leading-relaxed px-1">
+                    CSR waybill list not required. Photo is for RTS before-shipment reference only.
+                  </p>
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-2 pt-2">
-                <button
-                  type="button"
-                  className="flex-1 rounded-lg border border-border py-2 text-sm"
-                  onClick={() => resetFlow(false)}
-                  disabled={busy}
+              {step === "preview" && tracking && (
+                <div
+                  className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-5"
+                  data-testid="deliveries-photo-preview"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="flex-1 rounded-lg border border-border py-2 text-sm font-semibold"
-                  onClick={() => void finishParcel(true)}
-                  disabled={busy || !photoPreview || parcel.status !== "packing"}
-                >
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Scan next parcel"}
-                </button>
-                <FulfillmentPressable
-                  variant="primary"
-                  className="flex-1 rounded-lg py-2 text-sm font-bold"
-                  onClick={() => void finishParcel(false)}
-                  disabled={busy || !photoPreview || parcel.status !== "packing"}
-                >
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Done"}
-                </FulfillmentPressable>
-              </div>
-            </div>
-          )}
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">Tracking</p>
+                    <p className="font-mono font-semibold text-lg tracking-wide break-all">{tracking}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Documentary only — no stock or packaging change.
+                    </p>
+                  </div>
 
-          {step === "saving" && (
-            <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="text-sm font-medium">{savingLabel}</span>
-            </div>
-          )}
+                  {!photoPreview ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Photograph the wrapped parcel. This image shows on RTS when that tracking returns.
+                      </p>
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={e => onPhotoSelected(e.target.files?.[0] ?? null)}
+                      />
+                      <FulfillmentPressable
+                        variant="outline"
+                        className="w-full min-h-12 flex items-center justify-center gap-2 rounded-xl py-3.5 font-semibold"
+                        onClick={() => photoInputRef.current?.click()}
+                      >
+                        <Camera className="h-5 w-5" />
+                        Take before-shipment photo
+                      </FulfillmentPressable>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <img
+                        src={photoPreview}
+                        alt="Before shipment"
+                        className="rounded-xl max-h-56 w-full object-cover bg-secondary/30"
+                      />
+                      {photoUploading && (
+                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                          {photoUploadState === "compressing"
+                            ? "Preparing photo…"
+                            : "Saving photo in background…"}
+                        </p>
+                      )}
+                      {photoUploadState === "ready" && (
+                        <p className="flex items-center gap-1.5 text-sm font-medium text-green-800">
+                          <CheckCircle2 className="h-4 w-4 shrink-0" />
+                          Photo saved — tap Done or Scan next
+                        </p>
+                      )}
+                      {photoUploadState === "error" && (
+                        <p className="text-sm text-destructive">Upload failed — retake or try again.</p>
+                      )}
+                      <button
+                        type="button"
+                        className="text-sm font-semibold text-primary hover:underline min-h-11 px-1 -ml-1 disabled:opacity-50"
+                        onClick={() => photoInputRef.current?.click()}
+                        disabled={photoUploading || busy}
+                      >
+                        Retake photo
+                      </button>
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={e => onPhotoSelected(e.target.files?.[0] ?? null)}
+                      />
+                    </div>
+                  )}
 
-          {step === "done" && doneMessage && (
-            <FulfillmentSuccessPanel>
-              <p className="flex items-center gap-2 font-semibold text-green-800">
-                <CheckCircle2 size={20} />
-                Parcel recorded
-              </p>
-              <p className="text-sm text-green-700">{doneMessage}</p>
-              <p className="text-sm text-green-700">
-                {batchCount} parcel photo{batchCount === 1 ? "" : "s"} saved for {deliveryDate}.
-              </p>
-              <FulfillmentPressable
-                variant="primary"
-                className="inline-flex items-center gap-2 px-4 py-2"
-                onClick={() => resetFlow(false)}
-              >
-                <ScanLine size={16} />
-                Add more deliveries
-              </FulfillmentPressable>
-            </FulfillmentSuccessPanel>
-          )}
-        </FulfillmentStepSwitch>
-      </FulfillmentSectionEnter>
+                  <div className="flex flex-col-reverse sm:flex-row gap-2 pt-1">
+                    <FulfillmentPressable
+                      variant="outline"
+                      className="flex-1 min-h-11 rounded-xl py-2.5 text-sm font-semibold"
+                      onClick={() => resetFlow(false)}
+                      disabled={busy}
+                    >
+                      Cancel
+                    </FulfillmentPressable>
+                    <FulfillmentPressable
+                      variant="outline"
+                      className="flex-1 min-h-11 rounded-xl py-2.5 text-sm font-semibold"
+                      onClick={() => void finishPhoto(true)}
+                      disabled={busy || !photoPreview || photoUploading}
+                    >
+                      {busy ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Scan next"}
+                    </FulfillmentPressable>
+                    <FulfillmentPressable
+                      variant="primary"
+                      className="flex-1 min-h-11 rounded-xl py-2.5 text-sm font-bold"
+                      onClick={() => void finishPhoto(false)}
+                      disabled={busy || !photoPreview || photoUploading}
+                    >
+                      {busy ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Done"}
+                    </FulfillmentPressable>
+                  </div>
+                </div>
+              )}
 
-      {scannerOpen ? (
-        <TrackingQrScannerModal
-          onClose={() => setScannerOpen(false)}
-          title="Scan label"
-          titleId="deliveries-scan-modal-title"
-          onDecoded={decoded => void loadParcel(decoded)}
-          zIndex="z-50"
-        />
-      ) : null}
+              {step === "saving" && (
+                <div className="flex items-center justify-center gap-2 py-14 text-muted-foreground">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span className="text-sm font-medium">{savingLabel}</span>
+                </div>
+              )}
 
-      <DeliveryDuplicateScanModal
-        open={duplicateOpen}
-        tracking={tracking}
-        recordings={duplicateRecordings}
-        onStop={() => {
-          setDuplicateOpen(false);
-          setDuplicateRecordings([]);
-          setParcel(null);
-          setTracking("");
-          setStep("idle");
-        }}
-        onScanDifferent={() => {
-          setDuplicateOpen(false);
-          setDuplicateRecordings([]);
-          setParcel(null);
-          setTracking("");
-          setError(null);
-          startScanner();
-        }}
-      />
-      </>
+              {step === "done" && doneMessage && (
+                <FulfillmentSuccessPanel>
+                  <p className="flex items-center gap-2 font-semibold text-green-800">
+                    <CheckCircle2 size={20} />
+                    Photo recorded
+                  </p>
+                  <p className="text-sm text-green-800/90">{doneMessage}</p>
+                  <p className="text-sm text-green-800/90">
+                    {batchCount === 0
+                      ? `Ready for ${deliveryDate}.`
+                      : `${batchCount} photo${batchCount === 1 ? "" : "s"} for ${deliveryDate}.`}
+                  </p>
+                  <FulfillmentPressable
+                    variant="primary"
+                    className="inline-flex items-center gap-2 min-h-11 px-4 py-2.5"
+                    onClick={() => resetFlow(false)}
+                  >
+                    <ScanLine size={16} />
+                    Scan another
+                  </FulfillmentPressable>
+                </FulfillmentSuccessPanel>
+              )}
+            </FulfillmentStepSwitch>
+          </FulfillmentSectionEnter>
+
+          {scannerOpen ? (
+            <TrackingQrScannerModal
+              onClose={() => setScannerOpen(false)}
+              title="Scan tracking"
+              titleId="deliveries-scan-modal-title"
+              onDecoded={decoded => void beginTracking(decoded)}
+              zIndex="z-50"
+            />
+          ) : null}
+
+          <DeliveryDuplicateScanModal
+            open={duplicateOpen}
+            tracking={tracking}
+            recordings={duplicateRecordings}
+            onStop={() => {
+              setDuplicateOpen(false);
+              setDuplicateRecordings([]);
+              setTracking("");
+              setStep("idle");
+            }}
+            onScanDifferent={() => {
+              setDuplicateOpen(false);
+              setDuplicateRecordings([]);
+              setTracking("");
+              setError(null);
+              startScanner();
+            }}
+            onContinueAnyway={() => {
+              setDuplicateOpen(false);
+              setDuplicateRecordings([]);
+              if (tracking) enterPreview(tracking);
+            }}
+          />
+        </>
       )}
 
       <DeliveriesAddGuideModal

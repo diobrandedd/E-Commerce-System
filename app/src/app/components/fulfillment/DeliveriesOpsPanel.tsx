@@ -255,8 +255,8 @@ export function DeliveriesOpsPanel({ mode, deliveryDate, onBatchCountChange }: D
 
       const ship = await deliveriesShipParcel(newTracking, itemId, deliveryDate);
       const message = ship.already_shipped
-        ? "Already shipped — no extra deduct"
-        : "Re-waybill shipped — inventory updated";
+        ? "Already shipped on this tracking"
+        : "Re-waybill linked — photo saved";
 
       if (another) {
         resetRewaybill();

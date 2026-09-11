@@ -11,7 +11,7 @@ function buildSteps({ isExecutive }: DeliveriesAddTourContext): DriveStep[] {
       popover: {
         title: "Add deliveries",
         description:
-          "Scan waybills, photograph parcels, and ship — or handle sealed-box exceptions (on hold and re-waybill).",
+          "Scan tracking and save a before-shipment photo for RTS. No CSR list and no inventory deduct. On hold and re-waybill handle sealed-box exceptions.",
         side: "over",
         align: "center",
       },
@@ -19,9 +19,9 @@ function buildSteps({ isExecutive }: DeliveriesAddTourContext): DriveStep[] {
     {
       element: "[data-tour='deliveries-add-tabs']",
       popover: {
-        title: "Ship · On hold · Re-waybill",
+        title: "Photo · On hold · Re-waybill",
         description:
-          "Ship is the daily scan-and-photo flow. On hold marks wrong labels without undoing inventory. Re-waybill links old tracking to a new CSR waybill and ships again.",
+          "Photo is the daily scan-and-document flow. On hold marks wrong labels. Re-waybill links old tracking to a new CSR waybill.",
         side: "bottom",
         align: "start",
       },
@@ -30,8 +30,7 @@ function buildSteps({ isExecutive }: DeliveriesAddTourContext): DriveStep[] {
       element: "[data-tour='deliveries-add-date']",
       popover: {
         title: "Business date",
-        description:
-          "Photos and ship records group under this date. Use today unless you are catching up a prior batch.",
+        description: "Photos group under this date. Use today unless you are catching up a prior batch.",
         side: "bottom",
         align: "start",
       },
@@ -39,9 +38,9 @@ function buildSteps({ isExecutive }: DeliveriesAddTourContext): DriveStep[] {
     {
       element: "[data-tour='deliveries-add-ship-scan']",
       popover: {
-        title: "Scan and ship",
+        title: "Scan and photograph",
         description:
-          "On the Ship tab: scan label → take parcel photo → Done or Scan next. Packaging staging and honey deduct when you ship.",
+          "Tap Scan tracking, photograph the parcel, then Done or Scan next. Stock and packaging never change here.",
         side: "top",
         align: "center",
       },
@@ -50,7 +49,7 @@ function buildSteps({ isExecutive }: DeliveriesAddTourContext): DriveStep[] {
       popover: {
         title: "On hold & re-waybill",
         description:
-          "Switch to On hold or Re-waybill tabs for sealed-box exceptions. Re-waybill accepts on-hold and courier-cancelled parcels — old QR → new waybill → photo → ship.",
+          "Switch tabs for sealed-box exceptions. Re-waybill: old QR → new waybill → photo.",
         side: "over",
         align: "center",
       },
@@ -59,7 +58,7 @@ function buildSteps({ isExecutive }: DeliveriesAddTourContext): DriveStep[] {
       popover: {
         title: "Related pages",
         description: isExecutive
-          ? "Courier cancel scans go on the Cancelled page (inventory stays packed). Deliveries review shows every photo for audit."
+          ? "Courier cancel scans go on the Cancelled page. Deliveries review shows every photo for audit. RTS uses the photo by tracking."
           : "Scan courier cancels on Cancelled, then re-waybill here. Deliveries review is your photo audit trail.",
         side: "over",
         align: "center",
