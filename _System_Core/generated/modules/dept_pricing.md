@@ -1,7 +1,7 @@
 ---
 title: dept_pricing
 source: includes/dept_pricing.php
-generated: 2026-09-10T10:29:01+02:00
+generated: 2026-09-11T04:36:01+02:00
 type: module
 function_count: 8
 ---

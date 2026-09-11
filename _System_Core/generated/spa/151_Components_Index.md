@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-09-10T10:29:42+02:00
+generated: 2026-09-11T04:36:50+02:00
 type: spa
 ---
 
@@ -38,6 +38,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/exec/StaffPermissionsModal.tsx`
 - `app/src/app/components/honey/HoneyLotGallonProgress.tsx`
 - `app/src/app/components/honey/HoneyStageTabs.tsx`
+- `app/src/app/components/inventory/InventoryCheckBatchDocs.tsx`
 - `app/src/app/components/layout/appFeedbackMotion.tsx`
 - `app/src/app/components/layout/sidebarNavMotion.tsx`
 - `app/src/app/components/notifications/BarcodeDesktopAlertBanner.tsx`

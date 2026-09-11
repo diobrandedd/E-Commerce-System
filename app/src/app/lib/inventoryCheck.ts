@@ -90,6 +90,23 @@ export interface InventoryCheckVarianceLine {
   variance: number;
 }
 
+export interface InventoryCheckBatchDocLine {
+  bottling_date: string | null;
+  kind: string;
+  product_key: string;
+  product_label: string;
+  variant: string | null;
+  size: string | null;
+  size_label: string | null;
+  qty: number;
+}
+
+export interface InventoryCheckBatchDoc {
+  batch_no: string;
+  total_qty: number;
+  lines: InventoryCheckBatchDocLine[];
+}
+
 export interface InventoryCheckCompareRun {
   id: number;
   event_id: number;
@@ -106,6 +123,7 @@ export interface InventoryCheckCompareResult {
   preview?: boolean;
   run: InventoryCheckCompareRun;
   lines: InventoryCheckVarianceLine[];
+  batches?: InventoryCheckBatchDoc[];
   event: InventoryCheckEvent;
 }
 
@@ -144,20 +162,30 @@ export const inventoryCheckApi = {
       { page },
     ),
 
-  scan: (eventId: number, code: string, opts?: { qty?: number; batch_no?: string }) =>
+  scan: (
+    eventId: number,
+    code: string,
+    opts?: { qty?: number; batch_no?: string; bottling_date?: string },
+  ) =>
     apiPost<InventoryCheckScanResult>(ENDPOINT, "scan", {
       event_id: eventId,
       code,
       ...(opts?.qty != null ? { qty: opts.qty } : {}),
       ...(opts?.batch_no != null ? { batch_no: opts.batch_no } : {}),
+      ...(opts?.bottling_date != null ? { bottling_date: opts.bottling_date } : {}),
     }),
 
-  scanUpdate: (eventId: number, scanId: number, opts: { qty?: number; batch_no?: string }) =>
+  scanUpdate: (
+    eventId: number,
+    scanId: number,
+    opts: { qty?: number; batch_no?: string; bottling_date?: string },
+  ) =>
     apiPost<{ scan: InventoryCheckScan; summary: InventoryCheckSummary | null }>(ENDPOINT, "scan_update", {
       event_id: eventId,
       scan_id: scanId,
       ...(opts.qty != null ? { qty: opts.qty } : {}),
       ...(opts.batch_no != null ? { batch_no: opts.batch_no } : {}),
+      ...(opts.bottling_date != null ? { bottling_date: opts.bottling_date } : {}),
     }),
 
   scanRemove: (eventId: number, scanId: number) =>
@@ -178,6 +206,9 @@ export const inventoryCheckApi = {
 
   comparePreview: (eventId: number) =>
     apiGet<InventoryCheckCompareResult>(ENDPOINT, "compare_preview", { event_id: eventId }),
+
+  comparePreviewMerged: (eventIds: number[]) =>
+    apiPost<InventoryCheckCompareResult>(ENDPOINT, "compare_preview_merged", { event_ids: eventIds }),
 
   compareRun: (eventId: number) =>
     apiPost<InventoryCheckCompareResult>(ENDPOINT, "compare_run", { event_id: eventId }),

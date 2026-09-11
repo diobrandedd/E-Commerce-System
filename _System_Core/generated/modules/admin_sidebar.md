@@ -1,7 +1,7 @@
 ---
 title: admin_sidebar
 source: includes/admin_sidebar.php
-generated: 2026-09-10T10:28:52+02:00
+generated: 2026-09-11T04:35:50+02:00
 type: module
 function_count: 3
 ---
@@ -35,7 +35,7 @@ function_count: 3
 
 ## setOpen {#setopen}
 
-**Callers (24):**
+**Callers (25):**
 
 - `includes/admin_sidebar.php`:53 — `btn.addEventListener('click', function () { setOpen(!panel.classList.contains('open')); });`
 - `includes/admin_sidebar.php`:55 — `a.addEventListener('click', function () { setOpen(false); });`
@@ -49,6 +49,7 @@ function_count: 3
 - `records.php`:846 — `setOpen(!panel.classList.contains('open'));`
 - `records.php`:852 — `setOpen(false);`
 - `records.php`:881 — `setOpen(false);`
+- `app/src/app/components/inventory/InventoryCheckBatchDocs.tsx`:45 — `onClick={() => setOpen(prev => ({ ...prev, [group.batch_no]: !isOpen }))}`
 - `app/src/app/components/pos/StaffDebtorCombobox.tsx`:57 — `setOpen(false);`
 - `app/src/app/components/pos/StaffDebtorCombobox.tsx`:77 — `setOpen(false);`
 - `app/src/app/components/pos/StaffDebtorCombobox.tsx`:84 — `setOpen(false);`

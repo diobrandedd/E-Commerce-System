@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-10T10:28:51+02:00
+generated: 2026-09-11T04:35:50+02:00
 type: memory-bank
 ---
 
@@ -347,13 +347,14 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `event_open` | `api_inventory_check_event_open()` | `inventory_check_event_open()`, `ims_pdo()` |
 | `event_close` | `api_inventory_check_event_close()` | `inventory_check_event_close()`, `ims_pdo()` |
 | `event_cancel` | `api_inventory_check_event_cancel()` | `inventory_check_event_cancel()`, `ims_pdo()` |
-| `event_list` | `api_inventory_check_event_list()` | `inventory_check_event_list()`, `ims_pdo()` |
-| `scan` | `api_inventory_check_scan()` | `ims_pdo()`, `inventory_check_scan()`, `inventory_check_summary()`, `inventory_check_can_view_all()` |
-| `scan_update` | `api_inventory_check_scan_update()` | `ims_pdo()`, `inventory_check_scan_update()`, `inventory_check_can_manage()`, `inventory_check_summary()`, `inventory_check_can_view_all()` |
-| `scan_remove` | `api_inventory_check_scan_remove()` | `ims_pdo()`, `inventory_check_scan_remove()`, `inventory_check_can_manage()`, `inventory_check_summary()`, `inventory_check_can_view_all()` |
-| `summary` | `api_inventory_check_summary()` | `inventory_check_can_view_all()`, `inventory_check_summary()`, `ims_pdo()` |
-| `scan_log` | `api_inventory_check_scan_log()` | `inventory_check_can_view_all()`, `inventory_check_scan_log()`, `ims_pdo()` |
-| `compare_preview` | `api_inventory_check_compare_preview()` | `inventory_check_can_manage()`, `inventory_check_can_view_all()`, `inventory_check_compare_preview()`, `ims_pdo()` |
+| `event_list` | `api_inventory_check_event_list()` | `inventory_check_can_view_all()`, `inventory_check_event_list()`, `ims_pdo()` |
+| `scan` | `api_inventory_check_scan()` | `ims_pdo()`, `inventory_check_scan()`, `inventory_check_summary()` |
+| `scan_update` | `api_inventory_check_scan_update()` | `ims_pdo()`, `inventory_check_scan_update()`, `inventory_check_can_manage()`, `inventory_check_summary()` |
+| `scan_remove` | `api_inventory_check_scan_remove()` | `ims_pdo()`, `inventory_check_scan_remove()`, `inventory_check_can_manage()`, `inventory_check_summary()` |
+| `summary` | `api_inventory_check_summary()` | `inventory_check_summary()`, `ims_pdo()` |
+| `scan_log` | `api_inventory_check_scan_log()` | `inventory_check_scan_log()`, `ims_pdo()` |
+| `compare_preview` | `api_inventory_check_compare_preview()` | `inventory_check_compare_preview()`, `ims_pdo()` |
+| `compare_preview_merged` | `api_inventory_check_compare_preview_merged()` | `ims_pdo()`, `inventory_check_event_get()`, `inventory_check_compare_preview()` |
 | `compare_run` | `api_inventory_check_compare_run()` | `inventory_check_compare_run()`, `ims_pdo()` |
 | `compare_get` | `api_inventory_check_compare_get()` | `inventory_check_compare_get()`, `ims_pdo()` |
 | `compare_list` | `api_inventory_check_compare_list()` | `inventory_check_compare_list()`, `ims_pdo()` |

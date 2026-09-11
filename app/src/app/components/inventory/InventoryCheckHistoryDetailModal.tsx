@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { InventoryCheckBatchDocs } from "@/app/components/inventory/InventoryCheckBatchDocs";
 import { InventoryCheckScanLogModal } from "@/app/components/inventory/InventoryCheckScanLogModal";
 import { Button } from "@/app/components/ui/button";
 import {
@@ -267,7 +268,6 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                         <thead>
                           <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
                             <th className="px-3 py-2">Product</th>
-                            <th className="px-3 py-2">Batch</th>
                             <th className="px-3 py-2">Size</th>
                             <th className="px-3 py-2 text-right">Audited</th>
                             <th className="px-3 py-2 text-right">System</th>
@@ -281,7 +281,6 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                                 {line.product_label}
                                 {line.variant ? ` · ${line.variant}` : ""}
                               </td>
-                              <td className="px-3 py-2">{line.batch_no ?? "—"}</td>
                               <td className="px-3 py-2">{line.size_label ?? "—"}</td>
                               <td className="px-3 py-2 text-right tabular-nums">{line.counted_qty}</td>
                               <td className="px-3 py-2 text-right tabular-nums">{formatQty(line.system_qty)}</td>
@@ -295,6 +294,7 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                         </tbody>
                       </table>
                     </div>
+                    <InventoryCheckBatchDocs batches={compare.batches ?? []} />
                   </>
                 )}
               </div>
@@ -321,6 +321,7 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                                 {scan.product_label}
                                 {scan.size_label ? ` · ${scan.size_label}` : ""}
                                 {scan.batch_no ? ` · ${scan.batch_no}` : ""}
+                                {scan.bottling_date ? ` · bottled ${scan.bottling_date}` : ""}
                                 {scan.counted_qty != null && scan.counted_qty !== 1
                                   ? ` · ×${scan.counted_qty}`
                                   : ""}

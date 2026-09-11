@@ -8,11 +8,11 @@
 |-------|------|
 | **Active Spec** | _(none)_ |
 | **Active Plan** | _(none)_ |
-| **Status** | idle — last shipped [[specs/2026-09-10_sales-view-amounts]] |
+| **Status** | idle — last shipped [[specs/2026-09-11_inventory-check-batch-docs]] |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending
-- **Latest shipped:** [[specs/2026-09-10_sales-view-amounts]] · [[problems/records/2026-09-10_sales-view-amounts]] · [[specs/2026-09-10_inventory-check-scan-only]]
+- **Latest shipped:** [[specs/2026-09-11_inventory-check-batch-docs]] · [[specs/2026-09-11_inventory-check-scoped-compare]] · [[problems/records/2026-09-11_inventory-check-private-sessions]] · [[specs/2026-09-10_sales-view-amounts]]
 - **Agent entry:** [[problems/records/2026-06-12_dept-raw-ux-session]] â€” checklist for next dept raw / PageLayout work
 
 ## ðŸ› ï¸ Current Todo List

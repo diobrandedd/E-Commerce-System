@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-10T10:28:51+02:00
+generated: 2026-09-11T04:35:50+02:00
 type: memory-bank
 table_count: 97
 ---
@@ -1051,6 +1051,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_summary]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_log]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_build]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_batch_docs_build]] |
 
 ## `inventory_check_compare_runs`
 

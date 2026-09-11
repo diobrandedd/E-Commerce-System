@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-11 — Inventory check required batch + bottling docs
+**Change:** Scan → required batch/date (docs only); compare expandable batch groups; phase 81 unique on code+batch+date. → [[problems/records/2026-09-11_inventory-check-batch-docs]]
+
+### 2026-09-11 — Inventory check private sessions + scoped compare
+**Change:** Per-user private audits; compare only counted lines; optional batch; view_all merge history. → [[problems/records/2026-09-11_inventory-check-private-sessions]]
+
 ### 2026-09-10 — Sales view amounts permission
 **Change:** `sales.view_amounts` gates ₱ on Sales; API strips money when denied; phase 79 continuity grant. → [[problems/records/2026-09-10_sales-view-amounts]]
 
