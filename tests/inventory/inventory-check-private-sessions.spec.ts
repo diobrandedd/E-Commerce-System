@@ -176,7 +176,7 @@ test.describe("Inventory check private session UX", () => {
     });
 
     await page.getByRole("button", { name: /Add to list/i }).click();
-    await expect(page.getByTestId("inventory-check-scan-input")).toBeVisible();
+    await expect(page.getByTestId("inventory-check-batch-input")).toBeVisible();
     await page.getByRole("button", { name: /^Done$/i }).click();
 
     await page.getByRole("button", { name: /^History$/i }).click();

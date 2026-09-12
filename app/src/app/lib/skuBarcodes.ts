@@ -36,8 +36,6 @@ export interface SkuLookup {
   product_name?: string;
   pool?: string;
   batch_no?: string | null;
-  batch_date?: string | null;
-  bottling_date?: string | null;
 }
 
 export function skuPrintSheetUrl(skuId: number, qty: number): string {

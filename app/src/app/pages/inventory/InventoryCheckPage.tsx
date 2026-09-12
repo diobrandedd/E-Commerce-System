@@ -254,19 +254,17 @@ export function InventoryCheckPage() {
     }
   };
 
-  /** Commit a scan. Unique stickers may omit batch/date — API fills from sticker metadata. */
+  /** Commit after batch + bottling date are filled. */
   const commitScan = async (
     value: string,
-    opts: { qty: number; label: string; isSku: boolean; batch_no?: string; bottling_date?: string },
+    opts: { qty: number; label: string; isSku: boolean; batch_no: string; bottling_date: string },
   ): Promise<boolean> => {
     if (!event) return false;
     try {
       const res = await inventoryCheckApi.scan(event.id, value, {
         qty: opts.qty,
-        ...(opts.batch_no != null && opts.batch_no !== "" ? { batch_no: opts.batch_no } : {}),
-        ...(opts.bottling_date != null && opts.bottling_date !== ""
-          ? { bottling_date: opts.bottling_date }
-          : {}),
+        batch_no: opts.batch_no,
+        bottling_date: opts.bottling_date,
       });
       if (res.result === "unknown") {
         playScanBeep("bad");
@@ -283,7 +281,7 @@ export function InventoryCheckPage() {
       const total = res.scan?.counted_qty ?? opts.qty;
       const msg = opts.isSku
         ? `${opts.label} · +${opts.qty} (total ${total})`
-        : `Scan complete · ${opts.label}`;
+        : `${opts.label} · counted`;
       flash("ok", msg);
       if (res.summary) {
         setSummary(res.summary);
@@ -316,12 +314,8 @@ export function InventoryCheckPage() {
           countedQty: scanned.counted_qty ?? opts.qty,
         });
         setLastQty(String(scanned.counted_qty ?? opts.qty));
-        if (scanned.batch_no && scanned.bottling_date) {
-          setLastDocs({ batch: scanned.batch_no, date: scanned.bottling_date });
-        }
-      } else if (opts.batch_no && opts.bottling_date) {
-        setLastDocs({ batch: opts.batch_no, date: opts.bottling_date });
       }
+      setLastDocs({ batch: opts.batch_no, date: opts.bottling_date });
       return true;
     } catch (e) {
       const reason = e instanceof ApiError ? e.message : "Scan failed.";
@@ -367,7 +361,7 @@ export function InventoryCheckPage() {
     }
   };
 
-  /** Unique stickers auto-save from metadata; SKU codes pause for batch + date. */
+  /** Scan → pending docs; commit only after batch + bottling date. */
   const onAddScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     const value = (raw ?? code).trim();
     if (!value || !event) return;
@@ -404,20 +398,15 @@ export function InventoryCheckPage() {
           lookup.label ??
           ([lookup.product_label, lookup.size_label, lookup.variant].filter(Boolean).join(" · ") ||
             value);
-        const batch = (lookup.batch_no ?? "").trim().toUpperCase();
-        const date = (lookup.bottling_date ?? lookup.batch_date ?? "").trim();
-        const okAdd = await commitScan(value, {
-          qty: 1,
-          label,
-          isSku: false,
-          batch_no: batch || undefined,
-          bottling_date: date || undefined,
-        });
-        // Keep camera open for continuous unique scanning.
-        if (okAdd) {
-          return { kind: "success", message: `Scan complete · ${label}` };
-        }
-        return { kind: "error", message: "Could not count this sticker." };
+        setPending({ code: value, label, isSku: false });
+        setPendingQty("1");
+        setPendingBatch(lastDocs.batch);
+        setPendingDate(lastDocs.date);
+        setCameraOpen(false);
+        playScanBeep("ok");
+        flash("ok", `${label} — enter batch & date`, { popup: false });
+        window.setTimeout(() => batchInputRef.current?.focus(), 40);
+        return { kind: "success", message: `${label} · enter docs` };
       }
 
       playScanBeep("bad");
@@ -787,7 +776,7 @@ export function InventoryCheckPage() {
             {sessionOpen && (
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">
-                  Unique stickers save automatically. SKU barcodes need batch number and bottling date.
+                  Scan a product, then enter batch number and bottling date before the next scan.
                 </p>
                 <Button
                   type="button"
@@ -930,9 +919,8 @@ export function InventoryCheckPage() {
         <AppModalHeader title="Add to list" onClose={closeAddModal} />
         <AppModalBody className="space-y-4 relative">
           <p className="text-xs text-muted-foreground">
-            Unique stickers (honey, Paragis, cacao, comb) save batch and date from the sticker and stay in
-            the camera for continuous scanning. SKU barcodes pause so you can enter batch, date, and quantity.
-            Docs are for the count record only — system inventory still matches by product and size.
+            Scan first, then enter batch number and bottling date. Those fields document the count only —
+            system inventory still matches by product and size.
           </p>
           <AnimatePresence>
             {scanPopup ? (
@@ -1130,7 +1118,7 @@ export function InventoryCheckPage() {
           title="Scan barcode"
           continuous
           sameCodeCooldownMs={SCAN_COOLDOWN_MS}
-          scanPrompt="Unique stickers save automatically. SKU codes need batch and date next."
+          scanPrompt="Point at a barcode. You’ll enter batch and bottling date next."
           onClose={closeCamera}
           onDecoded={decoded => onAddScan(decoded)}
         />

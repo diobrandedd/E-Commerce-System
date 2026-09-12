@@ -9,10 +9,9 @@ Every inventory-check scan must record **batch number** and **bottling date** fo
 
 ## Behavior
 
-1. **Unique stickers** (honey bottles, Paragis / BRC / cacao / comb pouches): scan → auto-save using batch + bottling/batch date already on the sticker → camera stays open with a short “Scan complete” cue for continuous scanning.
-2. **SKU barcodes**: scan → enter batch + bottling date (+ qty) → confirm line (camera closes for the form).
-3. Compare / finalize / history / merged executive compare show product variance plus expandable **batch documentation** groups (one batch → many bottling dates / variants / sizes).
-4. Same UX for owners and `inventory.check.view_all` / executive.
+1. Flow: scan barcode → enter batch + bottling date (+ qty for SKUs) → confirm line.
+2. Compare / finalize / history / merged executive compare show product variance plus expandable **batch documentation** groups (one batch → many bottling dates / variants / sizes).
+3. Same UX for owners and `inventory.check.view_all` / executive.
 
 ## Out of scope
 

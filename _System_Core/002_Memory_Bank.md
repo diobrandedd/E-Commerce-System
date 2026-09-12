@@ -4,16 +4,6 @@
 
 ## 📅 Recent Log Entries
 
-### 2026-09-12 — Check inventory unique stickers auto-docs
-**Change:** Unique honey/dept scans auto-save batch/date from sticker and keep camera continuous; SKU still needs typed docs. → [[problems/records/2026-09-12_inventory-check-unique-auto-docs]]
-
-### 2026-09-12 — Honey pipeline honors honey.* grants
-**Change:** Raw Honey lists/ops no longer require home dept=honey when Staff Management granted honey.view/ops; presets only auto-grant for honey/csr. → [[problems/records/2026-09-12_honey-out-of-scope-permissions]]
-
-### 2026-09-12 — Warehouse list: out of stock last
-**Change:** `warehouse_list` orders available lots first (`current_qty > 0`), then by arrival date. → `api/v1/honey.php`
-
-
 ### 2026-09-12 — Warehouse barcode multi-select print
 **Change:** Select multiple supplier barcode requests; one combined A4 sheet with separator banners between codes. → [[problems/records/2026-09-12_warehouse-barcode-multi-print]]
 

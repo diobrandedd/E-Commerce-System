@@ -144,17 +144,20 @@ function honey_assert_staff_dept_scope(array $user): void
     if ($userDept === null) {
         api_fail('Your account has no department assigned.', 403);
     }
-    // Honey warehouse / production / packaging lists are gated by honey.view
-    // (already checked in api_honey_require_view). Do not also require dept=honey —
-    // Staff Management may grant honey.* to a TL/staff whose home dept is elsewhere.
+    // Honey-stage views carry no dept parameter — restrict them to honey staff
+    // (and CSR, who generate bottle barcodes from production lots).
     $honeyOnly = ['warehouse_list', 'production_list', 'packaging_list', 'packaging_total_inventory', 'traceability'];
     $action = (string) ($_GET['action'] ?? '');
     if (in_array($action, $honeyOnly, true)) {
+        if ($userDept !== 'honey' && $userDept !== 'csr') {
+            api_fail('Out of scope for your department.', 403);
+        }
+
         return;
     }
     $target = honey_request_target_dept_key();
     if ($target !== null && $target !== $userDept) {
-        api_fail('Out of scope for your department. Use Staff Management → Department, or open only your department’s raw materials.', 403);
+        api_fail('Out of scope for your department.', 403);
     }
 }
 
@@ -177,10 +180,19 @@ function api_honey_require_mutate(): array
 function api_honey_require_honey_ops(): array
 {
     $user = api_require_ims_user();
+    $role = (string) $user['role'];
     if (!honey_role_can_honey_ops($user)) {
         api_fail('Forbidden.', 403);
     }
-    // honey.ops permission is enough (including TL assigned to another department).
+    if ($role === 'tl') {
+        $userDept = honey_resolve_user_dept_key($user);
+        if ($userDept === null) {
+            api_fail('Your account has no department assigned.', 403);
+        }
+        if ($userDept !== 'honey') {
+            api_fail('Out of scope for your department.', 403);
+        }
+    }
 
     return $user;
 }
@@ -214,8 +226,7 @@ function api_honey_warehouse_list(): void
            {$costCol}, supplier_price_id, cost_override, created_at"
         : 'id, supplier_id, supplier_name, supplier_code, arrival_date, variant, current_qty, initial_qty, created_at';
     $st = $pdo->query(
-        "SELECT {$cols} FROM honey_warehouse_rows
-         ORDER BY (current_qty > 0) DESC, arrival_date DESC, id DESC"
+        "SELECT {$cols} FROM honey_warehouse_rows ORDER BY arrival_date DESC, id DESC"
     );
     $rows = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
     if ($costCol !== null) {

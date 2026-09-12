@@ -14,6 +14,12 @@ import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { listMaterials, type MaterialStockRow } from "@/app/lib/materials";
 import { cn } from "@/app/components/ui/utils";
 
+const peso = (v: string | number | undefined) => {
+  const n = typeof v === "string" ? parseFloat(v) : Number(v ?? 0);
+  if (!Number.isFinite(n)) return "—";
+  return `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
 type StockFilter = "all" | "in_stock" | "out_of_stock";
 
 const FILTER_CHIPS: { id: StockFilter; label: string }[] = [
@@ -61,20 +67,12 @@ export function SuppliesMaterialsPage() {
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return items
-      .filter(row => {
-        if (filter === "in_stock" && Number(row.on_hand ?? 0) <= 0) return false;
-        if (filter === "out_of_stock" && Number(row.on_hand ?? 0) > 0) return false;
-        if (q && !row.name.toLowerCase().includes(q) && !row.unit.toLowerCase().includes(q)) return false;
-        return true;
-      })
-      .slice()
-      .sort((a, b) => {
-        const aStock = Number(a.on_hand ?? 0) > 0 ? 1 : 0;
-        const bStock = Number(b.on_hand ?? 0) > 0 ? 1 : 0;
-        if (aStock !== bStock) return bStock - aStock;
-        return a.name.localeCompare(b.name);
-      });
+    return items.filter(row => {
+      if (filter === "in_stock" && Number(row.on_hand ?? 0) <= 0) return false;
+      if (filter === "out_of_stock" && Number(row.on_hand ?? 0) > 0) return false;
+      if (q && !row.name.toLowerCase().includes(q) && !row.unit.toLowerCase().includes(q)) return false;
+      return true;
+    });
   }, [items, search, filter]);
 
   const handleIssueDone = () => {
@@ -86,7 +84,7 @@ export function SuppliesMaterialsPage() {
   return (
     <PageLayout
       title="Supplies"
-      subtitle="Org-wide pool — lot stock-in and HR-submitted issues — click a row for details"
+      subtitle="Org-wide pool — lot stock-in, unit cost, and HR-submitted issues — click a row for details"
       actions={
         <div className="flex items-center gap-2">
           <div className="sm:hidden flex items-center gap-2">
@@ -183,8 +181,9 @@ export function SuppliesMaterialsPage() {
         </div>
 
         <div className="bg-card rounded-xl border overflow-hidden flex flex-col min-h-0 flex-1" data-tour="supplies-catalog">
-          <div className="hidden sm:grid sm:grid-cols-[1fr_120px_160px_28px] gap-2 px-4 py-3 border-b bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium shrink-0">
+          <div className="hidden sm:grid sm:grid-cols-[1fr_120px_120px_160px_28px] gap-2 px-4 py-3 border-b bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium shrink-0">
             <span>Item</span>
+            <span>Unit cost</span>
             <span>On hand</span>
             <span>Last stock-in</span>
             <span />
@@ -228,11 +227,17 @@ export function SuppliesMaterialsPage() {
                         </div>
                         <ChevronRight size={14} className="text-muted-foreground" />
                       </div>
-                      <div className="rounded-md bg-secondary/30 px-2 py-1.5 text-xs">
-                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">On hand</p>
-                        <p className={cn("mt-0.5 tabular-nums", !hasStock && "text-red-600 font-medium")}>
-                          {onHand.toLocaleString()} {row.unit}
-                        </p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-md bg-secondary/30 px-2 py-1.5">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Unit cost</p>
+                          <p className="mt-0.5 text-foreground tabular-nums">{peso(row.current_price)}/{row.unit}</p>
+                        </div>
+                        <div className="rounded-md bg-secondary/30 px-2 py-1.5">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">On hand</p>
+                          <p className={cn("mt-0.5 tabular-nums", !hasStock && "text-red-600 font-medium")}>
+                            {onHand.toLocaleString()} {row.unit}
+                          </p>
+                        </div>
                       </div>
                     </button>
                   );
@@ -255,11 +260,12 @@ export function SuppliesMaterialsPage() {
                     !hasStock && "bg-red-50/30 dark:bg-red-950/10",
                   )}
                 >
-                  <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_120px_160px_28px] sm:gap-2 sm:items-center">
+                  <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_120px_120px_160px_28px] sm:gap-2 sm:items-center">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{row.name}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{row.unit}</p>
                     </div>
+                    <div className="hidden sm:block text-sm">{peso(row.current_price)}</div>
                     <div className="hidden sm:block">
                       <span className={cn("text-sm font-medium", hasStock ? "text-foreground" : "text-red-600 dark:text-red-400")}>
                         {onHand.toLocaleString()} {row.unit}

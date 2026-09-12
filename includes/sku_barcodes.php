@@ -701,27 +701,6 @@ function sku_barcode_lookup(PDO $pdo, string $rawCode): array
         $lookup['requires_qty'] = false;
         $lookup['kind'] = 'honey';
         $lookup['label'] = ucfirst((string) $lookup['variant']) . ' · ' . (string) $lookup['size_label'];
-        // Prefer packaging lot bottling date when stocked; else barcode batch date.
-        $packagingRowId = $honeyRow['unit_packaging_row_id'] ?? $honeyRow['packaging_row_id'] ?? null;
-        $bottlingDate = '';
-        if ($packagingRowId !== null) {
-            $pkSt = $pdo->prepare('SELECT bottling_date, batch_no FROM honey_packaging_rows WHERE id = ? LIMIT 1');
-            $pkSt->execute([(int) $packagingRowId]);
-            $pk = $pkSt->fetch(PDO::FETCH_ASSOC);
-            if ($pk !== false) {
-                $bottlingDate = (string) ($pk['bottling_date'] ?? '');
-                if (trim((string) ($lookup['batch_no'] ?? '')) === '' && !empty($pk['batch_no'])) {
-                    $lookup['batch_no'] = (string) $pk['batch_no'];
-                }
-            }
-        }
-        if ($bottlingDate === '') {
-            $bdSt = $pdo->prepare('SELECT batch_date FROM honey_barcode_batches WHERE id = ? LIMIT 1');
-            $bdSt->execute([(int) $honeyRow['batch_id']]);
-            $bottlingDate = (string) ($bdSt->fetchColumn() ?: '');
-        }
-        $lookup['bottling_date'] = $bottlingDate;
-        $lookup['batch_date'] = $bottlingDate;
 
         return $lookup;
     }
@@ -740,7 +719,6 @@ function sku_barcode_lookup(PDO $pdo, string $rawCode): array
         $dept = $st->fetch(PDO::FETCH_ASSOC);
         if ($dept !== false) {
             $productKey = (string) ($dept['product_key'] ?? 'pt');
-            $batchDate = (string) ($dept['batch_date'] ?? '');
 
             return [
                 'lookup_kind' => 'unique_dept',
@@ -754,8 +732,6 @@ function sku_barcode_lookup(PDO $pdo, string $rawCode): array
                 'unit_id' => $dept['unit_id'] !== null ? (int) $dept['unit_id'] : null,
                 'unit_status' => $dept['unit_status'] !== null ? (string) $dept['unit_status'] : null,
                 'batch_no' => (string) ($dept['batch_no'] ?? ''),
-                'batch_date' => $batchDate,
-                'bottling_date' => $batchDate,
                 'status' => (string) $dept['status'],
             ];
         }

@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-12T07:20:56+02:00
+generated: 2026-09-12T04:46:00+02:00
 type: memory-bank
 table_count: 97
 ---
@@ -776,7 +776,6 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_rts_stock_in_scan]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_batch_codes]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
-| `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_lookup]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_credit_honey_requests]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_refresh_honey_request_status]] |
 
@@ -1193,7 +1192,6 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_honey_lines]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_system_packaging_row]] |
-| `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_lookup]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_honey_deduct]] |
 
 ## `honey_sales_log`
