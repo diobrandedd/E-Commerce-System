@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-12T07:56:29+02:00
+generated: 2026-09-12T11:14:10+02:00
 type: memory-bank
 ---
 
@@ -45,8 +45,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 |--------|---------|--------------|
 | `me` | `api_auth_me()` | `ims_pos_authenticated()`, `rts_forwarding_api_payload()`, `ims_current_user()`, `ims_user_permissions()` |
 | `login` | `api_auth_login()` | `ims_login_user()`, `ims_current_user()`, `ims_user_permissions()`, `rts_forwarding_api_payload()` |
-| `pos_login` | `api_auth_pos_login()` | `ims_login_pos()`, `rts_forwarding_api_payload()` |
-| `logout` | `api_auth_logout()` | `ims_logout()` |
+| `pos_login` | `api_auth_pos_login()` | `ims_login_pos()`, `rts_forwarding_api_payload()`, `pos_api_token_issue()`, `ims_pdo()` |
+| `logout` | `api_auth_logout()` | `pos_api_bearer_from_request()`, `pos_api_token_revoke_plain()`, `ims_pdo()`, `ims_logout()` |
 | `change_password` | `api_auth_change_password()` | `ims_change_password()` |
 
 ### `barcode_verify.php`
@@ -493,7 +493,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/pos.php`
 - **URL:** `/rts/api/v1/pos.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_unified.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`, `includes/pos_sales_helpers.php`, `includes/pos_thermal_print.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_unified.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`, `includes/pos_sales_helpers.php`, `includes/pos_thermal_print.php`, `includes/honey_sales_report.php`, `includes/pos_refund.php`, `includes/api_tokens.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
@@ -512,6 +512,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `discount_request_create` | `api_pos_discount_request_create()` | `pos_discount_request_create()`, `ims_pdo()` |
 | `discount_request_status` | `api_pos_discount_request_status()` | `pos_discount_request_fetch_for_pin()`, `ims_pdo()` |
 | `thermal_print` | `api_pos_thermal_print()` | `pos_thermal_print_text()`, `pos_thermal_print_raw()`, `pos_thermal_print_config()` |
+| `sales_history` | `api_pos_sales_history()` | `pos_sales_ensure_refund_columns()`, `ims_pdo()`, `honey_sales_resolve_filters()`, `honey_sales_fetch_checkouts()` |
+| `receipt_get` | `api_pos_receipt_get()` | `pos_sales_ensure_refund_columns()`, `ims_pdo()`, `honey_sales_fetch_checkouts()` |
+| `sale_refund` | `api_pos_sale_refund()` | `pos_sale_full_refund()`, `ims_pdo()` |
 
 ### `pos_discounts.php`
 
@@ -646,6 +649,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `brc_bom_save` | `api_settings_brc_bom_save()` | `dept_brc_bom_save()`, `ims_pdo()`, `dept_brc_bom_snapshot()` |
 | `jar_cacao_bom_get` | `api_settings_jar_cacao_bom_get()` | `dept_jar_cacao_bom_snapshot()`, `ims_pdo()` |
 | `jar_cacao_bom_save` | `api_settings_jar_cacao_bom_save()` | `dept_jar_cacao_bom_save()`, `ims_pdo()`, `dept_jar_cacao_bom_snapshot()` |
+| `admin_password_get` | `api_settings_admin_password_get()` | `admin_override_password_configured()`, `ims_pdo()` |
+| `admin_password_save` | `api_settings_admin_password_save()` | `admin_override_password_set()`, `ims_pdo()` |
 
 ### `sku_barcodes.php`
 

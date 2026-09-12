@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-09-12T07:56:46+02:00
+generated: 2026-09-12T11:14:29+02:00
 type: module
 function_count: 63
 ---
@@ -157,7 +157,7 @@ function_count: 63
 
 **Tables:** `honey_packaging_rows`
 
-**Callers (10):**
+**Callers (11):**
 
 - `includes/finished_leak_damage.php`:139 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, -1.0);`
 - `includes/honey_bottle_barcodes.php`:278 — `honey_bottle_adjust_aggregate($pdo, $id, $size, -1.0);`
@@ -165,6 +165,7 @@ function_count: 63
 - `includes/honey_bottle_barcodes.php`:2447 — `honey_bottle_adjust_aggregate($pdo, $packId, (string) $unit['size'], 1);`
 - `includes/honey_inventory.php`:747 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, (float) $qty);`
 - `includes/pack_cancel_restock.php`:542 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, 1.0);`
+- `includes/pos_refund.php`:73 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, 1.0);`
 - `includes/sku_barcodes.php`:1017 — `honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, (float) $qty);`
 - `includes/sku_barcodes.php`:1300 — `honey_bottle_adjust_aggregate($pdo, (int) $row['id'], $size, -(float) $take);`
 - `includes/sku_barcodes.php`:1309 — `honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, -(float) $qty);`
@@ -482,12 +483,14 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `honey_sales_log`
 
-**Callers (5):**
+**Callers (7):**
 
 - `includes/honey_bottle_barcodes.php`:2070 — `honey_bottle_write_sale_log($pdo, [`
 - `includes/honey_bottle_barcodes.php`:2393 — `honey_bottle_write_sale_log($pdo, [`
 - `includes/honey_bottle_barcodes.php`:2449 — `honey_bottle_write_sale_log($pdo, [`
 - `includes/pack_cancel_restock.php`:552 — `honey_bottle_write_sale_log($pdo, [`
+- `includes/pos_refund.php`:79 — `honey_bottle_write_sale_log($pdo, [`
+- `includes/pos_refund.php`:161 — `honey_bottle_write_sale_log($pdo, [`
 - `includes/sku_barcodes.php`:1314 — `honey_bottle_write_sale_log($pdo, [`
 
 ## honey_bottle_pos_lookup {#honey_bottle_pos_lookup}

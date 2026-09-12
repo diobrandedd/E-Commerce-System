@@ -1,7 +1,7 @@
 ---
 title: app_settings
 source: includes/app_settings.php
-generated: 2026-09-12T07:56:29+02:00
+generated: 2026-09-12T11:14:11+02:00
 type: module
 function_count: 3
 ---
@@ -24,8 +24,10 @@ function_count: 3
 
 **Tables:** `app_settings`
 
-**Callers (10):**
+**Callers (12):**
 
+- `includes/admin_override_password.php`:12 — `$hash = app_setting_get($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, null);`
+- `includes/admin_override_password.php`:22 — `$hash = app_setting_get($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, null);`
 - `includes/dept_brc_settings.php`:44 — `return dept_brc_setting_parse_bool(app_setting_get($pdo, BRC_BAG_POOL_DEDUCT_SETTING_KEY, null), true);`
 - `includes/dept_brc_settings.php`:52 — `$raw = app_setting_get($pdo, BRC_GRAMS_PER_POUCH_SETTING_KEY, null);`
 - `includes/dept_brc_settings.php`:69 — `$raw = app_setting_get($pdo, BRC_GRAMS_PER_BAG_SETTING_KEY, null);`
@@ -41,8 +43,9 @@ function_count: 3
 
 **Tables:** `app_settings`
 
-**Callers (10):**
+**Callers (11):**
 
+- `includes/admin_override_password.php`:49 — `app_setting_set($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, $hash, $userId);`
 - `includes/dept_brc_settings.php`:143 — `app_setting_set($pdo, BRC_GRAMS_PER_POUCH_SETTING_KEY, (string) $gramsPerPouch, $userId);`
 - `includes/dept_brc_settings.php`:144 — `app_setting_set($pdo, BRC_GRAMS_PER_BAG_SETTING_KEY, (string) $gramsPerBag, $userId);`
 - `includes/dept_brc_settings.php`:145 — `app_setting_set($pdo, BRC_BAG_POOL_DEDUCT_SETTING_KEY, $bagPoolDeduct ? '1' : '0', $userId);`

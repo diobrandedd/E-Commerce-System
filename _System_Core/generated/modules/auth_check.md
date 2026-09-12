@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-09-12T07:56:31+02:00
+generated: 2026-09-12T11:14:13+02:00
 type: module
 function_count: 14
 ---
@@ -19,15 +19,16 @@ function_count: 14
 
 ## ims_session_start {#ims_session_start}
 
-**Callers (64):**
+**Callers (65):**
 
-- `api/v1/_bootstrap.php`:52 — `ims_session_start();`
+- `api/v1/_bootstrap.php`:53 — `ims_session_start();`
 - `auth/login.php`:7 — `ims_session_start();`
 - `dept/beginning_inventory.php`:8 — `ims_session_start();`
 - `dept/products.php`:8 — `ims_session_start();`
 - `dept/stock_entries.php`:8 — `ims_session_start();`
 - `exec/edit_requests.php`:9 — `ims_session_start();`
 - `exec/staff_management.php`:9 — `ims_session_start();`
+- `includes/api_tokens.php`:169 — `ims_session_start();`
 - `includes/auth_check.php`:32 — `ims_session_start();`
 - `includes/auth_check.php`:49 — `ims_session_start();`
 - `includes/auth_check.php`:87 — `ims_session_start();`
@@ -45,14 +46,13 @@ function_count: 14
 - `includes/historical_orders_import.php`:537 — `ims_session_start();`
 - `includes/historical_orders_import.php`:616 — `ims_session_start();`
 - `includes/historical_orders_import.php`:748 — `ims_session_start();`
-- `includes/online_orders_generator.php`:738 — `ims_session_start();`
-- _… and 39 more (run impact.php for full list)_
+- _… and 40 more (run impact.php for full list)_
 
 ## ims_current_user {#ims_current_user}
 
 **Callers (48):**
 
-- `api/v1/_bootstrap.php`:132 — `$u = ims_current_user();`
+- `api/v1/_bootstrap.php`:145 — `$u = ims_current_user();`
 - `api/v1/auth.php`:69 — `$user = ims_current_user();`
 - `api/v1/auth.php`:114 — `$user = ims_current_user();`
 - `api/v1/deliveries.php`:13 — `$user = ims_current_user();`
@@ -85,7 +85,7 @@ function_count: 14
 
 - `api/v1/ar.php`:52 — `if (ims_pos_authenticated()) {`
 - `api/v1/auth.php`:50 — `if (ims_pos_authenticated()) {`
-- `api/v1/pos.php`:45 — `if (ims_pos_authenticated()) {`
+- `api/v1/pos.php`:51 — `if (ims_pos_authenticated()) {`
 - `auth/login.php`:8 — `if (ims_pos_authenticated()) {`
 - `dept/products.php`:17 — `$canDeductStock = !ims_pos_authenticated();`
 - `includes/auth_check.php`:164 — `if (!ims_pos_authenticated()) {`
@@ -110,14 +110,14 @@ function_count: 14
 **Callers (3):**
 
 - `api/v1/auth.php`:146 — `if (!ims_login_pos($pin)) {`
-- `api/v1/pos.php`:15 — `* Walk-in POS terminal API. Requires a POS PIN session (`ims_login_pos()`)`
+- `api/v1/pos.php`:18 — `* Walk-in POS terminal API. Requires a POS PIN session (`ims_login_pos()`)`
 - `auth/login.php`:25 — `if (ims_login_pos($pin)) {`
 
 ## ims_logout {#ims_logout}
 
 **Callers (2):**
 
-- `api/v1/auth.php`:170 — `ims_logout();`
+- `api/v1/auth.php`:197 — `ims_logout();`
 - `auth/logout.php`:7 — `ims_logout();`
 
 ## requireRole {#requirerole}
@@ -209,6 +209,6 @@ function_count: 14
 
 **Callers (2):**
 
-- `api/v1/auth.php`:182 — `$result = ims_change_password((int) $user['id'], $current, $next);`
+- `api/v1/auth.php`:209 — `$result = ims_change_password((int) $user['id'], $current, $next);`
 - `auth/settings.php`:19 — `$res = ims_change_password((int) ($u['id'] ?? 0), $current, $next);`
 

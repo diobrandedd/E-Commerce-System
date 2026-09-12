@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-09-12T07:56:29+02:00
+generated: 2026-09-12T11:14:10+02:00
 type: memory-bank
-edge_count: 421
+edge_count: 438
 ---
 
 
@@ -20,6 +20,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 
 | From | To |
 |------|-----|
+| `api/v1/_bootstrap.php` | `includes/api_tokens.php` |
 | `api/v1/_bootstrap.php` | `includes/auth.php` |
 | `api/v1/_bootstrap.php` | `includes/auth_check.php` |
 | `api/v1/_bootstrap.php` | `includes/db.php` |
@@ -72,10 +73,13 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/pdf_to_excel.php` | `api/v1/_bootstrap.php` |
 | `api/v1/pdf_to_excel.php` | `includes/pdf_to_excel.php` |
 | `api/v1/pos.php` | `api/v1/_bootstrap.php` |
+| `api/v1/pos.php` | `includes/api_tokens.php` |
 | `api/v1/pos.php` | `includes/ar_credits.php` |
 | `api/v1/pos.php` | `includes/dept_pos.php` |
 | `api/v1/pos.php` | `includes/honey_pos.php` |
+| `api/v1/pos.php` | `includes/honey_sales_report.php` |
 | `api/v1/pos.php` | `includes/pos_discount_requests.php` |
+| `api/v1/pos.php` | `includes/pos_refund.php` |
 | `api/v1/pos.php` | `includes/pos_sales_helpers.php` |
 | `api/v1/pos.php` | `includes/pos_thermal_print.php` |
 | `api/v1/pos.php` | `includes/pos_unified.php` |
@@ -122,7 +126,10 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `executive.php` | `includes/auth.php` |
 | `executive.php` | `includes/db.php` |
 | `includes/admin_nav.php` | `includes/auth.php` |
+| `includes/admin_override_password.php` | `includes/app_settings.php` |
 | `includes/admin_sidebar.php` | `includes/admin_nav.php` |
+| `includes/api_tokens.php` | `includes/db.php` |
+| `includes/api_tokens.php` | `includes/rts_schema.php` |
 | `includes/auth.php` | `includes/db.php` |
 | `includes/auth_check.php` | `includes/db.php` |
 | `includes/barcode_verify.php` | `includes/dept_pouch_barcodes.php` |
@@ -302,6 +309,16 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_discount_requests.php` | `includes/dept_pos.php` |
 | `includes/pos_discount_requests.php` | `includes/honey_pos.php` |
 | `includes/pos_discount_requests.php` | `includes/pos_unified.php` |
+| `includes/pos_refund.php` | `includes/api_tokens.php` |
+| `includes/pos_refund.php` | `includes/ar_credits.php` |
+| `includes/pos_refund.php` | `includes/dept_inventory.php` |
+| `includes/pos_refund.php` | `includes/dept_inventory.php` |
+| `includes/pos_refund.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/pos_refund.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/pos_refund.php` | `includes/honey_pos.php` |
+| `includes/pos_refund.php` | `includes/rts_inventory_sync.php` |
+| `includes/pos_refund.php` | `includes/rts_schema.php` |
+| `includes/pos_refund.php` | `includes/sku_barcodes.php` |
 | `includes/pos_sales_helpers.php` | `includes/honey_pos.php` |
 | `includes/pos_unified.php` | `includes/dept_pos.php` |
 | `includes/pos_unified.php` | `includes/dept_pouch_barcodes.php` |

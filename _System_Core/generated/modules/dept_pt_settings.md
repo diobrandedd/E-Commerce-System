@@ -1,7 +1,7 @@
 ---
 title: dept_pt_settings
 source: includes/dept_pt_settings.php
-generated: 2026-09-12T07:56:42+02:00
+generated: 2026-09-12T11:14:25+02:00
 type: module
 function_count: 8
 ---
@@ -69,8 +69,8 @@ function_count: 8
 
 **Callers (4):**
 
-- `api/v1/settings.php`:233 — `api_ok(dept_pt_bom_snapshot(ims_pdo()));`
-- `api/v1/settings.php`:257 — `api_ok(array_merge($saved, dept_pt_bom_snapshot(ims_pdo())));`
+- `api/v1/settings.php`:235 — `api_ok(dept_pt_bom_snapshot(ims_pdo()));`
+- `api/v1/settings.php`:259 — `api_ok(array_merge($saved, dept_pt_bom_snapshot(ims_pdo())));`
 - `includes/dept_inventory.php`:248 — `$bom = dept_pt_bom_snapshot($pdo);`
 - `includes/dept_production.php`:986 — `$bom = dept_pt_bom_snapshot($pdo);`
 
@@ -78,5 +78,5 @@ function_count: 8
 
 **Callers (1):**
 
-- `api/v1/settings.php`:246 — `$saved = dept_pt_bom_save(`
+- `api/v1/settings.php`:248 — `$saved = dept_pt_bom_save(`
 

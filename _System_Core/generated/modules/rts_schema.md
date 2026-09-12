@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-09-12T07:57:16+02:00
+generated: 2026-09-12T11:15:00+02:00
 type: module
 function_count: 13
 ---
@@ -19,16 +19,18 @@ function_count: 13
 
 ## rts_db_clear_column_cache {#rts_db_clear_column_cache}
 
-**Callers (1):**
+**Callers (2):**
 
+- `includes/api_tokens.php`:227 — `rts_db_clear_column_cache();`
 - `includes/rts_schema.php`:232 — `rts_db_clear_column_cache();`
 
 ## rts_db_has_column {#rts_db_has_column}
 
-**Callers (69):**
+**Callers (71):**
 
 - `api/v1/deliveries.php`:308 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `api/v1/deliveries.php`:347 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
+- `includes/api_tokens.php`:220 — `if (!rts_db_has_column($pdo, 'pos_sales', 'refunded_at')) {`
 - `includes/deliveries_upload.php`:58 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `includes/delivery_edit_requests.php`:19 — `$hasParcelLink = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id');`
 - `includes/delivery_edit_requests.php`:81 — `$parcelCol = rts_db_has_column($pdo, 'delivery_batch_items', 'online_parcel_id')`
@@ -51,8 +53,7 @@ function_count: 13
 - `includes/honey_bottle_barcodes.php`:2276 — `$hasUnit = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
 - `includes/honey_bottle_barcodes.php`:2277 — `$hasSess = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
 - `includes/honey_bottle_barcodes.php`:2278 — `$hasPos = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');`
-- `includes/honey_bottle_barcodes.php`:2344 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
-- _… and 44 more (run impact.php for full list)_
+- _… and 46 more (run impact.php for full list)_
 
 ## rts_cases_void_sql {#rts_cases_void_sql}
 

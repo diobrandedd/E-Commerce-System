@@ -201,6 +201,8 @@ export function setPackagingOnHand(payload: {
   stock_id: number;
   on_hand: number;
   note?: string;
+  monthly_inventory?: boolean;
+  admin_password?: string;
 }) {
   return apiPost<{ stock_id: number; on_hand: number; entry_id: number | null }>(
     "materials.php",
@@ -248,6 +250,8 @@ export function stockInPackagingLot(payload: {
   lot_qty: number;
   note?: string;
   pool_yield_qty?: number;
+  monthly_inventory?: boolean;
+  admin_password?: string;
 }) {
   return apiPost<{
     stock_id: number;

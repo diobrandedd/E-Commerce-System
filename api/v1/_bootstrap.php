@@ -47,10 +47,14 @@ require_once __DIR__ . '/../../includes/auth_check.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/permissions.php';
+require_once __DIR__ . '/../../includes/api_tokens.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     ims_session_start();
 }
+
+// Mobile POS Bearer token → hydrate session (website cookies unchanged).
+pos_api_apply_bearer_auth();
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -120,11 +124,20 @@ function api_require_csrf(array $input): void
     if (strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'GET') {
         return;
     }
+    // Bearer-authenticated mobile clients skip CSRF (token is the credential).
+    if (!empty($GLOBALS['api_bearer_auth'])) {
+        return;
+    }
     $token = (string) ($input['csrf'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
     $expected = api_csrf_token();
     if (!hash_equals($expected, $token)) {
         api_fail('Invalid CSRF token.', 419);
     }
+}
+
+function api_is_bearer_auth(): bool
+{
+    return !empty($GLOBALS['api_bearer_auth']);
 }
 
 function api_require_ims_user(): array

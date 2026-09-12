@@ -23,7 +23,11 @@ function ims_permission_catalog(): array
         'inventory.entries.view' => ['label' => 'View inventory entries', 'group' => 'Inventory', 'description' => 'View stock entries and counts.'],
         'inventory.entries.add' => ['label' => 'Add stock entries', 'group' => 'Inventory', 'description' => 'Create new stock-in entries.'],
         'inventory.daily_count' => ['label' => 'Daily count', 'group' => 'Inventory', 'description' => 'Run daily inventory counts.'],
-        'inventory.monthly_count' => ['label' => 'Monthly count', 'group' => 'Inventory', 'description' => 'Executive monthly inventory count.'],
+        'inventory.monthly_count' => [
+            'label' => 'Monthly inventory',
+            'group' => 'Inventory',
+            'description' => 'Executive monthly inventory: set absolute stock levels (requires administrator password).',
+        ],
         'inventory.requests.view' => ['label' => 'View inventory requests', 'group' => 'Inventory', 'description' => 'View packaging and supply requests queue.'],
         'inventory.requests.approve' => ['label' => 'Approve inventory requests', 'group' => 'Inventory', 'description' => 'Approve or reject inventory requests.'],
         'inventory.edit_requests.submit' => ['label' => 'Submit edit requests', 'group' => 'Inventory', 'description' => 'Submit inventory correction requests.'],

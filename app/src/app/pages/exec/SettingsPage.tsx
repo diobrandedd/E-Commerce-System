@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, ShoppingCart, Tag, Droplets, Leaf } from "lucide-react";
+import { Loader2, ShoppingCart, Tag, Droplets, Leaf, Shield } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import { Switch } from "@/app/components/ui/switch";
@@ -101,6 +101,15 @@ export function SettingsPage() {
   const [cacaoSaving, setCacaoSaving] = useState(false);
   const [cacaoOk, setCacaoOk] = useState<string | null>(null);
   const [cacaoErr, setCacaoErr] = useState<string | null>(null);
+
+  const [adminPwConfigured, setAdminPwConfigured] = useState(false);
+  const [adminPwLoading, setAdminPwLoading] = useState(true);
+  const [adminPwSaving, setAdminPwSaving] = useState(false);
+  const [adminPwCurrent, setAdminPwCurrent] = useState("");
+  const [adminPwNew, setAdminPwNew] = useState("");
+  const [adminPwConfirm, setAdminPwConfirm] = useState("");
+  const [adminPwOk, setAdminPwOk] = useState<string | null>(null);
+  const [adminPwErr, setAdminPwErr] = useState<string | null>(null);
 
   const loadPins = useCallback(async () => {
     setPinsLoading(true);
@@ -233,6 +242,19 @@ export function SettingsPage() {
     }
   }, []);
 
+  const loadAdminPassword = useCallback(async () => {
+    setAdminPwLoading(true);
+    setAdminPwErr(null);
+    try {
+      const data = await apiGet<{ configured: boolean }>("settings.php", "admin_password_get");
+      setAdminPwConfigured(!!data.configured);
+    } catch (e) {
+      setAdminPwErr(e instanceof ApiError ? e.message : "Could not load administrator password status.");
+    } finally {
+      setAdminPwLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadPins();
     void loadSkuRows();
@@ -240,7 +262,40 @@ export function SettingsPage() {
     void loadPtBom();
     void loadBrcBom();
     void loadCacaoBom();
-  }, [loadPins, loadSkuRows, loadHoneyVolume, loadPtBom, loadBrcBom, loadCacaoBom]);
+    void loadAdminPassword();
+  }, [loadPins, loadSkuRows, loadHoneyVolume, loadPtBom, loadBrcBom, loadCacaoBom, loadAdminPassword]);
+
+  const saveAdminPassword = async () => {
+    setAdminPwSaving(true);
+    setAdminPwOk(null);
+    setAdminPwErr(null);
+    try {
+      if (adminPwNew.trim().length < 6) {
+        throw new Error("New password must be at least 6 characters.");
+      }
+      if (adminPwNew !== adminPwConfirm) {
+        throw new Error("New password and confirmation do not match.");
+      }
+      await apiPost("settings.php", "admin_password_save", {
+        current_password: adminPwConfigured ? adminPwCurrent : undefined,
+        new_password: adminPwNew,
+        new_password_confirm: adminPwConfirm,
+      });
+      setAdminPwConfigured(true);
+      setAdminPwCurrent("");
+      setAdminPwNew("");
+      setAdminPwConfirm("");
+      setAdminPwOk(
+        adminPwConfigured
+          ? "Administrator password updated."
+          : "Administrator password set. Monthly inventory will require it for stock overrides."
+      );
+    } catch (e) {
+      setAdminPwErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not save.");
+    } finally {
+      setAdminPwSaving(false);
+    }
+  };
 
   const saveHoneyVolume = async () => {
     setMlSaving(true);
@@ -921,6 +976,87 @@ export function SettingsPage() {
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <Shield size={18} className="text-[#C8900A]" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Administrator password</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Required on Monthly inventory when overriding absolute stock levels. Separate from login
+                passwords — executives set and change it here.
+              </p>
+            </div>
+          </div>
+          {adminPwLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="px-6 py-5 space-y-4">
+              <AppSuccessNotice message={adminPwOk} />
+              <AppErrorBanner message={adminPwErr} />
+              <p className="text-xs text-muted-foreground">
+                Status:{" "}
+                <span className="font-medium text-foreground">
+                  {adminPwConfigured ? "Configured" : "Not set yet"}
+                </span>
+              </p>
+              {adminPwConfigured ? (
+                <div>
+                  <label htmlFor="admin-pw-current" className="text-xs text-muted-foreground">
+                    Current password
+                  </label>
+                  <input
+                    id="admin-pw-current"
+                    type="password"
+                    autoComplete="current-password"
+                    className="mt-1 w-full max-w-md rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={adminPwCurrent}
+                    onChange={e => setAdminPwCurrent(e.target.value)}
+                  />
+                </div>
+              ) : null}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
+                <div>
+                  <label htmlFor="admin-pw-new" className="text-xs text-muted-foreground">
+                    New password
+                  </label>
+                  <input
+                    id="admin-pw-new"
+                    type="password"
+                    autoComplete="new-password"
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={adminPwNew}
+                    onChange={e => setAdminPwNew(e.target.value)}
+                    placeholder="At least 6 characters"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="admin-pw-confirm" className="text-xs text-muted-foreground">
+                    Confirm new password
+                  </label>
+                  <input
+                    id="admin-pw-confirm"
+                    type="password"
+                    autoComplete="new-password"
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={adminPwConfirm}
+                    onChange={e => setAdminPwConfirm(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Button
+                type="button"
+                disabled={adminPwSaving || !adminPwNew.trim()}
+                onClick={() => void saveAdminPassword()}
+                className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+              >
+                {adminPwSaving ? <Loader2 className="animate-spin" size={14} /> : adminPwConfigured ? "Update password" : "Set password"}
+              </Button>
             </div>
           )}
         </div>

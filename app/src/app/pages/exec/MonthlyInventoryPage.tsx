@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ClipboardList, Loader2, Plus, RefreshCw } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
@@ -10,6 +10,7 @@ import {
   appHeaderActionClass,
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
+import { AdminOverridePasswordModal } from "@/app/components/inventory/AdminOverridePasswordModal";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { SupplierCombobox } from "@/app/components/suppliers/SupplierCombobox";
@@ -18,6 +19,18 @@ import { listMaterials, setPackagingOnHand, stockInPackagingLot } from "@/app/li
 import { HONEY_SIZES, HONEY_VARIANTS } from "@/app/lib/honey";
 import type { Supplier } from "@/app/lib/suppliers";
 import { cn } from "@/app/components/ui/utils";
+
+type WithAdminPassword = (run: (adminPassword: string) => Promise<void>) => void;
+
+const MonthlyAdminPwContext = createContext<WithAdminPassword | null>(null);
+
+function useMonthlyAdminPw(): WithAdminPassword {
+  const ctx = useContext(MonthlyAdminPwContext);
+  if (!ctx) {
+    throw new Error("Monthly inventory admin password context missing.");
+  }
+  return ctx;
+}
 
 type DomainTab =
   | "warehouse"
@@ -109,6 +122,33 @@ export function MonthlyInventoryPage() {
   const [logSource, setLogSource] = useState("");
   const [logQ, setLogQ] = useState("");
 
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const pendingPwRun = useRef<((password: string) => Promise<void>) | null>(null);
+
+  const withAdminPassword = useCallback<WithAdminPassword>((run) => {
+    pendingPwRun.current = run;
+    setPwError(null);
+    setPwOpen(true);
+  }, []);
+
+  const confirmAdminPassword = async (password: string) => {
+    const run = pendingPwRun.current;
+    if (!run) return;
+    setPwBusy(true);
+    setPwError(null);
+    try {
+      await run(password);
+      pendingPwRun.current = null;
+      setPwOpen(false);
+    } catch (e) {
+      setPwError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Failed.");
+    } finally {
+      setPwBusy(false);
+    }
+  };
+
   const flash = (msg: string) => {
     setSuccess(msg);
     setError(null);
@@ -181,9 +221,10 @@ export function MonthlyInventoryPage() {
   }, [load]);
 
   return (
+    <MonthlyAdminPwContext.Provider value={withAdminPassword}>
     <PageLayout
       title="Monthly inventory"
-      subtitle="Executive physical count — set quantities or add missing lots. Changes go to Edit Logs."
+      subtitle="Executive physical count — overrides absolute stock (requires administrator password from System Settings). Changes go to Edit Logs."
       actions={
         <AppPressable type="button" onClick={() => void load()} className={appHeaderActionClass}>
           <RefreshCw className="size-3.5" />
@@ -345,6 +386,19 @@ export function MonthlyInventoryPage() {
         ) : null}
       </AppSectionEnter>
     </PageLayout>
+    <AdminOverridePasswordModal
+      open={pwOpen}
+      busy={pwBusy}
+      error={pwError}
+      onClose={() => {
+        if (pwBusy) return;
+        pendingPwRun.current = null;
+        setPwOpen(false);
+        setPwError(null);
+      }}
+      onConfirm={confirmAdminPassword}
+    />
+    </MonthlyAdminPwContext.Provider>
   );
 }
 
@@ -383,57 +437,63 @@ function HoneyGallonSection({
   const [addQty, setAddQty] = useState("");
   const [whId, setWhId] = useState("");
   const [whList, setWhList] = useState<HoneyRow[]>(warehouseOptions ?? []);
+  const withAdminPw = useMonthlyAdminPw();
 
-  const saveSet = async () => {
+  const saveSet = () => {
     if (!setRow) return;
-    setBusy(true);
-    try {
-      await apiPost("honey.php", "executive_edit", {
-        stage,
-        row_table: rowTable,
-        row_id: setRow.id,
-        fields: {
-          current_qty: Number(qty),
-          qty_mode: "set_exact",
-          log_source: "monthly_inventory",
-        },
-      });
-      setSetRow(null);
-      onSaved("Quantity updated.");
-      await onReload();
-    } catch (e) {
-      onError(e instanceof ApiError ? e.message : "Save failed.");
-    } finally {
-      setBusy(false);
-    }
+    withAdminPw(async (admin_password) => {
+      setBusy(true);
+      try {
+        await apiPost("honey.php", "executive_edit", {
+          stage,
+          row_table: rowTable,
+          row_id: setRow.id,
+          fields: {
+            current_qty: Number(qty),
+            qty_mode: "set_exact",
+            log_source: "monthly_inventory",
+          },
+          admin_password,
+        });
+        setSetRow(null);
+        onSaved("Quantity updated.");
+        await onReload();
+      } finally {
+        setBusy(false);
+      }
+    });
   };
 
-  const saveAdd = async () => {
-    setBusy(true);
-    try {
-      if (allowAddWarehouse) {
-        if (!supplier) throw new Error("Pick a supplier.");
-        await apiPost("honey.php", "warehouse_stock_in", {
-          supplier_id: supplier.id,
-          arrival_date: arrival,
-          variants: [{ variant, qty: Number(addQty) }],
-        });
-        onSaved("Warehouse lot added.");
-      } else if (allowSeedProduction) {
-        await apiPost("honey.php", "seed_production_row", {
-          warehouse_row_id: Number(whId),
-          qty: Number(addQty),
-          variant: variant || undefined,
-        });
-        onSaved("Production lot seeded.");
+  const saveAdd = () => {
+    withAdminPw(async (admin_password) => {
+      setBusy(true);
+      try {
+        if (allowAddWarehouse) {
+          if (!supplier) throw new Error("Pick a supplier.");
+          await apiPost("honey.php", "warehouse_stock_in", {
+            supplier_id: supplier.id,
+            arrival_date: arrival,
+            variants: [{ variant, qty: Number(addQty) }],
+            monthly_inventory: true,
+            log_source: "monthly_inventory",
+            admin_password,
+          });
+          onSaved("Warehouse lot added.");
+        } else if (allowSeedProduction) {
+          await apiPost("honey.php", "seed_production_row", {
+            warehouse_row_id: Number(whId),
+            qty: Number(addQty),
+            variant: variant || undefined,
+            admin_password,
+          });
+          onSaved("Production lot seeded.");
+        }
+        setAddOpen(false);
+        await onReload();
+      } finally {
+        setBusy(false);
       }
-      setAddOpen(false);
-      await onReload();
-    } catch (e) {
-      onError(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Add failed.");
-    } finally {
-      setBusy(false);
-    }
+    });
   };
 
   return (
@@ -572,47 +632,50 @@ function HoneyPackagingSection({
   const [bottling, setBottling] = useState(new Date().toISOString().slice(0, 10));
   const [seedSizes, setSeedSizes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const withAdminPw = useMonthlyAdminPw();
 
-  const saveSet = async () => {
+  const saveSet = () => {
     if (!setRow) return;
-    setBusy(true);
-    try {
-      const size_qtys: Record<string, number> = {};
-      for (const s of HONEY_SIZES) size_qtys[s] = Number(sizes[s] ?? 0);
-      await apiPost("honey.php", "executive_edit", {
-        stage: "packaging",
-        row_table: "honey_packaging_rows",
-        row_id: setRow.id,
-        fields: { size_qtys, qty_mode: "set_exact", log_source: "monthly_inventory" },
-      });
-      setSetRow(null);
-      onSaved("Packaging sizes updated.");
-      await onReload();
-    } catch (e) {
-      onError(e instanceof ApiError ? e.message : "Save failed.");
-    } finally {
-      setBusy(false);
-    }
+    withAdminPw(async (admin_password) => {
+      setBusy(true);
+      try {
+        const size_qtys: Record<string, number> = {};
+        for (const s of HONEY_SIZES) size_qtys[s] = Number(sizes[s] ?? 0);
+        await apiPost("honey.php", "executive_edit", {
+          stage: "packaging",
+          row_table: "honey_packaging_rows",
+          row_id: setRow.id,
+          fields: { size_qtys, qty_mode: "set_exact", log_source: "monthly_inventory" },
+          admin_password,
+        });
+        setSetRow(null);
+        onSaved("Packaging sizes updated.");
+        await onReload();
+      } finally {
+        setBusy(false);
+      }
+    });
   };
 
-  const saveSeed = async () => {
-    setBusy(true);
-    try {
-      const size_qtys: Record<string, number> = {};
-      for (const s of HONEY_SIZES) size_qtys[s] = Number(seedSizes[s] ?? 0);
-      await apiPost("honey.php", "seed_packaging_row", {
-        production_row_id: Number(prodId),
-        bottling_date: bottling,
-        size_qtys,
-      });
-      setAddOpen(false);
-      onSaved("Packaging batch seeded.");
-      await onReload();
-    } catch (e) {
-      onError(e instanceof ApiError ? e.message : "Seed failed.");
-    } finally {
-      setBusy(false);
-    }
+  const saveSeed = () => {
+    withAdminPw(async (admin_password) => {
+      setBusy(true);
+      try {
+        const size_qtys: Record<string, number> = {};
+        for (const s of HONEY_SIZES) size_qtys[s] = Number(seedSizes[s] ?? 0);
+        await apiPost("honey.php", "seed_packaging_row", {
+          production_row_id: Number(prodId),
+          bottling_date: bottling,
+          size_qtys,
+          admin_password,
+        });
+        setAddOpen(false);
+        onSaved("Packaging batch seeded.");
+        await onReload();
+      } finally {
+        setBusy(false);
+      }
+    });
   };
 
   return (
@@ -755,6 +818,7 @@ function MaterialsSection({
   const [lotQty, setLotQty] = useState("");
   const [lotCost, setLotCost] = useState("");
   const [busy, setBusy] = useState(false);
+  const withAdminPw = useMonthlyAdminPw();
 
   return (
     <div className="space-y-3">
@@ -785,23 +849,25 @@ function MaterialsSection({
           <Button
             type="button"
             disabled={busy}
-            onClick={async () => {
+            onClick={() => {
               if (!setRow) return;
-              setBusy(true);
-              try {
-                await setPackagingOnHand({
-                  stock_id: setRow.id,
-                  on_hand: Number(onHand),
-                  note: "Monthly inventory",
-                });
-                setSetRow(null);
-                onSaved("On-hand updated.");
-                await onReload();
-              } catch (e) {
-                onError(e instanceof ApiError ? e.message : "Failed.");
-              } finally {
-                setBusy(false);
-              }
+              withAdminPw(async (admin_password) => {
+                setBusy(true);
+                try {
+                  await setPackagingOnHand({
+                    stock_id: setRow.id,
+                    on_hand: Number(onHand),
+                    note: "Monthly inventory",
+                    monthly_inventory: true,
+                    admin_password,
+                  });
+                  setSetRow(null);
+                  onSaved("On-hand updated.");
+                  await onReload();
+                } finally {
+                  setBusy(false);
+                }
+              });
             }}
           >
             Save
@@ -833,22 +899,25 @@ function MaterialsSection({
           <Button
             type="button"
             disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await stockInPackagingLot({
-                  stock_id: Number(addStockId),
-                  lot_qty: Number(lotQty),
-                  lot_total_price: Number(lotCost || 0),
-                });
-                setAddOpen(false);
-                onSaved("Lot stocked in.");
-                await onReload();
-              } catch (e) {
-                onError(e instanceof ApiError ? e.message : "Failed.");
-              } finally {
-                setBusy(false);
-              }
+            onClick={() => {
+              withAdminPw(async (admin_password) => {
+                setBusy(true);
+                try {
+                  await stockInPackagingLot({
+                    stock_id: Number(addStockId),
+                    lot_qty: Number(lotQty),
+                    lot_total_price: Number(lotCost || 0),
+                    note: "Monthly inventory",
+                    monthly_inventory: true,
+                    admin_password,
+                  });
+                  setAddOpen(false);
+                  onSaved("Lot stocked in.");
+                  await onReload();
+                } finally {
+                  setBusy(false);
+                }
+              });
             }}
           >
             Add
@@ -873,6 +942,7 @@ function RawBagsSection({
   const [setItem, setSetItem] = useState<RawSnap | null>(null);
   const [bags, setBags] = useState("");
   const [busy, setBusy] = useState(false);
+  const withAdminPw = useMonthlyAdminPw();
 
   return (
     <div className="space-y-3">
@@ -898,23 +968,24 @@ function RawBagsSection({
           <Button
             type="button"
             disabled={busy}
-            onClick={async () => {
+            onClick={() => {
               if (!setItem) return;
-              setBusy(true);
-              try {
-                await apiPost("honey.php", "dept_raw_set_bags", {
-                  product_key: setItem.product_key,
-                  bags: Number(bags),
-                  note: "Monthly inventory",
-                });
-                setSetItem(null);
-                onSaved("Raw bags updated.");
-                await onReload();
-              } catch (e) {
-                onError(e instanceof ApiError ? e.message : "Failed.");
-              } finally {
-                setBusy(false);
-              }
+              withAdminPw(async (admin_password) => {
+                setBusy(true);
+                try {
+                  await apiPost("honey.php", "dept_raw_set_bags", {
+                    product_key: setItem.product_key,
+                    bags: Number(bags),
+                    note: "Monthly inventory",
+                    admin_password,
+                  });
+                  setSetItem(null);
+                  onSaved("Raw bags updated.");
+                  await onReload();
+                } finally {
+                  setBusy(false);
+                }
+              });
             }}
           >
             Save
@@ -939,6 +1010,7 @@ function DeptFinishedSection({
   const [setItem, setSetItem] = useState<DeptItem | null>(null);
   const [qty, setQty] = useState("");
   const [busy, setBusy] = useState(false);
+  const withAdminPw = useMonthlyAdminPw();
   const withRows = items.filter((i) => i.dept_row_id);
 
   return (
@@ -965,28 +1037,29 @@ function DeptFinishedSection({
           <Button
             type="button"
             disabled={busy || !setItem?.dept_row_id}
-            onClick={async () => {
+            onClick={() => {
               if (!setItem?.dept_row_id) return;
-              setBusy(true);
-              try {
-                await apiPost("honey.php", "executive_edit", {
-                  stage: "dept",
-                  row_table: "dept_inventory_rows",
-                  row_id: setItem.dept_row_id,
-                  fields: {
-                    current_qty: Number(qty),
-                    qty_mode: "set_exact",
-                    log_source: "monthly_inventory",
-                  },
-                });
-                setSetItem(null);
-                onSaved("Finished qty updated.");
-                await onReload();
-              } catch (e) {
-                onError(e instanceof ApiError ? e.message : "Failed.");
-              } finally {
-                setBusy(false);
-              }
+              withAdminPw(async (admin_password) => {
+                setBusy(true);
+                try {
+                  await apiPost("honey.php", "executive_edit", {
+                    stage: "dept",
+                    row_table: "dept_inventory_rows",
+                    row_id: setItem.dept_row_id,
+                    fields: {
+                      current_qty: Number(qty),
+                      qty_mode: "set_exact",
+                      log_source: "monthly_inventory",
+                    },
+                    admin_password,
+                  });
+                  setSetItem(null);
+                  onSaved("Finished qty updated.");
+                  await onReload();
+                } finally {
+                  setBusy(false);
+                }
+              });
             }}
           >
             Save
@@ -1015,6 +1088,7 @@ function RtsSection({
   const [setOther, setSetOther] = useState<RtsOther | null>(null);
   const [otherQty, setOtherQty] = useState("");
   const [busy, setBusy] = useState(false);
+  const withAdminPw = useMonthlyAdminPw();
 
   return (
     <div className="space-y-6">
@@ -1094,25 +1168,27 @@ function RtsSection({
           <Button
             type="button"
             disabled={busy}
-            onClick={async () => {
+            onClick={() => {
               if (!setHoney) return;
-              setBusy(true);
-              try {
-                const size_qtys: Record<string, number> = {};
-                for (const s of HONEY_SIZES) size_qtys[s] = Number(sizes[s] ?? 0);
-                await apiPost("rts.php", "inventory_set_honey", {
-                  variant: setHoney.variant,
-                  pool: "sellable",
-                  size_qtys,
-                });
-                setSetHoney(null);
-                onSaved("RTS honey updated.");
-                await onReload();
-              } catch (e) {
-                onError(e instanceof ApiError ? e.message : "Failed.");
-              } finally {
-                setBusy(false);
-              }
+              withAdminPw(async (admin_password) => {
+                setBusy(true);
+                try {
+                  const size_qtys: Record<string, number> = {};
+                  for (const s of HONEY_SIZES) size_qtys[s] = Number(sizes[s] ?? 0);
+                  await apiPost("rts.php", "inventory_set_honey", {
+                    variant: setHoney.variant,
+                    pool: "sellable",
+                    size_qtys,
+                    monthly_inventory: true,
+                    admin_password,
+                  });
+                  setSetHoney(null);
+                  onSaved("RTS honey updated.");
+                  await onReload();
+                } finally {
+                  setBusy(false);
+                }
+              });
             }}
           >
             Save
@@ -1132,23 +1208,25 @@ function RtsSection({
           <Button
             type="button"
             disabled={busy}
-            onClick={async () => {
+            onClick={() => {
               if (!setOther) return;
-              setBusy(true);
-              try {
-                await apiPost("rts.php", "inventory_set_other", {
-                  product_label: setOther.product_label,
-                  qty: Number(otherQty),
-                  pool: "sellable",
-                });
-                setSetOther(null);
-                onSaved("RTS other updated.");
-                await onReload();
-              } catch (e) {
-                onError(e instanceof ApiError ? e.message : "Failed.");
-              } finally {
-                setBusy(false);
-              }
+              withAdminPw(async (admin_password) => {
+                setBusy(true);
+                try {
+                  await apiPost("rts.php", "inventory_set_other", {
+                    product_label: setOther.product_label,
+                    qty: Number(otherQty),
+                    pool: "sellable",
+                    monthly_inventory: true,
+                    admin_password,
+                  });
+                  setSetOther(null);
+                  onSaved("RTS other updated.");
+                  await onReload();
+                } finally {
+                  setBusy(false);
+                }
+              });
             }}
           >
             Save

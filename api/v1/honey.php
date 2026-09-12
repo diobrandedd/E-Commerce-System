@@ -271,6 +271,11 @@ function api_honey_warehouse_stock_in(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_honey_require_honey_ops();
+    $monthly = !empty($input['monthly_inventory']) || strtolower(trim((string) ($input['log_source'] ?? ''))) === 'monthly_inventory';
+    if ($monthly) {
+        require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+        api_require_admin_override_password($input);
+    }
     $variants = is_array($input['variants'] ?? null) ? $input['variants'] : [];
     try {
         $result = honey_warehouse_stock_in(
@@ -809,6 +814,13 @@ function api_honey_executive_edit(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_permission('honey.executive_edit');
+    $fields = is_array($input['fields'] ?? null) ? $input['fields'] : $input;
+    $logSource = strtolower(trim((string) ($fields['log_source'] ?? $input['log_source'] ?? '')));
+    $monthly = !empty($input['monthly_inventory']) || $logSource === 'monthly_inventory';
+    if ($monthly) {
+        require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+        api_require_admin_override_password($input);
+    }
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
@@ -818,7 +830,7 @@ function api_honey_executive_edit(): void
             (string) ($input['stage'] ?? ''),
             (string) ($input['row_table'] ?? ''),
             (int) ($input['row_id'] ?? 0),
-            is_array($input['fields'] ?? null) ? $input['fields'] : $input
+            $fields
         );
         $pdo->commit();
     } catch (Throwable $e) {
@@ -1422,6 +1434,8 @@ function api_honey_seed_production_row(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_permission('honey.executive_edit');
+    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    api_require_admin_override_password($input);
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
@@ -1448,6 +1462,8 @@ function api_honey_seed_packaging_row(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_permission('honey.executive_edit');
+    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    api_require_admin_override_password($input);
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
@@ -1474,6 +1490,8 @@ function api_honey_dept_raw_set_bags(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_permission('honey.executive_edit');
+    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    api_require_admin_override_password($input);
     $productKey = trim((string) ($input['product_key'] ?? ''));
     $pdo = ims_pdo();
     $pdo->beginTransaction();

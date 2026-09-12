@@ -1,7 +1,7 @@
 ---
 title: pos_thermal_print
 source: includes/pos_thermal_print.php
-generated: 2026-09-12T07:57:10+02:00
+generated: 2026-09-12T11:14:53+02:00
 type: module
 function_count: 4
 ---
@@ -17,7 +17,7 @@ function_count: 4
 
 **Callers (3):**
 
-- `api/v1/pos.php`:516 — `$cfg = pos_thermal_print_config();`
+- `api/v1/pos.php`:522 — `$cfg = pos_thermal_print_config();`
 - `includes/pos_thermal_print.php`:68 — `$cfg = pos_thermal_print_config();`
 - `includes/pos_thermal_print.php`:119 — `$cfg = pos_thermal_print_config();`
 
@@ -25,13 +25,13 @@ function_count: 4
 
 **Callers (1):**
 
-- `api/v1/pos.php`:499 — `pos_thermal_print_text($text);`
+- `api/v1/pos.php`:505 — `pos_thermal_print_text($text);`
 
 ## pos_thermal_print_raw {#pos_thermal_print_raw}
 
 **Callers (1):**
 
-- `api/v1/pos.php`:510 — `pos_thermal_print_raw($raw);`
+- `api/v1/pos.php`:516 — `pos_thermal_print_raw($raw);`
 
 ## pos_thermal_print_raw_winspool {#pos_thermal_print_raw_winspool}
 

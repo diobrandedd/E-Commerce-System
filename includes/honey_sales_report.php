@@ -498,12 +498,15 @@ function honey_sales_fetch_checkouts(
             : "COALESCE(NULLIF(TRIM(sp.label), ''), 'POS') AS sold_by_name";
         $sellerGroup = $hasUserSeller ? ', su.name, sp.label' : ', sp.label';
     }
+    $hasRefunded = honey_pos_column_exists($pdo, 'pos_sales', 'refunded_at');
+    $refundSelect = $hasRefunded ? ', ps.refunded_at, ps.refund_reason' : ', NULL AS refunded_at, NULL AS refund_reason';
+    $refundGroup = $hasRefunded ? ', ps.refunded_at, ps.refund_reason' : '';
     $listSql = "SELECT ps.id AS sale_id, ps.receipt_no, ps.sale_date AS sold_at,
                        ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount,
                        ps.buyer_name, ps.buyer_credentials, COALESCE(ps.is_ar, 0) AS is_ar,
-                       {$sellerSelect}
+                       {$sellerSelect}{$refundSelect}
                 FROM pos_sales ps{$sellerJoin}{$where}
-                GROUP BY ps.id, ps.receipt_no, ps.sale_date, ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount, ps.buyer_name, ps.buyer_credentials, ps.is_ar{$sellerGroup}
+                GROUP BY ps.id, ps.receipt_no, ps.sale_date, ps.subtotal_amount, ps.discount_percent, ps.discount_amount, ps.total_amount, ps.buyer_name, ps.buyer_credentials, ps.is_ar{$sellerGroup}{$refundGroup}
                 ORDER BY ps.sale_date DESC
                 LIMIT {$perPage} OFFSET {$offset}";
     $lst = $pdo->prepare($listSql);
@@ -615,6 +618,9 @@ function honey_sales_fetch_checkouts(
             'buyer_credentials' => $s['buyer_credentials'] !== null ? (string) $s['buyer_credentials'] : null,
             'sold_by_name' => trim((string) ($s['sold_by_name'] ?? '')) !== '' ? (string) $s['sold_by_name'] : 'POS',
             'is_ar' => (int) ($s['is_ar'] ?? 0) === 1,
+            'refunded' => !empty($s['refunded_at']),
+            'refunded_at' => !empty($s['refunded_at']) ? (string) $s['refunded_at'] : null,
+            'refund_reason' => isset($s['refund_reason']) && $s['refund_reason'] !== null ? (string) $s['refund_reason'] : null,
             'item_count' => count($items),
             'items' => $items,
             'returned_units' => $returnedBySale[$saleId] ?? [],

@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-09-12T07:57:19+02:00
+generated: 2026-09-12T11:15:02+02:00
 type: module
 function_count: 40
 ---
@@ -307,9 +307,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## sku_barcode_honey_credit {#sku_barcode_honey_credit}
 
-**Callers (1):**
+**Callers (2):**
 
 - `includes/pack_cancel_restock.php`:624 — `sku_barcode_honey_credit(`
+- `includes/pos_refund.php`:154 — `sku_barcode_honey_credit($pdo, $variant, $size, $qtyLeft, $pool, $packId);`
 
 ## sku_barcode_dept_credit {#sku_barcode_dept_credit}
 

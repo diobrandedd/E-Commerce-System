@@ -146,7 +146,9 @@ function api_auth_pos_login(): void
     if (!ims_login_pos($pin)) {
         api_fail('Invalid PIN.', 401);
     }
-    api_ok([
+
+    $label = (string) ($_SESSION['pos_label'] ?? 'POS');
+    $payload = [
         'authenticated' => true,
         'mode' => 'pos',
         'csrf' => api_csrf_token(),
@@ -154,19 +156,44 @@ function api_auth_pos_login(): void
         'user' => [
             'id' => 0,
             'username' => 'pos',
-            'name' => (string) ($_SESSION['pos_label'] ?? 'POS'),
+            'name' => $label,
             'role' => 'pos',
             'php_role' => 'pos',
             'dept' => 'all',
             'dept_id' => null,
             'dept_name' => 'POS terminal',
         ],
-    ]);
+    ];
+
+    // Always issue a Bearer token so the mobile POS app can call APIs without cookies.
+    try {
+        $issued = pos_api_token_issue(ims_pdo(), [
+            'pin_id' => (int) ($_SESSION['pos_pin_id'] ?? 0),
+            'label' => $label,
+        ]);
+        $payload['token'] = $issued['token'];
+        $payload['token_expires_at'] = $issued['expires_at'];
+    } catch (Throwable $e) {
+        // Session login still succeeds for the website; mobile can retry.
+        $payload['token'] = null;
+        $payload['token_expires_at'] = null;
+        $payload['token_error'] = $e->getMessage();
+    }
+
+    api_ok($payload);
 }
 
 function api_auth_logout(): void
 {
     api_method_allowed(['POST']);
+    $plain = (string) ($GLOBALS['api_bearer_token'] ?? pos_api_bearer_from_request());
+    if ($plain !== '') {
+        try {
+            pos_api_token_revoke_plain(ims_pdo(), $plain);
+        } catch (Throwable) {
+            // ignore revoke failures
+        }
+    }
     ims_logout();
     api_ok(['authenticated' => false]);
 }

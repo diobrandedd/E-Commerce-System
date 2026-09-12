@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-09-12T07:56:55+02:00
+generated: 2026-09-12T11:14:37+02:00
 type: module
 function_count: 10
 ---
@@ -27,7 +27,7 @@ function_count: 10
 
 **Callers (5):**
 
-- `api/v1/settings.php`:199 — `'ml_per_gallon' => honey_ml_per_gallon($pdo),`
+- `api/v1/settings.php`:201 — `'ml_per_gallon' => honey_ml_per_gallon($pdo),`
 - `includes/honey_inventory.php`:513 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
 - `includes/honey_inventory.php`:720 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
 - `includes/honey_inventory.php`:822 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
@@ -37,7 +37,7 @@ function_count: 10
 
 **Callers (1):**
 
-- `api/v1/settings.php`:217 — `$saved = honey_ml_per_gallon_save(ims_pdo(), $ml, (int) ($user['id'] ?? 0) ?: null);`
+- `api/v1/settings.php`:219 — `$saved = honey_ml_per_gallon_save(ims_pdo(), $ml, (int) ($user['id'] ?? 0) ?: null);`
 
 ## honey_normalize_bottle_size {#honey_normalize_bottle_size}
 
@@ -94,5 +94,5 @@ function_count: 10
 
 **Callers (1):**
 
-- `api/v1/honey.php`:518 — `$lines = honey_parse_bottle_lines_from_input($input);`
+- `api/v1/honey.php`:523 — `$lines = honey_parse_bottle_lines_from_input($input);`
 

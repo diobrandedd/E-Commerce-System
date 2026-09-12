@@ -10,6 +10,9 @@ require_once __DIR__ . '/../../includes/pos_discount_requests.php';
 require_once __DIR__ . '/../../includes/ar_credits.php';
 require_once __DIR__ . '/../../includes/pos_sales_helpers.php';
 require_once __DIR__ . '/../../includes/pos_thermal_print.php';
+require_once __DIR__ . '/../../includes/honey_sales_report.php';
+require_once __DIR__ . '/../../includes/pos_refund.php';
+require_once __DIR__ . '/../../includes/api_tokens.php';
 
 /**
  * Walk-in POS terminal API. Requires a POS PIN session (`ims_login_pos()`)
@@ -38,6 +41,9 @@ api_dispatch([
     'discount_request_create' => 'api_pos_discount_request_create',
     'discount_request_status' => 'api_pos_discount_request_status',
     'thermal_print' => 'api_pos_thermal_print',
+    'sales_history' => 'api_pos_sales_history',
+    'receipt_get' => 'api_pos_receipt_get',
+    'sale_refund' => 'api_pos_sale_refund',
 ]);
 
 function api_pos_require_session(): void
@@ -520,4 +526,88 @@ function api_pos_thermal_print(): void
         'port' => $cfg['port'] !== '' ? $cfg['port'] : null,
         'mode' => $text !== '' ? 'gdi' : 'raw',
     ]);
+}
+
+function api_pos_sales_history(): void
+{
+    api_method_allowed(['GET']);
+    api_pos_require_session();
+    try {
+        pos_sales_ensure_refund_columns(ims_pdo());
+    } catch (Throwable) {
+        // non-fatal if alter fails mid-request
+    }
+
+    $period = trim((string) ($_GET['period'] ?? 'day'));
+    $from = isset($_GET['from']) ? trim((string) $_GET['from']) : null;
+    $to = isset($_GET['to']) ? trim((string) $_GET['to']) : null;
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $receipt = isset($_GET['receipt']) ? trim((string) $_GET['receipt']) : null;
+    $saleType = trim((string) ($_GET['sale_type'] ?? 'all'));
+    $product = trim((string) ($_GET['product'] ?? 'all'));
+
+    $filters = honey_sales_resolve_filters($period !== '' ? $period : 'day', $from, $to);
+    $checkouts = honey_sales_fetch_checkouts(
+        ims_pdo(),
+        $filters['range'],
+        $page,
+        $receipt,
+        $saleType !== '' ? $saleType : 'all',
+        $product !== '' ? $product : 'all'
+    );
+    api_ok(['checkouts' => $checkouts]);
+}
+
+function api_pos_receipt_get(): void
+{
+    api_method_allowed(['GET']);
+    api_pos_require_session();
+    $saleId = (int) ($_GET['sale_id'] ?? 0);
+    if ($saleId < 1) {
+        api_fail('sale_id is required.', 422);
+    }
+    try {
+        pos_sales_ensure_refund_columns(ims_pdo());
+    } catch (Throwable) {
+    }
+
+    $pdo = ims_pdo();
+    $st = $pdo->prepare('SELECT receipt_no FROM pos_sales WHERE id = ? LIMIT 1');
+    $st->execute([$saleId]);
+    $receiptNo = $st->fetchColumn();
+    if ($receiptNo === false) {
+        api_fail('Sale not found.', 404);
+    }
+    $found = honey_sales_fetch_checkouts($pdo, null, 1, (string) $receiptNo, 'all', 'all');
+    $row = null;
+    foreach ($found['rows'] as $candidate) {
+        if ((int) ($candidate['sale_id'] ?? 0) === $saleId) {
+            $row = $candidate;
+            break;
+        }
+    }
+    if ($row === null) {
+        api_fail('Sale not found in walk-in sales history.', 404);
+    }
+    api_ok(['receipt' => $row]);
+}
+
+function api_pos_sale_refund(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_pos_require_session();
+
+    $saleId = (int) ($input['sale_id'] ?? 0);
+    $reason = trim((string) ($input['reason'] ?? ''));
+    if ($saleId < 1) {
+        api_fail('sale_id is required.', 422);
+    }
+    try {
+        $result = pos_sale_full_refund(ims_pdo(), $saleId, $reason);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
 }

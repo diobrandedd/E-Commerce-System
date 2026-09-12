@@ -524,6 +524,12 @@ function api_materials_set_on_hand(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_permission('packaging.set_on_hand');
+    $monthly = !empty($input['monthly_inventory'])
+        || strtolower(trim((string) ($input['note'] ?? ''))) === 'monthly inventory';
+    if ($monthly) {
+        require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+        api_require_admin_override_password($input);
+    }
     $stockId = (int) ($input['stock_id'] ?? 0);
     $onHandRaw = trim((string) ($input['on_hand'] ?? ''));
     $note = isset($input['note']) ? trim((string) $input['note']) : null;
@@ -576,6 +582,12 @@ function api_materials_stock_in_lot(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_ims_user();
+    $monthly = !empty($input['monthly_inventory'])
+        || strtolower(trim((string) ($input['note'] ?? ''))) === 'monthly inventory';
+    if ($monthly) {
+        require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+        api_require_admin_override_password($input);
+    }
     $role = (string) $user['role'];
     $stockId = (int) ($input['stock_id'] ?? 0);
     $totalRaw = trim((string) ($input['lot_total_price'] ?? ''));

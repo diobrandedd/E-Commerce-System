@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-09-12T07:56:38+02:00
+generated: 2026-09-12T11:14:20+02:00
 type: module
 function_count: 37
 ---
@@ -73,7 +73,7 @@ function_count: 37
 
 ## dept_pouch_product_label {#dept_pouch_product_label}
 
-**Callers (42):**
+**Callers (43):**
 
 - `api/v1/rts_barcode_labels.php`:49 — `'label' => dept_pouch_product_label($key),`
 - `includes/barcode_verify.php`:132 — `$productLabel = dept_pouch_product_label($productKey);`
@@ -100,7 +100,7 @@ function_count: 37
 - `includes/inventory_check.php`:1304 — `$productLabel = $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey);`
 - `includes/pack_cancel_restock.php`:143 — `: dept_pouch_product_label($productKey);`
 - `includes/pack_cancel_restock.php`:184 — `$productLabel = dept_pouch_product_label($productKey);`
-- _… and 17 more (run impact.php for full list)_
+- _… and 18 more (run impact.php for full list)_
 
 ## dept_pouch_unit_singular {#dept_pouch_unit_singular}
 

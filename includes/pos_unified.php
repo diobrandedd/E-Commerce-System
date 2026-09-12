@@ -680,7 +680,7 @@ function pos_unified_ar_checkout(PDO $pdo, array $actor, array $items, array $de
             'debtor_name' => $debtorName,
             'debtor_mobile' => $debtorMobile,
             'source' => 'pos',
-            'recorded_by_pin_id' => $posPinId,
+            'recorded_by_pin_id' => isset($actor['pin_id']) ? (int) $actor['pin_id'] : null,
             'pos_sale_id' => $saleId,
         ], $arLines);
 

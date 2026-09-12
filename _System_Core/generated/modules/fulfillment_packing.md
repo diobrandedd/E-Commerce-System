@@ -1,7 +1,7 @@
 ---
 title: fulfillment_packing
 source: includes/fulfillment_packing.php
-generated: 2026-09-12T07:56:44+02:00
+generated: 2026-09-12T11:14:26+02:00
 type: module
 function_count: 33
 ---
@@ -191,7 +191,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/materials.php`:353 — `'can_edit_price' => material_inventory_role_can_edit_packaging_price($user),`
-- `api/v1/materials.php`:660 — `if (!material_inventory_role_can_edit_packaging_price($user)) {`
+- `api/v1/materials.php`:672 — `if (!material_inventory_role_can_edit_packaging_price($user)) {`
 
 ## material_inventory_role_can_view_packing_staging {#material_inventory_role_can_view_packing_staging}
 
@@ -280,5 +280,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/materials.php`:681 — `$result = material_packaging_record_invoice_price(`
+- `api/v1/materials.php`:693 — `$result = material_packaging_record_invoice_price(`
 

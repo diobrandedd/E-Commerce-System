@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-12 — Monthly inventory + administrator password
+**Change:** Restored Monthly inventory (executive); stock overrides require System Settings administrator password. → [[problems/records/2026-09-12_monthly-inventory-admin-password]]
+
+### 2026-09-12 — Hide Monthly inventory (use Check inventory)
+**Change:** Removed Monthly inventory from sidebar; `/inventory/monthly-count` redirects to Check inventory; permission key hidden. Page file kept. → `Sidebar.tsx`, `routes.ts`, `includes/permissions.php` — **superseded** by admin-password restore above.
+
 ### 2026-09-12 — Permissions trump home department (honey + dept lines)
 **Change:** Staff/TL Raw Honey + cross-dept raw access follow Staff Management grants; home dept no longer hard-blocks. → [[problems/records/2026-09-12_honey-out-of-scope-permissions]]
 

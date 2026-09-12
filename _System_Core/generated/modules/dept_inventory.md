@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-09-12T07:56:36+02:00
+generated: 2026-09-12T11:14:18+02:00
 type: module
 function_count: 19
 ---
@@ -26,7 +26,7 @@ function_count: 19
 
 **Tables:** `dept_inventory_rows`, `departments`
 
-**Callers (11):**
+**Callers (12):**
 
 - `includes/dept_inventory.php`:35 — `$existing = dept_inventory_fetch_row($pdo, $productKey, true);`
 - `includes/dept_inventory.php`:51 — `$row = dept_inventory_fetch_row($pdo, $productKey, true);`
@@ -39,6 +39,7 @@ function_count: 19
 - `includes/dept_production.php`:1043 — `$finished = dept_inventory_fetch_row($pdo, 'jar_cacao');`
 - `includes/dept_production.php`:1073 — `$finished = dept_inventory_fetch_row($pdo, 'honey_comb');`
 - `includes/inventory_check.php`:1191 — `$row = dept_inventory_fetch_row($pdo, $productKey);`
+- `includes/pos_refund.php`:118 — `$fin = dept_inventory_fetch_row($pdo, $productKey, true);`
 
 ## dept_inventory_ensure_row {#dept_inventory_ensure_row}
 
@@ -61,7 +62,7 @@ function_count: 19
 
 **Callers (1):**
 
-- `api/v1/honey.php`:904 — `$result = dept_inventory_stock_in(`
+- `api/v1/honey.php`:916 — `$result = dept_inventory_stock_in(`
 
 ## dept_inventory_stock_in_supplier_priced {#dept_inventory_stock_in_supplier_priced}
 
@@ -73,7 +74,7 @@ function_count: 19
 
 **Callers (2):**
 
-- `api/v1/honey.php`:929 — `$productKey = dept_raw_material_slug_to_product_key($slug);`
+- `api/v1/honey.php`:941 — `$productKey = dept_raw_material_slug_to_product_key($slug);`
 - `includes/dept_inventory.php`:215 — `$productKey = dept_raw_material_slug_to_product_key($slug);`
 
 ## dept_raw_bags_on_hand {#dept_raw_bags_on_hand}
@@ -123,7 +124,7 @@ function_count: 19
 
 **Callers (2):**
 
-- `api/v1/honey.php`:961 — `$result = dept_raw_stock_in_bags(`
+- `api/v1/honey.php`:973 — `$result = dept_raw_stock_in_bags(`
 - `includes/dept_inventory.php`:125 — `return dept_raw_stock_in_bags($pdo, $userId, $productKey, $def, $qtyBags, $arrivalDate, $note, $supplierId);`
 
 ## dept_raw_deduct_bags_fifo {#dept_raw_deduct_bags_fifo}
@@ -161,7 +162,7 @@ function_count: 19
 
 **Callers (1):**
 
-- `api/v1/honey.php`:996 — `$result = dept_raw_stock_out_bags(`
+- `api/v1/honey.php`:1008 — `$result = dept_raw_stock_out_bags(`
 
 ## dept_inventory_produce_from_bags {#dept_inventory_produce_from_bags}
 
@@ -206,8 +207,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `api/v1/honey.php`:843 — `$catalog = dept_inventory_catalog_snapshot(`
-- `api/v1/honey.php`:886 — `api_ok(['products' => dept_inventory_catalog_snapshot($pdo, $deptKey !== '' ? $deptKey : null)]);`
+- `api/v1/honey.php`:855 — `$catalog = dept_inventory_catalog_snapshot(`
+- `api/v1/honey.php`:898 — `api_ok(['products' => dept_inventory_catalog_snapshot($pdo, $deptKey !== '' ? $deptKey : null)]);`
 - `includes/dept_pos.php`:37 — `foreach (dept_inventory_catalog_snapshot($pdo, $deptKey) as $item) {`
 - `includes/dept_pos.php`:71 — `$snapshot = dept_inventory_catalog_snapshot($pdo);`
 
@@ -217,5 +218,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1481 — `$result = dept_raw_set_bags_on_hand(`
+- `api/v1/honey.php`:1499 — `$result = dept_raw_set_bags_on_hand(`
 

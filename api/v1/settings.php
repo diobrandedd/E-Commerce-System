@@ -32,6 +32,8 @@ api_dispatch([
     'brc_bom_save' => 'api_settings_brc_bom_save',
     'jar_cacao_bom_get' => 'api_settings_jar_cacao_bom_get',
     'jar_cacao_bom_save' => 'api_settings_jar_cacao_bom_save',
+    'admin_password_get' => 'api_settings_admin_password_get',
+    'admin_password_save' => 'api_settings_admin_password_save',
 ]);
 
 function api_settings_require_executive(): void
@@ -319,4 +321,41 @@ function api_settings_jar_cacao_bom_save(): void
     }
 
     api_ok(array_merge($saved, dept_jar_cacao_bom_snapshot(ims_pdo())));
+}
+
+function api_settings_admin_password_get(): void
+{
+    api_method_allowed(['GET']);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    api_ok([
+        'configured' => admin_override_password_configured(ims_pdo()),
+    ]);
+}
+
+function api_settings_admin_password_save(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    $user = api_require_ims_user();
+    $newPassword = (string) ($input['new_password'] ?? '');
+    $confirm = (string) ($input['new_password_confirm'] ?? $input['confirm_password'] ?? '');
+    if ($newPassword !== $confirm) {
+        api_fail('New password and confirmation do not match.', 422);
+    }
+    $current = isset($input['current_password']) ? (string) $input['current_password'] : null;
+    try {
+        admin_override_password_set(
+            ims_pdo(),
+            $newPassword,
+            $current,
+            (int) ($user['id'] ?? 0) ?: null
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+    api_ok(['configured' => true, 'saved' => true]);
 }

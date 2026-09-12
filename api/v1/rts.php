@@ -447,6 +447,10 @@ function api_rts_inventory_set_honey(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_permission('rts.inventory.set');
+    if (!empty($input['monthly_inventory'])) {
+        require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+        api_require_admin_override_password($input);
+    }
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
@@ -473,6 +477,10 @@ function api_rts_inventory_set_other(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_permission('rts.inventory.set');
+    if (!empty($input['monthly_inventory'])) {
+        require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+        api_require_admin_override_password($input);
+    }
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {

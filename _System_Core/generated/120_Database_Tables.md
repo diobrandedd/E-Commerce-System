@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-09-12T07:56:29+02:00
+generated: 2026-09-12T11:14:10+02:00
 type: memory-bank
-table_count: 97
+table_count: 98
 ---
 
 
@@ -132,6 +132,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/staff.php` | [[modules/staff#api_staff_update]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_permissions_get]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_permissions_set]] |
+| `includes/api_tokens.php` | [[modules/api_tokens#pos_api_apply_bearer_auth]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 
@@ -193,6 +194,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/staff.php` | [[modules/staff#api_staff_permissions_get]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_permissions_set]] |
 | `api/v1/stocks.php` | [[modules/stocks#api_stocks_entries_list]] |
+| `includes/api_tokens.php` | [[modules/api_tokens#pos_api_apply_bearer_auth]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_list]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_take_for_user]] |
@@ -837,6 +839,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
+| `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
 | `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_build_cart_lines]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_codes]] |
 
@@ -899,6 +902,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `api/v1/pos.php` | [[modules/pos#api_pos_checkout]] |
+| `api/v1/pos.php` | [[modules/pos#api_pos_receipt_get]] |
+| `includes/api_tokens.php` | [[modules/api_tokens#pos_sales_ensure_refund_columns]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_list]] |
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_checkout]] |
 | `includes/dept_pos.php` | [[modules/dept_pos#dept_pos_ar_checkout]] |
@@ -910,6 +915,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
+| `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
 | `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_checkout]] |
 | `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_ar_checkout]] |
 
@@ -930,6 +936,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_receipt_payload]] |
+| `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
 | `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_checkout]] |
 | `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_ar_checkout]] |
 
@@ -941,6 +948,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_record_lines]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_mark_paid]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_credits_mark_unpaid]] |
+| `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
 
 ## `honey_bottle_pack_session_dept_items`
 
@@ -1209,6 +1217,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_checkout_where_clause]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_load_checkout_barcodes]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
+| `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_case_replace_line_items]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_honey_variant]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_deduct_sell_other_label]] |
@@ -1246,6 +1255,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
+| `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_dept_stock_in]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_dept_credit]] |
 
@@ -1350,6 +1360,14 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_sellable_from_cases_enabled]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_run]] |
 | `includes/rts_inventory_sync.php` | [[modules/rts_inventory_sync#rts_inventory_sync_status]] |
+
+## `pos_api_tokens`
+
+| File | Function |
+|------|----------|
+| `includes/api_tokens.php` | [[modules/api_tokens#pos_api_token_issue]] |
+| `includes/api_tokens.php` | [[modules/api_tokens#pos_api_token_revoke_plain]] |
+| `includes/api_tokens.php` | [[modules/api_tokens#pos_api_token_find]] |
 
 ## `suppliers`
 

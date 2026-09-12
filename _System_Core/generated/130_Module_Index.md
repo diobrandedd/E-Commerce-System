@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-09-12T07:56:29+02:00
+generated: 2026-09-12T11:14:10+02:00
 type: memory-bank
 ---
 
@@ -12,8 +12,10 @@ type: memory-bank
 | Module | Functions |
 |--------|-----------|
 | [[modules/admin_nav]] | 1 |
+| [[modules/admin_override_password]] | 4 |
 | [[modules/admin_sidebar]] | 3 |
 | [[modules/admin_sidebar_styles]] | 0 |
+| [[modules/api_tokens]] | 8 |
 | [[modules/app_settings]] | 3 |
 | [[modules/ar_credits]] | 9 |
 | [[modules/auth]] | 22 |
@@ -66,6 +68,7 @@ type: memory-bank
 | [[modules/pdf_to_excel]] | 15 |
 | [[modules/permissions]] | 19 |
 | [[modules/pos_discount_requests]] | 10 |
+| [[modules/pos_refund]] | 1 |
 | [[modules/pos_sales_helpers]] | 3 |
 | [[modules/pos_thermal_print]] | 4 |
 | [[modules/pos_unified]] | 9 |
