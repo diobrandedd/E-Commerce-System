@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-09-11T08:20:11+02:00
+generated: 2026-09-12T04:46:10+02:00
 type: module
 function_count: 37
 ---

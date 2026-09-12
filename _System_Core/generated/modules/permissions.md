@@ -1,7 +1,7 @@
 ---
 title: permissions
 source: includes/permissions.php
-generated: 2026-09-11T08:20:44+02:00
+generated: 2026-09-12T04:46:40+02:00
 type: module
 function_count: 18
 ---
@@ -88,7 +88,7 @@ function_count: 18
 
 ## ims_user_can {#ims_user_can}
 
-**Callers (102):**
+**Callers (103):**
 
 - `api/v1/_bootstrap.php`:155 — `if (ims_user_can($u, $key)) {`
 - `api/v1/_costing_helpers.php`:73 — `return ims_user_can($user, 'costing.manage');`
@@ -105,25 +105,25 @@ function_count: 18
 - `api/v1/edit_requests.php`:50 — `'is_reviewer' => ims_user_can($user, 'inventory.edit_requests.approve'),`
 - `api/v1/finished_leak_damage.php`:11 — `if (!ims_user_can($user, 'inventory.leak_damage.record') && !ims_user_can($user, 'inventory.leak_damage.view')) {`
 - `api/v1/finished_leak_damage.php`:28 — `if (!ims_user_can($user, 'inventory.leak_damage.record')) {`
-- `api/v1/honey.php`:306 — `if (!ims_user_can($user, 'honey.warehouse_barcode.request')) {`
-- `api/v1/honey.php`:330 — `if (!ims_user_can($user, 'honey.warehouse_barcode.request')) {`
-- `api/v1/honey.php`:352 — `if (!ims_user_can($user, 'honey.warehouse_barcode.generate')) {`
-- `api/v1/honey.php`:375 — `if (!ims_user_can($user, 'honey.warehouse_barcode.generate')) {`
-- `api/v1/honey.php`:597 — `$canApprove = ims_user_can($user, 'inventory.requests.approve');`
-- `api/v1/honey.php`:598 — `$canViewAllReadonly = ims_user_can($user, 'inventory.requests.view') && !$canApprove;`
-- `api/v1/honey.php`:637 — `if (!ims_user_can($user, 'inventory.requests.approve') && !ims_user_can($user, 'honey.executive_edit')) {`
-- `api/v1/honey.php`:655 — `if (!ims_user_can($user, 'inventory.requests.approve') && !ims_user_can($user, 'honey.executive_edit')) {`
+- `api/v1/honey.php`:307 — `if (!ims_user_can($user, 'honey.warehouse_barcode.request')) {`
+- `api/v1/honey.php`:331 — `if (!ims_user_can($user, 'honey.warehouse_barcode.request')) {`
+- `api/v1/honey.php`:353 — `if (!ims_user_can($user, 'honey.warehouse_barcode.generate')) {`
+- `api/v1/honey.php`:378 — `if (!ims_user_can($user, 'honey.warehouse_barcode.generate')) {`
+- `api/v1/honey.php`:400 — `if (!ims_user_can($user, 'honey.warehouse_barcode.generate')) {`
+- `api/v1/honey.php`:628 — `$canApprove = ims_user_can($user, 'inventory.requests.approve');`
+- `api/v1/honey.php`:629 — `$canViewAllReadonly = ims_user_can($user, 'inventory.requests.view') && !$canApprove;`
+- `api/v1/honey.php`:668 — `if (!ims_user_can($user, 'inventory.requests.approve') && !ims_user_can($user, 'honey.executive_edit')) {`
+- `api/v1/honey.php`:686 — `if (!ims_user_can($user, 'inventory.requests.approve') && !ims_user_can($user, 'honey.executive_edit')) {`
 - `api/v1/materials.php`:63 — `if (!ims_user_can($user, 'honey.pricing.view_cost')) {`
-- `api/v1/materials.php`:92 — `} elseif (!ims_user_can($user, 'packaging.catalog')) {`
-- _… and 77 more (run impact.php for full list)_
+- _… and 78 more (run impact.php for full list)_
 
 ## ims_user_can_dept_line {#ims_user_can_dept_line}
 
 **Callers (5):**
 
-- `api/v1/honey.php`:785 — `if ($productKey !== '' && !ims_user_can_dept_line($user, $productKey, 'view')) {`
-- `api/v1/honey.php`:796 — `static fn(array $item): bool => ims_user_can_dept_line($user, (string) $item['key'], 'view')`
-- `api/v1/honey.php`:879 — `if (!ims_user_can_dept_line($user, $productKey, 'view')) {`
+- `api/v1/honey.php`:816 — `if ($productKey !== '' && !ims_user_can_dept_line($user, $productKey, 'view')) {`
+- `api/v1/honey.php`:827 — `static fn(array $item): bool => ims_user_can_dept_line($user, (string) $item['key'], 'view')`
+- `api/v1/honey.php`:910 — `if (!ims_user_can_dept_line($user, $productKey, 'view')) {`
 - `includes/dept_pouch_barcodes.php`:21 — `return ims_user_can_dept_line($user, $productKey, 'barcodes');`
 - `includes/honey_inventory.php`:44 — `return ims_user_can_dept_line($user, $productKey, 'produce');`
 

@@ -352,3 +352,89 @@ function honey_warehouse_barcode_print_sheet_html(string $code, int $quantity): 
         $quantity
     );
 }
+
+/**
+ * Pack several warehouse barcode requests onto one A4 sheet.
+ * A full-width banner row separates each supplier/date code.
+ *
+ * @param list<int> $requestIds
+ */
+function honey_warehouse_barcode_combined_print_sheet_html(PDO $pdo, array $requestIds): string
+{
+    require_once __DIR__ . '/sku_barcodes.php';
+
+    $ids = array_values(array_unique(array_filter(array_map('intval', $requestIds))));
+    if ($ids === []) {
+        throw new RuntimeException('Select at least one barcode request to print.');
+    }
+
+    /** @var list<array{slots:int,html:string}> $stream */
+    $stream = [];
+    $labelCount = 0;
+    $batchCount = 0;
+
+    foreach ($ids as $requestId) {
+        $request = honey_warehouse_barcode_request_fetch($pdo, $requestId);
+        if ($request === null) {
+            throw new RuntimeException('Warehouse barcode request #' . $requestId . ' not found.');
+        }
+        if ((string) $request['status'] === 'cancelled') {
+            throw new RuntimeException(
+                'Request #' . $requestId . ' is cancelled and cannot be printed.'
+            );
+        }
+
+        $code = honey_warehouse_barcode_normalize((string) $request['supplier_code']);
+        $qty = honey_warehouse_barcode_quantity($request['quantity']);
+        $supplier = trim((string) ($request['supplier_name'] ?? ''));
+        $arrival = trim((string) ($request['arrival_date'] ?? ''));
+        $bannerParts = array_values(array_filter([$supplier, $arrival, $code], static fn ($p) => $p !== ''));
+        $bannerText = $bannerParts !== [] ? implode(' · ', $bannerParts) : $code;
+
+        $batchCount++;
+        $stream[] = [
+            'slots' => SKU_LABEL_SHEET_COLS,
+            'html' => sku_barcode_label_banner_html($bannerText),
+        ];
+        for ($i = 0; $i < $qty; $i++) {
+            $stream[] = ['slots' => 1, 'html' => sku_barcode_label_cell_html($code)];
+            $labelCount++;
+        }
+    }
+
+    if ($labelCount < 1) {
+        throw new RuntimeException('No labels to print.');
+    }
+
+    $title = 'Honey warehouse barcodes · ' . $batchCount . ' code(s) · ×' . $labelCount;
+
+    return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);
+}
+
+/**
+ * Mark multiple requests printed and return a combined print URL payload.
+ *
+ * @param list<int> $requestIds
+ * @return array{requests: list<array<string,mixed>>, print_url: string, request_ids: list<int>}
+ */
+function honey_warehouse_barcode_request_generate_many(PDO $pdo, int $userId, array $requestIds): array
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', $requestIds))));
+    if ($ids === []) {
+        throw new RuntimeException('Select at least one barcode request to print.');
+    }
+
+    $requests = [];
+    foreach ($ids as $requestId) {
+        $requests[] = honey_warehouse_barcode_request_generate($pdo, $userId, $requestId);
+    }
+
+    $queryIds = implode(',', array_map(static fn (array $r): int => (int) $r['id'], $requests));
+
+    return [
+        'requests' => $requests,
+        'request_ids' => array_map(static fn (array $r): int => (int) $r['id'], $requests),
+        'print_url' => '/rts/api/v1/honey.php?action=warehouse_barcode_print&request_ids='
+            . rawurlencode($queryIds),
+    ];
+}

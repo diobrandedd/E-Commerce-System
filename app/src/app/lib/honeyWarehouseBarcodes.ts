@@ -62,6 +62,14 @@ export const honeyWarehouseBarcodesApi = {
       request: HoneyWarehouseBarcodeRequest;
       print_url: string;
     }>("honey.php", "warehouse_barcode_generate", { request_id: requestId }),
+
+  generateBulk: (requestIds: number[]) =>
+    apiPost<{
+      requests: HoneyWarehouseBarcodeRequest[];
+      request_ids: number[];
+      print_url: string;
+    }>("honey.php", "warehouse_barcode_generate_bulk", { request_ids: requestIds }),
+
   lookup: (code: string) =>
     apiGet<{
       code: string;
@@ -81,6 +89,10 @@ export const honeyWarehouseBarcodesApi = {
     ),
   printUrl: (requestId: number) =>
     `/rts/api/v1/honey.php?action=warehouse_barcode_print&request_id=${requestId}`,
+  printUrlMany: (requestIds: number[]) =>
+    `/rts/api/v1/honey.php?action=warehouse_barcode_print&request_ids=${encodeURIComponent(
+      requestIds.join(","),
+    )}`,
 };
 
 export type HoneyWarehouseSupplier = Supplier;

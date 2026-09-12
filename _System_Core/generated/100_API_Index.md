@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-11T08:20:03+02:00
+generated: 2026-09-12T04:46:00+02:00
 type: memory-bank
 ---
 
@@ -285,7 +285,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `warehouse_barcode_request_create` | `api_honey_warehouse_barcode_request_create()` | `ims_user_can()`, `honey_warehouse_barcode_request_create()`, `ims_pdo()` |
 | `warehouse_barcode_request_cancel` | `api_honey_warehouse_barcode_request_cancel()` | `ims_user_can()`, `ims_pdo()` |
 | `warehouse_barcode_generate` | `api_honey_warehouse_barcode_generate()` | `ims_user_can()`, `honey_warehouse_barcode_request_generate()`, `ims_pdo()` |
-| `warehouse_barcode_print` | `api_honey_warehouse_barcode_print()` | `ims_user_can()`, `ims_pdo()`, `honey_warehouse_barcode_request_fetch()`, `honey_warehouse_barcode_print_sheet_html()` |
+| `warehouse_barcode_generate_bulk` | `api_honey_warehouse_barcode_generate_bulk()` | `ims_user_can()`, `honey_warehouse_barcode_request_generate_many()`, `ims_pdo()` |
+| `warehouse_barcode_print` | `api_honey_warehouse_barcode_print()` | `ims_user_can()`, `ims_pdo()`, `honey_warehouse_barcode_combined_print_sheet_html()`, `honey_warehouse_barcode_request_fetch()`, `honey_warehouse_barcode_print_sheet_html()` |
 | `warehouse_barcode_lookup` | `api_honey_warehouse_barcode_lookup()` | `honey_warehouse_barcode_normalize()`, `honey_warehouse_barcode_lookup()`, `ims_pdo()` |
 | `warehouse_barcode_stock_out` | `api_honey_warehouse_barcode_stock_out()` | `honey_warehouse_barcode_stock_out()`, `ims_pdo()` |
 | `production_list` | `api_honey_production_list()` | `ims_pdo()` |

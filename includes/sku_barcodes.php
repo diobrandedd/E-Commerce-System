@@ -1475,7 +1475,7 @@ function sku_barcode_product_info_text(?array $product): string
 
 /**
  * Render one product label as product info, Code128 barcode, and exact code.
- * A null product keeps the legacy bare label used by supplier/date labels.
+ * Plain supplier/date labels also print the code under the bars for visibility.
  *
  * @param array<string,mixed>|null $product
  */
@@ -1488,14 +1488,18 @@ function sku_barcode_label_cell_html(string $code, ?array $product = null): stri
         $svg = '<div class="err">barcode lib missing</div>';
     }
     $safe = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
+    $plain = '<div class="label label-plain">'
+        . '<div class="bc" title="' . $safe . '">' . $svg . '</div>'
+        . '<div class="human-code" title="' . $safe . '">' . $safe . '</div>'
+        . '</div>';
 
     if ($product === null) {
-        return '<div class="label label-plain"><div class="bc" title="' . $safe . '">' . $svg . '</div></div>';
+        return $plain;
     }
 
     $topText = sku_barcode_product_info_text($product);
     if ($topText === '') {
-        return '<div class="label label-plain"><div class="bc" title="' . $safe . '">' . $svg . '</div></div>';
+        return $plain;
     }
     $safeTop = htmlspecialchars($topText, ENT_QUOTES, 'UTF-8');
 
@@ -1668,6 +1672,12 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
           text-align: left;
         }
         .label.empty .bc { visibility: hidden; }
+        .label.empty .human-code { visibility: hidden; }
+        .label-plain {
+          padding: 0.6mm 0.7mm;
+          justify-content: space-between;
+          gap: 0.25mm;
+        }
         .label-product {
           padding: 0.45mm 0.7mm;
           justify-content: space-between;
@@ -1684,6 +1694,7 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
           text-overflow: ellipsis;
         }
         .bc { line-height: 0; width: 100%; max-height: 11mm; overflow: hidden; }
+        .label-plain .bc,
         .label-product .bc {
           flex: 1 1 auto;
           min-height: 0;
@@ -1696,12 +1707,15 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
           min-height: 2.2mm;
           font-family: "Courier New", Courier, monospace;
           font-size: 6.2pt;
+          font-weight: 700;
+          letter-spacing: 0.2pt;
           line-height: 1;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         .bc svg { width: 100%; max-height: 11mm; height: auto; display: block; }
+        .label-plain .bc svg,
         .label-product .bc svg { max-height: 8.5mm; }
         .err { font-size: 6pt; color: #c00; }
         .page-break { page-break-before: always; break-before: page; }
@@ -1718,7 +1732,7 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
         <div class="toolbar">
           <button type="button" onclick="window.print()">Print A4</button>
           <span class="hint">' . (int) $labelCount . ' label(s) · '
-        . $cols . '×' . $rowsPerPage . ' (' . (int) $slotsPerPage . '/page) · print at 100% scale</span>
+        . $cols . '×' . $rowsPerPage . ' (' . (int) $slotsPerPage . '/page) · barcode + code text · print at 100% scale</span>
         </div>
         ' . $pagesHtml . '
         </body></html>';

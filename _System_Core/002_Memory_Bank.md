@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-12 — Warehouse barcode multi-select print
+**Change:** Select multiple supplier barcode requests; one combined A4 sheet with separator banners between codes. → [[problems/records/2026-09-12_warehouse-barcode-multi-print]]
+
+### 2026-09-12 — Warehouse barcode labels show code text
+**Change:** Plain 8×20 A4 cells (honey warehouse supplier barcodes) now print the human-readable code under the bars. → [[problems/records/2026-09-12_warehouse-barcode-code-text]]
+
 ### 2026-09-11 — Deliveries photo-only (no CSR / no deduct)
 **Change:** Add deliveries Photo tab saves TN + before-shipment photo only; CSR parcel optional; no ship deduct. → [[problems/records/2026-09-11_deliveries-photo-only]]
 

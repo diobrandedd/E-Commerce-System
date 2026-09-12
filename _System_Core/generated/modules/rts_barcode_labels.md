@@ -1,7 +1,7 @@
 ---
 title: rts_barcode_labels
 source: includes/rts_barcode_labels.php
-generated: 2026-09-11T08:20:47+02:00
+generated: 2026-09-12T04:46:43+02:00
 type: module
 function_count: 11
 ---

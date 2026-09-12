@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-09-11T08:20:09+02:00
+generated: 2026-09-12T04:46:08+02:00
 type: module
 function_count: 19
 ---
@@ -61,7 +61,7 @@ function_count: 19
 
 **Callers (1):**
 
-- `api/v1/honey.php`:850 — `$result = dept_inventory_stock_in(`
+- `api/v1/honey.php`:881 — `$result = dept_inventory_stock_in(`
 
 ## dept_inventory_stock_in_supplier_priced {#dept_inventory_stock_in_supplier_priced}
 
@@ -73,7 +73,7 @@ function_count: 19
 
 **Callers (2):**
 
-- `api/v1/honey.php`:875 — `$productKey = dept_raw_material_slug_to_product_key($slug);`
+- `api/v1/honey.php`:906 — `$productKey = dept_raw_material_slug_to_product_key($slug);`
 - `includes/dept_inventory.php`:215 — `$productKey = dept_raw_material_slug_to_product_key($slug);`
 
 ## dept_raw_bags_on_hand {#dept_raw_bags_on_hand}
@@ -123,7 +123,7 @@ function_count: 19
 
 **Callers (2):**
 
-- `api/v1/honey.php`:907 — `$result = dept_raw_stock_in_bags(`
+- `api/v1/honey.php`:938 — `$result = dept_raw_stock_in_bags(`
 - `includes/dept_inventory.php`:125 — `return dept_raw_stock_in_bags($pdo, $userId, $productKey, $def, $qtyBags, $arrivalDate, $note, $supplierId);`
 
 ## dept_raw_deduct_bags_fifo {#dept_raw_deduct_bags_fifo}
@@ -161,7 +161,7 @@ function_count: 19
 
 **Callers (1):**
 
-- `api/v1/honey.php`:942 — `$result = dept_raw_stock_out_bags(`
+- `api/v1/honey.php`:973 — `$result = dept_raw_stock_out_bags(`
 
 ## dept_inventory_produce_from_bags {#dept_inventory_produce_from_bags}
 
@@ -206,8 +206,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `api/v1/honey.php`:789 — `$catalog = dept_inventory_catalog_snapshot(`
-- `api/v1/honey.php`:832 — `api_ok(['products' => dept_inventory_catalog_snapshot($pdo, $deptKey !== '' ? $deptKey : null)]);`
+- `api/v1/honey.php`:820 — `$catalog = dept_inventory_catalog_snapshot(`
+- `api/v1/honey.php`:863 — `api_ok(['products' => dept_inventory_catalog_snapshot($pdo, $deptKey !== '' ? $deptKey : null)]);`
 - `includes/dept_pos.php`:37 — `foreach (dept_inventory_catalog_snapshot($pdo, $deptKey) as $item) {`
 - `includes/dept_pos.php`:71 — `$snapshot = dept_inventory_catalog_snapshot($pdo);`
 
@@ -217,5 +217,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:1427 — `$result = dept_raw_set_bags_on_hand(`
+- `api/v1/honey.php`:1458 — `$result = dept_raw_set_bags_on_hand(`
 

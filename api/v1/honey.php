@@ -19,6 +19,7 @@ api_dispatch([
     'warehouse_barcode_request_create' => 'api_honey_warehouse_barcode_request_create',
     'warehouse_barcode_request_cancel' => 'api_honey_warehouse_barcode_request_cancel',
     'warehouse_barcode_generate' => 'api_honey_warehouse_barcode_generate',
+    'warehouse_barcode_generate_bulk' => 'api_honey_warehouse_barcode_generate_bulk',
     'warehouse_barcode_print' => 'api_honey_warehouse_barcode_print',
     'warehouse_barcode_lookup' => 'api_honey_warehouse_barcode_lookup',
     'warehouse_barcode_stock_out' => 'api_honey_warehouse_barcode_stock_out',
@@ -368,6 +369,30 @@ function api_honey_warehouse_barcode_generate(): void
     }
 }
 
+function api_honey_warehouse_barcode_generate_bulk(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'honey.warehouse_barcode.generate')) {
+        api_fail('You do not have permission to generate warehouse barcodes.', 403);
+    }
+    $rawIds = $input['request_ids'] ?? [];
+    if (!is_array($rawIds)) {
+        api_fail('request_ids must be an array.', 400);
+    }
+    try {
+        api_ok(honey_warehouse_barcode_request_generate_many(
+            ims_pdo(),
+            (int) $user['id'],
+            $rawIds
+        ));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+}
+
 function api_honey_warehouse_barcode_print(): void
 {
     api_method_allowed(['GET']);
@@ -377,17 +402,23 @@ function api_honey_warehouse_barcode_print(): void
     }
     try {
         $pdo = ims_pdo();
-        $request = honey_warehouse_barcode_request_fetch($pdo, (int) ($_GET['request_id'] ?? 0));
-        if ($request === null) {
-            api_fail('Warehouse barcode request not found.', 404);
+        $multiRaw = trim((string) ($_GET['request_ids'] ?? ''));
+        if ($multiRaw !== '') {
+            $ids = array_map('intval', preg_split('/\s*,\s*/', $multiRaw) ?: []);
+            $html = honey_warehouse_barcode_combined_print_sheet_html($pdo, $ids);
+        } else {
+            $request = honey_warehouse_barcode_request_fetch($pdo, (int) ($_GET['request_id'] ?? 0));
+            if ($request === null) {
+                api_fail('Warehouse barcode request not found.', 404);
+            }
+            if ((string) $request['status'] === 'cancelled') {
+                api_fail('Cancelled warehouse barcode requests cannot be printed.', 422);
+            }
+            $html = honey_warehouse_barcode_print_sheet_html(
+                (string) $request['supplier_code'],
+                (int) $request['quantity']
+            );
         }
-        if ((string) $request['status'] === 'cancelled') {
-            api_fail('Cancelled warehouse barcode requests cannot be printed.', 422);
-        }
-        $html = honey_warehouse_barcode_print_sheet_html(
-            (string) $request['supplier_code'],
-            (int) $request['quantity']
-        );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
     }

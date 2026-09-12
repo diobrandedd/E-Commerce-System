@@ -487,13 +487,20 @@ function WarehouseBarcodeRequestsPanel({
   const [rows, setRows] = useState<HoneyWarehouseBarcodeRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<number | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const printableRows = rows.filter(r => r.status !== "cancelled");
+  const allPrintableSelected =
+    printableRows.length > 0 && printableRows.every(r => selectedIds.includes(r.id));
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const result = await honeyWarehouseBarcodesApi.requestList();
       setRows(result.rows);
+      setSelectedIds(prev => prev.filter(id => result.rows.some(r => r.id === id && r.status !== "cancelled")));
       setError(null);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load warehouse barcode requests.");
@@ -521,6 +528,33 @@ function WarehouseBarcodeRequestsPanel({
     }
   };
 
+  const generateSelected = async () => {
+    if (selectedIds.length < 1) {
+      setError("Select at least one barcode request to print.");
+      return;
+    }
+    setBulkBusy(true);
+    setError(null);
+    try {
+      const result = await honeyWarehouseBarcodesApi.generateBulk(selectedIds);
+      window.open(result.print_url, "_blank");
+      setSelectedIds([]);
+      await refresh();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not print the selected barcode requests.");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const toggleRow = (id: number, checked: boolean) => {
+    setSelectedIds(prev => (checked ? [...prev, id] : prev.filter(x => x !== id)));
+  };
+
+  const toggleAllPrintable = (checked: boolean) => {
+    setSelectedIds(checked ? printableRows.map(r => r.id) : []);
+  };
+
   const cancel = async (requestId: number) => {
     setBusy(requestId);
     setError(null);
@@ -540,14 +574,29 @@ function WarehouseBarcodeRequestsPanel({
         <div>
           <h3 className="text-sm font-semibold">Supplier barcode requests</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            One reusable barcode per supplier and arrival date. Print identical labels for warehouse containers.
+            One reusable barcode per supplier and arrival date. Select several to print on one sheet (separator row
+            between codes).
           </p>
         </div>
-        {canRequest && (
-          <Button type="button" size="sm" className="min-h-11" variant="outline" onClick={onRequest}>
-            <Printer size={14} /> Request labels
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {canGenerate && selectedIds.length > 0 && (
+            <Button
+              type="button"
+              size="sm"
+              className="min-h-11"
+              onClick={() => void generateSelected()}
+              disabled={bulkBusy}
+            >
+              {bulkBusy ? <Loader2 className="animate-spin" size={14} /> : <Printer size={14} />}
+              Print selected ({selectedIds.length})
+            </Button>
+          )}
+          {canRequest && (
+            <Button type="button" size="sm" className="min-h-11" variant="outline" onClick={onRequest}>
+              <Printer size={14} /> Request labels
+            </Button>
+          )}
+        </div>
       </div>
       {error && <AppErrorBanner message={error} />}
       {loading ? (
@@ -559,6 +608,18 @@ function WarehouseBarcodeRequestsPanel({
           <table className="w-full text-sm">
             <thead className="bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground">
               <tr>
+                {canGenerate ? (
+                  <th className="px-3 py-2 w-10">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-primary"
+                      checked={allPrintableSelected}
+                      onChange={e => toggleAllPrintable(e.target.checked)}
+                      aria-label="Select all printable requests"
+                      disabled={printableRows.length === 0}
+                    />
+                  </th>
+                ) : null}
                 <th className="text-left px-3 py-2">When</th>
                 <th className="text-left px-3 py-2">Supplier / arrival</th>
                 <th className="text-left px-3 py-2">Code</th>
@@ -568,45 +629,61 @@ function WarehouseBarcodeRequestsPanel({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {rows.map(row => (
-                <tr key={row.id} className={appHoverRow}>
-                  <td className="px-3 py-2 whitespace-nowrap">{row.requested_at.slice(0, 16)}</td>
-                  <td className="px-3 py-2">
-                    <span className="font-medium">{row.supplier_name}</span>
-                    <span className="block text-xs text-muted-foreground">{row.arrival_date}</span>
-                  </td>
-                  <td className="px-3 py-2 font-mono">{row.supplier_code}</td>
-                  <td className="px-3 py-2">{row.quantity}</td>
-                  <td className="px-3 py-2 capitalize">{row.status}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    {canGenerate && row.status !== "cancelled" && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="min-h-11"
-                        variant="outline"
-                        disabled={busy === row.id}
-                        onClick={() => void generate(row.id)}
-                      >
-                        {busy === row.id ? <Loader2 className="animate-spin" size={14} /> : <Printer size={14} />}
-                        {row.status === "printed" ? "Reprint" : "Print"}
-                      </Button>
-                    )}
-                    {canRequest && row.status === "pending" && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="min-h-11"
-                        variant="ghost"
-                        disabled={busy === row.id}
-                        onClick={() => void cancel(row.id)}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {rows.map(row => {
+                const selectable = canGenerate && row.status !== "cancelled";
+                return (
+                  <tr key={row.id} className={appHoverRow}>
+                    {canGenerate ? (
+                      <td className="px-3 py-2">
+                        {selectable ? (
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-primary"
+                            checked={selectedIds.includes(row.id)}
+                            onChange={e => toggleRow(row.id, e.target.checked)}
+                            aria-label={`Select ${row.supplier_code}`}
+                          />
+                        ) : null}
+                      </td>
+                    ) : null}
+                    <td className="px-3 py-2 whitespace-nowrap">{row.requested_at.slice(0, 16)}</td>
+                    <td className="px-3 py-2">
+                      <span className="font-medium">{row.supplier_name}</span>
+                      <span className="block text-xs text-muted-foreground">{row.arrival_date}</span>
+                    </td>
+                    <td className="px-3 py-2 font-mono">{row.supplier_code}</td>
+                    <td className="px-3 py-2">{row.quantity}</td>
+                    <td className="px-3 py-2 capitalize">{row.status}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {selectable && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="min-h-11"
+                          variant="outline"
+                          disabled={busy === row.id || bulkBusy}
+                          onClick={() => void generate(row.id)}
+                        >
+                          {busy === row.id ? <Loader2 className="animate-spin" size={14} /> : <Printer size={14} />}
+                          {row.status === "printed" ? "Reprint" : "Print"}
+                        </Button>
+                      )}
+                      {canRequest && row.status === "pending" && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="min-h-11"
+                          variant="ghost"
+                          disabled={busy === row.id || bulkBusy}
+                          onClick={() => void cancel(row.id)}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
