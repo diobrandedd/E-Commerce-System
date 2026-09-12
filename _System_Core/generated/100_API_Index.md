@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-12T11:23:43+02:00
+generated: 2026-09-12T11:55:53+02:00
 type: memory-bank
 ---
 
@@ -46,6 +46,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `me` | `api_auth_me()` | `ims_pos_authenticated()`, `rts_forwarding_api_payload()`, `ims_current_user()`, `ims_user_permissions()` |
 | `login` | `api_auth_login()` | `ims_login_user()`, `ims_current_user()`, `ims_user_permissions()`, `rts_forwarding_api_payload()` |
 | `pos_login` | `api_auth_pos_login()` | `ims_login_pos()`, `rts_forwarding_api_payload()`, `pos_api_token_issue()`, `ims_pdo()` |
+| `pos_staff_login` | `api_auth_pos_staff_login()` | `ims_login_user()`, `ims_current_user()`, `pos_mobile_user_is_assigned()`, `ims_logout()`, `ims_user_permissions()`, `rts_forwarding_api_payload()`, `pos_api_token_issue()`, `ims_pdo()` |
 | `logout` | `api_auth_logout()` | `pos_api_bearer_from_request()`, `pos_api_token_revoke_plain()`, `ims_pdo()`, `ims_logout()` |
 | `change_password` | `api_auth_change_password()` | `ims_change_password()` |
 
@@ -359,7 +360,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `compare_run` | `api_inventory_check_compare_run()` | `inventory_check_compare_run()`, `ims_pdo()` |
 | `compare_get` | `api_inventory_check_compare_get()` | `inventory_check_compare_get()`, `ims_pdo()` |
 | `compare_list` | `api_inventory_check_compare_list()` | `inventory_check_compare_list()`, `ims_pdo()` |
-| `finalize` | `api_inventory_check_finalize()` | `ims_pdo()`, `inventory_check_compare_run()`, `inventory_check_event_close()` |
+| `finalize` | `api_inventory_check_finalize()` | `ims_pdo()`, `inventory_check_can_manage()`, `inventory_check_can_view_all()`, `inventory_check_finalize_with_sync()` |
+| `finalize_merged` | `api_inventory_check_finalize_merged()` | `ims_pdo()`, `inventory_check_event_get()`, `inventory_check_finalize_with_sync()` |
 
 ### `materials.php`
 
@@ -493,7 +495,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/pos.php`
 - **URL:** `/rts/api/v1/pos.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_unified.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`, `includes/pos_sales_helpers.php`, `includes/pos_thermal_print.php`, `includes/honey_sales_report.php`, `includes/pos_refund.php`, `includes/api_tokens.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/honey_pos.php`, `includes/dept_pos.php`, `includes/pos_unified.php`, `includes/pos_discount_requests.php`, `includes/ar_credits.php`, `includes/pos_sales_helpers.php`, `includes/pos_thermal_print.php`, `includes/honey_sales_report.php`, `includes/pos_refund.php`, `includes/api_tokens.php`, `includes/pos_mobile_staff.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
@@ -634,13 +636,17 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/settings.php`
 - **URL:** `/rts/api/v1/settings.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/pos_mobile_staff.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
 | `pos_pins_list` | `api_settings_pos_pins_list()` | `ims_pdo()` |
 | `pos_pin_update` | `api_settings_pos_pin_update()` | `ims_pdo()` |
 | `pos_pin_create` | `api_settings_pos_pin_create()` | `ims_pdo()` |
+| `pos_mobile_staff_list` | `api_settings_pos_mobile_staff_list()` | `pos_mobile_staff_list()`, `ims_pdo()` |
+| `pos_mobile_staff_candidates` | `api_settings_pos_mobile_staff_candidates()` | `pos_mobile_staff_candidates()`, `ims_pdo()` |
+| `pos_mobile_staff_assign` | `api_settings_pos_mobile_staff_assign()` | `pos_mobile_staff_assign()`, `ims_pdo()`, `pos_mobile_staff_list()` |
+| `pos_mobile_staff_unassign` | `api_settings_pos_mobile_staff_unassign()` | `pos_mobile_staff_unassign()`, `ims_pdo()`, `pos_mobile_staff_list()` |
 | `honey_volume_get` | `api_settings_honey_volume_get()` | `ims_pdo()`, `honey_ml_per_gallon()` |
 | `honey_volume_save` | `api_settings_honey_volume_save()` | `honey_ml_per_gallon_save()`, `ims_pdo()` |
 | `pt_bom_get` | `api_settings_pt_bom_get()` | `dept_pt_bom_snapshot()`, `ims_pdo()` |

@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-09-12T11:23:44+02:00
+generated: 2026-09-12T11:55:53+02:00
 type: memory-bank
-edge_count: 438
+edge_count: 442
 ---
 
 
@@ -79,6 +79,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/pos.php` | `includes/honey_pos.php` |
 | `api/v1/pos.php` | `includes/honey_sales_report.php` |
 | `api/v1/pos.php` | `includes/pos_discount_requests.php` |
+| `api/v1/pos.php` | `includes/pos_mobile_staff.php` |
 | `api/v1/pos.php` | `includes/pos_refund.php` |
 | `api/v1/pos.php` | `includes/pos_sales_helpers.php` |
 | `api/v1/pos.php` | `includes/pos_thermal_print.php` |
@@ -94,6 +95,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/sales.php` | `api/v1/_bootstrap.php` |
 | `api/v1/sales.php` | `includes/honey_sales_report.php` |
 | `api/v1/settings.php` | `api/v1/_bootstrap.php` |
+| `api/v1/settings.php` | `includes/pos_mobile_staff.php` |
 | `api/v1/sku_barcodes.php` | `api/v1/_bootstrap.php` |
 | `api/v1/staff.php` | `api/v1/_bootstrap.php` |
 | `api/v1/stocks.php` | `api/v1/_bootstrap.php` |
@@ -262,6 +264,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/inventory_check.php` | `includes/dept_inventory.php` |
 | `includes/inventory_check.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/inventory_check.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/inventory_check.php` | `includes/honey_inventory.php` |
+| `includes/inventory_check.php` | `includes/inventory_check_apply.php` |
+| `includes/inventory_check.php` | `includes/inventory_edit_log.php` |
 | `includes/inventory_check.php` | `includes/permissions.php` |
 | `includes/inventory_check.php` | `includes/sku_barcodes.php` |
 | `includes/inventory_edit_log.php` | `includes/db.php` |
@@ -309,14 +314,13 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_discount_requests.php` | `includes/dept_pos.php` |
 | `includes/pos_discount_requests.php` | `includes/honey_pos.php` |
 | `includes/pos_discount_requests.php` | `includes/pos_unified.php` |
+| `includes/pos_mobile_staff.php` | `includes/db.php` |
 | `includes/pos_refund.php` | `includes/api_tokens.php` |
 | `includes/pos_refund.php` | `includes/ar_credits.php` |
-| `includes/pos_refund.php` | `includes/dept_inventory.php` |
 | `includes/pos_refund.php` | `includes/dept_inventory.php` |
 | `includes/pos_refund.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/pos_refund.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/pos_refund.php` | `includes/honey_pos.php` |
-| `includes/pos_refund.php` | `includes/rts_inventory_sync.php` |
 | `includes/pos_refund.php` | `includes/rts_schema.php` |
 | `includes/pos_refund.php` | `includes/sku_barcodes.php` |
 | `includes/pos_sales_helpers.php` | `includes/honey_pos.php` |

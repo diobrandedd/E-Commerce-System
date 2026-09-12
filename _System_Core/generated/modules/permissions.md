@@ -1,7 +1,7 @@
 ---
 title: permissions
 source: includes/permissions.php
-generated: 2026-09-12T11:24:27+02:00
+generated: 2026-09-12T11:56:35+02:00
 type: module
 function_count: 19
 ---
@@ -79,10 +79,11 @@ function_count: 19
 
 **Tables:** `user_permissions`
 
-**Callers (5):**
+**Callers (6):**
 
-- `api/v1/auth.php`:89 — `$payload['permissions'] = ims_user_permissions((int) $user['id']);`
-- `api/v1/auth.php`:127 — `$serialized['permissions'] = ims_user_permissions((int) $user['id']);`
+- `api/v1/auth.php`:92 — `$payload['permissions'] = ims_user_permissions((int) $user['id']);`
+- `api/v1/auth.php`:130 — `$serialized['permissions'] = ims_user_permissions((int) $user['id']);`
+- `api/v1/auth.php`:222 — `$serialized['permissions'] = ims_user_permissions((int) $user['id']);`
 - `includes/permissions.php`:356 — `$granted = ims_user_permissions((int) $user['id']);`
 - `includes/permissions.php`:384 — `$keys = ims_user_permissions($userId);`
 - `includes/permissions.php`:488 — `return count(ims_user_permissions($userId));`
@@ -95,7 +96,7 @@ function_count: 19
 
 ## ims_user_can {#ims_user_can}
 
-**Callers (115):**
+**Callers (116):**
 
 - `api/v1/_bootstrap.php`:168 — `if (ims_user_can($u, $key)) {`
 - `api/v1/_costing_helpers.php`:73 — `return ims_user_can($user, 'costing.manage');`
@@ -122,7 +123,7 @@ function_count: 19
 - `api/v1/honey.php`:178 — `&& !ims_user_can($user, 'honey.bottle.request')`
 - `api/v1/honey.php`:179 — `&& !ims_user_can($user, 'honey.bottle.scan')`
 - `api/v1/honey.php`:180 — `&& !ims_user_can($user, 'honey.bottle.generate')`
-- _… and 90 more (run impact.php for full list)_
+- _… and 91 more (run impact.php for full list)_
 
 ## ims_user_can_dept_line {#ims_user_can_dept_line}
 

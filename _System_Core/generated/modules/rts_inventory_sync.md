@@ -1,7 +1,7 @@
 ---
 title: rts_inventory_sync
 source: includes/rts_inventory_sync.php
-generated: 2026-09-12T11:24:32+02:00
+generated: 2026-09-12T11:56:41+02:00
 type: module
 function_count: 25
 ---
@@ -89,12 +89,11 @@ function_count: 25
 
 **Tables:** `rts_inventory_rows`
 
-**Callers (6):**
+**Callers (5):**
 
 - `includes/honey_bottle_barcodes.php`:1197 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
 - `includes/honey_bottle_barcodes.php`:1217 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
 - `includes/pack_cancel_restock.php`:540 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
-- `includes/pos_refund.php`:71 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);`
 - `includes/sku_barcodes.php`:1212 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, (float) $qty);`
 - `includes/sku_barcodes.php`:1379 — `rts_inventory_credit_sellable_honey($pdo, $variant, $size, (float) $qty);`
 
@@ -102,12 +101,11 @@ function_count: 25
 
 **Tables:** `rts_inventory_rows`
 
-**Callers (6):**
+**Callers (5):**
 
 - `includes/dept_pouch_barcodes.php`:1418 — `rts_inventory_credit_sellable_other($pdo, $label, 1.0);`
 - `includes/dept_pouch_barcodes.php`:1428 — `rts_inventory_credit_sellable_other($pdo, $label, 1.0);`
 - `includes/pack_cancel_restock.php`:590 — `rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), 1.0);`
-- `includes/pos_refund.php`:115 — `rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), 1.0);`
 - `includes/sku_barcodes.php`:1230 — `rts_inventory_credit_sellable_other($pdo, $label, (float) $qty);`
 - `includes/sku_barcodes.php`:1395 — `rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), (float) $qty);`
 

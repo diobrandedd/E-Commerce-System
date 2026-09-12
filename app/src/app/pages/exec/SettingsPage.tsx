@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, ShoppingCart, Tag, Droplets, Leaf, Shield } from "lucide-react";
+import { Loader2, ShoppingCart, Tag, Droplets, Leaf, Shield, Smartphone } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import { Switch } from "@/app/components/ui/switch";
@@ -16,6 +16,16 @@ interface PosPinRow {
   label: string;
   is_active: boolean;
   created_at: string;
+}
+
+interface MobilePosStaffRow {
+  id: number;
+  username: string;
+  name: string;
+  role: string;
+  dept_name: string | null;
+  assigned_at?: string;
+  assigned?: boolean;
 }
 
 function skuRowKey(r: SkuBarcodeRow): string {
@@ -53,6 +63,13 @@ export function SettingsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [posBusy, setPosBusy] = useState<number | "create" | null>(null);
   const [posMsg, setPosMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const [mobileStaff, setMobileStaff] = useState<MobilePosStaffRow[]>([]);
+  const [mobileCandidates, setMobileCandidates] = useState<MobilePosStaffRow[]>([]);
+  const [mobileStaffLoading, setMobileStaffLoading] = useState(true);
+  const [mobileAssignId, setMobileAssignId] = useState("");
+  const [mobileStaffBusy, setMobileStaffBusy] = useState(false);
+  const [mobileStaffMsg, setMobileStaffMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   const [skuRows, setSkuRows] = useState<SkuBarcodeRow[]>([]);
   const [skuCodes, setSkuCodes] = useState<Record<string, string>>({});
@@ -126,6 +143,25 @@ export function SettingsPage() {
       setPosMsg({ type: "err", text: e instanceof ApiError ? e.message : "Could not load POS terminals." });
     } finally {
       setPinsLoading(false);
+    }
+  }, []);
+
+  const loadMobileStaff = useCallback(async () => {
+    setMobileStaffLoading(true);
+    try {
+      const [assigned, candidates] = await Promise.all([
+        apiGet<{ staff: MobilePosStaffRow[] }>("settings.php", "pos_mobile_staff_list"),
+        apiGet<{ users: MobilePosStaffRow[] }>("settings.php", "pos_mobile_staff_candidates"),
+      ]);
+      setMobileStaff(assigned.staff);
+      setMobileCandidates(candidates.users);
+    } catch (e) {
+      setMobileStaffMsg({
+        type: "err",
+        text: e instanceof ApiError ? e.message : "Could not load mobile POS staff.",
+      });
+    } finally {
+      setMobileStaffLoading(false);
     }
   }, []);
 
@@ -257,13 +293,14 @@ export function SettingsPage() {
 
   useEffect(() => {
     void loadPins();
+    void loadMobileStaff();
     void loadSkuRows();
     void loadHoneyVolume();
     void loadPtBom();
     void loadBrcBom();
     void loadCacaoBom();
     void loadAdminPassword();
-  }, [loadPins, loadSkuRows, loadHoneyVolume, loadPtBom, loadBrcBom, loadCacaoBom, loadAdminPassword]);
+  }, [loadPins, loadMobileStaff, loadSkuRows, loadHoneyVolume, loadPtBom, loadBrcBom, loadCacaoBom, loadAdminPassword]);
 
   const saveAdminPassword = async () => {
     setAdminPwSaving(true);
@@ -497,11 +534,55 @@ export function SettingsPage() {
     }
   };
 
+  const assignMobileStaff = async () => {
+    const userId = Number(mobileAssignId);
+    if (!Number.isFinite(userId) || userId < 1) {
+      setMobileStaffMsg({ type: "err", text: "Select a staff member to assign." });
+      return;
+    }
+    setMobileStaffBusy(true);
+    setMobileStaffMsg(null);
+    try {
+      await apiPost("settings.php", "pos_mobile_staff_assign", { user_id: userId });
+      setMobileAssignId("");
+      setMobileStaffMsg({ type: "ok", text: "Staff assigned to Mobile POS." });
+      await loadMobileStaff();
+    } catch (e) {
+      setMobileStaffMsg({
+        type: "err",
+        text: e instanceof ApiError ? e.message : "Could not assign staff.",
+      });
+    } finally {
+      setMobileStaffBusy(false);
+    }
+  };
+
+  const unassignMobileStaff = async (userId: number) => {
+    setMobileStaffBusy(true);
+    setMobileStaffMsg(null);
+    try {
+      await apiPost("settings.php", "pos_mobile_staff_unassign", { user_id: userId });
+      setMobileStaffMsg({ type: "ok", text: "Staff removed from Mobile POS." });
+      await loadMobileStaff();
+    } catch (e) {
+      setMobileStaffMsg({
+        type: "err",
+        text: e instanceof ApiError ? e.message : "Could not unassign staff.",
+      });
+    } finally {
+      setMobileStaffBusy(false);
+    }
+  };
+
+  const unassignedCandidates = mobileCandidates.filter(u => !u.assigned);
+
   return (
     <PageLayout title="System Settings" subtitle="Configure system-wide preferences">
       <div className="max-w-4xl space-y-6">
         {posMsg?.type === "ok" && <AppSuccessNotice message={posMsg.text} />}
         {posMsg?.type === "err" && <AppErrorBanner message={posMsg.text} />}
+        {mobileStaffMsg?.type === "ok" && <AppSuccessNotice message={mobileStaffMsg.text} />}
+        {mobileStaffMsg?.type === "err" && <AppErrorBanner message={mobileStaffMsg.text} />}
         {skuOk && <AppSuccessNotice message={skuOk} />}
         {skuErr && <AppErrorBanner message={skuErr} />}
         {mlOk && <AppSuccessNotice message={mlOk} />}
@@ -1232,6 +1313,81 @@ export function SettingsPage() {
                     )}
                   </div>
                 </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <Smartphone size={18} className="text-[#C8900A]" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Mobile POS staff</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Assigned staff sign in to the mobile POS app with their IMS username and password. Seller name on
+                receipts uses the logged-in staff name.
+              </p>
+            </div>
+          </div>
+          {mobileStaffLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="px-6 py-5 space-y-5">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="min-w-[220px] flex-1">
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                    Assign staff
+                  </label>
+                  <select
+                    value={mobileAssignId}
+                    onChange={e => setMobileAssignId(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-[#C8900A]"
+                  >
+                    <option value="">Select staff…</option>
+                    {unassignedCandidates.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ({u.username}){u.dept_name ? ` · ${u.dept_name}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  type="button"
+                  disabled={mobileStaffBusy || !mobileAssignId}
+                  onClick={() => void assignMobileStaff()}
+                  className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+                >
+                  {mobileStaffBusy ? <Loader2 className="animate-spin" size={14} /> : "Assign"}
+                </Button>
+              </div>
+
+              {mobileStaff.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No staff assigned yet.</p>
+              ) : (
+                <ul className="divide-y divide-border rounded-lg border border-border">
+                  {mobileStaff.map(s => (
+                    <li key={s.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{s.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {s.username}
+                          {s.dept_name ? ` · ${s.dept_name}` : ""}
+                          {s.role ? ` · ${s.role}` : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={mobileStaffBusy}
+                        onClick={() => void unassignMobileStaff(s.id)}
+                        className="shrink-0 text-xs font-medium text-destructive hover:underline disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           )}

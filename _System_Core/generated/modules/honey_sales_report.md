@@ -1,7 +1,7 @@
 ---
 title: honey_sales_report
 source: includes/honey_sales_report.php
-generated: 2026-09-12T11:24:13+02:00
+generated: 2026-09-12T11:56:20+02:00
 type: module
 function_count: 15
 ---
@@ -24,7 +24,7 @@ function_count: 15
 
 **Callers (2):**
 
-- `api/v1/pos.php`:549 — `$filters = honey_sales_resolve_filters($period !== '' ? $period : 'day', $from, $to);`
+- `api/v1/pos.php`:556 — `$filters = honey_sales_resolve_filters($period !== '' ? $period : 'day', $from, $to);`
 - `includes/honey_sales_report.php`:692 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
 
 ## honey_sales_log_where_clause {#honey_sales_log_where_clause}
@@ -112,8 +112,8 @@ function_count: 15
 
 **Callers (3):**
 
-- `api/v1/pos.php`:550 — `$checkouts = honey_sales_fetch_checkouts(`
-- `api/v1/pos.php`:581 — `$found = honey_sales_fetch_checkouts($pdo, null, 1, (string) $receiptNo, 'all', 'all');`
+- `api/v1/pos.php`:557 — `$checkouts = honey_sales_fetch_checkouts(`
+- `api/v1/pos.php`:588 — `$found = honey_sales_fetch_checkouts($pdo, null, 1, (string) $receiptNo, 'all', 'all');`
 - `includes/honey_sales_report.php`:776 — `$checkouts = honey_sales_fetch_checkouts($pdo, $range, $page, $receiptSearch, $saleType, $product);`
 
 ## honey_sales_variant_breakdown {#honey_sales_variant_breakdown}

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
+require_once __DIR__ . '/../../includes/pos_mobile_staff.php';
 
 /**
  * System settings API (executive).
@@ -10,6 +11,10 @@ require_once __DIR__ . '/_bootstrap.php';
  *   GET  ?action=pos_pins_list
  *   POST ?action=pos_pin_update   -> { id, pin, pin_confirm, label?, is_active? }
  *   POST ?action=pos_pin_create   -> { pin, pin_confirm, label? }
+ *   GET  ?action=pos_mobile_staff_list
+ *   GET  ?action=pos_mobile_staff_candidates
+ *   POST ?action=pos_mobile_staff_assign   -> { user_id }
+ *   POST ?action=pos_mobile_staff_unassign -> { user_id }
  *   GET  ?action=honey_volume_get
  *   POST ?action=honey_volume_save -> { ml_per_gallon }
  *   GET  ?action=pt_bom_get
@@ -24,6 +29,10 @@ api_dispatch([
     'pos_pins_list' => 'api_settings_pos_pins_list',
     'pos_pin_update' => 'api_settings_pos_pin_update',
     'pos_pin_create' => 'api_settings_pos_pin_create',
+    'pos_mobile_staff_list' => 'api_settings_pos_mobile_staff_list',
+    'pos_mobile_staff_candidates' => 'api_settings_pos_mobile_staff_candidates',
+    'pos_mobile_staff_assign' => 'api_settings_pos_mobile_staff_assign',
+    'pos_mobile_staff_unassign' => 'api_settings_pos_mobile_staff_unassign',
     'honey_volume_get' => 'api_settings_honey_volume_get',
     'honey_volume_save' => 'api_settings_honey_volume_save',
     'pt_bom_get' => 'api_settings_pt_bom_get',
@@ -78,6 +87,50 @@ function api_settings_serialize_pos_pin(array $row): array
         'is_active' => (int) ($row['is_active'] ?? 0) === 1,
         'created_at' => (string) $row['created_at'],
     ];
+}
+
+function api_settings_pos_mobile_staff_list(): void
+{
+    api_method_allowed(['GET']);
+    api_settings_require_executive();
+    api_ok(['staff' => pos_mobile_staff_list(ims_pdo())]);
+}
+
+function api_settings_pos_mobile_staff_candidates(): void
+{
+    api_method_allowed(['GET']);
+    api_settings_require_executive();
+    api_ok(['users' => pos_mobile_staff_candidates(ims_pdo())]);
+}
+
+function api_settings_pos_mobile_staff_assign(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $exec = api_require_permission('settings.manage');
+    $userId = (int) ($input['user_id'] ?? 0);
+    try {
+        pos_mobile_staff_assign(ims_pdo(), $userId, (int) ($exec['id'] ?? 0));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok(['assigned' => true, 'staff' => pos_mobile_staff_list(ims_pdo())]);
+}
+
+function api_settings_pos_mobile_staff_unassign(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    $userId = (int) ($input['user_id'] ?? 0);
+    try {
+        pos_mobile_staff_unassign(ims_pdo(), $userId);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok(['assigned' => false, 'staff' => pos_mobile_staff_list(ims_pdo())]);
 }
 
 function api_settings_pos_pins_list(): void

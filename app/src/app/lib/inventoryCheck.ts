@@ -110,6 +110,7 @@ export interface InventoryCheckBatchDoc {
 export interface InventoryCheckCompareRun {
   id: number;
   event_id: number;
+  event_ids?: number[];
   scope: string;
   line_count: number;
   mismatch_count: number;
@@ -117,6 +118,11 @@ export interface InventoryCheckCompareRun {
   system_total: number;
   run_by_name: string;
   run_at: string;
+  stock_applied?: boolean;
+  stock_applied_at?: string | null;
+  stock_applied_by_name?: string | null;
+  barcodes_voided_count?: number;
+  merged_event_ids?: string | null;
 }
 
 export interface InventoryCheckCompareResult {
@@ -213,9 +219,24 @@ export const inventoryCheckApi = {
   compareRun: (eventId: number) =>
     apiPost<InventoryCheckCompareResult>(ENDPOINT, "compare_run", { event_id: eventId }),
 
-  finalize: (eventId: number) =>
-    apiPost<{ event: InventoryCheckEvent; compare: InventoryCheckCompareResult }>(ENDPOINT, "finalize", {
+  finalize: (eventId: number, adminPassword: string) =>
+    apiPost<{
+      event: InventoryCheckEvent;
+      compare: InventoryCheckCompareResult;
+      closed?: boolean;
+    }>(ENDPOINT, "finalize", {
       event_id: eventId,
+      admin_password: adminPassword,
+    }),
+
+  finalizeMerged: (eventIds: number[], adminPassword: string) =>
+    apiPost<{
+      event: InventoryCheckEvent;
+      compare: InventoryCheckCompareResult;
+      closed?: boolean;
+    }>(ENDPOINT, "finalize_merged", {
+      event_ids: eventIds,
+      admin_password: adminPassword,
     }),
 
   compareGet: (runId: number) =>

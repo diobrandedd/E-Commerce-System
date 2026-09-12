@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-09-12T11:23:44+02:00
+generated: 2026-09-12T11:55:53+02:00
 type: memory-bank
 ---
 
@@ -56,6 +56,7 @@ type: memory-bank
 | [[modules/honey_warehouse_barcodes]] | 12 |
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/inventory_check]] | 33 |
+| [[modules/inventory_check_apply]] | 9 |
 | [[modules/inventory_edit_log]] | 3 |
 | [[modules/labels]] | 3 |
 | [[modules/material_inventory]] | 64 |
@@ -68,7 +69,8 @@ type: memory-bank
 | [[modules/pdf_to_excel]] | 15 |
 | [[modules/permissions]] | 19 |
 | [[modules/pos_discount_requests]] | 10 |
-| [[modules/pos_refund]] | 1 |
+| [[modules/pos_mobile_staff]] | 6 |
+| [[modules/pos_refund]] | 2 |
 | [[modules/pos_sales_helpers]] | 3 |
 | [[modules/pos_thermal_print]] | 4 |
 | [[modules/pos_unified]] | 9 |

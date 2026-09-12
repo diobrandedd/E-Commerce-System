@@ -8,7 +8,7 @@
 |-------|------|
 | **Active Spec** | _(none)_ |
 | **Active Plan** | _(none)_ |
-| **Status** | idle — last shipped [[specs/2026-09-11_deliveries-photo-only]] |
+| **Status** | idle — last shipped [[specs/2026-09-12_inventory-check-sync-on-confirm]] |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

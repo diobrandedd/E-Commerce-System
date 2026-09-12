@@ -1,9 +1,9 @@
 ---
 title: pos_refund
 source: includes/pos_refund.php
-generated: 2026-09-12T11:24:28+02:00
+generated: 2026-09-12T11:56:37+02:00
 type: module
-function_count: 1
+function_count: 2
 ---
 
 
@@ -22,15 +22,22 @@ function_count: 1
 - `includes/ar_credits.php`
 - `includes/api_tokens.php`
 - `includes/rts_schema.php`
-- `includes/rts_inventory_sync.php`
 - `includes/dept_inventory.php`
-- `includes/dept_inventory.php`
+
+## pos_refund_credit_honey_packaging {#pos_refund_credit_honey_packaging}
+
+**Tables:** `honey_packaging_rows`
+
+**Callers (2):**
+
+- `includes/pos_refund.php`:105 — `$packId = pos_refund_credit_honey_packaging(`
+- `includes/pos_refund.php`:197 — `$packId = pos_refund_credit_honey_packaging($pdo, $variant, $size, (float) $qtyLeft, 0);`
 
 ## pos_sale_full_refund {#pos_sale_full_refund}
 
-**Tables:** `pos_sales`, `honey_bottle_units`, `honey_sales_log`, `pos_receipt_items`, `ar_credits`, `dept_inventory_rows`
+**Tables:** `pos_sales`, `honey_bottle_units`, `pos_receipt_items`, `ar_credits`, `honey_packaging_rows`, `products`, `dept_inventory_rows`
 
 **Callers (1):**
 
-- `api/v1/pos.php`:608 — `$result = pos_sale_full_refund(ims_pdo(), $saleId, $reason);`
+- `api/v1/pos.php`:615 — `$result = pos_sale_full_refund(ims_pdo(), $saleId, $reason);`
 

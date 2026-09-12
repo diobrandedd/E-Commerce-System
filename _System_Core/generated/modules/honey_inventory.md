@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-09-12T11:24:08+02:00
+generated: 2026-09-12T11:56:14+02:00
 type: module
 function_count: 54
 ---
@@ -95,7 +95,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_normalize_variant {#honey_normalize_variant}
 
-**Callers (51):**
+**Callers (54):**
 
 - `includes/honey_bottle_barcodes.php`:244 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_bottle_barcodes.php`:295 — `$variant = honey_normalize_variant($variant);`
@@ -122,7 +122,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:1063 — `$variant = honey_normalize_variant($newValue);`
 - `includes/honey_inventory.php`:1316 — `$variant = honey_normalize_variant((string) $fields['variant']);`
 - `includes/honey_inventory.php`:1345 — `$variant = honey_normalize_variant((string) $fields['variant']);`
-- _… and 26 more (run impact.php for full list)_
+- _… and 29 more (run impact.php for full list)_
 
 ## honey_normalize_bottling_date {#honey_normalize_bottling_date}
 
@@ -168,7 +168,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_packaging_size_columns {#honey_packaging_size_columns}
 
-**Callers (20):**
+**Callers (21):**
 
 - `includes/honey_bottle_barcodes.php`:214 — `[$curCol, $iniCol] = honey_packaging_size_columns($size);`
 - `includes/honey_bottle_barcodes.php`:248 — `[$curCol] = honey_packaging_size_columns($size);`
@@ -184,6 +184,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_parcel_inventory.php`:139 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_pos.php`:144 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_pos.php`:164 — `[$curCol] = honey_packaging_size_columns($size);`
+- `includes/inventory_check_apply.php`:223 — `[$curCol, $iniCol] = honey_packaging_size_columns($size);`
 - `includes/rts_damaged_use.php`:294 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/rts_inventory_sync.php`:442 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/rts_inventory_sync.php`:608 — `[$curCol] = honey_packaging_size_columns($size);`
@@ -397,7 +398,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_log_edit {#honey_log_edit}
 
-**Callers (17):**
+**Callers (22):**
 
 - `includes/honey_inventory.php`:1309 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'supplier_id', (string) $wh['supplier_id'], (string) $supplierId, $logSource);`
 - `includes/honey_inventory.php`:1317 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $wh['variant'], $variant, $logSource);`
@@ -416,6 +417,11 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:1436 — `honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $row['initial_qty'], (string) $qty, $logSource);`
 - `includes/honey_inventory.php`:1870 — `honey_log_edit($pdo, $userId, 'honey_production_rows', $id, 'seed_qty', null, (string) $qtyGallons, 'monthly_inventory');`
 - `includes/honey_inventory.php`:1954 — `honey_log_edit($pdo, $userId, 'honey_packaging_rows', $id, 'seed_' . $curCol, null, (string) $normalized[$size], 'monthly_inventory');`
+- `includes/inventory_check_apply.php`:255 — `honey_log_edit($pdo, $userId, 'honey_packaging_rows', $id, $curCol, (string) $old, (string) $new, 'inventory_check_apply');`
+- `includes/inventory_check_apply.php`:274 — `honey_log_edit(`
+- `includes/inventory_check_apply.php`:294 — `honey_log_edit($pdo, $userId, 'honey_packaging_rows', $lastId, $curCol, '0', (string) $target, 'inventory_check_apply');`
+- `includes/inventory_check_apply.php`:311 — `honey_log_edit(`
+- `includes/inventory_check_apply.php`:321 — `honey_log_edit(`
 
 ## honey_traceability {#honey_traceability}
 

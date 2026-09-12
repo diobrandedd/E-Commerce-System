@@ -65,7 +65,7 @@ A count **event** per date owns many **scans** (snapshotting product, batch, bot
 
 ## Out of scope
 
-- Auto-adjusting inventory from variances
+- ~~Auto-adjusting inventory from variances~~ — superseded by [[specs/2026-09-12_inventory-check-sync-on-confirm]] (Confirm and update inventory)
 - Counting raw materials, packaging materials, or supplies
 - Counting units that have no barcode
 

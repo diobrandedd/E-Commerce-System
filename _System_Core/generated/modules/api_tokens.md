@@ -1,7 +1,7 @@
 ---
 title: api_tokens
 source: includes/api_tokens.php
-generated: 2026-09-12T11:23:47+02:00
+generated: 2026-09-12T11:55:54+02:00
 type: module
 function_count: 8
 ---
@@ -38,9 +38,10 @@ function_count: 8
 
 **Tables:** `pos_api_tokens`
 
-**Callers (1):**
+**Callers (2):**
 
-- `api/v1/auth.php`:170 — `$issued = pos_api_token_issue(ims_pdo(), [`
+- `api/v1/auth.php`:173 — `$issued = pos_api_token_issue(ims_pdo(), [`
+- `api/v1/auth.php`:233 — `$issued = pos_api_token_issue(ims_pdo(), [`
 
 ## pos_api_token_revoke_plain {#pos_api_token_revoke_plain}
 
@@ -48,7 +49,7 @@ function_count: 8
 
 **Callers (1):**
 
-- `api/v1/auth.php`:192 — `pos_api_token_revoke_plain(ims_pdo(), $plain);`
+- `api/v1/auth.php`:254 — `pos_api_token_revoke_plain(ims_pdo(), $plain);`
 
 ## pos_api_token_find {#pos_api_token_find}
 
@@ -62,7 +63,7 @@ function_count: 8
 
 **Callers (2):**
 
-- `api/v1/auth.php`:189 — `$plain = (string) ($GLOBALS['api_bearer_token'] ?? pos_api_bearer_from_request());`
+- `api/v1/auth.php`:251 — `$plain = (string) ($GLOBALS['api_bearer_token'] ?? pos_api_bearer_from_request());`
 - `includes/api_tokens.php`:155 — `$plain = pos_api_bearer_from_request();`
 
 ## pos_api_apply_bearer_auth {#pos_api_apply_bearer_auth}
@@ -79,7 +80,7 @@ function_count: 8
 
 **Callers (3):**
 
-- `api/v1/pos.php`:536 — `pos_sales_ensure_refund_columns(ims_pdo());`
-- `api/v1/pos.php`:570 — `pos_sales_ensure_refund_columns(ims_pdo());`
-- `includes/pos_refund.php`:26 — `pos_sales_ensure_refund_columns($pdo);`
+- `api/v1/pos.php`:543 — `pos_sales_ensure_refund_columns(ims_pdo());`
+- `api/v1/pos.php`:577 — `pos_sales_ensure_refund_columns(ims_pdo());`
+- `includes/pos_refund.php`:60 — `pos_sales_ensure_refund_columns($pdo);`
 

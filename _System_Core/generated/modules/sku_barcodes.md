@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-09-12T11:24:37+02:00
+generated: 2026-09-12T11:56:46+02:00
 type: module
 function_count: 40
 ---
@@ -133,7 +133,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `api/v1/sku_barcodes.php`:207 — `$sku = sku_barcode_fetch_by_code($pdo, (string) $input['code']);`
 - `includes/barcode_verify.php`:22 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:1663 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
-- `includes/inventory_check.php`:340 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
+- `includes/inventory_check.php`:342 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/pack_cancel_restock.php`:254 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/pos_unified.php`:103 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/rts_stock_in_sessions.php`:256 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
@@ -307,10 +307,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## sku_barcode_honey_credit {#sku_barcode_honey_credit}
 
-**Callers (2):**
+**Callers (1):**
 
 - `includes/pack_cancel_restock.php`:624 — `sku_barcode_honey_credit(`
-- `includes/pos_refund.php`:154 — `sku_barcode_honey_credit($pdo, $variant, $size, $qtyLeft, $pool, $packId);`
 
 ## sku_barcode_dept_credit {#sku_barcode_dept_credit}
 
