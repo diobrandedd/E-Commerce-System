@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-09-12T11:14:18+02:00
+generated: 2026-09-12T11:48:04+02:00
 type: module
 function_count: 19
 ---
@@ -38,14 +38,14 @@ function_count: 19
 - `includes/dept_production.php`:964 — `$finished = dept_inventory_fetch_row($pdo, 'brc');`
 - `includes/dept_production.php`:1043 — `$finished = dept_inventory_fetch_row($pdo, 'jar_cacao');`
 - `includes/dept_production.php`:1073 — `$finished = dept_inventory_fetch_row($pdo, 'honey_comb');`
-- `includes/inventory_check.php`:1191 — `$row = dept_inventory_fetch_row($pdo, $productKey);`
+- `includes/inventory_check.php`:1138 — `$row = dept_inventory_fetch_row($pdo, $productKey);`
 - `includes/pos_refund.php`:118 — `$fin = dept_inventory_fetch_row($pdo, $productKey, true);`
 
 ## dept_inventory_ensure_row {#dept_inventory_ensure_row}
 
 **Tables:** `dept_inventory_rows`
 
-**Callers (10):**
+**Callers (11):**
 
 - `includes/dept_inventory.php`:578 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/dept_inventory.php`:621 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
@@ -54,6 +54,7 @@ function_count: 19
 - `includes/dept_production.php`:954 — `$row = dept_inventory_ensure_row($pdo, $userId, 'brc');`
 - `includes/dept_production.php`:1033 — `$row = dept_inventory_ensure_row($pdo, $userId, 'jar_cacao');`
 - `includes/dept_production.php`:1063 — `$row = dept_inventory_ensure_row($pdo, $userId, 'honey_comb');`
+- `includes/inventory_check_apply.php`:305 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/pack_cancel_restock.php`:592 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/sku_barcodes.php`:1059 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/sku_barcodes.php`:1397 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`

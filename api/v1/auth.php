@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/forwarding.php';
+require_once dirname(__DIR__, 2) . '/includes/pos_mobile_staff.php';
+require_once dirname(__DIR__, 2) . '/includes/api_tokens.php';
 
 /**
  * Auth endpoint for the SPA.
@@ -20,6 +22,7 @@ api_dispatch([
     'me' => 'api_auth_me',
     'login' => 'api_auth_login',
     'pos_login' => 'api_auth_pos_login',
+    'pos_staff_login' => 'api_auth_pos_staff_login',
     'logout' => 'api_auth_logout',
     'change_password' => 'api_auth_change_password',
 ]);
@@ -175,6 +178,65 @@ function api_auth_pos_login(): void
         $payload['token_expires_at'] = $issued['expires_at'];
     } catch (Throwable $e) {
         // Session login still succeeds for the website; mobile can retry.
+        $payload['token'] = null;
+        $payload['token_expires_at'] = null;
+        $payload['token_error'] = $e->getMessage();
+    }
+
+    api_ok($payload);
+}
+
+/**
+ * Mobile POS: assigned staff login with IMS username + password.
+ */
+function api_auth_pos_staff_login(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    $username = trim((string) ($input['username'] ?? ''));
+    $password = (string) ($input['password'] ?? '');
+    if ($username === '' || $password === '') {
+        api_fail('Username and password are required.', 422);
+    }
+    if (!ims_login_user($username, $password)) {
+        api_fail('Invalid credentials.', 401);
+    }
+    $user = ims_current_user();
+    if ($user === null) {
+        api_fail('Login session could not be created.', 500);
+    }
+    if (!pos_mobile_user_is_assigned((int) $user['id'])) {
+        ims_logout();
+        api_fail('This account is not assigned to Mobile POS. Ask an executive in Settings.', 403);
+    }
+
+    $dept = api_dept_lookup($user['dept_id'] ?? null);
+    $serialized = api_auth_serialize_user([
+        'id' => $user['id'],
+        'username' => $user['username'],
+        'name' => $user['name'],
+        'email' => $user['email'],
+        'employee_id' => $user['employee_id'],
+        'role' => $user['role'],
+    ], $dept);
+    $serialized['permissions'] = ims_user_permissions((int) $user['id']);
+
+    $payload = [
+        'authenticated' => true,
+        'mode' => 'user',
+        'csrf' => api_csrf_token(),
+        'forwarding' => rts_forwarding_api_payload(),
+        'user' => $serialized,
+    ];
+
+    try {
+        $issued = pos_api_token_issue(ims_pdo(), [
+            'user_id' => (int) $user['id'],
+            'label' => (string) $user['name'],
+        ]);
+        $payload['token'] = $issued['token'];
+        $payload['token_expires_at'] = $issued['expires_at'];
+    } catch (Throwable $e) {
         $payload['token'] = null;
         $payload['token_expires_at'] = null;
         $payload['token_error'] = $e->getMessage();

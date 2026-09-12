@@ -77,6 +77,7 @@ api_dispatch([
     'compare_get' => 'api_inventory_check_compare_get',
     'compare_list' => 'api_inventory_check_compare_list',
     'finalize' => 'api_inventory_check_finalize',
+    'finalize_merged' => 'api_inventory_check_finalize_merged',
 ]);
 
 function api_inventory_check_context(): void
@@ -357,17 +358,53 @@ function api_inventory_check_finalize(): void
     api_inventory_check_require_csrf();
     $user = api_inventory_check_require_scan();
     $in = api_input();
+    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    api_require_admin_override_password($in);
     $pdo = ims_pdo();
     $eventId = (int) ($in['event_id'] ?? 0);
     api_inventory_check_require_event_access($user, $eventId);
+    if (!inventory_check_can_manage($user) && !inventory_check_can_view_all($user)) {
+        api_fail('Forbidden.', 403);
+    }
     try {
-        $compare = inventory_check_compare_run($pdo, $eventId, (int) $user['id']);
-        $event = inventory_check_event_close($pdo, (int) $user['id'], $eventId);
-        api_ok([
-            'event' => $event,
-            'compare' => $compare,
-        ]);
+        $result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], true);
+        api_ok($result);
     } catch (Throwable $e) {
+        if ($e->getMessage() === 'Forbidden.') {
+            api_fail('Forbidden.', 403);
+        }
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_inventory_check_finalize_merged(): void
+{
+    api_method_allowed(['POST']);
+    api_inventory_check_require_csrf();
+    $user = api_inventory_check_require_view_all();
+    $in = api_input();
+    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    api_require_admin_override_password($in);
+    $rawIds = is_array($in['event_ids'] ?? null) ? $in['event_ids'] : [];
+    $eventIds = array_values(array_unique(array_filter(array_map('intval', $rawIds))));
+    if (count($eventIds) < 1) {
+        api_fail('Select at least one closed audit.', 422);
+    }
+    $pdo = ims_pdo();
+    foreach ($eventIds as $eid) {
+        api_inventory_check_require_event_access($user, $eid);
+        $ev = inventory_check_event_get($pdo, $eid);
+        if ((string) ($ev['status'] ?? '') !== 'closed') {
+            api_fail('Merged update only works on closed audits.', 422);
+        }
+    }
+    try {
+        $result = inventory_check_finalize_with_sync($pdo, $user, $eventIds, false);
+        api_ok($result);
+    } catch (Throwable $e) {
+        if ($e->getMessage() === 'Forbidden.') {
+            api_fail('Forbidden.', 403);
+        }
         api_fail($e->getMessage(), 400);
     }
 }

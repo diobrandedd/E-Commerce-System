@@ -5,6 +5,7 @@ import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModa
 import { PageLayout } from "@/app/components/PageLayout";
 import { InventoryCheckBatchDocs } from "@/app/components/inventory/InventoryCheckBatchDocs";
 import { InventoryCheckHistoryDetailModal } from "@/app/components/inventory/InventoryCheckHistoryDetailModal";
+import { AdminOverridePasswordModal } from "@/app/components/inventory/AdminOverridePasswordModal";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
 import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
@@ -84,6 +85,10 @@ export function InventoryCheckPage() {
 
   const [compareOpen, setCompareOpen] = useState(false);
   const [compare, setCompare] = useState<InventoryCheckCompareResult | null>(null);
+  const [compareMode, setCompareMode] = useState<"session" | "merged">("session");
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
   const [historyDetail, setHistoryDetail] = useState<InventoryCheckEvent | null>(null);
 
   const [editId, setEditId] = useState<number | null>(null);
@@ -179,6 +184,7 @@ export function InventoryCheckPage() {
     setError(null);
     try {
       const preview = await inventoryCheckApi.comparePreviewMerged(closedIds);
+      setCompareMode("merged");
       setCompare(preview);
       setCompareOpen(true);
     } catch (e) {
@@ -522,6 +528,7 @@ export function InventoryCheckPage() {
     setError(null);
     try {
       const preview = await inventoryCheckApi.comparePreview(event.id);
+      setCompareMode("session");
       setCompare(preview);
       setCompareOpen(true);
     } catch (e) {
@@ -531,19 +538,48 @@ export function InventoryCheckPage() {
     }
   };
 
-  const finalize = async () => {
-    if (!event) return;
+  const requestFinalize = () => {
+    setPwError(null);
+    setPwOpen(true);
+  };
+
+  const finalizeWithPassword = async (adminPassword: string) => {
+    setPwBusy(true);
+    setPwError(null);
     setBusy(true);
     setError(null);
     try {
-      const res = await inventoryCheckApi.finalize(event.id);
-      setCompare(res.compare);
-      setOk("Audit saved to history.");
+      if (compareMode === "merged") {
+        const closedIds = selectedHistoryIds.filter(id => history.find(h => h.id === id)?.status === "closed");
+        if (closedIds.length < 1) throw new Error("Select at least one closed audit.");
+        const res = await inventoryCheckApi.finalizeMerged(closedIds, adminPassword);
+        setCompare(res.compare);
+        const voided = res.compare.run.barcodes_voided_count ?? 0;
+        setOk(
+          voided > 0
+            ? `Inventory updated to audited counts. ${voided} unique barcode(s) voided. Variance saved to history.`
+            : "Inventory updated to audited counts. Variance saved to history.",
+        );
+        setSelectedHistoryIds([]);
+      } else {
+        if (!event) throw new Error("No open audit.");
+        const res = await inventoryCheckApi.finalize(event.id, adminPassword);
+        setCompare(res.compare);
+        const voided = res.compare.run.barcodes_voided_count ?? 0;
+        setOk(
+          voided > 0
+            ? `Inventory updated to audited counts. ${voided} unique barcode(s) voided. Variance saved to history.`
+            : "Inventory updated to audited counts. Variance saved to history.",
+        );
+      }
+      setPwOpen(false);
       setCompareOpen(false);
       await loadContext();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not save the audit.");
+      const msg = e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not update inventory.";
+      setPwError(msg);
     } finally {
+      setPwBusy(false);
       setBusy(false);
     }
   };
@@ -561,7 +597,7 @@ export function InventoryCheckPage() {
   return (
     <PageLayout
       title="Check inventory"
-      subtitle="Your private audit of finished products on hand. Counting never changes stock."
+      subtitle="Your private audit of finished products. Confirm updates finished stock to audited counts (administrator password required)."
     >
       <AppSectionEnter className="space-y-4">
         <div className="rounded-xl border border-border bg-card px-4 py-3 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3">
@@ -1169,12 +1205,17 @@ export function InventoryCheckPage() {
                 </table>
               </div>
               <InventoryCheckBatchDocs batches={compare.batches ?? []} />
+              <p className="text-xs text-muted-foreground">
+                Confirm sets finished stock to the audited totals for these lines (+ adds, − deducts). Unique
+                stickers in this audit stay; other in-stock uniques for those same products are voided. Requires
+                the administrator password from System Settings.
+              </p>
               <div className="flex flex-wrap justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setCompareOpen(false)} disabled={busy}>
                   Go back
                 </Button>
-                <Button type="button" onClick={() => void finalize()} disabled={busy}>
-                  {busy ? <Loader2 className="animate-spin" size={16} /> : "Confirm and save"}
+                <Button type="button" onClick={() => requestFinalize()} disabled={busy || (!canManage && !canViewAll)}>
+                  {busy ? <Loader2 className="animate-spin" size={16} /> : "Confirm and update inventory"}
                 </Button>
               </div>
             </>
@@ -1185,6 +1226,19 @@ export function InventoryCheckPage() {
           )}
         </AppModalBody>
       </AppModal>
+
+      <AdminOverridePasswordModal
+        open={pwOpen}
+        busy={pwBusy}
+        error={pwError}
+        description="Updating inventory from this audit needs the administrator password from System Settings."
+        onClose={() => {
+          if (pwBusy) return;
+          setPwOpen(false);
+          setPwError(null);
+        }}
+        onConfirm={finalizeWithPassword}
+      />
 
       {historyDetail ? (
         <InventoryCheckHistoryDetailModal event={historyDetail} onClose={() => setHistoryDetail(null)} />

@@ -263,6 +263,16 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                       Run by {compare.run.run_by_name || "—"} · {formatWhen(compare.run.run_at)}
                       {runs.length > 1 ? ` · ${runs.length} runs total` : ""}
                     </p>
+                    {compare.run.stock_applied ? (
+                      <p className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                        Stock applied
+                        {compare.run.stock_applied_at ? ` · ${formatWhen(compare.run.stock_applied_at)}` : ""}
+                        {compare.run.stock_applied_by_name ? ` · ${compare.run.stock_applied_by_name}` : ""}
+                        {(compare.run.barcodes_voided_count ?? 0) > 0
+                          ? ` · ${compare.run.barcodes_voided_count} unique barcode(s) voided`
+                          : ""}
+                      </p>
+                    ) : null}
                     <div className="overflow-x-auto rounded-xl border border-border">
                       <table className="w-full text-sm">
                         <thead>

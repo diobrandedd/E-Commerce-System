@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-09-12T11:14:13+02:00
+generated: 2026-09-12T11:47:58+02:00
 type: module
 function_count: 14
 ---
@@ -50,11 +50,12 @@ function_count: 14
 
 ## ims_current_user {#ims_current_user}
 
-**Callers (48):**
+**Callers (50):**
 
 - `api/v1/_bootstrap.php`:145 — `$u = ims_current_user();`
-- `api/v1/auth.php`:69 — `$user = ims_current_user();`
-- `api/v1/auth.php`:114 — `$user = ims_current_user();`
+- `api/v1/auth.php`:72 — `$user = ims_current_user();`
+- `api/v1/auth.php`:117 — `$user = ims_current_user();`
+- `api/v1/auth.php`:204 — `$user = ims_current_user();`
 - `api/v1/deliveries.php`:13 — `$user = ims_current_user();`
 - `api/v1/online_orders.php`:21 — `$user = ims_current_user();`
 - `api/v1/online_orders.php`:84 — `$user = ims_current_user();`
@@ -70,21 +71,20 @@ function_count: 14
 - `api/v1/order_remarks.php`:30 — `$user = ims_current_user();`
 - `api/v1/parcels.php`:10 — `$user = ims_current_user();`
 - `api/v1/pdf_to_excel.php`:29 — `$user = ims_current_user();`
+- `api/v1/pos.php`:54 — `$user = ims_current_user();`
 - `api/v1/sku_barcodes.php`:34 — `$user = ims_current_user();`
 - `api/v1/sku_barcodes.php`:60 — `$user = ims_current_user();`
 - `api/v1/sku_barcodes.php`:86 — `$user = ims_current_user();`
 - `api/v1/waybill.php`:36 — `$user = ims_current_user();`
 - `auth/login.php`:12 — `$existing = ims_current_user();`
-- `auth/login.php`:34 — `$u = ims_current_user();`
-- `auth/settings.php`:8 — `$u = ims_current_user();`
-- _… and 23 more (run impact.php for full list)_
+- _… and 25 more (run impact.php for full list)_
 
 ## ims_pos_authenticated {#ims_pos_authenticated}
 
 **Callers (9):**
 
 - `api/v1/ar.php`:52 — `if (ims_pos_authenticated()) {`
-- `api/v1/auth.php`:50 — `if (ims_pos_authenticated()) {`
+- `api/v1/auth.php`:53 — `if (ims_pos_authenticated()) {`
 - `api/v1/pos.php`:51 — `if (ims_pos_authenticated()) {`
 - `auth/login.php`:8 — `if (ims_pos_authenticated()) {`
 - `dept/products.php`:17 — `$canDeductStock = !ims_pos_authenticated();`
@@ -97,9 +97,10 @@ function_count: 14
 
 **Tables:** `users`, `roles`
 
-**Callers (3):**
+**Callers (4):**
 
-- `api/v1/auth.php`:111 — `if (!ims_login_user($username, $password)) {`
+- `api/v1/auth.php`:114 — `if (!ims_login_user($username, $password)) {`
+- `api/v1/auth.php`:201 — `if (!ims_login_user($username, $password)) {`
 - `auth/login.php`:33 — `if (ims_login_user($username, $password)) {`
 - `login.php`:34 — `if (ims_login_user($user, $pass)) {`
 
@@ -109,15 +110,16 @@ function_count: 14
 
 **Callers (3):**
 
-- `api/v1/auth.php`:146 — `if (!ims_login_pos($pin)) {`
+- `api/v1/auth.php`:149 — `if (!ims_login_pos($pin)) {`
 - `api/v1/pos.php`:18 — `* Walk-in POS terminal API. Requires a POS PIN session (`ims_login_pos()`)`
 - `auth/login.php`:25 — `if (ims_login_pos($pin)) {`
 
 ## ims_logout {#ims_logout}
 
-**Callers (2):**
+**Callers (3):**
 
-- `api/v1/auth.php`:197 — `ims_logout();`
+- `api/v1/auth.php`:209 — `ims_logout();`
+- `api/v1/auth.php`:259 — `ims_logout();`
 - `auth/logout.php`:7 — `ims_logout();`
 
 ## requireRole {#requirerole}
@@ -209,6 +211,6 @@ function_count: 14
 
 **Callers (2):**
 
-- `api/v1/auth.php`:209 — `$result = ims_change_password((int) $user['id'], $current, $next);`
+- `api/v1/auth.php`:271 — `$result = ims_change_password((int) $user['id'], $current, $next);`
 - `auth/settings.php`:19 — `$res = ims_change_password((int) ($u['id'] ?? 0), $current, $next);`
 

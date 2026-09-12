@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-09-12T11:14:10+02:00
+generated: 2026-09-12T11:47:54+02:00
 type: memory-bank
-table_count: 98
+table_count: 99
 ---
 
 
@@ -135,6 +135,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/api_tokens.php` | [[modules/api_tokens#pos_api_apply_bearer_auth]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_list]] |
 
 ## `departments`
 
@@ -173,6 +175,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_user_is_csr_dept]] |
 | `includes/permissions.php` | [[modules/permissions#ims_user_dept_key]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_list]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_deduct_cap_seals]] |
 | `includes/waybill_stamper.php` | [[modules/waybill_stamper#waybill_stamper_user_is_csr_dept]] |
 
@@ -243,6 +247,9 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_list]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_list]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_assign]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_get]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_events_list]] |
@@ -778,6 +785,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_rts_stock_in_scan]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_batch_codes]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_void_missing_uniques]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_credit_honey_requests]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_refresh_honey_request_status]] |
 
@@ -804,6 +812,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_batch_codes]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_load_checkout_barcodes]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_void_missing_uniques]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_scan_stats]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
@@ -837,6 +846,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_heal_returned_units]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_load_checkout_barcodes]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_void_missing_uniques]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
 | `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
@@ -1060,6 +1070,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_log]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_build]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_batch_docs_build]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_audited_unique_codes]] |
 
 ## `inventory_check_compare_runs`
 
@@ -1068,17 +1079,19 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
-| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_run]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_list]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_compare_run_for_events]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_assert_not_already_applied]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_finalize_with_sync]] |
 
 ## `inventory_check_variance_lines`
 
 | File | Function |
 |------|----------|
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
-| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_run]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_compare_run_for_events]] |
 
 ## `product_sku_barcodes`
 
@@ -1198,6 +1211,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_packaging_by_batch]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_honey_lines]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_void_missing_uniques]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_apply_honey_qty]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_system_packaging_row]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_honey_deduct]] |
@@ -1254,6 +1269,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_apply_dept_qty]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
 | `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_dept_stock_in]] |
@@ -1368,6 +1384,16 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/api_tokens.php` | [[modules/api_tokens#pos_api_token_issue]] |
 | `includes/api_tokens.php` | [[modules/api_tokens#pos_api_token_revoke_plain]] |
 | `includes/api_tokens.php` | [[modules/api_tokens#pos_api_token_find]] |
+
+## `pos_mobile_staff`
+
+| File | Function |
+|------|----------|
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_user_is_assigned]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_list]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_assign]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_unassign]] |
 
 ## `suppliers`
 

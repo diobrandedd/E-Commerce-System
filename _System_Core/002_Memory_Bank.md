@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-12 — Check inventory Confirm updates stock
+**Change:** Confirm and update inventory syncs finished stock to audited (+/− variance), voids missing scoped uniques, keeps variance history; admin password required. → [[problems/records/2026-09-12_inventory-check-sync-on-confirm]]
+
 ### 2026-09-12 — Monthly inventory + administrator password
 **Change:** Restored Monthly inventory (executive); stock overrides require System Settings administrator password. → [[problems/records/2026-09-12_monthly-inventory-admin-password]]
 

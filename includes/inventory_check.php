@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/permissions.php';
 require_once __DIR__ . '/honey_bottle_barcodes.php';
+require_once __DIR__ . '/honey_inventory.php';
 require_once __DIR__ . '/dept_pouch_barcodes.php';
 require_once __DIR__ . '/dept_inventory.php';
+require_once __DIR__ . '/inventory_edit_log.php';
 
 const INVENTORY_CHECK_HONEY_SIZE_COLUMNS = [
     '250ml' => 'current_250ml',
@@ -940,62 +942,7 @@ function inventory_check_scan_log(PDO $pdo, int $eventId, array $filters, int $p
  */
 function inventory_check_compare_run(PDO $pdo, int $eventId, int $userId): array
 {
-    $event = inventory_check_event_get($pdo, $eventId);
-    $lines = inventory_check_compare_build($pdo, [$eventId]);
-    if ($lines['scope'] === []) {
-        throw new RuntimeException('Nothing has been counted yet.');
-    }
-
-    $countedTotal = 0;
-    $systemTotal = 0.0;
-    $mismatch = 0;
-    foreach ($lines['lines'] as $line) {
-        $countedTotal += (int) $line['counted_qty'];
-        $systemTotal += (float) $line['system_qty'];
-        if (abs((float) $line['variance']) > 0.001) {
-            $mismatch++;
-        }
-    }
-
-    $pdo->prepare(
-        'INSERT INTO inventory_check_compare_runs
-            (event_id, scope, line_count, mismatch_count, counted_total, system_total, run_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
-    )->execute([
-        $eventId,
-        implode(', ', $lines['scope_labels']),
-        count($lines['lines']),
-        $mismatch,
-        $countedTotal,
-        (int) round($systemTotal),
-        $userId,
-    ]);
-    $runId = (int) $pdo->lastInsertId();
-
-    $ins = $pdo->prepare(
-        'INSERT INTO inventory_check_variance_lines
-            (run_id, kind, product_key, packaging_row_id, supplier_code, batch_no, bottling_date,
-             variant, size, counted_qty, system_qty, variance)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    );
-    foreach ($lines['lines'] as $line) {
-        $ins->execute([
-            $runId,
-            $line['kind'],
-            $line['product_key'],
-            $line['packaging_row_id'],
-            $line['supplier_code'],
-            $line['batch_no'],
-            $line['bottling_date'],
-            $line['variant'],
-            $line['size'],
-            $line['counted_qty'],
-            $line['system_qty'],
-            $line['variance'],
-        ]);
-    }
-
-    return inventory_check_compare_get($pdo, $runId, $event);
+    return inventory_check_compare_run_for_events($pdo, [$eventId], $userId);
 }
 
 /**
@@ -1195,13 +1142,16 @@ function inventory_check_dept_system_qty(PDO $pdo, string $productKey): float
 
 /**
  * @param array<string, mixed>|null $event
+ * @param list<int>|null $batchEventIds
  * @return array<string, mixed>
  */
-function inventory_check_compare_get(PDO $pdo, int $runId, ?array $event = null): array
+function inventory_check_compare_get(PDO $pdo, int $runId, ?array $event = null, ?array $batchEventIds = null): array
 {
     $st = $pdo->prepare(
-        'SELECT r.*, u.name AS run_by_name FROM inventory_check_compare_runs r
+        'SELECT r.*, u.name AS run_by_name, ua.name AS stock_applied_by_name
+         FROM inventory_check_compare_runs r
          LEFT JOIN users u ON u.id = r.run_by
+         LEFT JOIN users ua ON ua.id = r.stock_applied_by
          WHERE r.id = ? LIMIT 1'
     );
     $st->execute([$runId]);
@@ -1238,21 +1188,18 @@ function inventory_check_compare_get(PDO $pdo, int $runId, ?array $event = null)
     }
 
     $eventId = (int) $run['event_id'];
+    $docIds = $batchEventIds;
+    if ($docIds === null && !empty($run['merged_event_ids'])) {
+        $docIds = array_values(array_filter(array_map('intval', explode(',', (string) $run['merged_event_ids']))));
+    }
+    if ($docIds === null || $docIds === []) {
+        $docIds = [$eventId];
+    }
 
     return [
-        'run' => [
-            'id' => (int) $run['id'],
-            'event_id' => $eventId,
-            'scope' => (string) $run['scope'],
-            'line_count' => (int) $run['line_count'],
-            'mismatch_count' => (int) $run['mismatch_count'],
-            'counted_total' => (int) $run['counted_total'],
-            'system_total' => (int) $run['system_total'],
-            'run_by_name' => (string) ($run['run_by_name'] ?? ''),
-            'run_at' => (string) $run['run_at'],
-        ],
+        'run' => inventory_check_serialize_compare_run($run),
         'lines' => $lines,
-        'batches' => inventory_check_batch_docs_build($pdo, [$eventId]),
+        'batches' => inventory_check_batch_docs_build($pdo, $docIds),
         'event' => $event ?? inventory_check_event_get($pdo, $eventId),
     ];
 }
@@ -1332,22 +1279,16 @@ function inventory_check_batch_docs_build(PDO $pdo, array $eventIds): array
 function inventory_check_compare_list(PDO $pdo, int $eventId): array
 {
     $st = $pdo->prepare(
-        'SELECT r.*, u.name AS run_by_name FROM inventory_check_compare_runs r
+        'SELECT r.*, u.name AS run_by_name, ua.name AS stock_applied_by_name
+         FROM inventory_check_compare_runs r
          LEFT JOIN users u ON u.id = r.run_by
+         LEFT JOIN users ua ON ua.id = r.stock_applied_by
          WHERE r.event_id = ?
          ORDER BY r.id DESC'
     );
     $st->execute([$eventId]);
 
-    return array_map(static fn (array $r): array => [
-        'id' => (int) $r['id'],
-        'event_id' => (int) $r['event_id'],
-        'scope' => (string) $r['scope'],
-        'line_count' => (int) $r['line_count'],
-        'mismatch_count' => (int) $r['mismatch_count'],
-        'counted_total' => (int) $r['counted_total'],
-        'system_total' => (int) $r['system_total'],
-        'run_by_name' => (string) ($r['run_by_name'] ?? ''),
-        'run_at' => (string) $r['run_at'],
-    ], $st->fetchAll(PDO::FETCH_ASSOC));
+    return array_map('inventory_check_serialize_compare_run', $st->fetchAll(PDO::FETCH_ASSOC));
 }
+
+require_once __DIR__ . '/inventory_check_apply.php';
