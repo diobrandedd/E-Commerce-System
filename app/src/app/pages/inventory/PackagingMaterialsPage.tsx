@@ -12,12 +12,6 @@ import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { listMaterials, type MaterialStockRow } from "@/app/lib/materials";
 import { cn } from "@/app/components/ui/utils";
 
-const peso = (v: string | number | undefined) => {
-  const n = typeof v === "string" ? parseFloat(v) : Number(v ?? 0);
-  if (!Number.isFinite(n)) return "—";
-  return `₱${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
 type StockFilter = "all" | "per_unit" | "pool" | "out_of_stock" | "fulfillment";
 
 const FILTER_CHIPS: { id: StockFilter; label: string }[] = [
@@ -196,9 +190,8 @@ export function PackagingMaterialsPage() {
         </div>
 
         <div className="bg-card rounded-xl border overflow-hidden flex flex-col min-h-0 flex-1" data-tour="packaging-catalog">
-          <div className="hidden sm:grid sm:grid-cols-[1fr_110px_130px_150px_24px] gap-2 px-4 py-2.5 border-b bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium shrink-0">
+          <div className="hidden sm:grid sm:grid-cols-[1fr_130px_150px_24px] gap-2 px-4 py-2.5 border-b bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground font-medium shrink-0">
             <span>Item</span>
-            <span>Unit cost</span>
             <span>On hand</span>
             <span>Last stock-in</span>
             <span />
@@ -257,17 +250,11 @@ export function PackagingMaterialsPage() {
                           </span>
                         )}
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="rounded-md bg-secondary/30 px-2 py-1.5">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Unit cost</p>
-                          <p className="mt-0.5 text-foreground tabular-nums">{peso(row.current_price)}/{row.unit}</p>
-                        </div>
-                        <div className="rounded-md bg-secondary/30 px-2 py-1.5">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">On hand</p>
-                          <p className={cn("mt-0.5 tabular-nums", !hasStock && "text-amber-700 dark:text-amber-400 font-medium")}>
-                            {onHand.toLocaleString()} {row.unit}
-                          </p>
-                        </div>
+                      <div className="rounded-md bg-secondary/30 px-2 py-1.5 text-xs">
+                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground">On hand</p>
+                        <p className={cn("mt-0.5 tabular-nums", !hasStock && "text-amber-700 dark:text-amber-400 font-medium")}>
+                          {onHand.toLocaleString()} {row.unit}
+                        </p>
                       </div>
                     </button>
                   );
@@ -291,7 +278,7 @@ export function PackagingMaterialsPage() {
                     !hasStock && "bg-amber-50/50 dark:bg-amber-950/10",
                   )}
                 >
-                  <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_110px_130px_150px_24px] sm:gap-2 sm:items-center">
+                  <div className="flex items-center gap-3 sm:grid sm:grid-cols-[1fr_130px_150px_24px] sm:gap-2 sm:items-center">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 min-w-0">
                         <p className="font-medium text-sm truncate">{row.name}</p>
@@ -318,10 +305,6 @@ export function PackagingMaterialsPage() {
                           </span>
                         )}
                       </p>
-                    </div>
-                    <div className="hidden sm:block text-sm tabular-nums">
-                      {peso(row.current_price)}
-                      <span className="text-[10px] text-muted-foreground block">/{row.unit}</span>
                     </div>
                     <div className="hidden sm:block tabular-nums">
                       <span

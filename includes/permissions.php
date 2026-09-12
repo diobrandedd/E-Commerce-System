@@ -189,6 +189,40 @@ function ims_preset_dept_lines(?string $deptKey): array
     };
 }
 
+/**
+ * Honey pipeline keys for staff/TL presets — only home dept honey or CSR.
+ * Cross-dept honey access is via explicit Staff Management grants (honey.view / honey.ops).
+ *
+ * @return list<string>
+ */
+function ims_preset_honey_pipeline(string $role, ?string $deptKey): array
+{
+    if ($deptKey === 'honey') {
+        if ($role === 'tl') {
+            return [
+                'honey.view', 'honey.ops',
+                'honey.bottle.request', 'honey.bottle.scan',
+                'honey.warehouse_barcode.request',
+            ];
+        }
+        if ($role === 'staff') {
+            return [
+                'honey.view',
+                'honey.bottle.request', 'honey.bottle.scan',
+            ];
+        }
+    }
+    if ($deptKey === 'csr' && in_array($role, ['tl', 'staff'], true)) {
+        return [
+            'honey.view',
+            'honey.bottle.request', 'honey.bottle.scan',
+            'honey.bottle.generate',
+        ];
+    }
+
+    return [];
+}
+
 /** @return list<string> */
 function ims_permission_preset_for_role(string $role, ?string $deptKey = null): array
 {
@@ -236,33 +270,26 @@ function ims_permission_preset_for_role(string $role, ?string $deptKey = null): 
             'barcode.verify',
             'inventory.raw.view', 'inventory.products.view', 'inventory.leak_damage.view', 'inventory.leak_damage.record',
             'inventory.check.scan',
-            'honey.view', 'honey.ops',
-            'honey.bottle.request', 'honey.bottle.scan',
-            'honey.warehouse_barcode.request',
             'suppliers.view',
             'packing.materials.view', 'packing.materials.issue',
             'rts.view', 'rts.record', 'rts.damaged.use', 'rts.barcode_labels',
             'ar.take',
-        ], ims_dept_line_permission_keys($deptLines, ['view', 'produce', 'barcodes']), $isCsr ? [
+        ], ims_preset_honey_pipeline('tl', $deptKey), ims_dept_line_permission_keys($deptLines, ['view', 'produce', 'barcodes']), $isCsr ? [
             'csr.online_orders', 'csr.parcels.view', 'csr.parcels.edit_items',
             'csr.reconcile.partner_sold', 'csr.reconcile.courier_soa', 'csr.historical_import',
-            'honey.bottle.generate',
             'packing.on_hold.view',
         ] : []),
         'staff' => array_merge([
             'barcode.verify',
             'inventory.raw.view', 'inventory.products.view', 'inventory.leak_damage.view', 'inventory.leak_damage.record',
             'inventory.check.scan',
-            'honey.view',
-            'honey.bottle.request', 'honey.bottle.scan',
             'packing.materials.view', 'packing.materials.issue',
             'deliveries.view', 'deliveries.pack_scan', 'deliveries.ship', 'deliveries.review', 'deliveries.cancel_restock',
             'rts.view',
             'ar.take',
-        ], ims_dept_line_permission_keys($deptLines, ['view', 'barcodes']), $isCsr ? [
+        ], ims_preset_honey_pipeline('staff', $deptKey), ims_dept_line_permission_keys($deptLines, ['view', 'barcodes']), $isCsr ? [
             'csr.online_orders', 'csr.parcels.view', 'csr.parcels.edit_items',
             'csr.reconcile.partner_sold', 'csr.reconcile.courier_soa', 'csr.historical_import',
-            'honey.bottle.generate',
             'packing.on_hold.view',
         ] : []),
         default => [],

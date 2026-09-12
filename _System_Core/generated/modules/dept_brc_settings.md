@@ -1,7 +1,7 @@
 ---
 title: dept_brc_settings
 source: includes/dept_brc_settings.php
-generated: 2026-09-12T04:46:07+02:00
+generated: 2026-09-12T07:21:03+02:00
 type: module
 function_count: 7
 ---
@@ -30,7 +30,7 @@ function_count: 7
 
 - `includes/dept_brc_settings.php`:114 — `'bag_pool_deduct' => dept_brc_setting_bag_pool_deduct_enabled($pdo),`
 - `includes/dept_pouch_barcodes.php`:629 — `if (dept_brc_setting_bag_pool_deduct_enabled($pdo)) {`
-- `includes/sku_barcodes.php`:1102 — `if (dept_brc_setting_bag_pool_deduct_enabled($pdo)) {`
+- `includes/sku_barcodes.php`:1126 — `if (dept_brc_setting_bag_pool_deduct_enabled($pdo)) {`
 
 ## dept_brc_setting_grams_per_pouch {#dept_brc_setting_grams_per_pouch}
 
@@ -39,7 +39,7 @@ function_count: 7
 - `includes/dept_brc_settings.php`:84 — `$gPouch = dept_brc_setting_grams_per_pouch($pdo);`
 - `includes/dept_brc_settings.php`:106 — `$gPouch = dept_brc_setting_grams_per_pouch($pdo);`
 - `includes/dept_pouch_barcodes.php`:641 — `'grams_deducted' => dept_brc_setting_grams_per_pouch($pdo),`
-- `includes/sku_barcodes.php`:1108 — `'grams_deducted' => round(dept_brc_setting_grams_per_pouch($pdo) * $qty, 2),`
+- `includes/sku_barcodes.php`:1132 — `'grams_deducted' => round(dept_brc_setting_grams_per_pouch($pdo) * $qty, 2),`
 
 ## dept_brc_setting_grams_per_bag {#dept_brc_setting_grams_per_bag}
 
@@ -48,7 +48,7 @@ function_count: 7
 - `includes/dept_brc_settings.php`:85 — `$gBag = dept_brc_setting_grams_per_bag($pdo);`
 - `includes/dept_brc_settings.php`:107 — `$gBag = dept_brc_setting_grams_per_bag($pdo);`
 - `includes/dept_pouch_barcodes.php`:628 — `$gramsPerBag = dept_brc_setting_grams_per_bag($pdo);`
-- `includes/sku_barcodes.php`:1101 — `$gramsPerBag = dept_brc_setting_grams_per_bag($pdo);`
+- `includes/sku_barcodes.php`:1125 — `$gramsPerBag = dept_brc_setting_grams_per_bag($pdo);`
 
 ## dept_brc_setting_bags_per_pouch {#dept_brc_setting_bags_per_pouch}
 
@@ -56,7 +56,7 @@ function_count: 7
 
 - `includes/dept_brc_settings.php`:113 — `'bags_per_pouch' => dept_brc_setting_bags_per_pouch($pdo),`
 - `includes/dept_pouch_barcodes.php`:630 — `$bagsPerPouch = dept_brc_setting_bags_per_pouch($pdo);`
-- `includes/sku_barcodes.php`:1103 — `$bags = dept_brc_setting_bags_per_pouch($pdo) * $qty;`
+- `includes/sku_barcodes.php`:1127 — `$bags = dept_brc_setting_bags_per_pouch($pdo) * $qty;`
 
 ## dept_brc_bom_snapshot {#dept_brc_bom_snapshot}
 

@@ -334,11 +334,12 @@ function inventory_check_scan(
     if ($code === '' || strlen($code) > 64) {
         throw new RuntimeException('Scan or type a barcode.');
     }
-    [$batchNo, $bottlingDate] = inventory_check_require_doc_fields($batchNo, $bottlingDate);
 
     require_once __DIR__ . '/sku_barcodes.php';
     $sku = sku_barcode_fetch_by_code($pdo, $code);
     if ($sku !== null) {
+        // SKU stickers share one code — auditors must type batch + bottling date.
+        [$batchNo, $bottlingDate] = inventory_check_require_doc_fields($batchNo, $bottlingDate);
         $qty = $countedQty !== null ? $countedQty : 0;
         if ($qty < 1 || $qty > 100000) {
             throw new RuntimeException('Enter how many you counted for this product.');
@@ -443,7 +444,17 @@ function inventory_check_scan(
         return ['result' => 'unknown', 'scan' => null, 'message' => 'Unknown barcode — not counted.'];
     }
 
-    // Documentation only — do not require match to barcode metadata.
+    // Unique stickers already carry batch + date — use sticker metadata when the client omits docs.
+    $docBatch = trim((string) ($batchNo ?? ''));
+    $docDate = trim((string) ($bottlingDate ?? ''));
+    if ($docBatch === '') {
+        $docBatch = (string) ($resolved['batch_no'] ?? '');
+    }
+    if ($docDate === '') {
+        $docDate = (string) ($resolved['bottling_date'] ?? '');
+    }
+    [$batchNo, $bottlingDate] = inventory_check_require_doc_fields($docBatch, $docDate);
+
     $resolved['batch_no'] = $batchNo;
     $resolved['bottling_date'] = $bottlingDate;
 

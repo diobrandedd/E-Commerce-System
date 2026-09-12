@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-09-12T04:46:00+02:00
+generated: 2026-09-12T07:19:21+02:00
 type: memory-bank
 ---
 
@@ -64,7 +64,7 @@ type: memory-bank
 | [[modules/parcel_pack_costing]] | 37 |
 | [[modules/partner_sold_reconcile]] | 16 |
 | [[modules/pdf_to_excel]] | 15 |
-| [[modules/permissions]] | 18 |
+| [[modules/permissions]] | 19 |
 | [[modules/pos_discount_requests]] | 10 |
 | [[modules/pos_sales_helpers]] | 3 |
 | [[modules/pos_thermal_print]] | 4 |
