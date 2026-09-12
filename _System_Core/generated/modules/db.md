@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-09-12T04:46:06+02:00
+generated: 2026-09-12T07:56:35+02:00
 type: module
 function_count: 4
 ---
@@ -72,22 +72,22 @@ function_count: 4
 - `api/v1/ar.php`:107 — `ar_credits_mark_paid(ims_pdo(), $id, (int) $user['id']);`
 - `api/v1/ar.php`:127 — `ar_credits_mark_unpaid(ims_pdo(), $id);`
 - `api/v1/barcode_verify.php`:25 — `api_ok(['result' => barcode_verify_lookup(ims_pdo(), $code)]);`
-- `api/v1/bottle_barcodes.php`:118 — `api_ok(['rows' => honey_bottle_packaging_options(ims_pdo())]);`
-- `api/v1/bottle_barcodes.php`:129 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:144 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:157 — `$before = honey_fetch_packaging_by_production(ims_pdo(), $productionRowId, date('Y-m-d'));`
-- `api/v1/bottle_barcodes.php`:158 — `$pk = honey_bottle_ensure_packaging_shell(ims_pdo(), (int) $user['id'], $productionRowId);`
-- `api/v1/bottle_barcodes.php`:177 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:199 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:218 — `api_ok(honey_bottle_request_list(ims_pdo(), $status, $filterUser, $page, 25));`
-- `api/v1/bottle_barcodes.php`:226 — `api_ok(['request' => honey_bottle_request_get(ims_pdo(), $id)]);`
-- `api/v1/bottle_barcodes.php`:236 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:252 — `api_ok(['count' => honey_bottle_pending_request_count(ims_pdo())]);`
-- `api/v1/bottle_barcodes.php`:266 — `$req = honey_bottle_request_get(ims_pdo(), $requestId);`
-- `api/v1/bottle_barcodes.php`:267 — `$sku = sku_barcode_fetch_honey(ims_pdo(), (string) $req['variant'], (string) $req['size']);`
-- `api/v1/bottle_barcodes.php`:276 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:285 — `ims_pdo()->prepare(`
-- `api/v1/bottle_barcodes.php`:292 — `'request' => honey_bottle_request_get(ims_pdo(), $requestId),`
-- `api/v1/bottle_barcodes.php`:308 — `$pdo = ims_pdo();`
+- `api/v1/bottle_barcodes.php`:129 — `api_ok(['rows' => honey_bottle_packaging_options(ims_pdo())]);`
+- `api/v1/bottle_barcodes.php`:140 — `ims_pdo(),`
+- `api/v1/bottle_barcodes.php`:155 — `ims_pdo(),`
+- `api/v1/bottle_barcodes.php`:168 — `$before = honey_fetch_packaging_by_production(ims_pdo(), $productionRowId, date('Y-m-d'));`
+- `api/v1/bottle_barcodes.php`:169 — `$pk = honey_bottle_ensure_packaging_shell(ims_pdo(), (int) $user['id'], $productionRowId);`
+- `api/v1/bottle_barcodes.php`:188 — `ims_pdo(),`
+- `api/v1/bottle_barcodes.php`:210 — `ims_pdo(),`
+- `api/v1/bottle_barcodes.php`:229 — `api_ok(honey_bottle_request_list(ims_pdo(), $status, $filterUser, $page, 25));`
+- `api/v1/bottle_barcodes.php`:237 — `api_ok(['request' => honey_bottle_request_get(ims_pdo(), $id)]);`
+- `api/v1/bottle_barcodes.php`:247 — `ims_pdo(),`
+- `api/v1/bottle_barcodes.php`:263 — `api_ok(['count' => honey_bottle_pending_request_count(ims_pdo())]);`
+- `api/v1/bottle_barcodes.php`:277 — `$req = honey_bottle_request_get(ims_pdo(), $requestId);`
+- `api/v1/bottle_barcodes.php`:278 — `$sku = sku_barcode_fetch_honey(ims_pdo(), (string) $req['variant'], (string) $req['size']);`
+- `api/v1/bottle_barcodes.php`:287 — `ims_pdo(),`
+- `api/v1/bottle_barcodes.php`:296 — `ims_pdo()->prepare(`
+- `api/v1/bottle_barcodes.php`:303 — `'request' => honey_bottle_request_get(ims_pdo(), $requestId),`
+- `api/v1/bottle_barcodes.php`:319 — `$pdo = ims_pdo();`
 - _… and 336 more (run impact.php for full list)_
 

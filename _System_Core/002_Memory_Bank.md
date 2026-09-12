@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-12 — Permissions trump home department (honey + dept lines)
+**Change:** Staff/TL Raw Honey + cross-dept raw access follow Staff Management grants; home dept no longer hard-blocks. → [[problems/records/2026-09-12_honey-out-of-scope-permissions]]
+
+### 2026-09-12 — Packaging scan report uses honey.view
+**Change:** Packaging tab scan report/log/options accept `honey.view` (not only `honey.bottle.request`) so “Forbidden.” no longer blocks viewers. → `api/v1/bottle_barcodes.php`, `includes/honey_bottle_barcodes.php`
+
 ### 2026-09-12 — Warehouse barcode multi-select print
 **Change:** Select multiple supplier barcode requests; one combined A4 sheet with separator banners between codes. → [[problems/records/2026-09-12_warehouse-barcode-multi-print]]
 

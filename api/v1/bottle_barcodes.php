@@ -28,6 +28,17 @@ function api_bottle_require_request(): array
     return $user;
 }
 
+/** Read-only packaging scan report / lot options — honey.view is enough. */
+function api_bottle_require_packaging_view(): array
+{
+    $user = api_bottle_require_user();
+    if (!honey_bottle_can_view_packaging_report($user)) {
+        api_fail('Forbidden.', 403);
+    }
+
+    return $user;
+}
+
 function api_bottle_require_generate(): array
 {
     $user = api_bottle_require_user();
@@ -114,14 +125,14 @@ function api_bottle_meta(): void
 function api_bottle_packaging_options(): void
 {
     api_method_allowed(['GET']);
-    api_bottle_require_request();
+    api_bottle_require_packaging_view();
     api_ok(['rows' => honey_bottle_packaging_options(ims_pdo())]);
 }
 
 function api_bottle_packaging_scan_log(): void
 {
     api_method_allowed(['GET']);
-    api_bottle_require_request();
+    api_bottle_require_packaging_view();
     $packId = (int) ($_GET['packaging_row_id'] ?? 0);
     $page = max(1, (int) ($_GET['page'] ?? 1));
     $scanDate = trim((string) ($_GET['scan_date'] ?? ''));
@@ -137,7 +148,7 @@ function api_bottle_packaging_scan_log(): void
 function api_bottle_packaging_scan_report(): void
 {
     api_method_allowed(['GET']);
-    api_bottle_require_request();
+    api_bottle_require_packaging_view();
     $scanDate = trim((string) ($_GET['scan_date'] ?? ''));
     $bottlingDate = trim((string) ($_GET['bottling_date'] ?? ''));
     api_ok(honey_bottle_packaging_scan_report(

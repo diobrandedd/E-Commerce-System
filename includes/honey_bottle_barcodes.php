@@ -34,6 +34,15 @@ function honey_bottle_can_scan(array $user): bool
     return ims_user_can($user, 'honey.bottle.scan');
 }
 
+/** View packaging scan report / history (not the same as requesting labels). */
+function honey_bottle_can_view_packaging_report(array $user): bool
+{
+    return ims_user_can($user, 'honey.view')
+        || ims_user_can($user, 'honey.ops')
+        || honey_bottle_can_request($user)
+        || honey_bottle_can_scan($user);
+}
+
 function honey_bottle_can_pack_scan(array $user): bool
 {
     return ims_user_can($user, 'deliveries.pack_scan');

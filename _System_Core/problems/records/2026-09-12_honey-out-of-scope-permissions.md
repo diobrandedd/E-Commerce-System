@@ -6,36 +6,30 @@ area: auth-permissions
 tags: [problem, honey, permissions, dept]
 ---
 
-# Problem: Raw Honey “Out of scope for your department” after granting honey permissions
-
-> Main hub note — links to **Cause**, **Fix**, and **Files** so Obsidian graph shows the chain.
+# Problem: Out of scope despite Staff Management honey / dept grants
 
 ## Symptom
 
-Staff/TL opened Raw Honey → Production (or Warehouse) after Honey permissions were turned on in Staff Management, but the page showed a red banner: **Out of scope for your department.** Retry loading failed the same way.
+Staff/TL with honey (or Paragis / BRC / cacao) permissions still saw **Out of scope for your department.** on Raw Honey Production and could not open other departments’ raw pages unless their home `dept_id` matched.
 
 ## Cause
 
-→ [[causes/honey-ops-dept-scope-vs-permissions]]
+`honey_assert_staff_dept_scope()` and `api_honey_require_honey_ops()` required home department = honey (or exact dept match), ignoring granular `user_permissions`. An earlier fix in this area had been reverted in `api/v1/honey.php`.
 
 ## Fix
 
-→ [[fixes/honey-ops-honor-permissions]]
+- Honey pipeline lists: allow when `honey.view` / `honey.ops` / `honey.mutate` is granted (no home-dept honey gate).
+- Cross-dept targets (`dept` / `slug` / `product_key`): allow home dept **or** matching `dept.*.view` / honey view grants via `honey_staff_may_access_target_dept()`.
+- TL honey ops: `honey.ops` alone is enough.
+- Role presets: honey pipeline keys only auto-included for home dept honey/csr.
 
 ## Files
 
-| Role | Path / note |
-|------|-------------|
-| Primary | `api/v1/honey.php` (`honey_assert_staff_dept_scope`, `api_honey_require_honey_ops`) |
-| Presets | `includes/permissions.php` (`ims_preset_honey_pipeline`) |
-| Docs | [[003_Fragile_Edges#IMS role vs SPA role (API gates)]] |
+| Role | Path |
+|------|------|
+| Primary | `api/v1/honey.php` |
+| Presets | `includes/permissions.php` |
 
 ## Deploy
 
-- PHP only + hard refresh (no SPA rebuild required for this fix)
-- Existing users keep their current `user_permissions` rows; re-Apply preset only if you want to strip honey keys from non-honey TLs
-
-## Links
-
-- **Fragile edges:** [[003_Fragile_Edges#IMS role vs SPA role (API gates)]]
-- Related: [[records/2026-08-18_granular-user-permissions]] · [[records/2026-06-21_staff-role-and-account-settings]]
+- PHP only; user must **log out and back in** (or hard refresh) after permission changes

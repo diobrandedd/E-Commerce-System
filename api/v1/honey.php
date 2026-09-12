@@ -130,6 +130,7 @@ function honey_request_target_dept_key(): ?string
         return match ($productKey) {
             'pt' => 'paragis',
             'brc', 'jar_cacao' => 'cacao_brc',
+            'honey_comb' => 'honey',
             default => 'honey',
         };
     }
@@ -137,27 +138,59 @@ function honey_request_target_dept_key(): ?string
     return null;
 }
 
-/** 403 unless a dept-scoped ops user (staff / tl) stays within their department. */
+/**
+ * Staff/TL may open a target department when it is their home dept, or when an
+ * executive granted the matching line permission (honey.view / dept.*.view).
+ */
+function honey_staff_may_access_target_dept(array $user, string $targetDept): bool
+{
+    $targetDept = strtolower(trim($targetDept));
+    $userDept = honey_resolve_user_dept_key($user);
+    if ($userDept !== null && $userDept === $targetDept) {
+        return true;
+    }
+
+    return match ($targetDept) {
+        'honey' => ims_user_can($user, 'honey.view')
+            || ims_user_can($user, 'honey.ops')
+            || ims_user_can($user, 'honey.mutate')
+            || ims_user_can_dept_line($user, 'honey_comb', 'view'),
+        'paragis' => ims_user_can_dept_line($user, 'pt', 'view'),
+        'cacao_brc' => ims_user_can_dept_line($user, 'brc', 'view')
+            || ims_user_can_dept_line($user, 'jar_cacao', 'view'),
+        'csr' => ims_user_can($user, 'honey.view') || ims_user_can($user, 'honey.bottle.generate'),
+        default => false,
+    };
+}
+
+/** 403 unless a dept-scoped ops user (staff / tl) stays within authorized scope. */
 function honey_assert_staff_dept_scope(array $user): void
 {
-    $userDept = honey_resolve_user_dept_key($user);
-    if ($userDept === null) {
-        api_fail('Your account has no department assigned.', 403);
-    }
-    // Honey-stage views carry no dept parameter — restrict them to honey staff
-    // (and CSR, who generate bottle barcodes from production lots).
-    $honeyOnly = ['warehouse_list', 'production_list', 'packaging_list', 'packaging_total_inventory', 'traceability'];
     $action = (string) ($_GET['action'] ?? '');
+    // Honey warehouse / production / packaging lists — gated by honey.view already.
+    // Do not also require home dept = honey (Staff Management may grant honey.* cross-dept).
+    $honeyOnly = ['warehouse_list', 'production_list', 'packaging_list', 'packaging_total_inventory', 'traceability'];
     if (in_array($action, $honeyOnly, true)) {
-        if ($userDept !== 'honey' && $userDept !== 'csr') {
-            api_fail('Out of scope for your department.', 403);
+        if (
+            !ims_user_can($user, 'honey.view')
+            && !ims_user_can($user, 'honey.mutate')
+            && !ims_user_can($user, 'honey.ops')
+            && !ims_user_can($user, 'honey.bottle.request')
+            && !ims_user_can($user, 'honey.bottle.scan')
+            && !ims_user_can($user, 'honey.bottle.generate')
+        ) {
+            api_fail('Forbidden.', 403);
         }
 
         return;
     }
+
     $target = honey_request_target_dept_key();
-    if ($target !== null && $target !== $userDept) {
-        api_fail('Out of scope for your department.', 403);
+    if ($target === null) {
+        return;
+    }
+    if (!honey_staff_may_access_target_dept($user, $target)) {
+        api_fail('Out of scope for your department. Ask an executive to grant access for that line, or open only departments you are assigned to.', 403);
     }
 }
 
@@ -173,26 +206,16 @@ function api_honey_require_mutate(): array
 
 /**
  * Honey warehouse / production → packaging / packaging sell / correction submit.
- * Team leaders (IMS role `tl`) only when assigned to the honey department.
  *
  * @return array<string, mixed>
  */
 function api_honey_require_honey_ops(): array
 {
     $user = api_require_ims_user();
-    $role = (string) $user['role'];
     if (!honey_role_can_honey_ops($user)) {
         api_fail('Forbidden.', 403);
     }
-    if ($role === 'tl') {
-        $userDept = honey_resolve_user_dept_key($user);
-        if ($userDept === null) {
-            api_fail('Your account has no department assigned.', 403);
-        }
-        if ($userDept !== 'honey') {
-            api_fail('Out of scope for your department.', 403);
-        }
-    }
+    // honey.ops permission is enough (including TL assigned to another department).
 
     return $user;
 }

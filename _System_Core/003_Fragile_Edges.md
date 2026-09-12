@@ -103,6 +103,8 @@ Labels often show size only (e.g. `1 x 1L HONEY w/SF`) with **no Light/Amber/Dar
 - **Trap:** API permission checks that only list `csr_tl` / `csr_staff` will **403** for real CSR users whose session still has `tl` / `staff`.
 - **Pattern:** Mirror `waybill_stamper_user_can_access()` — accept normalized names **or** `tl`/`staff` with `online_parcels_user_is_csr_dept()` / dept lookup `departments.name = 'csr'`.
 - **Fixed 2026-06-05:** `online_parcels_user_can_access()` in `includes/online_order_parcels.php`.
+- **Honey Packaging “Forbidden.” vs dept (2026-09-12):** Packaging scan report was gated on `honey.bottle.request` while the page only needs `honey.view`. That 403 is a **permission key** mismatch (message `Forbidden.`), not department scope (`Out of scope for your department.`). Report/log/options now accept `honey.view` / `honey.ops` / bottle request or scan.
+- **Permissions trump home dept (2026-09-12):** Staff/TL Raw Honey lists need `honey.view`/`ops`, not `dept_id=honey`. Cross-dept raw (`paragis` / `cacao_brc` / comb) allowed when home matches **or** the matching `dept.*.view` / honey grant is checked. See [[problems/records/2026-09-12_honey-out-of-scope-permissions]].
 
 ## Partner waybill matching (iPYX Excel + Flash OCR)
 
