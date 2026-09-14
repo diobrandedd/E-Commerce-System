@@ -11,8 +11,45 @@ const HONEY_ML_PER_US_GALLON = 3785.411784;
 const HONEY_LITERS_PER_US_GALLON = HONEY_ML_PER_US_GALLON / 1000.0;
 
 const HONEY_ML_PER_GALLON_SETTING_KEY = 'honey.ml_per_gallon';
+const HONEY_PACKAGING_DEDUCT_SETTING_KEY = 'honey.packaging_deduct';
 const HONEY_ML_PER_GALLON_MIN = 1000.0;
 const HONEY_ML_PER_GALLON_MAX = 100000.0;
+
+function honey_setting_parse_bool(?string $raw, bool $default = true): bool
+{
+    if ($raw === null || $raw === '') {
+        return $default;
+    }
+    $v = strtolower(trim($raw));
+    if (in_array($v, ['0', 'false', 'off', 'no'], true)) {
+        return false;
+    }
+    if (in_array($v, ['1', 'true', 'on', 'yes'], true)) {
+        return true;
+    }
+
+    return $default;
+}
+
+/**
+ * When true (default), bottling / bottle barcode stock-in deducts empty bottles + stickers
+ * from Packaging Materials (`stocks.on_hand`).
+ */
+function honey_packaging_deduct_enabled(?PDO $pdo = null): bool
+{
+    if ($pdo === null) {
+        return true;
+    }
+
+    return honey_setting_parse_bool(app_setting_get($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, null), true);
+}
+
+function honey_packaging_deduct_save(PDO $pdo, bool $enabled, ?int $userId = null): bool
+{
+    app_setting_set($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, $enabled ? '1' : '0', $userId);
+
+    return $enabled;
+}
 
 function honey_price_per_liter_from_gallon(float $pricePerGallon): float
 {

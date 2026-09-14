@@ -1,7 +1,7 @@
 ---
 title: ar_credits
 source: includes/ar_credits.php
-generated: 2026-09-12T11:55:54+02:00
+generated: 2026-09-14T07:52:55+02:00
 type: module
 function_count: 9
 ---

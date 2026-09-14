@@ -1,7 +1,7 @@
 ---
 title: dept_brc_settings
 source: includes/dept_brc_settings.php
-generated: 2026-09-12T11:56:01+02:00
+generated: 2026-09-14T07:53:00+02:00
 type: module
 function_count: 7
 ---
@@ -62,8 +62,8 @@ function_count: 7
 
 **Callers (5):**
 
-- `api/v1/settings.php`:320 — `api_ok(dept_brc_bom_snapshot(ims_pdo()));`
-- `api/v1/settings.php`:344 — `api_ok(array_merge($saved, dept_brc_bom_snapshot(ims_pdo())));`
+- `api/v1/settings.php`:331 — `api_ok(dept_brc_bom_snapshot(ims_pdo()));`
+- `api/v1/settings.php`:355 — `api_ok(array_merge($saved, dept_brc_bom_snapshot(ims_pdo())));`
 - `includes/dept_brc_settings.php`:147 — `$snap = dept_brc_bom_snapshot($pdo);`
 - `includes/dept_inventory.php`:267 — `$bom = dept_brc_bom_snapshot($pdo);`
 - `includes/dept_production.php`:994 — `$bom = dept_brc_bom_snapshot($pdo);`
@@ -72,5 +72,5 @@ function_count: 7
 
 **Callers (1):**
 
-- `api/v1/settings.php`:333 — `$saved = dept_brc_bom_save(`
+- `api/v1/settings.php`:344 — `$saved = dept_brc_bom_save(`
 

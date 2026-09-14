@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-09-12T11:56:46+02:00
+generated: 2026-09-14T07:53:41+02:00
 type: module
 function_count: 40
 ---

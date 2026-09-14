@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-09-12T11:56:11+02:00
+generated: 2026-09-14T07:53:10+02:00
 type: module
 function_count: 63
 ---
@@ -306,7 +306,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/bottle_barcodes.php`:441 — `api_ok(['barcode' => honey_bottle_lookup(ims_pdo(), $code)]);`
 - `includes/honey_bottle_barcodes.php`:2470 — `return honey_bottle_lookup($pdo, $code);`
-- `includes/honey_inventory.php`:1183 — `$lookup = honey_bottle_lookup($pdo, strtoupper($query));`
+- `includes/honey_inventory.php`:1186 — `$lookup = honey_bottle_lookup($pdo, strtoupper($query));`
 
 ## honey_bottle_serialize_lookup {#honey_bottle_serialize_lookup}
 

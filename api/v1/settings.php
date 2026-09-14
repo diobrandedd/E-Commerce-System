@@ -255,6 +255,7 @@ function api_settings_honey_volume_get(): void
         'default_ml_per_gallon' => HONEY_ML_PER_US_GALLON,
         'min' => HONEY_ML_PER_GALLON_MIN,
         'max' => HONEY_ML_PER_GALLON_MAX,
+        'packaging_deduct' => honey_packaging_deduct_enabled($pdo),
     ]);
 }
 
@@ -268,8 +269,17 @@ function api_settings_honey_volume_save(): void
 
     $ml = isset($input['ml_per_gallon']) ? (float) $input['ml_per_gallon'] : 0.0;
     $user = api_require_ims_user();
+    $userId = (int) ($user['id'] ?? 0) ?: null;
     try {
-        $saved = honey_ml_per_gallon_save(ims_pdo(), $ml, (int) ($user['id'] ?? 0) ?: null);
+        $saved = honey_ml_per_gallon_save(ims_pdo(), $ml, $userId);
+        $packagingDeduct = honey_packaging_deduct_enabled(ims_pdo());
+        if (array_key_exists('packaging_deduct', $input)) {
+            $packagingDeduct = honey_packaging_deduct_save(
+                ims_pdo(),
+                api_settings_bool($input['packaging_deduct'], true),
+                $userId
+            );
+        }
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
     }
@@ -277,6 +287,7 @@ function api_settings_honey_volume_save(): void
     api_ok([
         'ml_per_gallon' => $saved,
         'default_ml_per_gallon' => HONEY_ML_PER_US_GALLON,
+        'packaging_deduct' => $packagingDeduct,
     ]);
 }
 

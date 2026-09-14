@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-12T11:55:53+02:00
+generated: 2026-09-14T07:52:54+02:00
 type: memory-bank
 ---
 
@@ -647,8 +647,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pos_mobile_staff_candidates` | `api_settings_pos_mobile_staff_candidates()` | `pos_mobile_staff_candidates()`, `ims_pdo()` |
 | `pos_mobile_staff_assign` | `api_settings_pos_mobile_staff_assign()` | `pos_mobile_staff_assign()`, `ims_pdo()`, `pos_mobile_staff_list()` |
 | `pos_mobile_staff_unassign` | `api_settings_pos_mobile_staff_unassign()` | `pos_mobile_staff_unassign()`, `ims_pdo()`, `pos_mobile_staff_list()` |
-| `honey_volume_get` | `api_settings_honey_volume_get()` | `ims_pdo()`, `honey_ml_per_gallon()` |
-| `honey_volume_save` | `api_settings_honey_volume_save()` | `honey_ml_per_gallon_save()`, `ims_pdo()` |
+| `honey_volume_get` | `api_settings_honey_volume_get()` | `ims_pdo()`, `honey_ml_per_gallon()`, `honey_packaging_deduct_enabled()` |
+| `honey_volume_save` | `api_settings_honey_volume_save()` | `honey_ml_per_gallon_save()`, `ims_pdo()`, `honey_packaging_deduct_enabled()`, `honey_packaging_deduct_save()` |
 | `pt_bom_get` | `api_settings_pt_bom_get()` | `dept_pt_bom_snapshot()`, `ims_pdo()` |
 | `pt_bom_save` | `api_settings_pt_bom_save()` | `dept_pt_bom_save()`, `ims_pdo()`, `dept_pt_bom_snapshot()` |
 | `brc_bom_get` | `api_settings_brc_bom_get()` | `dept_brc_bom_snapshot()`, `ims_pdo()` |

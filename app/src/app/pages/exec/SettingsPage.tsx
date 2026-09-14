@@ -81,6 +81,7 @@ export function SettingsPage() {
 
   const [mlPerGallon, setMlPerGallon] = useState(String(DEFAULT_ML_PER_US_GALLON));
   const [mlDefault, setMlDefault] = useState(DEFAULT_ML_PER_US_GALLON);
+  const [mlPackagingDeduct, setMlPackagingDeduct] = useState(true);
   const [mlLoading, setMlLoading] = useState(true);
   const [mlSaving, setMlSaving] = useState(false);
   const [mlOk, setMlOk] = useState<string | null>(null);
@@ -190,12 +191,14 @@ export function SettingsPage() {
     setMlLoading(true);
     setMlErr(null);
     try {
-      const data = await apiGet<{ ml_per_gallon: number; default_ml_per_gallon: number }>(
-        "settings.php",
-        "honey_volume_get",
-      );
+      const data = await apiGet<{
+        ml_per_gallon: number;
+        default_ml_per_gallon: number;
+        packaging_deduct?: boolean;
+      }>("settings.php", "honey_volume_get");
       setMlPerGallon(String(data.ml_per_gallon));
       setMlDefault(data.default_ml_per_gallon ?? DEFAULT_ML_PER_US_GALLON);
+      setMlPackagingDeduct(data.packaging_deduct !== false);
     } catch (e) {
       setMlErr(e instanceof ApiError ? e.message : "Could not load honey volume setting.");
     } finally {
@@ -340,11 +343,23 @@ export function SettingsPage() {
     setMlErr(null);
     try {
       const n = Number(mlPerGallon);
-      const res = await apiPost<{ ml_per_gallon: number }>("settings.php", "honey_volume_save", {
-        ml_per_gallon: n,
-      });
+      const res = await apiPost<{ ml_per_gallon: number; packaging_deduct?: boolean }>(
+        "settings.php",
+        "honey_volume_save",
+        {
+          ml_per_gallon: n,
+          packaging_deduct: mlPackagingDeduct ? 1 : 0,
+        }
+      );
       setMlPerGallon(String(res.ml_per_gallon));
-      setMlOk(`Saved ml per gallon (${res.ml_per_gallon}).`);
+      if (typeof res.packaging_deduct === "boolean") {
+        setMlPackagingDeduct(res.packaging_deduct);
+      }
+      setMlOk(
+        `Saved ml per gallon (${res.ml_per_gallon}) · packaging deduct ${
+          (res.packaging_deduct ?? mlPackagingDeduct) ? "on" : "off"
+        }.`
+      );
     } catch (e) {
       setMlErr(e instanceof ApiError ? e.message : "Could not save honey volume.");
     } finally {
@@ -601,7 +616,8 @@ export function SettingsPage() {
               <h3 className="text-sm font-semibold text-foreground">Honey volume</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Milliliters per 1 production gallon used when bottling deducts gallons. Default is the US gallon (
-                {mlDefault} ml). Changing this does not rewrite past deductions.
+                {mlDefault} ml). Changing this does not rewrite past deductions. Toggle packaging deduct to consume
+                empty bottles + stickers from Packaging Materials on bottle stock-in.
               </p>
             </div>
           </div>
@@ -610,7 +626,24 @@ export function SettingsPage() {
               <Loader2 className="animate-spin" size={20} />
             </div>
           ) : (
-            <div className="px-6 py-5 flex flex-wrap items-end gap-3">
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Deduct packaging materials on bottle stock-in</p>
+                  <p className="text-xs text-muted-foreground">
+                    When on, each bottled unit uses empty <span className="font-mono">Honey bottle w/ cap</span> + sticker
+                    from Packaging Materials. When off, stock-in still credits finished honey without that deduct.
+                  </p>
+                </div>
+                <Switch
+                  checked={mlPackagingDeduct}
+                  onCheckedChange={setMlPackagingDeduct}
+                  data-testid="honey-packaging-deduct-switch"
+                  className="data-[state=checked]:bg-[#C8900A]"
+                  aria-label="Deduct packaging materials on bottle stock-in"
+                />
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
               <div className="w-48">
                 <label className="text-xs text-muted-foreground">ml per gallon</label>
                 <input
@@ -635,10 +668,14 @@ export function SettingsPage() {
                 type="button"
                 variant="outline"
                 disabled={mlSaving}
-                onClick={() => setMlPerGallon(String(mlDefault))}
+                onClick={() => {
+                  setMlPerGallon(String(mlDefault));
+                  setMlPackagingDeduct(true);
+                }}
               >
                 Reset to default
               </Button>
+              </div>
             </div>
           )}
         </div>

@@ -857,6 +857,9 @@ function honey_production_deduct_for_unique_stock_in(
  */
 function honey_bottling_deduct_packaging_stocks(PDO $pdo, int $userId, array $sizeQtys, string $label): array
 {
+    if (!honey_packaging_deduct_enabled($pdo)) {
+        return [];
+    }
     if (!material_inventory_has_pool_columns($pdo)) {
         return [];
     }

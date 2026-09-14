@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-14 — Honey packaging deduct Settings toggle
+**Change:** `honey.packaging_deduct` (default on) — turn off to stock-in bottles without deducting empty bottles/stickers from Packaging Materials. → [[problems/records/2026-09-14_honey-packaging-deduct-toggle]]
+
 ### 2026-09-12 — Check inventory Confirm updates stock
 **Change:** Confirm and update inventory syncs finished stock to audited (+/− variance), voids missing scoped uniques, keeps variance history; admin password required. → [[problems/records/2026-09-12_inventory-check-sync-on-confirm]]
 
