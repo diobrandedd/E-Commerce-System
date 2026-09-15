@@ -107,7 +107,7 @@ export const DEPT_PRODUCT_CATALOG: DeptProductDef[] = [
     code: "PT",
     dept: "paragis",
     unit: "pouch",
-    stockInUnit: "bag",
+    stockInUnit: "kg",
     inventoryUnit: "pouch",
     usesSupplierPricing: true,
   },
@@ -117,7 +117,7 @@ export const DEPT_PRODUCT_CATALOG: DeptProductDef[] = [
     code: "BRC",
     dept: "cacao_brc",
     unit: "pouch",
-    stockInUnit: "bag",
+    stockInUnit: "kg",
     inventoryUnit: "pouch",
     usesSupplierPricing: true,
   },
@@ -127,7 +127,7 @@ export const DEPT_PRODUCT_CATALOG: DeptProductDef[] = [
     code: "",
     dept: "cacao_brc",
     unit: "pcs",
-    stockInUnit: "bag",
+    stockInUnit: "kg",
     inventoryUnit: "pcs",
     usesSupplierPricing: true,
   },
@@ -212,13 +212,20 @@ export function deptDefaultFormulaStockName(productKey: string | null | undefine
 
 export function deptStockInYieldHint(key: DeptSupplierProductKey): string {
   if (key === "pt") {
-    return `1 bag (1 kg) → ${ptTeaBagsPerBag().toLocaleString()} tea bags @ 2 g → ~${ptPouchesPerBag().toFixed(2)} pouches (${PT_TEA_BAGS_PER_POUCH} tea bags per pouch).`;
+    return `1 kg → ${ptTeaBagsPerBag().toLocaleString()} tea bags @ 2 g → ~${ptPouchesPerBag().toFixed(2)} pouches (${PT_TEA_BAGS_PER_POUCH} tea bags per pouch).`;
   }
   if (key === "brc") {
-    return `1 bag (1 kg) → ${brcPouchesPerBag().toLocaleString()} sellable pouches (${BRC_GRAMS_PER_POUCH} g per pouch).`;
+    return `1 kg → ${brcPouchesPerBag().toLocaleString()} sellable pouches (${BRC_GRAMS_PER_POUCH} g per pouch).`;
   }
   if (key === "honey_comb") {
     return `1 bag (1 kg) → ~${honeyCombJarsPerBag().toFixed(2)} sellable jar(s) (${HONEY_COMB_GRAMS_PER_JAR} g comb per jar).`;
   }
-  return `1 bag (1 kg) → ~${jarCacaoJarsPerBag().toFixed(2)} sellable jar(s) (${JAR_CACAO_GRAMS_PER_JAR} g per jar, ${JAR_CACAO_TABLETS_PER_JAR} tablets per jar).`;
+  return `1 kg → ~${jarCacaoJarsPerBag().toFixed(2)} sellable jar(s) (${JAR_CACAO_GRAMS_PER_JAR} g per jar, ${JAR_CACAO_TABLETS_PER_JAR} tablets per jar).`;
+}
+
+/** Quantity label for stock-in / waste (kg has no plural s). */
+export function deptStockInQtyUnitLabel(unit: string): string {
+  const u = unit.trim().toLowerCase();
+  if (u === "kg") return "kg";
+  return `${unit}s`;
 }

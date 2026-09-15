@@ -1,7 +1,7 @@
 ---
 title: dept_brc_settings
 source: includes/dept_brc_settings.php
-generated: 2026-09-14T08:03:32+02:00
+generated: 2026-09-15T04:35:40+02:00
 type: module
 function_count: 7
 ---

@@ -65,8 +65,7 @@ export function ParagisProductionGuideModal({
       <AppModalBody className="flex flex-col min-h-0 overflow-y-auto overscroll-contain gap-5 py-4">
         <GuideSection title="Two stages">
           <p>
-            <strong className="text-foreground">Bag pool</strong> — leaf from stocked 1 kg supplier bags,
-            tracked as remaining grams (progress bar on this page).
+            <strong className="text-foreground">Bag pool</strong> — leaf from stocked raw kilos, tracked as remaining grams (progress bar on this page).
             {" "}
             <strong className="text-foreground">Finished pouches</strong> — retail packs ready to sell (
             {PT_TEA_BAGS_PER_POUCH} tea bags each). There is no tea-bag WIP step.
@@ -76,8 +75,8 @@ export function ParagisProductionGuideModal({
         <GuideSection title="Day-to-day flow">
           <ol className="list-decimal pl-4 space-y-1.5">
             <li>
-              <strong className="text-foreground">Stock in raw bags</strong> — receive sealed 1 kg bags.
-              This fills the bag pool.
+              <strong className="text-foreground">Stock in raw leaf (kg)</strong> — enter total kilos received.
+              This fills the leaf pool.
             </li>
             <li>
               <strong className="text-foreground">Request / print pouch barcodes</strong> — label finished
@@ -89,7 +88,7 @@ export function ParagisProductionGuideModal({
             </li>
           </ol>
           <p className="rounded-lg border border-[#C8900A]/25 bg-[#C8900A]/5 px-3 py-2 text-[#8a6506]">
-            Short pool still allows scanning — the bar shows overdrawn so you know to stock more bags.
+            Short pool still allows scanning — the bar shows overdrawn so you know to stock more leaf.
             Packaging materials are not deducted.
           </p>
         </GuideSection>
@@ -109,8 +108,8 @@ export function ParagisProductionGuideModal({
         <GuideSection title="Waste">
           <ul className="list-disc pl-4 space-y-1.5">
             <li>
-              <strong className="text-foreground">Bag waste</strong> — sealed raw bags discarded before use
-              (reduces the bag pool).
+              <strong className="text-foreground">Leaf waste</strong> — raw kilos discarded before use
+              (reduces the leaf pool).
             </li>
           </ul>
         </GuideSection>

@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-15 — Raw stock-in total kilos (PT / BRC / Cacao)
+**Change:** Paragis, BRC, Jar Cacao stock-in is total kg (`stock_in_unit=kg`); UI/pricing ₱/kg; Honey Comb unchanged. → [[problems/records/2026-09-15_raw-stock-in-kilos]]
+
+### 2026-09-14 — Remove packaging-page bottle stock-in scanner
+**Change:** Dropped Raw Honey Packaging “Scan bottle stock in” button/modal; bottle stock-in stays on Production. → `HoneyPackagingPage.tsx`
+
 ### 2026-09-14 — Honey packaging deduct Settings toggle
 **Change:** `honey.packaging_deduct` (default on) — turn off to stock-in bottles without deducting empty bottles/stickers from Packaging Materials. → [[problems/records/2026-09-14_honey-packaging-deduct-toggle]]
 

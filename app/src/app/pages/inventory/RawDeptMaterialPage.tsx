@@ -9,6 +9,7 @@ import { ApiError } from "@/app/lib/api";
 import { canMutateDeptRawProduction, canDeptPouchBarcodeOps } from "@/app/lib/honeyPermissions";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import {
+  deptStockInQtyUnitLabel,
   deptStockInYieldHint,
   deptSupplierCategoryForProduct,
   PT_TEA_BAGS_PER_POUCH,
@@ -225,10 +226,14 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           )}
           <div className={`grid gap-3 ${isParagis ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`} data-tour="raw-dept-metrics">
             <div className="rounded-xl border bg-card px-4 py-3">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Raw bags</p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {bagPoolWorkflow ? "Raw (kg)" : "Raw bags"}
+              </p>
               <p className="text-2xl font-semibold mt-1">{data.bags_on_hand.toLocaleString()}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                {bagPoolWorkflow ? `${data.unit}s in bag pool` : `${data.unit}s on hand`}
+                {bagPoolWorkflow
+                  ? "kg in leaf pool"
+                  : `${data.unit}s on hand`}
               </p>
             </div>
             {showPouchBarcodes ? (
@@ -268,6 +273,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
               }
               sellUnit={isCacao ? "jar" : "pouch"}
               deductEnabled={data.bag_pool_deduct_enabled !== false}
+              poolUnitLabel={bagPoolWorkflow ? "kg" : "bag"}
             />
           ) : null}
 
@@ -349,10 +355,12 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
 
           <div className="rounded-xl border bg-card overflow-hidden" data-tour="raw-dept-activity">
             <div className="px-5 py-4 border-b bg-secondary/30">
-              <p className="text-sm font-semibold">Raw bag entries</p>
+              <p className="text-sm font-semibold">{bagPoolWorkflow ? "Raw leaf entries" : "Raw bag entries"}</p>
             </div>
             {data.entries.length === 0 ? (
-              <p className="px-5 py-8 text-sm text-muted-foreground text-center">No bag entries yet.</p>
+              <p className="px-5 py-8 text-sm text-muted-foreground text-center">
+                {bagPoolWorkflow ? "No raw leaf entries yet." : "No bag entries yet."}
+              </p>
             ) : (
               <>
               <div className="sm:hidden divide-y divide-border">
@@ -567,8 +575,10 @@ function RawDeptInlineActions({
         <p className="text-sm font-semibold">Do next</p>
         <p className="text-xs text-muted-foreground mt-0.5">
           {bagPoolWorkflow && showPouchBarcodes
-            ? `Stock raw bags into the bag pool, then scan ${unitPlural} — each scan deducts leaf from the pool.`
-            : "Production steps — choose the action you need."}
+            ? `Stock raw leaf (kg) into the pool, then scan ${unitPlural} — each scan deducts leaf from the pool.`
+            : bagPoolWorkflow
+              ? "Stock raw leaf (kg) into the pool."
+              : "Production steps — choose the action you need."}
         </p>
       </div>
       <div className="p-3 sm:hidden space-y-2">
@@ -586,7 +596,7 @@ function RawDeptInlineActions({
             onClick={onStockIn}
             className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
           >
-            <Plus size={16} /> Stock in raw bags
+            <Plus size={16} /> {bagPoolWorkflow ? "Stock in raw leaf (kg)" : "Stock in raw bags"}
           </AppPressable>
         ) : null}
         {canMutate && showPouchBarcodes ? (
@@ -595,7 +605,7 @@ function RawDeptInlineActions({
             onClick={onStockIn}
             className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
           >
-            <Plus size={16} /> Stock in raw bags
+            <Plus size={16} /> {bagPoolWorkflow ? "Stock in raw leaf (kg)" : "Stock in raw bags"}
           </AppPressable>
         ) : null}
         <AppPressable
@@ -613,7 +623,7 @@ function RawDeptInlineActions({
             onClick={onStockIn}
             className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold"
           >
-            <Plus size={16} /> Stock in raw bags
+            <Plus size={16} /> {bagPoolWorkflow ? "Stock in raw leaf (kg)" : "Stock in raw bags"}
           </AppPressable>
         )}
         {showPouchBarcodes && (
@@ -668,7 +678,7 @@ function RawDeptInlineActions({
             onClick={onBagWaste}
             className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold"
           >
-            <Minus size={16} /> Bag waste
+            <Minus size={16} /> {bagPoolWorkflow ? "Leaf waste (kg)" : "Bag waste"}
           </AppPressable>
         )}
         <Link
@@ -734,7 +744,7 @@ function RawDeptInlineActions({
               onClick={() => runMobileAction(onBagWaste)}
               className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
             >
-              <Minus size={16} /> Bag waste
+              <Minus size={16} /> {bagPoolWorkflow ? "Leaf waste (kg)" : "Bag waste"}
             </AppPressable>
           ) : null}
           <Link
@@ -1082,7 +1092,11 @@ function RawStockInModal({
 
   return (
     <AppModal open onClose={onClose} panelClassName="max-w-md w-full" labelledBy="raw-stock-in-title">
-      <AppModalHeader title="Stock in raw bags" titleId="raw-stock-in-title" onClose={onClose} />
+      <AppModalHeader
+        title={unit === "kg" ? "Stock in raw leaf (kg)" : "Stock in raw bags"}
+        titleId="raw-stock-in-title"
+        onClose={onClose}
+      />
       <form onSubmit={submit}>
         <AppModalBody className="space-y-3">
           {error && <AppErrorBanner message={error} />}
@@ -1103,7 +1117,9 @@ function RawStockInModal({
             {yieldHint && <p className="text-xs text-muted-foreground mt-1">Price from Supplier Master (₱/{unit}). {yieldHint}</p>}
           </div>
           <div>
-            <label htmlFor="raw-stock-in-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Quantity ({unit}s)</label>
+            <label htmlFor="raw-stock-in-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+              Quantity ({deptStockInQtyUnitLabel(unit)})
+            </label>
             <input id="raw-stock-in-qty" type="number" step="0.01" min="0.01" value={qty} onChange={e => setQty(e.target.value)} required className={inputCls} />
           </div>
           <div>
@@ -1118,7 +1134,7 @@ function RawStockInModal({
         <AppModalFooter>
           <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg border border-border">Cancel</button>
           <button type="submit" disabled={saving || !supplierId} className="px-4 py-2 text-sm font-semibold rounded-lg text-white disabled:opacity-50" style={{ background: "#C8900A" }}>
-            {saving ? "Saving…" : "Stock in raw bags"}
+            {saving ? "Saving…" : unit === "kg" ? "Stock in raw leaf (kg)" : "Stock in raw bags"}
           </button>
         </AppModalFooter>
       </form>
@@ -1165,14 +1181,22 @@ function WarehouseWasteModal({
 
   return (
     <AppModal open onClose={onClose} panelClassName="max-w-md w-full" labelledBy="wh-waste-title">
-      <AppModalHeader title="Waste sealed bags" titleId="wh-waste-title" onClose={onClose} />
+      <AppModalHeader
+        title={unit === "kg" ? "Waste raw leaf (kg)" : "Waste sealed bags"}
+        titleId="wh-waste-title"
+        onClose={onClose}
+      />
       <form onSubmit={submit}>
         <AppModalBody className="space-y-3">
           {error && <AppErrorBanner message={error} />}
-          <p className="text-xs text-muted-foreground">Deduct sealed supplier bags (spoilage, return, etc.).</p>
+          <p className="text-xs text-muted-foreground">
+            {unit === "kg"
+              ? "Deduct raw leaf kilos from the pool (spoilage, return, etc.)."
+              : "Deduct sealed supplier bags (spoilage, return, etc.)."}
+          </p>
           <div>
             <label htmlFor="warehouse-waste-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
-              Quantity ({unit}s) — max {maxQty.toLocaleString()}
+              Quantity ({deptStockInQtyUnitLabel(unit)}) — max {maxQty.toLocaleString()}
             </label>
             <input id="warehouse-waste-qty" type="number" step="0.01" min="0.01" max={maxQty} value={qty} onChange={e => setQty(e.target.value)} required className={inputCls} />
           </div>

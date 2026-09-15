@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 const DEPT_PRODUCT_KEYS = ['pt', 'brc', 'jar_cacao', 'honey_comb'];
 
-/** Supplier raw unit: 1 kg leaf per bag. */
+/** Leaf pool unit: 1 stock-in unit = 1 kg (grams_per_bag denominator for scans). */
 const PT_GRAMS_PER_BAG = 1000;
 /** Each individual tea sachet uses 2 g of leaf. */
 const PT_GRAMS_PER_TEA_BAG = 2;
@@ -19,7 +19,7 @@ const PT_LEAF_STOCK_NAME = 'Paragis leaf — raw';
 const PT_TEA_BAG_SACHET_STOCK_NAME = 'PT tea bag sachet';
 const PT_PACKAGING_STOCK_NAME = 'PT pouch packaging';
 
-/** Supplier raw unit: 1 kg per bag. */
+/** Leaf pool unit: 1 stock-in unit = 1 kg. */
 const BRC_GRAMS_PER_BAG = 1000;
 /** Sellable pouch contains ~100 g product. */
 const BRC_GRAMS_PER_POUCH = 100;
@@ -27,7 +27,7 @@ const BRC_GRAMS_PER_POUCH = 100;
 const BRC_RAW_STOCK_NAME = 'Black Rice Coffee — raw';
 const BRC_PACKAGING_STOCK_NAME = 'BRC pouch packaging';
 
-/** Supplier raw unit: 1 kg per bag; sellable jar = 220 g cacao (24 tablets inside). */
+/** Leaf pool unit: 1 stock-in unit = 1 kg; sellable jar = 220 g cacao (24 tablets inside). */
 const JAR_CACAO_GRAMS_PER_BAG = 1000;
 const JAR_CACAO_GRAMS_PER_JAR = 220;
 const JAR_CACAO_TABLETS_PER_JAR = 24;
@@ -144,7 +144,7 @@ function dept_product_catalog(): array
             'code' => 'PT',
             'dept' => 'paragis',
             'unit' => 'pouch',
-            'stock_in_unit' => 'bag',
+            'stock_in_unit' => 'kg',
             'inventory_unit' => 'pouch',
             'uses_supplier_pricing' => true,
             'stock_name' => null,
@@ -159,7 +159,7 @@ function dept_product_catalog(): array
             'code' => 'BRC',
             'dept' => 'cacao_brc',
             'unit' => 'pouch',
-            'stock_in_unit' => 'bag',
+            'stock_in_unit' => 'kg',
             'inventory_unit' => 'pouch',
             'uses_supplier_pricing' => true,
             'stock_name' => null,
@@ -180,7 +180,7 @@ function dept_product_catalog(): array
             'code' => '',
             'dept' => 'cacao_brc',
             'unit' => 'pcs',
-            'stock_in_unit' => 'bag',
+            'stock_in_unit' => 'kg',
             'inventory_unit' => 'pcs',
             'uses_supplier_pricing' => true,
             'stock_name' => null,

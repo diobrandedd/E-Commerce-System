@@ -246,7 +246,9 @@ function dept_pricing_leaf_stock_id(PDO $pdo, int $supplierId, string $productKe
     $st->execute([$deptId, $stockName, $supplierId]);
     $id = (int) $st->fetchColumn();
     if ($id < 1) {
-        throw new RuntimeException('Leaf costing stock not found for supplier. Save ₱/bag in Supplier Master first.');
+        throw new RuntimeException(
+            'Leaf costing stock not found for supplier. Save ₱/' . (string) ($def['stock_in_unit'] ?? 'bag') . ' in Supplier Master first.'
+        );
     }
 
     return $id;

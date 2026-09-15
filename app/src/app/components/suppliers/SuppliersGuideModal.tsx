@@ -55,7 +55,7 @@ export function SuppliersGuideModal({
             </li>
             <li>
               <strong className="text-foreground">Honey / dept pricing rows</strong> — expand honey, paragis, black rice,
-              or cacao suppliers to set ₱/gallon or ₱/bag. Saves sync to costing stock and raw yield hints.
+              or cacao suppliers to set ₱/gallon or ₱/kg (Honey Comb still ₱/bag). Saves sync to costing stock and raw yield hints.
             </li>
             <li>
               <strong className="text-foreground">Profile</strong> — click non-pricing suppliers for full details and
@@ -68,8 +68,9 @@ export function SuppliersGuideModal({
         </GuideSection>
         <GuideSection title="Categories">
           <p>
-            Honey uses <strong className="text-foreground">₱/US gallon</strong> (costing converts to ₱/liter). Dept raw
-            suppliers use <strong className="text-foreground">₱/1 kg bag</strong>. Packaging suppliers are catalog-only
+            Honey uses <strong className="text-foreground">₱/US gallon</strong> (costing converts to ₱/liter). Paragis,
+            BRC, and Jar Cacao use <strong className="text-foreground">₱/kg</strong> of raw leaf. Honey Comb stays{" "}
+            <strong className="text-foreground">₱/1 kg bag</strong>. Packaging suppliers are catalog-only
             on this page — stock-in happens on Packaging Materials.
           </p>
         </GuideSection>

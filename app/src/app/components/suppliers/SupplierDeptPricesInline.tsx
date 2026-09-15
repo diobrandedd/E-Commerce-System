@@ -86,7 +86,8 @@ export function SupplierDeptPricesInline({
   return (
     <div className="space-y-3 max-w-xl">
       <p className="text-xs text-muted-foreground">
-        <strong>{supplierName}</strong> — {product?.label ?? productKey} purchase price per supplier bag.{" "}
+        <strong>{supplierName}</strong> — {product?.label ?? productKey} purchase price per{" "}
+        {productKey === "honey_comb" ? "supplier bag" : "kg of raw leaf"}.{" "}
         {deptStockInYieldHint(productKey)}
       </p>
       {error && <p className="text-xs text-red-600">{error}</p>}
@@ -105,7 +106,7 @@ export function SupplierDeptPricesInline({
         </div>
         <div>
           <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
-            ₱ / bag
+            {productKey === "honey_comb" ? "₱ / bag" : "₱ / kg"}
           </label>
           <input
             type="number"

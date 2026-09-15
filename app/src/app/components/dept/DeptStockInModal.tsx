@@ -4,6 +4,7 @@ import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/co
 import {
   deptProductUsesSupplierPricing,
   deptSellUnitsPerBag,
+  deptStockInQtyUnitLabel,
   deptStockInYieldHint,
   deptSupplierCategoryForProduct,
   type DeptSupplierProductKey,
@@ -165,7 +166,7 @@ export function DeptStockInModal({
               )}
               {yieldHint && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Price from Supplier Master (₱/bag). {yieldHint}
+                  Price from Supplier Master (₱/{stockInUnit}). {yieldHint}
                 </p>
               )}
             </div>
@@ -173,12 +174,12 @@ export function DeptStockInModal({
           <div className={usesSupplier ? "" : "grid grid-cols-2 gap-2"}>
             <div>
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
-                Quantity ({stockInUnit}{usesSupplier ? "s" : ""})
+                Quantity ({usesSupplier ? deptStockInQtyUnitLabel(stockInUnit) : stockInUnit})
               </label>
               <input type="number" step={usesSupplier ? "0.01" : "1"} min="0.01" value={qty} onChange={e => setQty(e.target.value)} required className={inputCls} />
               {sellUnitPreview && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  ≈ {sellUnitPreview} {inventoryUnitLabel}(s) after Produce (raw bags only on stock-in)
+                  ≈ {sellUnitPreview} {inventoryUnitLabel}(s) after Produce (raw {stockInUnit === "kg" ? "kg" : "bags"} only on stock-in)
                 </p>
               )}
             </div>
