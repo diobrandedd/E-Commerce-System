@@ -1361,8 +1361,8 @@ export function SettingsPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground">Mobile POS staff</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Assigned staff sign in to the mobile POS app with their IMS username and password. Seller name on
-                receipts uses the logged-in staff name.
+                Assign who may open the mobile POS app (executives can always sign in). On the phone they
+                enter only their employee ID — no username. Seller name on receipts uses the logged-in staff name.
               </p>
             </div>
           </div>

@@ -187,28 +187,46 @@ function api_auth_pos_login(): void
 }
 
 /**
- * Mobile POS: assigned staff login with IMS username + password.
+ * Mobile POS: executives or assigned staff. Sign in with employee ID only.
  */
 function api_auth_pos_staff_login(): void
 {
     api_method_allowed(['POST']);
+    require_once __DIR__ . '/../../includes/pos_mobile_staff.php';
     $input = api_input();
-    $username = trim((string) ($input['username'] ?? ''));
-    $password = (string) ($input['password'] ?? '');
-    if ($username === '' || $password === '') {
-        api_fail('Username and password are required.', 422);
+    // Accept pin / password / employee_id for the same field.
+    $pin = trim((string) ($input['pin'] ?? $input['password'] ?? $input['employee_id'] ?? ''));
+    if ($pin === '') {
+        api_fail('Employee ID is required.', 422);
     }
-    if (!ims_login_user($username, $password)) {
-        api_fail('Invalid credentials.', 401);
-    }
-    $user = ims_current_user();
+
+    $user = pos_mobile_authenticate($pin);
     if ($user === null) {
-        api_fail('Login session could not be created.', 500);
+        $pdo = ims_pdo();
+        $st = $pdo->prepare(
+            'SELECT u.id, u.is_active, r.name AS role_name
+             FROM users u
+             INNER JOIN roles r ON r.id = u.role_id
+             WHERE u.employee_id = ?
+             LIMIT 1'
+        );
+        $st->execute([$pin]);
+        $probe = $st->fetch(PDO::FETCH_ASSOC);
+        if ($probe !== false
+            && (int) $probe['is_active'] === 1
+            && !pos_mobile_user_can_login((int) $probe['id'], (string) $probe['role_name'])) {
+            api_fail('This account is not allowed on Mobile POS. Ask an executive to assign you in Settings.', 403);
+        }
+        api_fail('Invalid employee ID.', 401);
     }
-    if (!pos_mobile_user_is_assigned((int) $user['id'])) {
-        ims_logout();
-        api_fail('This account is not assigned to Mobile POS. Ask an executive in Settings.', 403);
-    }
+
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['username'] = $user['username'];
+    $_SESSION['user_name'] = $user['name'];
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['employee_id'] = $user['employee_id'];
+    $_SESSION['role'] = $user['role'];
+    $_SESSION['dept_id'] = $user['dept_id'];
 
     $dept = api_dept_lookup($user['dept_id'] ?? null);
     $serialized = api_auth_serialize_user([

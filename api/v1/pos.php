@@ -54,7 +54,9 @@ function api_pos_require_session(): void
     $user = ims_current_user();
     if ($user !== null) {
         require_once __DIR__ . '/../../includes/pos_mobile_staff.php';
-        if (ims_user_can($user, 'pos.sell') || pos_mobile_user_is_assigned((int) $user['id'])) {
+        $role = (string) ($user['role'] ?? '');
+        if (ims_user_can($user, 'pos.sell')
+            || pos_mobile_user_can_login((int) $user['id'], $role)) {
             return;
         }
     }

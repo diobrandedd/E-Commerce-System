@@ -5,7 +5,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/db.php';
 
 /**
- * Staff assigned to the mobile POS app (login with IMS username/password).
+ * Staff assigned to the mobile POS app.
+ * App login: employee ID only (PIN).
+ * Allowed: executives, or users listed in pos_mobile_staff.
  */
 function pos_mobile_staff_ensure_schema(PDO $pdo): void
 {
@@ -39,6 +41,63 @@ function pos_mobile_user_is_assigned(int $userId): bool
     } catch (Throwable) {
         return false;
     }
+}
+
+/**
+ * Who may use the mobile POS app: executives, or staff assigned in Settings.
+ */
+function pos_mobile_user_can_login(int $userId, string $role): bool
+{
+    if ($userId < 1) {
+        return false;
+    }
+    require_once __DIR__ . '/auth_check.php';
+    if (ims_is_executive($role)) {
+        return true;
+    }
+
+    return pos_mobile_user_is_assigned($userId);
+}
+
+/**
+ * Authenticate mobile POS with employee ID only.
+ * The ID identifies the staff member; no username is required.
+ *
+ * @return array{id:int,username:string,name:string,email:string,employee_id:string,role:string,dept_id:?int}|null
+ */
+function pos_mobile_authenticate(string $employeeId): ?array
+{
+    $employeeId = trim($employeeId);
+    if ($employeeId === '') {
+        return null;
+    }
+    $pdo = ims_pdo();
+    $st = $pdo->prepare(
+        'SELECT u.id, u.username, u.name, u.email, u.employee_id, u.dept_id, u.is_active, r.name AS role_name
+         FROM users u
+         INNER JOIN roles r ON r.id = u.role_id
+         WHERE u.employee_id = ?
+         LIMIT 1'
+    );
+    $st->execute([$employeeId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false || !(int) $row['is_active']) {
+        return null;
+    }
+    $role = (string) $row['role_name'];
+    if (!pos_mobile_user_can_login((int) $row['id'], $role)) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'username' => (string) $row['username'],
+        'name' => (string) $row['name'],
+        'email' => (string) $row['email'],
+        'employee_id' => trim((string) $row['employee_id']),
+        'role' => $role,
+        'dept_id' => $row['dept_id'] !== null ? (int) $row['dept_id'] : null,
+    ];
 }
 
 /** @return list<array{id:int,username:string,name:string,role:string,dept_name:?string,assigned:bool}> */
