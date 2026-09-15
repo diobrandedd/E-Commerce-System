@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-09-15T10:42:13+02:00
+generated: 2026-09-15T10:57:58+02:00
 type: memory-bank
 ---
 
@@ -51,7 +51,7 @@ type: memory-bank
 | [[modules/honey_parcel_item_parser]] | 17 |
 | [[modules/honey_pos]] | 16 |
 | [[modules/honey_pricing]] | 19 |
-| [[modules/honey_sales_report]] | 24 |
+| [[modules/honey_sales_report]] | 25 |
 | [[modules/honey_volume]] | 13 |
 | [[modules/honey_warehouse_barcodes]] | 12 |
 | [[modules/ims_exec_sidebar]] | 1 |

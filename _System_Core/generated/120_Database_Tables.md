@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-15T10:42:13+02:00
+generated: 2026-09-15T10:57:58+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -232,6 +232,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_list]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_shipped_export]] |
 | `includes/honey_warehouse_barcodes.php` | [[modules/honey_warehouse_barcodes#honey_warehouse_barcode_request_fetch]] |
 | `includes/honey_warehouse_barcodes.php` | [[modules/honey_warehouse_barcodes#honey_warehouse_barcode_request_list]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
@@ -871,6 +872,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_today_stats]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_discard]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_shipped_export]] |
 
 ## `honey_bottle_pack_session_items`
 
@@ -1239,6 +1241,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_log_sale]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_id_for_honey_unit]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_heal_returned_units]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_rts_scan_units]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_checkout_where_clause]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_load_checkout_barcodes]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |

@@ -1,7 +1,7 @@
 ---
 title: pos_mobile_staff
 source: includes/pos_mobile_staff.php
-generated: 2026-09-15T10:42:56+02:00
+generated: 2026-09-15T10:58:45+02:00
 type: module
 function_count: 8
 ---

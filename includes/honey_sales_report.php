@@ -51,6 +51,74 @@ function honey_sales_log_where_clause(?array $range, string $channel = 'all'): a
 }
 
 /**
+ * RTS scan units that represent real pack/POS lines (skip bare FIFO deduct mirrors that double-count stickers).
+ *
+ * @param array<string, mixed>|null $range
+ * @return array{
+ *   walk_in: float,
+ *   parcel: float,
+ *   honey_walk_in: float,
+ *   honey_parcel: float
+ * }
+ */
+function honey_sales_rts_scan_units(PDO $pdo, ?array $range): array
+{
+    $hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');
+    $hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');
+    $hasParcelCol = rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id');
+    $hasQtyOther = rts_db_has_column($pdo, 'honey_sales_log', 'qty_other');
+
+    $unitExpr = $hasUnitCol ? 'h.bottle_unit_id' : 'NULL';
+    $sessExpr = $hasSessCol ? 'h.pack_session_id' : 'NULL';
+    $parcelExpr = $hasParcelCol ? 'h.online_parcel_id' : 'NULL';
+    $qtyOtherExpr = $hasQtyOther ? 'COALESCE(h.qty_other, 0)' : '0';
+
+    $where = " WHERE h.source = 'rts'
+                 AND h.sale_type IN ('walk_in','parcel')
+                 AND (
+                   ({$unitExpr} IS NOT NULL)
+                   OR ({$sessExpr} IS NOT NULL)
+                   OR ({$parcelExpr} IS NOT NULL)
+                   OR ({$qtyOtherExpr} > 0)
+                 )";
+    $params = [];
+    if ($range !== null) {
+        $where .= ' AND h.created_at >= ? AND h.created_at <= ?';
+        $params = [$range['from'] . ' 00:00:00', $range['to'] . ' 23:59:59'];
+    }
+
+    $sql = "SELECT h.sale_type,
+                   COALESCE(SUM(h.qty_liter + h.qty_250ml + h.qty_350ml + h.qty_gallon), 0) AS honey_qty,
+                   COALESCE(SUM({$qtyOtherExpr}), 0) AS other_qty
+            FROM honey_sales_log h
+            {$where}
+            GROUP BY h.sale_type";
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+
+    $out = [
+        'walk_in' => 0.0,
+        'parcel' => 0.0,
+        'honey_walk_in' => 0.0,
+        'honey_parcel' => 0.0,
+    ];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $honey = (float) ($row['honey_qty'] ?? 0);
+        $other = (float) ($row['other_qty'] ?? 0);
+        $sum = $honey + $other;
+        if ((string) $row['sale_type'] === 'walk_in') {
+            $out['walk_in'] = $sum;
+            $out['honey_walk_in'] = $honey;
+        } elseif ((string) $row['sale_type'] === 'parcel') {
+            $out['parcel'] = $sum;
+            $out['honey_parcel'] = $honey;
+        }
+    }
+
+    return $out;
+}
+
+/**
  * @param array<string, mixed>|null $range
  * @param string|null $receiptSearch partial match on receipt_no (case-insensitive)
  */
@@ -797,58 +865,53 @@ function honey_sales_sold_snapshot(
                  GROUP BY h.sale_type";
     $shareSt = $pdo->prepare($shareSql);
     $shareSt->execute($shareParams);
-    $walkInQty = 0.0;
-    $onlineQty = 0.0;
+    $packWalkIn = 0.0;
+    $packShipped = 0.0;
     foreach ($shareSt->fetchAll(PDO::FETCH_ASSOC) as $sr) {
         if ((string) $sr['sale_type'] === 'walk_in') {
-            $walkInQty = (float) $sr['qty'];
+            $packWalkIn = (float) $sr['qty'];
         } elseif ((string) $sr['sale_type'] === 'parcel') {
-            $onlineQty = (float) $sr['qty'];
+            $packShipped = (float) $sr['qty'];
         }
     }
-    $honeyWalkIn = $channel === 'online' ? 0.0 : $walkInQty;
-    $honeyShipped = $channel === 'walk_in' ? 0.0 : $onlineQty;
+
+    $rtsScan = honey_sales_rts_scan_units($pdo, $range);
+    $rtsWalkIn = (float) $rtsScan['walk_in'];
+    $rtsShipped = (float) $rtsScan['parcel'];
+    $rtsHoneyWalkIn = (float) $rtsScan['honey_walk_in'];
+    $rtsHoneyShipped = (float) $rtsScan['honey_parcel'];
+
+    $honeyWalkIn = $channel === 'online' ? 0.0 : ($packWalkIn + $rtsHoneyWalkIn);
+    $honeyShipped = $channel === 'walk_in' ? 0.0 : ($packShipped + $rtsHoneyShipped);
 
     $dept = honey_sales_dept_breakdown($pdo, $range, $channel);
     $deptShare = $channel === 'all' ? $dept : honey_sales_dept_breakdown($pdo, $range, 'all');
-    $walkInQty += $deptShare['walk_in'];
-    $onlineQty += $deptShare['shipped'];
+
+    // Channel share = packaging honey + counted RTS scans + dept (always both channels for the %).
+    $walkInQty = $packWalkIn + $rtsWalkIn + (float) $deptShare['walk_in'];
+    $onlineQty = $packShipped + $rtsShipped + (float) $deptShare['shipped'];
     $shareTotal = $walkInQty + $onlineQty;
 
-    $rtsWalkIn = 0.0;
-    $rtsShipped = 0.0;
-    $rtsWhere = ' WHERE h.source = "rts" AND h.sale_type IN ("walk_in","parcel")';
-    $rtsParams = [];
-    if ($range !== null) {
-        $rtsWhere .= ' AND h.created_at >= ? AND h.created_at <= ?';
-        $rtsParams = [$range['from'] . ' 00:00:00', $range['to'] . ' 23:59:59'];
+    $rtsHoneyForChannel = 0.0;
+    if ($channel === 'walk_in') {
+        $rtsHoneyForChannel = $rtsHoneyWalkIn;
+    } elseif ($channel === 'online') {
+        $rtsHoneyForChannel = $rtsHoneyShipped;
+    } else {
+        $rtsHoneyForChannel = $rtsHoneyWalkIn + $rtsHoneyShipped;
     }
-    $rtsSt = $pdo->prepare(
-        "SELECT h.sale_type,
-                COALESCE(SUM(h.qty_liter + h.qty_250ml + h.qty_350ml + h.qty_gallon + COALESCE(h.qty_other, 0)), 0) AS qty
-         FROM honey_sales_log h
-         {$rtsWhere}
-         GROUP BY h.sale_type"
-    );
-    $rtsSt->execute($rtsParams);
-    foreach ($rtsSt->fetchAll(PDO::FETCH_ASSOC) as $rr) {
-        if ((string) $rr['sale_type'] === 'walk_in') {
-            $rtsWalkIn = (float) $rr['qty'];
-        } elseif ((string) $rr['sale_type'] === 'parcel') {
-            $rtsShipped = (float) $rr['qty'];
-        }
-    }
+    $honeyTotal = (float) $all['total'] + $rtsHoneyForChannel;
 
     return [
         'filter' => $filterMeta,
-        'total_bottles_sold' => $all['total'],
-        'total_units_sold' => $all['total'] + $dept['total'],
+        'total_bottles_sold' => $honeyTotal,
+        'total_units_sold' => $honeyTotal + (float) $dept['total'],
         'honey' => [
             'label' => 'Honey',
             'unit' => 'bottle',
             'walk_in' => $honeyWalkIn,
             'shipped' => $honeyShipped,
-            'total' => $all['total'],
+            'total' => $honeyTotal,
         ],
         'dept' => $dept,
         'rts' => [
@@ -1014,16 +1077,32 @@ function honey_sales_fetch_shipped_export(
             $trackSelect = 'op.tracking_number';
         }
 
+        $packerJoin = ' LEFT JOIN users u_sold ON u_sold.id = h.sold_by';
+        $packerSelect = "COALESCE(NULLIF(TRIM(u_sold.name), ''), '') AS packed_by_name";
+        if ($hasSessCol) {
+            $packerJoin .= ' LEFT JOIN honey_bottle_pack_sessions psess ON psess.id = h.pack_session_id
+                             LEFT JOIN users u_conf ON u_conf.id = psess.confirmed_by
+                             LEFT JOIN users u_start ON u_start.id = psess.started_by';
+            $packerSelect = "COALESCE(
+                NULLIF(TRIM(u_conf.name), ''),
+                NULLIF(TRIM(u_start.name), ''),
+                NULLIF(TRIM(u_sold.name), ''),
+                ''
+            ) AS packed_by_name";
+        }
+
         $sql = "SELECT h.id, h.created_at, h.source, h.variant, h.product_label,
                        h.qty_liter, h.qty_250ml, h.qty_350ml, h.qty_gallon,
                        {$qtyOtherExpr} AS qty_other,
                        {$sessExpr} AS pack_session_id,
                        {$parcelExpr} AS online_parcel_id,
                        {$barcodeSelect},
-                       {$trackSelect}
+                       {$trackSelect},
+                       {$packerSelect}
                 FROM honey_sales_log h
                 {$barcodeJoin}
                 {$trackJoin}
+                {$packerJoin}
                 {$where}
                 ORDER BY h.created_at DESC, h.id DESC
                 LIMIT " . (HONEY_SALES_EXPORT_MAX_ROWS + 1);
@@ -1087,6 +1166,7 @@ function honey_sales_fetch_shipped_export(
                 'is_rts_resellable' => strtolower((string) ($row['source'] ?? '')) === 'rts',
                 'kind' => $otherQty > 0 ? 'dept' : 'honey',
                 'size_qtys' => $sizeQtys,
+                'packed_by_name' => trim((string) ($row['packed_by_name'] ?? '')),
             ];
         }
     }
@@ -1111,9 +1191,17 @@ function honey_sales_fetch_shipped_export(
             $packParams[] = $product;
         }
         try {
-            $packSql = "SELECT u.consumed_at, u.product_key, u.pool, u.consumed_ref_id AS pack_session_id, c.code
+            $packSql = "SELECT u.consumed_at, u.product_key, u.pool, u.consumed_ref_id AS pack_session_id, c.code,
+                               COALESCE(
+                                 NULLIF(TRIM(u_conf.name), ''),
+                                 NULLIF(TRIM(u_start.name), ''),
+                                 ''
+                               ) AS packed_by_name
                         FROM dept_pouch_units u
                         LEFT JOIN dept_pouch_barcodes c ON c.id = u.barcode_id
+                        LEFT JOIN honey_bottle_pack_sessions psess ON psess.id = u.consumed_ref_id
+                        LEFT JOIN users u_conf ON u_conf.id = psess.confirmed_by
+                        LEFT JOIN users u_start ON u_start.id = psess.started_by
                         {$packWhere}
                         ORDER BY u.consumed_at DESC, u.id DESC
                         LIMIT " . (HONEY_SALES_EXPORT_MAX_ROWS + 1);
@@ -1131,6 +1219,7 @@ function honey_sales_fetch_shipped_export(
                     'is_rts_resellable' => (string) ($row['pool'] ?? '') === 'rts_sellable',
                     'kind' => 'dept',
                     'size_qtys' => ['dept' => 1.0],
+                    'packed_by_name' => trim((string) ($row['packed_by_name'] ?? '')),
                 ];
             }
         } catch (PDOException $e) {
@@ -1435,13 +1524,13 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         $shippedSummary
     );
 
-    $shippedHeaders = ['When packed', 'Product', 'Qty', 'Tracking / pack session', 'Barcode', 'RTS resellable'];
+    $shippedHeaders = ['When packed', 'Product', 'Qty', 'Tracking / pack session', 'Barcode', 'RTS resellable', 'Packed by'];
     $headerRow = $nextRow;
-    $shippedCols = ['A', 'B', 'C', 'D', 'E', 'F'];
+    $shippedCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
     foreach ($shippedHeaders as $i => $h) {
         $shipped->setCellValue($shippedCols[$i] . $headerRow, $h);
     }
-    $shipped->getStyle('A' . $headerRow . ':F' . $headerRow)->getFont()->setBold(true);
+    $shipped->getStyle('A' . $headerRow . ':G' . $headerRow)->getFont()->setBold(true);
 
     if ($shippedRows === []) {
         $shipped->setCellValue('A' . ($headerRow + 1), $channel === 'walk_in'
@@ -1456,10 +1545,12 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
             $shipped->setCellValue('D' . $r, (string) $row['tracking_or_session']);
             $shipped->setCellValue('E' . $r, (string) $row['barcode']);
             $shipped->setCellValue('F' . $r, !empty($row['is_rts_resellable']) ? 'Yes' : 'No');
+            $packedBy = trim((string) ($row['packed_by_name'] ?? ''));
+            $shipped->setCellValue('G' . $r, $packedBy !== '' ? $packedBy : '—');
             $r++;
         }
     }
-    foreach (range('A', 'F') as $col) {
+    foreach (range('A', 'G') as $col) {
         $shipped->getColumnDimension($col)->setAutoSize(true);
     }
 

@@ -1,6 +1,6 @@
 ---
 title: Theme Tokens
-generated: 2026-09-15T10:43:10+02:00
+generated: 2026-09-15T10:58:59+02:00
 type: spa
 ---
 
