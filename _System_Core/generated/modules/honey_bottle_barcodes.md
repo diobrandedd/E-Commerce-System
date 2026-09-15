@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-09-14T07:53:10+02:00
+generated: 2026-09-14T08:03:42+02:00
 type: module
 function_count: 63
 ---
