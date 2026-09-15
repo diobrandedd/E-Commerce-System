@@ -1,0 +1,21 @@
+from pathlib import Path
+from zipfile import ZipFile
+import hashlib,json
+from docx import Document
+w=Path('output/capstone_work');p=Path('C:/Users/Admin/Downloads/OUTLINE-AND-SAMPLE-DOCU-CHPATER-123 (2).docx')
+d=Document(p); inv=[]
+with ZipFile(p) as z:
+ for n in z.namelist():inv.append({'part':n,'size':len(z.read(n)),'sha256':hashlib.sha256(z.read(n)).hexdigest()})
+(w/'reference_inventory.json').write_text(json.dumps(inv,indent=2))
+(w/'artifact.md').write_text('''# Capstone document contract
+Reference: '''+str(p)+'''\nSHA256: '''+hashlib.sha256(p.read_bytes()).hexdigest()+'''\nReference pages: 56. Reference sections: 5.
+Evidence: reference.pdf, ref_contact_0.png through ref_contact_4.png, format.txt and extracted media.
+Page system: primary source pattern is US Letter, portrait; top/left 1.5 inches, bottom/right 1 inch. Header/footer distances inherited from reference. Remove accidental A4 instructional section and redundant blank source pages when replacing the samples; retain the main academic pattern.
+Typography: Arial 12 pt body, double line spacing, justified paragraphs with first-line indent. Black chapter headings centered and bold. Black section headings left, 12 pt; retain reference heading styles. Tables use compact Arial and repeated header rows. Diagram captions centered and single-spaced. Academic title retained verbatim from proposal.
+Components: retain school seal and institutional front matter. Replace sample title, proponents, chapter text, examples, screenshots, diagrams, captions and sample dictionary. Populate table of contents and page numbers. Adviser requires confirmation, not assumed from a sample.
+Slot map: document.xml body indices 0–37 cover; 38 TOC; 41–239 Chapter I; 240–314 Chapter II; 315–661 Chapter III. Replace full sample content in these slots with Pyx content, allowing cloned source paragraph/table patterns and added pages. Red text is writing guidance rather than manuscript content. No sample-company content retained.
+Figures: recreate diagram TYPES and notation for Pyx; retain nine-block BMC, time-axis Gantt, hierarchical FDD, bounded UML use cases, storyboard with explanation, ERD, network, topology, stack. Wireframes labeled as schematic. Provisional dates and logical network labels explicit.
+Package preservation: original file stays byte-for-byte unchanged; source styles, theme, logo, and page treatment retained through copied document. Sample drawings and relationships may be removed or replaced because all body examples are editable. The source is an outline/sample, not an immutable form. Content controls/TOC are replaced with a generated Word TOC. No source business facts are imported from unrelated examples.
+Fidelity: compare all distinct patterns to rendered source; verify titles, school seal, margins, Arial 12, double spacing, diagrams, and tables. Expected pagination changes follow replacing instructions with chapter content. Render final through Word (LibreOffice unavailable), then packaged renderer with Word-exported PDF, inspect page PNGs. Update fields with Word.
+''',encoding='utf8')
+print('Contract and source inventory saved.')

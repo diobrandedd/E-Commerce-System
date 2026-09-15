@@ -1,0 +1,1052 @@
+[
+    {
+        "TABLE_NAME": "app_settings",
+        "COLUMN_NAME": "updated_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "app_users",
+        "COLUMN_NAME": "created_by_user_id",
+        "REFERENCED_TABLE_NAME": "app_users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "ar_credits",
+        "COLUMN_NAME": "debtor_user_id",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "ar_credits",
+        "COLUMN_NAME": "marked_paid_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "ar_credits",
+        "COLUMN_NAME": "pos_sale_id",
+        "REFERENCED_TABLE_NAME": "pos_sales",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "ar_credits",
+        "COLUMN_NAME": "product_id",
+        "REFERENCED_TABLE_NAME": "products",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "ar_credits",
+        "COLUMN_NAME": "recorded_by_pin_id",
+        "REFERENCED_TABLE_NAME": "pos_pins",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "ar_credits",
+        "COLUMN_NAME": "user_id",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "beginning_inventory",
+        "COLUMN_NAME": "dept_id",
+        "REFERENCED_TABLE_NAME": "departments",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "beginning_inventory",
+        "COLUMN_NAME": "set_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "beginning_inventory",
+        "COLUMN_NAME": "stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "bulk_honey_orders",
+        "COLUMN_NAME": "confirmed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "bulk_honey_orders",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "bulk_honey_orders",
+        "COLUMN_NAME": "voided_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "bulk_honey_order_allocations",
+        "COLUMN_NAME": "line_id",
+        "REFERENCED_TABLE_NAME": "bulk_honey_order_lines",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "bulk_honey_order_allocations",
+        "COLUMN_NAME": "order_id",
+        "REFERENCED_TABLE_NAME": "bulk_honey_orders",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "bulk_honey_order_allocations",
+        "COLUMN_NAME": "warehouse_row_id",
+        "REFERENCED_TABLE_NAME": "honey_warehouse_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "bulk_honey_order_lines",
+        "COLUMN_NAME": "order_id",
+        "REFERENCED_TABLE_NAME": "bulk_honey_orders",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "csr_online_batch_runs",
+        "COLUMN_NAME": "batch_id",
+        "REFERENCED_TABLE_NAME": "csr_online_batches",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "csr_online_order_lines",
+        "COLUMN_NAME": "batch_id",
+        "REFERENCED_TABLE_NAME": "csr_online_batches",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "csr_online_order_lines",
+        "COLUMN_NAME": "run_id",
+        "REFERENCED_TABLE_NAME": "csr_online_batch_runs",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "delivery_batches",
+        "COLUMN_NAME": "submitted_by_user_id",
+        "REFERENCED_TABLE_NAME": "app_users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "delivery_batch_items",
+        "COLUMN_NAME": "online_parcel_id",
+        "REFERENCED_TABLE_NAME": "online_order_parcels",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "delivery_batch_items",
+        "COLUMN_NAME": "batch_id",
+        "REFERENCED_TABLE_NAME": "delivery_batches",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "delivery_batch_items",
+        "COLUMN_NAME": "resolved_by_user_id",
+        "REFERENCED_TABLE_NAME": "app_users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_inventory_rows",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_inventory_rows",
+        "COLUMN_NAME": "dept_id",
+        "REFERENCED_TABLE_NAME": "departments",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_pouch_barcodes",
+        "COLUMN_NAME": "batch_id",
+        "REFERENCED_TABLE_NAME": "dept_pouch_barcode_batches",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_pouch_barcodes",
+        "COLUMN_NAME": "scanned_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_pouch_barcode_batches",
+        "COLUMN_NAME": "request_id",
+        "REFERENCED_TABLE_NAME": "dept_pouch_requests",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_pouch_barcode_batches",
+        "COLUMN_NAME": "generated_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_pouch_defect_log",
+        "COLUMN_NAME": "barcode_id",
+        "REFERENCED_TABLE_NAME": "dept_pouch_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_pouch_defect_log",
+        "COLUMN_NAME": "unit_id",
+        "REFERENCED_TABLE_NAME": "dept_pouch_units",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_pouch_defect_log",
+        "COLUMN_NAME": "scanned_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_pouch_requests",
+        "COLUMN_NAME": "requested_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_pouch_units",
+        "COLUMN_NAME": "barcode_id",
+        "REFERENCED_TABLE_NAME": "dept_pouch_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_production_entries",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_wip_rows",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "dept_wip_rows",
+        "COLUMN_NAME": "dept_id",
+        "REFERENCED_TABLE_NAME": "departments",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "edit_requests",
+        "COLUMN_NAME": "requested_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "edit_requests",
+        "COLUMN_NAME": "reviewed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "finished_unit_leak_damage_log",
+        "COLUMN_NAME": "scanned_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "fulfillment_packing_balances",
+        "COLUMN_NAME": "stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "fulfillment_packing_damage_events",
+        "COLUMN_NAME": "stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "fulfillment_packing_issue_lines",
+        "COLUMN_NAME": "issue_id",
+        "REFERENCED_TABLE_NAME": "fulfillment_packing_issues",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "fulfillment_packing_issue_lines",
+        "COLUMN_NAME": "stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_barcode_batches",
+        "COLUMN_NAME": "packaging_row_id",
+        "REFERENCED_TABLE_NAME": "honey_packaging_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_barcode_batches",
+        "COLUMN_NAME": "request_id",
+        "REFERENCED_TABLE_NAME": "honey_bottle_requests",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_barcode_batches",
+        "COLUMN_NAME": "generated_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_barcodes",
+        "COLUMN_NAME": "batch_id",
+        "REFERENCED_TABLE_NAME": "honey_barcode_batches",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_barcodes",
+        "COLUMN_NAME": "scanned_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_pack_sessions",
+        "COLUMN_NAME": "confirmed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_pack_sessions",
+        "COLUMN_NAME": "started_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_pack_session_dept_items",
+        "COLUMN_NAME": "barcode_id",
+        "REFERENCED_TABLE_NAME": "dept_pouch_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_pack_session_dept_items",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "honey_bottle_pack_sessions",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_pack_session_dept_items",
+        "COLUMN_NAME": "unit_id",
+        "REFERENCED_TABLE_NAME": "dept_pouch_units",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_pack_session_items",
+        "COLUMN_NAME": "barcode_id",
+        "REFERENCED_TABLE_NAME": "honey_bottle_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_pack_session_items",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "honey_bottle_pack_sessions",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_pack_session_items",
+        "COLUMN_NAME": "unit_id",
+        "REFERENCED_TABLE_NAME": "honey_bottle_units",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_requests",
+        "COLUMN_NAME": "packaging_row_id",
+        "REFERENCED_TABLE_NAME": "honey_packaging_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_requests",
+        "COLUMN_NAME": "requested_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_units",
+        "COLUMN_NAME": "barcode_id",
+        "REFERENCED_TABLE_NAME": "honey_bottle_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_bottle_units",
+        "COLUMN_NAME": "packaging_row_id",
+        "REFERENCED_TABLE_NAME": "honey_packaging_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_packaging_rows",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_packaging_rows",
+        "COLUMN_NAME": "production_row_id",
+        "REFERENCED_TABLE_NAME": "honey_production_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_production_rows",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_production_rows",
+        "COLUMN_NAME": "warehouse_row_id",
+        "REFERENCED_TABLE_NAME": "honey_warehouse_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_sales_log",
+        "COLUMN_NAME": "online_parcel_id",
+        "REFERENCED_TABLE_NAME": "online_order_parcels",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_sales_log",
+        "COLUMN_NAME": "packaging_row_id",
+        "REFERENCED_TABLE_NAME": "honey_packaging_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_sales_log",
+        "COLUMN_NAME": "sold_by_pin_id",
+        "REFERENCED_TABLE_NAME": "pos_pins",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_sales_log",
+        "COLUMN_NAME": "pos_sale_id",
+        "REFERENCED_TABLE_NAME": "pos_sales",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_sales_log",
+        "COLUMN_NAME": "rts_inventory_row_id",
+        "REFERENCED_TABLE_NAME": "rts_inventory_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_sales_log",
+        "COLUMN_NAME": "sold_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_warehouse_barcode_requests",
+        "COLUMN_NAME": "generated_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_warehouse_barcode_requests",
+        "COLUMN_NAME": "supplier_id",
+        "REFERENCED_TABLE_NAME": "suppliers",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_warehouse_barcode_requests",
+        "COLUMN_NAME": "requested_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_warehouse_rows",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_warehouse_rows",
+        "COLUMN_NAME": "supplier_id",
+        "REFERENCED_TABLE_NAME": "suppliers",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_warehouse_rows",
+        "COLUMN_NAME": "supplier_price_id",
+        "REFERENCED_TABLE_NAME": "supplier_honey_prices",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_warehouse_stock_out_events",
+        "COLUMN_NAME": "production_row_id",
+        "REFERENCED_TABLE_NAME": "honey_production_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_warehouse_stock_out_events",
+        "COLUMN_NAME": "supplier_id",
+        "REFERENCED_TABLE_NAME": "suppliers",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_warehouse_stock_out_events",
+        "COLUMN_NAME": "stocked_out_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "honey_warehouse_stock_out_events",
+        "COLUMN_NAME": "warehouse_row_id",
+        "REFERENCED_TABLE_NAME": "honey_warehouse_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_check_compare_runs",
+        "COLUMN_NAME": "stock_applied_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_check_compare_runs",
+        "COLUMN_NAME": "event_id",
+        "REFERENCED_TABLE_NAME": "inventory_check_events",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_check_compare_runs",
+        "COLUMN_NAME": "run_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_check_events",
+        "COLUMN_NAME": "closed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_check_events",
+        "COLUMN_NAME": "opened_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_check_scans",
+        "COLUMN_NAME": "event_id",
+        "REFERENCED_TABLE_NAME": "inventory_check_events",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_check_scans",
+        "COLUMN_NAME": "scanned_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_check_variance_lines",
+        "COLUMN_NAME": "run_id",
+        "REFERENCED_TABLE_NAME": "inventory_check_compare_runs",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_correction_requests",
+        "COLUMN_NAME": "requested_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_correction_requests",
+        "COLUMN_NAME": "reviewed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "inventory_edit_log",
+        "COLUMN_NAME": "edited_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "material_adjustment_requests",
+        "COLUMN_NAME": "applied_entry_id",
+        "REFERENCED_TABLE_NAME": "stock_entries",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "material_adjustment_requests",
+        "COLUMN_NAME": "requested_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "material_adjustment_requests",
+        "COLUMN_NAME": "reviewed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "material_adjustment_requests",
+        "COLUMN_NAME": "stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "online_order_parcels",
+        "COLUMN_NAME": "csr_batch_id",
+        "REFERENCED_TABLE_NAME": "csr_online_batches",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "online_order_parcels",
+        "COLUMN_NAME": "csr_line_id",
+        "REFERENCED_TABLE_NAME": "csr_online_order_lines",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "online_order_parcels",
+        "COLUMN_NAME": "shipped_by_user_id",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "online_parcel_deduct_lines",
+        "COLUMN_NAME": "packaging_row_id",
+        "REFERENCED_TABLE_NAME": "honey_packaging_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "online_parcel_deduct_lines",
+        "COLUMN_NAME": "parcel_id",
+        "REFERENCED_TABLE_NAME": "online_order_parcels",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "online_parcel_dept_deduct_lines",
+        "COLUMN_NAME": "dept_row_id",
+        "REFERENCED_TABLE_NAME": "dept_inventory_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "online_parcel_fulfillment_deduct_lines",
+        "COLUMN_NAME": "parcel_id",
+        "REFERENCED_TABLE_NAME": "online_order_parcels",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "online_parcel_fulfillment_deduct_lines",
+        "COLUMN_NAME": "stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_dept_items",
+        "COLUMN_NAME": "barcode_id",
+        "REFERENCED_TABLE_NAME": "dept_pouch_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_dept_items",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "pack_cancel_restock_sessions",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_dept_items",
+        "COLUMN_NAME": "unit_id",
+        "REFERENCED_TABLE_NAME": "dept_pouch_units",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_honey_items",
+        "COLUMN_NAME": "barcode_id",
+        "REFERENCED_TABLE_NAME": "honey_bottle_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_honey_items",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "pack_cancel_restock_sessions",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_honey_items",
+        "COLUMN_NAME": "unit_id",
+        "REFERENCED_TABLE_NAME": "honey_bottle_units",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_sessions",
+        "COLUMN_NAME": "confirmed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_sessions",
+        "COLUMN_NAME": "started_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_sku_items",
+        "COLUMN_NAME": "packaging_row_id",
+        "REFERENCED_TABLE_NAME": "honey_packaging_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_sku_items",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "pack_cancel_restock_sessions",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_sku_items",
+        "COLUMN_NAME": "sku_id",
+        "REFERENCED_TABLE_NAME": "product_sku_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pack_cancel_restock_sku_items",
+        "COLUMN_NAME": "scanned_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "parcel_pack_tier_lines",
+        "COLUMN_NAME": "stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "parcel_pack_tier_lines",
+        "COLUMN_NAME": "tier_id",
+        "REFERENCED_TABLE_NAME": "parcel_pack_tiers",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pos_discount_requests",
+        "COLUMN_NAME": "sold_by_pin_id",
+        "REFERENCED_TABLE_NAME": "pos_pins",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pos_discount_requests",
+        "COLUMN_NAME": "reviewed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pos_discount_requests",
+        "COLUMN_NAME": "pos_sale_id",
+        "REFERENCED_TABLE_NAME": "pos_sales",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pos_receipt_items",
+        "COLUMN_NAME": "product_id",
+        "REFERENCED_TABLE_NAME": "products",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pos_receipt_items",
+        "COLUMN_NAME": "sale_id",
+        "REFERENCED_TABLE_NAME": "pos_sales",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pos_sales",
+        "COLUMN_NAME": "sold_by_pin_id",
+        "REFERENCED_TABLE_NAME": "pos_pins",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "pos_sales",
+        "COLUMN_NAME": "sold_by_user_id",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "products",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "products",
+        "COLUMN_NAME": "dept_id",
+        "REFERENCED_TABLE_NAME": "departments",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "product_cost_history",
+        "COLUMN_NAME": "product_id",
+        "REFERENCED_TABLE_NAME": "products",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "product_cost_history",
+        "COLUMN_NAME": "triggered_by_stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "product_formula",
+        "COLUMN_NAME": "product_id",
+        "REFERENCED_TABLE_NAME": "products",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "product_sku_barcodes",
+        "COLUMN_NAME": "updated_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_barcode_label_jobs",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_barcode_label_job_lines",
+        "COLUMN_NAME": "job_id",
+        "REFERENCED_TABLE_NAME": "rts_barcode_label_jobs",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_cases",
+        "COLUMN_NAME": "delivery_match_item_id",
+        "REFERENCED_TABLE_NAME": "delivery_batch_items",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_damaged_use_events",
+        "COLUMN_NAME": "rts_inventory_row_id",
+        "REFERENCED_TABLE_NAME": "rts_inventory_rows",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_damaged_use_events",
+        "COLUMN_NAME": "performed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_inventory_rows",
+        "COLUMN_NAME": "source_line_item_id",
+        "REFERENCED_TABLE_NAME": "rts_line_items",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_line_items",
+        "COLUMN_NAME": "case_id",
+        "REFERENCED_TABLE_NAME": "rts_cases",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_stock_in_sessions",
+        "COLUMN_NAME": "confirmed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_stock_in_sessions",
+        "COLUMN_NAME": "discarded_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_stock_in_sessions",
+        "COLUMN_NAME": "started_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_stock_in_session_events",
+        "COLUMN_NAME": "actor_user_id",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_stock_in_session_events",
+        "COLUMN_NAME": "item_id",
+        "REFERENCED_TABLE_NAME": "rts_stock_in_session_items",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_stock_in_session_events",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "rts_stock_in_sessions",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_stock_in_session_items",
+        "COLUMN_NAME": "dept_barcode_id",
+        "REFERENCED_TABLE_NAME": "dept_pouch_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_stock_in_session_items",
+        "COLUMN_NAME": "honey_barcode_id",
+        "REFERENCED_TABLE_NAME": "honey_bottle_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_stock_in_session_items",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "rts_stock_in_sessions",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "rts_stock_in_session_items",
+        "COLUMN_NAME": "sku_id",
+        "REFERENCED_TABLE_NAME": "product_sku_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "sku_barcode_print_jobs",
+        "COLUMN_NAME": "sku_id",
+        "REFERENCED_TABLE_NAME": "product_sku_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "sku_barcode_print_jobs",
+        "COLUMN_NAME": "printed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "sku_barcode_stock_events",
+        "COLUMN_NAME": "sku_id",
+        "REFERENCED_TABLE_NAME": "product_sku_barcodes",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "sku_barcode_stock_events",
+        "COLUMN_NAME": "scanned_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "sp_sort_batches",
+        "COLUMN_NAME": "submitted_by_user_id",
+        "REFERENCED_TABLE_NAME": "app_users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "sp_sort_rows",
+        "COLUMN_NAME": "batch_id",
+        "REFERENCED_TABLE_NAME": "sp_sort_batches",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stocks",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stocks",
+        "COLUMN_NAME": "dept_id",
+        "REFERENCED_TABLE_NAME": "departments",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stocks",
+        "COLUMN_NAME": "supplier_id",
+        "REFERENCED_TABLE_NAME": "suppliers",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stock_deductions",
+        "COLUMN_NAME": "deducted_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stock_deductions",
+        "COLUMN_NAME": "dept_id",
+        "REFERENCED_TABLE_NAME": "departments",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stock_deductions",
+        "COLUMN_NAME": "stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stock_entries",
+        "COLUMN_NAME": "dept_id",
+        "REFERENCED_TABLE_NAME": "departments",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stock_entries",
+        "COLUMN_NAME": "entered_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stock_entries",
+        "COLUMN_NAME": "stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stock_price_history",
+        "COLUMN_NAME": "changed_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "stock_price_history",
+        "COLUMN_NAME": "stock_id",
+        "REFERENCED_TABLE_NAME": "stocks",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "suppliers",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "supplier_dept_prices",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "supplier_dept_prices",
+        "COLUMN_NAME": "supplier_id",
+        "REFERENCED_TABLE_NAME": "suppliers",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "supplier_honey_prices",
+        "COLUMN_NAME": "created_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "supplier_honey_prices",
+        "COLUMN_NAME": "supplier_id",
+        "REFERENCED_TABLE_NAME": "suppliers",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "users",
+        "COLUMN_NAME": "dept_id",
+        "REFERENCED_TABLE_NAME": "departments",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "users",
+        "COLUMN_NAME": "role_id",
+        "REFERENCED_TABLE_NAME": "roles",
+        "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+        "TABLE_NAME": "user_permissions",
+        "COLUMN_NAME": "user_id",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+    }
+]

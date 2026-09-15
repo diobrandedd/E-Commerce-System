@@ -980,3 +980,8 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-08-31 — Barcode sheet requested-item banners
 - **What we did:** Barcode sheet banners now identify the requested Honey size/variant or department product instead of generic BATCH A/B text, while supplier/date labels retain their legacy fallback.
 - **Record:** [[problems/records/2026-08-31_barcode-sheet-requested-item-banner]]
+
+### 2026-09-15 — Capstone Chapters I–III document
+- **What we did:** Created `output/documents/Pyx_Tracker_Capstone_Chapters_I_III.docx` from the supplied title proposal and institutional chapter outline. Included six modules, verified literature, 24 figures, 39 tables, and a dictionary covering 28 principal database tables. Reflected the current photo-only Deliveries and confirmed-session RTS stock-in workflows.
+- **Validation:** Updated Word fields and contents; rendered and visually checked the 78-page document; checked source preservation, diagram/table counts, schema dictionary fields, and removal of unrelated sample content. No application code changed.
+- **Pending evidence:** Adviser name, actual schedule, physical deployment details, and evaluation results remain explicitly identified for confirmation. Working files and QA evidence are in `output/capstone_work/`.

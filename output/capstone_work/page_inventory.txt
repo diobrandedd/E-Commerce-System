@@ -1,0 +1,79 @@
+Pages 78
+1 518   PYX TRACKER  Web-based Enterprise Operations Management System    An Info
+2 3908     2    TABLE OF CONTENTS  CHAPTER I .....................................
+3 1335     3    Database Design ................................ .................
+4 1371     4    CHAPTER I  INTRODUCTION  Background of the Study  This study prese
+5 1656     5    to order lists, recorded retail sales, estimated costs, and mainta
+6 1144     6    formulas separately from parcel recipes. Mul ti-Platform Order Pro
+7 1082     7    Specific Objectives  1. Develop an integrated inventory module tha
+8 1237     8    Scope and Limitation of the Study  Scope of the Study  The study c
+9 1394     9    - Return-to-Sender Management � records return cases, item conditi
+10 1339     10    movements occur through their designated inventory, packing, sale
+11 551     11    For cashiers and customers, integrated POS records support organi
+12 618     12    IPO Model    Figure 1.1  Input Process Output Model of Pyx Tracke
+13 1103     13    sellable return produces an inventory increase after confirmation
+14 1015     14    Inventory pool � A defined stock source such as normal finished g
+15 1360     15    CHAPTER II  REVIEW OF RELATED LITERATURE AND STUDIES  This chapte
+16 1294     16    inventory software needs a clear business -process model as well 
+17 1425     17    These sources distinguish code detection, identifier interpretati
+18 1433     18    Philippine studies contribute related evidence on input and trans
+19 1483     19    (2025) illustrate transaction and inventory integration in a Phil
+20 1204     20    ingredient inventory. Divina et al. (2025) report user and techni
+21 1332     21    Return-to-Sender Management and Reverse Logistics  Nanayakkara et
+22 1276     22    and packing workflows. That local evidence must come from the pro
+23 1129     23    Synthesis of the Literature and Research Gap  The reviewed works 
+24 1234     24    CHAPTER III  METHODOLOGY  This chapter describes the development 
+25 630     25    server. Identifying the release used during evaluation is therefo
+26 1241     26    The diagram follows the sample's requirements -to-build structure
+27 1377     27    separate from fulfillment packaging. Executive permissions govern
+28 1322     28    staff scan or type a tracking number, capture or upload a photo, 
+29 522     29    accepted sellable goods into an owned draft session. Confirmation
+30 308     30    Planning and Conception Initiation Phase  Business Model Canvas  
+31 698     31    structure, and revenue streams. It represents the food business s
+32 261     32    Functional Decomposition Diagram    Figure 3.4  Functional Decomp
+33 598     33    responsibility, not screen navigation or execution order. S hared
+34 96     34      Figure 3.6  Use Cases for Online Orders    Figure 3.7  Use Case
+35 112     35      Figure 3.8  Use Cases for Return-to-Sender Management    Figure
+36 784     36      Figure 3.10  Use Cases for Parcel Documentation  Use Case Matri
+37 1263     37      Table 3.2  Use Case Matrix for Product and parcel costing  Elem
+38 1157     38    Element Specification  Exceptions Report duplicates, unmatched re
+39 1223     39    Element Specification  Basic flow  1. Select or scan items.  2. S
+40 496     40    They follow the reference's screen -plus-explanation approach wit
+41 242     41      Figure 3.12  Online Orders Storyboard  CSR personnel select a s
+42 217     42      Figure 3.13  Product Costing Storyboard  An executive selects a
+43 238     43      Figure 3.14  Parcel Documentation Storyboard  The operator ente
+44 223     44      Figure 3.15  Point of Sale Storyboard  The cashier authenticate
+45 213     45      Figure 3.16  Return-to-Sender Storyboard  The operator records 
+46 642     46    Database Design    Figure 3.17  Database Design by Functional Are
+47 98     47    Entity Relationship Diagram    Figure 3.18  Inventory and Costing
+48 63     48      Figure 3.19  Order and Sales Entity Relationships  
+49 639     49      Figure 3.20  Return and Barcode Entity Relationships  These dia
+50 1218     50    reported by metadata, not a literal stored dash. PRI means primar
+51 1023     51    Table 3.8  Data Dictionary for roles  Attribute Type Null Default
+52 1319     52    Attribute Type Null Default Description  category enum No � Categ
+53 1266     53    Attribute Type Null Default Description  supplier_name varchar(16
+54 1333     54    Attribute Type Null Default Description  arrival_date date No � A
+55 1365     55    Attribute Type Null Default Description  transferred_at datetime 
+56 1248     56    Attribute Type Null Default Description  created_at datetime No  
+57 1245     57    Attribute Type Null Default Description  variant enum Yes NULL Va
+58 1204     58    Attribute Type Null Default Description  match_rule longtext No �
+59 1220     59    Attribute Type Null Default Description  status enum No 'active' 
+60 1461     60    Table 3.23  Data Dictionary for online_order_parcels  Attribute T
+61 1296     61    Attribute Type Null Default Description  rts_recorded_at datetime
+62 1248     62    Attribute Type Null Default Description  resolved_at datetime Yes
+63 1140     63    Attribute Type Null Default Description  created_at datetime No  
+64 1361     64    Attribute Type Null Default Description  courier_final varchar(16
+65 1198     65    Attribute Type Null Default Description  voided_by_user_id int(10
+66 1456     66    Attribute Type Null Default Description  source_line_item_ id int
+67 1444     67    Attribute Type Null Default Description  started_by int(10) unsig
+68 1001     68    Attribute Type Null Default Description  variant varchar(32) Yes 
+69 728     69    Table 3.34  Data Dictionary for sku_barcode_stock_events  Attribu
+70 711     70    Network Design    Figure 3.21  Logical Network Design of Pyx Trac
+71 307     71    Network Topology    Figure 3.22  Star Topology for Local Access  
+72 643     72    Technology Stack Development    Figure 3.23  Technology Stack of 
+73 1381     73    Component Specification Purpose  Server PHP with session-based AP
+74 1255     74    Equipment Functional requirement  Network equipment Router/access
+75 1585     75    Table 3.38  Functional Verification Plan  ID Scenario Expected ev
+76 1169     76    Deployment verification identifies the release date, installed sc
+77 2372     77    REFERENCES  Beck, K., Beedle, M., van Bennekum, A., Cockburn, A.,
+78 1430     78    Laping, A. K. T., Mendoza, C. A. R., Tiulentino, K. N. L., Villar
