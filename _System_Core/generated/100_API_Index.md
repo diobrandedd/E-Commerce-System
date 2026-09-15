@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-15T05:53:15+02:00
+generated: 2026-09-15T10:15:17+02:00
 type: memory-bank
 ---
 
@@ -631,6 +631,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
 | `honey_sold` | `api_sales_honey_sold()` | `honey_sales_sold_snapshot()`, `ims_pdo()`, `ims_user_can()` |
+| `honey_sold_export` | `api_sales_honey_sold_export()` | `ims_user_can()`, `honey_sales_build_export_xlsx()`, `ims_pdo()` |
 
 ### `settings.php`
 

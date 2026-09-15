@@ -183,3 +183,63 @@ export async function apiPostForm<T = unknown>(
   }
   return payload.data as T;
 }
+
+/**
+ * Download a binary file from an API action (e.g. Excel export).
+ * Surfaces JSON `{ ok:false, error }` bodies when the server rejects the request.
+ */
+export async function apiDownload(
+  path: string,
+  action: string,
+  params?: Record<string, string | number | boolean | null | undefined>,
+  fallbackFilename = "download.bin",
+  signal?: AbortSignal
+): Promise<void> {
+  const url = new URL(`${API_BASE}/${path.replace(/^\/+/, "")}`, window.location.origin);
+  url.searchParams.set("action", action);
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      if (v === null || v === undefined || v === "") continue;
+      url.searchParams.set(k, String(v));
+    }
+  }
+
+  const headers = mergeApiHeaders({
+    Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/json",
+  });
+
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      method: "GET",
+      headers,
+      credentials: "same-origin",
+      signal,
+    });
+  } catch {
+    throw new ApiError("Network error. Is XAMPP/Apache running?", 0);
+  }
+
+  const contentType = (response.headers.get("Content-Type") || "").toLowerCase();
+  if (!response.ok || contentType.includes("application/json")) {
+    const payload = await readApiResponse<unknown>(response);
+    throw new ApiError(payload.error ?? `Download failed (${response.status}).`, response.status, payload.data);
+  }
+
+  const blob = await response.blob();
+  let filename = fallbackFilename;
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const match = /filename="([^"]+)"/i.exec(disposition) || /filename=([^;]+)/i.exec(disposition);
+  if (match?.[1]) {
+    filename = match[1].trim().replace(/^"|"$/g, "");
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(objectUrl);
+}

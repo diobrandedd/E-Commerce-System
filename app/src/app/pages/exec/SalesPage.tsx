@@ -1,11 +1,11 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Loader2, Package, Printer, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, Loader2, Package, Printer, Search, X } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { HoneyVariantPieGrid, type VariantChart } from "@/app/components/honey/HoneyVariantPieGrid";
 import { AppSectionEnter, AppErrorBanner, appHoverCard, appHoverRow } from "@/app/components/layout/appFeedbackMotion";
 import { Button } from "@/app/components/ui/button";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
-import { apiGet, ApiError } from "@/app/lib/api";
+import { apiDownload, apiGet, ApiError } from "@/app/lib/api";
 import { peso, variantLabel } from "@/app/lib/posHoney";
 import { printPosThermalReceipt, type PosThermalReceipt } from "@/app/lib/posThermalPrint";
 import pyxLogo from "@/imports/pyxfoodpr.png";
@@ -180,6 +180,7 @@ export function SalesPage() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [data, setData] = useState<SalesSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(
@@ -254,6 +255,49 @@ export function SalesPage() {
     setAppliedReceipt("");
     setPage(1);
     void load({ receipt: "", page: 1 });
+  };
+
+  const buildFilterParams = useCallback((): Record<string, string> => {
+    const params: Record<string, string> = {
+      sale_type: saleType,
+      channel,
+      product: productFilter,
+    };
+    if (period === "custom") {
+      params.period = "custom";
+      params.from = from;
+      params.to = to;
+    } else if (period === "date") {
+      params.period = "custom";
+      params.from = pickDate;
+      params.to = pickDate;
+    } else {
+      params.period = period;
+    }
+    if (appliedReceipt.trim()) {
+      params.receipt = appliedReceipt.trim();
+    }
+    return params;
+  }, [period, from, to, pickDate, saleType, channel, productFilter, appliedReceipt]);
+
+  const exportExcel = async () => {
+    if (period === "custom" && (!from || !to)) {
+      setError("Choose both start and end dates for a custom range.");
+      return;
+    }
+    if (period === "date" && !pickDate) {
+      setError("Choose a date.");
+      return;
+    }
+    setExporting(true);
+    setError(null);
+    try {
+      await apiDownload("sales.php", "honey_sold_export", buildFilterParams(), "sales-export.xlsx");
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Could not export sales.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   useLiveRefresh(load);
@@ -562,18 +606,31 @@ export function SalesPage() {
         {error && <AppErrorBanner message={error} />}
 
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
+          <div className="px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Package size={16} className="text-[#C8900A]" />
               <h2 className="text-sm font-semibold">
                 Recent walk-in sales · {productFilterLabel(productFilter)}
               </h2>
             </div>
-            {checkouts && checkouts.total > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {checkouts.total} checkout{checkouts.total === 1 ? "" : "s"}
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {checkouts && checkouts.total > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {checkouts.total} checkout{checkouts.total === 1 ? "" : "s"}
+                </span>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                disabled={exporting || loading}
+                onClick={() => void exportExcel()}
+              >
+                {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                Export Excel
+              </Button>
+            </div>
           </div>
 
           {loading ? (

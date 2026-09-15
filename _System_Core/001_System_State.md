@@ -8,7 +8,7 @@
 |-------|------|
 | **Active Spec** | _(none)_ |
 | **Active Plan** | _(none)_ |
-| **Status** | idle — last shipped [[specs/2026-09-12_inventory-check-sync-on-confirm]] |
+| **Status** | idle — last shipped [[plans/archive/2026-09-15_sales-excel-export_plan]] (Sales Excel export) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending
