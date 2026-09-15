@@ -330,7 +330,7 @@ function dept_raw_stock_in_bags(
 
     $priceRow = dept_pricing_resolve_active_price($pdo, $supplierId, $productKey, $arrivalDate);
     if (!$priceRow) {
-        throw new RuntimeException('No supplier price for this date. Set ₱/bag in Supplier Master first.');
+        throw new RuntimeException('No supplier price for this date. Set ₱/' . (string) $def['stock_in_unit'] . ' in Supplier Master first.');
     }
 
     dept_pricing_upsert_supplier_costing_stocks($pdo, $supplierId, $userId);

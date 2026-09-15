@@ -16,11 +16,14 @@ export function DeptBagPoolStrip({
   testId = "dept-bag-pool",
   sellUnit = "pouch",
   deductEnabled = true,
+  poolUnitLabel = "bag",
 }: {
   pool: DeptBagPool;
   testId?: string;
   sellUnit?: "pouch" | "jar";
   deductEnabled?: boolean;
+  /** Presentation unit for bags_on_hand (API field name unchanged). */
+  poolUnitLabel?: "kg" | "bag";
 }) {
   const reduceMotion = useReducedMotion();
   const capacity = Math.max(pool.grams_capacity, 0);
@@ -38,19 +41,32 @@ export function DeptBagPoolStrip({
     teaBags != null && gramsTea != null && Number.isFinite(teaBags) && Number.isFinite(gramsTea);
   const unitLabel = sellUnit === "jar" ? "jar" : "pouch";
   const unitLabelPlural = sellUnit === "jar" ? "jars" : "pouches";
+  const onHandLabel =
+    poolUnitLabel === "kg"
+      ? `${formatBags(pool.bags_on_hand)} kg`
+      : `${formatBags(pool.bags_on_hand)} bag${Math.abs(pool.bags_on_hand) === 1 ? "" : "s"}`;
+  const denomLabel = poolUnitLabel === "kg" ? "g / kg leaf" : "g bag";
+  const stockInHint =
+    poolUnitLabel === "kg" ? "Stock in raw leaf (kg) to fill the pool" : "Stock in raw bags to fill the pool";
+  const recoverHint =
+    poolUnitLabel === "kg"
+      ? "Scans can continue while overdrawn. Stock in more raw leaf (kg) to recover the pool."
+      : "Scans can continue while overdrawn. Stock in more raw bags to recover the pool.";
 
   return (
     <motion.section
       layout={!reduceMotion}
       data-testid={testId}
-      aria-label="Bag pool"
+      aria-label={poolUnitLabel === "kg" ? "Leaf pool" : "Bag pool"}
       className={cn(
         "rounded-xl border bg-card px-4 py-3.5 shadow-sm shadow-black/[0.03]",
         overdrawn ? "border-amber-500/70 bg-amber-50/50" : "border-border",
       )}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-foreground">Bag pool</h2>
+        <h2 className="text-sm font-semibold text-foreground">
+          {poolUnitLabel === "kg" ? "Leaf pool" : "Bag pool"}
+        </h2>
         <p className="text-xs text-muted-foreground">
           {formatGrams(pool.grams_per_pouch)} g per {unitLabel}
           {showTeaBreakdown ? (
@@ -61,7 +77,7 @@ export function DeptBagPoolStrip({
           ) : (
             <>
               {" "}
-              · {formatGrams(pool.grams_per_bag)} g bag
+              · {formatGrams(pool.grams_per_bag)} {denomLabel}
             </>
           )}
         </p>
@@ -75,7 +91,7 @@ export function DeptBagPoolStrip({
           <>
             {formatGrams(remaining)} g
             <span className="ml-2 text-sm font-medium text-muted-foreground">
-              · {formatBags(pool.bags_on_hand)} bag{Math.abs(pool.bags_on_hand) === 1 ? "" : "s"}
+              · {onHandLabel}
             </span>
           </>
         )}
@@ -109,7 +125,7 @@ export function DeptBagPoolStrip({
           <span>
             {capacity > 0
               ? `${Math.round(fillPct)}% of ${formatGrams(capacity)} g stocked`
-              : "Stock in raw bags to fill the pool"}
+              : stockInHint}
           </span>
           {!overdrawn && unitsLeft > 0 ? (
             <span>
@@ -128,7 +144,7 @@ export function DeptBagPoolStrip({
         </p>
       ) : overdrawn ? (
         <p className="mt-2.5 text-xs font-medium text-amber-950" role="status">
-          Scans can continue while overdrawn. Stock in more raw bags to recover the pool.
+          {recoverHint}
         </p>
       ) : null}
     </motion.section>
@@ -137,5 +153,5 @@ export function DeptBagPoolStrip({
 
 /** @deprecated Prefer DeptBagPoolStrip */
 export function ParagisBagPoolStrip({ pool }: { pool: DeptBagPool }) {
-  return <DeptBagPoolStrip pool={pool} testId="paragis-bag-pool" />;
+  return <DeptBagPoolStrip pool={pool} testId="paragis-bag-pool" poolUnitLabel="kg" />;
 }

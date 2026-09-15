@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-09-14T07:53:45+02:00
+generated: 2026-09-15T04:17:59+02:00
 type: spa
 ---
 

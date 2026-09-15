@@ -108,17 +108,17 @@ export function DeptRawProduceGuideModal({
         <GuideSection title="Two stages">
           {productKey === "brc" ? (
             <p>
-              <strong className="text-foreground">Bag pool</strong> — leaf from stocked 1 kg supplier bags, tracked as remaining grams (progress bar on this page).
+              <strong className="text-foreground">Bag pool</strong> — leaf from stocked raw kilos, tracked as remaining grams (progress bar on this page).
               {" "}
               <strong className="text-foreground">Finished pouches</strong> — retail packs ready to sell (default {BRC_GRAMS_PER_POUCH} g each).
-              There is no inventorial Produce step — stock bags, then scan pouches.
+              There is no inventorial Produce step — stock kg, then scan pouches.
             </p>
           ) : productKey === "jar_cacao" ? (
             <p>
-              <strong className="text-foreground">Bag pool</strong> — cacao from stocked 1 kg supplier bags, tracked as remaining grams (progress bar on this page).
+              <strong className="text-foreground">Bag pool</strong> — cacao from stocked raw kilos, tracked as remaining grams (progress bar on this page).
               {" "}
               <strong className="text-foreground">Finished jars</strong> — retail jars ready to sell (default {JAR_CACAO_GRAMS_PER_JAR} g cacao, {JAR_CACAO_TABLETS_PER_JAR} tablets inside each).
-              There is no inventorial Produce step — stock bags, then scan jars.
+              There is no inventorial Produce step — stock kg, then scan jars.
             </p>
           ) : (
             <p>
@@ -157,8 +157,8 @@ export function DeptRawProduceGuideModal({
             <>
               <ol className="list-decimal pl-4 space-y-1.5">
                 <li>
-                  <strong className="text-foreground">Stock in raw bags</strong> — receive sealed 1 kg supplier bags
-                  {productKey === "brc" || productKey === "jar_cacao" ? " into the bag pool" : ""}.
+                  <strong className="text-foreground">Stock in raw leaf (kg)</strong> — enter total kilos received
+                  {productKey === "brc" || productKey === "jar_cacao" ? " into the leaf pool" : ""}.
                 </li>
                 <li>
                   <strong className="text-foreground">Request barcodes</strong> — give the batch code and how many {meta.sellUnit}s you are packing.
@@ -212,16 +212,14 @@ export function DeptRawProduceGuideModal({
           <p className="rounded-lg border border-[#C8900A]/25 bg-[#C8900A]/5 px-3 py-2 text-[#8a6506]">{yieldHint}</p>
           {productKey === "brc" && (
             <p>
-              Example: opening <strong className="text-foreground">1 bag</strong> worth of production uses{" "}
-              <strong className="text-foreground">0.1 bag</strong> of raw per pouch — about{" "}
-              <strong className="text-foreground">{brcPouchesPerBag().toLocaleString()} pouches</strong> per full bag at yield.
+              Example: <strong className="text-foreground">1 kg</strong> of leaf yields about{" "}
+              <strong className="text-foreground">{brcPouchesPerBag()} pouches</strong> at default BOM.
             </p>
           )}
           {productKey === "jar_cacao" && (
             <p>
-              Example: opening <strong className="text-foreground">1 bag</strong> worth of production uses{" "}
-              <strong className="text-foreground">0.22 bag</strong> of raw per jar — about{" "}
-              <strong className="text-foreground">{jarCacaoJarsPerBag().toFixed(2)} jars</strong> per full bag at yield.
+              Example: <strong className="text-foreground">1 kg</strong> of cacao yields about{" "}
+              <strong className="text-foreground">{jarCacaoJarsPerBag().toFixed(2)} jars</strong> at default BOM.
             </p>
           )}
           {productKey === "honey_comb" && (
@@ -236,7 +234,13 @@ export function DeptRawProduceGuideModal({
         <GuideSection title="Waste & corrections">
           <ul className="list-disc pl-4 space-y-1.5">
             <li>
-              <strong className="text-foreground">Bag waste</strong> — sealed raw bags discarded before opening (reduces Raw bags).
+              <strong className="text-foreground">
+                {productKey === "honey_comb" ? "Bag waste" : "Leaf waste"}
+              </strong>{" "}
+              —{" "}
+              {productKey === "honey_comb"
+                ? "sealed raw bags discarded before opening (reduces Raw bags)."
+                : "raw kilos discarded before use (reduces the leaf pool)."}
             </li>
           </ul>
           <p>

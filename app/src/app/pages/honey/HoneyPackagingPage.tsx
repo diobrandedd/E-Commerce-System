@@ -13,7 +13,6 @@ import {
   DeptPouchRequestsPanel,
   DeptPouchScanInPanel,
 } from "@/app/components/dept/DeptPouchBarcodePanels";
-import { HoneyBottleScanInPanel } from "@/app/components/honey/HoneyBottleBarcodePanels";
 import {
   AppErrorBanner,
   AppPressable,
@@ -102,7 +101,6 @@ export function HoneyPackagingPage() {
   const { user, can } = useAuth();
   const canExecEdit = canExecutiveDirectEdit(user);
   const canLeakDamage = can("inventory.leak_damage.view");
-  const canBottleScan = can("honey.bottle.scan");
   const showSupplierProfile = canViewSupplierProfile(user);
   const canCombBarcodes = canDeptPouchBarcodeOps(user, "honey_comb");
   const [rows, setRows] = useState<PkRow[]>([]);
@@ -126,7 +124,6 @@ export function HoneyPackagingPage() {
   const [editRow, setEditRow] = useState<PkRow | null>(null);
   const [traceQ, setTraceQ] = useState("");
   const [combModal, setCombModal] = useState<"scan" | "admin" | null>(null);
-  const [honeyBottleScanOpen, setHoneyBottleScanOpen] = useState(false);
   const [pendingCombLabels, setPendingCombLabels] = useState(0);
   const combScanTitleId = useId();
   const combAdminTitleId = useId();
@@ -187,7 +184,7 @@ export function HoneyPackagingPage() {
   return (
     <PageLayout
       title="Raw Honey"
-      subtitle="Packaging — batch rows and scan-in history"
+      subtitle="Packaging — batch rows and scan-in history (stock-in from Production)"
       actions={
         <form
           className="flex items-center gap-2"
@@ -212,15 +209,6 @@ export function HoneyPackagingPage() {
     >
       <div className="space-y-4 mb-6">
         <HoneyStageTabs />
-        {canBottleScan && (
-          <AppPressable
-            type="button"
-            className={`${appHeaderActionClass} min-h-11 gap-1.5 inline-flex items-center text-xs font-medium px-3 py-1.5 rounded-lg border border-border`}
-            onClick={() => setHoneyBottleScanOpen(true)}
-          >
-            <ScanLine size={14} /> Scan bottle stock in
-          </AppPressable>
-        )}
         {canLeakDamage && (
           <Link
             to="/inventory/leak-damage"
@@ -598,30 +586,6 @@ export function HoneyPackagingPage() {
       ) : null}
         </div>
       </HoneyStageContent>
-
-      {honeyBottleScanOpen && (
-        <AppModal
-          open
-          onClose={() => {
-            setHoneyBottleScanOpen(false);
-            void refresh();
-          }}
-          panelClassName="max-w-lg w-full"
-          labelledBy="honey-bottle-scan-title"
-        >
-          <AppModalHeader
-            title="Scan bottles into packaging stock"
-            titleId="honey-bottle-scan-title"
-            onClose={() => {
-              setHoneyBottleScanOpen(false);
-              void refresh();
-            }}
-          />
-          <AppModalBody>
-            <HoneyBottleScanInPanel />
-          </AppModalBody>
-        </AppModal>
-      )}
 
       {combModal === "scan" && (
         <AppModal

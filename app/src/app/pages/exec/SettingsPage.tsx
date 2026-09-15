@@ -687,7 +687,7 @@ export function SettingsPage() {
               <h3 className="text-sm font-semibold text-foreground">Paragis pouch BOM</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Leaf grams per tea bag and tea bags per sellable pouch. Scan deducts grams_per_tea_bag × tea_bags_per_pouch
-                from the bag pool (1 kg bags). Defaults {ptDefaultGrams} g × {ptDefaultBags} = {ptDefaultGrams * ptDefaultBags} g.
+                from the leaf pool (1 stock-in unit = 1 kg). Defaults {ptDefaultGrams} g × {ptDefaultBags} = {ptDefaultGrams * ptDefaultBags} g.
               </p>
             </div>
           </div>
@@ -699,9 +699,9 @@ export function SettingsPage() {
             <div className="px-6 py-5 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Deduct raw bags on finished stock-in</p>
+                  <p className="text-sm font-medium text-foreground">Deduct leaf pool on finished stock-in</p>
                   <p className="text-xs text-muted-foreground">
-                    When off, pouch scans credit finished inventory without using the bag pool.
+                    When off, pouch scans credit finished inventory without using the leaf pool.
                   </p>
                 </div>
                 <Switch
@@ -709,7 +709,7 @@ export function SettingsPage() {
                   onCheckedChange={setPtBagPoolDeduct}
                   data-testid="pt-bag-pool-deduct-switch"
                   className="data-[state=checked]:bg-[#C8900A]"
-                  aria-label="Deduct raw bags on finished stock-in"
+                  aria-label="Deduct leaf pool on finished stock-in"
                 />
               </div>
               <div className="flex flex-wrap items-end gap-3">
@@ -789,8 +789,8 @@ export function SettingsPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground">Black Rice pouch BOM</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Grams deducted per pouch scan and supplier bag size for the bag pool. Defaults{" "}
-                {brcDefaultPouch} g / pouch · {brcDefaultBag} g / bag ({brcDefaultBag / brcDefaultPouch} pouches/bag).
+                Grams deducted per pouch scan and grams per kg of leaf pool (scan deduct denominator). Defaults{" "}
+                {brcDefaultPouch} g / pouch · {brcDefaultBag} g / kg ({brcDefaultBag / brcDefaultPouch} pouches/kg).
               </p>
             </div>
           </div>
@@ -802,9 +802,9 @@ export function SettingsPage() {
             <div className="px-6 py-5 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Deduct raw bags on finished stock-in</p>
+                  <p className="text-sm font-medium text-foreground">Deduct leaf pool on finished stock-in</p>
                   <p className="text-xs text-muted-foreground">
-                    When off, pouch scans credit finished inventory without using the bag pool.
+                    When off, pouch scans credit finished inventory without using the leaf pool.
                   </p>
                 </div>
                 <Switch
@@ -812,7 +812,7 @@ export function SettingsPage() {
                   onCheckedChange={setBrcBagPoolDeduct}
                   data-testid="brc-bag-pool-deduct-switch"
                   className="data-[state=checked]:bg-[#C8900A]"
-                  aria-label="Deduct raw bags on finished stock-in"
+                  aria-label="Deduct leaf pool on finished stock-in"
                 />
               </div>
               <div className="flex flex-wrap items-end gap-3">
@@ -840,7 +840,7 @@ export function SettingsPage() {
               </div>
               <div className="w-40">
                 <label htmlFor="brc-grams-bag" className="text-xs text-muted-foreground">
-                  g per bag
+                  g per kg of leaf
                 </label>
                 <input
                   id="brc-grams-bag"
@@ -861,7 +861,7 @@ export function SettingsPage() {
                 />
               </div>
               <div className="min-w-[8rem]">
-                <p className="text-xs text-muted-foreground">pouches per bag</p>
+                <p className="text-xs text-muted-foreground">pouches per kg</p>
                 <p className="mt-1 text-sm font-semibold tabular-nums">{brcPouchesPerBag}</p>
               </div>
               <Button
@@ -896,9 +896,9 @@ export function SettingsPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground">Jar Cacao BOM</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Grams deducted per jar scan and supplier bag size for the bag pool. Defaults{" "}
-                {cacaoDefaultJar} g / jar · {cacaoDefaultBag} g / bag (
-                {(cacaoDefaultBag / cacaoDefaultJar).toFixed(2)} jars/bag).
+                Grams deducted per jar scan and grams per kg of leaf pool (scan deduct denominator). Defaults{" "}
+                {cacaoDefaultJar} g / jar · {cacaoDefaultBag} g / kg (
+                {(cacaoDefaultBag / cacaoDefaultJar).toFixed(2)} jars/kg).
               </p>
             </div>
           </div>
@@ -910,9 +910,9 @@ export function SettingsPage() {
             <div className="px-6 py-5 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Deduct raw bags on finished stock-in</p>
+                  <p className="text-sm font-medium text-foreground">Deduct leaf pool on finished stock-in</p>
                   <p className="text-xs text-muted-foreground">
-                    When off, jar scans credit finished inventory without using the bag pool.
+                    When off, jar scans credit finished inventory without using the leaf pool.
                   </p>
                 </div>
                 <Switch
@@ -920,7 +920,7 @@ export function SettingsPage() {
                   onCheckedChange={setCacaoBagPoolDeduct}
                   data-testid="cacao-bag-pool-deduct-switch"
                   className="data-[state=checked]:bg-[#C8900A]"
-                  aria-label="Deduct raw bags on finished stock-in"
+                  aria-label="Deduct leaf pool on finished stock-in"
                 />
               </div>
               <div className="flex flex-wrap items-end gap-3">
@@ -948,7 +948,7 @@ export function SettingsPage() {
               </div>
               <div className="w-40">
                 <label htmlFor="cacao-grams-bag" className="text-xs text-muted-foreground">
-                  g per bag
+                  g per kg of leaf
                 </label>
                 <input
                   id="cacao-grams-bag"
@@ -969,7 +969,7 @@ export function SettingsPage() {
                 />
               </div>
               <div className="min-w-[8rem]">
-                <p className="text-xs text-muted-foreground">jars per bag</p>
+                <p className="text-xs text-muted-foreground">jars per kg</p>
                 <p className="mt-1 text-sm font-semibold tabular-nums">{cacaoJarsPerBag}</p>
               </div>
               <Button

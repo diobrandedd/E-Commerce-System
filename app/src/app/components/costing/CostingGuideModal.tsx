@@ -110,7 +110,7 @@ export function CostingGuideModal({
               {HONEY_LITERS_PER_US_GALLON.toFixed(3)}).
             </li>
             <li>
-              <strong className="text-foreground">PT / BRC / Jar Cacao raw</strong> — Supplier Master ₱/bag (1 kg bag).
+              <strong className="text-foreground">PT / BRC / Jar Cacao raw</strong> — Supplier Master ₱/kg (leaf pool unit = 1 kg).
             </li>
             <li>
               <strong className="text-foreground">Packaging</strong> — Packaging Materials lot stock-in → WAC ₱/pc (or pouch).
@@ -135,45 +135,45 @@ export function CostingGuideModal({
         </GuideSection>
 
         <GuideSection title="Paragis Tea">
-          <p>Supplier <strong className="text-foreground">1 kg bag</strong> → sellable <strong className="text-foreground">pouch</strong> (24 tea bags × 2 g = 48 g leaf).</p>
+          <p>Supplier <strong className="text-foreground">1 kg</strong> leaf → sellable <strong className="text-foreground">pouch</strong> (24 tea bags × 2 g = 48 g leaf).</p>
           <GuideTable
             headers={["Step", "Math"]}
             rows={[
-              ["Tea bags per bag", `${ptTeaBagsPerBag()} bags (1000 ÷ 2 g)`],
-              ["Pouches per bag (stock-in)", `~${ptPouchesPerBag().toFixed(2)} pouches`],
-              ["Formula raw qty", `${ptBagsPerPouch()} bag/pouch`],
+              ["Tea bags per kg", `${ptTeaBagsPerBag()} bags (1000 ÷ 2 g)`],
+              ["Pouches per kg (stock-in)", `~${ptPouchesPerBag().toFixed(2)} pouches`],
+              ["Formula raw qty", `${ptBagsPerPouch()} kg/pouch`],
               ["Packaging", `1 pouch packaging / pouch`],
             ]}
           />
-          <p>Example: ₱400/bag → leaf ≈ ₱{(400 * ptBagsPerPouch()).toFixed(2)}/pouch.</p>
+          <p>Example: ₱400/kg → leaf ≈ ₱{(400 * ptBagsPerPouch()).toFixed(2)}/pouch.</p>
         </GuideSection>
 
         <GuideSection title="Black Rice Coffee">
-          <p>Supplier <strong className="text-foreground">1 kg bag</strong> → sellable <strong className="text-foreground">pouch</strong> ({BRC_GRAMS_PER_POUCH} g).</p>
+          <p>Supplier <strong className="text-foreground">1 kg</strong> → sellable <strong className="text-foreground">pouch</strong> ({BRC_GRAMS_PER_POUCH} g).</p>
           <GuideTable
             headers={["Step", "Math"]}
             rows={[
-              ["Pouches per bag (stock-in)", `${brcPouchesPerBag()} pouches`],
-              ["Formula raw qty", `${brcBagsPerPouch()} bag/pouch`],
+              ["Pouches per kg (stock-in)", `${brcPouchesPerBag()} pouches`],
+              ["Formula raw qty", `${brcBagsPerPouch()} kg/pouch`],
               ["Packaging", `1 BRC pouch packaging / pouch`],
             ]}
           />
-          <p>Example: ₱100/bag → raw ≈ ₱{(100 * brcBagsPerPouch()).toFixed(2)}/pouch.</p>
+          <p>Example: ₱100/kg → raw ≈ ₱{(100 * brcBagsPerPouch()).toFixed(2)}/pouch.</p>
         </GuideSection>
 
         <GuideSection title="Jar Cacao">
           <p>
-            Supplier <strong className="text-foreground">1 kg bag</strong> → sellable <strong className="text-foreground">jar</strong> ({JAR_CACAO_GRAMS_PER_JAR} g, {JAR_CACAO_TABLETS_PER_JAR} tablets inside — descriptive only).
+            Supplier <strong className="text-foreground">1 kg</strong> → sellable <strong className="text-foreground">jar</strong> ({JAR_CACAO_GRAMS_PER_JAR} g, {JAR_CACAO_TABLETS_PER_JAR} tablets inside — descriptive only).
           </p>
           <GuideTable
             headers={["Step", "Math"]}
             rows={[
-              ["Jars per bag (stock-in)", `~${jarCacaoJarsPerBag().toFixed(2)} jars`],
-              ["Formula raw qty", `${jarCacaoBagsPerJar()} bag/jar`],
+              ["Jars per kg (stock-in)", `~${jarCacaoJarsPerBag().toFixed(2)} jars`],
+              ["Formula raw qty", `${jarCacaoBagsPerJar()} kg/jar`],
               ["Packaging", `1 jar packaging / jar`],
             ]}
           />
-          <p>Example: ₱500/bag → raw ≈ ₱{(500 * jarCacaoBagsPerJar()).toFixed(2)}/jar.</p>
+          <p>Example: ₱500/kg → raw ≈ ₱{(500 * jarCacaoBagsPerJar()).toFixed(2)}/jar.</p>
         </GuideSection>
 
         <GuideSection title="Parcel packaging (separate from product COGS)">

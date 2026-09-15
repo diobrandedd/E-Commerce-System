@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from "react";
+﻿import { useCallback, useEffect, useId, useState } from "react";
 import { Camera, Loader2, Printer } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -81,7 +81,7 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
         <h3 className="text-sm font-semibold">New label request</h3>
         <p className="text-xs text-muted-foreground">
           Pick product and how many identical stickers to print. The barcode itself is set in System Settings → Barcode Settings.
-          When bottles are ready, stock them in under Scan into packaging stock and enter a custom batch number there.
+          When bottles are ready, stock them in from Production → scan stock-in (deducts production gallons).
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="text-xs text-muted-foreground">
@@ -153,178 +153,6 @@ export function HoneyBottleRequestsPanel({ canAdmin }: { canAdmin: boolean }) {
           </table>
         </div>
       )}
-    </AppSectionEnter>
-  );
-}
-
-export function HoneyBottleScanInPanel() {
-  const [code, setCode] = useState("");
-  const [flash, setFlash] = useState<"ok" | "err" | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [progress, setProgress] = useState<string | null>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
-  const [skuQty, setSkuQty] = useState("1");
-  const [customBatchNo, setCustomBatchNo] = useState("");
-  const [lastSku, setLastSku] = useState<{ code: string; label: string } | null>(null);
-  const cameraTitleId = useId();
-  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
-
-  const commitStockIn = async (
-    value: string,
-    opts?: { qty?: number; packaging_row_id?: number; batch_no?: string },
-  ): Promise<ScannerDecodeFeedback | void> => {
-    try {
-      const res = await bottleBarcodesApi.scanStockIn(value, opts);
-      playScanBeep("ok");
-      setFlash("ok");
-      const qtyBit = res.qty ? ` ×${res.qty}` : "";
-      setMsg(`${res.variant} ${res.size_label} · ${res.code}${qtyBit}`);
-      if (res.request) {
-        setProgress(`${res.request.scanned_count} / ${res.request.generated_count || res.request.quantity} scanned`);
-      }
-      window.setTimeout(() => setFlash(null), 700);
-      refocus();
-      return { kind: "success", message: `Stocked in: ${res.variant} ${res.size_label} · ${res.code}${qtyBit}` };
-    } catch (e) {
-      const reason = e instanceof ApiError ? e.message : "Scan failed.";
-      const isDup = /already|duplicate/i.test(reason);
-      playScanBeep(isDup ? "dup" : "bad");
-      setFlash("err");
-      setMsg(reason);
-      window.setTimeout(() => setFlash(null), 700);
-      refocus();
-      return {
-        kind: isDup ? "duplicate" : "error",
-        message: reason,
-      };
-    }
-  };
-
-  const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
-    const value = (raw ?? code).trim();
-    if (!value) return;
-    setCode("");
-    try {
-      const { lookup } = await skuBarcodesApi.lookup(value);
-      if (lookup.lookup_kind === "sku" && lookup.kind === "honey") {
-        if (!customBatchNo.trim()) {
-          playScanBeep("bad");
-          setFlash("err");
-          setMsg("Enter a custom batch number before scanning SKU barcodes.");
-          window.setTimeout(() => setFlash(null), 700);
-          refocus();
-          return { kind: "error", message: "Custom batch number required for SKU stock-in." };
-        }
-        const label = lookup.label ?? "Honey SKU";
-        setLastSku({ code: value, label });
-        return commitStockIn(value, { qty: 1, batch_no: customBatchNo.trim() });
-      }
-    } catch {
-      // fall through to unique scan
-    }
-    return commitStockIn(value);
-  };
-
-  const addSkuBulk = async () => {
-    if (!lastSku) {
-      setMsg("Scan a SKU barcode first, then use Quantity + Stock in for bulk.");
-      refocus();
-      return;
-    }
-    const qty = Number(skuQty);
-    if (!Number.isFinite(qty) || qty < 1) {
-      setMsg("Enter a quantity of at least 1.");
-      return;
-    }
-    if (!customBatchNo.trim()) {
-      setMsg("Enter a custom batch number for SKU stock-in.");
-      return;
-    }
-    await commitStockIn(lastSku.code, { qty, batch_no: customBatchNo.trim() });
-  };
-
-  return (
-    <AppSectionEnter className="space-y-4">
-      <div className="bg-card rounded-xl border border-border p-4 space-y-3">
-        <h3 className="text-sm font-semibold">Scan into packaging stock</h3>
-        <p className="text-xs text-muted-foreground">
-          Prefer <span className="font-medium text-foreground">Production → scan stock-in</span> when bottling from a
-          supplier gallon lot (deducts production gallons). This panel is for custom batches and leftover unique stickers:
-          set a custom batch for SKU (+1 per scan or Quantity + Stock in), or scan unique stickers one at a time.
-        </p>
-        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Custom batch number (for SKU stock-in)
-          <input
-            className="mt-1 w-full border rounded-lg px-3 py-2 text-sm uppercase"
-            value={customBatchNo}
-            onChange={e => setCustomBatchNo(e.target.value.toUpperCase())}
-            placeholder="e.g. NF082826"
-            autoComplete="off"
-          />
-        </label>
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            {...inputProps}
-            className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide"
-            placeholder="Scan barcode or type it…"
-            value={code}
-            onChange={e => setCode(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void onScan();
-              }
-            }}
-          />
-          <Button type="button" variant="outline" className="min-h-11 gap-1.5 shrink-0" onClick={() => setCameraOpen(true)}>
-            <Camera size={16} /> Camera
-          </Button>
-        </div>
-        <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2">
-          <p className="text-xs text-muted-foreground">
-            Bulk SKU add{lastSku ? ` — last: ${lastSku.label}` : " — scan a SKU first"}
-          </p>
-          <div className="flex gap-2 items-end">
-            <div className="w-24">
-              <label className="text-xs text-muted-foreground">Quantity</label>
-              <input
-                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
-                type="number"
-                min={1}
-                value={skuQty}
-                onChange={e => setSkuQty(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void addSkuBulk();
-                  }
-                }}
-              />
-            </div>
-            <Button type="button" className="min-h-11" onClick={() => void addSkuBulk()} disabled={!lastSku}>
-              Stock in
-            </Button>
-          </div>
-        </div>
-        <div className={`h-16 rounded-xl border flex items-center justify-center text-sm font-medium ${
-          flash === "ok" ? "bg-green-100 border-green-300 text-green-800" : flash === "err" ? "bg-red-100 border-red-300 text-red-800" : "bg-secondary/30 border-border text-muted-foreground"
-        }`}>
-          {flash === "ok" ? "Scanned" : flash === "err" ? "Not accepted" : "Ready"}
-        </div>
-        {msg && <p className="text-sm">{msg}</p>}
-        {progress && <p className="text-lg font-bold">{progress}</p>}
-      </div>
-      {cameraOpen ? (
-        <BarcodeCameraScannerModal
-          title="Scan bottle barcode"
-          titleId={cameraTitleId}
-          continuous
-          scanPrompt="Point at each bottle barcode. Keep scanning until stock-in is complete."
-          onClose={() => setCameraOpen(false)}
-          onDecoded={decoded => onScan(decoded)}
-        />
-      ) : null}
     </AppSectionEnter>
   );
 }
