@@ -1038,15 +1038,21 @@ function honey_sales_fetch_shipped_export(
             if ($qty <= 0) {
                 continue;
             }
+            $sizeQtys = [
+                'liter' => (float) ($row['qty_liter'] ?? 0),
+                '250ml' => (float) ($row['qty_250ml'] ?? 0),
+                '350ml' => (float) ($row['qty_350ml'] ?? 0),
+                'gallon' => (float) ($row['qty_gallon'] ?? 0),
+            ];
             $sizeParts = [];
             $sizeMap = [
-                'qty_liter' => '1L',
-                'qty_250ml' => '250ml',
-                'qty_350ml' => '350ml',
-                'qty_gallon' => 'Gallon',
+                'liter' => '1L',
+                '250ml' => '250ml',
+                '350ml' => '350ml',
+                'gallon' => 'Gallon',
             ];
             foreach ($sizeMap as $col => $label) {
-                $q = (float) ($row[$col] ?? 0);
+                $q = $sizeQtys[$col];
                 if ($q > 0) {
                     $sizeParts[] = $label . (abs($q - 1.0) > 0.001 ? ' ×' . $q : '');
                 }
@@ -1059,6 +1065,7 @@ function honey_sales_fetch_shipped_export(
             $variant = trim((string) ($row['variant'] ?? ''));
             if ($otherQty > 0 && $productLabel !== '') {
                 $productName = $productLabel;
+                $sizeQtys = ['dept' => $otherQty];
             } elseif ($variant !== '') {
                 $productName = ucfirst($variant) . ($sizeParts !== [] ? ' ' . implode(', ', $sizeParts) : '');
             } elseif ($productLabel !== '') {
@@ -1079,6 +1086,7 @@ function honey_sales_fetch_shipped_export(
                 'barcode' => trim((string) ($row['barcode'] ?? '')),
                 'is_rts_resellable' => strtolower((string) ($row['source'] ?? '')) === 'rts',
                 'kind' => $otherQty > 0 ? 'dept' : 'honey',
+                'size_qtys' => $sizeQtys,
             ];
         }
     }
@@ -1122,6 +1130,7 @@ function honey_sales_fetch_shipped_export(
                     'barcode' => trim((string) ($row['code'] ?? '')),
                     'is_rts_resellable' => (string) ($row['pool'] ?? '') === 'rts_sellable',
                     'kind' => 'dept',
+                    'size_qtys' => ['dept' => 1.0],
                 ];
             }
         } catch (PDOException $e) {
@@ -1166,6 +1175,204 @@ function honey_sales_export_checkout_items_summary(array $items): string
 }
 
 /**
+ * Normalize receipt/item size to export bucket.
+ */
+function honey_sales_export_size_bucket(?string $size, ?string $sizeLabel = null): string
+{
+    $raw = strtolower(trim((string) ($size !== null && $size !== '' ? $size : $sizeLabel)));
+    if ($raw === 'liter' || $raw === '1l' || $raw === '1 l') {
+        return 'liter';
+    }
+    if ($raw === '250ml' || $raw === '250 ml') {
+        return '250ml';
+    }
+    if ($raw === '350ml' || $raw === '350 ml') {
+        return '350ml';
+    }
+    if ($raw === 'gallon') {
+        return 'gallon';
+    }
+
+    return 'other';
+}
+
+/**
+ * Totals from Walk-in receipt lines (matches sheet Items column).
+ *
+ * @param list<array<string, mixed>> $checkoutRows
+ * @return array{total: float, by_size: array<string, float>, rts_units: float}
+ */
+function honey_sales_export_summarize_walk_in(array $checkoutRows, array $rtsFlags): array
+{
+    $bySize = [
+        '250ml' => 0.0,
+        '350ml' => 0.0,
+        'liter' => 0.0,
+        'gallon' => 0.0,
+        'dept' => 0.0,
+        'other' => 0.0,
+    ];
+    $total = 0.0;
+    $rtsUnits = 0.0;
+
+    foreach ($checkoutRows as $row) {
+        $saleId = (int) ($row['sale_id'] ?? 0);
+        $isRts = !empty($rtsFlags[$saleId]);
+        $items = is_array($row['items'] ?? null) ? $row['items'] : [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $qty = (float) ($item['qty'] ?? 0);
+            if ($qty <= 0) {
+                continue;
+            }
+            $total += $qty;
+            if ($isRts) {
+                $rtsUnits += $qty;
+            }
+            $deptKey = trim((string) ($item['product_key'] ?? ''));
+            if ($deptKey !== '' || (($item['kind'] ?? '') === 'dept' && empty($item['variant']))) {
+                $bySize['dept'] += $qty;
+                continue;
+            }
+            $bucket = honey_sales_export_size_bucket(
+                isset($item['size']) ? (string) $item['size'] : null,
+                isset($item['size_label']) ? (string) $item['size_label'] : null
+            );
+            if (!isset($bySize[$bucket])) {
+                $bucket = 'other';
+            }
+            $bySize[$bucket] += $qty;
+        }
+    }
+
+    return ['total' => $total, 'by_size' => $bySize, 'rts_units' => $rtsUnits];
+}
+
+/**
+ * Totals from Shipped sheet rows (includes packaging + RTS).
+ *
+ * @param list<array<string, mixed>> $shippedRows
+ * @return array{total: float, by_size: array<string, float>, rts_units: float}
+ */
+function honey_sales_export_summarize_shipped(array $shippedRows): array
+{
+    $bySize = [
+        '250ml' => 0.0,
+        '350ml' => 0.0,
+        'liter' => 0.0,
+        'gallon' => 0.0,
+        'dept' => 0.0,
+        'other' => 0.0,
+    ];
+    $total = 0.0;
+    $rtsUnits = 0.0;
+
+    foreach ($shippedRows as $row) {
+        $qty = (float) ($row['qty'] ?? 0);
+        if ($qty <= 0) {
+            continue;
+        }
+        $total += $qty;
+        if (!empty($row['is_rts_resellable'])) {
+            $rtsUnits += $qty;
+        }
+        $sizeQtys = is_array($row['size_qtys'] ?? null) ? $row['size_qtys'] : [];
+        if ($sizeQtys === []) {
+            $bySize['other'] += $qty;
+            continue;
+        }
+        foreach ($sizeQtys as $size => $q) {
+            $q = (float) $q;
+            if ($q <= 0) {
+                continue;
+            }
+            $bucket = $size === 'dept' ? 'dept' : honey_sales_export_size_bucket((string) $size);
+            if (!isset($bySize[$bucket])) {
+                $bucket = 'other';
+            }
+            $bySize[$bucket] += $q;
+        }
+    }
+
+    return ['total' => $total, 'by_size' => $bySize, 'rts_units' => $rtsUnits];
+}
+
+/**
+ * Write shared summary block (period + channel totals + size breakdown).
+ *
+ * @param array{total: float, by_size: array<string, float>, rts_units: float} $walkInSummary
+ * @param array{total: float, by_size: array<string, float>, rts_units: float} $shippedSummary
+ * @return int next empty row index
+ */
+function honey_sales_export_write_summary_block(
+    \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
+    string $title,
+    string $filterLabel,
+    array $walkInSummary,
+    array $shippedSummary
+): int {
+    $walkInTotal = (float) $walkInSummary['total'];
+    $shippedTotal = (float) $shippedSummary['total'];
+    $grand = $walkInTotal + $shippedTotal;
+    $walkInPct = $grand > 0 ? round(($walkInTotal / $grand) * 100, 1) : 0.0;
+    $shippedPct = $grand > 0 ? round(($shippedTotal / $grand) * 100, 1) : 0.0;
+
+    $sheet->setCellValue('A1', $title);
+    $sheet->setCellValue('A2', 'Period');
+    $sheet->setCellValue('B2', $filterLabel);
+    $sheet->setCellValue('A3', 'Walk-in sold (units on receipts)');
+    $sheet->setCellValue('B3', $walkInTotal);
+    $sheet->setCellValue('C3', $walkInPct . '%');
+    $sheet->setCellValue('A4', 'Shipped / pack-scan (units in sheet)');
+    $sheet->setCellValue('B4', $shippedTotal);
+    $sheet->setCellValue('C4', $shippedPct . '%');
+    $sheet->setCellValue('A5', 'Total units');
+    $sheet->setCellValue('B5', $grand);
+    $sheet->setCellValue('A6', 'Of which RTS resellable');
+    $sheet->setCellValue('B6', 'Walk-in ' . (float) $walkInSummary['rts_units'] . ' · Shipped ' . (float) $shippedSummary['rts_units']);
+
+    $sheet->setCellValue('A8', 'Walk-in by bottle / size');
+    $sheet->setCellValue('B8', 'Qty');
+    $sheet->setCellValue('D8', 'Shipped by bottle / size');
+    $sheet->setCellValue('E8', 'Qty');
+    $sheet->getStyle('A8:E8')->getFont()->setBold(true);
+
+    $labels = [
+        '250ml' => '250ml',
+        '350ml' => '350ml',
+        'liter' => '1L',
+        'gallon' => 'Gallon',
+        'dept' => 'Dept (pouch/jar/etc.)',
+        'other' => 'Other',
+    ];
+    $r = 9;
+    foreach ($labels as $key => $label) {
+        $wq = (float) ($walkInSummary['by_size'][$key] ?? 0);
+        $sq = (float) ($shippedSummary['by_size'][$key] ?? 0);
+        if ($wq <= 0 && $sq <= 0) {
+            continue;
+        }
+        $sheet->setCellValue('A' . $r, $label);
+        $sheet->setCellValue('B' . $r, $wq);
+        $sheet->setCellValue('D' . $r, $label);
+        $sheet->setCellValue('E' . $r, $sq);
+        $r++;
+    }
+    if ($r === 9) {
+        $sheet->setCellValue('A9', '(none)');
+        $sheet->setCellValue('D9', '(none)');
+        $r = 10;
+    }
+
+    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+    $sheet->getStyle('A2:A6')->getFont()->setBold(true);
+
+    return $r + 1;
+}
+
+/**
  * Build a two-sheet sales workbook and return the temp file path.
  *
  * @param array{period:?string,from:?string,to:?string,receipt:?string,sale_type:string,channel:string,product:string} $opts
@@ -1189,24 +1396,11 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         $channel = 'all';
     }
 
-    $snapshot = honey_sales_sold_snapshot(
-        $pdo,
-        $period,
-        $from,
-        $to,
-        1,
-        $receipt,
-        $saleType,
-        $channel,
-        $product
-    );
-    $filterLabel = (string) ($snapshot['filter']['label'] ?? 'All time');
-    $share = is_array($snapshot['channel_share'] ?? null) ? $snapshot['channel_share'] : [];
-    $walkInShare = (float) ($share['walk_in'] ?? 0);
-    $shippedShare = (float) ($share['online'] ?? 0);
-    $shareTotal = (float) ($share['total'] ?? 0);
-    $walkInPct = (float) ($share['walk_in_pct'] ?? 0);
-    $shippedPct = (float) ($share['online_pct'] ?? 0);
+    $filters = honey_sales_resolve_filters($period, $from, $to);
+    $range = $filters['range'];
+    $filterLabel = $range !== null
+        ? (string) ($range['label'] ?? ($range['from'] . ' – ' . $range['to']))
+        : 'All time';
 
     $walkInRows = [];
     $rtsFlags = [];
@@ -1215,6 +1409,9 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         $walkInRows = $exported['rows'];
         $saleIds = array_map(static fn ($r) => (int) ($r['sale_id'] ?? 0), $walkInRows);
         $rtsFlags = honey_sales_checkout_rts_flags($pdo, $saleIds);
+        if (!empty($exported['filter_label'])) {
+            $filterLabel = (string) $exported['filter_label'];
+        }
     }
 
     $shippedRows = [];
@@ -1222,35 +1419,32 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         $shippedRows = honey_sales_fetch_shipped_export($pdo, $period, $from, $to, $product);
     }
 
+    $walkInSummary = honey_sales_export_summarize_walk_in($walkInRows, $rtsFlags);
+    $shippedSummary = honey_sales_export_summarize_shipped($shippedRows);
+
     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
 
     // --- Sheet: Shipped ---
     $shipped = $spreadsheet->getActiveSheet();
     $shipped->setTitle('Shipped');
-    $shipped->setCellValue('A1', 'Shipped / pack-scan');
-    $shipped->setCellValue('A2', 'Period');
-    $shipped->setCellValue('B2', $filterLabel);
-    $shipped->setCellValue('A3', 'Walk-in sold');
-    $shipped->setCellValue('B3', $walkInShare);
-    $shipped->setCellValue('C3', $walkInPct . '%');
-    $shipped->setCellValue('A4', 'Shipped');
-    $shipped->setCellValue('B4', $shippedShare);
-    $shipped->setCellValue('C4', $shippedPct . '%');
-    $shipped->setCellValue('A5', 'Total units');
-    $shipped->setCellValue('B5', $shareTotal);
-    $shipped->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-    $shipped->getStyle('A2:A5')->getFont()->setBold(true);
+    $nextRow = honey_sales_export_write_summary_block(
+        $shipped,
+        'Shipped / pack-scan',
+        $filterLabel,
+        $walkInSummary,
+        $shippedSummary
+    );
 
     $shippedHeaders = ['When packed', 'Product', 'Qty', 'Tracking / pack session', 'Barcode', 'RTS resellable'];
-    $headerRow = 7;
+    $headerRow = $nextRow;
     $shippedCols = ['A', 'B', 'C', 'D', 'E', 'F'];
     foreach ($shippedHeaders as $i => $h) {
         $shipped->setCellValue($shippedCols[$i] . $headerRow, $h);
     }
-    $shipped->getStyle('A7:F7')->getFont()->setBold(true);
+    $shipped->getStyle('A' . $headerRow . ':F' . $headerRow)->getFont()->setBold(true);
 
     if ($shippedRows === []) {
-        $shipped->setCellValue('A8', $channel === 'walk_in'
+        $shipped->setCellValue('A' . ($headerRow + 1), $channel === 'walk_in'
             ? 'No shipped rows for Walk-in filter.'
             : 'No shipped / pack-scan rows for this period.');
     } else {
@@ -1272,32 +1466,28 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
     // --- Sheet: Walk-in ---
     $walkIn = $spreadsheet->createSheet();
     $walkIn->setTitle('Walk-in');
-    $walkIn->setCellValue('A1', 'Walk-in sales');
-    $walkIn->setCellValue('A2', 'Period');
-    $walkIn->setCellValue('B2', $filterLabel);
-    $walkIn->setCellValue('A3', 'Walk-in sold');
-    $walkIn->setCellValue('B3', $walkInShare);
-    $walkIn->setCellValue('C3', $walkInPct . '%');
-    $walkIn->setCellValue('A4', 'Shipped');
-    $walkIn->setCellValue('B4', $shippedShare);
-    $walkIn->setCellValue('C4', $shippedPct . '%');
-    $walkIn->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-    $walkIn->getStyle('A2:A4')->getFont()->setBold(true);
+    $walkNext = honey_sales_export_write_summary_block(
+        $walkIn,
+        'Walk-in sales',
+        $filterLabel,
+        $walkInSummary,
+        $shippedSummary
+    );
 
     $walkHeaders = ['When sold', 'Receipt', 'Sold by', 'Sold to', 'Items', 'Type', 'RTS resellable'];
     if ($canViewAmounts) {
         $walkHeaders[] = 'Total';
     }
-    $whRow = 6;
+    $whRow = $walkNext;
     $walkCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     foreach ($walkHeaders as $i => $h) {
         $walkIn->setCellValue($walkCols[$i] . $whRow, $h);
     }
     $lastCol = $canViewAmounts ? 'H' : 'G';
-    $walkIn->getStyle('A6:' . $lastCol . '6')->getFont()->setBold(true);
+    $walkIn->getStyle('A' . $whRow . ':' . $lastCol . $whRow)->getFont()->setBold(true);
 
     if ($walkInRows === []) {
-        $walkIn->setCellValue('A7', $channel === 'online'
+        $walkIn->setCellValue('A' . ($whRow + 1), $channel === 'online'
             ? 'No walk-in rows for Shipped filter.'
             : 'No walk-in checkouts for this period.');
     } else {
@@ -1337,4 +1527,5 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
 
     return $path;
 }
+
 

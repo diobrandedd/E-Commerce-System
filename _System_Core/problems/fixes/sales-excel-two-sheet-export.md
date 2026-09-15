@@ -14,6 +14,7 @@ area: sales
 4. Period + channel + product + sale_type + receipt filters; channel empties the non-matching sheet.
 5. SPA **Export Excel** above the Recent walk-in table via `apiDownload`.
 6. Always `require_once vendor/autoload.php` before PhpSpreadsheet (API bootstrap does not load Composer).
+7. Excel header totals come from **sheet row sums** (walk-in receipt item qtys; shipped row qtys including RTS), not packaging-only `channel_share`. Size breakdown (250ml / 350ml / 1L / Gallon / dept) is written at the top of both sheets.
 
 ## Do not
 

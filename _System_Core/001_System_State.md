@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | _(none)_ |
-| **Active Plan** | _(none)_ |
-| **Status** | idle — last shipped [[plans/archive/2026-09-15_sales-excel-export_plan]] (Sales Excel export) |
+| **Active Spec** | [[specs/2026-09-15_honey-production-lot-merge]] |
+| **Active Plan** | [[plans/active/2026-09-15_honey-production-lot-merge_plan]] |
+| **Status** | `awaiting approval` — merge part-by-part Production lots (same-day supplier/arrival/variant) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending
