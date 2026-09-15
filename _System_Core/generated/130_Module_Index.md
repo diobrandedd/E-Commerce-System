@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-09-15T04:37:11+02:00
+generated: 2026-09-15T05:53:15+02:00
 type: memory-bank
 ---
 
@@ -69,7 +69,7 @@ type: memory-bank
 | [[modules/pdf_to_excel]] | 15 |
 | [[modules/permissions]] | 19 |
 | [[modules/pos_discount_requests]] | 10 |
-| [[modules/pos_mobile_staff]] | 6 |
+| [[modules/pos_mobile_staff]] | 8 |
 | [[modules/pos_refund]] | 2 |
 | [[modules/pos_sales_helpers]] | 3 |
 | [[modules/pos_thermal_print]] | 4 |

@@ -1,7 +1,7 @@
 ---
 title: dept_pos
 source: includes/dept_pos.php
-generated: 2026-09-15T04:37:21+02:00
+generated: 2026-09-15T05:53:24+02:00
 type: module
 function_count: 5
 ---
@@ -38,7 +38,7 @@ function_count: 5
 
 **Callers (1):**
 
-- `api/v1/pos.php`:118 — `api_ok(dept_pos_catalog(ims_pdo(), $deptKey !== '' ? $deptKey : null));`
+- `api/v1/pos.php`:120 — `api_ok(dept_pos_catalog(ims_pdo(), $deptKey !== '' ? $deptKey : null));`
 
 ## dept_pos_build_cart_lines {#dept_pos_build_cart_lines}
 
@@ -56,7 +56,7 @@ function_count: 5
 
 **Callers (2):**
 
-- `api/v1/pos.php`:142 — `$result = dept_pos_checkout(ims_pdo(), $pinId, $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
+- `api/v1/pos.php`:144 — `$result = dept_pos_checkout(ims_pdo(), $pinId, $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
 - `includes/pos_discount_requests.php`:249 — `$result = dept_pos_checkout(`
 
 ## dept_pos_ar_checkout {#dept_pos_ar_checkout}
@@ -65,5 +65,5 @@ function_count: 5
 
 **Callers (1):**
 
-- `api/v1/pos.php`:357 — `$result = dept_pos_ar_checkout(ims_pdo(), $pinId, $items, [`
+- `api/v1/pos.php`:359 — `$result = dept_pos_ar_checkout(ims_pdo(), $pinId, $items, [`
 

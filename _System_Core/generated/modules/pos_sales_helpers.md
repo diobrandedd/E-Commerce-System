@@ -1,7 +1,7 @@
 ---
 title: pos_sales_helpers
 source: includes/pos_sales_helpers.php
-generated: 2026-09-15T04:37:56+02:00
+generated: 2026-09-15T05:53:59+02:00
 type: module
 function_count: 3
 ---
@@ -41,7 +41,7 @@ function_count: 3
 
 **Callers (7):**
 
-- `api/v1/pos.php`:179 — `$seller = pos_sales_seller_insert($pdo, ['pin_id' => $pinId, 'user_id' => null], $identity['seller_name']);`
+- `api/v1/pos.php`:181 — `$seller = pos_sales_seller_insert($pdo, ['pin_id' => $pinId, 'user_id' => null], $identity['seller_name']);`
 - `includes/dept_pos.php`:194 — `$seller = pos_sales_seller_insert($pdo, ['pin_id' => $posPinId, 'user_id' => null], $sellerName);`
 - `includes/dept_pos.php`:346 — `$seller = pos_sales_seller_insert($pdo, ['pin_id' => $posPinId, 'user_id' => null], $sellerName);`
 - `includes/honey_pos.php`:305 — `$seller = pos_sales_seller_insert($pdo, ['pin_id' => $posPinId, 'user_id' => null], $sellerName);`

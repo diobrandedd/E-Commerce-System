@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-15T04:37:11+02:00
+generated: 2026-09-15T05:53:15+02:00
 type: memory-bank
 ---
 
@@ -39,14 +39,14 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 - **Path:** `api/v1/auth.php`
 - **URL:** `/rts/api/v1/auth.php?action=...`
-- **Includes:** `api/v1/_bootstrap.php`
+- **Includes:** `api/v1/_bootstrap.php`, `includes/pos_mobile_staff.php`
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
 | `me` | `api_auth_me()` | `ims_pos_authenticated()`, `rts_forwarding_api_payload()`, `ims_current_user()`, `ims_user_permissions()` |
 | `login` | `api_auth_login()` | `ims_login_user()`, `ims_current_user()`, `ims_user_permissions()`, `rts_forwarding_api_payload()` |
 | `pos_login` | `api_auth_pos_login()` | `ims_login_pos()`, `rts_forwarding_api_payload()`, `pos_api_token_issue()`, `ims_pdo()` |
-| `pos_staff_login` | `api_auth_pos_staff_login()` | `ims_login_user()`, `ims_current_user()`, `pos_mobile_user_is_assigned()`, `ims_logout()`, `ims_user_permissions()`, `rts_forwarding_api_payload()`, `pos_api_token_issue()`, `ims_pdo()` |
+| `pos_staff_login` | `api_auth_pos_staff_login()` | `pos_mobile_authenticate()`, `ims_pdo()`, `pos_mobile_user_can_login()`, `ims_user_permissions()`, `rts_forwarding_api_payload()`, `pos_api_token_issue()` |
 | `logout` | `api_auth_logout()` | `pos_api_bearer_from_request()`, `pos_api_token_revoke_plain()`, `ims_pdo()`, `ims_logout()` |
 | `change_password` | `api_auth_change_password()` | `ims_change_password()` |
 

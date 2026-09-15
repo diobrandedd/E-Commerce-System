@@ -1,7 +1,7 @@
 ---
 title: pos_unified
 source: includes/pos_unified.php
-generated: 2026-09-15T04:37:56+02:00
+generated: 2026-09-15T05:53:59+02:00
 type: module
 function_count: 9
 ---
@@ -30,8 +30,8 @@ function_count: 9
 
 **Callers (2):**
 
-- `api/v1/pos.php`:451 — `$result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
-- `api/v1/pos.php`:484 — `$result = pos_unified_ar_checkout(ims_pdo(), pos_session_actor(), $items, [`
+- `api/v1/pos.php`:453 — `$result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
+- `api/v1/pos.php`:486 — `$result = pos_unified_ar_checkout(ims_pdo(), pos_session_actor(), $items, [`
 
 ## pos_unified_resolve_honey_product {#pos_unified_resolve_honey_product}
 
@@ -59,7 +59,7 @@ function_count: 9
 
 **Callers (1):**
 
-- `api/v1/pos.php`:427 — `api_ok(['barcode' => pos_unified_lookup(ims_pdo(), $code)]);`
+- `api/v1/pos.php`:429 — `api_ok(['barcode' => pos_unified_lookup(ims_pdo(), $code)]);`
 
 ## pos_unified_build_cart_lines {#pos_unified_build_cart_lines}
 
@@ -77,7 +77,7 @@ function_count: 9
 
 **Callers (2):**
 
-- `api/v1/pos.php`:451 — `$result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
+- `api/v1/pos.php`:453 — `$result = pos_unified_checkout(ims_pdo(), pos_session_actor(), $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
 - `includes/pos_discount_requests.php`:240 — `$result = pos_unified_checkout(`
 
 ## pos_unified_ar_checkout {#pos_unified_ar_checkout}
@@ -86,7 +86,7 @@ function_count: 9
 
 **Callers (1):**
 
-- `api/v1/pos.php`:484 — `$result = pos_unified_ar_checkout(ims_pdo(), pos_session_actor(), $items, [`
+- `api/v1/pos.php`:486 — `$result = pos_unified_ar_checkout(ims_pdo(), pos_session_actor(), $items, [`
 
 ## pos_unified_discount_quote {#pos_unified_discount_quote}
 

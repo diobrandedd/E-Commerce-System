@@ -1,7 +1,7 @@
 ---
 title: honey_parcel_inventory
 source: includes/honey_parcel_inventory.php
-generated: 2026-09-15T04:37:36+02:00
+generated: 2026-09-15T05:53:39+02:00
 type: module
 function_count: 4
 ---

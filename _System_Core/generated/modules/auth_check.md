@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-09-15T04:37:14+02:00
+generated: 2026-09-15T05:53:18+02:00
 type: module
 function_count: 14
 ---
@@ -50,12 +50,11 @@ function_count: 14
 
 ## ims_current_user {#ims_current_user}
 
-**Callers (50):**
+**Callers (49):**
 
 - `api/v1/_bootstrap.php`:145 — `$u = ims_current_user();`
 - `api/v1/auth.php`:72 — `$user = ims_current_user();`
 - `api/v1/auth.php`:117 — `$user = ims_current_user();`
-- `api/v1/auth.php`:204 — `$user = ims_current_user();`
 - `api/v1/deliveries.php`:13 — `$user = ims_current_user();`
 - `api/v1/online_orders.php`:21 — `$user = ims_current_user();`
 - `api/v1/online_orders.php`:84 — `$user = ims_current_user();`
@@ -77,7 +76,8 @@ function_count: 14
 - `api/v1/sku_barcodes.php`:86 — `$user = ims_current_user();`
 - `api/v1/waybill.php`:36 — `$user = ims_current_user();`
 - `auth/login.php`:12 — `$existing = ims_current_user();`
-- _… and 25 more (run impact.php for full list)_
+- `auth/login.php`:34 — `$u = ims_current_user();`
+- _… and 24 more (run impact.php for full list)_
 
 ## ims_pos_authenticated {#ims_pos_authenticated}
 
@@ -97,10 +97,9 @@ function_count: 14
 
 **Tables:** `users`, `roles`
 
-**Callers (4):**
+**Callers (3):**
 
 - `api/v1/auth.php`:114 — `if (!ims_login_user($username, $password)) {`
-- `api/v1/auth.php`:201 — `if (!ims_login_user($username, $password)) {`
 - `auth/login.php`:33 — `if (ims_login_user($username, $password)) {`
 - `login.php`:34 — `if (ims_login_user($user, $pass)) {`
 
@@ -116,10 +115,9 @@ function_count: 14
 
 ## ims_logout {#ims_logout}
 
-**Callers (3):**
+**Callers (2):**
 
-- `api/v1/auth.php`:209 — `ims_logout();`
-- `api/v1/auth.php`:259 — `ims_logout();`
+- `api/v1/auth.php`:277 — `ims_logout();`
 - `auth/logout.php`:7 — `ims_logout();`
 
 ## requireRole {#requirerole}
@@ -158,7 +156,7 @@ function_count: 14
 
 ## ims_is_executive {#ims_is_executive}
 
-**Callers (9):**
+**Callers (10):**
 
 - `dept/products.php`:15 — `$canManageProducts = ims_is_executive($role) || ims_is_prod_manager($role) || ims_is_tl($role);`
 - `dept/products.php`:16 — `$canAddStocks = ims_is_executive($role);`
@@ -169,6 +167,7 @@ function_count: 14
 - `dept/stock_entries.php`:17 — `$canUseSupplierIdentityAndPrice = ims_is_executive($role);`
 - `dept/stock_entries.php`:364 — `<?php if (ims_is_executive($role)): ?>`
 - `includes/auth_check.php`:216 — `return ims_is_executive($role) || ims_is_prod_manager($role);`
+- `includes/pos_mobile_staff.php`:55 — `if (ims_is_executive($role)) {`
 
 ## ims_is_prod_manager {#ims_is_prod_manager}
 
@@ -211,6 +210,6 @@ function_count: 14
 
 **Callers (2):**
 
-- `api/v1/auth.php`:271 — `$result = ims_change_password((int) $user['id'], $current, $next);`
+- `api/v1/auth.php`:289 — `$result = ims_change_password((int) $user['id'], $current, $next);`
 - `auth/settings.php`:19 — `$res = ims_change_password((int) ($u['id'] ?? 0), $current, $next);`
 

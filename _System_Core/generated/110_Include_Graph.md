@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-09-15T04:37:11+02:00
+generated: 2026-09-15T05:53:15+02:00
 type: memory-bank
-edge_count: 442
+edge_count: 444
 ---
 
 
@@ -29,6 +29,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `api/v1/ar.php` | `api/v1/_bootstrap.php` |
 | `api/v1/ar.php` | `includes/ar_credits.php` |
 | `api/v1/auth.php` | `api/v1/_bootstrap.php` |
+| `api/v1/auth.php` | `includes/pos_mobile_staff.php` |
 | `api/v1/barcode_verify.php` | `api/v1/_bootstrap.php` |
 | `api/v1/bottle_barcodes.php` | `api/v1/_bootstrap.php` |
 | `api/v1/bulk_orders.php` | `api/v1/_bootstrap.php` |
@@ -314,6 +315,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_discount_requests.php` | `includes/dept_pos.php` |
 | `includes/pos_discount_requests.php` | `includes/honey_pos.php` |
 | `includes/pos_discount_requests.php` | `includes/pos_unified.php` |
+| `includes/pos_mobile_staff.php` | `includes/auth_check.php` |
 | `includes/pos_mobile_staff.php` | `includes/db.php` |
 | `includes/pos_refund.php` | `includes/api_tokens.php` |
 | `includes/pos_refund.php` | `includes/ar_credits.php` |

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useId, useState } from "react";
-import { Camera, Loader2, Printer } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Camera, Loader2, Printer, X } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
 import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
@@ -533,25 +534,46 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
   const [code, setCode] = useState("");
   const [flash, setFlash] = useState<"ok" | "err" | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [poolWarn, setPoolWarn] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [pendingSku, setPendingSku] = useState<{ code: string; label: string } | null>(null);
-  const [skuQty, setSkuQty] = useState("1");
+  const [pending, setPending] = useState<{ code: string; label: string; kind: "sku" | "unique" } | null>(null);
+  const [qty, setQty] = useState("1");
+  const [saving, setSaving] = useState(false);
   const cameraTitleId = useId();
-  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen || !!pendingSku, productKey);
+  const qtyInputRef = useRef<HTMLInputElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen || !!pending, productKey);
 
-  const commit = async (value: string, qty?: number): Promise<ScannerDecodeFeedback | void> => {
+  useEffect(() => {
+    if (!pending) return;
+    if (pending.kind !== "sku") return;
+    const t = window.setTimeout(() => {
+      qtyInputRef.current?.focus();
+      qtyInputRef.current?.select();
+    }, 40);
+    return () => window.clearTimeout(t);
+  }, [pending]);
+
+  const clearPending = () => {
+    setPending(null);
+    setQty("1");
+  };
+
+  const commit = async (value: string, stockQty?: number): Promise<ScannerDecodeFeedback | void> => {
+    setSaving(true);
     try {
-      const res = await deptPouchBarcodesApi.scanStockIn(productKey, value, qty);
+      const res = await deptPouchBarcodesApi.scanStockIn(productKey, value, stockQty);
       playScanBeep("ok");
       setFlash("ok");
+      clearPending();
       const qtyBit = res.qty ? ` ×${res.qty}` : "";
-      const poolWarn = res.bag_pool?.warned ? ` · ${res.bag_pool.warning ?? "Bag pool short"}` : "";
       const poolLeft =
         res.bag_pool != null
           ? ` · pool ${res.bag_pool.grams_remaining.toLocaleString()} g`
           : "";
-      setMsg(`${res.batch_no ?? productLabel} · ${res.code}${qtyBit}${poolLeft}${poolWarn}`);
+      setMsg(`${res.batch_no ?? productLabel} · ${res.code}${qtyBit}${poolLeft}`);
+      setPoolWarn(res.bag_pool?.warned ? (res.bag_pool.warning ?? "Leaf pool short — still stocked in.") : null);
       if (res.bag_pool?.warned) {
         setFlash("err");
       }
@@ -568,58 +590,133 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
       const dup = /already scanned/i.test(message);
       playScanBeep(dup ? "dup" : "bad");
       setFlash("err");
+      setPoolWarn(null);
       setMsg(message);
       window.setTimeout(() => setFlash(null), 1200);
       return { kind: dup ? "duplicate" : "error", message };
     } finally {
+      setSaving(false);
       refocus();
     }
+  };
+
+  const confirmPending = async (): Promise<ScannerDecodeFeedback | void> => {
+    if (!pending) {
+      setMsg(`Scan a ${unit.singular} barcode first.`);
+      refocus();
+      return;
+    }
+    if (pending.kind === "unique") {
+      return commit(pending.code);
+    }
+    const n = Number(qty);
+    if (!Number.isFinite(n) || n < 1) {
+      setFlash("err");
+      setMsg(`Enter how many ${unit.plural} to stock in.`);
+      window.setTimeout(() => setFlash(null), 700);
+      qtyInputRef.current?.focus();
+      return { kind: "error", message: "Enter quantity." };
+    }
+    return commit(pending.code, Math.floor(n));
   };
 
   const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     const value = (raw ?? code).trim();
     if (!value) return;
     setCode("");
+    if (pending) {
+      playScanBeep("bad");
+      setFlash("err");
+      setMsg("Enter quantity and Stock in first, or clear the current scan.");
+      window.setTimeout(() => setFlash(null), 900);
+      return { kind: "error", message: "Finish quantity first." };
+    }
     try {
       const { lookup } = await skuBarcodesApi.lookup(value);
       if (lookup.lookup_kind === "sku" && lookup.kind === "dept") {
-        setPendingSku({ code: value, label: lookup.label ?? productLabel });
-        setSkuQty("1");
-        return { kind: "success", message: `SKU — enter qty` };
+        if (lookup.product_key && lookup.product_key !== productKey) {
+          playScanBeep("bad");
+          setFlash("err");
+          setMsg(`This SKU belongs to ${lookup.label ?? lookup.product_key}.`);
+          window.setTimeout(() => setFlash(null), 900);
+          refocus();
+          return { kind: "error", message: "Wrong product SKU." };
+        }
+        playScanBeep("ok");
+        setFlash("ok");
+        setPoolWarn(null);
+        setMsg(null);
+        setQty("1");
+        setPending({
+          code: value,
+          label: lookup.label ?? productLabel,
+          kind: "sku",
+        });
+        setCameraOpen(false);
+        window.setTimeout(() => setFlash(null), 700);
+        return { kind: "success", message: "Enter quantity, then Stock in." };
       }
-    } catch {
-      // unique leftover
+      if (lookup.lookup_kind === "unique_dept") {
+        if (lookup.product_key && lookup.product_key !== productKey) {
+          playScanBeep("bad");
+          setFlash("err");
+          setMsg(`This barcode belongs to ${lookup.product_label ?? lookup.product_key}.`);
+          window.setTimeout(() => setFlash(null), 900);
+          refocus();
+          return { kind: "error", message: "Wrong product barcode." };
+        }
+        playScanBeep("ok");
+        setFlash("ok");
+        setPoolWarn(null);
+        setMsg(null);
+        setPending({
+          code: value,
+          label: lookup.batch_no
+            ? `${lookup.product_label ?? productLabel} · ${lookup.batch_no}`
+            : (lookup.product_label ?? value),
+          kind: "unique",
+        });
+        setCameraOpen(false);
+        window.setTimeout(() => setFlash(null), 700);
+        return { kind: "success", message: `Confirm Stock in for this ${unit.singular}.` };
+      }
+      playScanBeep("bad");
+      setFlash("err");
+      setMsg("Unknown barcode for this product.");
+      window.setTimeout(() => setFlash(null), 900);
+      refocus();
+      return { kind: "error", message: "Unknown barcode." };
+    } catch (e) {
+      const reason = e instanceof ApiError ? e.message : "Unknown barcode.";
+      playScanBeep("bad");
+      setFlash("err");
+      setPoolWarn(null);
+      setMsg(reason);
+      window.setTimeout(() => setFlash(null), 900);
+      refocus();
+      return { kind: "error", message: reason };
     }
-    return commit(value);
   };
 
-  const confirmSku = async () => {
-    if (!pendingSku) return;
-    const qty = Number(skuQty);
-    if (!Number.isFinite(qty) || qty < 1) {
-      setMsg("Enter a quantity of at least 1.");
-      return;
-    }
-    const c = pendingSku.code;
-    setPendingSku(null);
-    await commit(c, qty);
-  };
+  const scanDisabled = saving || !!pending;
 
   return (
     <AppSectionEnter className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        {productKey === "pt"
-          ? "Each pouch scan adds finished stock and deducts leaf from the bag pool (Settings BOM). Short pool warns but still stocks in."
-          : `SKU barcodes: scan → enter how many into finished ${productLabel}. Leftover unique stickers still scan one at a time.`}
+        Scan a {unit.singular} barcode, enter how many, then Stock in
+        {productKey === "pt" || productKey === "brc" || productKey === "jar_cacao"
+          ? " — leaf/cacao deducts from the pool when Settings deduct is on."
+          : "."}{" "}
+        Nothing is added until you confirm.
       </p>
       <div className="flex flex-wrap gap-2">
         <input
           ref={inputRef}
           {...inputProps}
-          className={`flex-1 min-w-[12rem] border rounded-lg px-3 py-2 font-mono text-sm outline-none focus:ring-4 focus:ring-[#C8900A]/15 ${
+          className={`flex-1 min-w-[12rem] border rounded-lg px-3 py-2.5 font-mono text-sm outline-none focus:ring-4 focus:ring-[#C8900A]/15 disabled:opacity-60 ${
             flash === "ok" ? "border-green-500" : flash === "err" ? "border-red-500" : "border-border"
           }`}
-          placeholder="Scan or type barcode"
+          placeholder={pending ? "Clear below to scan another…" : "Scan or type barcode"}
           value={code}
           onChange={e => setCode(e.target.value)}
           onKeyDown={e => {
@@ -628,44 +725,154 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
               void onScan();
             }
           }}
+          disabled={scanDisabled}
         />
-        <Button type="button" variant="outline" className="gap-1.5" onClick={() => setCameraOpen(true)}>
+        <Button
+          type="button"
+          variant="outline"
+          className="gap-1.5 min-h-11"
+          onClick={() => setCameraOpen(true)}
+          disabled={scanDisabled}
+        >
           <Camera size={16} /> Camera
         </Button>
       </div>
-      {pendingSku ? (
-        <div className="rounded-lg border border-[#C8900A]/40 bg-[#C8900A]/5 p-3 space-y-2">
-          <p className="text-sm font-medium">{pendingSku.label}</p>
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <label className="text-xs text-muted-foreground">Quantity</label>
-              <input
-                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
-                type="number"
-                min={1}
-                value={skuQty}
-                onChange={e => setSkuQty(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void confirmSku();
-                  }
+
+      <AnimatePresence initial={false} mode="wait">
+        {pending ? (
+          <motion.div
+            key={pending.code}
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="rounded-xl border border-[#C8900A]/35 bg-[#C8900A]/[0.06] px-3 py-3 space-y-3"
+            data-testid="dept-pouch-qty-step"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  {pending.kind === "sku" ? "Scanned SKU" : `Scanned ${unit.singular}`}
+                </p>
+                <p className="text-sm font-semibold text-foreground truncate">{pending.label}</p>
+                <p className="text-xs font-mono text-muted-foreground truncate">{pending.code}</p>
+              </div>
+              <AppPressable
+                type="button"
+                variant="ghost"
+                className="shrink-0 min-h-9 px-2 text-muted-foreground"
+                onClick={() => {
+                  clearPending();
+                  refocus();
                 }}
-              />
+                disabled={saving}
+              >
+                <X size={16} aria-hidden />
+                <span className="sr-only">Clear scan</span>
+              </AppPressable>
             </div>
-            <Button type="button" onClick={() => void confirmSku()}>Stock in</Button>
-            <Button type="button" variant="outline" onClick={() => setPendingSku(null)}>Cancel</Button>
-          </div>
-        </div>
+            {pending.kind === "sku" ? (
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="w-28">
+                  <label
+                    htmlFor="dept-pouch-scan-qty"
+                    className="text-xs font-medium text-muted-foreground uppercase tracking-wide"
+                  >
+                    Quantity
+                  </label>
+                  <input
+                    id="dept-pouch-scan-qty"
+                    ref={qtyInputRef}
+                    className="mt-1 w-full border border-border rounded-lg px-3 py-2.5 text-base tabular-nums bg-background"
+                    type="number"
+                    min={1}
+                    step={1}
+                    inputMode="numeric"
+                    value={qty}
+                    onChange={e => setQty(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void confirmPending();
+                      }
+                    }}
+                    disabled={saving}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  className="min-h-11 flex-1 sm:flex-none sm:min-w-[8.5rem]"
+                  onClick={() => void confirmPending()}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" /> Saving…
+                    </>
+                  ) : (
+                    "Stock in"
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                className="min-h-11 w-full"
+                onClick={() => void confirmPending()}
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Saving…
+                  </>
+                ) : (
+                  `Stock in this ${unit.singular}`
+                )}
+              </Button>
+            )}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <div
+        className={`h-12 rounded-xl border flex items-center justify-center text-sm font-medium transition-colors ${
+          flash === "ok"
+            ? "bg-green-100 border-green-300 text-green-800"
+            : flash === "err"
+              ? "bg-red-100 border-red-300 text-red-800"
+              : "bg-secondary/30 border-border text-muted-foreground"
+        }`}
+      >
+        {flash === "ok"
+          ? pending
+            ? "Scanned — enter quantity"
+            : "Stocked in"
+          : flash === "err"
+            ? "Not accepted"
+            : pending
+              ? "Enter quantity"
+              : "Ready"}
+      </div>
+      {flash === "err" ? (
+        <AppErrorBanner message={msg ?? "Not accepted."} />
+      ) : (
+        <AppSuccessNotice message={msg} />
+      )}
+      {poolWarn ? (
+        <p
+          className="text-xs font-medium text-amber-950 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"
+          role="status"
+        >
+          {poolWarn}
+        </p>
       ) : null}
-      {msg && <p className="text-sm">{msg}</p>}
-      {progress && <p className="text-lg font-bold">{progress}</p>}
+      {progress && <p className="text-lg font-bold tabular-nums">{progress}</p>}
       {cameraOpen ? (
         <BarcodeCameraScannerModal
           title={`Scan ${unit.singular} barcode`}
           titleId={cameraTitleId}
-          continuous
-          scanPrompt={`Point at each ${unit.singular} barcode. Keep scanning until the batch is complete.`}
+          continuous={false}
+          scanPrompt={`Scan one ${unit.singular} barcode, then enter quantity on the page.`}
           onClose={() => setCameraOpen(false)}
           onDecoded={decoded => onScan(decoded)}
         />

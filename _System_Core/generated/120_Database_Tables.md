@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-15T04:37:11+02:00
+generated: 2026-09-15T05:53:15+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -127,6 +127,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 
 | File | Function |
 |------|----------|
+| `api/v1/auth.php` | [[modules/auth#api_auth_pos_staff_login]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_list]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_create]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_update]] |
@@ -135,6 +136,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/api_tokens.php` | [[modules/api_tokens#pos_api_apply_bearer_auth]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_authenticate]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_list]] |
 
@@ -184,6 +186,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 
 | File | Function |
 |------|----------|
+| `api/v1/auth.php` | [[modules/auth#api_auth_pos_staff_login]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_edit_requests]] |
@@ -247,6 +250,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_list]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
+| `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_authenticate]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_list]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_assign]] |

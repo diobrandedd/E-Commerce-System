@@ -1,9 +1,9 @@
 ---
 title: pos_mobile_staff
 source: includes/pos_mobile_staff.php
-generated: 2026-09-15T04:37:55+02:00
+generated: 2026-09-15T05:53:58+02:00
 type: module
-function_count: 6
+function_count: 8
 ---
 
 
@@ -16,25 +16,41 @@ function_count: 6
 ## Includes
 
 - `includes/db.php`
+- `includes/auth_check.php`
 
 ## pos_mobile_staff_ensure_schema {#pos_mobile_staff_ensure_schema}
 
 **Callers (5):**
 
-- `includes/pos_mobile_staff.php`:35 — `pos_mobile_staff_ensure_schema($pdo);`
-- `includes/pos_mobile_staff.php`:47 — `pos_mobile_staff_ensure_schema($pdo);`
-- `includes/pos_mobile_staff.php`:76 — `pos_mobile_staff_ensure_schema($pdo);`
-- `includes/pos_mobile_staff.php`:104 — `pos_mobile_staff_ensure_schema($pdo);`
-- `includes/pos_mobile_staff.php`:121 — `pos_mobile_staff_ensure_schema($pdo);`
+- `includes/pos_mobile_staff.php`:37 — `pos_mobile_staff_ensure_schema($pdo);`
+- `includes/pos_mobile_staff.php`:106 — `pos_mobile_staff_ensure_schema($pdo);`
+- `includes/pos_mobile_staff.php`:135 — `pos_mobile_staff_ensure_schema($pdo);`
+- `includes/pos_mobile_staff.php`:163 — `pos_mobile_staff_ensure_schema($pdo);`
+- `includes/pos_mobile_staff.php`:180 — `pos_mobile_staff_ensure_schema($pdo);`
 
 ## pos_mobile_user_is_assigned {#pos_mobile_user_is_assigned}
 
 **Tables:** `pos_mobile_staff`
 
-**Callers (2):**
+**Callers (1):**
 
-- `api/v1/auth.php`:208 — `if (!pos_mobile_user_is_assigned((int) $user['id'])) {`
-- `api/v1/pos.php`:57 — `if (ims_user_can($user, 'pos.sell') || pos_mobile_user_is_assigned((int) $user['id'])) {`
+- `includes/pos_mobile_staff.php`:59 — `return pos_mobile_user_is_assigned($userId);`
+
+## pos_mobile_user_can_login {#pos_mobile_user_can_login}
+
+**Callers (3):**
+
+- `api/v1/auth.php`:217 — `&& !pos_mobile_user_can_login((int) $probe['id'], (string) $probe['role_name'])) {`
+- `api/v1/pos.php`:59 — `|| pos_mobile_user_can_login((int) $user['id'], $role)) {`
+- `includes/pos_mobile_staff.php`:88 — `if (!pos_mobile_user_can_login((int) $row['id'], $role)) {`
+
+## pos_mobile_authenticate {#pos_mobile_authenticate}
+
+**Tables:** `users`, `roles`
+
+**Callers (1):**
+
+- `api/v1/auth.php`:203 — `$user = pos_mobile_authenticate($pin);`
 
 ## pos_mobile_staff_candidates {#pos_mobile_staff_candidates}
 

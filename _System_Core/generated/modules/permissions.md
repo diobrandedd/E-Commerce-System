@@ -1,7 +1,7 @@
 ---
 title: permissions
 source: includes/permissions.php
-generated: 2026-09-15T04:37:54+02:00
+generated: 2026-09-15T05:53:57+02:00
 type: module
 function_count: 19
 ---
@@ -83,7 +83,7 @@ function_count: 19
 
 - `api/v1/auth.php`:92 — `$payload['permissions'] = ims_user_permissions((int) $user['id']);`
 - `api/v1/auth.php`:130 — `$serialized['permissions'] = ims_user_permissions((int) $user['id']);`
-- `api/v1/auth.php`:222 — `$serialized['permissions'] = ims_user_permissions((int) $user['id']);`
+- `api/v1/auth.php`:240 — `$serialized['permissions'] = ims_user_permissions((int) $user['id']);`
 - `includes/permissions.php`:356 — `$granted = ims_user_permissions((int) $user['id']);`
 - `includes/permissions.php`:384 — `$keys = ims_user_permissions($userId);`
 - `includes/permissions.php`:488 — `return count(ims_user_permissions($userId));`

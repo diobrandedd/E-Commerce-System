@@ -1,7 +1,7 @@
 ---
 title: pos_refund
 source: includes/pos_refund.php
-generated: 2026-09-15T04:37:56+02:00
+generated: 2026-09-15T05:53:58+02:00
 type: module
 function_count: 2
 ---
@@ -39,5 +39,5 @@ function_count: 2
 
 **Callers (1):**
 
-- `api/v1/pos.php`:615 — `$result = pos_sale_full_refund(ims_pdo(), $saleId, $reason);`
+- `api/v1/pos.php`:617 — `$result = pos_sale_full_refund(ims_pdo(), $saleId, $reason);`
 

@@ -1,10 +1,12 @@
-﻿import { useCallback, useEffect, useId, useState } from "react";
-import { Camera, Loader2, Printer } from "lucide-react";
+﻿import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Camera, Loader2, Printer, X } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
 import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
 import {
   AppErrorBanner,
+  AppPressable,
   AppSectionEnter,
   AppSuccessNotice,
   appHoverRow,
@@ -165,6 +167,14 @@ export type ProductionLotOption = {
   initial_qty?: string | number;
 };
 
+type PendingScan = {
+  code: string;
+  label: string;
+  variant: string;
+  size: HoneyBottleSize;
+  kind: "sku" | "unique";
+};
+
 export function HoneyProductionScanStockInPanel({
   lots,
   onStocked,
@@ -179,12 +189,13 @@ export function HoneyProductionScanStockInPanel({
   const [warn, setWarn] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [skuQty, setSkuQty] = useState("1");
-  const [lastSku, setLastSku] = useState<{ code: string; label: string; variant: string; size: HoneyBottleSize } | null>(
-    null,
-  );
+  const [qty, setQty] = useState("1");
+  const [pending, setPending] = useState<PendingScan | null>(null);
+  const [saving, setSaving] = useState(false);
   const [mlPerGallon, setMlPerGallon] = useState(DEFAULT_ML_PER_US_GALLON);
   const cameraTitleId = useId();
+  const qtyInputRef = useRef<HTMLInputElement>(null);
+  const reduceMotion = useReducedMotion();
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
 
   const openLots = lots;
@@ -209,12 +220,26 @@ export function HoneyProductionScanStockInPanel({
     })();
   }, []);
 
+  useEffect(() => {
+    if (!pending) return;
+    const t = window.setTimeout(() => {
+      qtyInputRef.current?.focus();
+      qtyInputRef.current?.select();
+    }, 40);
+    return () => window.clearTimeout(t);
+  }, [pending]);
+
   const previewGallons = (() => {
-    if (!lastSku) return 0;
-    const qty = Number(skuQty);
-    if (!Number.isFinite(qty) || qty < 1) return 0;
-    return linesToGallons([{ size: lastSku.size, qty: String(qty) }], mlPerGallon);
+    if (!pending || pending.kind !== "sku") return 0;
+    const n = Number(qty);
+    if (!Number.isFinite(n) || n < 1) return 0;
+    return linesToGallons([{ size: pending.size, qty: String(n) }], mlPerGallon);
   })();
+
+  const clearPending = () => {
+    setPending(null);
+    setQty("1");
+  };
 
   const commitStockIn = async (
     value: string,
@@ -229,6 +254,7 @@ export function HoneyProductionScanStockInPanel({
       refocus();
       return { kind: "error", message: "Select a production lot first." };
     }
+    setSaving(true);
     try {
       const res = await bottleBarcodesApi.scanStockIn(value, {
         qty: opts.qty,
@@ -236,6 +262,7 @@ export function HoneyProductionScanStockInPanel({
       });
       playScanBeep("ok");
       setFlash("ok");
+      clearPending();
       const qtyBit = res.qty ? ` ×${res.qty}` : "";
       const remain = res.remaining_production_gallons;
       const galBit =
@@ -273,7 +300,29 @@ export function HoneyProductionScanStockInPanel({
       window.setTimeout(() => setFlash(null), 700);
       refocus();
       return { kind: isDup ? "duplicate" : "error", message: reason };
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const confirmPending = async (): Promise<ScannerDecodeFeedback | void> => {
+    if (!pending) {
+      setMsg("Scan a barcode first.");
+      refocus();
+      return;
+    }
+    if (pending.kind === "unique") {
+      return commitStockIn(pending.code, { qty: 1 });
+    }
+    const n = Number(qty);
+    if (!Number.isFinite(n) || n < 1) {
+      setFlash("err");
+      setMsg("Enter how many bottles to stock in.");
+      window.setTimeout(() => setFlash(null), 700);
+      qtyInputRef.current?.focus();
+      return { kind: "error", message: "Enter quantity." };
+    }
+    return commitStockIn(pending.code, { qty: Math.floor(n) });
   };
 
   const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
@@ -301,55 +350,85 @@ export function HoneyProductionScanStockInPanel({
           refocus();
           return { kind: "error", message: "Variant mismatch." };
         }
-        const label = lookup.label ?? "Honey SKU";
-        setLastSku({ code: value, label, variant, size });
-        return commitStockIn(value, { qty: 1 });
+        playScanBeep("ok");
+        setFlash("ok");
+        setWarn(null);
+        setMsg(null);
+        setQty("1");
+        setPending({
+          code: value,
+          label: lookup.label ?? "Honey SKU",
+          variant,
+          size,
+          kind: "sku",
+        });
+        setCameraOpen(false);
+        window.setTimeout(() => setFlash(null), 700);
+        return { kind: "success", message: "Enter quantity, then Stock in." };
       }
     } catch {
-      // fall through to unique scan
+      // fall through to unique sticker
     }
-    return commitStockIn(value, { qty: 1 });
+    try {
+      const { barcode } = await bottleBarcodesApi.lookup(value);
+      playScanBeep("ok");
+      setFlash("ok");
+      setWarn(null);
+      setMsg(null);
+      setQty("1");
+      setPending({
+        code: value,
+        label: `${barcode.variant} ${barcode.size_label ?? barcode.size}`,
+        variant: String(barcode.variant ?? ""),
+        size: String(barcode.size ?? "liter") as HoneyBottleSize,
+        kind: "unique",
+      });
+      setCameraOpen(false);
+      window.setTimeout(() => setFlash(null), 700);
+      return { kind: "success", message: "Confirm Stock in for this bottle." };
+    } catch (e) {
+      const reason = e instanceof ApiError ? e.message : "Unknown barcode.";
+      playScanBeep("bad");
+      setFlash("err");
+      setWarn(null);
+      setMsg(reason);
+      window.setTimeout(() => setFlash(null), 700);
+      refocus();
+      return { kind: "error", message: reason };
+    }
   };
 
-  const addSkuBulk = async () => {
-    if (!lastSku) {
-      setMsg("Scan a SKU barcode first, then use Quantity + Stock in for bulk.");
-      refocus();
-      return;
-    }
-    const qty = Number(skuQty);
-    if (!Number.isFinite(qty) || qty < 1) {
-      setMsg("Enter a quantity of at least 1.");
-      return;
-    }
-    await commitStockIn(lastSku.code, { qty });
-  };
+  const scanDisabled = openLots.length === 0 || saving || !!pending;
 
   return (
     <AppSectionEnter className="space-y-4">
-      <div className="bg-card rounded-xl border border-border p-4 space-y-3">
+      <div className="bg-card rounded-xl border border-border p-4 space-y-3 shadow-sm shadow-black/[0.03]">
         <h3 className="text-sm font-semibold">Scan bottles into packaging (from production)</h3>
         <p className="text-xs text-muted-foreground">
-          Select the supplier gallon lot these bottles came from. Each stock-in credits packaging and deducts production
-          gallons using Settings → Honey volume (ml per gallon).
+          Pick the gallon lot, scan a bottle or SKU barcode, enter how many, then Stock in. Deducts production gallons
+          using Settings → Honey volume.
         </p>
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block">
           Production lot
           <select
             className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-background"
             value={productionRowId || ""}
-            onChange={e => setProductionRowId(Number(e.target.value) || 0)}
+            onChange={e => {
+              setProductionRowId(Number(e.target.value) || 0);
+              clearPending();
+            }}
+            disabled={saving}
           >
             <option value="">Select lot…</option>
             {openLots.map(l => {
-              const qty = Number(l.current_qty);
-              const over = Number.isFinite(qty) && qty < -1e-9;
+              const lotQty = Number(l.current_qty);
+              const over = Number.isFinite(lotQty) && lotQty < -1e-9;
               return (
                 <option key={l.id} value={l.id}>
                   {l.supplier_code} · {l.variant} ·{" "}
                   {over
-                    ? `${formatGallons(Math.abs(qty))} gal overdrawn`
-                    : `${formatGallons(qty)} gal left`}
+                    ? `${formatGallons(Math.abs(lotQty))} gal overdrawn`
+                    : `${formatGallons(lotQty)} gal left`}
                 </option>
               );
             })}
@@ -360,19 +439,12 @@ export function HoneyProductionScanStockInPanel({
             No production lots yet. Stock out from Warehouse first.
           </p>
         )}
-        {selected && lastSku && previewGallons > 0 && (
-          <p className="text-xs text-muted-foreground">
-            Qty {skuQty} × {lastSku.label} uses ~{formatGallons(previewGallons)} gal ·{" "}
-            {formatGallons(Number(selected.current_qty) - previewGallons)} remain after
-            {previewGallons > Number(selected.current_qty) + 1e-9 ? " (will overdraw — scan still allowed)" : ""}
-          </p>
-        )}
         <div className="flex gap-2">
           <input
             ref={inputRef}
             {...inputProps}
-            className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide"
-            placeholder="Scan barcode or type it…"
+            className="flex-1 border rounded-lg px-3 py-3 text-base tracking-wide disabled:opacity-60"
+            placeholder={pending ? "Clear below to scan another…" : "Scan barcode or type it…"}
             value={code}
             onChange={e => setCode(e.target.value)}
             onKeyDown={e => {
@@ -381,46 +453,121 @@ export function HoneyProductionScanStockInPanel({
                 void onScan();
               }
             }}
-            disabled={openLots.length === 0}
+            disabled={scanDisabled || openLots.length === 0}
           />
           <Button
             type="button"
             variant="outline"
             className="min-h-11 gap-1.5 shrink-0"
             onClick={() => setCameraOpen(true)}
-            disabled={openLots.length === 0}
+            disabled={scanDisabled || openLots.length === 0}
           >
             <Camera size={16} /> Camera
           </Button>
         </div>
-        <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2">
-          <p className="text-xs text-muted-foreground">
-            Bulk SKU add{lastSku ? ` — last: ${lastSku.label}` : " — scan a SKU first"}
-          </p>
-          <div className="flex gap-2 items-end">
-            <div className="w-24">
-              <label className="text-xs text-muted-foreground">Quantity</label>
-              <input
-                className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
-                type="number"
-                min={1}
-                value={skuQty}
-                onChange={e => setSkuQty(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void addSkuBulk();
-                  }
-                }}
-              />
-            </div>
-            <Button type="button" className="min-h-11" onClick={() => void addSkuBulk()} disabled={!lastSku || productionRowId < 1}>
-              Stock in
-            </Button>
-          </div>
-        </div>
+
+        <AnimatePresence initial={false} mode="wait">
+          {pending ? (
+            <motion.div
+              key={pending.code}
+              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="rounded-xl border border-[#C8900A]/35 bg-[#C8900A]/[0.06] px-3 py-3 space-y-3"
+              data-testid="honey-production-qty-step"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {pending.kind === "sku" ? "Scanned SKU" : "Scanned bottle"}
+                  </p>
+                  <p className="text-sm font-semibold text-foreground truncate">{pending.label}</p>
+                  <p className="text-xs font-mono text-muted-foreground truncate">{pending.code}</p>
+                </div>
+                <AppPressable
+                  type="button"
+                  variant="ghost"
+                  className="shrink-0 min-h-9 px-2 text-muted-foreground"
+                  onClick={() => {
+                    clearPending();
+                    refocus();
+                  }}
+                  disabled={saving}
+                >
+                  <X size={16} aria-hidden />
+                  <span className="sr-only">Clear scan</span>
+                </AppPressable>
+              </div>
+              {pending.kind === "sku" ? (
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="w-28">
+                    <label htmlFor="honey-prod-scan-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Quantity
+                    </label>
+                    <input
+                      id="honey-prod-scan-qty"
+                      ref={qtyInputRef}
+                      className="mt-1 w-full border border-border rounded-lg px-3 py-2.5 text-base tabular-nums bg-background"
+                      type="number"
+                      min={1}
+                      step={1}
+                      inputMode="numeric"
+                      value={qty}
+                      onChange={e => setQty(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void confirmPending();
+                        }
+                      }}
+                      disabled={saving}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    className="min-h-11 flex-1 sm:flex-none sm:min-w-[8.5rem]"
+                    onClick={() => void confirmPending()}
+                    disabled={saving || productionRowId < 1}
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" /> Saving…
+                      </>
+                    ) : (
+                      "Stock in"
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  className="min-h-11 w-full"
+                  onClick={() => void confirmPending()}
+                  disabled={saving || productionRowId < 1}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" /> Saving…
+                    </>
+                  ) : (
+                    "Stock in this bottle"
+                  )}
+                </Button>
+              )}
+              {pending.kind === "sku" && selected && previewGallons > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Uses ~{formatGallons(previewGallons)} gal ·{" "}
+                  {formatGallons(Number(selected.current_qty) - previewGallons)} remain after
+                  {previewGallons > Number(selected.current_qty) + 1e-9 ? " (will overdraw — still allowed)" : ""}
+                </p>
+              ) : null}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
         <div
-          className={`h-16 rounded-xl border flex items-center justify-center text-sm font-medium ${
+          className={`h-14 rounded-xl border flex items-center justify-center text-sm font-medium transition-colors ${
             flash === "ok"
               ? "bg-green-100 border-green-300 text-green-800"
               : flash === "err"
@@ -428,9 +575,21 @@ export function HoneyProductionScanStockInPanel({
                 : "bg-secondary/30 border-border text-muted-foreground"
           }`}
         >
-          {flash === "ok" ? "Scanned" : flash === "err" ? "Not accepted" : "Ready"}
+          {flash === "ok"
+            ? pending
+              ? "Scanned — enter quantity"
+              : "Stocked in"
+            : flash === "err"
+              ? "Not accepted"
+              : pending
+                ? "Enter quantity"
+                : "Ready"}
         </div>
-        {msg && <p className="text-sm">{msg}</p>}
+        {flash === "err" ? (
+          <AppErrorBanner message={msg ?? "Not accepted."} />
+        ) : (
+          <AppSuccessNotice message={msg} />
+        )}
         {warn && (
           <p
             className="text-xs font-medium text-amber-950 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"
@@ -440,14 +599,14 @@ export function HoneyProductionScanStockInPanel({
             {warn}
           </p>
         )}
-        {progress && <p className="text-lg font-bold">{progress}</p>}
+        {progress && <p className="text-lg font-bold tabular-nums">{progress}</p>}
       </div>
       {cameraOpen ? (
         <BarcodeCameraScannerModal
           title="Scan bottle barcode"
           titleId={cameraTitleId}
-          continuous
-          scanPrompt="Point at each bottle barcode. Keep scanning until stock-in is complete."
+          continuous={false}
+          scanPrompt="Scan one barcode, then enter quantity on the page."
           onClose={() => setCameraOpen(false)}
           onDecoded={decoded => onScan(decoded)}
         />
