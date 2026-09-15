@@ -1,7 +1,7 @@
 ---
 title: dashboard_inventory
 source: includes/dashboard_inventory.php
-generated: 2026-09-15T05:53:21+02:00
+generated: 2026-09-15T10:15:24+02:00
 type: module
 function_count: 6
 ---
@@ -23,7 +23,7 @@ function_count: 6
 
 - `api/v1/dashboard.php`:320 — `$range = dashboard_inventory_resolve_range($period, null, null);`
 - `includes/dashboard_inventory.php`:214 — `$range = dashboard_inventory_resolve_range($period, $from, $to);`
-- `includes/honey_sales_report.php`:24 — `$range = dashboard_inventory_resolve_range($period, $from, $to);`
+- `includes/honey_sales_report.php`:27 — `$range = dashboard_inventory_resolve_range($period, $from, $to);`
 
 ## dashboard_honey_packaging_snapshot {#dashboard_honey_packaging_snapshot}
 

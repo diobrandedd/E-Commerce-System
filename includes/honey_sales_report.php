@@ -16,6 +16,9 @@ const HONEY_SALES_SIZE_LABELS = [
 
 const HONEY_SALES_CHECKOUTS_PER_PAGE = 10;
 
+/** Hard cap for Excel export rows per sheet. */
+const HONEY_SALES_EXPORT_MAX_ROWS = 5000;
+
 /** @return array{sql: string, params: list<mixed>, range: array<string, mixed>|null} */
 function honey_sales_resolve_filters(?string $period, ?string $from, ?string $to): array
 {
@@ -459,10 +462,13 @@ function honey_sales_fetch_checkouts(
     int $page,
     ?string $receiptSearch = null,
     string $saleType = 'all',
-    string $product = 'all'
+    string $product = 'all',
+    ?int $perPageOverride = null
 ): array
 {
-    $perPage = HONEY_SALES_CHECKOUTS_PER_PAGE;
+    $perPage = $perPageOverride !== null && $perPageOverride > 0
+        ? $perPageOverride
+        : HONEY_SALES_CHECKOUTS_PER_PAGE;
     $page = max(1, $page);
     if (!in_array($saleType, ['all', 'regular', 'discount', 'ar'], true)) {
         $saleType = 'all';
@@ -872,3 +878,463 @@ function honey_sales_sold_snapshot(
         'checkouts' => $checkouts,
     ];
 }
+
+/**
+ * All matching walk-in checkouts for Excel (ignores UI pagination).
+ *
+ * @return array{total: int, rows: list<array<string, mixed>>, filter_label: string}
+ */
+function honey_sales_fetch_checkouts_export(
+    PDO $pdo,
+    ?string $period,
+    ?string $from,
+    ?string $to,
+    ?string $receiptSearch = null,
+    string $saleType = 'all',
+    string $product = 'all'
+): array {
+    $filters = honey_sales_resolve_filters($period, $from, $to);
+    $range = $filters['range'];
+    $page1 = honey_sales_fetch_checkouts(
+        $pdo,
+        $range,
+        1,
+        $receiptSearch,
+        $saleType,
+        $product,
+        HONEY_SALES_EXPORT_MAX_ROWS
+    );
+    if ((int) $page1['total'] > HONEY_SALES_EXPORT_MAX_ROWS) {
+        throw new InvalidArgumentException(
+            'Too many walk-in checkouts to export (max ' . HONEY_SALES_EXPORT_MAX_ROWS . '). Narrow the period or filters.'
+        );
+    }
+
+    $label = $range !== null
+        ? ((string) ($range['label'] ?? ($range['from'] . ' – ' . $range['to'])))
+        : 'All time';
+
+    return [
+        'total' => (int) $page1['total'],
+        'rows' => $page1['rows'],
+        'filter_label' => $label,
+    ];
+}
+
+/**
+ * Whether a checkout used any RTS-sellable scanned units.
+ *
+ * @param list<int> $saleIds
+ * @return array<int, bool>
+ */
+function honey_sales_checkout_rts_flags(PDO $pdo, array $saleIds): array
+{
+    $saleIds = array_values(array_filter(array_map('intval', $saleIds), static fn ($id) => $id > 0));
+    $flags = [];
+    foreach ($saleIds as $id) {
+        $flags[$id] = false;
+    }
+    if ($saleIds === []) {
+        return $flags;
+    }
+    $placeholders = implode(',', array_fill(0, count($saleIds), '?'));
+    $st = $pdo->prepare(
+        "SELECT DISTINCT h.pos_sale_id
+         FROM honey_sales_log h
+         WHERE h.pos_sale_id IN ({$placeholders})
+           AND h.source = 'rts'
+           AND h.sale_type = 'walk_in'"
+    );
+    $st->execute($saleIds);
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $flags[(int) $row['pos_sale_id']] = true;
+    }
+
+    return $flags;
+}
+
+/**
+ * Pack-scan / shipped lines for Excel.
+ *
+ * @return list<array<string, mixed>>
+ */
+function honey_sales_fetch_shipped_export(
+    PDO $pdo,
+    ?string $period,
+    ?string $from,
+    ?string $to,
+    string $product = 'all'
+): array {
+    $filters = honey_sales_resolve_filters($period, $from, $to);
+    $range = $filters['range'];
+    $product = honey_sales_normalize_product_filter($product);
+    $rows = [];
+
+    $hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');
+    $hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');
+    $hasParcelCol = rts_db_has_column($pdo, 'honey_sales_log', 'online_parcel_id');
+    $hasQtyOther = rts_db_has_column($pdo, 'honey_sales_log', 'qty_other');
+
+    // Honey unique stickers + honey SKU / legacy parcel log lines (skip bare RTS FIFO duplicates).
+    if ($product === 'all' || $product === 'honey') {
+        $where = ' WHERE h.sale_type = \'parcel\'';
+        $params = [];
+        if ($range !== null) {
+            $where .= ' AND h.created_at >= ? AND h.created_at <= ?';
+            $params[] = $range['from'] . ' 00:00:00';
+            $params[] = $range['to'] . ' 23:59:59';
+        }
+
+        $unitExpr = $hasUnitCol ? 'h.bottle_unit_id' : 'NULL';
+        $sessExpr = $hasSessCol ? 'h.pack_session_id' : 'NULL';
+        $parcelExpr = $hasParcelCol ? 'h.online_parcel_id' : 'NULL';
+        $qtyOtherExpr = $hasQtyOther ? 'COALESCE(h.qty_other, 0)' : '0';
+
+        // Keep unit/session/parcel rows and packaging legacy; keep RTS only when qty_other (dept) or linked unit/session.
+        $where .= " AND (
+            ({$unitExpr} IS NOT NULL)
+            OR ({$sessExpr} IS NOT NULL)
+            OR ({$parcelExpr} IS NOT NULL)
+            OR (h.source = 'packaging')
+            OR (h.source = 'rts' AND {$qtyOtherExpr} > 0)
+        )";
+
+        $barcodeJoin = '';
+        $barcodeSelect = 'NULL AS barcode';
+        if ($hasUnitCol) {
+            $barcodeJoin = ' LEFT JOIN honey_bottle_units u ON u.id = h.bottle_unit_id
+                             LEFT JOIN honey_bottle_barcodes bc ON bc.id = u.barcode_id';
+            $barcodeSelect = 'bc.code AS barcode';
+        }
+
+        $trackJoin = '';
+        $trackSelect = 'NULL AS tracking_number';
+        if ($hasParcelCol) {
+            $trackJoin = ' LEFT JOIN online_order_parcels op ON op.id = h.online_parcel_id';
+            $trackSelect = 'op.tracking_number';
+        }
+
+        $sql = "SELECT h.id, h.created_at, h.source, h.variant, h.product_label,
+                       h.qty_liter, h.qty_250ml, h.qty_350ml, h.qty_gallon,
+                       {$qtyOtherExpr} AS qty_other,
+                       {$sessExpr} AS pack_session_id,
+                       {$parcelExpr} AS online_parcel_id,
+                       {$barcodeSelect},
+                       {$trackSelect}
+                FROM honey_sales_log h
+                {$barcodeJoin}
+                {$trackJoin}
+                {$where}
+                ORDER BY h.created_at DESC, h.id DESC
+                LIMIT " . (HONEY_SALES_EXPORT_MAX_ROWS + 1);
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $qty = (float) ($row['qty_liter'] ?? 0)
+                + (float) ($row['qty_250ml'] ?? 0)
+                + (float) ($row['qty_350ml'] ?? 0)
+                + (float) ($row['qty_gallon'] ?? 0)
+                + (float) ($row['qty_other'] ?? 0);
+            if ($qty <= 0) {
+                continue;
+            }
+            $sizeParts = [];
+            $sizeMap = [
+                'qty_liter' => '1L',
+                'qty_250ml' => '250ml',
+                'qty_350ml' => '350ml',
+                'qty_gallon' => 'Gallon',
+            ];
+            foreach ($sizeMap as $col => $label) {
+                $q = (float) ($row[$col] ?? 0);
+                if ($q > 0) {
+                    $sizeParts[] = $label . (abs($q - 1.0) > 0.001 ? ' ×' . $q : '');
+                }
+            }
+            $otherQty = (float) ($row['qty_other'] ?? 0);
+            if ($product === 'honey' && $otherQty > 0) {
+                continue;
+            }
+            $productLabel = trim((string) ($row['product_label'] ?? ''));
+            $variant = trim((string) ($row['variant'] ?? ''));
+            if ($otherQty > 0 && $productLabel !== '') {
+                $productName = $productLabel;
+            } elseif ($variant !== '') {
+                $productName = ucfirst($variant) . ($sizeParts !== [] ? ' ' . implode(', ', $sizeParts) : '');
+            } elseif ($productLabel !== '') {
+                $productName = $productLabel;
+            } else {
+                $productName = 'Honey';
+            }
+
+            $tracking = trim((string) ($row['tracking_number'] ?? ''));
+            $sessId = (int) ($row['pack_session_id'] ?? 0);
+            $packRef = $tracking !== '' ? $tracking : ($sessId > 0 ? 'Pack session #' . $sessId : '');
+
+            $rows[] = [
+                'when_packed' => (string) $row['created_at'],
+                'product' => $productName,
+                'qty' => $qty,
+                'tracking_or_session' => $packRef,
+                'barcode' => trim((string) ($row['barcode'] ?? '')),
+                'is_rts_resellable' => strtolower((string) ($row['source'] ?? '')) === 'rts',
+                'kind' => $otherQty > 0 ? 'dept' : 'honey',
+            ];
+        }
+    }
+
+    // Dept unique stickers packed in a pack session.
+    if ($product === 'all' || in_array($product, ['pt', 'brc', 'jar_cacao', 'honey_comb'], true)) {
+        $deptLabels = [];
+        foreach (dept_product_catalog() as $p) {
+            $deptLabels[(string) $p['key']] = (string) $p['label'];
+        }
+        $packWhere = " WHERE u.consumed_at IS NOT NULL
+                         AND u.consumed_ref_type = 'pack_session'
+                         AND u.status IN ('packed','shipped')";
+        $packParams = [];
+        if ($range !== null) {
+            $packWhere .= ' AND u.consumed_at >= ? AND u.consumed_at <= ?';
+            $packParams[] = $range['from'] . ' 00:00:00';
+            $packParams[] = $range['to'] . ' 23:59:59';
+        }
+        if ($product !== 'all') {
+            $packWhere .= ' AND u.product_key = ?';
+            $packParams[] = $product;
+        }
+        try {
+            $packSql = "SELECT u.consumed_at, u.product_key, u.pool, u.consumed_ref_id AS pack_session_id, c.code
+                        FROM dept_pouch_units u
+                        LEFT JOIN dept_pouch_barcodes c ON c.id = u.barcode_id
+                        {$packWhere}
+                        ORDER BY u.consumed_at DESC, u.id DESC
+                        LIMIT " . (HONEY_SALES_EXPORT_MAX_ROWS + 1);
+            $packSt = $pdo->prepare($packSql);
+            $packSt->execute($packParams);
+            foreach ($packSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $key = strtolower(trim((string) $row['product_key']));
+                $sessId = (int) ($row['pack_session_id'] ?? 0);
+                $rows[] = [
+                    'when_packed' => (string) $row['consumed_at'],
+                    'product' => $deptLabels[$key] ?? $key,
+                    'qty' => 1.0,
+                    'tracking_or_session' => $sessId > 0 ? 'Pack session #' . $sessId : '',
+                    'barcode' => trim((string) ($row['code'] ?? '')),
+                    'is_rts_resellable' => (string) ($row['pool'] ?? '') === 'rts_sellable',
+                    'kind' => 'dept',
+                ];
+            }
+        } catch (PDOException $e) {
+            // Table missing — skip dept sticker rows.
+        }
+    }
+
+    usort($rows, static function ($a, $b) {
+        return strcmp((string) ($b['when_packed'] ?? ''), (string) ($a['when_packed'] ?? ''));
+    });
+
+    if (count($rows) > HONEY_SALES_EXPORT_MAX_ROWS) {
+        throw new InvalidArgumentException(
+            'Too many shipped/pack-scan rows to export (max ' . HONEY_SALES_EXPORT_MAX_ROWS . '). Narrow the period or filters.'
+        );
+    }
+
+    return $rows;
+}
+
+/**
+ * @param list<array<string, mixed>> $checkoutRows
+ */
+function honey_sales_export_checkout_items_summary(array $items): string
+{
+    if ($items === []) {
+        return '—';
+    }
+    if (count($items) === 1) {
+        $i = $items[0];
+        $label = '';
+        if (!empty($i['variant'])) {
+            $label = ucfirst((string) $i['variant']) . ' ' . (string) ($i['size_label'] ?? $i['size'] ?? '');
+        } else {
+            $label = (string) ($i['label'] ?? $i['name'] ?? 'Item');
+        }
+
+        return trim($label) . ' ×' . (string) ($i['qty'] ?? 0);
+    }
+
+    return count($items) . ' line items';
+}
+
+/**
+ * Build a two-sheet sales workbook and return the temp file path.
+ *
+ * @param array{period:?string,from:?string,to:?string,receipt:?string,sale_type:string,channel:string,product:string} $opts
+ */
+function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmounts): string
+{
+    $autoload = dirname(__DIR__) . '/vendor/autoload.php';
+    if (!is_file($autoload)) {
+        throw new RuntimeException('Composer autoload missing (PhpSpreadsheet). Run composer install.');
+    }
+    require_once $autoload;
+
+    $period = $opts['period'] ?? null;
+    $from = $opts['from'] ?? null;
+    $to = $opts['to'] ?? null;
+    $receipt = $opts['receipt'] ?? null;
+    $saleType = (string) ($opts['sale_type'] ?? 'all');
+    $channel = (string) ($opts['channel'] ?? 'all');
+    $product = (string) ($opts['product'] ?? 'all');
+    if (!in_array($channel, ['all', 'walk_in', 'online'], true)) {
+        $channel = 'all';
+    }
+
+    $snapshot = honey_sales_sold_snapshot(
+        $pdo,
+        $period,
+        $from,
+        $to,
+        1,
+        $receipt,
+        $saleType,
+        $channel,
+        $product
+    );
+    $filterLabel = (string) ($snapshot['filter']['label'] ?? 'All time');
+    $share = is_array($snapshot['channel_share'] ?? null) ? $snapshot['channel_share'] : [];
+    $walkInShare = (float) ($share['walk_in'] ?? 0);
+    $shippedShare = (float) ($share['online'] ?? 0);
+    $shareTotal = (float) ($share['total'] ?? 0);
+    $walkInPct = (float) ($share['walk_in_pct'] ?? 0);
+    $shippedPct = (float) ($share['online_pct'] ?? 0);
+
+    $walkInRows = [];
+    $rtsFlags = [];
+    if ($channel !== 'online') {
+        $exported = honey_sales_fetch_checkouts_export($pdo, $period, $from, $to, $receipt, $saleType, $product);
+        $walkInRows = $exported['rows'];
+        $saleIds = array_map(static fn ($r) => (int) ($r['sale_id'] ?? 0), $walkInRows);
+        $rtsFlags = honey_sales_checkout_rts_flags($pdo, $saleIds);
+    }
+
+    $shippedRows = [];
+    if ($channel !== 'walk_in') {
+        $shippedRows = honey_sales_fetch_shipped_export($pdo, $period, $from, $to, $product);
+    }
+
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+
+    // --- Sheet: Shipped ---
+    $shipped = $spreadsheet->getActiveSheet();
+    $shipped->setTitle('Shipped');
+    $shipped->setCellValue('A1', 'Shipped / pack-scan');
+    $shipped->setCellValue('A2', 'Period');
+    $shipped->setCellValue('B2', $filterLabel);
+    $shipped->setCellValue('A3', 'Walk-in sold');
+    $shipped->setCellValue('B3', $walkInShare);
+    $shipped->setCellValue('C3', $walkInPct . '%');
+    $shipped->setCellValue('A4', 'Shipped');
+    $shipped->setCellValue('B4', $shippedShare);
+    $shipped->setCellValue('C4', $shippedPct . '%');
+    $shipped->setCellValue('A5', 'Total units');
+    $shipped->setCellValue('B5', $shareTotal);
+    $shipped->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+    $shipped->getStyle('A2:A5')->getFont()->setBold(true);
+
+    $shippedHeaders = ['When packed', 'Product', 'Qty', 'Tracking / pack session', 'Barcode', 'RTS resellable'];
+    $headerRow = 7;
+    $shippedCols = ['A', 'B', 'C', 'D', 'E', 'F'];
+    foreach ($shippedHeaders as $i => $h) {
+        $shipped->setCellValue($shippedCols[$i] . $headerRow, $h);
+    }
+    $shipped->getStyle('A7:F7')->getFont()->setBold(true);
+
+    if ($shippedRows === []) {
+        $shipped->setCellValue('A8', $channel === 'walk_in'
+            ? 'No shipped rows for Walk-in filter.'
+            : 'No shipped / pack-scan rows for this period.');
+    } else {
+        $r = $headerRow + 1;
+        foreach ($shippedRows as $row) {
+            $shipped->setCellValue('A' . $r, (string) $row['when_packed']);
+            $shipped->setCellValue('B' . $r, (string) $row['product']);
+            $shipped->setCellValue('C' . $r, (float) $row['qty']);
+            $shipped->setCellValue('D' . $r, (string) $row['tracking_or_session']);
+            $shipped->setCellValue('E' . $r, (string) $row['barcode']);
+            $shipped->setCellValue('F' . $r, !empty($row['is_rts_resellable']) ? 'Yes' : 'No');
+            $r++;
+        }
+    }
+    foreach (range('A', 'F') as $col) {
+        $shipped->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    // --- Sheet: Walk-in ---
+    $walkIn = $spreadsheet->createSheet();
+    $walkIn->setTitle('Walk-in');
+    $walkIn->setCellValue('A1', 'Walk-in sales');
+    $walkIn->setCellValue('A2', 'Period');
+    $walkIn->setCellValue('B2', $filterLabel);
+    $walkIn->setCellValue('A3', 'Walk-in sold');
+    $walkIn->setCellValue('B3', $walkInShare);
+    $walkIn->setCellValue('C3', $walkInPct . '%');
+    $walkIn->setCellValue('A4', 'Shipped');
+    $walkIn->setCellValue('B4', $shippedShare);
+    $walkIn->setCellValue('C4', $shippedPct . '%');
+    $walkIn->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+    $walkIn->getStyle('A2:A4')->getFont()->setBold(true);
+
+    $walkHeaders = ['When sold', 'Receipt', 'Sold by', 'Sold to', 'Items', 'Type', 'RTS resellable'];
+    if ($canViewAmounts) {
+        $walkHeaders[] = 'Total';
+    }
+    $whRow = 6;
+    $walkCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    foreach ($walkHeaders as $i => $h) {
+        $walkIn->setCellValue($walkCols[$i] . $whRow, $h);
+    }
+    $lastCol = $canViewAmounts ? 'H' : 'G';
+    $walkIn->getStyle('A6:' . $lastCol . '6')->getFont()->setBold(true);
+
+    if ($walkInRows === []) {
+        $walkIn->setCellValue('A7', $channel === 'online'
+            ? 'No walk-in rows for Shipped filter.'
+            : 'No walk-in checkouts for this period.');
+    } else {
+        $r = $whRow + 1;
+        foreach ($walkInRows as $row) {
+            $saleId = (int) ($row['sale_id'] ?? 0);
+            $type = !empty($row['is_ar'])
+                ? 'AR'
+                : (!empty($row['discount_percent']) ? ((int) $row['discount_percent'] . '% off') : 'Regular');
+            $walkIn->setCellValue('A' . $r, (string) ($row['sold_at'] ?? ''));
+            $walkIn->setCellValue('B' . $r, (string) ($row['receipt_no'] ?? ''));
+            $walkIn->setCellValue('C' . $r, (string) ($row['sold_by_name'] ?? 'POS'));
+            $walkIn->setCellValue('D' . $r, (string) ($row['buyer_name'] ?? 'Walk-in'));
+            $walkIn->setCellValue('E' . $r, honey_sales_export_checkout_items_summary(
+                is_array($row['items'] ?? null) ? $row['items'] : []
+            ));
+            $walkIn->setCellValue('F' . $r, $type);
+            $walkIn->setCellValue('G' . $r, !empty($rtsFlags[$saleId]) ? 'Yes' : 'No');
+            if ($canViewAmounts) {
+                $walkIn->setCellValue('H' . $r, (float) ($row['total_amount'] ?? 0));
+            }
+            $r++;
+        }
+    }
+    foreach (range('A', $lastCol) as $col) {
+        $walkIn->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    $spreadsheet->setActiveSheetIndex(0);
+
+    $dir = sys_get_temp_dir();
+    $path = $dir . DIRECTORY_SEPARATOR . 'sales_export_' . bin2hex(random_bytes(8)) . '.xlsx';
+    $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+    $writer->save($path);
+    $spreadsheet->disconnectWorksheets();
+    unset($spreadsheet);
+
+    return $path;
+}
+

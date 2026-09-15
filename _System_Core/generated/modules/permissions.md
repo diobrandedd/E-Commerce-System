@@ -1,7 +1,7 @@
 ---
 title: permissions
 source: includes/permissions.php
-generated: 2026-09-15T05:53:57+02:00
+generated: 2026-09-15T10:16:11+02:00
 type: module
 function_count: 19
 ---
@@ -96,7 +96,7 @@ function_count: 19
 
 ## ims_user_can {#ims_user_can}
 
-**Callers (116):**
+**Callers (117):**
 
 - `api/v1/_bootstrap.php`:168 — `if (ims_user_can($u, $key)) {`
 - `api/v1/_costing_helpers.php`:73 — `return ims_user_can($user, 'costing.manage');`
@@ -123,7 +123,7 @@ function_count: 19
 - `api/v1/honey.php`:178 — `&& !ims_user_can($user, 'honey.bottle.request')`
 - `api/v1/honey.php`:179 — `&& !ims_user_can($user, 'honey.bottle.scan')`
 - `api/v1/honey.php`:180 — `&& !ims_user_can($user, 'honey.bottle.generate')`
-- _… and 91 more (run impact.php for full list)_
+- _… and 92 more (run impact.php for full list)_
 
 ## ims_user_can_dept_line {#ims_user_can_dept_line}
 

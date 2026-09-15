@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-15 — Sales Excel export (Shipped + Walk-in)
+**Change:** Export button on Sales downloads two-sheet `.xlsx` (pack-scan with RTS resellable column + walk-in checkouts); respects period/channel/product filters. → [[problems/records/2026-09-15_sales-excel-export]]
+
 ### 2026-09-15 — Raw stock-in total kilos (PT / BRC / Cacao)
 **Change:** Paragis, BRC, Jar Cacao stock-in is total kg (`stock_in_unit=kg`); UI/pricing ₱/kg; Honey Comb unchanged. → [[problems/records/2026-09-15_raw-stock-in-kilos]]
 

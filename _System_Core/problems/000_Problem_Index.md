@@ -52,6 +52,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-09-15_sales-excel-export]] — Sales Excel: Shipped (RTS flag) + Walk-in sheets
 - [[records/2026-08-26_sku-barcode-inventory]] — Permanent SKU barcodes (one code per product); print N copies; scan→qty; leftover uniques kept
 - [[records/2026-08-26_sku-barcode-spa]] — Barcode Settings + POS/check/pack/RTS SKU qty UX
 - [[records/2026-08-26_pos-return-receipt-total]] — Returned POS barcode reduces receipt total (heal + restock reverse)
