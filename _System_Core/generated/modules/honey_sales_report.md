@@ -1,7 +1,7 @@
 ---
 title: honey_sales_report
 source: includes/honey_sales_report.php
-generated: 2026-09-16T11:48:24+02:00
+generated: 2026-09-16T12:01:02+02:00
 type: module
 function_count: 27
 ---
@@ -28,7 +28,7 @@ function_count: 27
 - `includes/honey_sales_report.php`:793 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
 - `includes/honey_sales_report.php`:986 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
 - `includes/honey_sales_report.php`:1058 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
-- `includes/honey_sales_report.php`:1792 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
+- `includes/honey_sales_report.php`:1761 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
 
 ## honey_sales_log_where_clause {#honey_sales_log_where_clause}
 
@@ -151,7 +151,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:1801 — `$exported = honey_sales_fetch_checkouts_export($pdo, $period, $from, $to, $receipt, $saleType, $product);`
+- `includes/honey_sales_report.php`:1770 — `$exported = honey_sales_fetch_checkouts_export($pdo, $period, $from, $to, $receipt, $saleType, $product);`
 
 ## honey_sales_checkout_rts_flags {#honey_sales_checkout_rts_flags}
 
@@ -159,7 +159,7 @@ function_count: 27
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:1804 — `$rtsFlags = honey_sales_checkout_rts_flags($pdo, $saleIds);`
+- `includes/honey_sales_report.php`:1773 — `$rtsFlags = honey_sales_checkout_rts_flags($pdo, $saleIds);`
 
 ## honey_sales_fetch_shipped_export {#honey_sales_fetch_shipped_export}
 
@@ -167,21 +167,21 @@ function_count: 27
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:1812 — `$shippedRows = honey_sales_fetch_shipped_export($pdo, $period, $from, $to, $product);`
+- `includes/honey_sales_report.php`:1781 — `$shippedRows = honey_sales_fetch_shipped_export($pdo, $period, $from, $to, $product);`
 
 ## honey_sales_export_checkout_item_labels {#honey_sales_export_checkout_item_labels}
 
 **Callers (2):**
 
 - `includes/honey_sales_report.php`:1417 — `$labels = explode('; ', honey_sales_export_checkout_item_labels($items));`
-- `includes/honey_sales_report.php`:1901 — `$walkIn->setCellValue('E' . $r, honey_sales_export_checkout_item_labels($items));`
+- `includes/honey_sales_report.php`:1870 — `$walkIn->setCellValue('E' . $r, honey_sales_export_checkout_item_labels($items));`
 
 ## honey_sales_export_checkout_item_qtys {#honey_sales_export_checkout_item_qtys}
 
 **Callers (2):**
 
 - `includes/honey_sales_report.php`:1418 — `$qtys = explode('; ', honey_sales_export_checkout_item_qtys($items));`
-- `includes/honey_sales_report.php`:1902 — `$walkIn->setCellValue('F' . $r, honey_sales_export_checkout_item_qtys($items));`
+- `includes/honey_sales_report.php`:1871 — `$walkIn->setCellValue('F' . $r, honey_sales_export_checkout_item_qtys($items));`
 
 ## honey_sales_export_checkout_items_summary {#honey_sales_export_checkout_items_summary}
 
@@ -200,20 +200,20 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:1815 — `$walkInSummary = honey_sales_export_summarize_walk_in($walkInRows, $rtsFlags);`
+- `includes/honey_sales_report.php`:1784 — `$walkInSummary = honey_sales_export_summarize_walk_in($walkInRows, $rtsFlags);`
 
 ## honey_sales_export_summarize_shipped {#honey_sales_export_summarize_shipped}
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:1816 — `$shippedSummary = honey_sales_export_summarize_shipped($shippedRows);`
+- `includes/honey_sales_report.php`:1785 — `$shippedSummary = honey_sales_export_summarize_shipped($shippedRows);`
 
 ## honey_sales_export_write_summary_block {#honey_sales_export_write_summary_block}
 
 **Callers (2):**
 
-- `includes/honey_sales_report.php`:1823 — `$nextRow = honey_sales_export_write_summary_block(`
-- `includes/honey_sales_report.php`:1865 — `$walkNext = honey_sales_export_write_summary_block(`
+- `includes/honey_sales_report.php`:1792 — `$nextRow = honey_sales_export_write_summary_block(`
+- `includes/honey_sales_report.php`:1834 — `$walkNext = honey_sales_export_write_summary_block(`
 
 ## honey_sales_build_export_xlsx {#honey_sales_build_export_xlsx}
 

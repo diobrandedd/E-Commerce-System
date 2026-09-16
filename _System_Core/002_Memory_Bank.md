@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-16 — Sales Excel sheet summaries are channel-only
+**Change:** Shipped sheet summary shows only shipped; Walk-in sheet only walk-in (no side-by-side). → [[problems/records/2026-09-16_sales-export-sheet-channel-only]]
+
 ### 2026-09-16 — Sales shipped includes dept SKU packs
 **Change:** Dept product cards + Excel shipped sheet count unique stickers **and** confirmed SKU pack qty (pt/brc/cacao/comb); honey already did via sales log. → [[problems/records/2026-09-16_sales-dept-shipped-include-sku]]
 

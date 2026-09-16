@@ -1621,44 +1621,36 @@ function honey_sales_export_summarize_shipped(array $shippedRows): array
 }
 
 /**
- * Write shared summary block (period + channel totals + size/variant breakdown).
+ * Header + breakdown for one channel only (Walk-in sheet or Shipped sheet).
  *
- * @param array{total: float, by_size: array<string, float>, by_variant?: array<string, float>, by_variant_size?: array<string, float>, rts_units: float} $walkInSummary
- * @param array{total: float, by_size: array<string, float>, by_variant?: array<string, float>, by_variant_size?: array<string, float>, rts_units: float} $shippedSummary
+ * @param array{total: float, by_size: array<string, float>, by_variant?: array<string, float>, by_variant_size?: array<string, float>, rts_units: float} $summary
+ * @param 'walk_in'|'shipped' $channel
  * @return int next empty row index
  */
 function honey_sales_export_write_summary_block(
     \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
     string $title,
     string $filterLabel,
-    array $walkInSummary,
-    array $shippedSummary
+    array $summary,
+    string $channel
 ): int {
-    $walkInTotal = (float) $walkInSummary['total'];
-    $shippedTotal = (float) $shippedSummary['total'];
-    $grand = $walkInTotal + $shippedTotal;
-    $walkInPct = $grand > 0 ? round(($walkInTotal / $grand) * 100, 1) : 0.0;
-    $shippedPct = $grand > 0 ? round(($shippedTotal / $grand) * 100, 1) : 0.0;
+    $total = (float) ($summary['total'] ?? 0);
+    $rts = (float) ($summary['rts_units'] ?? 0);
+    $unitsLabel = $channel === 'shipped'
+        ? 'Shipped / pack-scan (units in sheet)'
+        : 'Walk-in sold (units on receipts)';
 
     $sheet->setCellValue('A1', $title);
     $sheet->setCellValue('A2', 'Period');
     $sheet->setCellValue('B2', $filterLabel);
-    $sheet->setCellValue('A3', 'Walk-in sold (units on receipts)');
-    $sheet->setCellValue('B3', $walkInTotal);
-    $sheet->setCellValue('C3', $walkInPct . '%');
-    $sheet->setCellValue('A4', 'Shipped / pack-scan (units in sheet)');
-    $sheet->setCellValue('B4', $shippedTotal);
-    $sheet->setCellValue('C4', $shippedPct . '%');
-    $sheet->setCellValue('A5', 'Total units');
-    $sheet->setCellValue('B5', $grand);
-    $sheet->setCellValue('A6', 'Of which RTS resellable');
-    $sheet->setCellValue('B6', 'Walk-in ' . (float) $walkInSummary['rts_units'] . ' · Shipped ' . (float) $shippedSummary['rts_units']);
+    $sheet->setCellValue('A3', $unitsLabel);
+    $sheet->setCellValue('B3', $total);
+    $sheet->setCellValue('A4', 'Of which RTS resellable');
+    $sheet->setCellValue('B4', $rts);
 
-    $sheet->setCellValue('A8', 'Walk-in by bottle / size');
-    $sheet->setCellValue('B8', 'Qty');
-    $sheet->setCellValue('D8', 'Shipped by bottle / size');
-    $sheet->setCellValue('E8', 'Qty');
-    $sheet->getStyle('A8:E8')->getFont()->setBold(true);
+    $sheet->setCellValue('A6', 'By bottle / size');
+    $sheet->setCellValue('B6', 'Qty');
+    $sheet->getStyle('A6:B6')->getFont()->setBold(true);
 
     $labels = [
         '250ml' => '250ml',
@@ -1668,99 +1660,76 @@ function honey_sales_export_write_summary_block(
         'dept' => 'Dept (pouch/jar/etc.)',
         'other' => 'Other',
     ];
-    $r = 9;
+    $r = 7;
+    $bySize = is_array($summary['by_size'] ?? null) ? $summary['by_size'] : [];
     foreach ($labels as $key => $label) {
-        $wq = (float) ($walkInSummary['by_size'][$key] ?? 0);
-        $sq = (float) ($shippedSummary['by_size'][$key] ?? 0);
-        if ($wq <= 0 && $sq <= 0) {
+        $q = (float) ($bySize[$key] ?? 0);
+        if ($q <= 0) {
             continue;
         }
         $sheet->setCellValue('A' . $r, $label);
-        $sheet->setCellValue('B' . $r, $wq);
-        $sheet->setCellValue('D' . $r, $label);
-        $sheet->setCellValue('E' . $r, $sq);
+        $sheet->setCellValue('B' . $r, $q);
         $r++;
     }
-    if ($r === 9) {
-        $sheet->setCellValue('A9', '(none)');
-        $sheet->setCellValue('D9', '(none)');
-        $r = 10;
+    if ($r === 7) {
+        $sheet->setCellValue('A7', '(none)');
+        $r = 8;
     }
 
     $r += 1;
-    $sheet->setCellValue('A' . $r, 'Walk-in by variant');
+    $sheet->setCellValue('A' . $r, 'By variant');
     $sheet->setCellValue('B' . $r, 'Qty');
-    $sheet->setCellValue('D' . $r, 'Shipped by variant');
-    $sheet->setCellValue('E' . $r, 'Qty');
-    $sheet->getStyle('A' . $r . ':E' . $r)->getFont()->setBold(true);
+    $sheet->getStyle('A' . $r . ':B' . $r)->getFont()->setBold(true);
     $r++;
 
-    $walkVariants = is_array($walkInSummary['by_variant'] ?? null) ? $walkInSummary['by_variant'] : [];
-    $shipVariants = is_array($shippedSummary['by_variant'] ?? null) ? $shippedSummary['by_variant'] : [];
-    $variantKeys = array_values(array_unique(array_merge(array_keys($walkVariants), array_keys($shipVariants))));
-    usort($variantKeys, static function ($a, $b) use ($walkVariants, $shipVariants) {
-        $wa = (float) ($walkVariants[$a] ?? 0) + (float) ($shipVariants[$a] ?? 0);
-        $wb = (float) ($walkVariants[$b] ?? 0) + (float) ($shipVariants[$b] ?? 0);
-
-        return $wb <=> $wa;
+    $variants = is_array($summary['by_variant'] ?? null) ? $summary['by_variant'] : [];
+    $variantKeys = array_keys($variants);
+    usort($variantKeys, static function ($a, $b) use ($variants) {
+        return (float) ($variants[$b] ?? 0) <=> (float) ($variants[$a] ?? 0);
     });
     $variantStart = $r;
     foreach ($variantKeys as $vk) {
-        $wq = (float) ($walkVariants[$vk] ?? 0);
-        $sq = (float) ($shipVariants[$vk] ?? 0);
-        if ($wq <= 0 && $sq <= 0) {
+        $q = (float) ($variants[$vk] ?? 0);
+        if ($q <= 0) {
             continue;
         }
         $sheet->setCellValue('A' . $r, $vk);
-        $sheet->setCellValue('B' . $r, $wq);
-        $sheet->setCellValue('D' . $r, $vk);
-        $sheet->setCellValue('E' . $r, $sq);
+        $sheet->setCellValue('B' . $r, $q);
         $r++;
     }
     if ($r === $variantStart) {
         $sheet->setCellValue('A' . $r, '(none)');
-        $sheet->setCellValue('D' . $r, '(none)');
         $r++;
     }
 
     $r += 1;
-    $sheet->setCellValue('A' . $r, 'Walk-in by variant × size');
+    $sheet->setCellValue('A' . $r, 'By variant × size');
     $sheet->setCellValue('B' . $r, 'Qty');
-    $sheet->setCellValue('D' . $r, 'Shipped by variant × size');
-    $sheet->setCellValue('E' . $r, 'Qty');
-    $sheet->getStyle('A' . $r . ':E' . $r)->getFont()->setBold(true);
+    $sheet->getStyle('A' . $r . ':B' . $r)->getFont()->setBold(true);
     $r++;
 
-    $walkVs = is_array($walkInSummary['by_variant_size'] ?? null) ? $walkInSummary['by_variant_size'] : [];
-    $shipVs = is_array($shippedSummary['by_variant_size'] ?? null) ? $shippedSummary['by_variant_size'] : [];
-    $vsKeys = array_values(array_unique(array_merge(array_keys($walkVs), array_keys($shipVs))));
-    usort($vsKeys, static function ($a, $b) use ($walkVs, $shipVs) {
-        $wa = (float) ($walkVs[$a] ?? 0) + (float) ($shipVs[$a] ?? 0);
-        $wb = (float) ($walkVs[$b] ?? 0) + (float) ($shipVs[$b] ?? 0);
-
-        return $wb <=> $wa;
+    $vs = is_array($summary['by_variant_size'] ?? null) ? $summary['by_variant_size'] : [];
+    $vsKeys = array_keys($vs);
+    usort($vsKeys, static function ($a, $b) use ($vs) {
+        return (float) ($vs[$b] ?? 0) <=> (float) ($vs[$a] ?? 0);
     });
     $vsStart = $r;
     foreach ($vsKeys as $vk) {
-        $wq = (float) ($walkVs[$vk] ?? 0);
-        $sq = (float) ($shipVs[$vk] ?? 0);
-        if ($wq <= 0 && $sq <= 0) {
+        $q = (float) ($vs[$vk] ?? 0);
+        if ($q <= 0) {
             continue;
         }
         $sheet->setCellValue('A' . $r, $vk);
-        $sheet->setCellValue('B' . $r, $wq);
-        $sheet->setCellValue('D' . $r, $vk);
-        $sheet->setCellValue('E' . $r, $sq);
+        $sheet->setCellValue('B' . $r, $q);
         $r++;
     }
     if ($r === $vsStart) {
         $sheet->setCellValue('A' . $r, '(none)');
-        $sheet->setCellValue('D' . $r, '(none)');
         $r++;
     }
 
     $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-    $sheet->getStyle('A2:A6')->getFont()->setBold(true);
+    $sheet->getStyle('A2:A4')->getFont()->setBold(true);
 
     return $r + 1;
 }
@@ -1824,8 +1793,8 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         $shipped,
         'Shipped / pack-scan',
         $filterLabel,
-        $walkInSummary,
-        $shippedSummary
+        $shippedSummary,
+        'shipped'
     );
 
     $shippedHeaders = ['When packed', 'Variant', 'Size', 'Qty', 'Tracking / pack session', 'Barcode', 'RTS resellable', 'Packed by'];
@@ -1867,7 +1836,7 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         'Walk-in sales',
         $filterLabel,
         $walkInSummary,
-        $shippedSummary
+        'walk_in'
     );
 
     $walkHeaders = ['When sold', 'Receipt', 'Sold by', 'Sold to', 'Items', 'Qty', 'Type', 'RTS resellable'];

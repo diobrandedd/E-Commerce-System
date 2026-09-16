@@ -53,6 +53,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-09-16_sales-export-sheet-channel-only]] — Excel Shipped/Walk-in sheets: summary for that channel only
 - [[records/2026-09-16_sales-dept-shipped-include-sku]] — Dept Sales shipped = stickers + SKU pack qty (pt/brc/cacao/comb)
 - [[records/2026-09-16_sales-export-items-detail]] — Walk-in Items + Qty columns (one row per checkout)
 - [[records/2026-09-16_honey-packaging-show-on-hand]] — Packaging Edit shows/updates current on-hand (not scan gross)
