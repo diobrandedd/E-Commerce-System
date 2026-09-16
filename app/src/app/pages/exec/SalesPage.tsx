@@ -133,13 +133,14 @@ function itemLabel(item: CheckoutItem): string {
   return item.label ?? item.name ?? "Item";
 }
 
-function itemSummary(items: CheckoutItem[]): string {
+function itemNames(items: CheckoutItem[]): string {
   if (items.length === 0) return "—";
-  if (items.length === 1) {
-    const i = items[0];
-    return `${itemLabel(i)} ×${fmtQty(i.qty)}`;
-  }
-  return `${items.length} line items`;
+  return items.map(itemLabel).join("; ");
+}
+
+function itemQtys(items: CheckoutItem[]): string {
+  if (items.length === 0) return "—";
+  return items.map(i => fmtQty(i.qty)).join("; ");
 }
 
 /** Rebuild thermal receipt from stored sale lines (no PDF on disk). */
@@ -495,7 +496,7 @@ export function SalesPage() {
               })}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Shipped units are stickers scanned in pack scan — packed for a parcel, not yet a register sale.
+              Shipped units are pack-scan totals (unique stickers + SKU qty) — packed for a parcel, not yet a register sale.
             </p>
           </AppSectionEnter>
         )}
@@ -655,6 +656,7 @@ export function SalesPage() {
                       <th className="px-3 py-2 font-semibold">Sold by</th>
                       <th className="px-3 py-2 font-semibold">Sold to</th>
                       <th className="px-3 py-2 font-semibold">Items</th>
+                      <th className="px-3 py-2 font-semibold">Qty</th>
                       <th className="px-3 py-2 font-semibold">Type</th>
                       {canViewAmounts ? (
                         <th className="px-3 py-2 font-semibold text-right">Total</th>
@@ -685,7 +687,12 @@ export function SalesPage() {
                             <td className="px-3 py-2.5 font-mono text-xs">{row.receipt_no}</td>
                             <td className="px-3 py-2.5">{row.sold_by_name || "POS"}</td>
                             <td className="px-3 py-2.5">{row.buyer_name || "Walk-in"}</td>
-                            <td className="px-3 py-2.5 text-muted-foreground">{itemSummary(row.items)}</td>
+                            <td className="px-3 py-2.5 text-muted-foreground max-w-[14rem]">
+                              {itemNames(row.items)}
+                            </td>
+                            <td className="px-3 py-2.5 tabular-nums text-muted-foreground whitespace-nowrap">
+                              {itemQtys(row.items)}
+                            </td>
                             <td className="px-3 py-2.5">
                               {row.is_ar ? (
                                 <span className="inline-flex rounded-full bg-red-100 text-red-700 text-[11px] px-2 py-0.5 font-semibold">
@@ -709,7 +716,7 @@ export function SalesPage() {
                           </tr>
                           {expanded && (
                             <tr key={`${row.sale_id}-detail`} className="border-b border-border/60 bg-secondary/10">
-                              <td colSpan={canViewAmounts ? 8 : 7} className="px-4 py-3">
+                              <td colSpan={canViewAmounts ? 9 : 8} className="px-4 py-3">
                                 <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                                   <p className="text-xs text-muted-foreground">
                                     Sold by: <span className="text-foreground font-medium">{row.sold_by_name || "POS"}</span>

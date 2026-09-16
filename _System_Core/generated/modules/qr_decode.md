@@ -1,7 +1,7 @@
 ---
 title: qr_decode
 source: includes/qr_decode.php
-generated: 2026-09-16T07:31:20+02:00
+generated: 2026-09-16T11:48:42+02:00
 type: module
 function_count: 13
 ---

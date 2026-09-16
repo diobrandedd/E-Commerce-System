@@ -1,6 +1,6 @@
 ---
 title: Include Graph
-generated: 2026-09-16T07:30:35+02:00
+generated: 2026-09-16T11:47:59+02:00
 type: memory-bank
 edge_count: 447
 ---

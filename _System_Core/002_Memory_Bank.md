@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-16 — Sales shipped includes dept SKU packs
+**Change:** Dept product cards + Excel shipped sheet count unique stickers **and** confirmed SKU pack qty (pt/brc/cacao/comb); honey already did via sales log. → [[problems/records/2026-09-16_sales-dept-shipped-include-sku]]
+
+### 2026-09-16 — Sales export Items lists products
+**Change:** Walk-in keeps one row per checkout; **Items** = product names, **Qty** = matching qtys (`Amber 1L; Dark…` / `1; 2`) in UI + Excel. → [[problems/records/2026-09-16_sales-export-items-detail]]
+
 ### 2026-09-16 — Honey Packaging shows on-hand (Edit reflects)
 **Change:** Packaging table/totals use `current_*`; Edit updates visible inventory; scanned history kept as secondary. → [[problems/records/2026-09-16_honey-packaging-show-on-hand]]
 

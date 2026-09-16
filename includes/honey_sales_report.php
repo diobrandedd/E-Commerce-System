@@ -231,8 +231,9 @@ function honey_sales_checkout_where_clause(?array $range, ?string $receiptSearch
 /**
  * Dept finished units moved in the period.
  * Walk-in comes from POS receipt lines (covers sticker sells and older quantity sells);
- * shipped comes from sticker units scanned in a confirmed pack session — packed for a parcel,
- * not a register sale. Pack-cancel restock clears the unit, so returns drop out on their own.
+ * shipped = unique stickers packed in a confirmed pack session + SKU qty lines on those
+ * same sessions (matches Pack scan History). Pack-cancel restock clears unique units;
+ * SKU lines remain on the confirmed session (same as History).
  *
  * @param array<string, mixed>|null $range
  * @return array{products: list<array<string, mixed>>, walk_in: float, shipped: float, total: float}
@@ -277,6 +278,32 @@ function honey_sales_dept_breakdown(PDO $pdo, ?array $range, string $channel = '
         }
     } catch (PDOException $e) {
         // Sticker units table not migrated yet — report sold units only rather than breaking the page.
+    }
+
+    // SKU qty packs on confirmed sessions (no dept_pouch_units row — inventory-only deduct).
+    try {
+        $skuWhere = ' WHERE s.status = "confirmed"
+                        AND s.confirmed_at IS NOT NULL
+                        AND di.sku_id IS NOT NULL AND di.sku_id > 0
+                        AND (di.unit_id IS NULL OR di.unit_id < 1)';
+        $skuParams = [];
+        if ($range !== null) {
+            $skuWhere .= ' AND s.confirmed_at >= ? AND s.confirmed_at <= ?';
+            $skuParams = [$range['from'] . ' 00:00:00', $range['to'] . ' 23:59:59'];
+        }
+        $skuSql = "SELECT di.product_key, COALESCE(SUM(di.qty), 0) AS qty
+                   FROM honey_bottle_pack_session_dept_items di
+                   INNER JOIN honey_bottle_pack_sessions s ON s.id = di.session_id
+                   {$skuWhere}
+                   GROUP BY di.product_key";
+        $skuSt = $pdo->prepare($skuSql);
+        $skuSt->execute($skuParams);
+        foreach ($skuSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $key = (string) $row['product_key'];
+            $counts[$key]['shipped'] = (float) ($counts[$key]['shipped'] ?? 0) + (float) $row['qty'];
+        }
+    } catch (PDOException $e) {
+        // Pack session / dept item tables missing — stickers-only is still useful.
     }
 
     $products = [];
@@ -1200,7 +1227,7 @@ function honey_sales_fetch_shipped_export(
         }
     }
 
-    // Dept unique stickers packed in a pack session.
+    // Dept unique stickers + SKU qty packs from confirmed pack sessions.
     if ($product === 'all' || in_array($product, ['pt', 'brc', 'jar_cacao', 'honey_comb'], true)) {
         $deptLabels = [];
         foreach (dept_product_catalog() as $p) {
@@ -1256,6 +1283,62 @@ function honey_sales_fetch_shipped_export(
         } catch (PDOException $e) {
             // Table missing — skip dept sticker rows.
         }
+
+        $skuWhere = ' WHERE s.status = "confirmed"
+                        AND s.confirmed_at IS NOT NULL
+                        AND di.sku_id IS NOT NULL AND di.sku_id > 0
+                        AND (di.unit_id IS NULL OR di.unit_id < 1)';
+        $skuParams = [];
+        if ($range !== null) {
+            $skuWhere .= ' AND s.confirmed_at >= ? AND s.confirmed_at <= ?';
+            $skuParams[] = $range['from'] . ' 00:00:00';
+            $skuParams[] = $range['to'] . ' 23:59:59';
+        }
+        if ($product !== 'all') {
+            $skuWhere .= ' AND di.product_key = ?';
+            $skuParams[] = $product;
+        }
+        try {
+            $skuSql = "SELECT s.confirmed_at, di.product_key, di.qty, di.sku_code, di.pool, s.id AS pack_session_id,
+                              COALESCE(
+                                NULLIF(TRIM(u_conf.name), ''),
+                                NULLIF(TRIM(u_start.name), ''),
+                                ''
+                              ) AS packed_by_name
+                       FROM honey_bottle_pack_session_dept_items di
+                       INNER JOIN honey_bottle_pack_sessions s ON s.id = di.session_id
+                       LEFT JOIN users u_conf ON u_conf.id = s.confirmed_by
+                       LEFT JOIN users u_start ON u_start.id = s.started_by
+                       {$skuWhere}
+                       ORDER BY s.confirmed_at DESC, di.id DESC
+                       LIMIT " . (HONEY_SALES_EXPORT_MAX_ROWS + 1);
+            $skuSt = $pdo->prepare($skuSql);
+            $skuSt->execute($skuParams);
+            foreach ($skuSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $key = strtolower(trim((string) $row['product_key']));
+                $qty = (float) ($row['qty'] ?? 0);
+                if ($qty <= 0) {
+                    continue;
+                }
+                $sessId = (int) ($row['pack_session_id'] ?? 0);
+                $label = $deptLabels[$key] ?? $key;
+                $rows[] = [
+                    'when_packed' => (string) $row['confirmed_at'],
+                    'product' => $label . (abs($qty - 1.0) > 0.001 ? ' ×' . $qty : ''),
+                    'variant' => $label,
+                    'size_label' => '—',
+                    'qty' => $qty,
+                    'tracking_or_session' => $sessId > 0 ? 'Pack session #' . $sessId : '',
+                    'barcode' => trim((string) ($row['sku_code'] ?? '')),
+                    'is_rts_resellable' => (string) ($row['pool'] ?? '') === 'rts_sellable',
+                    'kind' => 'dept',
+                    'size_qtys' => ['dept' => $qty],
+                    'packed_by_name' => trim((string) ($row['packed_by_name'] ?? '')),
+                ];
+            }
+        } catch (PDOException $e) {
+            // Pack session tables missing — stickers-only export still useful.
+        }
     }
 
     usort($rows, static function ($a, $b) {
@@ -1272,26 +1355,79 @@ function honey_sales_fetch_shipped_export(
 }
 
 /**
- * @param list<array<string, mixed>> $checkoutRows
+ * Labels only (no qty) for one checkout — order matches honey_sales_export_checkout_item_qtys.
+ *
+ * @param list<array<string, mixed>> $items
+ */
+function honey_sales_export_checkout_item_labels(array $items): string
+{
+    if ($items === []) {
+        return '—';
+    }
+    $parts = [];
+    foreach ($items as $i) {
+        if (!is_array($i)) {
+            continue;
+        }
+        if (!empty($i['variant'])) {
+            $parts[] = trim(ucfirst((string) $i['variant']) . ' ' . (string) ($i['size_label'] ?? $i['size'] ?? ''));
+        } else {
+            $parts[] = trim((string) ($i['label'] ?? $i['name'] ?? 'Item'));
+        }
+    }
+
+    return $parts === [] ? '—' : implode('; ', $parts);
+}
+
+/**
+ * Qtys only — same order as honey_sales_export_checkout_item_labels.
+ *
+ * @param list<array<string, mixed>> $items
+ */
+function honey_sales_export_checkout_item_qtys(array $items): string
+{
+    if ($items === []) {
+        return '—';
+    }
+    $parts = [];
+    foreach ($items as $i) {
+        if (!is_array($i)) {
+            continue;
+        }
+        $qty = $i['qty'] ?? 0;
+        $parts[] = is_numeric($qty)
+            ? (abs((float) $qty - round((float) $qty)) < 0.001
+                ? (string) (int) round((float) $qty)
+                : rtrim(rtrim(number_format((float) $qty, 2, '.', ''), '0'), '.'))
+            : (string) $qty;
+    }
+
+    return $parts === [] ? '—' : implode('; ', $parts);
+}
+
+/**
+ * @param list<array<string, mixed>> $items
+ * @deprecated Prefer labels + qtys columns; kept for callers that need a single cell.
  */
 function honey_sales_export_checkout_items_summary(array $items): string
 {
     if ($items === []) {
         return '—';
     }
-    if (count($items) === 1) {
-        $i = $items[0];
-        $label = '';
-        if (!empty($i['variant'])) {
-            $label = ucfirst((string) $i['variant']) . ' ' . (string) ($i['size_label'] ?? $i['size'] ?? '');
-        } else {
-            $label = (string) ($i['label'] ?? $i['name'] ?? 'Item');
+    $labels = explode('; ', honey_sales_export_checkout_item_labels($items));
+    $qtys = explode('; ', honey_sales_export_checkout_item_qtys($items));
+    $parts = [];
+    $n = max(count($labels), count($qtys));
+    for ($i = 0; $i < $n; $i++) {
+        $label = trim((string) ($labels[$i] ?? ''));
+        $qty = trim((string) ($qtys[$i] ?? ''));
+        if ($label === '' || $label === '—') {
+            continue;
         }
-
-        return trim($label) . ' ×' . (string) ($i['qty'] ?? 0);
+        $parts[] = $label . ' ×' . ($qty !== '' ? $qty : '0');
     }
 
-    return count($items) . ' line items';
+    return $parts === [] ? '—' : implode('; ', $parts);
 }
 
 /**
@@ -1734,16 +1870,16 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         $shippedSummary
     );
 
-    $walkHeaders = ['When sold', 'Receipt', 'Sold by', 'Sold to', 'Items', 'Type', 'RTS resellable'];
+    $walkHeaders = ['When sold', 'Receipt', 'Sold by', 'Sold to', 'Items', 'Qty', 'Type', 'RTS resellable'];
     if ($canViewAmounts) {
         $walkHeaders[] = 'Total';
     }
     $whRow = $walkNext;
-    $walkCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    $walkCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
     foreach ($walkHeaders as $i => $h) {
         $walkIn->setCellValue($walkCols[$i] . $whRow, $h);
     }
-    $lastCol = $canViewAmounts ? 'H' : 'G';
+    $lastCol = $canViewAmounts ? 'I' : 'H';
     $walkIn->getStyle('A' . $whRow . ':' . $lastCol . $whRow)->getFont()->setBold(true);
 
     if ($walkInRows === []) {
@@ -1757,17 +1893,17 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
             $type = !empty($row['is_ar'])
                 ? 'AR'
                 : (!empty($row['discount_percent']) ? ((int) $row['discount_percent'] . '% off') : 'Regular');
+            $items = is_array($row['items'] ?? null) ? $row['items'] : [];
             $walkIn->setCellValue('A' . $r, (string) ($row['sold_at'] ?? ''));
             $walkIn->setCellValue('B' . $r, (string) ($row['receipt_no'] ?? ''));
             $walkIn->setCellValue('C' . $r, (string) ($row['sold_by_name'] ?? 'POS'));
             $walkIn->setCellValue('D' . $r, (string) ($row['buyer_name'] ?? 'Walk-in'));
-            $walkIn->setCellValue('E' . $r, honey_sales_export_checkout_items_summary(
-                is_array($row['items'] ?? null) ? $row['items'] : []
-            ));
-            $walkIn->setCellValue('F' . $r, $type);
-            $walkIn->setCellValue('G' . $r, !empty($rtsFlags[$saleId]) ? 'Yes' : 'No');
+            $walkIn->setCellValue('E' . $r, honey_sales_export_checkout_item_labels($items));
+            $walkIn->setCellValue('F' . $r, honey_sales_export_checkout_item_qtys($items));
+            $walkIn->setCellValue('G' . $r, $type);
+            $walkIn->setCellValue('H' . $r, !empty($rtsFlags[$saleId]) ? 'Yes' : 'No');
             if ($canViewAmounts) {
-                $walkIn->setCellValue('H' . $r, (float) ($row['total_amount'] ?? 0));
+                $walkIn->setCellValue('I' . $r, (float) ($row['total_amount'] ?? 0));
             }
             $r++;
         }
