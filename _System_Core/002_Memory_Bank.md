@@ -1004,3 +1004,17 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 - **What we did:** Created `output/documents/Pyx_Tracker_Capstone_Chapters_I_III.docx` from the supplied title proposal and institutional chapter outline. Included six modules, verified literature, 24 figures, 39 tables, and a dictionary covering 28 principal database tables. Reflected the current photo-only Deliveries and confirmed-session RTS stock-in workflows.
 - **Validation:** Updated Word fields and contents; rendered and visually checked the 78-page document; checked source preservation, diagram/table counts, schema dictionary fields, and removal of unrelated sample content. No application code changed.
 - **Pending evidence:** Adviser name, actual schedule, physical deployment details, and evaluation results remain explicitly identified for confirmation. Working files and QA evidence are in `output/capstone_work/`.
+
+### 2026-09-16 — Capstone diagram and schedule revision
+- **What we did:** Saved a revised capstone DOCX with a top-down six-module FDD, subsystem-boundary UML use cases, and a May–August Gantt chart. Each of the six features has Design and Development, Testing, and Implementation rows; detailed activity allocation is explicitly proposed.
+- **Validation:** Updated Word contents and page fields; rendered 81 pages and checked revised figures and page flow. Original delivered DOCX preserved. No application code changed.
+- **Artifact:** `output/documents/Pyx_Tracker_Capstone_Chapters_I_III_Revised.docx`.
+
+### 2026-09-16 — Consolidated capstone use case diagram
+- **What we did:** Replaced the six separate subsystem diagrams with one overall Pyx Tracker use case diagram following the user's new reference: one system boundary, operational actors on both sides, grouped use cases, and include/extend relationships. Renumbered subsequent figures and retained the May–August Gantt and top-down FDD.
+- **Artifact:** `output/documents/Pyx_Tracker_Capstone_Updated_Use_Case.docx`.
+
+### 2026-09-16 — Five-feature capstone scope and two actors
+- **What we did:** Applied the user's explicit removal of POS throughout Chapters I–III. Retained Inventory, Costing/Pricing, Orders/Waybills, Parcel Processing, and RTS. Updated objectives, literature, five-build methodology, May–August Gantt, FDD, IPO, storyboards, schema selection, module list, and tests. The overall use case diagram and matrices use only Admin/Executive and Staff; costing/pricing remains Admin/Executive-only.
+- **Validation:** Confirmed five modules and five test scenarios; no POS, cashier, or obsolete six-feature wording in document text. Rendered the 71-page Word document and checked diagram legibility and page flow. No application code or permissions changed.
+- **Artifact:** `output/documents/Pyx_Tracker_Capstone_Five_Features_Final.docx`.
