@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-09-16T03:59:52+02:00
+generated: 2026-09-16T07:31:03+02:00
 type: module
 function_count: 13
 ---
@@ -114,5 +114,5 @@ function_count: 13
 
 **Callers (1):**
 
-- `api/v1/honey.php`:523 — `$lines = honey_parse_bottle_lines_from_input($input);`
+- `api/v1/honey.php`:524 — `$lines = honey_parse_bottle_lines_from_input($input);`
 

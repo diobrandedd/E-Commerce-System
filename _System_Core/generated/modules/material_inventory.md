@@ -1,7 +1,7 @@
 ---
 title: material_inventory
 source: includes/material_inventory.php
-generated: 2026-09-16T03:59:56+02:00
+generated: 2026-09-16T07:31:07+02:00
 type: module
 function_count: 64
 ---
@@ -504,7 +504,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/honey.php`:705 — `$count += material_adjustment_pending_count($pdo);`
+- `api/v1/honey.php`:706 — `$count += material_adjustment_pending_count($pdo);`
 - `api/v1/materials.php`:279 — `api_ok(['count' => material_adjustment_pending_count(ims_pdo())]);`
 
 ## material_adjustment_mark_viewed {#material_adjustment_mark_viewed}

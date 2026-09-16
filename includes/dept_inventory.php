@@ -781,19 +781,47 @@ function dept_inventory_catalog_snapshot(PDO $pdo, ?string $deptKey = null, ?str
 }
 
 /**
- * Executive monthly count: set raw bag on-hand via balancing stock_entries row.
+ * Grams-per-kg (API field grams_per_bag) for leaf pool products. Default 1000.
+ */
+function dept_raw_pool_grams_per_bag(PDO $pdo, string $productKey): float
+{
+    if ($productKey === 'pt') {
+        require_once __DIR__ . '/dept_pt_settings.php';
+        $bom = dept_pt_bom_snapshot($pdo);
+
+        return max(0.0001, (float) $bom['grams_per_bag']);
+    }
+    if ($productKey === 'brc') {
+        require_once __DIR__ . '/dept_brc_settings.php';
+        $bom = dept_brc_bom_snapshot($pdo);
+
+        return max(0.0001, (float) $bom['grams_per_bag']);
+    }
+    if ($productKey === 'jar_cacao') {
+        require_once __DIR__ . '/dept_jar_cacao_settings.php';
+        $bom = dept_jar_cacao_bom_snapshot($pdo);
+
+        return max(0.0001, (float) $bom['grams_per_bag']);
+    }
+
+    return 1000.0;
+}
+
+/**
+ * Executive / monthly count: set raw leaf on-hand (kg; API field bags_on_hand) via balancing stock_entries row.
  *
- * @return array{product_key: string, bags_on_hand: float, previous: float, entry_id: int|null}
+ * @return array{product_key: string, bags_on_hand: float, previous: float, entry_id: int|null, grams_remaining?: float, grams_per_bag?: float}
  */
 function dept_raw_set_bags_on_hand(
     PDO $pdo,
     int $userId,
     string $productKey,
     float $newBags,
-    ?string $note = null
+    ?string $note = null,
+    string $logSource = 'monthly_inventory'
 ): array {
     if ($newBags < 0) {
-        throw new RuntimeException('Bags on-hand cannot be negative.');
+        throw new RuntimeException('On-hand quantity cannot be negative.');
     }
     $def = dept_product_by_key($productKey);
     $stockName = dept_pricing_leaf_stock_name($productKey);
@@ -802,13 +830,17 @@ function dept_raw_set_bags_on_hand(
     }
     $deptId = dept_product_dept_id($pdo, (string) $def['dept']);
     $previous = dept_raw_bags_on_hand($pdo, $productKey);
-    $delta = round($newBags - $previous, 4);
-    if (abs($delta) < 0.0001) {
+    $delta = round($newBags - $previous, 6);
+    if (abs($delta) < 0.0000001) {
+        $gramsPerBag = dept_raw_pool_grams_per_bag($pdo, $productKey);
+
         return [
             'product_key' => $productKey,
             'bags_on_hand' => $previous,
             'previous' => $previous,
             'entry_id' => null,
+            'grams_remaining' => round($previous * $gramsPerBag, 2),
+            'grams_per_bag' => $gramsPerBag,
         ];
     }
 
@@ -826,7 +858,8 @@ function dept_raw_set_bags_on_hand(
         throw new RuntimeException('No leaf stock for this product. Stock-in at least once first, or set supplier prices.');
     }
     $stockId = (int) $stock['id'];
-    $auditNote = $note !== null && trim($note) !== '' ? trim($note) : 'Monthly inventory count';
+    $defaultNote = $logSource === 'executive_edit' ? 'Executive pool correction' : 'Monthly inventory count';
+    $auditNote = $note !== null && trim($note) !== '' ? trim($note) : $defaultNote;
     $ins = $pdo->prepare(
         'INSERT INTO stock_entries (stock_id, dept_id, qty, batching_date, supplier_batch_no, entered_by)
          VALUES (?, ?, ?, ?, ?, ?)'
@@ -850,14 +883,43 @@ function dept_raw_set_bags_on_hand(
         $productKey . ':bags_on_hand',
         (string) $previous,
         (string) $newBags,
-        'monthly_inventory'
+        $logSource
     );
+
+    $gramsPerBag = dept_raw_pool_grams_per_bag($pdo, $productKey);
 
     return [
         'product_key' => $productKey,
-        'bags_on_hand' => round($newBags, 4),
+        'bags_on_hand' => round($newBags, 6),
         'previous' => $previous,
         'entry_id' => $entryId,
+        'grams_remaining' => round($newBags * $gramsPerBag, 2),
+        'grams_per_bag' => $gramsPerBag,
     ];
+}
+
+/**
+ * Set leaf pool by target grams remaining (converts to kg using Settings grams_per_bag).
+ *
+ * @return array{product_key: string, bags_on_hand: float, previous: float, entry_id: int|null, grams_remaining: float, grams_per_bag: float}
+ */
+function dept_raw_set_grams_on_hand(
+    PDO $pdo,
+    int $userId,
+    string $productKey,
+    float $newGrams,
+    ?string $note = null,
+    string $logSource = 'executive_edit'
+): array {
+    if (!in_array($productKey, ['pt', 'brc', 'jar_cacao'], true)) {
+        throw new RuntimeException('Gram edits are only for Paragis, Black Rice, and Jar Cacao raw pools.');
+    }
+    if ($newGrams < 0) {
+        throw new RuntimeException('Grams on-hand cannot be negative.');
+    }
+    $gramsPerBag = dept_raw_pool_grams_per_bag($pdo, $productKey);
+    $newKg = round($newGrams / $gramsPerBag, 6);
+
+    return dept_raw_set_bags_on_hand($pdo, $userId, $productKey, $newKg, $note, $logSource);
 }
 

@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-09-16T03:59:38+02:00
+generated: 2026-09-16T07:30:48+02:00
 type: module
 function_count: 23
 ---
@@ -135,7 +135,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (36):**
 
-- `api/v1/honey.php`:962 — `$def = dept_product_by_key($productKey);`
+- `api/v1/honey.php`:963 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:12 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:40 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:77 — `$def = dept_product_by_key($productKey);`
@@ -147,7 +147,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_inventory.php`:520 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:562 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:677 — `$def = dept_product_by_key($productKey);`
-- `includes/dept_inventory.php`:798 — `$def = dept_product_by_key($productKey);`
+- `includes/dept_inventory.php`:826 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pos.php`:128 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pos.php`:137 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_pouch_barcodes.php`:53 — `$product = dept_product_by_key($productKey);`
@@ -166,9 +166,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (6):**
 
-- `api/v1/honey.php`:1000 — `if (!dept_product_key_valid($productKey)) {`
-- `api/v1/honey.php`:1140 — `if (!dept_product_key_valid($productKey)) {`
-- `api/v1/honey.php`:1159 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:1001 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:1141 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:1160 — `if (!dept_product_key_valid($productKey)) {`
 - `includes/dept_pos.php`:82 — `if (!dept_product_key_valid($productKey) || $qty <= 0) {`
 - `includes/honey_parcel_inventory.php`:41 — `if ($key === '' || !dept_product_key_valid($key)) {`
 - `includes/pos_discount_requests.php`:18 — `return $productKey !== '' && dept_product_key_valid($productKey);`
@@ -208,7 +208,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_inventory.php`:524 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_inventory.php`:620 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_inventory.php`:731 — `$deptId = dept_product_dept_id($pdo, $def['dept']);`
-- `includes/dept_inventory.php`:803 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
+- `includes/dept_inventory.php`:831 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_pricing.php`:180 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_pricing.php`:242 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`
 - `includes/dept_production.php`:397 — `$deptId = dept_product_dept_id($pdo, (string) $def['dept']);`

@@ -196,7 +196,8 @@ test.describe("raw materials responsive UI", () => {
     await openRoute(page, "/inventory/raw-materials/honey/packaging");
     await expect(page.getByTestId("packaging-scan-date-filter")).toBeVisible();
     await expect(page.getByTestId("packaging-bottling-date-filter")).toBeVisible();
-    await expect(page.getByText(/Scan date is when stock-in happened/i)).toBeVisible();
+    await expect(page.getByText(/current on hand/i)).toBeVisible();
+    await expect(page.getByText(/Edit updates those levels/i)).toBeVisible();
     await page.getByTestId("packaging-scan-date-filter").selectOption("all");
     await expect(page.getByTestId("packaging-active-filters")).toBeHidden();
     const detailName = testInfo.project.name === "mobile-chrome" ? "View scan details" : "Details";

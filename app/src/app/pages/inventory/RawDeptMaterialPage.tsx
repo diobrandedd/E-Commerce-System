@@ -6,7 +6,8 @@ import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { ApiError } from "@/app/lib/api";
-import { canMutateDeptRawProduction, canDeptPouchBarcodeOps } from "@/app/lib/honeyPermissions";
+import { canMutateDeptRawProduction, canDeptPouchBarcodeOps, canExecutiveDirectEdit } from "@/app/lib/honeyPermissions";
+import { ExecutiveRawPoolEditModal } from "@/app/components/dept/ExecutiveRawPoolEditModal";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import {
   deptStockInQtyUnitLabel,
@@ -104,6 +105,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const { user } = useAuth();
   const canMutate = canMutateDeptRawProduction(user, route.productKey);
   const canPouchBarcodes = canDeptPouchBarcodeOps(user, route.productKey);
+  const canExecEdit = canExecutiveDirectEdit(user);
   const productKey = route.productKey;
   const isParagis = productKey === "pt";
   const isBrc = productKey === "brc";
@@ -137,6 +139,8 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const [pouchLogTick, setPouchLogTick] = useState(0);
   const [pouchModal, setPouchModal] = useState<"request" | "scan" | "admin" | "history" | null>(null);
   const [pendingPouchLabels, setPendingPouchLabels] = useState(0);
+  const [editPoolOpen, setEditPoolOpen] = useState(false);
+  const [poolSavedNotice, setPoolSavedNotice] = useState<string | null>(null);
   const pouchRequestTitleId = useId();
   const pouchScanTitleId = useId();
   const pouchAdminTitleId = useId();
@@ -266,15 +270,33 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           </div>
 
           {data.bag_pool ? (
-            <DeptBagPoolStrip
-              pool={data.bag_pool}
-              testId={
-                isParagis ? "paragis-bag-pool" : isBrc ? "brc-bag-pool" : isCacao ? "cacao-bag-pool" : "dept-bag-pool"
-              }
-              sellUnit={isCacao ? "jar" : "pouch"}
-              deductEnabled={data.bag_pool_deduct_enabled !== false}
-              poolUnitLabel={bagPoolWorkflow ? "kg" : "bag"}
-            />
+            <div className="space-y-2">
+              <DeptBagPoolStrip
+                pool={data.bag_pool}
+                testId={
+                  isParagis ? "paragis-bag-pool" : isBrc ? "brc-bag-pool" : isCacao ? "cacao-bag-pool" : "dept-bag-pool"
+                }
+                sellUnit={isCacao ? "jar" : "pouch"}
+                deductEnabled={data.bag_pool_deduct_enabled !== false}
+                poolUnitLabel={bagPoolWorkflow ? "kg" : "bag"}
+              />
+              {canExecEdit && bagPoolWorkflow ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11"
+                    onClick={() => {
+                      setPoolSavedNotice(null);
+                      setEditPoolOpen(true);
+                    }}
+                  >
+                    Edit pool (grams)
+                  </Button>
+                  {poolSavedNotice ? <AppSuccessNotice message={poolSavedNotice} /> : null}
+                </div>
+              ) : null}
+            </div>
           ) : null}
 
           {(canMutate || showPouchBarcodes) && (
@@ -520,6 +542,20 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           maxQty={wipTeaBags}
           onClose={() => setShowWipWaste(false)}
           onDone={() => { setShowWipWaste(false); void refresh(); }}
+        />
+      )}
+      {editPoolOpen && data?.bag_pool && bagPoolWorkflow && (productKey === "pt" || productKey === "brc" || productKey === "jar_cacao") && (
+        <ExecutiveRawPoolEditModal
+          productKey={productKey}
+          title={route.title}
+          pool={data.bag_pool}
+          onClose={() => setEditPoolOpen(false)}
+          onSaved={() => {
+            setEditPoolOpen(false);
+            setPoolSavedNotice("Leaf pool updated.");
+            window.setTimeout(() => setPoolSavedNotice(null), 3500);
+            void refresh();
+          }}
         />
       )}
     </PageLayout>

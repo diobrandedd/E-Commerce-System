@@ -17,6 +17,7 @@ import {
   AppErrorBanner,
   AppPressable,
   AppSectionEnter,
+  AppSuccessNotice,
   appHeaderActionClass,
   appHoverCard,
   appHoverRow,
@@ -97,6 +98,67 @@ function grossQty(value: string | number): string {
   return Number.isFinite(qty) ? qty.toLocaleString() : String(value);
 }
 
+function currentField(size: (typeof HONEY_SIZES)[number]): keyof PkRow {
+  return `current_${size}` as keyof PkRow;
+}
+
+function scannedField(size: (typeof HONEY_SIZES)[number]): keyof PkRow {
+  return `scanned_${size}` as keyof PkRow;
+}
+
+function QtyCell({ current, scanned }: { current: string | number; scanned: string | number }) {
+  const cur = Number(current);
+  const scan = Number(scanned);
+  const showScanHint = Number.isFinite(scan) && (!Number.isFinite(cur) || Math.abs(scan - cur) > 1e-9);
+  return (
+    <div className="leading-tight">
+      <span className="font-semibold tabular-nums">{grossQty(current)}</span>
+      {showScanHint ? (
+        <span className="mt-0.5 block text-[10px] font-normal text-muted-foreground tabular-nums">
+          scanned {grossQty(scanned)}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function sumOnHandByVariant(rows: PkRow[]): {
+  byVariant: { variant: string; total: number; liter: number; "250ml": number; "350ml": number; gallon: number }[];
+  grandTotal: number;
+} {
+  const map = new Map<
+    string,
+    { variant: string; total: number; liter: number; "250ml": number; "350ml": number; gallon: number }
+  >();
+  for (const r of rows) {
+    const key = String(r.variant || "unknown").toLowerCase();
+    const liter = Number(r.current_liter) || 0;
+    const ml250 = Number(r.current_250ml) || 0;
+    const ml350 = Number(r.current_350ml) || 0;
+    const gallon = Number(r.current_gallon) || 0;
+    const total = liter + ml250 + ml350 + gallon;
+    const prev = map.get(key) ?? {
+      variant: key,
+      total: 0,
+      liter: 0,
+      "250ml": 0,
+      "350ml": 0,
+      gallon: 0,
+    };
+    prev.total += total;
+    prev.liter += liter;
+    prev["250ml"] += ml250;
+    prev["350ml"] += ml350;
+    prev.gallon += gallon;
+    map.set(key, prev);
+  }
+  const byVariant = [...map.values()].sort((a, b) => a.variant.localeCompare(b.variant));
+  return {
+    byVariant,
+    grandTotal: byVariant.reduce((n, v) => n + v.total, 0),
+  };
+}
+
 export function HoneyPackagingPage() {
   const { user, can } = useAuth();
   const canExecEdit = canExecutiveDirectEdit(user);
@@ -108,9 +170,6 @@ export function HoneyPackagingPage() {
   const [scanDates, setScanDates] = useState<string[]>([]);
   const [bottlingDate, setBottlingDate] = useState("all");
   const [bottlingDates, setBottlingDates] = useState<string[]>([]);
-  const [variantTotals, setVariantTotals] = useState<
-    { variant: string; total: number; liter: number; "250ml": number; "350ml": number; gallon: number }[]
-  >([]);
   const [scannedGrandTotal, setScannedGrandTotal] = useState(0);
   const [byScanner, setByScanner] = useState<{ user_id: number | null; name: string; qty: number }[]>(
     [],
@@ -122,6 +181,7 @@ export function HoneyPackagingPage() {
   const [traceBatch, setTraceBatch] = useState<string | null>(null);
   const [scanLogRow, setScanLogRow] = useState<PkRow | null>(null);
   const [editRow, setEditRow] = useState<PkRow | null>(null);
+  const [editSavedNotice, setEditSavedNotice] = useState<string | null>(null);
   const [traceQ, setTraceQ] = useState("");
   const [combModal, setCombModal] = useState<"scan" | "admin" | null>(null);
   const [pendingCombLabels, setPendingCombLabels] = useState(0);
@@ -148,7 +208,6 @@ export function HoneyPackagingPage() {
       setRows(data.rows);
       setScanDates(data.dates);
       setBottlingDates(data.bottling_dates ?? []);
-      setVariantTotals(data.totals?.by_variant ?? []);
       setScannedGrandTotal(data.totals?.total ?? 0);
       setByScanner(data.by_scanner ?? []);
       setPage(1);
@@ -180,6 +239,7 @@ export function HoneyPackagingPage() {
   ]
     .filter(Boolean)
     .join(" · ");
+  const onHandTotals = sumOnHandByVariant(rows);
 
   return (
     <PageLayout
@@ -231,12 +291,18 @@ export function HoneyPackagingPage() {
 
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold mb-1">Scanned into inventory</h2>
+          <h2 className="text-sm font-semibold mb-1">Packaging inventory</h2>
           <p className="text-xs text-muted-foreground">
-            Gross bottle scans only — packing, sales, defects, and other deductions do not reduce these totals.
-            Use Details to review the stickers scanned into each batch.
-            Scan date is when stock-in happened; bottling date is the lot date on the packaging row.
+            Quantities are <strong className="text-foreground font-medium">current on hand</strong> (what packing and
+            sales use). Edit updates those levels. When scanned stock-in differs, a small “scanned” note appears under
+            the cell. Filters still use scan date (when stickers were stocked in) and bottling date (lot on the row).
+            Use Details for the sticker log.
           </p>
+          {editSavedNotice ? (
+            <div className="mt-2">
+              <AppSuccessNotice message={editSavedNotice} />
+            </div>
+          ) : null}
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <label
@@ -334,13 +400,13 @@ export function HoneyPackagingPage() {
       {showTotalsBand && (
         <div className="mb-3 rounded-xl border border-border bg-card px-4 py-3" aria-live="polite">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
-            Total scanned · {totalsBandTitle}
+            On hand · {totalsBandTitle}
           </p>
-          {variantTotals.length === 0 ? (
+          {onHandTotals.byVariant.length === 0 ? (
             <p className="text-sm text-muted-foreground mt-1">0 bottles</p>
           ) : (
             <ul className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {variantTotals.map(v => (
+              {onHandTotals.byVariant.map(v => (
                 <li key={v.variant} className="rounded-lg border border-border/70 bg-secondary/20 px-3 py-2">
                   <p className="text-xs text-muted-foreground capitalize">{variantLabel(v.variant)}</p>
                   <p className="text-xl font-bold mt-0.5">{grossQty(v.total)}</p>
@@ -352,9 +418,16 @@ export function HoneyPackagingPage() {
               ))}
             </ul>
           )}
-          {scannedGrandTotal > 0 && (
+          {onHandTotals.grandTotal > 0 && (
             <p className="text-xs text-muted-foreground mt-2">
-              All variants · {grossQty(scannedGrandTotal)} bottle{scannedGrandTotal === 1 ? "" : "s"}
+              All variants · {grossQty(onHandTotals.grandTotal)} bottle
+              {onHandTotals.grandTotal === 1 ? "" : "s"} on hand
+            </p>
+          )}
+          {scannedGrandTotal > 0 && scannedGrandTotal !== onHandTotals.grandTotal && (
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Gross scanned under these filters · {grossQty(scannedGrandTotal)} (history only; Edit does not change
+              scan history)
             </p>
           )}
         </div>
@@ -362,7 +435,7 @@ export function HoneyPackagingPage() {
       {!loading && byScanner.length > 0 && (
         <div className="mb-3 rounded-xl border border-border bg-secondary/20 px-4 py-3">
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
-            By person · current filters
+            Gross scanned by person · current filters
           </p>
           <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {byScanner.map(row => (
@@ -387,7 +460,7 @@ export function HoneyPackagingPage() {
         {loading ? (
           <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
             <Loader2 className="mr-2 inline animate-spin" size={18} aria-hidden />
-            Loading scanned batches…
+            Loading packaging batches…
           </div>
         ) : pagedRows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
@@ -414,8 +487,11 @@ export function HoneyPackagingPage() {
                 {HONEY_SIZES.map(size => (
                   <div key={size} className="rounded-lg bg-secondary/30 px-3 py-2">
                     <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{size}</dt>
-                    <dd className="mt-0.5 text-base font-semibold tabular-nums">
-                      {grossQty(r[`scanned_${size}` as keyof PkRow] as string)}
+                    <dd className="mt-0.5 text-base">
+                      <QtyCell
+                        current={r[currentField(size)] as string}
+                        scanned={r[scannedField(size)] as string}
+                      />
                     </dd>
                   </div>
                 ))}
@@ -440,7 +516,7 @@ export function HoneyPackagingPage() {
         aria-busy={loading || undefined}
       >
         <table className="w-full text-sm min-w-[36rem]">
-          <caption className="sr-only">Honey bottles scanned into packaging inventory</caption>
+          <caption className="sr-only">Honey packaging batch inventory on hand</caption>
           <thead>
             <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
               <th scope="col" className="px-3 py-2 text-left">Supplier</th>
@@ -460,7 +536,7 @@ export function HoneyPackagingPage() {
               <tr>
                 <td colSpan={colCount} className="py-8 text-center text-sm text-muted-foreground">
                   <Loader2 className="mr-2 inline animate-spin" size={14} aria-hidden />
-                  Loading scanned batches…
+                  Loading packaging batches…
                 </td>
               </tr>
             )}
@@ -476,10 +552,14 @@ export function HoneyPackagingPage() {
                 <td className="px-3 py-2 font-medium whitespace-nowrap">{r.batch_no}</td>
                 <td className="px-3 py-2 whitespace-nowrap">{scanDateLabel(r.bottling_date)}</td>
                 <td className="px-3 py-2 capitalize">{r.variant}</td>
-                <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_liter)}</td>
-                <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_250ml)}</td>
-                <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_350ml)}</td>
-                <td className="px-3 py-2 font-semibold">{grossQty(r.scanned_gallon)}</td>
+                {HONEY_SIZES.map(size => (
+                  <td key={size} className="px-3 py-2">
+                    <QtyCell
+                      current={r[currentField(size)] as string}
+                      scanned={r[scannedField(size)] as string}
+                    />
+                  </td>
+                ))}
                 <td className="px-3 py-2 whitespace-nowrap">
                   <Button type="button" size="sm" variant="ghost" onClick={() => setScanLogRow(r)}>
                     Details
@@ -653,6 +733,8 @@ export function HoneyPackagingPage() {
           onClose={() => setEditRow(null)}
           onSaved={() => {
             setEditRow(null);
+            setEditSavedNotice("Packaging on-hand updated.");
+            window.setTimeout(() => setEditSavedNotice(null), 3500);
             void refresh();
           }}
         />

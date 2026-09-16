@@ -69,6 +69,7 @@ api_dispatch([
     'seed_production_row' => 'api_honey_seed_production_row',
     'seed_packaging_row' => 'api_honey_seed_packaging_row',
     'dept_raw_set_bags' => 'api_honey_dept_raw_set_bags',
+    'dept_raw_executive_set' => 'api_honey_dept_raw_executive_set',
 ]);
 
 function api_honey_require_view(): array
@@ -1501,8 +1502,49 @@ function api_honey_dept_raw_set_bags(): void
             (int) $user['id'],
             $productKey,
             (float) ($input['bags'] ?? -1),
-            isset($input['note']) ? (string) $input['note'] : null
+            isset($input['note']) ? (string) $input['note'] : null,
+            'monthly_inventory'
         );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+/** Day-to-day executive correction of PT/BRC/Jar Cacao leaf pool (grams). No admin password. */
+function api_honey_dept_raw_executive_set(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_permission('honey.executive_edit');
+    $productKey = trim((string) ($input['product_key'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        if (array_key_exists('grams', $input)) {
+            $result = dept_raw_set_grams_on_hand(
+                $pdo,
+                (int) $user['id'],
+                $productKey,
+                (float) $input['grams'],
+                isset($input['note']) ? (string) $input['note'] : null,
+                'executive_edit'
+            );
+        } else {
+            $result = dept_raw_set_bags_on_hand(
+                $pdo,
+                (int) $user['id'],
+                $productKey,
+                (float) ($input['bags'] ?? -1),
+                isset($input['note']) ? (string) $input['note'] : null,
+                'executive_edit'
+            );
+        }
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {

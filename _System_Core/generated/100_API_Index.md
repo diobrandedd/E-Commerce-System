@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-16T03:59:25+02:00
+generated: 2026-09-16T07:30:35+02:00
 type: memory-bank
 ---
 
@@ -336,6 +336,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `seed_production_row` | `api_honey_seed_production_row()` | `ims_pdo()`, `honey_executive_seed_production_row()` |
 | `seed_packaging_row` | `api_honey_seed_packaging_row()` | `ims_pdo()`, `honey_executive_seed_packaging_row()` |
 | `dept_raw_set_bags` | `api_honey_dept_raw_set_bags()` | `ims_pdo()`, `dept_raw_set_bags_on_hand()` |
+| `dept_raw_executive_set` | `api_honey_dept_raw_executive_set()` | `ims_pdo()`, `dept_raw_set_grams_on_hand()`, `dept_raw_set_bags_on_hand()` |
 
 ### `inventory_check.php`
 

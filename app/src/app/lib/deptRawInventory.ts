@@ -189,3 +189,19 @@ export function deptPtMakeTeaBags(payload: { qty: number; note?: string }) {
 export function deptWipWaste(payload: { qty: number; reason?: string }) {
   return apiPost("honey.php", "dept_wip_waste", payload);
 }
+
+/** Executive correction of PT/BRC/Jar Cacao leaf pool (grams → kg). Requires honey.executive_edit. */
+export function deptRawExecutiveSetGrams(payload: {
+  product_key: "pt" | "brc" | "jar_cacao";
+  grams: number;
+  note?: string;
+}) {
+  return apiPost<{
+    product_key: string;
+    bags_on_hand: number;
+    previous: number;
+    entry_id: number | null;
+    grams_remaining: number;
+    grams_per_bag: number;
+  }>("honey.php", "dept_raw_executive_set", payload);
+}

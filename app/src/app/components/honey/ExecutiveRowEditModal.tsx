@@ -219,7 +219,7 @@ export function ExecutiveRowEditModal(props: Props) {
       <AppModalHeader
         title={title}
         titleId="exec-row-edit-title"
-        subtitle="Fixes data entry errors only. Does not move stock between stages. Warehouse supplier/variant changes cascade to linked production and packaging rows (batch numbers stay unchanged)."
+        subtitle="Fixes data entry errors only. Does not move stock between stages. For packaging, quantities are current on hand (packing/sales deduct from these). Warehouse supplier/variant changes cascade to linked production and packaging rows (batch numbers stay unchanged)."
         onClose={onClose}
       />
       <AppModalBody className="space-y-3 text-sm">

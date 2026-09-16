@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-16 — Honey Packaging shows on-hand (Edit reflects)
+**Change:** Packaging table/totals use `current_*`; Edit updates visible inventory; scanned history kept as secondary. → [[problems/records/2026-09-16_honey-packaging-show-on-hand]]
+
+### 2026-09-16 — Executive edit PT/BRC/Cacao raw pool grams
+**Change:** Executives set leaf pool remaining grams on raw materials pages (`dept_raw_executive_set`). → [[problems/records/2026-09-16_dept-raw-executive-grams]]
+
 ### 2026-09-16 — Honey production lot active + scan filter
 **Change:** Executives Edit lot (deactivate + set/adjust gallons); scan Production lot select hides OOS/inactive (`is_active`, phase 83). → [[problems/records/2026-09-16_honey-production-lot-active]]
 
