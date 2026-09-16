@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-16 — Honey production lot active + scan filter
+**Change:** Executives Edit lot (deactivate + set/adjust gallons); scan Production lot select hides OOS/inactive (`is_active`, phase 83). → [[problems/records/2026-09-16_honey-production-lot-active]]
+
 ### 2026-09-16 — Honey production lot refill across days
 **Change:** Warehouse→production stock-outs refill one lot per supplier+arrival+variant (not a new row per stock-out day); folded existing AA091226/EJ052526 splits. → [[problems/records/2026-09-16_honey-production-lot-refill]]
 

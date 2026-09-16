@@ -1,7 +1,7 @@
 ---
 title: suppliers
 source: includes/suppliers.php
-generated: 2026-09-16T03:39:33+02:00
+generated: 2026-09-16T04:00:19+02:00
 type: module
 function_count: 12
 ---
@@ -23,15 +23,15 @@ function_count: 12
 **Callers (13):**
 
 - `api/v1/costing.php`:95 — `$row['supplier_display_name'] = supplier_display_name(`
-- `api/v1/honey.php`:1255 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
-- `api/v1/honey.php`:1317 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
+- `api/v1/honey.php`:1256 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
+- `api/v1/honey.php`:1318 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
 - `includes/dept_inventory.php`:190 — `$supplierName = supplier_display_name(`
 - `includes/dept_pricing.php`:156 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:314 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
-- `includes/honey_inventory.php`:1333 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
-- `includes/honey_inventory.php`:1373 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
-- `includes/honey_inventory.php`:1539 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
-- `includes/honey_inventory.php`:1806 — `? supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name'])`
+- `includes/honey_inventory.php`:1339 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
+- `includes/honey_inventory.php`:1379 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
+- `includes/honey_inventory.php`:1545 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
+- `includes/honey_inventory.php`:1818 — `? supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name'])`
 - `includes/honey_pricing.php`:133 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_warehouse_barcodes.php`:54 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/suppliers.php`:74 — `'display_name' => supplier_display_name((string) $row['first_name'], (string) $row['last_name']),`
@@ -59,8 +59,8 @@ function_count: 12
 - `api/v1/suppliers.php`:52 — `$row = supplier_fetch(ims_pdo(), $id);`
 - `includes/dept_pricing.php`:87 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/dept_pricing.php`:151 — `$supplier = supplier_fetch($pdo, $supplierId);`
-- `includes/honey_inventory.php`:1371 — `$supplier = supplier_fetch($pdo, $supplierId);`
-- `includes/honey_inventory.php`:1804 — `$supplier = supplier_fetch($pdo, $supplierId);`
+- `includes/honey_inventory.php`:1377 — `$supplier = supplier_fetch($pdo, $supplierId);`
+- `includes/honey_inventory.php`:1816 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_pricing.php`:128 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_pricing.php`:249 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/suppliers.php`:175 — `$row = supplier_fetch($pdo, (int) $pdo->lastInsertId());`
@@ -133,7 +133,7 @@ function_count: 12
 **Callers (4):**
 
 - `includes/honey_inventory.php`:313 — `$supplier = supplier_require_honey_active($pdo, $supplierId);`
-- `includes/honey_inventory.php`:1328 — `$supplier = supplier_require_honey_active($pdo, $supplierId);`
-- `includes/honey_inventory.php`:1538 — `$supplier = supplier_require_honey_active($pdo, $supplierId);`
+- `includes/honey_inventory.php`:1334 — `$supplier = supplier_require_honey_active($pdo, $supplierId);`
+- `includes/honey_inventory.php`:1544 — `$supplier = supplier_require_honey_active($pdo, $supplierId);`
 - `includes/honey_warehouse_barcodes.php`:53 — `$supplier = supplier_require_honey_active($pdo, $supplierId);`
 

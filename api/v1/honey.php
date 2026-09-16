@@ -505,6 +505,7 @@ function api_honey_production_list(): void
         'SELECT pr.id, pr.warehouse_row_id, pr.supplier_code, pr.arrival_date,
                 COALESCE(pr.stock_out_date, DATE(pr.transferred_at)) AS stock_out_date,
                 pr.daily_group_key, pr.variant, pr.current_qty, pr.initial_qty,
+                COALESCE(pr.is_active, 1) AS is_active,
                 pr.transferred_at, pr.created_at
          FROM honey_production_rows pr
          ORDER BY pr.transferred_at DESC, pr.id DESC'

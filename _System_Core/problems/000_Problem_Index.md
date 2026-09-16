@@ -52,6 +52,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-09-16_honey-production-lot-active]] — Executive deactivate/qty on production lots; scan select hides OOS/inactive
 - [[records/2026-09-15_honey-production-lot-merge]] — Part-by-part warehouse stock-out merges same-day Production lots (variant kept separate)
 - [[records/2026-09-15_sales-excel-export]] — Sales Excel: Shipped (RTS flag) + Walk-in sheets
 - [[records/2026-08-26_sku-barcode-inventory]] — Permanent SKU barcodes (one code per product); print N copies; scan→qty; leftover uniques kept

@@ -8,6 +8,7 @@ import {
   HoneyBottleRequestsPanel,
   HoneyProductionScanStockInPanel,
 } from "@/app/components/honey/HoneyBottleBarcodePanels";
+import { ExecutiveRowEditModal } from "@/app/components/honey/ExecutiveRowEditModal";
 import { HoneyStageContent, HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { HoneyLotGallonProgress } from "@/app/components/honey/HoneyLotGallonProgress";
 import { PageLayout } from "@/app/components/PageLayout";
@@ -18,7 +19,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet, ApiError } from "@/app/lib/api";
 import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
-import { canGenerateHoneyBottleLabels, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
+import { canExecutiveDirectEdit, canGenerateHoneyBottleLabels, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
 
 interface PrRow {
   id: number;
@@ -28,6 +29,7 @@ interface PrRow {
   variant: string;
   current_qty: string;
   initial_qty: string;
+  is_active?: number | boolean;
 }
 
 type ModalKind = "request" | "admin" | "guide" | null;
@@ -40,6 +42,7 @@ export function HoneyProductionPage() {
   const isCsrOnly = user?.role === "csr_tl" || user?.role === "csr_staff";
   const canLeakDamage = can("inventory.leak_damage.view");
   const showSupplierProfile = canViewSupplierProfile(user);
+  const canExecEdit = canExecutiveDirectEdit(user);
   const [rows, setRows] = useState<PrRow[]>([]);
   const [page, setPage] = useState(1);
   const perPage = 12;
@@ -47,6 +50,7 @@ export function HoneyProductionPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalKind>(null);
   const [pendingLabels, setPendingLabels] = useState(0);
+  const [editRow, setEditRow] = useState<PrRow | null>(null);
 
   const refreshPending = useCallback(async () => {
     if (!canGenerate) {
@@ -175,8 +179,10 @@ export function HoneyProductionPage() {
               No production lots yet.
             </div>
           ) : (
-            pagedRows.map(r => (
-              <article key={r.id} className="rounded-xl border border-border bg-card p-4">
+            pagedRows.map(r => {
+              const inactive = r.is_active === 0 || r.is_active === false;
+              return (
+              <article key={r.id} className={`rounded-xl border bg-card p-4 ${inactive ? "border-border/60 opacity-75" : "border-border"}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Supplier</p>
@@ -187,7 +193,15 @@ export function HoneyProductionPage() {
                     )}
                     <p className="mt-1 text-xs capitalize text-muted-foreground">{r.variant}</p>
                   </div>
-                  <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />
+                  <div className="flex flex-col items-end gap-1">
+                    {inactive ? (
+                      <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground">
+                        Inactive
+                      </span>
+                    ) : (
+                      <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />
+                    )}
+                  </div>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div className="rounded-lg bg-secondary/30 px-3 py-2">
@@ -210,15 +224,26 @@ export function HoneyProductionPage() {
                     />
                   </div>
                 </div>
+                {canExecEdit ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-3 min-h-11 w-full"
+                    onClick={() => setEditRow(r)}
+                  >
+                    Edit lot
+                  </Button>
+                ) : null}
               </article>
-            ))
+              );
+            })
           )}
         </div>
         <div className="hidden sm:block bg-card rounded-xl border overflow-x-auto" data-testid="honey-production-desktop-table">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-secondary/40">
-                {["Supplier code", "From WH", "Stock out", "Variant", "Gallon/s", "Status"].map(h => (
+                {["Supplier code", "From WH", "Stock out", "Variant", "Gallon/s", "Status", ...(canExecEdit ? ["Actions"] : [])].map(h => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
                     {h}
                   </th>
@@ -228,20 +253,22 @@ export function HoneyProductionPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center">
+                  <td colSpan={canExecEdit ? 7 : 6} className="py-8 text-center">
                     <Loader2 className="inline animate-spin" size={14} />
                   </td>
                 </tr>
               )}
               {!loading && pagedRows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={canExecEdit ? 7 : 6} className="px-4 py-8 text-center text-sm text-muted-foreground">
                     No production lots yet.
                   </td>
                 </tr>
               )}
-              {pagedRows.map(r => (
-                <tr key={r.id} className="border-b">
+              {pagedRows.map(r => {
+                const inactive = r.is_active === 0 || r.is_active === false;
+                return (
+                <tr key={r.id} className={`border-b ${inactive ? "bg-secondary/20" : ""}`}>
                   <td className="px-4 py-3">
                     {showSupplierProfile ? (
                       <SupplierCodeButton code={r.supplier_code} />
@@ -260,10 +287,24 @@ export function HoneyProductionPage() {
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />
+                    {inactive ? (
+                      <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground">
+                        Inactive
+                      </span>
+                    ) : (
+                      <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />
+                    )}
                   </td>
+                  {canExecEdit ? (
+                    <td className="px-4 py-3">
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setEditRow(r)}>
+                        Edit
+                      </Button>
+                    </td>
+                  ) : null}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -318,14 +359,25 @@ export function HoneyProductionPage() {
         <AppModalBody className="space-y-3 text-sm text-muted-foreground">
           <p>Honey staff request labels. Executives and CSR generate unique barcodes and print an A4 sheet (68 labels per page, 4×17 — barcode plus the code text underneath for manual entry, cut on dashed guides). Print at 100% scale so the bars stay camera-scannable.</p>
           <p>
-            Stock out from Warehouse part by part if needed — same supplier code + variant on the same day merges into{" "}
-            <strong className="text-foreground">one</strong> Production lot (Light / Amber / Dark stay separate). Then
-            Production → scan stock-in: pick that gallon lot, scan SKU/unique barcodes, and packaging gains bottles while
-            production gallons drop.
+            Stock out from Warehouse part by part if needed — same supplier code + arrival + variant shares{" "}
+            <strong className="text-foreground">one</strong> Production lot (later transfers refill; Light / Amber / Dark stay separate). Then
+            Production → scan stock-in: pick an active lot with gallons left, scan SKU/unique barcodes, and packaging gains bottles while
+            production gallons drop. Executives can Edit a lot to adjust gallons or deactivate it.
           </p>
           <p>Courier packing uses Deliveries → Pack scan. Waybill + photo ships without deducting stock.</p>
         </AppModalBody>
       </AppModal>
+      {editRow && (
+        <ExecutiveRowEditModal
+          stage="production"
+          row={editRow}
+          onClose={() => setEditRow(null)}
+          onSaved={() => {
+            setEditRow(null);
+            void refresh();
+          }}
+        />
+      )}
     </PageLayout>
   );
 }

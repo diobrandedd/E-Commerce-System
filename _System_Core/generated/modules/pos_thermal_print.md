@@ -1,7 +1,7 @@
 ---
 title: pos_thermal_print
 source: includes/pos_thermal_print.php
-generated: 2026-09-16T03:39:22+02:00
+generated: 2026-09-16T04:00:08+02:00
 type: module
 function_count: 4
 ---

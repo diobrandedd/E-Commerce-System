@@ -167,6 +167,7 @@ export type ProductionLotOption = {
   initial_qty?: string | number;
   arrival_date?: string;
   stock_out_date?: string;
+  is_active?: number | boolean;
 };
 
 type PendingScan = {
@@ -176,6 +177,14 @@ type PendingScan = {
   size: HoneyBottleSize;
   kind: "sku" | "unique";
 };
+
+function isScanSelectableProductionLot(lot: ProductionLotOption): boolean {
+  if (lot.is_active === 0 || lot.is_active === false) return false;
+  const qty = Number(lot.current_qty);
+  if (!Number.isFinite(qty)) return false;
+  // Hide exact OOS (0). Overdrawn (negative) stays selectable so ops can finish bottling.
+  return Math.abs(qty) > 1e-9;
+}
 
 export function HoneyProductionScanStockInPanel({
   lots,
@@ -200,14 +209,14 @@ export function HoneyProductionScanStockInPanel({
   const reduceMotion = useReducedMotion();
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
 
-  const openLots = lots;
+  const openLots = lots.filter(isScanSelectableProductionLot);
   const selected = openLots.find(l => l.id === productionRowId) ?? null;
 
   useEffect(() => {
-    if (productionRowId > 0 && !lots.some(l => l.id === productionRowId)) {
+    if (productionRowId > 0 && !openLots.some(l => l.id === productionRowId)) {
       setProductionRowId(0);
     }
-  }, [lots, productionRowId]);
+  }, [openLots, productionRowId]);
 
   useEffect(() => {
     void (async () => {
@@ -407,9 +416,9 @@ export function HoneyProductionScanStockInPanel({
       <div className="bg-card rounded-xl border border-border p-4 space-y-3 shadow-sm shadow-black/[0.03]">
         <h3 className="text-sm font-semibold">Scan bottles into packaging (from production)</h3>
         <p className="text-xs text-muted-foreground">
-          Pick the gallon lot, scan a bottle or SKU barcode, enter how many, then Stock in. Deducts production gallons
-          using Settings → Honey volume. Stock-outs for the same supplier code + arrival + variant
-          share one production lot — later transfers refill that lot.
+          Pick an active lot with gallons left (or overdrawn), scan a bottle or SKU barcode, enter how many, then Stock
+          in. Out-of-stock and inactive lots are hidden here. Deducts production gallons using Settings → Honey volume.
+          Same supplier code + arrival + variant share one production lot — later transfers refill that lot.
         </p>
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block">
           Production lot
@@ -441,7 +450,9 @@ export function HoneyProductionScanStockInPanel({
         </label>
         {openLots.length === 0 && (
           <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            No production lots yet. Stock out from Warehouse first.
+            {lots.length === 0
+              ? "No production lots yet. Stock out from Warehouse first."
+              : "No active lots with gallons available. Out-of-stock and inactive lots are hidden from this list."}
           </p>
         )}
         <div className="flex gap-2">

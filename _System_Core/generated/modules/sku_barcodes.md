@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-09-16T03:39:30+02:00
+generated: 2026-09-16T04:00:17+02:00
 type: module
 function_count: 40
 ---
@@ -148,7 +148,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/bottle_barcodes.php`:278 — `$sku = sku_barcode_fetch_honey(ims_pdo(), (string) $req['variant'], (string) $req['size']);`
 - `api/v1/bottle_barcodes.php`:332 — `$sku = sku_barcode_fetch_honey($pdo, (string) $req['variant'], (string) $req['size']);`
-- `includes/honey_inventory.php`:979 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
+- `includes/honey_inventory.php`:985 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
 - `includes/rts_barcode_labels.php`:255 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
 - `includes/rts_barcode_labels.php`:439 — `$sku = sku_barcode_fetch_honey(`
 - `includes/sku_barcodes.php`:121 — `return sku_barcode_fetch_honey($pdo, $variant, $size);`
@@ -230,7 +230,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/honey_inventory.php`:981 — `$credit = sku_barcode_credit_honey_requests(`
+- `includes/honey_inventory.php`:987 — `$credit = sku_barcode_credit_honey_requests(`
 - `includes/sku_barcodes.php`:1022 — `$credit = sku_barcode_credit_honey_requests(`
 
 ## sku_barcode_refresh_honey_request_status {#sku_barcode_refresh_honey_request_status}

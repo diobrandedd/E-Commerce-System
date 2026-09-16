@@ -26,6 +26,7 @@ export interface ProductionEditRow {
   variant: string;
   current_qty: string;
   initial_qty: string;
+  is_active?: number | boolean;
 }
 
 export interface PackagingEditRow {
@@ -112,6 +113,9 @@ export function ExecutiveRowEditModal(props: Props) {
   const [qty, setQty] = useState(
     stage === "warehouse" || stage === "production" || stage === "dept" ? props.row.current_qty : "",
   );
+  const [isActive, setIsActive] = useState(
+    stage === "production" ? props.row.is_active !== 0 && props.row.is_active !== false : true,
+  );
   const [productLabel, setProductLabel] = useState(stage === "dept" ? props.row.product_label : "");
   const [sizeQtys, setSizeQtys] = useState<Record<string, string>>(
     stage === "packaging"
@@ -144,6 +148,7 @@ export function ExecutiveRowEditModal(props: Props) {
     } else if (stage === "production") {
       fields.variant = variant;
       fields.current_qty = parseFloat(qty);
+      fields.is_active = isActive ? 1 : 0;
     } else if (stage === "packaging") {
       fields.variant = variant;
       const sq: Record<string, number> = {};
@@ -273,6 +278,20 @@ export function ExecutiveRowEditModal(props: Props) {
                 </label>
                 <input id={`${fieldId}-qty`} type="number" step="0.01" min="0" value={qty} onChange={e => setQty(e.target.value)} className="w-full border rounded-lg px-3 py-2" />
               </div>
+              <label className="flex items-start gap-2 text-sm cursor-pointer rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={e => setIsActive(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="font-medium text-foreground">Active lot</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Inactive lots stay in history but are hidden from the Production lot scanner dropdown.
+                  </span>
+                </span>
+              </label>
             </>
           )}
 

@@ -1,7 +1,7 @@
 ---
 title: sp_sort_service
 source: includes/sp_sort_service.php
-generated: 2026-09-16T03:39:32+02:00
+generated: 2026-09-16T04:00:18+02:00
 type: module
 function_count: 26
 ---

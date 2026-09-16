@@ -734,6 +734,9 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
     if (!$pr) {
         throw new RuntimeException('Production row not found.');
     }
+    if (isset($pr['is_active']) && (int) $pr['is_active'] === 0) {
+        throw new RuntimeException('This production lot is inactive. An executive must reactivate it before scanning.');
+    }
     if (!$lines) {
         throw new RuntimeException('Add at least one bottle line with quantity.');
     }
@@ -939,6 +942,9 @@ function honey_production_bottle_stock_in(
     $pr = honey_fetch_production($pdo, $productionRowId);
     if (!$pr) {
         throw new RuntimeException('Production row not found.');
+    }
+    if (isset($pr['is_active']) && (int) $pr['is_active'] === 0) {
+        throw new RuntimeException('This production lot is inactive. An executive must reactivate it before scanning.');
     }
     if (honey_normalize_variant((string) $pr['variant']) !== $variant) {
         throw new RuntimeException('SKU variant does not match the selected production lot.');
@@ -1594,6 +1600,12 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
             } else {
                 $pdo->prepare('UPDATE honey_production_rows SET current_qty = ? WHERE id = ?')->execute([$qty, $rowId]);
             }
+        }
+        if (array_key_exists('is_active', $fields)) {
+            $active = !empty($fields['is_active']) ? 1 : 0;
+            $oldActive = isset($pr['is_active']) ? (string) (int) $pr['is_active'] : '1';
+            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'is_active', $oldActive, (string) $active, $logSource);
+            $pdo->prepare('UPDATE honey_production_rows SET is_active = ? WHERE id = ?')->execute([$active, $rowId]);
         }
 
         return;
