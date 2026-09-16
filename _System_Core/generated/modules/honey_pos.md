@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-09-16T07:31:00+02:00
+generated: 2026-09-16T11:48:22+02:00
 type: module
 function_count: 16
 ---
@@ -126,8 +126,8 @@ function_count: 16
 - `includes/honey_pos.php`:803 — `$hasVariant = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
 - `includes/honey_pos.php`:804 — `$hasList = honey_pos_column_exists($pdo, 'pos_receipt_items', 'list_unit_price');`
 - `includes/honey_pos.php`:933 — `$hasVariant = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
-- `includes/honey_sales_report.php`:560 — `$hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');`
-- `includes/honey_sales_report.php`:575 — `$hasRefunded = honey_pos_column_exists($pdo, 'pos_sales', 'refunded_at');`
+- `includes/honey_sales_report.php`:587 — `$hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');`
+- `includes/honey_sales_report.php`:602 — `$hasRefunded = honey_pos_column_exists($pdo, 'pos_sales', 'refunded_at');`
 - `includes/pos_discount_requests.php`:331 — `$hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');`
 - `includes/pos_refund.php`:180 — `if (honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant')`
 - `includes/pos_refund.php`:181 — `&& honey_pos_column_exists($pdo, 'pos_receipt_items', 'size')) {`
@@ -189,5 +189,5 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:610 — `pos_sale_heal_returned_units($pdo, $saleId);`
+- `includes/honey_sales_report.php`:637 — `pos_sale_heal_returned_units($pdo, $saleId);`
 

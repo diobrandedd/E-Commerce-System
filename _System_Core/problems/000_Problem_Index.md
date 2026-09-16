@@ -30,6 +30,7 @@ flowchart LR
 
 ## Reusable fix patterns (inventory & UX)
 
+- [[fixes/sales-dept-shipped-include-sku]] — Dept Sales shipped includes SKU pack qty + unique stickers
 - [[fixes/sku-barcode-permanent-catalog]] — One permanent SKU code per product; print N copies; scan→qty
 - [[fixes/packaging-inventory-roles]] — HR stock-in / PM deduct / exec all
 - [[fixes/inventory-role-permissions]] — PHP helpers + API `permissions` + SPA guides
@@ -52,6 +53,8 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-09-16_sales-dept-shipped-include-sku]] — Dept Sales shipped = stickers + SKU pack qty (pt/brc/cacao/comb)
+- [[records/2026-09-16_sales-export-items-detail]] — Walk-in Items + Qty columns (one row per checkout)
 - [[records/2026-09-16_honey-packaging-show-on-hand]] — Packaging Edit shows/updates current on-hand (not scan gross)
 - [[records/2026-09-16_dept-raw-executive-grams]] — Executive set PT/BRC/Cacao leaf pool in grams
 - [[records/2026-09-16_honey-production-lot-active]] — Executive deactivate/qty on production lots; scan select hides OOS/inactive

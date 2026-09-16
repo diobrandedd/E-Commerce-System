@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-16T07:30:35+02:00
+generated: 2026-09-16T11:47:59+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -872,6 +872,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_today_stats]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_discard]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_shipped_export]] |
 
 ## `honey_bottle_pack_session_items`
@@ -982,6 +983,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_remove_item]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_set_item_qty]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_shipped_export]] |
 
 ## `pack_cancel_restock_sessions`
 
