@@ -165,6 +165,8 @@ export type ProductionLotOption = {
   variant: string;
   current_qty: string | number;
   initial_qty?: string | number;
+  arrival_date?: string;
+  stock_out_date?: string;
 };
 
 type PendingScan = {
@@ -406,7 +408,8 @@ export function HoneyProductionScanStockInPanel({
         <h3 className="text-sm font-semibold">Scan bottles into packaging (from production)</h3>
         <p className="text-xs text-muted-foreground">
           Pick the gallon lot, scan a bottle or SKU barcode, enter how many, then Stock in. Deducts production gallons
-          using Settings → Honey volume.
+          using Settings → Honey volume. Stock-outs for the same supplier code + arrival + variant
+          share one production lot — later transfers refill that lot.
         </p>
         <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block">
           Production lot
@@ -423,9 +426,11 @@ export function HoneyProductionScanStockInPanel({
             {openLots.map(l => {
               const lotQty = Number(l.current_qty);
               const over = Number.isFinite(lotQty) && lotQty < -1e-9;
+              const when = l.stock_out_date || l.arrival_date || "";
               return (
                 <option key={l.id} value={l.id}>
-                  {l.supplier_code} · {l.variant} ·{" "}
+                  {l.supplier_code} · {l.variant}
+                  {when ? ` · ${when}` : ""} ·{" "}
                   {over
                     ? `${formatGallons(Math.abs(lotQty))} gal overdrawn`
                     : `${formatGallons(lotQty)} gal left`}

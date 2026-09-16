@@ -500,14 +500,13 @@ function api_honey_production_list(): void
     api_method_allowed(['GET']);
     api_honey_require_view();
     $pdo = ims_pdo();
+    // One row per production lot — do not join packaging (1 lot → many bottling dates).
     $st = $pdo->query(
         'SELECT pr.id, pr.warehouse_row_id, pr.supplier_code, pr.arrival_date,
                 COALESCE(pr.stock_out_date, DATE(pr.transferred_at)) AS stock_out_date,
                 pr.daily_group_key, pr.variant, pr.current_qty, pr.initial_qty,
-                pr.transferred_at, pr.created_at,
-                pk.batch_no AS packaging_batch_no, pk.bottling_date AS packaging_bottling_date
+                pr.transferred_at, pr.created_at
          FROM honey_production_rows pr
-         LEFT JOIN honey_packaging_rows pk ON pk.production_row_id = pr.id
          ORDER BY pr.transferred_at DESC, pr.id DESC'
     );
     api_ok(['rows' => $st ? $st->fetchAll() : []]);

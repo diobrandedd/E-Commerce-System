@@ -404,6 +404,223 @@ function honey_warehouse_normalize_cost_row(array $row): array
     return $row;
 }
 
+/**
+ * Production lot merge key: one open lot per supplier/code/arrival/variant.
+ * Stock-outs on later days add gallons to the same lot (refill), not a new row.
+ */
+function honey_production_daily_group_key(
+    int $supplierId,
+    string $supplierCode,
+    string $arrivalDate,
+    string $variant,
+    ?string $stockOutDate = null
+): string {
+    // Stock-out date is intentionally not part of the merge key (cross-day refill).
+    if ($stockOutDate !== null && $stockOutDate === '') {
+        // no-op: keep optional arg for older callers
+    }
+
+    return $supplierId . '|' . $supplierCode . '|' . $arrivalDate . '|' . $variant;
+}
+
+/**
+ * Upsert production gallons onto one lot for supplier/code/arrival/variant.
+ * Same-day and later-day stock-outs refill the same row. Caller must already
+ * hold a transaction and must have deducted warehouse qty.
+ *
+ * @param list<array{warehouse_row_id:int, quantity:float}> $sources
+ * @return int production_row_id
+ */
+function honey_production_upsert_daily_lot(
+    PDO $pdo,
+    int $userId,
+    int $supplierId,
+    string $supplierCode,
+    string $arrivalDate,
+    string $variant,
+    string $stockOutDate,
+    float $quantity,
+    int $primaryWarehouseRowId,
+    array $sources
+): int {
+    $quantity = round($quantity, 2);
+    if ($quantity <= 0) {
+        throw new RuntimeException('Stock-out quantity must be greater than zero.');
+    }
+    $supplierCode = strtoupper(trim($supplierCode));
+    $variant = honey_normalize_variant($variant);
+    $lotKey = honey_production_daily_group_key(
+        $supplierId,
+        $supplierCode,
+        $arrivalDate,
+        $variant
+    );
+
+    $prod = $pdo->prepare(
+        'SELECT * FROM honey_production_rows WHERE daily_group_key = ? LIMIT 1 FOR UPDATE'
+    );
+    $prod->execute([$lotKey]);
+    $production = $prod->fetch(PDO::FETCH_ASSOC);
+
+    if ($production === false) {
+        // Absorb legacy dated keys / same-day splits / NULL keys for this supplier lot.
+        // Prefer overdrawn lots so a restock refills the shortfall row first.
+        $legacy = $pdo->prepare(
+            'SELECT * FROM honey_production_rows
+             WHERE supplier_code = ? AND arrival_date = ? AND variant = ?
+             ORDER BY (current_qty < 0) DESC, id ASC
+             FOR UPDATE'
+        );
+        $legacy->execute([$supplierCode, $arrivalDate, $variant]);
+        $matches = $legacy->fetchAll(PDO::FETCH_ASSOC);
+        $production = $matches[0] ?? false;
+        if ($production !== false) {
+            $productionId = (int) $production['id'];
+            $extraCurrent = 0.0;
+            $extraInitial = 0.0;
+            $latestStockOut = $stockOutDate;
+            for ($i = 1, $n = count($matches); $i < $n; $i++) {
+                $extra = $matches[$i];
+                $extraId = (int) $extra['id'];
+                $pkConflict = $pdo->prepare(
+                    'SELECT pk.id
+                     FROM honey_packaging_rows pk
+                     INNER JOIN honey_packaging_rows keep
+                       ON keep.production_row_id = ?
+                      AND keep.batch_no = pk.batch_no
+                      AND keep.variant = pk.variant
+                      AND keep.bottling_date = pk.bottling_date
+                     WHERE pk.production_row_id = ?
+                     LIMIT 1'
+                );
+                $pkConflict->execute([$productionId, $extraId]);
+                if ($pkConflict->fetchColumn() !== false) {
+                    // Leave this day-split row alone; still refill the keeper below.
+                    continue;
+                }
+                $extraCurrent += (float) $extra['current_qty'];
+                $extraInitial += (float) $extra['initial_qty'];
+                $extraOut = (string) ($extra['stock_out_date'] ?? '');
+                if ($extraOut !== '' && ($latestStockOut === '' || $extraOut > $latestStockOut)) {
+                    $latestStockOut = $extraOut;
+                }
+                $pdo->prepare(
+                    'UPDATE honey_warehouse_stock_out_events SET production_row_id = ? WHERE production_row_id = ?'
+                )->execute([$productionId, $extraId]);
+                $pdo->prepare(
+                    'UPDATE honey_packaging_rows SET production_row_id = ? WHERE production_row_id = ?'
+                )->execute([$productionId, $extraId]);
+                $pdo->prepare('DELETE FROM honey_production_rows WHERE id = ?')->execute([$extraId]);
+            }
+            if ($stockOutDate !== '' && ($latestStockOut === '' || $stockOutDate > $latestStockOut)) {
+                $latestStockOut = $stockOutDate;
+            }
+            $pdo->prepare(
+                'UPDATE honey_production_rows
+                 SET current_qty = current_qty + ? + ?,
+                     initial_qty = initial_qty + ? + ?,
+                     stock_out_date = ?,
+                     daily_group_key = ?
+                 WHERE id = ?'
+            )->execute([
+                $quantity,
+                $extraCurrent,
+                $quantity,
+                $extraInitial,
+                $latestStockOut !== '' ? $latestStockOut : $stockOutDate,
+                $lotKey,
+                $productionId,
+            ]);
+        } else {
+            $ins = $pdo->prepare(
+                'INSERT INTO honey_production_rows
+                    (warehouse_row_id, supplier_code, arrival_date, stock_out_date, daily_group_key,
+                     variant, current_qty, initial_qty, created_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $ins->execute([
+                $primaryWarehouseRowId,
+                $supplierCode,
+                $arrivalDate,
+                $stockOutDate,
+                $lotKey,
+                $variant,
+                $quantity,
+                $quantity,
+                $userId,
+            ]);
+            $productionId = (int) $pdo->lastInsertId();
+        }
+    } else {
+        $productionId = (int) $production['id'];
+        // Fold any leftover same-lot duplicates (dated keys) into this canonical row.
+        $dupes = $pdo->prepare(
+            'SELECT * FROM honey_production_rows
+             WHERE supplier_code = ? AND arrival_date = ? AND variant = ? AND id <> ?
+             FOR UPDATE'
+        );
+        $dupes->execute([$supplierCode, $arrivalDate, $variant, $productionId]);
+        $extraCurrent = 0.0;
+        $extraInitial = 0.0;
+        foreach ($dupes->fetchAll(PDO::FETCH_ASSOC) as $extra) {
+            $extraId = (int) $extra['id'];
+            $pkConflict = $pdo->prepare(
+                'SELECT pk.id
+                 FROM honey_packaging_rows pk
+                 INNER JOIN honey_packaging_rows keep
+                   ON keep.production_row_id = ?
+                  AND keep.batch_no = pk.batch_no
+                  AND keep.variant = pk.variant
+                  AND keep.bottling_date = pk.bottling_date
+                 WHERE pk.production_row_id = ?
+                 LIMIT 1'
+            );
+            $pkConflict->execute([$productionId, $extraId]);
+            if ($pkConflict->fetchColumn() !== false) {
+                continue;
+            }
+            $extraCurrent += (float) $extra['current_qty'];
+            $extraInitial += (float) $extra['initial_qty'];
+            $pdo->prepare(
+                'UPDATE honey_warehouse_stock_out_events SET production_row_id = ? WHERE production_row_id = ?'
+            )->execute([$productionId, $extraId]);
+            $pdo->prepare(
+                'UPDATE honey_packaging_rows SET production_row_id = ? WHERE production_row_id = ?'
+            )->execute([$productionId, $extraId]);
+            $pdo->prepare('DELETE FROM honey_production_rows WHERE id = ?')->execute([$extraId]);
+        }
+        $pdo->prepare(
+            'UPDATE honey_production_rows
+             SET current_qty = current_qty + ? + ?,
+                 initial_qty = initial_qty + ? + ?,
+                 stock_out_date = ?
+             WHERE id = ?'
+        )->execute([$quantity, $extraCurrent, $quantity, $extraInitial, $stockOutDate, $productionId]);
+    }
+
+    $event = $pdo->prepare(
+        'INSERT INTO honey_warehouse_stock_out_events
+            (warehouse_row_id, production_row_id, supplier_id, supplier_code, arrival_date,
+             variant, quantity_gallons, stock_out_date, stocked_out_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    foreach ($sources as $source) {
+        $event->execute([
+            (int) $source['warehouse_row_id'],
+            $productionId,
+            $supplierId > 0 ? $supplierId : null,
+            $supplierCode,
+            $arrivalDate,
+            $variant,
+            round((float) $source['quantity'], 2),
+            $stockOutDate,
+            $userId,
+        ]);
+    }
+
+    return $productionId;
+}
+
 function honey_warehouse_stock_out(PDO $pdo, int $userId, int $warehouseRowId, float $qty): array
 {
     $wh = honey_fetch_warehouse($pdo, $warehouseRowId);
@@ -414,27 +631,34 @@ function honey_warehouse_stock_out(PDO $pdo, int $userId, int $warehouseRowId, f
     if ($qty <= 0 || $qty > $current) {
         throw new RuntimeException('Invalid quantity for stock-out.');
     }
+    $qty = round($qty, 2);
+    $supplierId = (int) ($wh['supplier_id'] ?? 0);
+    $supplierCode = strtoupper(trim((string) $wh['supplier_code']));
+    $arrivalDate = (string) $wh['arrival_date'];
+    $variant = honey_normalize_variant((string) $wh['variant']);
+    $stockOutDate = date('Y-m-d');
+
     $pdo->beginTransaction();
     try {
-        $upd = $pdo->prepare('UPDATE honey_warehouse_rows SET current_qty = current_qty - ? WHERE id = ? AND current_qty >= ?');
+        $upd = $pdo->prepare(
+            'UPDATE honey_warehouse_rows SET current_qty = current_qty - ? WHERE id = ? AND current_qty >= ?'
+        );
         $upd->execute([$qty, $warehouseRowId, $qty]);
         if ($upd->rowCount() < 1) {
             throw new RuntimeException('Could not deduct warehouse quantity.');
         }
-        $ins = $pdo->prepare(
-            'INSERT INTO honey_production_rows (warehouse_row_id, supplier_code, arrival_date, variant, current_qty, initial_qty, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
-        );
-        $ins->execute([
-            $warehouseRowId,
-            $wh['supplier_code'],
-            $wh['arrival_date'],
-            $wh['variant'],
-            $qty,
-            $qty,
+        $prodId = honey_production_upsert_daily_lot(
+            $pdo,
             $userId,
-        ]);
-        $prodId = (int) $pdo->lastInsertId();
+            $supplierId,
+            $supplierCode,
+            $arrivalDate,
+            $variant,
+            $stockOutDate,
+            $qty,
+            $warehouseRowId,
+            [['warehouse_row_id' => $warehouseRowId, 'quantity' => $qty]]
+        );
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
@@ -443,7 +667,12 @@ function honey_warehouse_stock_out(PDO $pdo, int $userId, int $warehouseRowId, f
         throw $e;
     }
 
-    return ['production_row_id' => $prodId, 'qty' => $qty];
+    return [
+        'production_row_id' => $prodId,
+        'qty' => $qty,
+        'stock_out_date' => $stockOutDate,
+        'merged' => true,
+    ];
 }
 
 /**

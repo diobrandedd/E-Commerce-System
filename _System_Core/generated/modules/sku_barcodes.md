@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-09-15T10:58:54+02:00
+generated: 2026-09-16T03:39:30+02:00
 type: module
 function_count: 40
 ---
@@ -148,7 +148,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/bottle_barcodes.php`:278 — `$sku = sku_barcode_fetch_honey(ims_pdo(), (string) $req['variant'], (string) $req['size']);`
 - `api/v1/bottle_barcodes.php`:332 — `$sku = sku_barcode_fetch_honey($pdo, (string) $req['variant'], (string) $req['size']);`
-- `includes/honey_inventory.php`:750 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
+- `includes/honey_inventory.php`:979 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
 - `includes/rts_barcode_labels.php`:255 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
 - `includes/rts_barcode_labels.php`:439 — `$sku = sku_barcode_fetch_honey(`
 - `includes/sku_barcodes.php`:121 — `return sku_barcode_fetch_honey($pdo, $variant, $size);`
@@ -230,7 +230,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/honey_inventory.php`:752 — `$credit = sku_barcode_credit_honey_requests(`
+- `includes/honey_inventory.php`:981 — `$credit = sku_barcode_credit_honey_requests(`
 - `includes/sku_barcodes.php`:1022 — `$credit = sku_barcode_credit_honey_requests(`
 
 ## sku_barcode_refresh_honey_request_status {#sku_barcode_refresh_honey_request_status}
@@ -345,8 +345,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/honey_warehouse_barcodes.php`:346 — `$stream[] = ['slots' => 1, 'html' => sku_barcode_label_cell_html($code)];`
-- `includes/honey_warehouse_barcodes.php`:400 — `$stream[] = ['slots' => 1, 'html' => sku_barcode_label_cell_html($code)];`
+- `includes/honey_warehouse_barcodes.php`:305 — `$stream[] = ['slots' => 1, 'html' => sku_barcode_label_cell_html($code)];`
+- `includes/honey_warehouse_barcodes.php`:359 — `$stream[] = ['slots' => 1, 'html' => sku_barcode_label_cell_html($code)];`
 - `includes/rts_barcode_labels.php`:460 — `'html' => sku_barcode_label_cell_html((string) $row['code'], $line),`
 - `includes/sku_barcodes.php`:1780 — `'html' => sku_barcode_label_cell_html($code, $row),`
 
@@ -354,7 +354,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/honey_warehouse_barcodes.php`:397 — `'html' => sku_barcode_label_banner_html($bannerText),`
+- `includes/honey_warehouse_barcodes.php`:356 — `'html' => sku_barcode_label_banner_html($bannerText),`
 - `includes/rts_barcode_labels.php`:427 — `'html' => sku_barcode_label_banner_html($bannerText),`
 - `includes/sku_barcodes.php`:1774 — `'html' => sku_barcode_label_banner_html($bannerText),`
 
@@ -362,8 +362,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/honey_warehouse_barcodes.php`:349 — `return sku_barcode_render_packed_label_sheet(`
-- `includes/honey_warehouse_barcodes.php`:411 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
+- `includes/honey_warehouse_barcodes.php`:308 — `return sku_barcode_render_packed_label_sheet(`
+- `includes/honey_warehouse_barcodes.php`:370 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
 - `includes/rts_barcode_labels.php`:468 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
 - `includes/sku_barcodes.php`:1792 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
 

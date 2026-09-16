@@ -1,7 +1,7 @@
 ---
 title: honey_warehouse_barcodes
 source: includes/honey_warehouse_barcodes.php
-generated: 2026-09-15T10:58:28+02:00
+generated: 2026-09-16T03:39:08+02:00
 type: module
 function_count: 12
 ---
@@ -26,8 +26,8 @@ function_count: 12
 - `api/v1/honey.php`:464 — `'code' => honey_warehouse_barcode_normalize((string) ($_GET['code'] ?? '')),`
 - `includes/honey_warehouse_barcodes.php`:156 — `$code = honey_warehouse_barcode_normalize($rawCode);`
 - `includes/honey_warehouse_barcodes.php`:199 — `$code = honey_warehouse_barcode_normalize($rawCode);`
-- `includes/honey_warehouse_barcodes.php`:342 — `$code = honey_warehouse_barcode_normalize($code);`
-- `includes/honey_warehouse_barcodes.php`:387 — `$code = honey_warehouse_barcode_normalize((string) $request['supplier_code']);`
+- `includes/honey_warehouse_barcodes.php`:301 — `$code = honey_warehouse_barcode_normalize($code);`
+- `includes/honey_warehouse_barcodes.php`:346 — `$code = honey_warehouse_barcode_normalize((string) $request['supplier_code']);`
 
 ## honey_warehouse_barcode_date {#honey_warehouse_barcode_date}
 
@@ -41,8 +41,8 @@ function_count: 12
 **Callers (3):**
 
 - `includes/honey_warehouse_barcodes.php`:52 — `$quantity = honey_warehouse_barcode_quantity($quantity);`
-- `includes/honey_warehouse_barcodes.php`:343 — `$quantity = honey_warehouse_barcode_quantity($quantity);`
-- `includes/honey_warehouse_barcodes.php`:388 — `$qty = honey_warehouse_barcode_quantity($request['quantity']);`
+- `includes/honey_warehouse_barcodes.php`:302 — `$quantity = honey_warehouse_barcode_quantity($quantity);`
+- `includes/honey_warehouse_barcodes.php`:347 — `$qty = honey_warehouse_barcode_quantity($request['quantity']);`
 
 ## honey_warehouse_barcode_request_create {#honey_warehouse_barcode_request_create}
 
@@ -62,7 +62,7 @@ function_count: 12
 - `includes/honey_warehouse_barcodes.php`:72 — `return honey_warehouse_barcode_request_fetch($pdo, (int) $pdo->lastInsertId()) ?? [`
 - `includes/honey_warehouse_barcodes.php`:134 — `$request = honey_warehouse_barcode_request_fetch($pdo, $requestId);`
 - `includes/honey_warehouse_barcodes.php`:148 — `return honey_warehouse_barcode_request_fetch($pdo, $requestId) ?? $request;`
-- `includes/honey_warehouse_barcodes.php`:377 — `$request = honey_warehouse_barcode_request_fetch($pdo, $requestId);`
+- `includes/honey_warehouse_barcodes.php`:336 — `$request = honey_warehouse_barcode_request_fetch($pdo, $requestId);`
 
 ## honey_warehouse_barcode_request_list {#honey_warehouse_barcode_request_list}
 
@@ -79,7 +79,7 @@ function_count: 12
 **Callers (2):**
 
 - `api/v1/honey.php`:385 — `$request = honey_warehouse_barcode_request_generate(`
-- `includes/honey_warehouse_barcodes.php`:429 — `$requests[] = honey_warehouse_barcode_request_generate($pdo, $userId, $requestId);`
+- `includes/honey_warehouse_barcodes.php`:388 — `$requests[] = honey_warehouse_barcode_request_generate($pdo, $userId, $requestId);`
 
 ## honey_warehouse_barcode_lookup {#honey_warehouse_barcode_lookup}
 
@@ -91,7 +91,7 @@ function_count: 12
 
 ## honey_warehouse_barcode_stock_out {#honey_warehouse_barcode_stock_out}
 
-**Tables:** `honey_warehouse_rows`, `honey_production_rows`, `honey_warehouse_stock_out_events`
+**Tables:** `honey_warehouse_rows`
 
 **Callers (1):**
 

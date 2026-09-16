@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-15T10:57:58+02:00
+generated: 2026-09-16T03:38:40+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -1166,7 +1166,7 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `api/v1/honey.php` | [[modules/honey#api_honey_production_list]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_production]] |
-| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_warehouse_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_upsert_daily_lot]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_stock_out]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_deduct_gallons]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
@@ -1175,14 +1175,12 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_seed_production_row]] |
-| `includes/honey_warehouse_barcodes.php` | [[modules/honey_warehouse_barcodes#honey_warehouse_barcode_stock_out]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
 
 ## `honey_packaging_rows`
 
 | File | Function |
 |------|----------|
-| `api/v1/honey.php` | [[modules/honey#api_honey_production_list]] |
 | `api/v1/honey.php` | [[modules/honey#api_honey_packaging_list]] |
 | `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_honey_packaging_snapshot]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_adjust_aggregate]] |
@@ -1204,6 +1202,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_ensure_packaging_row_for_stock_in]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging_by_production]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_upsert_daily_lot]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_stock_out]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_ensure_packaging_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_stock_out_sold]] |
@@ -1315,7 +1314,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
-| `includes/honey_warehouse_barcodes.php` | [[modules/honey_warehouse_barcodes#honey_warehouse_barcode_stock_out]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_upsert_daily_lot]] |
 
 ## `pack_cancel_restock_sku_items`
 

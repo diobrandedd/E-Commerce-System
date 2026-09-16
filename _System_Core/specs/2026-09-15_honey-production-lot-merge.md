@@ -1,5 +1,5 @@
 ---
-status: theory
+status: shipped
 created: 2026-09-15
 owner: ops
 area: inventory
@@ -8,7 +8,7 @@ tags: [honey, production, warehouse, stock-out, merge]
 
 # Honey production lot merge (part-by-part stock-out)
 
-> **Theory only** — what we want and why. Implementation in `plans/active/`.
+> Shipped — see [[plans/archive/2026-09-15_honey-production-lot-merge_plan]] · [[problems/records/2026-09-15_honey-production-lot-merge]]
 
 Links: [[010_Product_Theory]] · [[006_AI_Directed_Engineering]] · [[problems/records/2026-08-28_honey-warehouse-supplier-barcodes]] · [[specs/2026-09-10_honey-lot-gallon-progress]]
 

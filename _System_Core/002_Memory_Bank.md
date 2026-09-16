@@ -4,6 +4,13 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-16 — Honey production lot refill across days
+**Change:** Warehouse→production stock-outs refill one lot per supplier+arrival+variant (not a new row per stock-out day); folded existing AA091226/EJ052526 splits. → [[problems/records/2026-09-16_honey-production-lot-refill]]
+
+### 2026-09-15 — Honey production daily lot merge
+**Change:** Manual + scan warehouse stock-out upsert one Production lot per supplier/arrival/variant/day; `production_list` no packaging fan-out; optional consolidate tool. → [[problems/records/2026-09-15_honey-production-lot-merge]]
+**Superseded for cross-day:** later days now refill the same lot — see 2026-09-16 entry above.
+
 ### 2026-09-15 — Sales Excel export (Shipped + Walk-in)
 **Change:** Export button on Sales downloads two-sheet `.xlsx` (pack-scan with RTS resellable + Packed by + walk-in checkouts). Header/page totals include packaging + counted RTS scans (not packaging-only 410). → [[problems/records/2026-09-15_sales-excel-export]]
 

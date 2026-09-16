@@ -16,6 +16,7 @@ area: sales
 6. Always `require_once vendor/autoload.php` before PhpSpreadsheet (API bootstrap does not load Composer).
 7. Excel header totals come from **sheet row sums** (walk-in receipt item qtys; shipped row qtys including RTS), not packaging-only `channel_share`. Size breakdown (250ml / 350ml / 1L / Gallon / dept) is written at the top of both sheets.
 8. Shipped sheet **Packed by** = pack session `confirmed_by` (fallback `started_by`, then sales-log `sold_by`).
+9. Summary includes by size, by variant, and by variant×size; Shipped detail has separate **Variant** and **Size** columns for Excel sort/filter.
 
 ## Do not
 

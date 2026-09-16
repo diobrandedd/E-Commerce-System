@@ -1,8 +1,8 @@
 ---
-status: draft
+status: shipped
 spec: "[[specs/2026-09-15_honey-production-lot-merge]]"
 created: 2026-09-15
-approved_by: pending
+approved_by: chat
 ---
 
 # Implementation Plan: Honey production lot merge
@@ -98,6 +98,6 @@ Run `impact.php` on `honey_warehouse_stock_out` and any extracted upsert helper 
 
 ## Approval
 
-- [ ] Human approved — OK to implement in Agent mode
-- Approved date: _
-- Cross-day merge? **no** (default) / **yes** (extend plan)
+- [x] Human approved — OK to implement in Agent mode
+- Approved date: 2026-09-15
+- Cross-day merge? **no** (default) / yes (extend plan)

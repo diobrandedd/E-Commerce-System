@@ -1123,51 +1123,80 @@ function honey_sales_fetch_shipped_export(
                 '350ml' => (float) ($row['qty_350ml'] ?? 0),
                 'gallon' => (float) ($row['qty_gallon'] ?? 0),
             ];
-            $sizeParts = [];
             $sizeMap = [
                 'liter' => '1L',
                 '250ml' => '250ml',
                 '350ml' => '350ml',
                 'gallon' => 'Gallon',
             ];
-            foreach ($sizeMap as $col => $label) {
-                $q = $sizeQtys[$col];
-                if ($q > 0) {
-                    $sizeParts[] = $label . (abs($q - 1.0) > 0.001 ? ' ×' . $q : '');
-                }
-            }
             $otherQty = (float) ($row['qty_other'] ?? 0);
             if ($product === 'honey' && $otherQty > 0) {
                 continue;
             }
             $productLabel = trim((string) ($row['product_label'] ?? ''));
             $variant = trim((string) ($row['variant'] ?? ''));
-            if ($otherQty > 0 && $productLabel !== '') {
-                $productName = $productLabel;
-                $sizeQtys = ['dept' => $otherQty];
-            } elseif ($variant !== '') {
-                $productName = ucfirst($variant) . ($sizeParts !== [] ? ' ' . implode(', ', $sizeParts) : '');
-            } elseif ($productLabel !== '') {
-                $productName = $productLabel;
-            } else {
-                $productName = 'Honey';
-            }
 
             $tracking = trim((string) ($row['tracking_number'] ?? ''));
             $sessId = (int) ($row['pack_session_id'] ?? 0);
             $packRef = $tracking !== '' ? $tracking : ($sessId > 0 ? 'Pack session #' . $sessId : '');
+            $packedBy = trim((string) ($row['packed_by_name'] ?? ''));
+            $isRts = strtolower((string) ($row['source'] ?? '')) === 'rts';
 
-            $rows[] = [
-                'when_packed' => (string) $row['created_at'],
-                'product' => $productName,
-                'qty' => $qty,
-                'tracking_or_session' => $packRef,
-                'barcode' => trim((string) ($row['barcode'] ?? '')),
-                'is_rts_resellable' => strtolower((string) ($row['source'] ?? '')) === 'rts',
-                'kind' => $otherQty > 0 ? 'dept' : 'honey',
-                'size_qtys' => $sizeQtys,
-                'packed_by_name' => trim((string) ($row['packed_by_name'] ?? '')),
-            ];
+            if ($otherQty > 0 && $productLabel !== '') {
+                $rows[] = [
+                    'when_packed' => (string) $row['created_at'],
+                    'product' => $productLabel,
+                    'variant' => $productLabel,
+                    'size_label' => '—',
+                    'qty' => $otherQty,
+                    'tracking_or_session' => $packRef,
+                    'barcode' => trim((string) ($row['barcode'] ?? '')),
+                    'is_rts_resellable' => $isRts,
+                    'kind' => 'dept',
+                    'size_qtys' => ['dept' => $otherQty],
+                    'packed_by_name' => $packedBy,
+                ];
+                continue;
+            }
+
+            $variantLabel = $variant !== '' ? ucfirst($variant) : ($productLabel !== '' ? $productLabel : 'Honey');
+            $barcode = trim((string) ($row['barcode'] ?? ''));
+            $emitted = false;
+            foreach ($sizeMap as $sizeKey => $sizeLabel) {
+                $q = (float) ($sizeQtys[$sizeKey] ?? 0);
+                if ($q <= 0) {
+                    continue;
+                }
+                $emitted = true;
+                $rows[] = [
+                    'when_packed' => (string) $row['created_at'],
+                    'product' => trim($variantLabel . ' ' . $sizeLabel . (abs($q - 1.0) > 0.001 ? ' ×' . $q : '')),
+                    'variant' => $variantLabel,
+                    'size_label' => $sizeLabel,
+                    'qty' => $q,
+                    'tracking_or_session' => $packRef,
+                    'barcode' => $barcode,
+                    'is_rts_resellable' => $isRts,
+                    'kind' => 'honey',
+                    'size_qtys' => [$sizeKey => $q],
+                    'packed_by_name' => $packedBy,
+                ];
+            }
+            if (!$emitted) {
+                $rows[] = [
+                    'when_packed' => (string) $row['created_at'],
+                    'product' => $variantLabel,
+                    'variant' => $variantLabel,
+                    'size_label' => '—',
+                    'qty' => $qty,
+                    'tracking_or_session' => $packRef,
+                    'barcode' => $barcode,
+                    'is_rts_resellable' => $isRts,
+                    'kind' => 'honey',
+                    'size_qtys' => ['other' => $qty],
+                    'packed_by_name' => $packedBy,
+                ];
+            }
         }
     }
 
@@ -1213,6 +1242,8 @@ function honey_sales_fetch_shipped_export(
                 $rows[] = [
                     'when_packed' => (string) $row['consumed_at'],
                     'product' => $deptLabels[$key] ?? $key,
+                    'variant' => $deptLabels[$key] ?? $key,
+                    'size_label' => '—',
                     'qty' => 1.0,
                     'tracking_or_session' => $sessId > 0 ? 'Pack session #' . $sessId : '',
                     'barcode' => trim((string) ($row['code'] ?? '')),
@@ -1289,7 +1320,13 @@ function honey_sales_export_size_bucket(?string $size, ?string $sizeLabel = null
  * Totals from Walk-in receipt lines (matches sheet Items column).
  *
  * @param list<array<string, mixed>> $checkoutRows
- * @return array{total: float, by_size: array<string, float>, rts_units: float}
+ * @return array{
+ *   total: float,
+ *   by_size: array<string, float>,
+ *   by_variant: array<string, float>,
+ *   by_variant_size: array<string, float>,
+ *   rts_units: float
+ * }
  */
 function honey_sales_export_summarize_walk_in(array $checkoutRows, array $rtsFlags): array
 {
@@ -1301,6 +1338,8 @@ function honey_sales_export_summarize_walk_in(array $checkoutRows, array $rtsFla
         'dept' => 0.0,
         'other' => 0.0,
     ];
+    $byVariant = [];
+    $byVariantSize = [];
     $total = 0.0;
     $rtsUnits = 0.0;
 
@@ -1323,6 +1362,13 @@ function honey_sales_export_summarize_walk_in(array $checkoutRows, array $rtsFla
             $deptKey = trim((string) ($item['product_key'] ?? ''));
             if ($deptKey !== '' || (($item['kind'] ?? '') === 'dept' && empty($item['variant']))) {
                 $bySize['dept'] += $qty;
+                $vLabel = trim((string) ($item['label'] ?? $item['name'] ?? $deptKey));
+                if ($vLabel === '') {
+                    $vLabel = 'Dept';
+                }
+                $byVariant[$vLabel] = ($byVariant[$vLabel] ?? 0) + $qty;
+                $vsKey = $vLabel . ' · —';
+                $byVariantSize[$vsKey] = ($byVariantSize[$vsKey] ?? 0) + $qty;
                 continue;
             }
             $bucket = honey_sales_export_size_bucket(
@@ -1333,17 +1379,44 @@ function honey_sales_export_summarize_walk_in(array $checkoutRows, array $rtsFla
                 $bucket = 'other';
             }
             $bySize[$bucket] += $qty;
+            $variant = trim((string) ($item['variant'] ?? ''));
+            $vLabel = $variant !== '' ? ucfirst($variant) : trim((string) ($item['label'] ?? $item['name'] ?? 'Honey'));
+            $sizeLabel = honey_sales_size_label($bucket === 'liter' ? 'liter' : ($bucket === 'other' ? '' : $bucket));
+            if ($sizeLabel === '' && !empty($item['size_label'])) {
+                $sizeLabel = (string) $item['size_label'];
+            }
+            if ($sizeLabel === '') {
+                $sizeLabel = '—';
+            }
+            $byVariant[$vLabel] = ($byVariant[$vLabel] ?? 0) + $qty;
+            $vsKey = $vLabel . ' · ' . $sizeLabel;
+            $byVariantSize[$vsKey] = ($byVariantSize[$vsKey] ?? 0) + $qty;
         }
     }
 
-    return ['total' => $total, 'by_size' => $bySize, 'rts_units' => $rtsUnits];
+    arsort($byVariant);
+    arsort($byVariantSize);
+
+    return [
+        'total' => $total,
+        'by_size' => $bySize,
+        'by_variant' => $byVariant,
+        'by_variant_size' => $byVariantSize,
+        'rts_units' => $rtsUnits,
+    ];
 }
 
 /**
  * Totals from Shipped sheet rows (includes packaging + RTS).
  *
  * @param list<array<string, mixed>> $shippedRows
- * @return array{total: float, by_size: array<string, float>, rts_units: float}
+ * @return array{
+ *   total: float,
+ *   by_size: array<string, float>,
+ *   by_variant: array<string, float>,
+ *   by_variant_size: array<string, float>,
+ *   rts_units: float
+ * }
  */
 function honey_sales_export_summarize_shipped(array $shippedRows): array
 {
@@ -1355,6 +1428,8 @@ function honey_sales_export_summarize_shipped(array $shippedRows): array
         'dept' => 0.0,
         'other' => 0.0,
     ];
+    $byVariant = [];
+    $byVariantSize = [];
     $total = 0.0;
     $rtsUnits = 0.0;
 
@@ -1370,29 +1445,50 @@ function honey_sales_export_summarize_shipped(array $shippedRows): array
         $sizeQtys = is_array($row['size_qtys'] ?? null) ? $row['size_qtys'] : [];
         if ($sizeQtys === []) {
             $bySize['other'] += $qty;
-            continue;
-        }
-        foreach ($sizeQtys as $size => $q) {
-            $q = (float) $q;
-            if ($q <= 0) {
-                continue;
+        } else {
+            foreach ($sizeQtys as $size => $q) {
+                $q = (float) $q;
+                if ($q <= 0) {
+                    continue;
+                }
+                $bucket = $size === 'dept' ? 'dept' : honey_sales_export_size_bucket((string) $size);
+                if (!isset($bySize[$bucket])) {
+                    $bucket = 'other';
+                }
+                $bySize[$bucket] += $q;
             }
-            $bucket = $size === 'dept' ? 'dept' : honey_sales_export_size_bucket((string) $size);
-            if (!isset($bySize[$bucket])) {
-                $bucket = 'other';
-            }
-            $bySize[$bucket] += $q;
         }
+
+        $vLabel = trim((string) ($row['variant'] ?? ''));
+        if ($vLabel === '') {
+            $vLabel = trim((string) ($row['product'] ?? 'Item'));
+        }
+        $sizeLabel = trim((string) ($row['size_label'] ?? ''));
+        if ($sizeLabel === '') {
+            $sizeLabel = '—';
+        }
+        $byVariant[$vLabel] = ($byVariant[$vLabel] ?? 0) + $qty;
+        $vsKey = $vLabel . ' · ' . $sizeLabel;
+        $byVariantSize[$vsKey] = ($byVariantSize[$vsKey] ?? 0) + $qty;
     }
 
-    return ['total' => $total, 'by_size' => $bySize, 'rts_units' => $rtsUnits];
+    arsort($byVariant);
+    arsort($byVariantSize);
+
+    return [
+        'total' => $total,
+        'by_size' => $bySize,
+        'by_variant' => $byVariant,
+        'by_variant_size' => $byVariantSize,
+        'rts_units' => $rtsUnits,
+    ];
 }
 
 /**
- * Write shared summary block (period + channel totals + size breakdown).
+ * Write shared summary block (period + channel totals + size/variant breakdown).
  *
- * @param array{total: float, by_size: array<string, float>, rts_units: float} $walkInSummary
- * @param array{total: float, by_size: array<string, float>, rts_units: float} $shippedSummary
+ * @param array{total: float, by_size: array<string, float>, by_variant?: array<string, float>, by_variant_size?: array<string, float>, rts_units: float} $walkInSummary
+ * @param array{total: float, by_size: array<string, float>, by_variant?: array<string, float>, by_variant_size?: array<string, float>, rts_units: float} $shippedSummary
  * @return int next empty row index
  */
 function honey_sales_export_write_summary_block(
@@ -1453,6 +1549,78 @@ function honey_sales_export_write_summary_block(
         $sheet->setCellValue('A9', '(none)');
         $sheet->setCellValue('D9', '(none)');
         $r = 10;
+    }
+
+    $r += 1;
+    $sheet->setCellValue('A' . $r, 'Walk-in by variant');
+    $sheet->setCellValue('B' . $r, 'Qty');
+    $sheet->setCellValue('D' . $r, 'Shipped by variant');
+    $sheet->setCellValue('E' . $r, 'Qty');
+    $sheet->getStyle('A' . $r . ':E' . $r)->getFont()->setBold(true);
+    $r++;
+
+    $walkVariants = is_array($walkInSummary['by_variant'] ?? null) ? $walkInSummary['by_variant'] : [];
+    $shipVariants = is_array($shippedSummary['by_variant'] ?? null) ? $shippedSummary['by_variant'] : [];
+    $variantKeys = array_values(array_unique(array_merge(array_keys($walkVariants), array_keys($shipVariants))));
+    usort($variantKeys, static function ($a, $b) use ($walkVariants, $shipVariants) {
+        $wa = (float) ($walkVariants[$a] ?? 0) + (float) ($shipVariants[$a] ?? 0);
+        $wb = (float) ($walkVariants[$b] ?? 0) + (float) ($shipVariants[$b] ?? 0);
+
+        return $wb <=> $wa;
+    });
+    $variantStart = $r;
+    foreach ($variantKeys as $vk) {
+        $wq = (float) ($walkVariants[$vk] ?? 0);
+        $sq = (float) ($shipVariants[$vk] ?? 0);
+        if ($wq <= 0 && $sq <= 0) {
+            continue;
+        }
+        $sheet->setCellValue('A' . $r, $vk);
+        $sheet->setCellValue('B' . $r, $wq);
+        $sheet->setCellValue('D' . $r, $vk);
+        $sheet->setCellValue('E' . $r, $sq);
+        $r++;
+    }
+    if ($r === $variantStart) {
+        $sheet->setCellValue('A' . $r, '(none)');
+        $sheet->setCellValue('D' . $r, '(none)');
+        $r++;
+    }
+
+    $r += 1;
+    $sheet->setCellValue('A' . $r, 'Walk-in by variant × size');
+    $sheet->setCellValue('B' . $r, 'Qty');
+    $sheet->setCellValue('D' . $r, 'Shipped by variant × size');
+    $sheet->setCellValue('E' . $r, 'Qty');
+    $sheet->getStyle('A' . $r . ':E' . $r)->getFont()->setBold(true);
+    $r++;
+
+    $walkVs = is_array($walkInSummary['by_variant_size'] ?? null) ? $walkInSummary['by_variant_size'] : [];
+    $shipVs = is_array($shippedSummary['by_variant_size'] ?? null) ? $shippedSummary['by_variant_size'] : [];
+    $vsKeys = array_values(array_unique(array_merge(array_keys($walkVs), array_keys($shipVs))));
+    usort($vsKeys, static function ($a, $b) use ($walkVs, $shipVs) {
+        $wa = (float) ($walkVs[$a] ?? 0) + (float) ($shipVs[$a] ?? 0);
+        $wb = (float) ($walkVs[$b] ?? 0) + (float) ($shipVs[$b] ?? 0);
+
+        return $wb <=> $wa;
+    });
+    $vsStart = $r;
+    foreach ($vsKeys as $vk) {
+        $wq = (float) ($walkVs[$vk] ?? 0);
+        $sq = (float) ($shipVs[$vk] ?? 0);
+        if ($wq <= 0 && $sq <= 0) {
+            continue;
+        }
+        $sheet->setCellValue('A' . $r, $vk);
+        $sheet->setCellValue('B' . $r, $wq);
+        $sheet->setCellValue('D' . $r, $vk);
+        $sheet->setCellValue('E' . $r, $sq);
+        $r++;
+    }
+    if ($r === $vsStart) {
+        $sheet->setCellValue('A' . $r, '(none)');
+        $sheet->setCellValue('D' . $r, '(none)');
+        $r++;
     }
 
     $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
@@ -1524,13 +1692,13 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         $shippedSummary
     );
 
-    $shippedHeaders = ['When packed', 'Product', 'Qty', 'Tracking / pack session', 'Barcode', 'RTS resellable', 'Packed by'];
+    $shippedHeaders = ['When packed', 'Variant', 'Size', 'Qty', 'Tracking / pack session', 'Barcode', 'RTS resellable', 'Packed by'];
     $headerRow = $nextRow;
-    $shippedCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    $shippedCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     foreach ($shippedHeaders as $i => $h) {
         $shipped->setCellValue($shippedCols[$i] . $headerRow, $h);
     }
-    $shipped->getStyle('A' . $headerRow . ':G' . $headerRow)->getFont()->setBold(true);
+    $shipped->getStyle('A' . $headerRow . ':H' . $headerRow)->getFont()->setBold(true);
 
     if ($shippedRows === []) {
         $shipped->setCellValue('A' . ($headerRow + 1), $channel === 'walk_in'
@@ -1540,17 +1708,18 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         $r = $headerRow + 1;
         foreach ($shippedRows as $row) {
             $shipped->setCellValue('A' . $r, (string) $row['when_packed']);
-            $shipped->setCellValue('B' . $r, (string) $row['product']);
-            $shipped->setCellValue('C' . $r, (float) $row['qty']);
-            $shipped->setCellValue('D' . $r, (string) $row['tracking_or_session']);
-            $shipped->setCellValue('E' . $r, (string) $row['barcode']);
-            $shipped->setCellValue('F' . $r, !empty($row['is_rts_resellable']) ? 'Yes' : 'No');
+            $shipped->setCellValue('B' . $r, (string) ($row['variant'] ?? $row['product'] ?? ''));
+            $shipped->setCellValue('C' . $r, (string) ($row['size_label'] ?? '—'));
+            $shipped->setCellValue('D' . $r, (float) $row['qty']);
+            $shipped->setCellValue('E' . $r, (string) $row['tracking_or_session']);
+            $shipped->setCellValue('F' . $r, (string) $row['barcode']);
+            $shipped->setCellValue('G' . $r, !empty($row['is_rts_resellable']) ? 'Yes' : 'No');
             $packedBy = trim((string) ($row['packed_by_name'] ?? ''));
-            $shipped->setCellValue('G' . $r, $packedBy !== '' ? $packedBy : '—');
+            $shipped->setCellValue('H' . $r, $packedBy !== '' ? $packedBy : '—');
             $r++;
         }
     }
-    foreach (range('A', 'G') as $col) {
+    foreach (range('A', 'H') as $col) {
         $shipped->getColumnDimension($col)->setAutoSize(true);
     }
 

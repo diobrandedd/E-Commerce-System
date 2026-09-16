@@ -182,8 +182,8 @@ function honey_warehouse_barcode_lookup(PDO $pdo, string $rawCode): array
 /**
  * Scan a supplier/date code, choose a variant, and move gallons to production.
  *
- * Multiple warehouse rows are consumed oldest-first. New scanner transfers share
- * one production row per stock-out date + supplier code + variant.
+ * Multiple warehouse rows are consumed oldest-first. Transfers share one
+ * production row per supplier code + arrival + variant (later stock-outs refill).
  *
  * @return array<string, mixed>
  */
@@ -207,7 +207,6 @@ function honey_warehouse_barcode_stock_out(
     }
     $quantity = round($quantity, 2);
     $stockOutDate = date('Y-m-d');
-    $dailyKey = $supplierId . '|' . $code . '|' . $arrivalDate . '|' . $variant . '|' . $stockOutDate;
 
     $ownsTransaction = !$pdo->inTransaction();
     if ($ownsTransaction) {
@@ -250,7 +249,10 @@ function honey_warehouse_barcode_stock_out(
                 throw new RuntimeException('Warehouse quantity changed. Scan again.');
             }
             $remaining = round($remaining - $used, 2);
-            $sources[] = ['row' => $warehouse, 'quantity' => $used];
+            $sources[] = [
+                'warehouse_row_id' => (int) $warehouse['id'],
+                'quantity' => $used,
+            ];
         }
         if ($remaining > 0.000001) {
             throw new RuntimeException(
@@ -259,61 +261,18 @@ function honey_warehouse_barcode_stock_out(
             );
         }
 
-        $prod = $pdo->prepare(
-            'SELECT * FROM honey_production_rows WHERE daily_group_key = ? LIMIT 1 FOR UPDATE'
+        $productionId = honey_production_upsert_daily_lot(
+            $pdo,
+            $userId,
+            $supplierId,
+            $code,
+            $arrivalDate,
+            $variant,
+            $stockOutDate,
+            $quantity,
+            (int) $sources[0]['warehouse_row_id'],
+            $sources
         );
-        $prod->execute([$dailyKey]);
-        $production = $prod->fetch(PDO::FETCH_ASSOC);
-        if ($production === false) {
-            $first = $sources[0]['row'];
-            $ins = $pdo->prepare(
-                'INSERT INTO honey_production_rows
-                    (warehouse_row_id, supplier_code, arrival_date, stock_out_date, daily_group_key,
-                     variant, current_qty, initial_qty, created_by)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-            );
-            $ins->execute([
-                (int) $first['id'],
-                $code,
-                $arrivalDate,
-                $stockOutDate,
-                $dailyKey,
-                $variant,
-                $quantity,
-                $quantity,
-                $userId,
-            ]);
-            $productionId = (int) $pdo->lastInsertId();
-        } else {
-            $productionId = (int) $production['id'];
-            $updProd = $pdo->prepare(
-                'UPDATE honey_production_rows
-                 SET current_qty = current_qty + ?, initial_qty = initial_qty + ?
-                 WHERE id = ?'
-            );
-            $updProd->execute([$quantity, $quantity, $productionId]);
-        }
-
-        $event = $pdo->prepare(
-            'INSERT INTO honey_warehouse_stock_out_events
-                (warehouse_row_id, production_row_id, supplier_id, supplier_code, arrival_date,
-                 variant, quantity_gallons, stock_out_date, stocked_out_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        );
-        foreach ($sources as $source) {
-            $warehouse = $source['row'];
-            $event->execute([
-                (int) $warehouse['id'],
-                $productionId,
-                $supplierId,
-                $code,
-                $arrivalDate,
-                $variant,
-                $source['quantity'],
-                $stockOutDate,
-                $userId,
-            ]);
-        }
 
         if ($ownsTransaction) {
             $pdo->commit();

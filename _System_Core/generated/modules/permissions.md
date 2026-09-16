@@ -1,7 +1,7 @@
 ---
 title: permissions
 source: includes/permissions.php
-generated: 2026-09-15T10:58:43+02:00
+generated: 2026-09-16T03:39:20+02:00
 type: module
 function_count: 19
 ---
@@ -133,9 +133,9 @@ function_count: 19
 - `api/v1/honey.php`:158 — `'paragis' => ims_user_can_dept_line($user, 'pt', 'view'),`
 - `api/v1/honey.php`:159 — `'cacao_brc' => ims_user_can_dept_line($user, 'brc', 'view')`
 - `api/v1/honey.php`:160 — `|| ims_user_can_dept_line($user, 'jar_cacao', 'view'),`
-- `api/v1/honey.php`:851 — `if ($productKey !== '' && !ims_user_can_dept_line($user, $productKey, 'view')) {`
-- `api/v1/honey.php`:862 — `static fn(array $item): bool => ims_user_can_dept_line($user, (string) $item['key'], 'view')`
-- `api/v1/honey.php`:945 — `if (!ims_user_can_dept_line($user, $productKey, 'view')) {`
+- `api/v1/honey.php`:850 — `if ($productKey !== '' && !ims_user_can_dept_line($user, $productKey, 'view')) {`
+- `api/v1/honey.php`:861 — `static fn(array $item): bool => ims_user_can_dept_line($user, (string) $item['key'], 'view')`
+- `api/v1/honey.php`:944 — `if (!ims_user_can_dept_line($user, $productKey, 'view')) {`
 - `includes/dept_pouch_barcodes.php`:21 — `return ims_user_can_dept_line($user, $productKey, 'barcodes');`
 - `includes/honey_inventory.php`:44 — `return ims_user_can_dept_line($user, $productKey, 'produce');`
 

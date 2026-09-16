@@ -317,7 +317,12 @@ export function HoneyProductionPage() {
         <AppModalHeader title="Honey bottle barcodes" titleId="honey-production-guide-title" onClose={closeModal} />
         <AppModalBody className="space-y-3 text-sm text-muted-foreground">
           <p>Honey staff request labels. Executives and CSR generate unique barcodes and print an A4 sheet (68 labels per page, 4×17 — barcode plus the code text underneath for manual entry, cut on dashed guides). Print at 100% scale so the bars stay camera-scannable.</p>
-          <p>Sticker bottles, then use Production → scan stock-in: pick the supplier gallon lot, scan SKU/unique barcodes, and packaging gains bottles while production gallons drop.</p>
+          <p>
+            Stock out from Warehouse part by part if needed — same supplier code + variant on the same day merges into{" "}
+            <strong className="text-foreground">one</strong> Production lot (Light / Amber / Dark stay separate). Then
+            Production → scan stock-in: pick that gallon lot, scan SKU/unique barcodes, and packaging gains bottles while
+            production gallons drop.
+          </p>
           <p>Courier packing uses Deliveries → Pack scan. Waybill + photo ships without deducting stock.</p>
         </AppModalBody>
       </AppModal>
