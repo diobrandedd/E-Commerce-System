@@ -1027,3 +1027,11 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 - **What we did:** Applied the user's explicit removal of POS throughout Chapters I–III. Retained Inventory, Costing/Pricing, Orders/Waybills, Parcel Processing, and RTS. Updated objectives, literature, five-build methodology, May–August Gantt, FDD, IPO, storyboards, schema selection, module list, and tests. The overall use case diagram and matrices use only Admin/Executive and Staff; costing/pricing remains Admin/Executive-only.
 - **Validation:** Confirmed five modules and five test scenarios; no POS, cashier, or obsolete six-feature wording in document text. Rendered the 71-page Word document and checked diagram legibility and page flow. No application code or permissions changed.
 - **Artifact:** `output/documents/Pyx_Tracker_Capstone_Five_Features_Final.docx`.
+
+### 2026-09-16 — Use case direct associations and claim extension
+- **What we did:** Replaced shared connector rails with direct actor associations that meet the outer edges of use-case ovals, avoiding crossings through neighboring ovals. Retained two actors and five features. Added optional Update claim status extending Manage RTS case with an explicit Admin/Executive condition, grounded in the existing administrative claim-update action; updated the narrative and RTS matrix.
+- **Artifact:** `output/documents/Pyx_Tracker_Capstone_Use_Case_Final.docx`. No application code changed.
+
+### 2026-09-17 — FDD-aligned use cases
+- **What we did:** Removed numbering from all FDD feature and function boxes. Replaced the use case diagram with the exact twenty named FDD leaf functions, grouped under the five features with Admin/Executive and Staff as the two primary actors. Removed the prior claim-status extension and corresponding diagram-specific text because it is not an FDD function. Preserved existing role-permission matrices, May–August Gantt, and the no-POS scope.
+- **Artifact:** `output/documents/Pyx_Tracker_Capstone_FDD_Aligned.docx`.
