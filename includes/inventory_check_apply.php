@@ -464,9 +464,16 @@ function inventory_check_finalize_with_sync(
  */
 function inventory_check_serialize_compare_run(array $r): array
 {
+    $mergedCsv = isset($r['merged_event_ids']) && $r['merged_event_ids'] !== null
+        ? (string) $r['merged_event_ids']
+        : null;
+    $eventId = (int) $r['event_id'];
+    $eventIds = inventory_check_parse_merged_event_ids($mergedCsv, $eventId);
+
     return [
         'id' => (int) $r['id'],
-        'event_id' => (int) $r['event_id'],
+        'event_id' => $eventId,
+        'event_ids' => $eventIds,
         'scope' => (string) $r['scope'],
         'line_count' => (int) $r['line_count'],
         'mismatch_count' => (int) $r['mismatch_count'],
@@ -482,8 +489,7 @@ function inventory_check_serialize_compare_run(array $r): array
             ? (string) $r['stock_applied_by_name']
             : null,
         'barcodes_voided_count' => (int) ($r['barcodes_voided_count'] ?? 0),
-        'merged_event_ids' => isset($r['merged_event_ids']) && $r['merged_event_ids'] !== null
-            ? (string) $r['merged_event_ids']
-            : null,
+        'merged_event_ids' => $mergedCsv,
+        'is_merged' => count($eventIds) > 1,
     ];
 }

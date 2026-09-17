@@ -30,6 +30,7 @@ flowchart LR
 
 ## Reusable fix patterns (inventory & UX)
 
+- [[fixes/inventory-check-applied-run-history]] — Confirmed/merged audit stock-apply history + mismatch detail
 - [[fixes/sales-dept-shipped-include-sku]] — Dept Sales shipped includes SKU pack qty + unique stickers
 - [[fixes/sku-barcode-permanent-catalog]] — One permanent SKU code per product; print N copies; scan→qty
 - [[fixes/packaging-inventory-roles]] — HR stock-in / PM deduct / exec all
@@ -53,6 +54,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-09-17_inventory-check-applied-run-history]] — Confirmed/merged audit stock-apply history + mismatches
 - [[records/2026-09-16_sales-export-sheet-channel-only]] — Excel Shipped/Walk-in sheets: summary for that channel only
 - [[records/2026-09-16_sales-dept-shipped-include-sku]] — Dept Sales shipped = stickers + SKU pack qty (pt/brc/cacao/comb)
 - [[records/2026-09-16_sales-export-items-detail]] — Walk-in Items + Qty columns (one row per checkout)

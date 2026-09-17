@@ -48,12 +48,18 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<InventoryCheckSummary | null>(null);
   const [runs, setRuns] = useState<InventoryCheckCompareRun[]>([]);
+  const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [compare, setCompare] = useState<InventoryCheckCompareResult | null>(null);
   const [scans, setScans] = useState<InventoryCheckScan[]>([]);
   const [scanTotal, setScanTotal] = useState(0);
   const [scanPage, setScanPage] = useState(1);
   const [scanLoading, setScanLoading] = useState(false);
   const [logRow, setLogRow] = useState<InventoryCheckSummaryRow | null>(null);
+
+  const loadCompareRun = useCallback(async (runId: number) => {
+    setCompare(await inventoryCheckApi.compareGet(runId));
+    setSelectedRunId(runId);
+  }, []);
 
   const loadCore = useCallback(async () => {
     setLoading(true);
@@ -67,19 +73,21 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
       setRuns(compareList.runs);
       const latest = compareList.runs[0];
       if (latest) {
-        setCompare(await inventoryCheckApi.compareGet(latest.id));
+        await loadCompareRun(latest.id);
       } else {
         setCompare(null);
+        setSelectedRunId(null);
       }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load this audit session.");
       setSummary(null);
       setRuns([]);
       setCompare(null);
+      setSelectedRunId(null);
     } finally {
       setLoading(false);
     }
-  }, [event.id]);
+  }, [event.id, loadCompareRun]);
 
   const loadScans = useCallback(
     async (page: number) => {
@@ -249,6 +257,49 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                   </p>
                 ) : (
                   <>
+                    {runs.length > 1 ? (
+                      <label className="block text-sm space-y-1">
+                        <span className="text-xs uppercase tracking-wide text-muted-foreground">Comparison run</span>
+                        <select
+                          className="w-full min-h-11 rounded-lg border border-border bg-card px-3 text-sm"
+                          value={selectedRunId ?? compare.run.id}
+                          onChange={e => {
+                            const id = Number(e.target.value);
+                            void loadCompareRun(id).catch(err => {
+                              setError(
+                                err instanceof ApiError ? err.message : "Could not load that comparison run.",
+                              );
+                            });
+                          }}
+                        >
+                          {runs.map(r => {
+                            const when = r.stock_applied_at || r.run_at;
+                            const label = [
+                              r.is_merged || (r.event_ids && r.event_ids.length > 1) ? "Merged" : "Single",
+                              r.stock_applied ? "stock applied" : "preview/saved",
+                              when ? new Date(when.replace(" ", "T")).toLocaleString() : "",
+                              `${r.mismatch_count} mismatch${r.mismatch_count === 1 ? "" : "es"}`,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ");
+                            return (
+                              <option key={r.id} value={r.id}>
+                                {label}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </label>
+                    ) : null}
+                    {(compare.run.is_merged || (compare.run.event_ids && compare.run.event_ids.length > 1)) && (
+                      <p className="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                        Merged sessions · ids{" "}
+                        {(compare.run.event_ids && compare.run.event_ids.length > 0
+                          ? compare.run.event_ids
+                          : [compare.run.event_id]
+                        ).join(", ")}
+                      </p>
+                    )}
                     <div className="grid gap-3 sm:grid-cols-4">
                       <StatCard label="Scope" value={compare.run.scope || "—"} />
                       <StatCard label="Audited" value={String(compare.run.counted_total)} />
@@ -261,7 +312,7 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Run by {compare.run.run_by_name || "—"} · {formatWhen(compare.run.run_at)}
-                      {runs.length > 1 ? ` · ${runs.length} runs total` : ""}
+                      {runs.length > 1 ? ` · ${runs.length} runs on this session` : ""}
                     </p>
                     {compare.run.stock_applied ? (
                       <p className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">

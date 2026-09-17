@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-17 — Confirmed / merged audit history
+**Change:** History lists stock-applied compare runs (incl. merges) with mismatch detail; session Comparison run picker. → [[problems/records/2026-09-17_inventory-check-applied-run-history]]
+
 ### 2026-09-16 — Sales Excel sheet summaries are channel-only
 **Change:** Shipped sheet summary shows only shipped; Walk-in sheet only walk-in (no side-by-side). → [[problems/records/2026-09-16_sales-export-sheet-channel-only]]
 

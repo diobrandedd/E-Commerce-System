@@ -1274,6 +1274,8 @@ function inventory_check_batch_docs_build(PDO $pdo, array $eventIds): array
 }
 
 /**
+ * Comparison runs for a session: owned primary event_id, or listed in merged_event_ids.
+ *
  * @return list<array<string, mixed>>
  */
 function inventory_check_compare_list(PDO $pdo, int $eventId): array
@@ -1284,11 +1286,153 @@ function inventory_check_compare_list(PDO $pdo, int $eventId): array
          LEFT JOIN users u ON u.id = r.run_by
          LEFT JOIN users ua ON ua.id = r.stock_applied_by
          WHERE r.event_id = ?
+            OR FIND_IN_SET(?, REPLACE(COALESCE(r.merged_event_ids, ""), " ", "")) > 0
          ORDER BY r.id DESC'
     );
-    $st->execute([$eventId]);
+    $st->execute([$eventId, $eventId]);
 
     return array_map('inventory_check_serialize_compare_run', $st->fetchAll(PDO::FETCH_ASSOC));
+}
+
+/**
+ * Parse merged_event_ids CSV into distinct positive ints (includes primary when passed).
+ *
+ * @return list<int>
+ */
+function inventory_check_parse_merged_event_ids(?string $csv, ?int $primaryEventId = null): array
+{
+    $ids = [];
+    if ($primaryEventId !== null && $primaryEventId > 0) {
+        $ids[] = $primaryEventId;
+    }
+    if ($csv !== null && trim($csv) !== '') {
+        foreach (explode(',', $csv) as $part) {
+            $id = (int) trim($part);
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+    }
+
+    return array_values(array_unique($ids));
+}
+
+/**
+ * Session summaries for ids (order preserved).
+ *
+ * @param list<int> $eventIds
+ * @return list<array{id:int,count_date:string,opened_by_name:string,status:string}>
+ */
+function inventory_check_event_summaries_by_ids(PDO $pdo, array $eventIds): array
+{
+    $eventIds = array_values(array_unique(array_filter(array_map('intval', $eventIds))));
+    if ($eventIds === []) {
+        return [];
+    }
+    $in = implode(',', array_fill(0, count($eventIds), '?'));
+    $st = $pdo->prepare(
+        "SELECT e.id, e.count_date, e.status, u.name AS opened_by_name
+         FROM inventory_check_events e
+         LEFT JOIN users u ON u.id = e.opened_by
+         WHERE e.id IN ({$in})"
+    );
+    $st->execute($eventIds);
+    $byId = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $byId[(int) $row['id']] = [
+            'id' => (int) $row['id'],
+            'count_date' => (string) $row['count_date'],
+            'opened_by_name' => (string) ($row['opened_by_name'] ?? ''),
+            'status' => (string) $row['status'],
+        ];
+    }
+    $out = [];
+    foreach ($eventIds as $id) {
+        if (isset($byId[$id])) {
+            $out[] = $byId[$id];
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * Whether the user may open a compare run (primary session or any merged member).
+ *
+ * @param array{id:int,role?:string} $user
+ */
+function inventory_check_user_can_access_compare_run(PDO $pdo, array $user, array $runRow): bool
+{
+    if (inventory_check_can_view_all($user) || inventory_check_can_manage($user)) {
+        return true;
+    }
+    $ids = inventory_check_parse_merged_event_ids(
+        isset($runRow['merged_event_ids']) ? (string) $runRow['merged_event_ids'] : null,
+        (int) ($runRow['event_id'] ?? 0)
+    );
+    if ($ids === []) {
+        return false;
+    }
+    $in = implode(',', array_fill(0, count($ids), '?'));
+    $st = $pdo->prepare(
+        "SELECT 1 FROM inventory_check_events WHERE opened_by = ? AND id IN ({$in}) LIMIT 1"
+    );
+    $st->execute(array_merge([(int) ($user['id'] ?? 0)], $ids));
+
+    return (bool) $st->fetchColumn();
+}
+
+/**
+ * Stock-applied compare runs (single + merged confirms), newest first.
+ *
+ * @return array{rows:list<array<string,mixed>>,total:int,page:int,per_page:int}
+ */
+function inventory_check_applied_runs_list(PDO $pdo, int $page = 1, int $perPage = 25): array
+{
+    $page = max(1, $page);
+    $perPage = max(1, min(100, $perPage));
+    $offset = ($page - 1) * $perPage;
+
+    $total = (int) $pdo->query(
+        'SELECT COUNT(*) FROM inventory_check_compare_runs WHERE stock_applied = 1'
+    )->fetchColumn();
+
+    $st = $pdo->prepare(
+        'SELECT r.*, u.name AS run_by_name, ua.name AS stock_applied_by_name,
+                e.count_date AS primary_count_date, eo.name AS primary_opened_by_name
+         FROM inventory_check_compare_runs r
+         LEFT JOIN users u ON u.id = r.run_by
+         LEFT JOIN users ua ON ua.id = r.stock_applied_by
+         LEFT JOIN inventory_check_events e ON e.id = r.event_id
+         LEFT JOIN users eo ON eo.id = e.opened_by
+         WHERE r.stock_applied = 1
+         ORDER BY COALESCE(r.stock_applied_at, r.run_at) DESC, r.id DESC
+         LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset
+    );
+    $st->execute();
+
+    $rows = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $run = inventory_check_serialize_compare_run($row);
+        $sessionIds = inventory_check_parse_merged_event_ids(
+            $run['merged_event_ids'] !== null ? (string) $run['merged_event_ids'] : null,
+            (int) $run['event_id']
+        );
+        $sessions = inventory_check_event_summaries_by_ids($pdo, $sessionIds);
+        $rows[] = array_merge($run, [
+            'primary_count_date' => (string) ($row['primary_count_date'] ?? ''),
+            'primary_opened_by_name' => (string) ($row['primary_opened_by_name'] ?? ''),
+            'is_merged' => count($sessionIds) > 1,
+            'sessions' => $sessions,
+        ]);
+    }
+
+    return [
+        'rows' => $rows,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+    ];
 }
 
 require_once __DIR__ . '/inventory_check_apply.php';

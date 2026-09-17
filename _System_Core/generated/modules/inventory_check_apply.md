@@ -1,7 +1,7 @@
 ---
 title: inventory_check_apply
 source: includes/inventory_check_apply.php
-generated: 2026-09-16T12:01:06+02:00
+generated: 2026-09-17T05:12:36+02:00
 type: module
 function_count: 9
 ---
@@ -74,12 +74,13 @@ function_count: 9
 
 **Callers (2):**
 
-- `api/v1/inventory_check.php`:370 — `$result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], true);`
-- `api/v1/inventory_check.php`:402 — `$result = inventory_check_finalize_with_sync($pdo, $user, $eventIds, false);`
+- `api/v1/inventory_check.php`:371 — `$result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], true);`
+- `api/v1/inventory_check.php`:403 — `$result = inventory_check_finalize_with_sync($pdo, $user, $eventIds, false);`
 
 ## inventory_check_serialize_compare_run {#inventory_check_serialize_compare_run}
 
-**Callers (1):**
+**Callers (2):**
 
 - `includes/inventory_check.php`:1200 — `'run' => inventory_check_serialize_compare_run($run),`
+- `includes/inventory_check.php`:1416 — `$run = inventory_check_serialize_compare_run($row);`
 

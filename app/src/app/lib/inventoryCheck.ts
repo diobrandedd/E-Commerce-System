@@ -123,6 +123,21 @@ export interface InventoryCheckCompareRun {
   stock_applied_by_name?: string | null;
   barcodes_voided_count?: number;
   merged_event_ids?: string | null;
+  is_merged?: boolean;
+}
+
+export interface InventoryCheckAppliedSessionRef {
+  id: number;
+  count_date: string;
+  opened_by_name: string;
+  status: string;
+}
+
+export interface InventoryCheckAppliedRun extends InventoryCheckCompareRun {
+  primary_count_date: string;
+  primary_opened_by_name: string;
+  is_merged: boolean;
+  sessions: InventoryCheckAppliedSessionRef[];
 }
 
 export interface InventoryCheckCompareResult {
@@ -244,4 +259,12 @@ export const inventoryCheckApi = {
 
   compareList: (eventId: number) =>
     apiGet<{ runs: InventoryCheckCompareRun[] }>(ENDPOINT, "compare_list", { event_id: eventId }),
+
+  appliedRunsList: (page = 1, perPage = 25) =>
+    apiGet<{
+      rows: InventoryCheckAppliedRun[];
+      total: number;
+      page: number;
+      per_page: number;
+    }>(ENDPOINT, "applied_runs_list", { page, per_page: perPage }),
 };
