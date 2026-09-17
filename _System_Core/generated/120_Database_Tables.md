@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-17T05:12:06+02:00
+generated: 2026-09-17T11:12:54+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -1176,6 +1176,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `api/v1/honey.php` | [[modules/honey#api_honey_production_list]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_fifo_deduct_gallons]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_variant_summary]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_production]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_upsert_daily_lot]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_stock_out]] |
@@ -1211,6 +1213,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_unique_packaging_batch_no]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging_by_batch_variant_date]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_ensure_packaging_row_for_stock_in]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_ensure_variant_pool]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_packaging_by_production]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_upsert_daily_lot]] |

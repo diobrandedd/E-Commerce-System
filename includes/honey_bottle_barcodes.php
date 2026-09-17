@@ -1053,24 +1053,12 @@ function honey_bottle_scan_stock_in(PDO $pdo, int $userId, string $code, bool $a
             throw new RuntimeException('Already scanned into inventory.');
         }
         $packId = (int) ($row['packaging_row_id'] ?? 0);
-        if ($packId < 1) {
-            throw new RuntimeException('Barcode is not tied to a packaging batch.');
-        }
-        $sourcePk = honey_fetch_packaging($pdo, $packId);
-        if ($sourcePk === null) {
-            throw new RuntimeException('Packaging row not found.');
-        }
-        // Stock-in day = bottling date for the credited lot (same batch+variant, today's date).
-        $todayPk = honey_ensure_packaging_row_for_stock_in(
-            $pdo,
-            $userId,
-            (string) $row['batch_no'],
-            honey_normalize_variant((string) $row['variant']),
-            (string) $row['supplier_code'],
-            date('Y-m-d'),
-            isset($sourcePk['production_row_id']) ? (int) $sourcePk['production_row_id'] : null
-        );
-        $packId = (int) $todayPk['id'];
+        $variant = honey_normalize_variant((string) $row['variant']);
+        require_once __DIR__ . '/honey_inventory.php';
+        // Finished stock-in always credits the variant POOL (no dated lot rows).
+        $poolPk = honey_packaging_ensure_variant_pool($pdo, $userId, $variant);
+        $packId = (int) $poolPk['id'];
+        $todayPk = $poolPk;
         $shouldIncrement = !$adoptOnly && (string) $row['batch_source'] !== 'backfill';
         $pdo->prepare(
             'UPDATE honey_bottle_barcodes SET status = "scanned", scanned_at = NOW(), scanned_by = ? WHERE id = ?'
@@ -1082,7 +1070,7 @@ function honey_bottle_scan_stock_in(PDO $pdo, int $userId, string $code, bool $a
         );
         $ins->execute([
             (int) $row['id'],
-            honey_normalize_variant((string) $row['variant']),
+            $variant,
             (string) $row['size'],
             (string) $row['supplier_code'],
             $packId,

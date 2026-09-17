@@ -225,6 +225,335 @@ function honey_ensure_packaging_row_for_stock_in(
     return $pack;
 }
 
+const HONEY_PACKAGING_POOL_BATCH = 'POOL';
+const HONEY_PACKAGING_POOL_DATE = '2000-01-01';
+
+function honey_packaging_is_pool_row(array $row): bool
+{
+    return (string) ($row['batch_no'] ?? '') === HONEY_PACKAGING_POOL_BATCH
+        && (string) ($row['bottling_date'] ?? '') === HONEY_PACKAGING_POOL_DATE;
+}
+
+/**
+ * One finished-goods pool row per Light / Amber / Dark (no lot / date).
+ *
+ * @return array<string, mixed>
+ */
+function honey_packaging_ensure_variant_pool(PDO $pdo, int $userId, string $variant): array
+{
+    $variant = honey_normalize_variant($variant);
+    if (!in_array($variant, ['light', 'amber', 'dark'], true)) {
+        throw new RuntimeException('Variant pools are only for Light, Amber, and Dark.');
+    }
+    $existing = honey_fetch_packaging_by_batch_variant_date(
+        $pdo,
+        HONEY_PACKAGING_POOL_BATCH,
+        $variant,
+        HONEY_PACKAGING_POOL_DATE
+    );
+    if ($existing !== null) {
+        return $existing;
+    }
+
+    $ins = $pdo->prepare(
+        'INSERT INTO honey_packaging_rows (
+            production_row_id, supplier_code, batch_no, bottling_date, variant,
+            current_liter, initial_liter, current_250ml, initial_250ml,
+            current_350ml, initial_350ml, current_gallon, initial_gallon, created_by
+         ) VALUES (NULL, "", ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0, ?)'
+    );
+    $ins->execute([
+        HONEY_PACKAGING_POOL_BATCH,
+        HONEY_PACKAGING_POOL_DATE,
+        $variant,
+        $userId > 0 ? $userId : 1,
+    ]);
+    $pack = honey_fetch_packaging($pdo, (int) $pdo->lastInsertId());
+    if ($pack === null) {
+        throw new RuntimeException('Could not create packaging pool.');
+    }
+
+    return $pack;
+}
+
+/**
+ * FIFO deduct gallons from production lots of one variant. Allows overdraw on the last lot.
+ *
+ * @return array{used_gallons: float, remaining_production_gallons: float, production_overdrawn: bool, warning: ?string, lot_deductions: list<array<string,mixed>>, ml_per_gallon: float}
+ */
+function honey_production_fifo_deduct_gallons(PDO $pdo, string $variant, float $usedGallons): array
+{
+    $variant = honey_normalize_variant($variant);
+    if ($usedGallons <= 0) {
+        throw new RuntimeException('Bottle volume must be greater than zero.');
+    }
+
+    $st = $pdo->prepare(
+        'SELECT id, supplier_code, current_qty, initial_qty,
+                COALESCE(stock_out_date, DATE(transferred_at)) AS stock_out_date
+         FROM honey_production_rows
+         WHERE variant = ?
+           AND COALESCE(is_active, 1) = 1
+         ORDER BY COALESCE(stock_out_date, DATE(transferred_at)) ASC, id ASC
+         FOR UPDATE'
+    );
+    $st->execute([$variant]);
+    $lots = $st->fetchAll(PDO::FETCH_ASSOC);
+    if ($lots === []) {
+        throw new RuntimeException(
+            'No production gallons for ' . ucfirst($variant) . '. Stock out from warehouse first.'
+        );
+    }
+
+    $remainingNeed = $usedGallons;
+    $deductions = [];
+    $totalRemainingAfter = 0.0;
+    $lastId = (int) $lots[array_key_last($lots)]['id'];
+
+    foreach ($lots as $lot) {
+        $lotId = (int) $lot['id'];
+        $avail = (float) $lot['current_qty'];
+        $totalRemainingAfter += $avail;
+        if ($remainingNeed <= 1e-9) {
+            continue;
+        }
+        if ($avail > 1e-9) {
+            $take = min($avail, $remainingNeed);
+            honey_production_deduct_gallons($pdo, $lotId, $take);
+            $remainingNeed -= $take;
+            $totalRemainingAfter -= $take;
+            $deductions[] = [
+                'production_row_id' => $lotId,
+                'supplier_code' => (string) $lot['supplier_code'],
+                'taken_gallons' => round($take, 4),
+            ];
+            $lastId = $lotId;
+        }
+    }
+
+    $warning = null;
+    $overdrawn = false;
+    if ($remainingNeed > 1e-9) {
+        honey_production_deduct_gallons($pdo, $lastId, $remainingNeed);
+        $totalRemainingAfter -= $remainingNeed;
+        $deductions[] = [
+            'production_row_id' => $lastId,
+            'supplier_code' => (string) ($lots[array_key_last($lots)]['supplier_code'] ?? ''),
+            'taken_gallons' => round($remainingNeed, 4),
+            'overdraw' => true,
+        ];
+        $overdrawn = true;
+        $warning = sprintf(
+            'Bottled volume uses %s gallon/s but production only had enough for part of that — lot may go negative.',
+            round($usedGallons, 4)
+        );
+        $remainingNeed = 0.0;
+    }
+
+    $mlPerGallon = honey_ml_per_gallon($pdo);
+
+    return [
+        'used_gallons' => round($usedGallons, 4),
+        'remaining_production_gallons' => round($totalRemainingAfter, 4),
+        'production_overdrawn' => $overdrawn || $totalRemainingAfter < -1e-9,
+        'warning' => $warning,
+        'lot_deductions' => $deductions,
+        'ml_per_gallon' => $mlPerGallon,
+    ];
+}
+
+/**
+ * SKU stock-in to variant POOL + FIFO production gallon deduct.
+ *
+ * @return array<string, mixed>
+ */
+function honey_packaging_pool_stock_in(
+    PDO $pdo,
+    int $userId,
+    string $variant,
+    string $size,
+    int $qty
+): array {
+    require_once __DIR__ . '/honey_bottle_barcodes.php';
+    require_once __DIR__ . '/sku_barcodes.php';
+
+    $variant = honey_normalize_variant($variant);
+    $size = honey_normalize_bottle_size($size);
+    if ($qty < 1 || $qty > 5000) {
+        throw new RuntimeException('Quantity must be between 1 and 5000.');
+    }
+
+    $lines = [['size' => $size, 'qty' => $qty]];
+    $sizeQtys = honey_aggregate_bottle_lines($lines);
+    $mlPerGallon = honey_ml_per_gallon($pdo);
+    $usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);
+    if ($usedGallons <= 0) {
+        throw new RuntimeException('Enter quantity for at least one bottle.');
+    }
+
+    $packagingDeduct = [];
+    $credit = ['primary_request_id' => null, 'credited' => $qty];
+    $fifo = null;
+    $owns = !$pdo->inTransaction();
+    if ($owns) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $pool = honey_packaging_ensure_variant_pool($pdo, $userId, $variant);
+        $packId = (int) $pool['id'];
+        $fifo = honey_production_fifo_deduct_gallons($pdo, $variant, $usedGallons);
+        honey_bottle_adjust_aggregate($pdo, $packId, $size, (float) $qty);
+        $packagingDeduct = honey_bottling_deduct_packaging_stocks(
+            $pdo,
+            $userId,
+            $sizeQtys,
+            HONEY_PACKAGING_POOL_BATCH
+        );
+
+        $sku = sku_barcode_fetch_honey($pdo, $variant, $size);
+        if ($sku !== null) {
+            $credit = sku_barcode_credit_honey_requests(
+                $pdo,
+                $userId,
+                (int) $sku['id'],
+                $variant,
+                $size,
+                $qty,
+                $packId
+            );
+        }
+
+        if ($owns) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($owns && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    return [
+        'kind' => 'honey',
+        'variant' => $variant,
+        'size' => $size,
+        'size_label' => honey_bottle_size_label($size),
+        'qty' => $qty,
+        'packaging_row_id' => $packId,
+        'batch_no' => HONEY_PACKAGING_POOL_BATCH,
+        'bottling_date' => HONEY_PACKAGING_POOL_DATE,
+        'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),
+        'used_gallons' => $fifo['used_gallons'],
+        'remaining_production_gallons' => $fifo['remaining_production_gallons'],
+        'production_overdrawn' => $fifo['production_overdrawn'],
+        'warning' => $fifo['warning'],
+        'ml_per_gallon' => $fifo['ml_per_gallon'],
+        'lot_deductions' => $fifo['lot_deductions'],
+        'packaging_deduct' => $packagingDeduct,
+        'primary_request_id' => $credit['primary_request_id'] ?? null,
+        'credited' => $credit['credited'] ?? $qty,
+    ];
+}
+
+/**
+ * @return array{variants: list<array<string,mixed>>, total_bottles: float}
+ */
+function honey_packaging_variant_pools_snapshot(PDO $pdo): array
+{
+    $variants = [];
+    $grand = 0.0;
+    foreach (['light', 'amber', 'dark'] as $variant) {
+        $pool = honey_packaging_ensure_variant_pool($pdo, 1, $variant);
+        $bySize = [
+            '250ml' => (float) $pool['current_250ml'],
+            '350ml' => (float) $pool['current_350ml'],
+            'liter' => (float) $pool['current_liter'],
+            'gallon' => (float) $pool['current_gallon'],
+        ];
+        $total = $bySize['250ml'] + $bySize['350ml'] + $bySize['liter'] + $bySize['gallon'];
+        $grand += $total;
+        $variants[] = [
+            'variant' => $variant,
+            'label' => ucfirst($variant),
+            'packaging_row_id' => (int) $pool['id'],
+            'total_bottles' => $total,
+            'by_size' => $bySize,
+            'current_250ml' => $bySize['250ml'],
+            'current_350ml' => $bySize['350ml'],
+            'current_liter' => $bySize['liter'],
+            'current_gallon' => $bySize['gallon'],
+            'initial_250ml' => (float) ($pool['initial_250ml'] ?? 0),
+            'initial_350ml' => (float) ($pool['initial_350ml'] ?? 0),
+            'initial_liter' => (float) ($pool['initial_liter'] ?? 0),
+            'initial_gallon' => (float) ($pool['initial_gallon'] ?? 0),
+        ];
+    }
+
+    return [
+        'scope' => 'packaging_variant_pools',
+        'note' => 'Finished honey on-hand by variant pool (Light / Amber / Dark).',
+        'variants' => $variants,
+        'total_bottles' => $grand,
+    ];
+}
+
+/**
+ * @return array{variants: list<array<string,mixed>>}
+ */
+function honey_production_variant_summary(PDO $pdo): array
+{
+    $st = $pdo->query(
+        'SELECT pr.id, pr.warehouse_row_id, pr.supplier_code, pr.arrival_date,
+                COALESCE(pr.stock_out_date, DATE(pr.transferred_at)) AS stock_out_date,
+                pr.daily_group_key, pr.variant, pr.current_qty, pr.initial_qty,
+                COALESCE(pr.is_active, 1) AS is_active,
+                pr.transferred_at, pr.created_at
+         FROM honey_production_rows pr
+         WHERE pr.variant IN ("light", "amber", "dark")
+         ORDER BY FIELD(pr.variant, "light", "amber", "dark"),
+                  COALESCE(pr.stock_out_date, DATE(pr.transferred_at)) DESC,
+                  pr.id DESC'
+    );
+    $byVariant = [
+        'light' => [],
+        'amber' => [],
+        'dark' => [],
+    ];
+    foreach ($st ? $st->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
+        $v = honey_normalize_variant((string) $row['variant']);
+        if (!isset($byVariant[$v])) {
+            continue;
+        }
+        $byVariant[$v][] = $row;
+    }
+
+    $out = [];
+    foreach (['light', 'amber', 'dark'] as $variant) {
+        $lots = $byVariant[$variant];
+        $current = 0.0;
+        $initial = 0.0;
+        $activeLots = 0;
+        foreach ($lots as $lot) {
+            $current += (float) $lot['current_qty'];
+            $initial += (float) $lot['initial_qty'];
+            if ((int) ($lot['is_active'] ?? 1) === 1) {
+                $activeLots++;
+            }
+        }
+        $out[] = [
+            'variant' => $variant,
+            'label' => ucfirst($variant),
+            'current_qty' => $current,
+            'initial_qty' => $initial,
+            'lot_count' => count($lots),
+            'active_lot_count' => $activeLots,
+            'lots' => $lots,
+        ];
+    }
+
+    return ['variants' => $out];
+}
+
 function honey_packaging_size_columns(string $size): array
 {
     return match ($size) {

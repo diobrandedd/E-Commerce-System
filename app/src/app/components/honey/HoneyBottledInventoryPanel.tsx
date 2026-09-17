@@ -16,7 +16,7 @@ interface HoneyBottledInventoryPanelProps {
 }
 
 export function HoneyBottledInventoryPanel({
-  emptyMessage = "No bottled batch stock yet. Finish packaging from production to create batch numbers.",
+  emptyMessage = "No finished honey on hand yet. Stock in bottles from Production first.",
 }: HoneyBottledInventoryPanelProps) {
   const [inventory, setInventory] = useState<PackagingInventorySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +38,7 @@ export function HoneyBottledInventoryPanel({
 
   return (
     <section>
-      <h2 className="text-sm font-semibold mb-3">Total inventory (batch bottled)</h2>
+      <h2 className="text-sm font-semibold mb-3">Finished honey on hand</h2>
       {loading ? (
         <div className="flex justify-center py-8 text-muted-foreground">
           <Loader2 className="animate-spin" size={20} />

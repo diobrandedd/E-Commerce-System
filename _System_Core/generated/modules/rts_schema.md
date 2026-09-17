@@ -1,7 +1,7 @@
 ---
 title: rts_schema
 source: includes/rts_schema.php
-generated: 2026-09-17T05:12:56+02:00
+generated: 2026-09-17T11:13:49+02:00
 type: module
 function_count: 13
 ---
@@ -48,11 +48,11 @@ function_count: 13
 - `includes/fulfillment_packing.php`:711 — `$hasDamaged = rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty');`
 - `includes/fulfillment_packing.php`:761 — `if (!rts_db_has_column($pdo, 'fulfillment_packing_balances', 'damaged_qty')) {`
 - `includes/fulfillment_packing.php`:957 — `$hasBubbleCols = rts_db_has_column($pdo, 'fulfillment_packing_issue_lines', 'bubble_width_cm');`
-- `includes/honey_bottle_barcodes.php`:2000 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
-- `includes/honey_bottle_barcodes.php`:2001 — `$hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
-- `includes/honey_bottle_barcodes.php`:2276 — `$hasUnit = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
-- `includes/honey_bottle_barcodes.php`:2277 — `$hasSess = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
-- `includes/honey_bottle_barcodes.php`:2278 — `$hasPos = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');`
+- `includes/honey_bottle_barcodes.php`:1988 — `$hasUnitCol = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/honey_bottle_barcodes.php`:1989 — `$hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
+- `includes/honey_bottle_barcodes.php`:2264 — `$hasUnit = rts_db_has_column($pdo, 'honey_sales_log', 'bottle_unit_id');`
+- `includes/honey_bottle_barcodes.php`:2265 — `$hasSess = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');`
+- `includes/honey_bottle_barcodes.php`:2266 — `$hasPos = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');`
 - _… and 55 more (run impact.php for full list)_
 
 ## rts_cases_void_sql {#rts_cases_void_sql}

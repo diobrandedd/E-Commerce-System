@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-09-17T05:12:06+02:00
+generated: 2026-09-17T11:12:54+02:00
 type: memory-bank
-edge_count: 447
+edge_count: 450
 ---
 
 
@@ -218,6 +218,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_bottle_barcodes.php` | `includes/dept_inventory.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/honey_inventory.php` |
+| `includes/honey_bottle_barcodes.php` | `includes/honey_inventory.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/rts_inventory_sync.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/rts_inventory_sync.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/rts_inventory_sync.php` |
@@ -229,10 +230,12 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_inventory.php` | `includes/dept_production.php` |
 | `includes/honey_inventory.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/honey_inventory.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/honey_inventory.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/honey_inventory.php` | `includes/honey_pricing.php` |
 | `includes/honey_inventory.php` | `includes/honey_volume.php` |
 | `includes/honey_inventory.php` | `includes/inventory_edit_log.php` |
 | `includes/honey_inventory.php` | `includes/material_inventory.php` |
+| `includes/honey_inventory.php` | `includes/sku_barcodes.php` |
 | `includes/honey_inventory.php` | `includes/sku_barcodes.php` |
 | `includes/honey_inventory.php` | `includes/suppliers.php` |
 | `includes/honey_parcel_inventory.php` | `includes/dept_inventory.php` |

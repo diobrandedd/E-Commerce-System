@@ -6,7 +6,7 @@ export function HoneyProductInventoryPage() {
   return (
     <PageLayout
       title="Honey"
-      subtitle="Finished bottled products — batch inventory by variant and size"
+      subtitle="Finished bottled products on hand — by variant and size"
       actions={
         <div className="flex flex-wrap gap-2">
           <Link
@@ -19,7 +19,7 @@ export function HoneyProductInventoryPage() {
             to="/inventory/raw-materials/honey/packaging"
             className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border hover:bg-secondary"
           >
-            Batch rows →
+            Stock-in report →
           </Link>
         </div>
       }

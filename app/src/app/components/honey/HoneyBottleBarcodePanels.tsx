@@ -178,22 +178,7 @@ type PendingScan = {
   kind: "sku" | "unique";
 };
 
-function isScanSelectableProductionLot(lot: ProductionLotOption): boolean {
-  if (lot.is_active === 0 || lot.is_active === false) return false;
-  const qty = Number(lot.current_qty);
-  if (!Number.isFinite(qty)) return false;
-  // Hide exact OOS (0). Overdrawn (negative) stays selectable so ops can finish bottling.
-  return Math.abs(qty) > 1e-9;
-}
-
-export function HoneyProductionScanStockInPanel({
-  lots,
-  onStocked,
-}: {
-  lots: ProductionLotOption[];
-  onStocked?: () => void;
-}) {
-  const [productionRowId, setProductionRowId] = useState<number>(0);
+export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () => void }) {
   const [code, setCode] = useState("");
   const [flash, setFlash] = useState<"ok" | "err" | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -208,15 +193,6 @@ export function HoneyProductionScanStockInPanel({
   const qtyInputRef = useRef<HTMLInputElement>(null);
   const reduceMotion = useReducedMotion();
   const { inputRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
-
-  const openLots = lots.filter(isScanSelectableProductionLot);
-  const selected = openLots.find(l => l.id === productionRowId) ?? null;
-
-  useEffect(() => {
-    if (productionRowId > 0 && !openLots.some(l => l.id === productionRowId)) {
-      setProductionRowId(0);
-    }
-  }, [openLots, productionRowId]);
 
   useEffect(() => {
     void (async () => {
@@ -256,21 +232,9 @@ export function HoneyProductionScanStockInPanel({
     value: string,
     opts: { qty: number },
   ): Promise<ScannerDecodeFeedback | void> => {
-    if (productionRowId < 1) {
-      playScanBeep("bad");
-      setFlash("err");
-      setWarn(null);
-      setMsg("Select a production lot before stocking in.");
-      window.setTimeout(() => setFlash(null), 700);
-      refocus();
-      return { kind: "error", message: "Select a production lot first." };
-    }
     setSaving(true);
     try {
-      const res = await bottleBarcodesApi.scanStockIn(value, {
-        qty: opts.qty,
-        production_row_id: productionRowId,
-      });
+      const res = await bottleBarcodesApi.scanStockIn(value, { qty: opts.qty });
       playScanBeep("ok");
       setFlash("ok");
       clearPending();
@@ -283,8 +247,7 @@ export function HoneyProductionScanStockInPanel({
       setMsg(`${res.variant} ${res.size_label} · ${res.code}${qtyBit}${galBit}`);
       setWarn(
         res.production_overdrawn || res.warning
-          ? res.warning ||
-              `Lot overdrawn — ${formatGallons(Math.abs(remain ?? 0))} gal short.`
+          ? res.warning || `Production overdrawn — ${formatGallons(Math.abs(remain ?? 0))} gal short.`
           : null,
       );
       if (res.request) {
@@ -340,27 +303,11 @@ export function HoneyProductionScanStockInPanel({
     const value = (raw ?? code).trim();
     if (!value) return;
     setCode("");
-    if (productionRowId < 1) {
-      playScanBeep("bad");
-      setFlash("err");
-      setMsg("Select a production lot before scanning.");
-      window.setTimeout(() => setFlash(null), 700);
-      refocus();
-      return { kind: "error", message: "Select a production lot first." };
-    }
     try {
       const { lookup } = await skuBarcodesApi.lookup(value);
       if (lookup.lookup_kind === "sku" && lookup.kind === "honey") {
         const variant = String(lookup.variant ?? "");
         const size = String(lookup.size ?? "") as HoneyBottleSize;
-        if (selected && variant && variant !== selected.variant) {
-          playScanBeep("bad");
-          setFlash("err");
-          setMsg(`SKU is ${variant}; selected lot is ${selected.variant}.`);
-          window.setTimeout(() => setFlash(null), 700);
-          refocus();
-          return { kind: "error", message: "Variant mismatch." };
-        }
         playScanBeep("ok");
         setFlash("ok");
         setWarn(null);
@@ -409,52 +356,16 @@ export function HoneyProductionScanStockInPanel({
     }
   };
 
-  const scanDisabled = openLots.length === 0 || saving || !!pending;
+  const scanDisabled = saving || !!pending;
 
   return (
     <AppSectionEnter className="space-y-4">
       <div className="bg-card rounded-xl border border-border p-4 space-y-3 shadow-sm shadow-black/[0.03]">
-        <h3 className="text-sm font-semibold">Scan bottles into packaging (from production)</h3>
+        <h3 className="text-sm font-semibold">Scan bottles into packaging</h3>
         <p className="text-xs text-muted-foreground">
-          Pick an active lot with gallons left (or overdrawn), scan a bottle or SKU barcode, enter how many, then Stock
-          in. Out-of-stock and inactive lots are hidden here. Deducts production gallons using Settings → Honey volume.
-          Same supplier code + arrival + variant share one production lot — later transfers refill that lot.
+          Scan a bottle or SKU barcode, enter how many (SKU), then Stock in. Production gallons deduct automatically by
+          variant (FIFO across supplier lots). No lot or batch picker.
         </p>
-        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block">
-          Production lot
-          <select
-            className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-background"
-            value={productionRowId || ""}
-            onChange={e => {
-              setProductionRowId(Number(e.target.value) || 0);
-              clearPending();
-            }}
-            disabled={saving}
-          >
-            <option value="">Select lot…</option>
-            {openLots.map(l => {
-              const lotQty = Number(l.current_qty);
-              const over = Number.isFinite(lotQty) && lotQty < -1e-9;
-              const when = l.stock_out_date || l.arrival_date || "";
-              return (
-                <option key={l.id} value={l.id}>
-                  {l.supplier_code} · {l.variant}
-                  {when ? ` · ${when}` : ""} ·{" "}
-                  {over
-                    ? `${formatGallons(Math.abs(lotQty))} gal overdrawn`
-                    : `${formatGallons(lotQty)} gal left`}
-                </option>
-              );
-            })}
-          </select>
-        </label>
-        {openLots.length === 0 && (
-          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            {lots.length === 0
-              ? "No production lots yet. Stock out from Warehouse first."
-              : "No active lots with gallons available. Out-of-stock and inactive lots are hidden from this list."}
-          </p>
-        )}
         <div className="flex gap-2">
           <input
             ref={inputRef}
@@ -469,14 +380,14 @@ export function HoneyProductionScanStockInPanel({
                 void onScan();
               }
             }}
-            disabled={scanDisabled || openLots.length === 0}
+            disabled={scanDisabled}
           />
           <Button
             type="button"
             variant="outline"
             className="min-h-11 gap-1.5 shrink-0"
             onClick={() => setCameraOpen(true)}
-            disabled={scanDisabled || openLots.length === 0}
+            disabled={scanDisabled}
           >
             <Camera size={16} /> Camera
           </Button>
@@ -544,7 +455,7 @@ export function HoneyProductionScanStockInPanel({
                     type="button"
                     className="min-h-11 flex-1 sm:flex-none sm:min-w-[8.5rem]"
                     onClick={() => void confirmPending()}
-                    disabled={saving || productionRowId < 1}
+                    disabled={saving}
                   >
                     {saving ? (
                       <>
@@ -560,7 +471,7 @@ export function HoneyProductionScanStockInPanel({
                   type="button"
                   className="min-h-11 w-full"
                   onClick={() => void confirmPending()}
-                  disabled={saving || productionRowId < 1}
+                  disabled={saving}
                 >
                   {saving ? (
                     <>
@@ -571,11 +482,9 @@ export function HoneyProductionScanStockInPanel({
                   )}
                 </Button>
               )}
-              {pending.kind === "sku" && selected && previewGallons > 0 ? (
+              {pending.kind === "sku" && previewGallons > 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Uses ~{formatGallons(previewGallons)} gal ·{" "}
-                  {formatGallons(Number(selected.current_qty) - previewGallons)} remain after
-                  {previewGallons > Number(selected.current_qty) + 1e-9 ? " (will overdraw — still allowed)" : ""}
+                  Uses ~{formatGallons(previewGallons)} gal from {pending.variant} production (FIFO)
                 </p>
               ) : null}
             </motion.div>

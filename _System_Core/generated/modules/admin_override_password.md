@@ -1,7 +1,7 @@
 ---
 title: admin_override_password
 source: includes/admin_override_password.php
-generated: 2026-09-17T05:12:06+02:00
+generated: 2026-09-17T11:12:54+02:00
 type: module
 function_count: 4
 ---
@@ -42,11 +42,11 @@ function_count: 4
 
 **Callers (11):**
 
-- `api/v1/honey.php`:278 — `api_require_admin_override_password($input);`
-- `api/v1/honey.php`:823 — `api_require_admin_override_password($input);`
-- `api/v1/honey.php`:1439 — `api_require_admin_override_password($input);`
-- `api/v1/honey.php`:1467 — `api_require_admin_override_password($input);`
-- `api/v1/honey.php`:1495 — `api_require_admin_override_password($input);`
+- `api/v1/honey.php`:280 — `api_require_admin_override_password($input);`
+- `api/v1/honey.php`:839 — `api_require_admin_override_password($input);`
+- `api/v1/honey.php`:1455 — `api_require_admin_override_password($input);`
+- `api/v1/honey.php`:1483 — `api_require_admin_override_password($input);`
+- `api/v1/honey.php`:1511 — `api_require_admin_override_password($input);`
 - `api/v1/inventory_check.php`:363 — `api_require_admin_override_password($in);`
 - `api/v1/inventory_check.php`:388 — `api_require_admin_override_password($in);`
 - `api/v1/materials.php`:531 — `api_require_admin_override_password($input);`

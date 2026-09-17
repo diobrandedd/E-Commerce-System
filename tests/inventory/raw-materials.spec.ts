@@ -35,20 +35,22 @@ test.describe("raw materials responsive UI", () => {
   test("navigates every Raw Honey stage with the correct responsive inventory view", async ({ page }, testInfo) => {
     const isMobile = testInfo.project.name === "mobile-chrome";
     const stages = [
-      { path: "/inventory/raw-materials/honey/warehouse", mobile: "honey-warehouse-mobile-cards", desktop: "honey-warehouse-desktop-table" },
-      { path: "/inventory/raw-materials/honey/production", mobile: "honey-production-mobile-cards", desktop: "honey-production-desktop-table" },
-      { path: "/inventory/raw-materials/honey/packaging", mobile: "honey-packaging-mobile-cards", desktop: "honey-packaging-desktop-table" },
+      { path: "/inventory/raw-materials/honey/warehouse", mobile: "honey-warehouse-mobile-cards", desktop: "honey-warehouse-desktop-table", split: true },
+      { path: "/inventory/raw-materials/honey/production", shared: "honey-production-variant-rows" },
+      { path: "/inventory/raw-materials/honey/packaging", shared: "honey-packaging-stocked-cards" },
     ];
 
     for (const stage of stages) {
       await openRoute(page, stage.path);
       await expect(page.getByRole("heading", { name: "Raw Honey" })).toBeVisible();
-      if (isMobile) {
-        await expect(page.getByTestId(stage.mobile)).toBeVisible();
-        await expect(page.getByTestId(stage.desktop)).toBeHidden();
+      if ("shared" in stage && stage.shared) {
+        await expect(page.getByTestId(stage.shared)).toBeVisible();
+      } else if (isMobile) {
+        await expect(page.getByTestId(stage.mobile!)).toBeVisible();
+        await expect(page.getByTestId(stage.desktop!)).toBeHidden();
       } else {
-        await expect(page.getByTestId(stage.mobile)).toBeHidden();
-        await expect(page.getByTestId(stage.desktop)).toBeVisible();
+        await expect(page.getByTestId(stage.mobile!)).toBeHidden();
+        await expect(page.getByTestId(stage.desktop!)).toBeVisible();
       }
       await expectNoDocumentOverflow(page);
     }
@@ -154,7 +156,7 @@ test.describe("raw materials responsive UI", () => {
     await expect(guide).toBeHidden();
   });
 
-  test("uses semantic Packaging detail actions", async ({ page }, testInfo) => {
+  test("Packaging shows stocked-in report by scan date", async ({ page }) => {
     await page.route("**/rts/api/v1/bottle_barcodes.php?action=packaging_scan_report*", async route => {
       await route.fulfill({
         status: 200,
@@ -163,31 +165,20 @@ test.describe("raw materials responsive UI", () => {
           ok: true,
           error: null,
           data: {
-            dates: [],
-            bottling_dates: ["2026-09-09"],
+            dates: ["2026-09-09"],
+            bottling_dates: [],
             scan_date: "all",
             bottling_date: null,
-            totals: { total: 10, by_variant: [] },
-            by_scanner: [],
-            rows: [{
-              id: 77,
-              supplier_code: "TEST-LOT",
-              batch_no: "TEST-BATCH",
-              bottling_date: "2026-09-09",
-              variant: "light",
-              current_liter: "4",
-              initial_liter: "4",
-              current_250ml: "3",
-              initial_250ml: "3",
-              current_350ml: "2",
-              initial_350ml: "2",
-              current_gallon: "1",
-              initial_gallon: "1",
-              scanned_liter: "4",
-              scanned_250ml: "3",
-              scanned_350ml: "2",
-              scanned_gallon: "1",
-            }],
+            totals: {
+              total: 10,
+              by_variant: [
+                { variant: "light", total: 10, liter: 4, "250ml": 3, "350ml": 2, gallon: 1 },
+                { variant: "amber", total: 0, liter: 0, "250ml": 0, "350ml": 0, gallon: 0 },
+                { variant: "dark", total: 0, liter: 0, "250ml": 0, "350ml": 0, gallon: 0 },
+              ],
+            },
+            by_scanner: [{ user_id: 1, name: "Test Scanner", qty: 10 }],
+            rows: [],
           },
         }),
       });
@@ -195,63 +186,19 @@ test.describe("raw materials responsive UI", () => {
 
     await openRoute(page, "/inventory/raw-materials/honey/packaging");
     await expect(page.getByTestId("packaging-scan-date-filter")).toBeVisible();
-    await expect(page.getByTestId("packaging-bottling-date-filter")).toBeVisible();
-    await expect(page.getByText(/current on hand/i)).toBeVisible();
-    await expect(page.getByText(/Edit updates those levels/i)).toBeVisible();
+    await expect(page.getByText(/Stocked into inventory/i)).toBeVisible();
+    await expect(page.getByText(/scanned into inventory/i).first()).toBeVisible();
+    await expect(page.getByTestId("honey-packaging-stocked-cards")).toBeVisible();
     await page.getByTestId("packaging-scan-date-filter").selectOption("all");
     await expect(page.getByTestId("packaging-active-filters")).toBeHidden();
-    const detailName = testInfo.project.name === "mobile-chrome" ? "View scan details" : "Details";
-    const detailButton = page.getByRole("button", { name: detailName });
-    await expect(detailButton).toBeVisible();
-    if (testInfo.project.name === "mobile-chrome") {
-      expect((await detailButton.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
-    }
+    await expect(page.getByText("Test Scanner")).toBeVisible();
   });
 
-  test("filters Packaging report by bottling date", async ({ page }) => {
+  test("filters Packaging stocked-in report by scan date", async ({ page }) => {
     await page.route("**/rts/api/v1/bottle_barcodes.php?action=packaging_scan_report*", async route => {
       const url = new URL(route.request().url());
-      const bottling = url.searchParams.get("bottling_date") ?? "all";
-      const rows =
-        bottling === "2026-09-08"
-          ? [{
-              id: 8,
-              supplier_code: "JR",
-              batch_no: "JR12345",
-              bottling_date: "2026-09-08",
-              variant: "dark",
-              current_liter: "0",
-              initial_liter: "0",
-              current_250ml: "0",
-              initial_250ml: "0",
-              current_350ml: "0",
-              initial_350ml: "0",
-              current_gallon: "0",
-              initial_gallon: "0",
-              scanned_liter: "1",
-              scanned_250ml: "0",
-              scanned_350ml: "0",
-              scanned_gallon: "0",
-            }]
-          : [{
-              id: 9,
-              supplier_code: "JR",
-              batch_no: "JR12345",
-              bottling_date: "2026-09-09",
-              variant: "dark",
-              current_liter: "0",
-              initial_liter: "0",
-              current_250ml: "0",
-              initial_250ml: "0",
-              current_350ml: "0",
-              initial_350ml: "0",
-              current_gallon: "0",
-              initial_gallon: "0",
-              scanned_liter: "2",
-              scanned_250ml: "0",
-              scanned_350ml: "0",
-              scanned_gallon: "0",
-            }];
+      const scan = url.searchParams.get("scan_date") ?? "all";
+      const total = scan === "2026-09-08" ? 1 : 2;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -260,27 +207,30 @@ test.describe("raw materials responsive UI", () => {
           error: null,
           data: {
             dates: ["2026-09-09", "2026-09-08"],
-            bottling_dates: ["2026-09-09", "2026-09-08"],
-            scan_date: "all",
-            bottling_date: bottling === "all" ? null : bottling,
-            totals: { total: rows.reduce((n, r) => n + Number(r.scanned_liter), 0), by_variant: [] },
+            bottling_dates: [],
+            scan_date: scan === "all" ? null : scan,
+            bottling_date: null,
+            totals: {
+              total,
+              by_variant: [
+                { variant: "dark", total, liter: total, "250ml": 0, "350ml": 0, gallon: 0 },
+              ],
+            },
             by_scanner: [],
-            rows,
+            rows: [],
           },
         }),
       });
     });
 
     await openRoute(page, "/inventory/raw-materials/honey/packaging");
-    await page.getByTestId("packaging-scan-date-filter").selectOption("all");
-    await page.getByTestId("packaging-bottling-date-filter").selectOption("2026-09-08");
+    await page.getByTestId("packaging-scan-date-filter").selectOption("2026-09-08");
     await expect(page.getByTestId("packaging-active-filters")).toBeVisible();
-    await expect(page.getByText("JR12345").first()).toBeVisible();
-    await expect(page.getByText(/Bottled Sep 8, 2026|Sep 8, 2026/).first()).toBeVisible();
+    await expect(page.getByText(/1 bottle/i).first()).toBeVisible();
   });
 
   test("shows an actionable production load error", async ({ page }) => {
-    await page.route("**/rts/api/v1/honey.php?action=production_list*", async route => {
+    await page.route("**/rts/api/v1/honey.php?action=production_variant_list*", async route => {
       await route.fulfill({
         status: 503,
         contentType: "application/json",
