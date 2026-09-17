@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-16T12:00:36+02:00
+generated: 2026-09-17T05:12:06+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -193,6 +193,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_financials]] |
 | `api/v1/edit_requests.php` | [[modules/edit_requests#api_er_list]] |
 | `api/v1/honey.php` | [[modules/honey#api_honey_correction_list]] |
+| `api/v1/inventory_check.php` | [[modules/inventory_check#api_inventory_check_compare_get]] |
 | `api/v1/reports.php` | [[modules/reports#api_reports_dept_summary]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_list]] |
 | `api/v1/staff.php` | [[modules/staff#api_staff_create]] |
@@ -243,6 +244,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_log]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_list]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_summaries_by_ids]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_applied_runs_list]] |
 | `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
@@ -1066,6 +1069,9 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_update]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_remove]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_summaries_by_ids]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_user_can_access_compare_run]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_applied_runs_list]] |
 
 ## `inventory_check_scans`
 
@@ -1089,11 +1095,13 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `api/v1/inventory_check.php` | [[modules/inventory_check#api_inventory_check_compare_get]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_get]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_list]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_applied_runs_list]] |
 | `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_compare_run_for_events]] |
 | `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_assert_not_already_applied]] |
 | `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_finalize_with_sync]] |

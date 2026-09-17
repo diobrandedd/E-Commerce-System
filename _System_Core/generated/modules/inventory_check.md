@@ -1,9 +1,9 @@
 ---
 title: inventory_check
 source: includes/inventory_check.php
-generated: 2026-09-16T12:01:04+02:00
+generated: 2026-09-17T05:12:34+02:00
 type: module
-function_count: 33
+function_count: 37
 ---
 
 
@@ -32,25 +32,27 @@ function_count: 33
 
 ## inventory_check_can_view_all {#inventory_check_can_view_all}
 
-**Callers (6):**
+**Callers (7):**
 
 - `api/v1/inventory_check.php`:21 — `if (!inventory_check_can_view_all($user)) {`
-- `api/v1/inventory_check.php`:89 — `$viewAll = inventory_check_can_view_all($user);`
-- `api/v1/inventory_check.php`:158 — `$onlyMine = inventory_check_can_view_all($user) ? null : (int) $user['id'];`
-- `api/v1/inventory_check.php`:366 — `if (!inventory_check_can_manage($user) && !inventory_check_can_view_all($user)) {`
+- `api/v1/inventory_check.php`:90 — `$viewAll = inventory_check_can_view_all($user);`
+- `api/v1/inventory_check.php`:159 — `$onlyMine = inventory_check_can_view_all($user) ? null : (int) $user['id'];`
+- `api/v1/inventory_check.php`:367 — `if (!inventory_check_can_manage($user) && !inventory_check_can_view_all($user)) {`
 - `includes/inventory_check.php`:126 — `return inventory_check_can_view_all($user) || inventory_check_can_manage($user);`
+- `includes/inventory_check.php`:1366 — `if (inventory_check_can_view_all($user) || inventory_check_can_manage($user)) {`
 - `includes/inventory_check_apply.php`:412 — `if (!inventory_check_can_manage($user) && !inventory_check_can_view_all($user)) {`
 
 ## inventory_check_can_manage {#inventory_check_can_manage}
 
-**Callers (7):**
+**Callers (8):**
 
 - `api/v1/inventory_check.php`:31 — `if (!inventory_check_can_manage($user)) {`
-- `api/v1/inventory_check.php`:93 — `'can_manage' => inventory_check_can_manage($user),`
-- `api/v1/inventory_check.php`:210 — `inventory_check_can_manage($user),`
-- `api/v1/inventory_check.php`:245 — `inventory_check_can_manage($user)`
-- `api/v1/inventory_check.php`:366 — `if (!inventory_check_can_manage($user) && !inventory_check_can_view_all($user)) {`
+- `api/v1/inventory_check.php`:94 — `'can_manage' => inventory_check_can_manage($user),`
+- `api/v1/inventory_check.php`:211 — `inventory_check_can_manage($user),`
+- `api/v1/inventory_check.php`:246 — `inventory_check_can_manage($user)`
+- `api/v1/inventory_check.php`:367 — `if (!inventory_check_can_manage($user) && !inventory_check_can_view_all($user)) {`
 - `includes/inventory_check.php`:126 — `return inventory_check_can_view_all($user) || inventory_check_can_manage($user);`
+- `includes/inventory_check.php`:1366 — `if (inventory_check_can_view_all($user) || inventory_check_can_manage($user)) {`
 - `includes/inventory_check_apply.php`:412 — `if (!inventory_check_can_manage($user) && !inventory_check_can_view_all($user)) {`
 
 ## inventory_check_serialize_event {#inventory_check_serialize_event}
@@ -75,8 +77,8 @@ function_count: 33
 
 **Callers (11):**
 
-- `api/v1/inventory_check.php`:324 — `$ev = inventory_check_event_get($pdo, $id);`
-- `api/v1/inventory_check.php`:396 — `$ev = inventory_check_event_get($pdo, $eid);`
+- `api/v1/inventory_check.php`:325 — `$ev = inventory_check_event_get($pdo, $id);`
+- `api/v1/inventory_check.php`:397 — `$ev = inventory_check_event_get($pdo, $eid);`
 - `includes/inventory_check.php`:112 — `return $id > 0 ? inventory_check_event_get($pdo, $id) : null;`
 - `includes/inventory_check.php`:135 — `$event = inventory_check_event_get($pdo, $eventId);`
 - `includes/inventory_check.php`:160 — `return inventory_check_event_get($pdo, (int) $pdo->lastInsertId());`
@@ -93,7 +95,7 @@ function_count: 33
 
 **Callers (2):**
 
-- `api/v1/inventory_check.php`:88 — `$event = inventory_check_event_current($pdo, (int) $user['id']);`
+- `api/v1/inventory_check.php`:89 — `$event = inventory_check_event_current($pdo, (int) $user['id']);`
 - `includes/inventory_check.php`:150 — `$open = inventory_check_event_current($pdo, $userId);`
 
 ## inventory_check_user_can_access_event {#inventory_check_user_can_access_event}
@@ -114,7 +116,7 @@ function_count: 33
 
 **Callers (1):**
 
-- `api/v1/inventory_check.php`:109 — `api_ok(['event' => inventory_check_event_open(`
+- `api/v1/inventory_check.php`:110 — `api_ok(['event' => inventory_check_event_open(`
 
 ## inventory_check_event_close {#inventory_check_event_close}
 
@@ -122,7 +124,7 @@ function_count: 33
 
 **Callers (2):**
 
-- `api/v1/inventory_check.php`:128 — `api_ok(['event' => inventory_check_event_close(`
+- `api/v1/inventory_check.php`:129 — `api_ok(['event' => inventory_check_event_close(`
 - `includes/inventory_check_apply.php`:440 — `$event = inventory_check_event_close($pdo, $userId, $eventIds[0]);`
 
 ## inventory_check_event_cancel {#inventory_check_event_cancel}
@@ -131,7 +133,7 @@ function_count: 33
 
 **Callers (1):**
 
-- `api/v1/inventory_check.php`:147 — `inventory_check_event_cancel(ims_pdo(), $eventId);`
+- `api/v1/inventory_check.php`:148 — `inventory_check_event_cancel(ims_pdo(), $eventId);`
 
 ## inventory_check_event_list {#inventory_check_event_list}
 
@@ -139,7 +141,7 @@ function_count: 33
 
 **Callers (1):**
 
-- `api/v1/inventory_check.php`:159 — `api_ok(inventory_check_event_list(`
+- `api/v1/inventory_check.php`:160 — `api_ok(inventory_check_event_list(`
 
 ## inventory_check_serialize_scan {#inventory_check_serialize_scan}
 
@@ -161,7 +163,7 @@ function_count: 33
 
 **Callers (1):**
 
-- `api/v1/inventory_check.php`:176 — `$res = inventory_check_scan(`
+- `api/v1/inventory_check.php`:177 — `$res = inventory_check_scan(`
 
 ## inventory_check_packaging_by_batch {#inventory_check_packaging_by_batch}
 
@@ -178,14 +180,14 @@ function_count: 33
 
 **Callers (1):**
 
-- `api/v1/inventory_check.php`:206 — `$scan = inventory_check_scan_update(`
+- `api/v1/inventory_check.php`:207 — `$scan = inventory_check_scan_update(`
 
 ## inventory_check_compare_preview {#inventory_check_compare_preview}
 
 **Callers (2):**
 
-- `api/v1/inventory_check.php`:305 — `api_ok(inventory_check_compare_preview(ims_pdo(), $eventId));`
-- `api/v1/inventory_check.php`:330 — `api_ok(inventory_check_compare_preview($pdo, $ids[0], $ids));`
+- `api/v1/inventory_check.php`:306 — `api_ok(inventory_check_compare_preview(ims_pdo(), $eventId));`
+- `api/v1/inventory_check.php`:331 — `api_ok(inventory_check_compare_preview($pdo, $ids[0], $ids));`
 
 ## inventory_check_resolve_honey {#inventory_check_resolve_honey}
 
@@ -225,7 +227,7 @@ function_count: 33
 
 **Callers (1):**
 
-- `api/v1/inventory_check.php`:241 — `inventory_check_scan_remove(`
+- `api/v1/inventory_check.php`:242 — `inventory_check_scan_remove(`
 
 ## inventory_check_summary {#inventory_check_summary}
 
@@ -233,11 +235,11 @@ function_count: 33
 
 **Callers (5):**
 
-- `api/v1/inventory_check.php`:97 — `? inventory_check_summary($pdo, (int) $event['id'], null)`
-- `api/v1/inventory_check.php`:194 — `'summary' => inventory_check_summary($pdo, $eventId, null),`
-- `api/v1/inventory_check.php`:229 — `'summary' => $eventId > 0 ? inventory_check_summary($pdo, $eventId, null) : null,`
-- `api/v1/inventory_check.php`:254 — `'summary' => $eventId > 0 ? inventory_check_summary($pdo, $eventId, null) : null,`
-- `api/v1/inventory_check.php`:265 — `api_ok(inventory_check_summary(ims_pdo(), $eventId, null));`
+- `api/v1/inventory_check.php`:98 — `? inventory_check_summary($pdo, (int) $event['id'], null)`
+- `api/v1/inventory_check.php`:195 — `'summary' => inventory_check_summary($pdo, $eventId, null),`
+- `api/v1/inventory_check.php`:230 — `'summary' => $eventId > 0 ? inventory_check_summary($pdo, $eventId, null) : null,`
+- `api/v1/inventory_check.php`:255 — `'summary' => $eventId > 0 ? inventory_check_summary($pdo, $eventId, null) : null,`
+- `api/v1/inventory_check.php`:266 — `api_ok(inventory_check_summary(ims_pdo(), $eventId, null));`
 
 ## inventory_check_scan_log {#inventory_check_scan_log}
 
@@ -245,13 +247,13 @@ function_count: 33
 
 **Callers (1):**
 
-- `api/v1/inventory_check.php`:286 — `api_ok(inventory_check_scan_log(`
+- `api/v1/inventory_check.php`:287 — `api_ok(inventory_check_scan_log(`
 
 ## inventory_check_compare_run {#inventory_check_compare_run}
 
 **Callers (1):**
 
-- `api/v1/inventory_check.php`:345 — `api_ok(inventory_check_compare_run(`
+- `api/v1/inventory_check.php`:346 — `api_ok(inventory_check_compare_run(`
 
 ## inventory_check_compare_build {#inventory_check_compare_build}
 
@@ -282,7 +284,7 @@ function_count: 33
 
 **Callers (3):**
 
-- `api/v1/inventory_check.php`:417 — `$compare = inventory_check_compare_get(ims_pdo(), (int) ($_GET['run_id'] ?? 0));`
+- `api/v1/inventory_check.php`:435 — `api_ok(inventory_check_compare_get($pdo, $runId));`
 - `includes/inventory_check_apply.php`:81 — `return inventory_check_compare_get($pdo, $runId, $event, $eventIds);`
 - `includes/inventory_check_apply.php`:450 — `'compare' => inventory_check_compare_get($pdo, $runId, $event, $eventIds),`
 
@@ -301,5 +303,37 @@ function_count: 33
 
 **Callers (1):**
 
-- `api/v1/inventory_check.php`:435 — `api_ok(['runs' => inventory_check_compare_list(ims_pdo(), $eventId)]);`
+- `api/v1/inventory_check.php`:450 — `api_ok(['runs' => inventory_check_compare_list(ims_pdo(), $eventId)]);`
+
+## inventory_check_parse_merged_event_ids {#inventory_check_parse_merged_event_ids}
+
+**Callers (3):**
+
+- `includes/inventory_check.php`:1369 — `$ids = inventory_check_parse_merged_event_ids(`
+- `includes/inventory_check.php`:1417 — `$sessionIds = inventory_check_parse_merged_event_ids(`
+- `includes/inventory_check_apply.php`:471 — `$eventIds = inventory_check_parse_merged_event_ids($mergedCsv, $eventId);`
+
+## inventory_check_event_summaries_by_ids {#inventory_check_event_summaries_by_ids}
+
+**Tables:** `inventory_check_events`, `users`
+
+**Callers (1):**
+
+- `includes/inventory_check.php`:1421 — `$sessions = inventory_check_event_summaries_by_ids($pdo, $sessionIds);`
+
+## inventory_check_user_can_access_compare_run {#inventory_check_user_can_access_compare_run}
+
+**Tables:** `inventory_check_events`
+
+**Callers (1):**
+
+- `api/v1/inventory_check.php`:432 — `if (!inventory_check_user_can_access_compare_run($pdo, $user, $runRow)) {`
+
+## inventory_check_applied_runs_list {#inventory_check_applied_runs_list}
+
+**Tables:** `inventory_check_compare_runs`, `users`, `inventory_check_events`
+
+**Callers (1):**
+
+- `api/v1/inventory_check.php`:457 — `api_ok(inventory_check_applied_runs_list(`
 

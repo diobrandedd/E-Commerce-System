@@ -4,6 +4,7 @@ import { Camera, ClipboardCheck, Loader2, Plus, Scale, Trash2, XCircle } from "l
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { InventoryCheckBatchDocs } from "@/app/components/inventory/InventoryCheckBatchDocs";
+import { InventoryCheckAppliedRunDetailModal } from "@/app/components/inventory/InventoryCheckAppliedRunDetailModal";
 import { InventoryCheckHistoryDetailModal } from "@/app/components/inventory/InventoryCheckHistoryDetailModal";
 import { AdminOverridePasswordModal } from "@/app/components/inventory/AdminOverridePasswordModal";
 import { Button } from "@/app/components/ui/button";
@@ -21,6 +22,7 @@ import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
 import {
   inventoryCheckApi,
+  type InventoryCheckAppliedRun,
   type InventoryCheckCompareResult,
   type InventoryCheckContext,
   type InventoryCheckEvent,
@@ -90,6 +92,9 @@ export function InventoryCheckPage() {
   const [pwBusy, setPwBusy] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
   const [historyDetail, setHistoryDetail] = useState<InventoryCheckEvent | null>(null);
+  const [appliedRuns, setAppliedRuns] = useState<InventoryCheckAppliedRun[]>([]);
+  const [appliedRunsTotal, setAppliedRunsTotal] = useState(0);
+  const [appliedRunDetail, setAppliedRunDetail] = useState<InventoryCheckAppliedRun | null>(null);
 
   const [editId, setEditId] = useState<number | null>(null);
   const [editQty, setEditQty] = useState("");
@@ -154,11 +159,19 @@ export function InventoryCheckPage() {
         const res = await inventoryCheckApi.eventList(1);
         setHistory(res.rows);
         setSelectedHistoryIds([]);
+        if (canViewAll) {
+          const applied = await inventoryCheckApi.appliedRunsList(1, 25);
+          setAppliedRuns(applied.rows);
+          setAppliedRunsTotal(applied.total);
+        } else {
+          setAppliedRuns([]);
+          setAppliedRunsTotal(0);
+        }
       } catch (e) {
         setError(e instanceof ApiError ? e.message : "Could not load audit history.");
       }
     })();
-  }, [showHistory]);
+  }, [showHistory, canViewAll]);
 
   const openCount = async () => {
     setBusy(true);
@@ -575,6 +588,15 @@ export function InventoryCheckPage() {
       setPwOpen(false);
       setCompareOpen(false);
       await loadContext();
+      if (canViewAll) {
+        try {
+          const applied = await inventoryCheckApi.appliedRunsList(1, 25);
+          setAppliedRuns(applied.rows);
+          setAppliedRunsTotal(applied.total);
+        } catch {
+          /* history refresh is best-effort */
+        }
+      }
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not update inventory.";
       setPwError(msg);
@@ -806,6 +828,116 @@ export function InventoryCheckPage() {
                 </div>
               </>
             )}
+            {canViewAll ? (
+              <div className="space-y-3 pt-4 border-t border-border">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Confirmed inventory updates
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Stock applied from Complete or merged Compare — frozen mismatch lines.
+                  </p>
+                </div>
+                {appliedRuns.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No confirmed inventory updates yet.</p>
+                ) : (
+                  <>
+                    <div className="sm:hidden space-y-3">
+                      {appliedRuns.map(run => (
+                        <article
+                          key={run.id}
+                          className="rounded-xl border border-border bg-card p-4 space-y-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold">
+                                {run.is_merged ? "Merged confirm" : "Session confirm"}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {run.stock_applied_at
+                                  ? new Date(run.stock_applied_at.replace(" ", "T")).toLocaleString()
+                                  : "—"}
+                                {run.stock_applied_by_name ? ` · ${run.stock_applied_by_name}` : ""}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {run.sessions.map(s => s.count_date).join(" · ") || run.primary_count_date}
+                              </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground text-right shrink-0">
+                              {run.mismatch_count} mismatch
+                              {run.mismatch_count === 1 ? "" : "es"}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="min-h-11 w-full"
+                            onClick={() => setAppliedRunDetail(run)}
+                          >
+                            View mismatches
+                          </Button>
+                        </article>
+                      ))}
+                    </div>
+                    <div className="hidden sm:block overflow-x-auto rounded-xl border border-border">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
+                            <th className="px-3 py-2">Applied</th>
+                            <th className="px-3 py-2">Type</th>
+                            <th className="px-3 py-2">Sessions</th>
+                            <th className="px-3 py-2">By</th>
+                            <th className="px-3 py-2 text-right">Audited</th>
+                            <th className="px-3 py-2 text-right">Mismatches</th>
+                            <th className="px-3 py-2" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {appliedRuns.map(run => (
+                            <tr key={run.id} className={appHoverRow}>
+                              <td className="px-3 py-2 text-xs whitespace-nowrap">
+                                {run.stock_applied_at
+                                  ? new Date(run.stock_applied_at.replace(" ", "T")).toLocaleString()
+                                  : "—"}
+                              </td>
+                              <td className="px-3 py-2">{run.is_merged ? "Merged" : "Single"}</td>
+                              <td className="px-3 py-2 text-xs">
+                                {run.sessions.map(s => s.count_date).join(", ") || run.primary_count_date || "—"}
+                              </td>
+                              <td className="px-3 py-2">{run.stock_applied_by_name || "—"}</td>
+                              <td className="px-3 py-2 text-right tabular-nums">{run.counted_total}</td>
+                              <td
+                                className={`px-3 py-2 text-right tabular-nums font-semibold ${
+                                  run.mismatch_count > 0 ? "text-destructive" : ""
+                                }`}
+                              >
+                                {run.mismatch_count}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="min-h-11"
+                                  onClick={() => setAppliedRunDetail(run)}
+                                >
+                                  View
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {appliedRunsTotal > appliedRuns.length ? (
+                      <p className="text-xs text-muted-foreground">
+                        Showing {appliedRuns.length} of {appliedRunsTotal} confirmed updates.
+                      </p>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
         ) : (
           <div className="space-y-4">
@@ -1242,6 +1374,13 @@ export function InventoryCheckPage() {
 
       {historyDetail ? (
         <InventoryCheckHistoryDetailModal event={historyDetail} onClose={() => setHistoryDetail(null)} />
+      ) : null}
+
+      {appliedRunDetail ? (
+        <InventoryCheckAppliedRunDetailModal
+          run={appliedRunDetail}
+          onClose={() => setAppliedRunDetail(null)}
+        />
       ) : null}
     </PageLayout>
   );

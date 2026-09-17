@@ -1,7 +1,7 @@
 ---
 title: pack_cancel_restock
 source: includes/pack_cancel_restock.php
-generated: 2026-09-16T12:01:13+02:00
+generated: 2026-09-17T05:12:43+02:00
 type: module
 function_count: 11
 ---

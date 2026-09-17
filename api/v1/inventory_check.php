@@ -76,6 +76,7 @@ api_dispatch([
     'compare_run' => 'api_inventory_check_compare_run',
     'compare_get' => 'api_inventory_check_compare_get',
     'compare_list' => 'api_inventory_check_compare_list',
+    'applied_runs_list' => 'api_inventory_check_applied_runs_list',
     'finalize' => 'api_inventory_check_finalize',
     'finalize_merged' => 'api_inventory_check_finalize_merged',
 ]);
@@ -413,11 +414,25 @@ function api_inventory_check_compare_get(): void
 {
     api_method_allowed(['GET']);
     $user = api_inventory_check_require_scan();
+    $pdo = ims_pdo();
     try {
-        $compare = inventory_check_compare_get(ims_pdo(), (int) ($_GET['run_id'] ?? 0));
-        $eventId = (int) ($compare['run']['event_id'] ?? 0);
-        api_inventory_check_require_event_access($user, $eventId);
-        api_ok($compare);
+        $runId = (int) ($_GET['run_id'] ?? 0);
+        $st = $pdo->prepare(
+            'SELECT r.*, u.name AS run_by_name, ua.name AS stock_applied_by_name
+             FROM inventory_check_compare_runs r
+             LEFT JOIN users u ON u.id = r.run_by
+             LEFT JOIN users ua ON ua.id = r.stock_applied_by
+             WHERE r.id = ? LIMIT 1'
+        );
+        $st->execute([$runId]);
+        $runRow = $st->fetch(PDO::FETCH_ASSOC);
+        if ($runRow === false) {
+            api_fail('Comparison run not found.', 404);
+        }
+        if (!inventory_check_user_can_access_compare_run($pdo, $user, $runRow)) {
+            api_fail('Forbidden.', 403);
+        }
+        api_ok(inventory_check_compare_get($pdo, $runId));
     } catch (Throwable $e) {
         if ($e->getMessage() === 'Forbidden.') {
             api_fail('Forbidden.', 403);
@@ -433,4 +448,15 @@ function api_inventory_check_compare_list(): void
     $eventId = (int) ($_GET['event_id'] ?? 0);
     api_inventory_check_require_event_access($user, $eventId);
     api_ok(['runs' => inventory_check_compare_list(ims_pdo(), $eventId)]);
+}
+
+function api_inventory_check_applied_runs_list(): void
+{
+    api_method_allowed(['GET']);
+    api_inventory_check_require_view_all();
+    api_ok(inventory_check_applied_runs_list(
+        ims_pdo(),
+        (int) ($_GET['page'] ?? 1),
+        (int) ($_GET['per_page'] ?? 25)
+    ));
 }

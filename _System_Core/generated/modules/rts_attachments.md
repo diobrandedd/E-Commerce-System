@@ -1,7 +1,7 @@
 ---
 title: rts_attachments
 source: includes/rts_attachments.php
-generated: 2026-09-16T12:01:19+02:00
+generated: 2026-09-17T05:12:51+02:00
 type: module
 function_count: 6
 ---
