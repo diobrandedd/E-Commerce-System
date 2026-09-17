@@ -1038,3 +1038,12 @@ Review panel listed only ambiguous rows → fixed to show all pages before expor
 ### 2026-09-17 — FDD-aligned use cases
 - **What we did:** Removed numbering from all FDD feature and function boxes. Replaced the use case diagram with the exact twenty named FDD leaf functions, grouped under the five features with Admin/Executive and Staff as the two primary actors. Removed the prior claim-status extension and corresponding diagram-specific text because it is not an FDD function. Preserved existing role-permission matrices, May–August Gantt, and the no-POS scope.
 - **Artifact:** `output/documents/Pyx_Tracker_Capstone_FDD_Aligned.docx`.
+
+### 2026-09-17 — Main-feature ovals and included FDD subfeatures
+- **What we did:** Followed the user's explicit visual convention: two actors connect to main-feature ovals, with twenty dashed include arrows connecting those five features to their exact FDD subfeatures. Retained the unnumbered FDD, no-POS scope, and May–August schedule. The accompanying description identifies the diagram as a feature-level view, rather than a transaction sequence. No unsupported optional extension was added.
+- **Artifact:** `output/documents/Pyx_Tracker_Capstone_Feature_Subfeature_Use_Case.docx`.
+
+### 2026-09-17 — SQL-derived capstone ERDs
+- **What we did:** Refreshed SQL catalog metadata without reading business records. Rebuilt four connected entity-box diagrams for inventory/production, costing, orders/parcels, and returns using actual tables, principal fields, PK/FK labels, and nullability/uniqueness-aware relationship cardinalities. Kept the five-feature scope without POS. Added the costing ERD and renumbered later figures.
+- **Evidence:** Enforced foreign keys only; undeclared references are not invented. `rts_inventory_rows.source_line_item_id` is unique, so its child cardinality is zero-or-one. Shared audit links and secondary attributes are omitted for readability and identified as such.
+- **Artifact:** `output/documents/Pyx_Tracker_Capstone_SQL_ERD.docx`. No application code or database state changed.

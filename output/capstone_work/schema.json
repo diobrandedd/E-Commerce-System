@@ -3295,6 +3295,15 @@
     },
     {
         "TABLE_NAME": "honey_production_rows",
+        "COLUMN_NAME": "is_active",
+        "COLUMN_TYPE": "tinyint(1)",
+        "IS_NULLABLE": "NO",
+        "COLUMN_DEFAULT": "1",
+        "COLUMN_KEY": "MUL",
+        "EXTRA": ""
+    },
+    {
+        "TABLE_NAME": "honey_production_rows",
         "COLUMN_NAME": "transferred_at",
         "COLUMN_TYPE": "datetime",
         "IS_NULLABLE": "NO",
