@@ -24,9 +24,11 @@ api_dispatch([
     'warehouse_barcode_lookup' => 'api_honey_warehouse_barcode_lookup',
     'warehouse_barcode_stock_out' => 'api_honey_warehouse_barcode_stock_out',
     'production_list' => 'api_honey_production_list',
+    'production_variant_list' => 'api_honey_production_variant_list',
     'production_stock_out' => 'api_honey_production_stock_out',
     'packaging_list' => 'api_honey_packaging_list',
     'packaging_total_inventory' => 'api_honey_packaging_total_inventory',
+    'packaging_variant_pools' => 'api_honey_packaging_variant_pools',
     'packaging_stock_out' => 'api_honey_packaging_stock_out',
     'traceability' => 'api_honey_traceability',
     'correction_submit' => 'api_honey_correction_submit',
@@ -170,7 +172,7 @@ function honey_assert_staff_dept_scope(array $user): void
     $action = (string) ($_GET['action'] ?? '');
     // Honey warehouse / production / packaging lists — gated by honey.view already.
     // Do not also require home dept = honey (Staff Management may grant honey.* cross-dept).
-    $honeyOnly = ['warehouse_list', 'production_list', 'packaging_list', 'packaging_total_inventory', 'traceability'];
+    $honeyOnly = ['warehouse_list', 'production_list', 'production_variant_list', 'packaging_list', 'packaging_total_inventory', 'packaging_variant_pools', 'traceability'];
     if (in_array($action, $honeyOnly, true)) {
         if (
             !ims_user_can($user, 'honey.view')
@@ -514,6 +516,13 @@ function api_honey_production_list(): void
     api_ok(['rows' => $st ? $st->fetchAll() : []]);
 }
 
+function api_honey_production_variant_list(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    api_ok(honey_production_variant_summary(ims_pdo()));
+}
+
 function api_honey_production_stock_out(): void
 {
     api_method_allowed(['POST']);
@@ -560,6 +569,13 @@ function api_honey_packaging_total_inventory(): void
     api_method_allowed(['GET']);
     api_honey_require_view();
     api_ok(honey_packaging_total_inventory_snapshot(ims_pdo()));
+}
+
+function api_honey_packaging_variant_pools(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    api_ok(honey_packaging_variant_pools_snapshot(ims_pdo()));
 }
 
 function api_honey_packaging_stock_out(): void

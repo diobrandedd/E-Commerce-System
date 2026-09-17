@@ -449,11 +449,16 @@ function api_bottle_scan_stock_in(): void
     $in = api_input();
     $code = (string) ($in['code'] ?? '');
     $qty = isset($in['qty']) ? (int) $in['qty'] : null;
-    $packId = isset($in['packaging_row_id']) ? (int) $in['packaging_row_id'] : 0;
-    $customBatchNo = trim((string) ($in['batch_no'] ?? ''));
     $productionRowId = isset($in['production_row_id']) ? (int) $in['production_row_id'] : 0;
+    if ($productionRowId > 0) {
+        api_fail(
+            'Production lot selection is retired. Scan the barcode and enter quantity — gallons deduct automatically by variant.',
+            422
+        );
+    }
     require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
     require_once dirname(__DIR__, 2) . '/includes/honey_inventory.php';
+    require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
     $pdo = ims_pdo();
     $sku = sku_barcode_fetch_by_code($pdo, $code);
     if ($sku !== null) {
@@ -464,51 +469,12 @@ function api_bottle_scan_stock_in(): void
             api_fail('Enter how many bottles to stock in for this SKU.', 422);
         }
         try {
-            if ($productionRowId > 0) {
-                $stocked = honey_production_bottle_stock_in(
-                    $pdo,
-                    (int) $user['id'],
-                    $productionRowId,
-                    (string) $sku['variant'],
-                    (string) $sku['size'],
-                    $qty
-                );
-                $payload = array_merge($stocked, [
-                    'lookup_kind' => 'sku',
-                    'code' => (string) $sku['code'],
-                    'variant' => (string) $sku['variant'],
-                    'size' => (string) $sku['size'],
-                    'size_label' => honey_bottle_size_label((string) $sku['size']),
-                ]);
-                if (!empty($stocked['primary_request_id'])) {
-                    require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
-                    $payload['request'] = honey_bottle_request_get($pdo, (int) $stocked['primary_request_id']);
-                }
-                api_ok($payload);
-            }
-            if ($packId < 1 && $customBatchNo === '') {
-                api_fail('Select a production lot or enter a custom batch number before stocking in SKU barcodes.', 422);
-            }
-            if ($packId < 1 && $customBatchNo !== '') {
-                $reused = false;
-                $customPack = honey_bottle_create_custom_packaging(
-                    $pdo,
-                    (int) $user['id'],
-                    $customBatchNo,
-                    (string) $sku['variant'],
-                    date('Y-m-d'),
-                    $customBatchNo,
-                    $reused
-                );
-                $packId = (int) $customPack['id'];
-            }
-            $stocked = sku_barcode_honey_stock_in(
+            $stocked = honey_packaging_pool_stock_in(
                 $pdo,
                 (int) $user['id'],
                 (string) $sku['variant'],
                 (string) $sku['size'],
-                $qty,
-                $packId
+                $qty
             );
             $payload = array_merge($stocked, [
                 'lookup_kind' => 'sku',
@@ -518,7 +484,6 @@ function api_bottle_scan_stock_in(): void
                 'size_label' => honey_bottle_size_label((string) $sku['size']),
             ]);
             if (!empty($stocked['primary_request_id'])) {
-                require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
                 $payload['request'] = honey_bottle_request_get($pdo, (int) $stocked['primary_request_id']);
             }
             api_ok($payload);
@@ -527,38 +492,43 @@ function api_bottle_scan_stock_in(): void
         }
     }
     $adopt = !empty($in['adopt']);
-    if ($productionRowId > 0) {
+    try {
+        $pdo->beginTransaction();
         try {
-            require_once dirname(__DIR__, 2) . '/includes/honey_bottle_barcodes.php';
-            $pdo->beginTransaction();
-            try {
-                $scanned = honey_bottle_scan_stock_in($pdo, (int) $user['id'], $code, $adopt);
-                $packFromScan = (int) ($scanned['packaging_row_id'] ?? 0);
-                if ($packFromScan < 1) {
-                    throw new RuntimeException('Barcode is not tied to a packaging batch.');
-                }
-                $deduct = honey_production_deduct_for_unique_stock_in(
+            $scanned = honey_bottle_scan_stock_in($pdo, (int) $user['id'], $code, $adopt);
+            $variant = honey_normalize_variant((string) ($scanned['variant'] ?? ''));
+            $size = (string) ($scanned['size'] ?? '');
+            $deduct = [];
+            if (!$adopt && $variant !== '' && $size !== '') {
+                $mlPerGallon = honey_ml_per_gallon($pdo);
+                $usedGallons = honey_lines_to_gallons([['size' => $size, 'qty' => 1]], $mlPerGallon);
+                $fifo = honey_production_fifo_deduct_gallons($pdo, $variant, $usedGallons);
+                honey_bottling_deduct_packaging_stocks(
                     $pdo,
                     (int) $user['id'],
-                    $productionRowId,
-                    $packFromScan,
-                    (string) ($scanned['size'] ?? '')
+                    honey_aggregate_bottle_lines([['size' => $size, 'qty' => 1]]),
+                    HONEY_PACKAGING_POOL_BATCH
                 );
-                $pdo->commit();
-            } catch (Throwable $e) {
-                if ($pdo->inTransaction()) {
-                    $pdo->rollBack();
-                }
-                throw $e;
+                $deduct = [
+                    'used_gallons' => $fifo['used_gallons'],
+                    'remaining_production_gallons' => $fifo['remaining_production_gallons'],
+                    'production_overdrawn' => $fifo['production_overdrawn'],
+                    'warning' => $fifo['warning'],
+                    'ml_per_gallon' => $fifo['ml_per_gallon'],
+                    'lot_deductions' => $fifo['lot_deductions'],
+                ];
             }
-            api_ok(array_merge($scanned, $deduct, [
-                'production_row_id' => $productionRowId,
-            ]));
+            $pdo->commit();
         } catch (Throwable $e) {
-            api_fail($e->getMessage(), 422);
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
         }
+        api_ok(array_merge($scanned, $deduct));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
     }
-    api_ok(honey_bottle_scan_stock_in($pdo, (int) $user['id'], $code, $adopt));
 }
 
 function api_bottle_pack_start(): void

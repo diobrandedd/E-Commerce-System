@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router";
-import { BookOpen, Loader2, Printer, Tag, AlertTriangle } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { BookOpen, ChevronDown, Loader2, Printer, Tag, AlertTriangle } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { HoneyStockStatusBadge } from "@/app/components/honey/HoneyStockStatusBadge";
 import {
@@ -14,22 +15,33 @@ import { HoneyLotGallonProgress } from "@/app/components/honey/HoneyLotGallonPro
 import { PageLayout } from "@/app/components/PageLayout";
 import { SupplierCodeButton } from "@/app/components/suppliers/SupplierCodeButton";
 import { Button } from "@/app/components/ui/button";
-import { AppErrorBanner, appHeaderActionClass } from "@/app/components/layout/appFeedbackMotion";
+import { AppErrorBanner, appHeaderActionClass, appHoverCard } from "@/app/components/layout/appFeedbackMotion";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { apiGet, ApiError } from "@/app/lib/api";
 import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
 import { canExecutiveDirectEdit, canGenerateHoneyBottleLabels, canViewSupplierProfile } from "@/app/lib/honeyPermissions";
+import { variantLabel } from "@/app/lib/posHoney";
+import { cn } from "@/app/components/ui/utils";
 
-interface PrRow {
+interface PrLot {
   id: number;
   supplier_code: string;
   arrival_date: string;
   stock_out_date?: string;
   variant: string;
-  current_qty: string;
-  initial_qty: string;
+  current_qty: string | number;
+  initial_qty: string | number;
   is_active?: number | boolean;
+}
+
+interface VariantGroup {
+  variant: string;
+  label: string;
+  current_qty: number;
+  initial_qty: number;
+  lot_count: number;
+  lots: PrLot[];
 }
 
 type ModalKind = "request" | "admin" | "guide" | null;
@@ -37,20 +49,20 @@ type ModalKind = "request" | "admin" | "guide" | null;
 export function HoneyProductionPage() {
   const { user, can } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const reduceMotion = useReducedMotion();
   const canRequest = can("honey.bottle.request");
   const canGenerate = can("honey.bottle.generate") || canGenerateHoneyBottleLabels(user);
   const isCsrOnly = user?.role === "csr_tl" || user?.role === "csr_staff";
   const canLeakDamage = can("inventory.leak_damage.view");
   const showSupplierProfile = canViewSupplierProfile(user);
   const canExecEdit = canExecutiveDirectEdit(user);
-  const [rows, setRows] = useState<PrRow[]>([]);
-  const [page, setPage] = useState(1);
-  const perPage = 12;
+  const [variants, setVariants] = useState<VariantGroup[]>([]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalKind>(null);
   const [pendingLabels, setPendingLabels] = useState(0);
-  const [editRow, setEditRow] = useState<PrRow | null>(null);
+  const [editRow, setEditRow] = useState<PrLot | null>(null);
 
   const refreshPending = useCallback(async () => {
     if (!canGenerate) {
@@ -68,13 +80,12 @@ export function HoneyProductionPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiGet<{ rows: PrRow[] }>("honey.php", "production_list");
-      setRows(data.rows);
-      setPage(1);
+      const data = await apiGet<{ variants: VariantGroup[] }>("honey.php", "production_variant_list");
+      setVariants(data.variants);
       await refreshPending();
       setLoadError(null);
     } catch (error) {
-      setLoadError(error instanceof ApiError ? error.message : "Could not load production lots.");
+      setLoadError(error instanceof ApiError ? error.message : "Could not load production.");
     } finally {
       setLoading(false);
     }
@@ -94,12 +105,6 @@ export function HoneyProductionPage() {
       setSearchParams(next, { replace: true });
     }
   }, [canGenerate, searchParams, setSearchParams]);
-
-  const totalRows = rows.length;
-  const totalPages = Math.max(1, Math.ceil(totalRows / perPage));
-  const safePage = Math.min(page, totalPages);
-  const start = (safePage - 1) * perPage;
-  const pagedRows = rows.slice(start, start + perPage);
 
   const closeModal = () => setModal(null);
 
@@ -135,7 +140,7 @@ export function HoneyProductionPage() {
       subtitle={
         isCsrOnly
           ? "Generate and print bottle barcode labels (A4 · 68 per page)"
-          : "Production — request bottle labels, scan stock-in, and review lot history"
+          : "Production — scan stock-in and review gallons by variant"
       }
       actions={
         <button type="button" onClick={() => setModal("guide")} className={appHeaderActionClass}>
@@ -150,227 +155,158 @@ export function HoneyProductionPage() {
         </div>
         <HoneyStageContent>
           <div className="space-y-4">
-        {canLeakDamage && (
-          <Link
-            to="/inventory/leak-damage"
-            className="inline-flex min-h-11 items-center gap-2 py-2 px-3 text-sm font-semibold border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors w-fit"
-          >
-            <AlertTriangle size={16} /> Leak / damage scan
-          </Link>
-        )}
-        {!isCsrOnly && (
-          <HoneyProductionScanStockInPanel lots={rows} onStocked={() => void refresh()} />
-        )}
-        {loadError && (
-          <div>
-            <AppErrorBanner message={loadError} />
-            <Button type="button" variant="outline" className="min-h-11" onClick={() => void refresh()}>
-              Retry loading
-            </Button>
-          </div>
-        )}
-        <div className="sm:hidden space-y-3" data-testid="honey-production-mobile-cards">
-          {loading ? (
-            <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-muted-foreground">
-              <Loader2 className="inline animate-spin" size={18} />
-            </div>
-          ) : pagedRows.length === 0 ? (
-            <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
-              No production lots yet.
-            </div>
-          ) : (
-            pagedRows.map(r => {
-              const inactive = r.is_active === 0 || r.is_active === false;
-              return (
-              <article key={r.id} className={`rounded-xl border bg-card p-4 ${inactive ? "border-border/60 opacity-75" : "border-border"}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Supplier</p>
-                    {showSupplierProfile ? (
-                      <SupplierCodeButton code={r.supplier_code} className="min-h-11" />
-                    ) : (
-                      <p className="font-mono text-sm font-semibold">{r.supplier_code}</p>
-                    )}
-                    <p className="mt-1 text-xs capitalize text-muted-foreground">{r.variant}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    {inactive ? (
-                      <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground">
-                        Inactive
-                      </span>
-                    ) : (
-                      <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />
-                    )}
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                  <div className="rounded-lg bg-secondary/30 px-3 py-2">
-                    <p className="text-[11px] text-muted-foreground">From warehouse</p>
-                    <p className="mt-0.5 font-medium">{r.arrival_date}</p>
-                  </div>
-                  <div className="rounded-lg bg-secondary/30 px-3 py-2">
-                    <p className="text-[11px] text-muted-foreground">Stocked out</p>
-                    <p className="mt-0.5 font-medium">{r.stock_out_date ?? "—"}</p>
-                  </div>
-                </div>
-                <div className="mt-2 rounded-lg border border-border px-3 py-2">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Gallons on hand</p>
-                  <div className="mt-1">
-                    <HoneyLotGallonProgress
-                      current={r.current_qty}
-                      initial={r.initial_qty}
-                      testId={`honey-production-gal-progress-${r.id}`}
-                      className="max-w-none"
-                    />
-                  </div>
-                </div>
-                {canExecEdit ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="mt-3 min-h-11 w-full"
-                    onClick={() => setEditRow(r)}
-                  >
-                    Edit lot
-                  </Button>
-                ) : null}
-              </article>
-              );
-            })
-          )}
-        </div>
-        <div className="hidden sm:block bg-card rounded-xl border overflow-x-auto" data-testid="honey-production-desktop-table">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-secondary/40">
-                {["Supplier code", "From WH", "Stock out", "Variant", "Gallon/s", "Status", ...(canExecEdit ? ["Actions"] : [])].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr>
-                  <td colSpan={canExecEdit ? 7 : 6} className="py-8 text-center">
-                    <Loader2 className="inline animate-spin" size={14} />
-                  </td>
-                </tr>
-              )}
-              {!loading && pagedRows.length === 0 && (
-                <tr>
-                  <td colSpan={canExecEdit ? 7 : 6} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    No production lots yet.
-                  </td>
-                </tr>
-              )}
-              {pagedRows.map(r => {
-                const inactive = r.is_active === 0 || r.is_active === false;
-                return (
-                <tr key={r.id} className={`border-b ${inactive ? "bg-secondary/20" : ""}`}>
-                  <td className="px-4 py-3">
-                    {showSupplierProfile ? (
-                      <SupplierCodeButton code={r.supplier_code} />
-                    ) : (
-                      <span className="font-mono">{r.supplier_code}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">{r.arrival_date}</td>
-                  <td className="px-4 py-3">{r.stock_out_date ?? "—"}</td>
-                  <td className="px-4 py-3 capitalize">{r.variant}</td>
-                  <td className="px-4 py-3">
-                    <HoneyLotGallonProgress
-                      current={r.current_qty}
-                      initial={r.initial_qty}
-                      testId={`honey-production-gal-progress-${r.id}`}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    {inactive ? (
-                      <span className="inline-flex text-xs px-2 py-0.5 rounded-full font-medium bg-secondary text-muted-foreground">
-                        Inactive
-                      </span>
-                    ) : (
-                      <HoneyStockStatusBadge current={r.current_qty} initial={r.initial_qty} />
-                    )}
-                  </td>
-                  {canExecEdit ? (
-                    <td className="px-4 py-3">
-                      <Button type="button" size="sm" variant="ghost" onClick={() => setEditRow(r)}>
-                        Edit
-                      </Button>
-                    </td>
-                  ) : null}
-                </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {!loading && totalRows > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 mt-3">
-            <p className="text-xs text-muted-foreground">
-              Showing {start + 1}-{Math.min(start + perPage, totalRows)} of {totalRows} rows
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={safePage <= 1}
-                className="min-h-11 text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
+            {canLeakDamage && (
+              <Link
+                to="/inventory/leak-damage"
+                className="inline-flex min-h-11 items-center gap-2 py-2 px-3 text-sm font-semibold border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors w-fit"
               >
-                Previous
-              </button>
-              <span className="text-xs text-muted-foreground">
-                Page {safePage} of {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={safePage >= totalPages}
-                className="min-h-11 text-xs font-medium border rounded-lg px-3 py-1.5 hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
+                <AlertTriangle size={16} /> Leak / damage scan
+              </Link>
+            )}
+            {!isCsrOnly && <HoneyProductionScanStockInPanel onStocked={() => void refresh()} />}
+            {loadError && (
+              <div>
+                <AppErrorBanner message={loadError} />
+                <Button type="button" variant="outline" className="min-h-11" onClick={() => void refresh()}>
+                  Retry loading
+                </Button>
+              </div>
+            )}
+
+            <div>
+              <h2 className="text-sm font-semibold mb-1">Production gallons</h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                One row per variant. Expand to see supplier codes and gallons from warehouse stock-out.
+              </p>
+              {loading ? (
+                <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-muted-foreground">
+                  <Loader2 className="inline animate-spin" size={18} />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {variants.map(v => {
+                    const open = !!expanded[v.variant];
+                    return (
+                      <div key={v.variant} className={cn("rounded-xl border border-border bg-card overflow-hidden", appHoverCard)}>
+                        <button
+                          type="button"
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                          onClick={() => setExpanded(prev => ({ ...prev, [v.variant]: !prev[v.variant] }))}
+                        >
+                          <ChevronDown
+                            size={18}
+                            className={cn("shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground">{variantLabel(v.variant)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {v.lot_count} supplier lot{v.lot_count === 1 ? "" : "s"}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <HoneyStockStatusBadge current={v.current_qty} initial={v.initial_qty} />
+                            <div className="mt-1 min-w-[9rem]">
+                              <HoneyLotGallonProgress current={v.current_qty} initial={v.initial_qty} className="max-w-none" />
+                            </div>
+                          </div>
+                        </button>
+                        <AnimatePresence initial={false}>
+                          {open && (
+                            <motion.div
+                              initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+                              transition={{ duration: 0.22 }}
+                              className="overflow-hidden border-t border-border"
+                            >
+                              {v.lots.length === 0 ? (
+                                <p className="px-4 py-3 text-sm text-muted-foreground">No lots for this variant yet.</p>
+                              ) : (
+                                <ul className="divide-y divide-border">
+                                  {v.lots.map(lot => {
+                                    const inactive = lot.is_active === 0 || lot.is_active === false;
+                                    return (
+                                      <li
+                                        key={lot.id}
+                                        className={cn("px-4 py-3 flex flex-wrap items-center gap-3 text-sm", inactive && "opacity-70")}
+                                      >
+                                        <div className="min-w-[7rem]">
+                                          {showSupplierProfile ? (
+                                            <SupplierCodeButton code={lot.supplier_code} />
+                                          ) : (
+                                            <span className="font-mono font-medium">{lot.supplier_code}</span>
+                                          )}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          WH {lot.arrival_date}
+                                          {lot.stock_out_date ? ` · out ${lot.stock_out_date}` : ""}
+                                        </div>
+                                        <div className="flex-1 min-w-[8rem]">
+                                          <HoneyLotGallonProgress
+                                            current={lot.current_qty}
+                                            initial={lot.initial_qty}
+                                            className="max-w-none"
+                                          />
+                                        </div>
+                                        {canExecEdit && (
+                                          <Button type="button" size="sm" variant="outline" onClick={() => setEditRow(lot)}>
+                                            Edit
+                                          </Button>
+                                        )}
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        )}
           </div>
         </HoneyStageContent>
       </div>
 
-      <AppModal open={modal === "request"} onClose={closeModal} panelClassName="max-w-3xl w-full" labelledBy="honey-production-request-title">
-        <AppModalHeader title="Request barcodes" titleId="honey-production-request-title" onClose={closeModal} />
-        <AppModalBody className="max-h-[75vh] overflow-y-auto">
-          <HoneyBottleRequestsPanel canAdmin={canGenerate} />
-        </AppModalBody>
-      </AppModal>
-
-      <AppModal open={modal === "admin"} onClose={closeModal} panelClassName="max-w-3xl w-full" labelledBy="honey-production-admin-title">
-        <AppModalHeader title="Generate / print requests" titleId="honey-production-admin-title" onClose={closeModal} />
-        <AppModalBody className="max-h-[75vh] overflow-y-auto">
-          {canGenerate ? <HoneyBottleAdminPanel /> : null}
-        </AppModalBody>
-      </AppModal>
-
-      <AppModal open={modal === "guide"} onClose={closeModal} labelledBy="honey-production-guide-title">
-        <AppModalHeader title="Honey bottle barcodes" titleId="honey-production-guide-title" onClose={closeModal} />
-        <AppModalBody className="space-y-3 text-sm text-muted-foreground">
-          <p>Honey staff request labels. Executives and CSR generate unique barcodes and print an A4 sheet (68 labels per page, 4×17 — barcode plus the code text underneath for manual entry, cut on dashed guides). Print at 100% scale so the bars stay camera-scannable.</p>
-          <p>
-            Stock out from Warehouse part by part if needed — same supplier code + arrival + variant shares{" "}
-            <strong className="text-foreground">one</strong> Production lot (later transfers refill; Light / Amber / Dark stay separate). Then
-            Production → scan stock-in: pick an active lot with gallons left, scan SKU/unique barcodes, and packaging gains bottles while
-            production gallons drop. Executives can Edit a lot to adjust gallons or deactivate it.
-          </p>
-          <p>Courier packing uses Deliveries → Pack scan. Waybill + photo ships without deducting stock.</p>
-        </AppModalBody>
-      </AppModal>
+      {modal === "request" && (
+        <AppModal open onClose={closeModal} panelClassName="max-w-3xl w-full" labelledBy="pr-req-title">
+          <AppModalHeader title="Request bottle barcodes" titleId="pr-req-title" onClose={closeModal} />
+          <AppModalBody>
+            <HoneyBottleRequestsPanel />
+          </AppModalBody>
+        </AppModal>
+      )}
+      {modal === "admin" && (
+        <AppModal open onClose={closeModal} panelClassName="max-w-4xl w-full" labelledBy="pr-admin-title">
+          <AppModalHeader title="Generate / print requests" titleId="pr-admin-title" onClose={closeModal} />
+          <AppModalBody>
+            <HoneyBottleAdminPanel />
+          </AppModalBody>
+        </AppModal>
+      )}
+      {modal === "guide" && (
+        <AppModal open onClose={closeModal} panelClassName="max-w-lg w-full" labelledBy="pr-guide-title">
+          <AppModalHeader title="Production guide" titleId="pr-guide-title" onClose={closeModal} />
+          <AppModalBody className="space-y-3 text-sm text-muted-foreground">
+            <p>Stock out gallons from Warehouse first. Scan bottles or SKUs here to credit finished packaging pools.</p>
+            <p>Gallons deduct FIFO by variant across supplier lots — no lot picker. Expand a variant to see suppliers.</p>
+          </AppModalBody>
+        </AppModal>
+      )}
       {editRow && (
         <ExecutiveRowEditModal
           stage="production"
-          row={editRow}
+          row={{
+            id: editRow.id,
+            supplier_code: editRow.supplier_code,
+            variant: editRow.variant,
+            current_qty: String(editRow.current_qty),
+            initial_qty: String(editRow.initial_qty),
+            is_active: editRow.is_active,
+          }}
           onClose={() => setEditRow(null)}
           onSaved={() => {
             setEditRow(null);
