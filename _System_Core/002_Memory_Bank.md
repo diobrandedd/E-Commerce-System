@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-17 — Packaging stage is stocked-in report
+**Change:** Raw Honey → Packaging shows gross scanned-in by date (not live on-hand); Products → Honey remains finished on hand. → [[problems/records/2026-09-17_honey-packaging-stocked-in-report]]
+
 ### 2026-09-17 — Honey packaging variant pools + production rows
 **Change:** Finished honey on-hand = Light/Amber/Dark POOL rows; stock-in = barcode+qty with FIFO gallon deduct; Packaging cards + Production variant expand. Phase 79 fold. → [[problems/records/2026-09-17_honey-packaging-variant-pools]]
 

@@ -5,7 +5,6 @@ import { AlertTriangle, ChevronDown, Loader2, Printer, ScanLine, Tag } from "luc
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { HoneyStageContent, HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
-import { ExecutiveRowEditModal, type PackagingEditRow } from "@/app/components/honey/ExecutiveRowEditModal";
 import { BatchTraceabilityDrawer } from "@/app/components/honey/BatchTraceabilityDrawer";
 import {
   DeptPouchAdminPanel,
@@ -16,7 +15,6 @@ import {
   AppErrorBanner,
   AppPressable,
   AppSectionEnter,
-  AppSuccessNotice,
   appHeaderActionClass,
   appHoverCard,
 } from "@/app/components/layout/appFeedbackMotion";
@@ -24,35 +22,25 @@ import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import { HONEY_SIZES } from "@/app/lib/honey";
-import { canDeptPouchBarcodeOps, canExecutiveDirectEdit } from "@/app/lib/honeyPermissions";
+import { canDeptPouchBarcodeOps } from "@/app/lib/honeyPermissions";
 import { deptPouchBarcodesApi } from "@/app/lib/deptPouchBarcodes";
 import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
-import { apiGet, ApiError } from "@/app/lib/api";
 import { variantLabel } from "@/app/lib/posHoney";
 import { cn } from "@/app/components/ui/utils";
 
 const HONEY_COMB_KEY = "honey_comb";
 const HONEY_COMB_LABEL = "Honey Comb";
+const VARIANT_ORDER = ["light", "amber", "dark"] as const;
 
-interface PoolVariant {
+type SizeKey = (typeof HONEY_SIZES)[number];
+
+interface VariantScanned {
   variant: string;
-  label: string;
-  packaging_row_id: number;
-  total_bottles: number;
-  by_size: {
-    "250ml": number;
-    "350ml": number;
-    liter: number;
-    gallon: number;
-  };
-  current_250ml: number;
-  current_350ml: number;
-  current_liter: number;
-  current_gallon: number;
-  initial_250ml?: number;
-  initial_350ml?: number;
-  initial_liter?: number;
-  initial_gallon?: number;
+  total: number;
+  liter: number;
+  "250ml": number;
+  "350ml": number;
+  gallon: number;
 }
 
 function localToday(): string {
@@ -69,34 +57,38 @@ function scanDateLabel(date: string): string {
   });
 }
 
+function filterScanLabel(value: string): string {
+  if (value === "all") return "All scan dates";
+  if (value === localToday()) return `Today · ${scanDateLabel(value)}`;
+  return scanDateLabel(value);
+}
+
 function grossQty(value: string | number): string {
   const qty = Number(value);
   return Number.isFinite(qty) ? qty.toLocaleString() : String(value);
 }
 
-function sizeKey(size: (typeof HONEY_SIZES)[number]): keyof PoolVariant["by_size"] {
-  return size as keyof PoolVariant["by_size"];
+function emptyVariant(variant: string): VariantScanned {
+  return { variant, total: 0, liter: 0, "250ml": 0, "350ml": 0, gallon: 0 };
+}
+
+function sizeQty(v: VariantScanned, size: SizeKey): number {
+  return Number(v[size]) || 0;
 }
 
 export function HoneyPackagingPage() {
   const { user, can } = useAuth();
   const reduceMotion = useReducedMotion();
-  const canExecEdit = canExecutiveDirectEdit(user);
   const canLeakDamage = can("inventory.leak_damage.view");
   const canCombBarcodes = canDeptPouchBarcodeOps(user, "honey_comb");
-  const [pools, setPools] = useState<PoolVariant[]>([]);
-  const [grandTotal, setGrandTotal] = useState(0);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [scanDate, setScanDate] = useState(localToday);
   const [scanDates, setScanDates] = useState<string[]>([]);
-  const [scannedGrandTotal, setScannedGrandTotal] = useState(0);
+  const [byVariant, setByVariant] = useState<VariantScanned[]>([]);
+  const [grandTotal, setGrandTotal] = useState(0);
   const [byScanner, setByScanner] = useState<{ user_id: number | null; name: string; qty: number }[]>([]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
-  const [historyLoading, setHistoryLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [editRow, setEditRow] = useState<PackagingEditRow | null>(null);
-  const [editSavedNotice, setEditSavedNotice] = useState<string | null>(null);
   const [traceQ, setTraceQ] = useState("");
   const [traceBatch, setTraceBatch] = useState<string | null>(null);
   const [combModal, setCombModal] = useState<"scan" | "admin" | null>(null);
@@ -117,70 +109,37 @@ export function HoneyPackagingPage() {
     }
   }, [canCombBarcodes]);
 
-  const refreshPools = useCallback(async () => {
+  const refresh = useCallback(async () => {
     setLoading(true);
-    try {
-      const data = await apiGet<{ variants: PoolVariant[]; total_bottles: number }>(
-        "honey.php",
-        "packaging_variant_pools",
-      );
-      setPools(data.variants ?? []);
-      setGrandTotal(Number(data.total_bottles) || 0);
-      await refreshPendingComb();
-      setLoadError(null);
-    } catch (error) {
-      setLoadError(error instanceof ApiError ? error.message : "Could not load packaging pools.");
-    } finally {
-      setLoading(false);
-    }
-  }, [refreshPendingComb]);
-
-  const refreshHistory = useCallback(async () => {
-    setHistoryLoading(true);
     try {
       const data = await bottleBarcodesApi.packagingScanReport(scanDate, "all");
       setScanDates(data.dates);
-      setScannedGrandTotal(data.totals?.total ?? 0);
+      setGrandTotal(data.totals?.total ?? 0);
+      setByVariant(data.totals?.by_variant ?? []);
       setByScanner(data.by_scanner ?? []);
-    } catch {
-      setByScanner([]);
-      setScannedGrandTotal(0);
+      await refreshPendingComb();
+      setLoadError(null);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Could not load stock-in report.");
     } finally {
-      setHistoryLoading(false);
+      setLoading(false);
     }
-  }, [scanDate]);
+  }, [refreshPendingComb, scanDate]);
 
   useEffect(() => {
-    void refreshPools();
-  }, [refreshPools]);
-  useLiveRefresh(refreshPools);
+    void refresh();
+  }, [refresh]);
+  useLiveRefresh(refresh);
 
-  useEffect(() => {
-    if (!historyOpen) return;
-    void refreshHistory();
-  }, [historyOpen, refreshHistory]);
-
-  const openPoolEdit = (pool: PoolVariant) => {
-    setEditRow({
-      id: pool.packaging_row_id,
-      supplier_code: "",
-      batch_no: "POOL",
-      variant: pool.variant,
-      current_liter: String(pool.current_liter),
-      initial_liter: String(pool.initial_liter ?? pool.current_liter),
-      current_250ml: String(pool.current_250ml),
-      initial_250ml: String(pool.initial_250ml ?? pool.current_250ml),
-      current_350ml: String(pool.current_350ml),
-      initial_350ml: String(pool.initial_350ml ?? pool.current_350ml),
-      current_gallon: String(pool.current_gallon),
-      initial_gallon: String(pool.initial_gallon ?? pool.current_gallon),
-    });
-  };
+  const variantCards: VariantScanned[] = VARIANT_ORDER.map(v => {
+    const found = byVariant.find(row => row.variant.toLowerCase() === v);
+    return found ? { ...found, variant: v } : emptyVariant(v);
+  });
 
   return (
     <PageLayout
       title="Raw Honey"
-      subtitle="Packaging — finished bottles by variant (stock-in from Production)"
+      subtitle="Packaging — bottles scanned into inventory (report by date)"
       actions={
         <form
           className="flex items-center gap-2"
@@ -221,37 +180,83 @@ export function HoneyPackagingPage() {
           {loadError && (
             <div className="mb-3">
               <AppErrorBanner message={loadError} />
-              <Button type="button" variant="outline" className="min-h-11" onClick={() => void refreshPools()}>
+              <Button type="button" variant="outline" className="min-h-11" onClick={() => void refresh()}>
                 Retry loading
               </Button>
             </div>
           )}
 
-          <div className="mb-3">
-            <h2 className="text-sm font-semibold mb-1">Finished honey on hand</h2>
-            <p className="text-xs text-muted-foreground">
-              Light, Amber, and Dark pools. Expand a card for size breakdown. Stock-in from Production credits these
-              pools (no lot picker). Packing and sales deduct from the same totals.
-            </p>
-            {editSavedNotice ? (
-              <div className="mt-2">
-                <AppSuccessNotice message={editSavedNotice} />
-              </div>
-            ) : null}
-            {!loading && grandTotal > 0 && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                All variants · {grossQty(grandTotal)} bottle{grandTotal === 1 ? "" : "s"} on hand
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold mb-1">Stocked into inventory</h2>
+              <p className="text-xs text-muted-foreground">
+                Gross bottles scanned in for the selected date. This does not change when packing or POS sells — live
+                finished on hand is on{" "}
+                <Link to="/inventory/products/honey" className="underline hover:text-foreground font-medium">
+                  Products → Honey
+                </Link>
+                .
               </p>
-            )}
+            </div>
+            <label
+              htmlFor="packaging-scan-date-filter"
+              className="text-xs uppercase tracking-wide text-muted-foreground font-semibold shrink-0"
+            >
+              Scan date
+              <select
+                id="packaging-scan-date-filter"
+                name="packaging_scan_date"
+                value={scanDate}
+                onChange={e => setScanDate(e.target.value)}
+                className="mt-1 block min-h-11 min-w-[12rem] rounded-lg border border-border bg-card px-2.5 py-2 text-sm normal-case"
+                data-testid="packaging-scan-date-filter"
+              >
+                <option value={localToday()}>Today · {scanDateLabel(localToday())}</option>
+                {scanDates
+                  .filter(date => date !== localToday())
+                  .map(date => (
+                    <option key={date} value={date}>
+                      {scanDateLabel(date)}
+                    </option>
+                  ))}
+                <option value="all">All scan dates</option>
+              </select>
+            </label>
           </div>
+
+          {scanDate !== "all" && (
+            <div
+              className="mb-3 flex flex-wrap items-center gap-2"
+              data-testid="packaging-active-filters"
+              aria-live="polite"
+            >
+              <span className="text-xs text-muted-foreground">Showing</span>
+              <AppPressable
+                type="button"
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium"
+                onClick={() => setScanDate("all")}
+              >
+                {filterScanLabel(scanDate)}
+                <span className="text-muted-foreground">×</span>
+              </AppPressable>
+            </div>
+          )}
+
+          {!loading && (
+            <p className="mb-3 text-sm text-muted-foreground" aria-live="polite">
+              {filterScanLabel(scanDate)} ·{" "}
+              <span className="font-semibold text-foreground tabular-nums">{grossQty(grandTotal)}</span> bottle
+              {grandTotal === 1 ? "" : "s"} scanned in
+            </p>
+          )}
 
           {loading ? (
             <div className="rounded-xl border border-border bg-card px-4 py-8 text-center text-muted-foreground">
               <Loader2 className="inline animate-spin" size={18} />
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3" data-testid="honey-packaging-variant-cards">
-              {pools.map(pool => {
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3" data-testid="honey-packaging-stocked-cards">
+              {variantCards.map(pool => {
                 const open = !!expanded[pool.variant];
                 return (
                   <div
@@ -275,8 +280,8 @@ export function HoneyPackagingPage() {
                       <div className="min-w-0 flex-1">
                         <p className="text-xs uppercase tracking-wide text-muted-foreground">Variant</p>
                         <p className="text-lg font-semibold text-foreground">{variantLabel(pool.variant)}</p>
-                        <p className="mt-2 text-3xl font-bold tabular-nums">{grossQty(pool.total_bottles)}</p>
-                        <p className="text-xs text-muted-foreground">bottles on hand</p>
+                        <p className="mt-2 text-3xl font-bold tabular-nums">{grossQty(pool.total)}</p>
+                        <p className="text-xs text-muted-foreground">scanned into inventory</p>
                       </div>
                     </button>
                     <AnimatePresence initial={false}>
@@ -293,23 +298,11 @@ export function HoneyPackagingPage() {
                               <div key={size} className="rounded-lg bg-secondary/30 px-3 py-2">
                                 <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{size}</dt>
                                 <dd className="mt-0.5 text-base font-semibold tabular-nums">
-                                  {grossQty(pool.by_size[sizeKey(size)] ?? 0)}
+                                  {grossQty(sizeQty(pool, size))}
                                 </dd>
                               </div>
                             ))}
                           </dl>
-                          {canExecEdit && (
-                            <div className="px-4 pb-4">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="min-h-11 w-full"
-                                onClick={() => openPoolEdit(pool)}
-                              >
-                                Edit pool on hand
-                              </Button>
-                            </div>
-                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -319,89 +312,33 @@ export function HoneyPackagingPage() {
             </div>
           )}
 
-          <div className="mt-6 rounded-xl border border-border bg-card overflow-hidden">
-            <button
-              type="button"
-              className="w-full flex items-center gap-3 px-4 py-3 text-left"
-              onClick={() => setHistoryOpen(o => !o)}
-              data-testid="packaging-scan-history-toggle"
-            >
-              <ChevronDown
-                size={18}
-                className={cn("shrink-0 text-muted-foreground transition-transform", historyOpen && "rotate-180")}
-              />
-              <div>
-                <p className="text-sm font-semibold">Scan history</p>
-                <p className="text-xs text-muted-foreground">Gross scanned by date and person (does not change on-hand).</p>
-              </div>
-            </button>
-            <AnimatePresence initial={false}>
-              {historyOpen && (
-                <motion.div
-                  initial={reduceMotion ? false : { height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
-                  transition={{ duration: 0.22 }}
-                  className="overflow-hidden border-t border-border"
-                >
-                  <div className="p-4 space-y-3">
-                    <label
-                      htmlFor="packaging-scan-date-filter"
-                      className="text-xs uppercase tracking-wide text-muted-foreground font-semibold block w-fit"
-                    >
-                      Scan date (stock-in)
-                      <select
-                        id="packaging-scan-date-filter"
-                        name="packaging_scan_date"
-                        value={scanDate}
-                        onChange={e => setScanDate(e.target.value)}
-                        className="mt-1 block min-h-11 min-w-[10.5rem] rounded-lg border border-border bg-card px-2.5 py-2 text-sm normal-case"
-                        data-testid="packaging-scan-date-filter"
-                      >
-                        <option value={localToday()}>Today · {scanDateLabel(localToday())}</option>
-                        {scanDates
-                          .filter(date => date !== localToday())
-                          .map(date => (
-                            <option key={date} value={date}>
-                              {scanDateLabel(date)}
-                            </option>
-                          ))}
-                        <option value="all">All scan dates</option>
-                      </select>
-                    </label>
-                    {historyLoading ? (
-                      <p className="text-sm text-muted-foreground">
-                        <Loader2 className="mr-2 inline animate-spin" size={14} /> Loading…
-                      </p>
-                    ) : (
-                      <>
-                        <p className="text-sm">
-                          Gross scanned · <span className="font-semibold tabular-nums">{grossQty(scannedGrandTotal)}</span>
-                        </p>
-                        {byScanner.length > 0 ? (
-                          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                            {byScanner.map(row => (
-                              <li
-                                key={`${row.user_id ?? "unk"}-${row.name}`}
-                                className="flex items-baseline justify-between gap-3 text-sm"
-                              >
-                                <span className="font-medium truncate">{row.name}</span>
-                                <span className="tabular-nums shrink-0 text-muted-foreground">
-                                  {row.qty.toLocaleString()} bottles
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No scans for this filter.</p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          {!loading && byScanner.length > 0 && (
+            <div className="mt-4 rounded-xl border border-border bg-secondary/20 px-4 py-3">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                Scanned by person · {filterScanLabel(scanDate)}
+              </p>
+              <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {byScanner.map(row => (
+                  <li
+                    key={`${row.user_id ?? "unk"}-${row.name}`}
+                    className="flex items-baseline justify-between gap-3 text-sm"
+                  >
+                    <span className="font-medium truncate">{row.name}</span>
+                    <span className="tabular-nums shrink-0 text-muted-foreground">
+                      {row.qty.toLocaleString()} bottles
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {!loading && grandTotal === 0 && (
+            <p className="mt-4 text-sm text-muted-foreground">
+              No bottles scanned into inventory for {filterScanLabel(scanDate).toLowerCase()}. Stock-in from Production
+              first.
+            </p>
+          )}
 
           {canCombBarcodes ? (
             <AppSectionEnter className="mt-8 space-y-3 border-t border-border pt-6">
@@ -461,7 +398,7 @@ export function HoneyPackagingPage() {
           open
           onClose={() => {
             setCombModal(null);
-            void refreshPools();
+            void refresh();
           }}
           panelClassName="max-w-lg w-full"
           labelledBy={combScanTitleId}
@@ -471,7 +408,7 @@ export function HoneyPackagingPage() {
             titleId={combScanTitleId}
             onClose={() => {
               setCombModal(null);
-              void refreshPools();
+              void refresh();
             }}
           />
           <AppModalBody>
@@ -484,7 +421,7 @@ export function HoneyPackagingPage() {
           open
           onClose={() => {
             setCombModal(null);
-            void refreshPools();
+            void refresh();
           }}
           panelClassName="max-w-2xl w-full"
           labelledBy={combAdminTitleId}
@@ -494,7 +431,7 @@ export function HoneyPackagingPage() {
             titleId={combAdminTitleId}
             onClose={() => {
               setCombModal(null);
-              void refreshPools();
+              void refresh();
             }}
           />
           <AppModalBody>
@@ -504,19 +441,6 @@ export function HoneyPackagingPage() {
       )}
 
       {traceBatch && <BatchTraceabilityDrawer query={traceBatch} onClose={() => setTraceBatch(null)} />}
-      {editRow && (
-        <ExecutiveRowEditModal
-          stage="packaging"
-          row={editRow}
-          onClose={() => setEditRow(null)}
-          onSaved={() => {
-            setEditRow(null);
-            setEditSavedNotice("Packaging pool on-hand updated.");
-            window.setTimeout(() => setEditSavedNotice(null), 3500);
-            void refreshPools();
-          }}
-        />
-      )}
     </PageLayout>
   );
 }

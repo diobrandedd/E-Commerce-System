@@ -43,26 +43,52 @@ async function installHoneyMocks(page: Page, stage: "production" | "warehouse") 
   await page.route("**/rts/api/v1/honey.php**", async route => {
     const url = new URL(route.request().url());
     const action = url.searchParams.get("action");
-    if (stage === "production" && action === "production_list") {
+    if (stage === "production" && action === "production_variant_list") {
       await fulfillJson(route, {
-        rows: [
+        variants: [
           {
-            id: 11,
-            supplier_code: "NF082826",
-            arrival_date: "2026-08-28",
-            stock_out_date: "2026-09-04",
             variant: "light",
-            current_qty: "10",
-            initial_qty: "10",
+            label: "Light",
+            current_qty: 10,
+            initial_qty: 10,
+            lot_count: 1,
+            lots: [
+              {
+                id: 11,
+                supplier_code: "NF082826",
+                arrival_date: "2026-08-28",
+                stock_out_date: "2026-09-04",
+                variant: "light",
+                current_qty: "10",
+                initial_qty: "10",
+              },
+            ],
           },
           {
-            id: 12,
-            supplier_code: "EJ070126",
-            arrival_date: "2026-07-01",
-            stock_out_date: "2026-07-14",
             variant: "amber",
-            current_qty: "-0.27",
-            initial_qty: "20",
+            label: "Amber",
+            current_qty: -0.27,
+            initial_qty: 20,
+            lot_count: 1,
+            lots: [
+              {
+                id: 12,
+                supplier_code: "EJ070126",
+                arrival_date: "2026-07-01",
+                stock_out_date: "2026-07-14",
+                variant: "amber",
+                current_qty: "-0.27",
+                initial_qty: "20",
+              },
+            ],
+          },
+          {
+            variant: "dark",
+            label: "Dark",
+            current_qty: 0,
+            initial_qty: 0,
+            lot_count: 0,
+            lots: [],
           },
         ],
       });
@@ -97,7 +123,7 @@ async function installHoneyMocks(page: Page, stage: "production" | "warehouse") 
 }
 
 test.describe("Honey lot gallon progress", () => {
-  test("production table shows progress for remaining and overdrawn lots", async ({ page }) => {
+  test("production variant rows show progress for remaining and overdrawn lots", async ({ page }) => {
     await installHoneyMocks(page, "production");
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("./inventory/raw-materials/honey/production");
@@ -105,16 +131,13 @@ test.describe("Honey lot gallon progress", () => {
       timeout: 15_000,
     });
 
-    const table = page.getByTestId("honey-production-desktop-table");
-    const full = table.getByTestId("honey-production-gal-progress-11");
-    await expect(full).toBeVisible();
-    await expect(full).toContainText("10");
-    await expect(full).toContainText("100%");
+    const list = page.getByTestId("honey-production-variant-rows");
+    await expect(list.getByText("Light")).toBeVisible();
+    await expect(list.getByText("Amber")).toBeVisible();
 
-    const over = table.getByTestId("honey-production-gal-progress-12");
-    await expect(over).toBeVisible();
-    await expect(over).toContainText("over");
-    await expect(table.getByText("Overdrawn").first()).toBeVisible();
+    await list.getByRole("button", { name: /Amber/i }).click();
+    await expect(list.getByText("EJ070126")).toBeVisible();
+    await expect(list.getByText(/over/i).first()).toBeVisible();
   });
 
   test("warehouse table shows gallon progress", async ({ page }) => {

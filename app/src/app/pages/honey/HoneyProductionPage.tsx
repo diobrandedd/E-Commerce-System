@@ -173,7 +173,7 @@ export function HoneyProductionPage() {
               </div>
             )}
 
-            <div>
+            <div data-testid="honey-production-variant-rows">
               <h2 className="text-sm font-semibold mb-1">Production gallons</h2>
               <p className="text-xs text-muted-foreground mb-3">
                 One row per variant. Expand to see supplier codes and gallons from warehouse stock-out.
