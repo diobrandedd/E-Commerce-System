@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-18 — Sales Excel Today Summary + per-sheet mini breakdown
+**Change:** Today/week/month exports use `Summary` with `Period: Today` (not Sep monthly). Each shp/wlk sheet opens with by size/variant/variant×size then detail. → [[fixes/sales-excel-weekly-named-sheets]] · [[problems/records/2026-09-18_sales-excel-today-summary-period]]
+
 ### 2026-09-18 — Sales Excel monthly summary = size + variant + variant×size
 **Change:** Each `Sep Summary` / `Aug Summary` sheet now mirrors the old header: by bottle/size, by variant, by variant × size for shipped and walk-in (not totals-only). → [[fixes/sales-excel-weekly-named-sheets]] · [[problems/records/2026-09-18_sales-excel-chunked-export]]
 

@@ -2032,8 +2032,83 @@ function honey_sales_export_write_channel_breakdown_block(
 }
 
 /**
- * Write one calendar-month summary sheet (shipped + walk-in breakdowns).
+ * True when export should get one Summary sheet per calendar month
+ * (all-time / multi-month). False for Today / This week / This month / single-month custom.
  *
+ * @param array{period?: string, from?: string|null, to?: string|null}|null $range
+ * @param array<string, mixed> $monthOrder
+ */
+function honey_sales_export_use_per_month_summaries(?array $range, array $monthOrder): bool
+{
+    if ($range === null) {
+        return count($monthOrder) > 1 || $monthOrder !== [];
+    }
+    $period = strtolower((string) ($range['period'] ?? ''));
+    if (in_array($period, ['day', 'week', 'month'], true)) {
+        return false;
+    }
+    if ($period === 'custom') {
+        $from = (string) ($range['from'] ?? '');
+        $to = (string) ($range['to'] ?? '');
+        if ($from !== '' && $to !== '' && substr($from, 0, 7) === substr($to, 0, 7)) {
+            return false;
+        }
+    }
+
+    return count($monthOrder) > 1;
+}
+
+/**
+ * Combined shipped + walk-in summary sheet for a filter period or one calendar month.
+ *
+ * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
+ * @param array{total: float, by_size: array<string, float>, by_variant?: array<string, float>, by_variant_size?: array<string, float>, rts_units: float} $shippedSummary
+ * @param array{total: float, by_size: array<string, float>, by_variant?: array<string, float>, by_variant_size?: array<string, float>, rts_units: float} $walkInSummary
+ */
+function honey_sales_export_write_period_summary_sheet(
+    $sheet,
+    string $heading,
+    string $periodFieldLabel,
+    string $periodValue,
+    array $shippedSummary,
+    array $walkInSummary,
+    int $shippedRowCount,
+    int $walkInCheckoutCount,
+    string $channelScopeLabel = 'this period'
+): void {
+    $sheet->setCellValue('A1', $heading);
+    $sheet->setCellValue('A2', $periodFieldLabel);
+    $sheet->setCellValue('B2', $periodValue);
+    $sheet->setCellValue('A3', 'Shipped rows');
+    $sheet->setCellValue('B3', $shippedRowCount);
+    $sheet->setCellValue('A4', 'Walk-in checkouts');
+    $sheet->setCellValue('B4', $walkInCheckoutCount);
+    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+    $sheet->getStyle('A2:A4')->getFont()->setBold(true);
+
+    $r = 6;
+    $r = honey_sales_export_write_channel_breakdown_block(
+        $sheet,
+        $r,
+        'Shipped / pack-scan (' . $channelScopeLabel . ')',
+        'Shipped / pack-scan (units in sheet)',
+        $shippedSummary
+    );
+    $r = honey_sales_export_write_channel_breakdown_block(
+        $sheet,
+        $r,
+        'Walk-in sales (' . $channelScopeLabel . ')',
+        'Walk-in sold (units on receipts)',
+        $walkInSummary
+    );
+
+    foreach (['A', 'B'] as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+}
+
+/**
+ * @deprecated Use honey_sales_export_write_period_summary_sheet
  * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
  * @param array{total: float, by_size: array<string, float>, by_variant?: array<string, float>, by_variant_size?: array<string, float>, rts_units: float} $shippedSummary
  * @param array{total: float, by_size: array<string, float>, by_variant?: array<string, float>, by_variant_size?: array<string, float>, rts_units: float} $walkInSummary
@@ -2047,39 +2122,21 @@ function honey_sales_export_write_month_summary_sheet(
     int $shippedRowCount,
     int $walkInCheckoutCount
 ): void {
-    $sheet->setCellValue('A1', $monthLabel . ' — monthly summary');
-    $sheet->setCellValue('A2', 'Calendar month');
-    $sheet->setCellValue('B2', $monthKey);
-    $sheet->setCellValue('A3', 'Shipped rows');
-    $sheet->setCellValue('B3', $shippedRowCount);
-    $sheet->setCellValue('A4', 'Walk-in checkouts');
-    $sheet->setCellValue('B4', $walkInCheckoutCount);
-    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-    $sheet->getStyle('A2:A4')->getFont()->setBold(true);
-
-    $r = 6;
-    $r = honey_sales_export_write_channel_breakdown_block(
+    honey_sales_export_write_period_summary_sheet(
         $sheet,
-        $r,
-        'Shipped / pack-scan (this month)',
-        'Shipped / pack-scan (units in sheet)',
-        $shippedSummary
+        $monthLabel . ' — monthly summary',
+        'Calendar month',
+        $monthKey,
+        $shippedSummary,
+        $walkInSummary,
+        $shippedRowCount,
+        $walkInCheckoutCount,
+        'this month'
     );
-    $r = honey_sales_export_write_channel_breakdown_block(
-        $sheet,
-        $r,
-        'Walk-in sales (this month)',
-        'Walk-in sold (units on receipts)',
-        $walkInSummary
-    );
-
-    foreach (['A', 'B'] as $col) {
-        $sheet->getColumnDimension($col)->setAutoSize(true);
-    }
 }
 
 /**
- * Write shipped detail table (optional part label) onto a sheet.
+ * Write shipped detail table with mini size/variant summary at top.
  *
  * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
  * @param list<array<string, mixed>> $rows
@@ -2088,13 +2145,24 @@ function honey_sales_export_write_shipped_detail(
     $sheet,
     array $rows,
     string $partLabel,
-    string $emptyMessage
+    string $emptyMessage,
+    string $periodLabel = ''
 ): void {
-    $sheet->setCellValue('A1', $partLabel);
-    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
+    $summary = honey_sales_export_summarize_shipped($rows);
+    $period = $periodLabel !== '' ? $periodLabel : $partLabel;
+    $detailStart = honey_sales_export_write_summary_block(
+        $sheet,
+        'Shipped / pack-scan',
+        $period,
+        $summary,
+        'shipped'
+    );
+
+    $sheet->setCellValue('A' . $detailStart, 'Detail · ' . $partLabel);
+    $sheet->getStyle('A' . $detailStart)->getFont()->setBold(true)->setSize(12);
 
     $headers = ['When packed', 'Variant', 'Size', 'Qty', 'Tracking / pack session', 'Barcode', 'RTS resellable', 'Packed by'];
-    $headerRow = 3;
+    $headerRow = $detailStart + 2;
     $cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     foreach ($headers as $i => $h) {
         $sheet->setCellValue($cols[$i] . $headerRow, $h);
@@ -2124,7 +2192,7 @@ function honey_sales_export_write_shipped_detail(
 }
 
 /**
- * Write walk-in detail table onto a sheet.
+ * Write walk-in detail table with mini size/variant summary at top.
  *
  * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
  * @param list<array<string, mixed>> $rows
@@ -2136,16 +2204,27 @@ function honey_sales_export_write_walk_in_detail(
     array $rtsFlags,
     bool $canViewAmounts,
     string $partLabel,
-    string $emptyMessage
+    string $emptyMessage,
+    string $periodLabel = ''
 ): void {
-    $sheet->setCellValue('A1', $partLabel);
-    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
+    $summary = honey_sales_export_summarize_walk_in($rows, $rtsFlags);
+    $period = $periodLabel !== '' ? $periodLabel : $partLabel;
+    $detailStart = honey_sales_export_write_summary_block(
+        $sheet,
+        'Walk-in sales',
+        $period,
+        $summary,
+        'walk_in'
+    );
+
+    $sheet->setCellValue('A' . $detailStart, 'Detail · ' . $partLabel);
+    $sheet->getStyle('A' . $detailStart)->getFont()->setBold(true)->setSize(12);
 
     $headers = ['When sold', 'Receipt', 'Sold by', 'Sold to', 'Items', 'Qty', 'Type', 'RTS resellable'];
     if ($canViewAmounts) {
         $headers[] = 'Total';
     }
-    $headerRow = 3;
+    $headerRow = $detailStart + 2;
     $cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
     foreach ($headers as $i => $h) {
         $sheet->setCellValue($cols[$i] . $headerRow, $h);
@@ -2280,9 +2359,10 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
     $usedTitles = [];
     $firstSheet = true;
+    $splitMonthSummaries = honey_sales_export_use_per_month_summaries($range, $monthOrder);
 
-    // --- One summary sheet per calendar month (not all-time rollup) ---
-    if ($monthOrder === []) {
+    // --- Summary sheet(s): filter-scoped for Today/week/month; per calendar month for all-time ---
+    if ($monthOrder === [] && $shippedRows === [] && $walkInRows === []) {
         $sheet = $spreadsheet->getActiveSheet();
         $title = 'No data';
         $usedTitles[$title] = true;
@@ -2291,6 +2371,25 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         $sheet->setCellValue('A2', 'Period');
         $sheet->setCellValue('B2', $filterLabel);
         $firstSheet = false;
+    } elseif (!$splitMonthSummaries) {
+        $shpSum = honey_sales_export_summarize_shipped($shippedRows);
+        $wlkSum = honey_sales_export_summarize_walk_in($walkInRows, $rtsFlags);
+        $title = 'Summary';
+        $usedTitles[$title] = true;
+        $sheet = $spreadsheet->getActiveSheet();
+        $firstSheet = false;
+        $sheet->setTitle($title);
+        honey_sales_export_write_period_summary_sheet(
+            $sheet,
+            $filterLabel . ' — summary',
+            'Period',
+            $filterLabel,
+            $shpSum,
+            $wlkSum,
+            count($shippedRows),
+            count($walkInRows),
+            'this period'
+        );
     } else {
         $monthYearsInExport = [];
         foreach ($monthOrder as $m) {
@@ -2352,7 +2451,13 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
             $sheet = $spreadsheet->createSheet();
             $title = honey_sales_export_unique_sheet_title('No data', 'shp', 1, false, '', $usedTitles);
             $sheet->setTitle($title);
-            honey_sales_export_write_shipped_detail($sheet, [], 'Shipped / pack-scan', $shippedEmpty);
+            honey_sales_export_write_shipped_detail(
+                $sheet,
+                [],
+                'Shipped / pack-scan',
+                $shippedEmpty,
+                $filterLabel
+            );
         }
         if ($channel !== 'online') {
             $sheet = $spreadsheet->createSheet();
@@ -2364,13 +2469,16 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
                 $rtsFlags,
                 $canViewAmounts,
                 'Walk-in sales',
-                $walkEmpty
+                $walkEmpty,
+                $filterLabel
             );
         }
     } else {
         foreach ($weekOrder as $key => $meta) {
             $weekLabel = (string) $meta['label'];
             $year = (string) $meta['year'];
+            $weekPeriodLabel = $filterLabel . ' · ' . $weekLabel
+                . ' (Mon ' . $meta['start'] . ' – Sun ' . $meta['end'] . ')';
 
             if ($channel !== 'walk_in') {
                 $shpRows = $shippedByKey[$key]['rows'] ?? [];
@@ -2387,9 +2495,14 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
                     );
                     $sheet->setTitle($title);
                     $partLabel = 'Shipped / pack-scan · ' . $weekLabel
-                        . ' (Mon ' . $meta['start'] . ' – Sun ' . $meta['end'] . ')'
                         . ($part > 1 ? ' · part ' . $part : '');
-                    honey_sales_export_write_shipped_detail($sheet, $chunk, $partLabel, $shippedEmpty);
+                    honey_sales_export_write_shipped_detail(
+                        $sheet,
+                        $chunk,
+                        $partLabel,
+                        $shippedEmpty,
+                        $weekPeriodLabel
+                    );
                 }
             }
 
@@ -2408,7 +2521,6 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
                     );
                     $sheet->setTitle($title);
                     $partLabel = 'Walk-in · ' . $weekLabel
-                        . ' (Mon ' . $meta['start'] . ' – Sun ' . $meta['end'] . ')'
                         . ($part > 1 ? ' · part ' . $part : '');
                     honey_sales_export_write_walk_in_detail(
                         $sheet,
@@ -2416,7 +2528,8 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
                         $rtsFlags,
                         $canViewAmounts,
                         $partLabel,
-                        $walkEmpty
+                        $walkEmpty,
+                        $weekPeriodLabel
                     );
                 }
             }
