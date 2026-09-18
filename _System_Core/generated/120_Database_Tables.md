@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-17T11:12:54+02:00
+generated: 2026-09-18T05:13:36+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -479,6 +479,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_has_source_column]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_has_reason_column]] |
 | `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_write]] |
 | `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_list]] |
 

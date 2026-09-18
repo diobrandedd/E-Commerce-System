@@ -71,14 +71,10 @@ export function InventoryCheckPage() {
   const [scanFlash, setScanFlash] = useState<"ok" | "err" | "dup" | null>(null);
   const [scanFlashMsg, setScanFlashMsg] = useState<string | null>(null);
   const [scanPopup, setScanPopup] = useState<string | null>(null);
-  const [pending, setPending] = useState<{ code: string; label: string; isSku: boolean } | null>(null);
+  const [pending, setPending] = useState<{ code: string; label: string } | null>(null);
   const [pendingQty, setPendingQty] = useState("1");
-  const [pendingBatch, setPendingBatch] = useState("");
-  const [pendingDate, setPendingDate] = useState("");
-  const [lastDocs, setLastDocs] = useState({ batch: "", date: "" });
   const [docBusy, setDocBusy] = useState(false);
   const qtyInputRef = useRef<HTMLInputElement>(null);
-  const batchInputRef = useRef<HTMLInputElement>(null);
   const lastItemRef = useRef(lastItem);
   lastItemRef.current = lastItem;
   const pendingRef = useRef(pending);
@@ -98,8 +94,6 @@ export function InventoryCheckPage() {
 
   const [editId, setEditId] = useState<number | null>(null);
   const [editQty, setEditQty] = useState("");
-  const [editBatch, setEditBatch] = useState("");
-  const [editDate, setEditDate] = useState("");
   const [selectedHistoryIds, setSelectedHistoryIds] = useState<number[]>([]);
   const [mergeBusy, setMergeBusy] = useState(false);
 
@@ -219,8 +213,6 @@ export function InventoryCheckPage() {
     setQtyBusy(false);
     setPending(null);
     setPendingQty("1");
-    setPendingBatch(lastDocs.batch);
-    setPendingDate(lastDocs.date);
     setDocBusy(false);
     setScanFlash(null);
     setScanFlashMsg(null);
@@ -238,8 +230,8 @@ export function InventoryCheckPage() {
     setCameraOpen(false);
     window.setTimeout(() => {
       if (pendingRef.current) {
-        batchInputRef.current?.focus();
-        batchInputRef.current?.select();
+        qtyInputRef.current?.focus();
+        qtyInputRef.current?.select();
       } else if (lastItemRef.current?.isSku) {
         qtyInputRef.current?.focus();
         qtyInputRef.current?.select();
@@ -273,17 +265,15 @@ export function InventoryCheckPage() {
     }
   };
 
-  /** Commit after batch + bottling date are filled. */
+  /** Commit scan (SKU with qty, or unique sticker as +1). */
   const commitScan = async (
     value: string,
-    opts: { qty: number; label: string; isSku: boolean; batch_no: string; bottling_date: string },
+    opts: { qty: number; label: string; isSku: boolean },
   ): Promise<boolean> => {
     if (!event) return false;
     try {
       const res = await inventoryCheckApi.scan(event.id, value, {
         qty: opts.qty,
-        batch_no: opts.batch_no,
-        bottling_date: opts.bottling_date,
       });
       if (res.result === "unknown") {
         playScanBeep("bad");
@@ -334,7 +324,6 @@ export function InventoryCheckPage() {
         });
         setLastQty(String(scanned.counted_qty ?? opts.qty));
       }
-      setLastDocs({ batch: opts.batch_no, date: opts.bottling_date });
       return true;
     } catch (e) {
       const reason = e instanceof ApiError ? e.message : "Scan failed.";
@@ -344,50 +333,39 @@ export function InventoryCheckPage() {
     }
   };
 
+  /** SKU only: confirm quantity after scan. */
   const confirmPending = async () => {
     if (!pending || !event) return;
-    const batch = pendingBatch.trim().toUpperCase();
-    const date = pendingDate.trim();
-    if (!batch) {
-      flash("err", "Batch number is required.");
-      batchInputRef.current?.focus();
-      return;
-    }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      flash("err", "Bottling date is required.");
-      return;
-    }
-    const qty = pending.isSku ? Math.max(1, parseInt(pendingQty, 10) || 1) : 1;
+    const qty = Math.max(1, parseInt(pendingQty, 10) || 1);
     setDocBusy(true);
     try {
       const okAdd = await commitScan(pending.code, {
         qty,
         label: pending.label,
-        isSku: pending.isSku,
-        batch_no: batch,
-        bottling_date: date,
+        isSku: true,
       });
       if (okAdd) {
         setPending(null);
         setPendingQty("1");
-        setPendingBatch(batch);
-        setPendingDate(date);
         setCameraOpen(false);
-        refocus();
+        window.setTimeout(() => {
+          qtyInputRef.current?.focus();
+          qtyInputRef.current?.select();
+        }, 40);
       }
     } finally {
       setDocBusy(false);
     }
   };
 
-  /** Scan → pending docs; commit only after batch + bottling date. */
+  /** Unique stickers auto-commit; SKU barcodes pause for quantity. */
   const onAddScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     const value = (raw ?? code).trim();
     if (!value || !event) return;
     setCode("");
 
     if (pending) {
-      return { kind: "error", message: "Confirm batch and bottling date first." };
+      return { kind: "error", message: "Enter quantity for the current product first." };
     }
 
     const now = Date.now();
@@ -401,15 +379,16 @@ export function InventoryCheckPage() {
 
       if (lookup.lookup_kind === "sku") {
         const label = lookup.label ?? lookup.product_label ?? value;
-        setPending({ code: value, label, isSku: true });
+        setPending({ code: value, label });
         setPendingQty("1");
-        setPendingBatch(lastDocs.batch);
-        setPendingDate(lastDocs.date);
         setCameraOpen(false);
         playScanBeep("ok");
-        flash("ok", `${label} — enter batch & date`, { popup: false });
-        window.setTimeout(() => batchInputRef.current?.focus(), 40);
-        return { kind: "success", message: `${label} · enter docs` };
+        flash("ok", `${label} — enter quantity`, { popup: false });
+        window.setTimeout(() => {
+          qtyInputRef.current?.focus();
+          qtyInputRef.current?.select();
+        }, 40);
+        return { kind: "success", message: `${label} · enter qty` };
       }
 
       if (lookup.lookup_kind === "unique_honey" || lookup.lookup_kind === "unique_dept") {
@@ -417,15 +396,11 @@ export function InventoryCheckPage() {
           lookup.label ??
           ([lookup.product_label, lookup.size_label, lookup.variant].filter(Boolean).join(" · ") ||
             value);
-        setPending({ code: value, label, isSku: false });
-        setPendingQty("1");
-        setPendingBatch(lastDocs.batch);
-        setPendingDate(lastDocs.date);
-        setCameraOpen(false);
-        playScanBeep("ok");
-        flash("ok", `${label} — enter batch & date`, { popup: false });
-        window.setTimeout(() => batchInputRef.current?.focus(), 40);
-        return { kind: "success", message: `${label} · enter docs` };
+        const okAdd = await commitScan(value, { qty: 1, label, isSku: false });
+        if (!okAdd) {
+          return { kind: "error", message: "Not accepted" };
+        }
+        return { kind: "success", message: `${label} · counted` };
       }
 
       playScanBeep("bad");
@@ -496,26 +471,16 @@ export function InventoryCheckPage() {
   const startEdit = (row: InventoryCheckScan) => {
     setEditId(row.id);
     setEditQty(String(row.counted_qty ?? 1));
-    setEditBatch((row.batch_no ?? "").toUpperCase());
-    setEditDate(row.bottling_date ?? "");
   };
 
   const saveEdit = async () => {
     if (!event || editId == null) return;
     const n = Math.max(1, parseInt(editQty, 10) || 1);
-    const batch = editBatch.trim().toUpperCase();
-    const date = editDate.trim();
-    if (!batch || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      setError("Batch number and bottling date are required.");
-      return;
-    }
     setBusy(true);
     setError(null);
     try {
       const res = await inventoryCheckApi.scanUpdate(event.id, editId, {
         qty: n,
-        batch_no: batch,
-        bottling_date: date,
       });
       if (res.summary) {
         setSummary(res.summary);
@@ -535,67 +500,69 @@ export function InventoryCheckPage() {
     }
   };
 
+  /** Close the private session into history — does not change stock. */
   const openComplete = async () => {
     if (!event) return;
+    if (
+      !window.confirm(
+        "Complete this audit? It will be closed and saved to history. Inventory will not change — an executive can compare selected sessions later and update stock.",
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
-      const preview = await inventoryCheckApi.comparePreview(event.id);
-      setCompareMode("session");
-      setCompare(preview);
-      setCompareOpen(true);
+      await inventoryCheckApi.closeEvent(event.id);
+      setOk("Audit completed and saved to history. Stock was not changed.");
+      closeAddModal();
+      await loadContext({ silent: true });
+      setShowHistory(true);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Could not build comparison.");
+      setError(e instanceof ApiError ? e.message : "Could not complete the audit.");
     } finally {
       setBusy(false);
     }
   };
 
   const requestFinalize = () => {
+    if (!canViewAll || compareMode !== "merged") return;
     setPwError(null);
     setPwOpen(true);
   };
 
   const finalizeWithPassword = async (adminPassword: string) => {
+    if (!canViewAll) {
+      setPwError("Only full-report accounts can update inventory from audits.");
+      return;
+    }
     setPwBusy(true);
     setPwError(null);
     setBusy(true);
     setError(null);
     try {
-      if (compareMode === "merged") {
-        const closedIds = selectedHistoryIds.filter(id => history.find(h => h.id === id)?.status === "closed");
-        if (closedIds.length < 1) throw new Error("Select at least one closed audit.");
-        const res = await inventoryCheckApi.finalizeMerged(closedIds, adminPassword);
-        setCompare(res.compare);
-        const voided = res.compare.run.barcodes_voided_count ?? 0;
-        setOk(
-          voided > 0
-            ? `Inventory updated to audited counts. ${voided} unique barcode(s) voided. Variance saved to history.`
-            : "Inventory updated to audited counts. Variance saved to history.",
-        );
-        setSelectedHistoryIds([]);
-      } else {
-        if (!event) throw new Error("No open audit.");
-        const res = await inventoryCheckApi.finalize(event.id, adminPassword);
-        setCompare(res.compare);
-        const voided = res.compare.run.barcodes_voided_count ?? 0;
-        setOk(
-          voided > 0
-            ? `Inventory updated to audited counts. ${voided} unique barcode(s) voided. Variance saved to history.`
-            : "Inventory updated to audited counts. Variance saved to history.",
-        );
-      }
+      const closedIds = selectedHistoryIds.filter(id => history.find(h => h.id === id)?.status === "closed");
+      if (closedIds.length < 1) throw new Error("Select at least one closed audit.");
+      const res = await inventoryCheckApi.finalizeMerged(closedIds, adminPassword);
+      setCompare(res.compare);
+      const voided = res.compare.run.barcodes_voided_count ?? 0;
+      setOk(
+        voided > 0
+          ? `Inventory updated to audited counts. ${voided} unique barcode(s) voided. Variance saved to history.`
+          : "Inventory updated to audited counts. Variance saved to history.",
+      );
+      setSelectedHistoryIds([]);
       setPwOpen(false);
       setCompareOpen(false);
-      await loadContext();
-      if (canViewAll) {
-        try {
-          const applied = await inventoryCheckApi.appliedRunsList(1, 25);
-          setAppliedRuns(applied.rows);
-          setAppliedRunsTotal(applied.total);
-        } catch {
-          /* history refresh is best-effort */
-        }
+      await loadContext({ silent: true });
+      try {
+        const applied = await inventoryCheckApi.appliedRunsList(1, 25);
+        setAppliedRuns(applied.rows);
+        setAppliedRunsTotal(applied.total);
+        const hist = await inventoryCheckApi.eventList(1);
+        setHistory(hist.rows);
+      } catch {
+        /* history refresh is best-effort */
       }
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not update inventory.";
@@ -619,7 +586,7 @@ export function InventoryCheckPage() {
   return (
     <PageLayout
       title="Check inventory"
-      subtitle="Your private audit of finished products. Confirm updates finished stock to audited counts (administrator password required)."
+      subtitle="Private audits of finished products. Completing saves to history without changing stock — executives compare selected sessions to update inventory."
     >
       <AppSectionEnter className="space-y-4">
         <div className="rounded-xl border border-border bg-card px-4 py-3 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3">
@@ -701,9 +668,15 @@ export function InventoryCheckPage() {
                 </p>
                 {canViewAll ? (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Select closed rows (any dates) then compare them together against system inventory.
+                    Select closed sessions (any dates), compare against system inventory, then confirm to update
+                    stock (administrator password required).
                   </p>
-                ) : null}
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Completed audits stay here for review. Updating stock is done by an executive after they
+                    compare selected sessions.
+                  </p>
+                )}
               </div>
               {canViewAll ? (
                 <Button
@@ -835,7 +808,7 @@ export function InventoryCheckPage() {
                     Confirmed inventory updates
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Stock applied from Complete or merged Compare — frozen mismatch lines.
+                    Stock applied when an executive confirms after Compare selected — frozen mismatch lines.
                   </p>
                 </div>
                 {appliedRuns.length === 0 ? (
@@ -944,7 +917,8 @@ export function InventoryCheckPage() {
             {sessionOpen && (
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">
-                  Scan a product, then enter batch number and bottling date before the next scan.
+                  Scan a product barcode, then enter how many you counted. Unique stickers count as 1
+                  automatically.
                 </p>
                 <Button
                   type="button"
@@ -971,8 +945,6 @@ export function InventoryCheckPage() {
                     <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
                       <th className="px-3 py-2">Product</th>
                       <th className="px-3 py-2">Code</th>
-                      <th className="px-3 py-2">Batch</th>
-                      <th className="px-3 py-2">Bottled</th>
                       <th className="px-3 py-2 text-right">Qty</th>
                       <th className="px-3 py-2">By</th>
                       <th className="px-3 py-2 w-28" />
@@ -993,29 +965,6 @@ export function InventoryCheckPage() {
                             ) : null}
                           </td>
                           <td className="px-3 py-2 font-mono text-xs">{r.code}</td>
-                          <td className="px-3 py-2">
-                            {editing ? (
-                              <input
-                                className="w-28 border rounded-lg px-2 py-1 text-sm uppercase"
-                                value={editBatch}
-                                onChange={e => setEditBatch(e.target.value.toUpperCase())}
-                              />
-                            ) : (
-                              r.batch_no ?? "—"
-                            )}
-                          </td>
-                          <td className="px-3 py-2">
-                            {editing ? (
-                              <input
-                                type="date"
-                                className="w-36 border rounded-lg px-2 py-1 text-sm"
-                                value={editDate}
-                                onChange={e => setEditDate(e.target.value)}
-                              />
-                            ) : (
-                              r.bottling_date ?? "—"
-                            )}
-                          </td>
                           <td className="px-3 py-2 text-right">
                             {editing ? (
                               <input
@@ -1087,8 +1036,8 @@ export function InventoryCheckPage() {
         <AppModalHeader title="Add to list" onClose={closeAddModal} />
         <AppModalBody className="space-y-4 relative">
           <p className="text-xs text-muted-foreground">
-            Scan first, then enter batch number and bottling date. Those fields document the count only —
-            system inventory still matches by product and size.
+            Scan a product barcode — variant and size come from the code. For SKU stickers, enter how many
+            you counted; unique unit stickers count as 1 right away.
           </p>
           <AnimatePresence>
             {scanPopup ? (
@@ -1109,73 +1058,33 @@ export function InventoryCheckPage() {
           {pending ? (
             <div
               className="rounded-xl border border-border bg-secondary/20 p-3 space-y-3"
-              data-testid="inventory-check-pending-docs"
+              data-testid="inventory-check-pending-qty-panel"
             >
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Just scanned</p>
                 <p className="text-sm font-semibold mt-0.5">{pending.label}</p>
                 <p className="font-mono text-xs text-muted-foreground">{pending.code}</p>
               </div>
-              {pending.isSku ? (
-                <div className="w-28">
-                  <label className="text-xs text-muted-foreground" htmlFor="inv-check-pending-qty">
-                    How many
-                  </label>
-                  <input
-                    id="inv-check-pending-qty"
-                    className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
-                    type="number"
-                    min={1}
-                    value={pendingQty}
-                    onChange={e => setPendingQty(e.target.value)}
-                    data-testid="inventory-check-pending-qty"
-                  />
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">Unique sticker — counts as 1.</p>
-              )}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs text-muted-foreground" htmlFor="inv-check-pending-batch">
-                    Batch number
-                  </label>
-                  <input
-                    ref={batchInputRef}
-                    id="inv-check-pending-batch"
-                    className="mt-1 w-full border rounded-lg px-3 py-2 text-sm tracking-wide uppercase"
-                    value={pendingBatch}
-                    onChange={e => setPendingBatch(e.target.value.toUpperCase())}
-                    autoComplete="off"
-                    required
-                    data-testid="inventory-check-batch-input"
-                    onKeyDown={e => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void confirmPending();
-                      }
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground" htmlFor="inv-check-pending-date">
-                    Bottling date
-                  </label>
-                  <input
-                    id="inv-check-pending-date"
-                    type="date"
-                    className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                    value={pendingDate}
-                    onChange={e => setPendingDate(e.target.value)}
-                    required
-                    data-testid="inventory-check-bottling-date"
-                    onKeyDown={e => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void confirmPending();
-                      }
-                    }}
-                  />
-                </div>
+              <div className="w-28">
+                <label className="text-xs text-muted-foreground" htmlFor="inv-check-pending-qty">
+                  How many
+                </label>
+                <input
+                  ref={qtyInputRef}
+                  id="inv-check-pending-qty"
+                  className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                  type="number"
+                  min={1}
+                  value={pendingQty}
+                  onChange={e => setPendingQty(e.target.value)}
+                  data-testid="inventory-check-pending-qty"
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void confirmPending();
+                    }
+                  }}
+                />
               </div>
               <div className="flex flex-wrap gap-2 justify-end">
                 <Button
@@ -1190,7 +1099,7 @@ export function InventoryCheckPage() {
                   Discard scan
                 </Button>
                 <Button type="button" onClick={() => void confirmPending()} disabled={docBusy}>
-                  {docBusy ? <Loader2 className="animate-spin" size={16} /> : "Confirm line"}
+                  {docBusy ? <Loader2 className="animate-spin" size={16} /> : "Confirm quantity"}
                 </Button>
               </div>
             </div>
@@ -1233,7 +1142,7 @@ export function InventoryCheckPage() {
                     ? (scanFlashMsg ?? "Already counted")
                     : scanFlash === "err"
                       ? (scanFlashMsg ?? "Not accepted")
-                      : "Ready — scan, then enter batch & date"}
+                      : "Ready — scan a barcode, then enter quantity"}
               </div>
               {lastItem ? (
                 <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2">
@@ -1286,7 +1195,7 @@ export function InventoryCheckPage() {
           title="Scan barcode"
           continuous
           sameCodeCooldownMs={SCAN_COOLDOWN_MS}
-          scanPrompt="Point at a barcode. You’ll enter batch and bottling date next."
+          scanPrompt="Point at a barcode. For SKU codes you’ll enter quantity next."
           onClose={closeCamera}
           onDecoded={decoded => onAddScan(decoded)}
         />
@@ -1337,19 +1246,29 @@ export function InventoryCheckPage() {
                 </table>
               </div>
               <InventoryCheckBatchDocs batches={compare.batches ?? []} />
-              <p className="text-xs text-muted-foreground">
-                Confirm sets finished stock to the audited totals for these lines (+ adds, − deducts). Unique
-                stickers in this audit stay; other in-stock uniques for those same products are voided. Requires
-                the administrator password from System Settings.
-              </p>
-              <div className="flex flex-wrap justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setCompareOpen(false)} disabled={busy}>
-                  Go back
-                </Button>
-                <Button type="button" onClick={() => requestFinalize()} disabled={busy || (!canManage && !canViewAll)}>
-                  {busy ? <Loader2 className="animate-spin" size={16} /> : "Confirm and update inventory"}
-                </Button>
-              </div>
+              {canViewAll && compareMode === "merged" ? (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Confirm sets finished stock to the audited totals for these lines (+ adds, − deducts). Unique
+                    stickers in this audit stay; other in-stock uniques for those same products are voided. Requires
+                    the administrator password from System Settings.
+                  </p>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setCompareOpen(false)} disabled={busy}>
+                      Go back
+                    </Button>
+                    <Button type="button" onClick={() => requestFinalize()} disabled={busy}>
+                      {busy ? <Loader2 className="animate-spin" size={16} /> : "Confirm and update inventory"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setCompareOpen(false)} disabled={busy}>
+                    Close
+                  </Button>
+                </div>
+              )}
             </>
           ) : (
             <p className="text-sm text-muted-foreground flex items-center gap-2">

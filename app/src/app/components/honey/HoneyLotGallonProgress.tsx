@@ -67,10 +67,14 @@ export function HoneyLotGallonProgress({
       </div>
       <p className="mt-1 text-[10px] text-muted-foreground tabular-nums">
         {overdrawn
-          ? `of ${capacityLabel} gal stocked`
+          ? capacityOk
+            ? `of ${capacityLabel} gal stocked`
+            : "Overdrawn — next stock-out starts a new max"
           : capacityOk
             ? `${Math.round(fillPct)}% of ${capacityLabel} gal`
-            : "No capacity recorded"}
+            : Number.isFinite(remaining) && Math.abs(remaining) <= 1e-9
+              ? "Empty — next stock-out starts a new max"
+              : "No capacity recorded"}
       </p>
     </div>
   );

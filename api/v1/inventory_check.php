@@ -357,18 +357,20 @@ function api_inventory_check_finalize(): void
 {
     api_method_allowed(['POST']);
     api_inventory_check_require_csrf();
-    $user = api_inventory_check_require_scan();
+    // Stock updates only after a closed audit is selected from history (same gate as merge).
+    $user = api_inventory_check_require_view_all();
     $in = api_input();
     require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
     api_require_admin_override_password($in);
     $pdo = ims_pdo();
     $eventId = (int) ($in['event_id'] ?? 0);
     api_inventory_check_require_event_access($user, $eventId);
-    if (!inventory_check_can_manage($user) && !inventory_check_can_view_all($user)) {
-        api_fail('Forbidden.', 403);
+    $ev = inventory_check_event_get($pdo, $eventId);
+    if ((string) ($ev['status'] ?? '') !== 'closed') {
+        api_fail('Complete the audit first so it is in history, then confirm from Compare selected.', 422);
     }
     try {
-        $result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], true);
+        $result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], false);
         api_ok($result);
     } catch (Throwable $e) {
         if ($e->getMessage() === 'Forbidden.') {

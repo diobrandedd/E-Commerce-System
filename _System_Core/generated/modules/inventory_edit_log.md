@@ -1,9 +1,9 @@
 ---
 title: inventory_edit_log
 source: includes/inventory_edit_log.php
-generated: 2026-09-17T11:13:23+02:00
+generated: 2026-09-18T05:14:06+02:00
 type: module
-function_count: 3
+function_count: 4
 ---
 
 
@@ -23,9 +23,19 @@ function_count: 3
 
 **Callers (3):**
 
-- `includes/inventory_edit_log.php`:38 — `if ($source !== null && $source !== '' && inventory_edit_log_has_source_column($pdo)) {`
-- `includes/inventory_edit_log.php`:77 — `if ($source !== null && $source !== '' && inventory_edit_log_has_source_column($pdo)) {`
-- `includes/inventory_edit_log.php`:96 — `$hasSource = inventory_edit_log_has_source_column($pdo);`
+- `includes/inventory_edit_log.php`:55 — `$hasSource = $source !== null && $source !== '' && inventory_edit_log_has_source_column($pdo);`
+- `includes/inventory_edit_log.php`:113 — `if ($source !== null && $source !== '' && inventory_edit_log_has_source_column($pdo)) {`
+- `includes/inventory_edit_log.php`:137 — `$hasSource = inventory_edit_log_has_source_column($pdo);`
+
+## inventory_edit_log_has_reason_column {#inventory_edit_log_has_reason_column}
+
+**Tables:** `inventory_edit_log`
+
+**Callers (3):**
+
+- `includes/inventory_edit_log.php`:56 — `$hasReason = $reason !== null && $reason !== '' && inventory_edit_log_has_reason_column($pdo);`
+- `includes/inventory_edit_log.php`:127 — `if (inventory_edit_log_has_reason_column($pdo)) {`
+- `includes/inventory_edit_log.php`:138 — `$hasReason = inventory_edit_log_has_reason_column($pdo);`
 
 ## inventory_edit_log_write {#inventory_edit_log_write}
 
@@ -34,7 +44,7 @@ function_count: 3
 **Callers (8):**
 
 - `includes/dept_inventory.php`:878 — `inventory_edit_log_write(`
-- `includes/honey_inventory.php`:1736 — `inventory_edit_log_write($pdo, $userId, $rowTable, $rowId, $field, $old, $new, $source);`
+- `includes/honey_inventory.php`:1790 — `inventory_edit_log_write($pdo, $userId, $rowTable, $rowId, $field, $old, $new, $source, $reason);`
 - `includes/material_inventory.php`:941 — `inventory_edit_log_write(`
 - `includes/material_inventory.php`:1412 — `inventory_edit_log_write(`
 - `includes/rts_inventory_sync.php`:741 — `inventory_edit_log_write($pdo, $userId, 'rts_inventory_rows', $id, $curCol, (string) $old, (string) $new, 'monthly_inventory');`

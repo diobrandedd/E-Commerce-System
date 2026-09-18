@@ -127,6 +127,7 @@ export function ExecutiveRowEditModal(props: Props) {
         }
       : {},
   );
+  const [reason, setReason] = useState("");
 
   const rowTable =
     stage === "warehouse"
@@ -140,6 +141,14 @@ export function ExecutiveRowEditModal(props: Props) {
   const submit = async () => {
     setBusy(true);
     setErr(null);
+    if (stage === "packaging") {
+      const trimmed = reason.trim();
+      if (trimmed.length < 5) {
+        setErr("Enter a reason for this correction (at least 5 characters).");
+        setBusy(false);
+        return;
+      }
+    }
     const fields: Record<string, unknown> = { qty_mode: qtyMode };
     if (stage === "warehouse") {
       if (supplier) fields.supplier_id = supplier.id;
@@ -157,6 +166,7 @@ export function ExecutiveRowEditModal(props: Props) {
         if (Number.isFinite(v)) sq[s] = v;
       });
       fields.size_qtys = sq;
+      fields.reason = reason.trim();
     } else {
       fields.product_label = productLabel;
       fields.current_qty = parseFloat(qty);
@@ -182,7 +192,9 @@ export function ExecutiveRowEditModal(props: Props) {
       : stage === "production"
         ? `Edit production — ${props.row.supplier_code}`
         : stage === "packaging"
-          ? `Edit packaging — ${props.row.batch_no}`
+          ? props.row.batch_no === "POOL"
+            ? `Edit finished honey — ${props.row.variant}`
+            : `Edit packaging — ${props.row.batch_no}`
           : "Edit dept row";
 
   const recordedQty =
@@ -328,6 +340,24 @@ export function ExecutiveRowEditModal(props: Props) {
                   />
                 </div>
               ))}
+              <div>
+                <label htmlFor={`${fieldId}-reason`} className="text-xs text-muted-foreground block mb-1">
+                  Reason for correction <span className="text-destructive">*</span>
+                </label>
+                <textarea
+                  id={`${fieldId}-reason`}
+                  value={reason}
+                  onChange={e => setReason(e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  placeholder="e.g. Physical count short 12× 250ml Light — missed stock-in on Sep 17"
+                  className="w-full border rounded-lg px-3 py-2 resize-y min-h-[4.5rem]"
+                  required
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Saved to Edit Logs for reporting. Does not rewrite stock-in scan history.
+                </p>
+              </div>
             </>
           )}
 

@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-09-17T11:13:53+02:00
+generated: 2026-09-18T05:14:28+02:00
 type: module
 function_count: 40
 ---
@@ -133,7 +133,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `api/v1/sku_barcodes.php`:207 — `$sku = sku_barcode_fetch_by_code($pdo, (string) $input['code']);`
 - `includes/barcode_verify.php`:22 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:1651 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
-- `includes/inventory_check.php`:342 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
+- `includes/inventory_check.php`:340 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/pack_cancel_restock.php`:254 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/pos_unified.php`:103 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/rts_stock_in_sessions.php`:256 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
@@ -149,7 +149,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `api/v1/bottle_barcodes.php`:278 — `$sku = sku_barcode_fetch_honey(ims_pdo(), (string) $req['variant'], (string) $req['size']);`
 - `api/v1/bottle_barcodes.php`:332 — `$sku = sku_barcode_fetch_honey($pdo, (string) $req['variant'], (string) $req['size']);`
 - `includes/honey_inventory.php`:413 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
-- `includes/honey_inventory.php`:1314 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
+- `includes/honey_inventory.php`:1359 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
 - `includes/rts_barcode_labels.php`:255 — `$sku = sku_barcode_fetch_honey($pdo, $variant, $size);`
 - `includes/rts_barcode_labels.php`:439 — `$sku = sku_barcode_fetch_honey(`
 - `includes/sku_barcodes.php`:121 — `return sku_barcode_fetch_honey($pdo, $variant, $size);`
@@ -232,7 +232,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (3):**
 
 - `includes/honey_inventory.php`:415 — `$credit = sku_barcode_credit_honey_requests(`
-- `includes/honey_inventory.php`:1316 — `$credit = sku_barcode_credit_honey_requests(`
+- `includes/honey_inventory.php`:1361 — `$credit = sku_barcode_credit_honey_requests(`
 - `includes/sku_barcodes.php`:1022 — `$credit = sku_barcode_credit_honey_requests(`
 
 ## sku_barcode_refresh_honey_request_status {#sku_barcode_refresh_honey_request_status}

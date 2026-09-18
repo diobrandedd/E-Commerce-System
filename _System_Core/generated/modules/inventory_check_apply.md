@@ -1,7 +1,7 @@
 ---
 title: inventory_check_apply
 source: includes/inventory_check_apply.php
-generated: 2026-09-17T11:13:22+02:00
+generated: 2026-09-18T05:14:05+02:00
 type: module
 function_count: 9
 ---
@@ -19,7 +19,7 @@ function_count: 9
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:945 — `return inventory_check_compare_run_for_events($pdo, [$eventId], $userId);`
+- `includes/inventory_check.php`:909 — `return inventory_check_compare_run_for_events($pdo, [$eventId], $userId);`
 - `includes/inventory_check_apply.php`:423 — `$compare = inventory_check_compare_run_for_events($pdo, $eventIds, $userId);`
 
 ## inventory_check_audited_unique_codes {#inventory_check_audited_unique_codes}
@@ -74,13 +74,13 @@ function_count: 9
 
 **Callers (2):**
 
-- `api/v1/inventory_check.php`:371 — `$result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], true);`
-- `api/v1/inventory_check.php`:403 — `$result = inventory_check_finalize_with_sync($pdo, $user, $eventIds, false);`
+- `api/v1/inventory_check.php`:373 — `$result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], false);`
+- `api/v1/inventory_check.php`:405 — `$result = inventory_check_finalize_with_sync($pdo, $user, $eventIds, false);`
 
 ## inventory_check_serialize_compare_run {#inventory_check_serialize_compare_run}
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:1200 — `'run' => inventory_check_serialize_compare_run($run),`
-- `includes/inventory_check.php`:1416 — `$run = inventory_check_serialize_compare_run($row);`
+- `includes/inventory_check.php`:1164 — `'run' => inventory_check_serialize_compare_run($run),`
+- `includes/inventory_check.php`:1380 — `$run = inventory_check_serialize_compare_run($row);`
 

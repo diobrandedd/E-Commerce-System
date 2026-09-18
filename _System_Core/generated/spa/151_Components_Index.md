@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-09-17T11:14:01+02:00
+generated: 2026-09-18T05:14:33+02:00
 type: spa
 ---
 
@@ -168,6 +168,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/honey/BatchTraceabilityDrawer.tsx`
 - `app/src/app/components/honey/CorrectionReviewModal.tsx`
 - `app/src/app/components/honey/ExecutiveRowEditModal.tsx`
+- `app/src/app/components/honey/HoneyFinishedEditLogsModal.tsx`
 - `app/src/app/components/honey/PackagingScanLogModal.tsx`
 - `app/src/app/components/inventory/AdminOverridePasswordModal.tsx`
 - `app/src/app/components/inventory/DeptRawProduceGuideModal.tsx`

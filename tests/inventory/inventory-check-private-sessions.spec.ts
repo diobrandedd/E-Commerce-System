@@ -37,7 +37,7 @@ async function fulfillJson(route: Route, data: unknown) {
 }
 
 test.describe("Inventory check private session UX", () => {
-  test("Add modal has batch field; history compare selected for view_all", async ({ page }) => {
+  test("Add modal asks for quantity; history compare selected for view_all", async ({ page }) => {
     let previewMerged = false;
     await page.route("**/rts/api/v1/auth.php**", async route => {
       await fulfillJson(route, mePayload);
@@ -176,7 +176,9 @@ test.describe("Inventory check private session UX", () => {
     });
 
     await page.getByRole("button", { name: /Add to list/i }).click();
-    await expect(page.getByTestId("inventory-check-batch-input")).toBeVisible();
+    await expect(page.getByTestId("inventory-check-scan-input")).toBeVisible();
+    await expect(page.getByText(/enter how many|Ready — scan a barcode/i).first()).toBeVisible();
+    await expect(page.getByTestId("inventory-check-batch-input")).toHaveCount(0);
     await page.getByRole("button", { name: /^Done$/i }).click();
 
     await page.getByRole("button", { name: /^History$/i }).click();

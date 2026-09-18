@@ -1,7 +1,7 @@
 ---
 title: pos_refund
 source: includes/pos_refund.php
-generated: 2026-09-17T11:13:39+02:00
+generated: 2026-09-18T05:14:20+02:00
 type: module
 function_count: 2
 ---

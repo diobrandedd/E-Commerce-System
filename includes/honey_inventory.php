@@ -534,8 +534,13 @@ function honey_production_variant_summary(PDO $pdo): array
         $initial = 0.0;
         $activeLots = 0;
         foreach ($lots as $lot) {
-            $current += (float) $lot['current_qty'];
-            $initial += (float) $lot['initial_qty'];
+            $lotCurrent = (float) $lot['current_qty'];
+            $lotInitial = (float) $lot['initial_qty'];
+            $current += $lotCurrent;
+            // Empty/overdrawn lots must not inflate the variant “of X gal” max.
+            if ($lotCurrent > 1e-9) {
+                $initial += $lotInitial;
+            }
             if ((int) ($lot['is_active'] ?? 1) === 1) {
                 $activeLots++;
             }
@@ -847,15 +852,20 @@ function honey_production_upsert_daily_lot(
             $pdo->prepare(
                 'UPDATE honey_production_rows
                  SET current_qty = current_qty + ? + ?,
-                     initial_qty = initial_qty + ? + ?,
+                     initial_qty = ?,
                      stock_out_date = ?,
                      daily_group_key = ?
                  WHERE id = ?'
             )->execute([
                 $quantity,
                 $extraCurrent,
-                $quantity,
-                $extraInitial,
+                honey_production_refill_initial_qty(
+                    (float) $production['current_qty'],
+                    (float) $production['initial_qty'],
+                    $quantity,
+                    $extraCurrent,
+                    $extraInitial
+                ),
                 $latestStockOut !== '' ? $latestStockOut : $stockOutDate,
                 $lotKey,
                 $productionId,
@@ -921,10 +931,22 @@ function honey_production_upsert_daily_lot(
         $pdo->prepare(
             'UPDATE honey_production_rows
              SET current_qty = current_qty + ? + ?,
-                 initial_qty = initial_qty + ? + ?,
+                 initial_qty = ?,
                  stock_out_date = ?
              WHERE id = ?'
-        )->execute([$quantity, $extraCurrent, $quantity, $extraInitial, $stockOutDate, $productionId]);
+        )->execute([
+            $quantity,
+            $extraCurrent,
+            honey_production_refill_initial_qty(
+                (float) $production['current_qty'],
+                (float) $production['initial_qty'],
+                $quantity,
+                $extraCurrent,
+                $extraInitial
+            ),
+            $stockOutDate,
+            $productionId,
+        ]);
     }
 
     $event = $pdo->prepare(
@@ -1238,12 +1260,35 @@ function honey_production_deduct_gallons(PDO $pdo, int $productionRowId, float $
         throw new RuntimeException('Bottle volume must be greater than zero.');
     }
     $upd = $pdo->prepare(
-        'UPDATE honey_production_rows SET current_qty = current_qty - ? WHERE id = ?'
+        'UPDATE honey_production_rows
+         SET current_qty = current_qty - ?,
+             initial_qty = CASE
+                 WHEN (current_qty - ?) <= 1e-9 THEN 0
+                 ELSE initial_qty
+             END
+         WHERE id = ?'
     );
-    $upd->execute([$usedGallons, $productionRowId]);
+    $upd->execute([$usedGallons, $usedGallons, $productionRowId]);
     if ($upd->rowCount() < 1) {
         throw new RuntimeException('Could not deduct production quantity.');
     }
+}
+
+/**
+ * Next stock-out baseline after an empty/overdrawn lot: new fill becomes the cycle max.
+ */
+function honey_production_refill_initial_qty(float $priorCurrent, float $priorInitial, float $addQty, float $extraCurrent = 0.0, float $extraInitial = 0.0): float
+{
+    $addQty = round($addQty, 2);
+    $extraCurrent = round($extraCurrent, 2);
+    $extraInitial = round($extraInitial, 2);
+    if ($priorCurrent <= 1e-9) {
+        $newCurrent = round($priorCurrent + $addQty + $extraCurrent, 2);
+        // Fresh cycle: "of X" = gallons just stocked (cover overdraw shortfall in the baseline).
+        return max($addQty + max(0.0, $extraCurrent), max(0.0, $newCurrent), 0.0);
+    }
+
+    return round($priorInitial + $addQty + $extraInitial, 2);
 }
 
 /**
@@ -1582,7 +1627,15 @@ function honey_apply_correction_request(PDO $pdo, array $req): void
             return;
         }
         if ($rowTable === 'honey_production_rows' && $stage === 'production') {
-            $pdo->prepare('UPDATE honey_production_rows SET current_qty = current_qty + ? WHERE id = ?')->execute([$delta, $rowId]);
+            $pdo->prepare(
+                'UPDATE honey_production_rows
+                 SET current_qty = current_qty + ?,
+                     initial_qty = CASE
+                         WHEN (current_qty + ?) <= 1e-9 THEN 0
+                         ELSE initial_qty
+                     END
+                 WHERE id = ?'
+            )->execute([$delta, $delta, $rowId]);
 
             return;
         }
@@ -1731,9 +1784,10 @@ function honey_log_edit(
     string $field,
     ?string $old,
     ?string $new,
-    ?string $source = 'executive_edit'
+    ?string $source = 'executive_edit',
+    ?string $reason = null
 ): void {
-    inventory_edit_log_write($pdo, $userId, $rowTable, $rowId, $field, $old, $new, $source);
+    inventory_edit_log_write($pdo, $userId, $rowTable, $rowId, $field, $old, $new, $source, $reason);
 }
 
 function honey_traceability(PDO $pdo, string $query): array
@@ -1863,6 +1917,19 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
         ? (string) $fields['log_source']
         : 'executive_edit';
 
+    $editReason = trim((string) ($fields['reason'] ?? ''));
+    $requireReason = ($stage === 'packaging' || $rowTable === 'honey_packaging_rows')
+        && $logSource !== 'monthly_inventory';
+    if ($requireReason) {
+        if (mb_strlen($editReason) < 5) {
+            throw new RuntimeException('Enter a reason for this finished honey correction (at least 5 characters).');
+        }
+        if (mb_strlen($editReason) > 500) {
+            throw new RuntimeException('Reason is too long (max 500 characters).');
+        }
+    }
+    $editReason = $editReason !== '' ? mb_substr($editReason, 0, 500) : null;
+
     if ($rowTable === 'honey_warehouse_rows') {
         $wh = honey_fetch_warehouse($pdo, $rowId);
         if (!$wh) {
@@ -1873,7 +1940,7 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
             $supplier = supplier_require_honey_active($pdo, $supplierId);
             $supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);
             $code = honey_supplier_code($supplierName, (string) $wh['arrival_date']);
-            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'supplier_id', (string) $wh['supplier_id'], (string) $supplierId, $logSource);
+            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'supplier_id', (string) $wh['supplier_id'], (string) $supplierId, $logSource, $editReason);
             $pdo->prepare(
                 'UPDATE honey_warehouse_rows SET supplier_id = ?, supplier_name = ?, supplier_code = ? WHERE id = ?'
             )->execute([$supplierId, $supplierName, $code, $rowId]);
@@ -1881,7 +1948,7 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
         }
         if (isset($fields['variant'])) {
             $variant = honey_normalize_variant((string) $fields['variant']);
-            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $wh['variant'], $variant, $logSource);
+            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $wh['variant'], $variant, $logSource, $editReason);
             $pdo->prepare('UPDATE honey_warehouse_rows SET variant = ? WHERE id = ?')->execute([$variant, $rowId]);
             honey_cascade_warehouse_metadata($pdo, $rowId, null, $variant);
         }
@@ -1891,9 +1958,9 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
                 throw new RuntimeException('Quantity cannot be negative.');
             }
             $resetBaseline = honey_executive_qty_resets_baseline($fields);
-            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $wh['current_qty'], (string) $qty, $logSource);
+            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $wh['current_qty'], (string) $qty, $logSource, $editReason);
             if ($resetBaseline) {
-                honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $wh['initial_qty'], (string) $qty, $logSource);
+                honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $wh['initial_qty'], (string) $qty, $logSource, $editReason);
                 $pdo->prepare('UPDATE honey_warehouse_rows SET current_qty = ?, initial_qty = ? WHERE id = ?')->execute([$qty, $qty, $rowId]);
             } else {
                 $pdo->prepare('UPDATE honey_warehouse_rows SET current_qty = ? WHERE id = ?')->execute([$qty, $rowId]);
@@ -1910,7 +1977,7 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
         }
         if (isset($fields['variant'])) {
             $variant = honey_normalize_variant((string) $fields['variant']);
-            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $pr['variant'], $variant, $logSource);
+            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $pr['variant'], $variant, $logSource, $editReason);
             $pdo->prepare('UPDATE honey_production_rows SET variant = ? WHERE id = ?')->execute([$variant, $rowId]);
             $pdo->prepare(
                 'UPDATE honey_packaging_rows SET variant = ? WHERE production_row_id = ?'
@@ -1922,9 +1989,13 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
                 throw new RuntimeException('Quantity cannot be negative.');
             }
             $resetBaseline = honey_executive_qty_resets_baseline($fields);
-            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $pr['current_qty'], (string) $qty, $logSource);
+            // Empty lots must not keep a stale cycle max (“0 of 99 gal”).
+            if ($qty <= 1e-9) {
+                $resetBaseline = true;
+            }
+            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $pr['current_qty'], (string) $qty, $logSource, $editReason);
             if ($resetBaseline) {
-                honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $pr['initial_qty'], (string) $qty, $logSource);
+                honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $pr['initial_qty'], (string) $qty, $logSource, $editReason);
                 $pdo->prepare('UPDATE honey_production_rows SET current_qty = ?, initial_qty = ? WHERE id = ?')->execute([$qty, $qty, $rowId]);
             } else {
                 $pdo->prepare('UPDATE honey_production_rows SET current_qty = ? WHERE id = ?')->execute([$qty, $rowId]);
@@ -1933,7 +2004,7 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
         if (array_key_exists('is_active', $fields)) {
             $active = !empty($fields['is_active']) ? 1 : 0;
             $oldActive = isset($pr['is_active']) ? (string) (int) $pr['is_active'] : '1';
-            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'is_active', $oldActive, (string) $active, $logSource);
+            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'is_active', $oldActive, (string) $active, $logSource, $editReason);
             $pdo->prepare('UPDATE honey_production_rows SET is_active = ? WHERE id = ?')->execute([$active, $rowId]);
         }
 
@@ -1945,10 +2016,15 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
         if (!$pk) {
             throw new RuntimeException('Packaging row not found.');
         }
+        $changed = false;
         if (isset($fields['variant'])) {
             $variant = honey_normalize_variant((string) $fields['variant']);
-            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $pk['variant'], $variant, $logSource);
-            $pdo->prepare('UPDATE honey_packaging_rows SET variant = ? WHERE id = ?')->execute([$variant, $rowId]);
+            $oldVariant = honey_normalize_variant((string) $pk['variant']);
+            if ($variant !== $oldVariant) {
+                honey_log_edit($pdo, $userId, $rowTable, $rowId, 'variant', (string) $pk['variant'], $variant, $logSource, $editReason);
+                $pdo->prepare('UPDATE honey_packaging_rows SET variant = ? WHERE id = ?')->execute([$variant, $rowId]);
+                $changed = true;
+            }
         }
         $sizeQtys = $fields['size_qtys'] ?? null;
         $resetBaseline = honey_executive_qty_resets_baseline($fields);
@@ -1959,26 +2035,96 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
                     throw new RuntimeException('Quantity cannot be negative.');
                 }
                 [$curCol, $initCol] = honey_packaging_size_columns((string) $size);
-                $old = (string) ($pk[$curCol] ?? '0');
-                honey_log_edit($pdo, $userId, $rowTable, $rowId, $curCol, $old, (string) $qty, $logSource);
+                $oldCur = (float) ($pk[$curCol] ?? 0);
+                $oldInit = (float) ($pk[$initCol] ?? 0);
+                $curChanged = abs($oldCur - $qty) > 0.0001;
+                $initChanged = $resetBaseline && abs($oldInit - $qty) > 0.0001;
+                if (!$curChanged && !$initChanged) {
+                    continue;
+                }
+                if ($curChanged) {
+                    honey_log_edit(
+                        $pdo,
+                        $userId,
+                        $rowTable,
+                        $rowId,
+                        $curCol,
+                        (string) ($pk[$curCol] ?? '0'),
+                        (string) $qty,
+                        $logSource,
+                        $editReason
+                    );
+                }
                 if ($resetBaseline) {
-                    honey_log_edit($pdo, $userId, $rowTable, $rowId, $initCol, (string) ($pk[$initCol] ?? '0'), (string) $qty, $logSource);
-                    $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = ?, {$initCol} = ? WHERE id = ?")->execute([$qty, $qty, $rowId]);
+                    if ($initChanged) {
+                        honey_log_edit(
+                            $pdo,
+                            $userId,
+                            $rowTable,
+                            $rowId,
+                            $initCol,
+                            (string) ($pk[$initCol] ?? '0'),
+                            (string) $qty,
+                            $logSource,
+                            $editReason
+                        );
+                    }
+                    $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = ?, {$initCol} = ? WHERE id = ?")
+                        ->execute([$qty, $qty, $rowId]);
                 } else {
                     $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = ? WHERE id = ?")->execute([$qty, $rowId]);
                 }
+                $changed = true;
             }
         } elseif (isset($fields['current_qty'], $fields['size'])) {
             $size = (string) $fields['size'];
             $qty = (float) $fields['current_qty'];
-            [$curCol, $initCol] = honey_packaging_size_columns($size);
-            honey_log_edit($pdo, $userId, $rowTable, $rowId, $curCol, (string) ($pk[$curCol] ?? '0'), (string) $qty, $logSource);
-            if ($resetBaseline) {
-                honey_log_edit($pdo, $userId, $rowTable, $rowId, $initCol, (string) ($pk[$initCol] ?? '0'), (string) $qty, $logSource);
-                $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = ?, {$initCol} = ? WHERE id = ?")->execute([$qty, $qty, $rowId]);
-            } else {
-                $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = ? WHERE id = ?")->execute([$qty, $rowId]);
+            if ($qty < 0) {
+                throw new RuntimeException('Quantity cannot be negative.');
             }
+            [$curCol, $initCol] = honey_packaging_size_columns($size);
+            $oldCur = (float) ($pk[$curCol] ?? 0);
+            $oldInit = (float) ($pk[$initCol] ?? 0);
+            $curChanged = abs($oldCur - $qty) > 0.0001;
+            $initChanged = $resetBaseline && abs($oldInit - $qty) > 0.0001;
+            if ($curChanged || $initChanged) {
+                if ($curChanged) {
+                    honey_log_edit(
+                        $pdo,
+                        $userId,
+                        $rowTable,
+                        $rowId,
+                        $curCol,
+                        (string) ($pk[$curCol] ?? '0'),
+                        (string) $qty,
+                        $logSource,
+                        $editReason
+                    );
+                }
+                if ($resetBaseline) {
+                    if ($initChanged) {
+                        honey_log_edit(
+                            $pdo,
+                            $userId,
+                            $rowTable,
+                            $rowId,
+                            $initCol,
+                            (string) ($pk[$initCol] ?? '0'),
+                            (string) $qty,
+                            $logSource,
+                            $editReason
+                        );
+                    }
+                    $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = ?, {$initCol} = ? WHERE id = ?")
+                        ->execute([$qty, $qty, $rowId]);
+                } else {
+                    $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = ? WHERE id = ?")->execute([$qty, $rowId]);
+                }
+                $changed = true;
+            }
+        }
+        if (!$changed) {
+            throw new RuntimeException('Nothing changed — update at least one size quantity.');
         }
 
         return;
@@ -1994,7 +2140,7 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
         if (isset($fields['product_label'])) {
             $label = trim((string) $fields['product_label']);
             if ($label !== '') {
-                honey_log_edit($pdo, $userId, $rowTable, $rowId, 'product_label', (string) $row['product_label'], $label, $logSource);
+                honey_log_edit($pdo, $userId, $rowTable, $rowId, 'product_label', (string) $row['product_label'], $label, $logSource, $editReason);
                 $pdo->prepare('UPDATE dept_inventory_rows SET product_label = ? WHERE id = ?')->execute([$label, $rowId]);
             }
         }
@@ -2004,9 +2150,9 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
                 throw new RuntimeException('Quantity cannot be negative.');
             }
             $resetBaseline = honey_executive_qty_resets_baseline($fields);
-            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $row['current_qty'], (string) $qty, $logSource);
+            honey_log_edit($pdo, $userId, $rowTable, $rowId, 'current_qty', (string) $row['current_qty'], (string) $qty, $logSource, $editReason);
             if ($resetBaseline) {
-                honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $row['initial_qty'], (string) $qty, $logSource);
+                honey_log_edit($pdo, $userId, $rowTable, $rowId, 'initial_qty', (string) $row['initial_qty'], (string) $qty, $logSource, $editReason);
                 $pdo->prepare('UPDATE dept_inventory_rows SET current_qty = ?, initial_qty = ? WHERE id = ?')->execute([$qty, $qty, $rowId]);
             } else {
                 $pdo->prepare('UPDATE dept_inventory_rows SET current_qty = ? WHERE id = ?')->execute([$qty, $rowId]);

@@ -64,6 +64,7 @@ type EditLogRow = {
   new_value: string | null;
   edited_by_name: string;
   source: string | null;
+  reason: string | null;
   created_at: string;
 };
 
@@ -352,6 +353,7 @@ export function MonthlyInventoryPage() {
                     <th className="text-left px-3 py-2">Table</th>
                     <th className="text-left px-3 py-2">Field</th>
                     <th className="text-left px-3 py-2">Change</th>
+                    <th className="text-left px-3 py-2">Reason</th>
                     <th className="text-left px-3 py-2">Source</th>
                   </tr>
                 </thead>
@@ -369,12 +371,15 @@ export function MonthlyInventoryPage() {
                         {" → "}
                         <span className="font-medium">{r.new_value ?? "—"}</span>
                       </td>
+                      <td className="px-3 py-2 text-xs max-w-[14rem]">
+                        {r.reason ? <span className="line-clamp-3">{r.reason}</span> : "—"}
+                      </td>
                       <td className="px-3 py-2 text-xs">{r.source ?? "—"}</td>
                     </tr>
                   ))}
                   {logs.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground text-sm">
+                      <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground text-sm">
                         No edit logs yet.
                       </td>
                     </tr>

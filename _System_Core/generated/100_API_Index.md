@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-17T11:12:54+02:00
+generated: 2026-09-18T05:13:35+02:00
 type: memory-bank
 ---
 
@@ -364,7 +364,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `compare_get` | `api_inventory_check_compare_get()` | `ims_pdo()`, `inventory_check_user_can_access_compare_run()`, `inventory_check_compare_get()` |
 | `compare_list` | `api_inventory_check_compare_list()` | `inventory_check_compare_list()`, `ims_pdo()` |
 | `applied_runs_list` | `api_inventory_check_applied_runs_list()` | `inventory_check_applied_runs_list()`, `ims_pdo()` |
-| `finalize` | `api_inventory_check_finalize()` | `ims_pdo()`, `inventory_check_can_manage()`, `inventory_check_can_view_all()`, `inventory_check_finalize_with_sync()` |
+| `finalize` | `api_inventory_check_finalize()` | `ims_pdo()`, `inventory_check_event_get()`, `inventory_check_finalize_with_sync()` |
 | `finalize_merged` | `api_inventory_check_finalize_merged()` | `ims_pdo()`, `inventory_check_event_get()`, `inventory_check_finalize_with_sync()` |
 
 ### `materials.php`

@@ -20,6 +20,22 @@ function inventory_edit_log_has_source_column(PDO $pdo): bool
     return $cache;
 }
 
+function inventory_edit_log_has_reason_column(PDO $pdo): bool
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    try {
+        $st = $pdo->query("SHOW COLUMNS FROM inventory_edit_log LIKE 'reason'");
+        $cache = $st !== false && (bool) $st->fetch();
+    } catch (Throwable) {
+        $cache = false;
+    }
+
+    return $cache;
+}
+
 /**
  * Append one inventory edit audit row.
  * Soft-fails if the log table is missing (pre-migration).
@@ -32,14 +48,34 @@ function inventory_edit_log_write(
     string $field,
     ?string $old,
     ?string $new,
-    ?string $source = null
+    ?string $source = null,
+    ?string $reason = null
 ): void {
     try {
-        if ($source !== null && $source !== '' && inventory_edit_log_has_source_column($pdo)) {
+        $hasSource = $source !== null && $source !== '' && inventory_edit_log_has_source_column($pdo);
+        $hasReason = $reason !== null && $reason !== '' && inventory_edit_log_has_reason_column($pdo);
+
+        if ($hasSource && $hasReason) {
+            $pdo->prepare(
+                'INSERT INTO inventory_edit_log (row_table, row_id, field_name, old_value, new_value, edited_by, source, reason)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            )->execute([$rowTable, $rowId, $field, $old, $new, $userId, $source, $reason]);
+
+            return;
+        }
+        if ($hasSource) {
             $pdo->prepare(
                 'INSERT INTO inventory_edit_log (row_table, row_id, field_name, old_value, new_value, edited_by, source)
                  VALUES (?, ?, ?, ?, ?, ?, ?)'
             )->execute([$rowTable, $rowId, $field, $old, $new, $userId, $source]);
+
+            return;
+        }
+        if ($hasReason) {
+            $pdo->prepare(
+                'INSERT INTO inventory_edit_log (row_table, row_id, field_name, old_value, new_value, edited_by, reason)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+            )->execute([$rowTable, $rowId, $field, $old, $new, $userId, $reason]);
 
             return;
         }
@@ -88,13 +124,20 @@ function inventory_edit_log_list(
     }
     if ($q !== null && trim($q) !== '') {
         $like = '%' . trim($q) . '%';
-        $where[] = '(l.field_name LIKE ? OR l.old_value LIKE ? OR l.new_value LIKE ? OR CAST(l.row_id AS CHAR) LIKE ? OR u.name LIKE ?)';
-        array_push($params, $like, $like, $like, $like, $like);
+        if (inventory_edit_log_has_reason_column($pdo)) {
+            $where[] = '(l.field_name LIKE ? OR l.old_value LIKE ? OR l.new_value LIKE ? OR CAST(l.row_id AS CHAR) LIKE ? OR u.name LIKE ? OR l.reason LIKE ?)';
+            array_push($params, $like, $like, $like, $like, $like, $like);
+        } else {
+            $where[] = '(l.field_name LIKE ? OR l.old_value LIKE ? OR l.new_value LIKE ? OR CAST(l.row_id AS CHAR) LIKE ? OR u.name LIKE ?)';
+            array_push($params, $like, $like, $like, $like, $like);
+        }
     }
 
     $whereSql = implode(' AND ', $where);
     $hasSource = inventory_edit_log_has_source_column($pdo);
+    $hasReason = inventory_edit_log_has_reason_column($pdo);
     $sourceCol = $hasSource ? 'l.source' : 'NULL AS source';
+    $reasonCol = $hasReason ? 'l.reason' : 'NULL AS reason';
 
     $countSt = $pdo->prepare(
         "SELECT COUNT(*) FROM inventory_edit_log l
@@ -106,7 +149,7 @@ function inventory_edit_log_list(
 
     $st = $pdo->prepare(
         "SELECT l.id, l.row_table, l.row_id, l.field_name, l.old_value, l.new_value,
-                l.edited_by, {$sourceCol}, l.created_at, u.name AS edited_by_name
+                l.edited_by, {$sourceCol}, {$reasonCol}, l.created_at, u.name AS edited_by_name
          FROM inventory_edit_log l
          LEFT JOIN users u ON u.id = l.edited_by
          WHERE {$whereSql}
@@ -128,6 +171,9 @@ function inventory_edit_log_list(
                 'edited_by' => (int) $r['edited_by'],
                 'edited_by_name' => (string) ($r['edited_by_name'] ?? ''),
                 'source' => $r['source'] ?? null,
+                'reason' => isset($r['reason']) && $r['reason'] !== null && $r['reason'] !== ''
+                    ? (string) $r['reason']
+                    : null,
                 'created_at' => (string) $r['created_at'],
             ];
         }, $rows),

@@ -409,7 +409,7 @@ function inventory_check_finalize_with_sync(
     if ($eventIds === []) {
         throw new RuntimeException('No audit selected.');
     }
-    if (!inventory_check_can_manage($user) && !inventory_check_can_view_all($user)) {
+    if (!inventory_check_can_view_all($user)) {
         throw new RuntimeException('Forbidden.');
     }
 

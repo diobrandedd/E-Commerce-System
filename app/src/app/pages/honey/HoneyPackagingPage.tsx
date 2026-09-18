@@ -191,11 +191,11 @@ export function HoneyPackagingPage() {
               <h2 className="text-sm font-semibold mb-1">Stocked into inventory</h2>
               <p className="text-xs text-muted-foreground">
                 Gross bottles scanned in for the selected date. This does not change when packing or POS sells — live
-                finished on hand is on{" "}
+                finished on hand (and executive Edit) is on{" "}
                 <Link to="/inventory/products/honey" className="underline hover:text-foreground font-medium">
                   Products → Honey
                 </Link>
-                .
+                . Editing this report would not change stock.
               </p>
             </div>
             <label

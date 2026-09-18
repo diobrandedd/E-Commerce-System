@@ -36,8 +36,8 @@ async function fulfillJson(route: Route, data: unknown) {
   });
 }
 
-test.describe("Inventory check required docs", () => {
-  test("Scan then require batch + bottling date before commit", async ({ page }) => {
+test.describe("Inventory check scan then quantity", () => {
+  test("SKU scan requires quantity only — no batch or bottling date", async ({ page }) => {
     let scanBody: Record<string, unknown> | null = null;
 
     await page.route("**/rts/api/v1/auth.php**", async route => {
@@ -71,7 +71,7 @@ test.describe("Inventory check required docs", () => {
         scanBody = post;
         await fulfillJson(route, {
           result: "ok",
-          message: "Counted 1.",
+          message: "Counted 12.",
           scan: {
             id: 101,
             code: "HONEYSKU1",
@@ -81,9 +81,9 @@ test.describe("Inventory check required docs", () => {
             variant: "amber",
             size: "gallon",
             size_label: "Gallon",
-            batch_no: post.batch_no,
-            bottling_date: post.bottling_date,
-            counted_qty: 1,
+            batch_no: null,
+            bottling_date: null,
+            counted_qty: Number(post.qty ?? 1),
             flag: "ok",
             scanned_by_name: "E2E",
             scanned_at: "2026-09-10 10:01:00",
@@ -91,7 +91,7 @@ test.describe("Inventory check required docs", () => {
           summary: {
             event: { id: 9, status: "open" },
             rows: [],
-            total_units: 1,
+            total_units: Number(post.qty ?? 1),
             flagged_units: 0,
           },
         });
@@ -136,23 +136,24 @@ test.describe("Inventory check required docs", () => {
       ),
       scanInput.press("Enter"),
     ]);
-    await expect(page.getByTestId("inventory-check-pending-docs")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId("inventory-check-batch-input")).toBeVisible();
-    await expect(page.getByTestId("inventory-check-bottling-date")).toBeVisible();
+    await expect(page.getByTestId("inventory-check-pending-qty-panel")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("inventory-check-pending-qty")).toBeVisible();
+    await expect(page.getByTestId("inventory-check-batch-input")).toHaveCount(0);
+    await expect(page.getByTestId("inventory-check-bottling-date")).toHaveCount(0);
 
-    await page.getByTestId("inventory-check-batch-input").fill("B-100");
-    await page.getByTestId("inventory-check-bottling-date").fill("2026-09-01");
+    await page.getByTestId("inventory-check-pending-qty").fill("12");
     await Promise.all([
       page.waitForResponse(
         res => res.url().includes("inventory_check.php") && res.url().includes("action=scan") && res.ok(),
         { timeout: 15_000 },
       ),
-      page.getByRole("button", { name: /Confirm line/i }).click(),
+      page.getByRole("button", { name: /Confirm quantity/i }).click(),
     ]);
 
-    await expect(page.getByTestId("inventory-check-pending-docs")).toHaveCount(0);
+    await expect(page.getByTestId("inventory-check-pending-qty-panel")).toHaveCount(0);
     await expect(page.getByText(/Last confirmed/i)).toBeVisible();
-    expect(scanBody?.batch_no).toBe("B-100");
-    expect(scanBody?.bottling_date).toBe("2026-09-01");
+    expect(scanBody?.qty).toBe(12);
+    expect(scanBody?.batch_no).toBeUndefined();
+    expect(scanBody?.bottling_date).toBeUndefined();
   });
 });

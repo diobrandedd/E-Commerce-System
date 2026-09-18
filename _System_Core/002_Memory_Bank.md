@@ -4,6 +4,27 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-18 — Check Inventory: scan → qty (no batch/date)
+**Change:** Batch/bottling no longer required. SKU = scan then quantity; unique stickers auto +1; upsert by code (phase85). → [[problems/records/2026-09-18_inventory-check-no-batch-docs]]
+
+### 2026-09-18 — Production gallon max resets when empty
+**Change:** Empty/overdrawn production lots clear `initial_qty`; next stock-out starts a fresh “of X gal”. Phase 80 cleanup. → [[problems/records/2026-09-18_honey-production-reset-initial-on-empty]]
+
+### 2026-09-18 — Executive Edit logs only real changes
+**Change:** Finished honey `executive_edit` skips unchanged sizes/variant (no more `21→21` noise in Edit Logs). → [[problems/records/2026-09-17_honey-packaging-stocked-in-report]]
+
+### 2026-09-18 — Finished honey Edit Logs modal
+**Change:** Products → Honey “Edit logs” opens an in-page modal (packaging executive_edit rows + reason); no longer navigates to Monthly Inventory. → [[problems/records/2026-09-17_honey-packaging-stocked-in-report]]
+
+### 2026-09-18 — Reason-required executive Edit (finished honey)
+**Change:** Products → Honey Edit requires a reason (≥5 chars); stored on `inventory_edit_log.reason` (phase84). Edit Logs show Reason. Packaging stocked-in report stays append-only. → [[problems/records/2026-09-17_honey-packaging-stocked-in-report]]
+
+### 2026-09-18 — Executive Edit restored on Products → Honey
+**Change:** After Packaging became a stocked-in report, executive Edit for finished bottle pools was missing. Restored Edit on Products → Honey (Light/Amber/Dark POOL `current_*`); Packaging stays report-only. → [[problems/records/2026-09-17_honey-packaging-stocked-in-report]]
+
+### 2026-09-18 — Check Inventory: Complete ≠ stock update
+**Change:** Complete only closes the private audit into history. Confirm and update inventory is limited to History → Compare selected for `inventory.check.view_all` (admin password). API `finalize` no longer applies stock from an open session. → [[problems/records/2026-09-11_inventory-check-private-sessions]]
+
 ### 2026-09-17 — Packaging stage is stocked-in report
 **Change:** Raw Honey → Packaging shows gross scanned-in by date (not live on-hand); Products → Honey remains finished on hand. → [[problems/records/2026-09-17_honey-packaging-stocked-in-report]]
 

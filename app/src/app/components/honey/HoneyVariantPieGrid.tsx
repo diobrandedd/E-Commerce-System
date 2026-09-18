@@ -1,5 +1,5 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 export interface SizeSlice {
   size: string;
@@ -72,11 +72,20 @@ type InventoryGridProps = {
   mode: "inventory";
   variants: VariantChart[];
   emptyMessage?: string;
+  headerNote?: string;
+  variantActions?: { variant: string; node: ReactNode }[];
 };
 
 export function HoneyVariantPieGrid(props: SalesGridProps | InventoryGridProps) {
   if (props.mode === "inventory") {
-    return <HoneyInventoryGrid variants={props.variants} emptyMessage={props.emptyMessage} />;
+    return (
+      <HoneyInventoryGrid
+        variants={props.variants}
+        emptyMessage={props.emptyMessage}
+        headerNote={props.headerNote}
+        variantActions={props.variantActions}
+      />
+    );
   }
 
   return <HoneySalesGrid {...props} />;
@@ -85,11 +94,22 @@ export function HoneyVariantPieGrid(props: SalesGridProps | InventoryGridProps) 
 function HoneyInventoryGrid({
   variants,
   emptyMessage = "No bottled batch inventory.",
+  headerNote = "Bottled stock with batch numbers only (warehouse & production gallons excluded)",
+  variantActions,
 }: {
   variants: VariantChart[];
   emptyMessage?: string;
+  headerNote?: string;
+  variantActions?: { variant: string; node: ReactNode }[];
 }) {
   const [sizeFilter, setSizeFilter] = useState<InventorySizeFilter>("all");
+  const actionByVariant = useMemo(() => {
+    const map = new Map<string, ReactNode>();
+    for (const a of variantActions ?? []) {
+      map.set(a.variant, a.node);
+    }
+    return map;
+  }, [variantActions]);
 
   const display = useMemo(
     () => variants.map(v => applyInventorySizeFilter(v, sizeFilter)),
@@ -105,9 +125,7 @@ function HoneyInventoryGrid({
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          Bottled stock with batch numbers only (warehouse & production excluded)
-        </p>
+        <p className="text-sm text-muted-foreground">{headerNote}</p>
         <p className="text-xl font-bold text-foreground">{fmtQty(total)} total bottles</p>
       </div>
 
@@ -135,6 +153,7 @@ function HoneyInventoryGrid({
         {display.map(effective => {
           const chartData = effective.sizes.filter(s => s.qty > 0);
           const hasData = chartData.length > 0;
+          const editAction = actionByVariant.get(effective.variant);
 
           return (
             <div
@@ -142,9 +161,14 @@ function HoneyInventoryGrid({
               className="bg-card rounded-xl border border-border p-4"
               style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
             >
-              <div className="flex items-baseline justify-between mb-3">
-                <h3 className="text-sm font-semibold capitalize">{variantLabel(effective.variant)}</h3>
-                <span className="text-xs text-muted-foreground">{fmtQty(effective.total_bottles)} in stock</span>
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-baseline justify-between gap-2 flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold capitalize">{variantLabel(effective.variant)}</h3>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {fmtQty(effective.total_bottles)} in stock
+                  </span>
+                </div>
+                {editAction ? <div className="shrink-0">{editAction}</div> : null}
               </div>
 
               {hasData ? (

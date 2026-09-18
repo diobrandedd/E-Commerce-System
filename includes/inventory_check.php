@@ -287,29 +287,27 @@ function inventory_check_serialize_scan(array $row): array
  * @return array{result: string, scan: array<string, mixed>|null, message: string}
  */
 /**
- * Batch + bottling date are required documentation only (never used for inventory matching).
+ * Optional documentation fields. Empty / invalid date → null (not required).
  *
- * @return array{0: string, 1: string} [batch_no, bottling_date Y-m-d]
+ * @return array{0: ?string, 1: ?string} [batch_no|null, bottling_date Y-m-d|null]
  */
-function inventory_check_require_doc_fields(?string $batchNo, ?string $bottlingDate): array
+function inventory_check_optional_doc_fields(?string $batchNo, ?string $bottlingDate): array
 {
     $batch = strtoupper(trim((string) $batchNo));
+    if ($batch === '' || strlen($batch) > 64) {
+        $batch = '';
+    }
     $date = trim((string) $bottlingDate);
-    if ($batch === '') {
-        throw new RuntimeException('Batch number is required.');
-    }
-    if (strlen($batch) > 64) {
-        throw new RuntimeException('Batch number is too long.');
-    }
-    if ($date === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-        throw new RuntimeException('Bottling date is required (YYYY-MM-DD).');
-    }
-    $dt = DateTime::createFromFormat('Y-m-d', $date);
-    if ($dt === false || $dt->format('Y-m-d') !== $date) {
-        throw new RuntimeException('Bottling date is invalid.');
+    if ($date !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        $dt = DateTime::createFromFormat('Y-m-d', $date);
+        if ($dt === false || $dt->format('Y-m-d') !== $date) {
+            $date = '';
+        }
+    } else {
+        $date = '';
     }
 
-    return [$batch, $date];
+    return [$batch !== '' ? $batch : null, $date !== '' ? $date : null];
 }
 
 function inventory_check_scan(
@@ -336,7 +334,7 @@ function inventory_check_scan(
     if ($code === '' || strlen($code) > 64) {
         throw new RuntimeException('Scan or type a barcode.');
     }
-    [$batchNo, $bottlingDate] = inventory_check_require_doc_fields($batchNo, $bottlingDate);
+    [$docBatch, $docDate] = inventory_check_optional_doc_fields($batchNo, $bottlingDate);
 
     require_once __DIR__ . '/sku_barcodes.php';
     $sku = sku_barcode_fetch_by_code($pdo, $code);
@@ -351,12 +349,14 @@ function inventory_check_scan(
         $size = $kind === 'honey' ? (string) $sku['size'] : null;
         $packagingRowId = null;
         $supplierCode = null;
-        // Optional packaging link for reference only — never overwrite documented date/batch.
-        if ($kind === 'honey') {
-            $pk = inventory_check_packaging_by_batch($pdo, $batchNo, $variant);
-            if ($pk !== null) {
-                $packagingRowId = (int) $pk['id'];
-                $supplierCode = (string) $pk['supplier_code'];
+        // Live honey stock is the variant POOL — link for reference only.
+        if ($kind === 'honey' && $variant !== null && $variant !== '') {
+            require_once __DIR__ . '/honey_inventory.php';
+            $pool = honey_packaging_ensure_variant_pool($pdo, $userId, $variant);
+            $packagingRowId = (int) $pool['id'];
+            $supplierCode = (string) ($pool['supplier_code'] ?? '');
+            if ($supplierCode === '') {
+                $supplierCode = null;
             }
         }
 
@@ -364,11 +364,9 @@ function inventory_check_scan(
             'SELECT s.*, u.name AS scanned_by_name FROM inventory_check_scans s
              LEFT JOIN users u ON u.id = s.scanned_by
              WHERE s.event_id = ? AND s.code = ?
-               AND UPPER(TRIM(COALESCE(s.batch_no, ""))) = ?
-               AND s.bottling_date = ?
              LIMIT 1'
         );
-        $dup->execute([$eventId, $code, $batchNo, $bottlingDate]);
+        $dup->execute([$eventId, $code]);
         $dupRow = $dup->fetch(PDO::FETCH_ASSOC);
         if ($dupRow !== false) {
             $totalQty = (int) ($dupRow['counted_qty'] ?? 0) + $qty;
@@ -380,15 +378,16 @@ function inventory_check_scan(
                  SET counted_qty = ?, scanned_by = ?, scanned_at = NOW(), flag = "ok",
                      packaging_row_id = COALESCE(?, packaging_row_id),
                      supplier_code = COALESCE(?, supplier_code),
-                     batch_no = ?, bottling_date = ?
+                     variant = COALESCE(?, variant),
+                     size = COALESCE(?, size)
                  WHERE id = ?'
             )->execute([
                 $totalQty,
                 $userId,
                 $packagingRowId,
                 $supplierCode,
-                $batchNo,
-                $bottlingDate,
+                $variant,
+                $size,
                 (int) $dupRow['id'],
             ]);
             $scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);
@@ -412,8 +411,8 @@ function inventory_check_scan(
             $code,
             $packagingRowId,
             $supplierCode,
-            $batchNo,
-            $bottlingDate,
+            $docBatch,
+            $docDate,
             $variant,
             $size,
             $qty,
@@ -445,9 +444,15 @@ function inventory_check_scan(
         return ['result' => 'unknown', 'scan' => null, 'message' => 'Unknown barcode — not counted.'];
     }
 
-    // Documentation only — do not require match to barcode metadata.
-    $resolved['batch_no'] = $batchNo;
-    $resolved['bottling_date'] = $bottlingDate;
+    // Prefer sticker metadata when the client did not supply docs.
+    $storeBatch = $docBatch ?? (isset($resolved['batch_no']) ? (string) $resolved['batch_no'] : null);
+    $storeDate = $docDate ?? (isset($resolved['bottling_date']) ? (string) $resolved['bottling_date'] : null);
+    if ($storeBatch !== null && trim($storeBatch) === '') {
+        $storeBatch = null;
+    }
+    if ($storeDate !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $storeDate)) {
+        $storeDate = null;
+    }
 
     $qty = $countedQty !== null && $countedQty > 0 ? min(100000, $countedQty) : 1;
 
@@ -465,8 +470,8 @@ function inventory_check_scan(
         $code,
         $resolved['packaging_row_id'],
         $resolved['supplier_code'],
-        $batchNo,
-        $bottlingDate,
+        $storeBatch,
+        $storeDate,
         $resolved['variant'],
         $resolved['size'],
         $resolved['flag'],
@@ -512,7 +517,7 @@ function inventory_check_packaging_by_batch(PDO $pdo, string $batchNo, ?string $
 }
 
 /**
- * Update qty and/or documentation fields on an open-event scan row.
+ * Update counted qty on an open-event scan row.
  *
  * @return array<string, mixed>
  */
@@ -547,59 +552,18 @@ function inventory_check_scan_update(
         throw new RuntimeException('Quantity must be between 1 and 100000.');
     }
 
-    $docBatch = $batchNo !== null ? $batchNo : (string) ($row['batch_no'] ?? '');
-    $docDate = $bottlingDate !== null ? $bottlingDate : (string) ($row['bottling_date'] ?? '');
-    [$newBatch, $newDate] = inventory_check_require_doc_fields($docBatch, $docDate);
-
-    $skuId = (int) ($row['sku_id'] ?? 0);
-    $packagingRowId = $row['packaging_row_id'] !== null ? (int) $row['packaging_row_id'] : null;
-    $supplierCode = $row['supplier_code'] !== null ? (string) $row['supplier_code'] : null;
-    if ((string) $row['kind'] === 'honey' && $skuId > 0) {
-        $pk = inventory_check_packaging_by_batch(
-            $pdo,
-            $newBatch,
-            $row['variant'] !== null ? (string) $row['variant'] : null
-        );
-        if ($pk !== null) {
-            $packagingRowId = (int) $pk['id'];
-            $supplierCode = (string) $pk['supplier_code'];
-        } else {
-            $packagingRowId = null;
-            $supplierCode = null;
-        }
+    // Optional docs — only overwrite when the client sends them.
+    $sets = ['counted_qty = ?', 'scanned_by = ?', 'scanned_at = NOW()'];
+    $params = [$qty, $userId];
+    if ($batchNo !== null || $bottlingDate !== null) {
+        [$newBatch, $newDate] = inventory_check_optional_doc_fields($batchNo, $bottlingDate);
+        $sets[] = 'batch_no = ?';
+        $sets[] = 'bottling_date = ?';
+        $params[] = $newBatch;
+        $params[] = $newDate;
     }
-
-    // Avoid unique-key collision when changing docs to an existing SKU+batch+date line.
-    if ($skuId > 0) {
-        $clash = $pdo->prepare(
-            'SELECT id FROM inventory_check_scans
-             WHERE event_id = ? AND code = ?
-               AND UPPER(TRIM(COALESCE(batch_no, ""))) = ?
-               AND bottling_date = ? AND id <> ?
-             LIMIT 1'
-        );
-        $clash->execute([(int) $row['event_id'], (string) $row['code'], $newBatch, $newDate, $scanId]);
-        if ($clash->fetchColumn()) {
-            throw new RuntimeException(
-                'Another line already uses this product with the same batch and bottling date. Adjust quantity there instead.'
-            );
-        }
-    }
-
-    $pdo->prepare(
-        'UPDATE inventory_check_scans
-         SET counted_qty = ?, batch_no = ?, packaging_row_id = ?, supplier_code = ?, bottling_date = ?,
-             scanned_by = ?, scanned_at = NOW()
-         WHERE id = ?'
-    )->execute([
-        $qty,
-        $newBatch,
-        $packagingRowId,
-        $supplierCode,
-        $newDate,
-        $userId,
-        $scanId,
-    ]);
+    $params[] = $scanId;
+    $pdo->prepare('UPDATE inventory_check_scans SET ' . implode(', ', $sets) . ' WHERE id = ?')->execute($params);
 
     return inventory_check_scan_get($pdo, $scanId);
 }

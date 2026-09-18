@@ -8,11 +8,11 @@
 |-------|------|
 | **Active Spec** | — |
 | **Active Plan** | — |
-| **Status** | `shipped` - Honey packaging pools + production variant rows (2026-09-17) |
+| **Status** | `shipped` - Check Inventory scan → qty only (no batch/bottling) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending
-- **Latest shipped:** [[specs/2026-09-17_honey-packaging-pool-no-lots]] · [[problems/records/2026-09-17_honey-packaging-variant-pools]] · [[specs/2026-09-11_deliveries-photo-only]] · [[specs/2026-09-11_inventory-check-batch-docs]] · [[specs/2026-09-11_inventory-check-scoped-compare]] · [[problems/records/2026-09-11_inventory-check-private-sessions]] · [[specs/2026-09-10_sales-view-amounts]]
+- **Latest shipped:** [[specs/2026-09-18_inventory-check-no-batch-docs]] · [[specs/2026-09-17_honey-packaging-pool-no-lots]] · [[problems/records/2026-09-17_honey-packaging-variant-pools]] · [[specs/2026-09-11_deliveries-photo-only]] · [[specs/2026-09-11_inventory-check-batch-docs]] · [[specs/2026-09-11_inventory-check-scoped-compare]] · [[problems/records/2026-09-11_inventory-check-private-sessions]] · [[specs/2026-09-10_sales-view-amounts]]
 - **Agent entry:** [[problems/records/2026-06-12_dept-raw-ux-session]] â€” checklist for next dept raw / PageLayout work
 
 ## ðŸ› ï¸ Current Todo List
