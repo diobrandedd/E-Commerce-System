@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-18 — Rebuild finished honey pools from stickers (prod recovery)
+**Change:** Phase 86 SQL restores empty POOL `current_*` from `honey_bottle_units` still in packaging; re-links stickers to POOL. SKU packs not included. → [[problems/records/2026-09-17_honey-packaging-variant-pools]]
+
 ### 2026-09-18 — Check Inventory: scan → qty (no batch/date)
 **Change:** Batch/bottling no longer required. SKU = scan then quantity; unique stickers auto +1; upsert by code (phase85). → [[problems/records/2026-09-18_inventory-check-no-batch-docs]]
 
