@@ -1,7 +1,7 @@
 ---
 title: inventory_edit_log
 source: includes/inventory_edit_log.php
-generated: 2026-09-18T11:28:12+02:00
+generated: 2026-09-18T11:30:05+02:00
 type: module
 function_count: 4
 ---

@@ -1,7 +1,7 @@
 ---
 title: api_tokens
 source: includes/api_tokens.php
-generated: 2026-09-18T11:27:35+02:00
+generated: 2026-09-18T11:29:33+02:00
 type: module
 function_count: 8
 ---
