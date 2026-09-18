@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-18 — Sales Excel Today sheets use day label not week
+**Change:** Period Today → tabs `SE 18-shp` / `wlk` and `Period: Today` (was misleading `SE 14-20` week band). → [[fixes/sales-excel-weekly-named-sheets]]
+
 ### 2026-09-18 — Sales Excel Today Summary + per-sheet mini breakdown
 **Change:** Today/week/month exports use `Summary` with `Period: Today` (not Sep monthly). Each shp/wlk sheet opens with by size/variant/variant×size then detail. → [[fixes/sales-excel-weekly-named-sheets]] · [[problems/records/2026-09-18_sales-excel-today-summary-period]]
 

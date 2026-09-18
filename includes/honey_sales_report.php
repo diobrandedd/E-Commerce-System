@@ -1839,6 +1839,82 @@ function honey_sales_export_unique_sheet_title(
 }
 
 /**
+ * Calendar-day meta for a datetime (sheet label like SE 18).
+ *
+ * @return array{key: string, start: string, end: string, label: string, year: string}
+ */
+function honey_sales_export_day_meta(string $datetime): array
+{
+    $datePart = substr(trim($datetime), 0, 10);
+    $ts = strtotime($datePart);
+    if ($ts === false) {
+        $ts = time();
+    }
+    $ymd = date('Y-m-d', $ts);
+    $label = honey_sales_export_month_code((int) date('n', $ts)) . ' ' . (int) date('j', $ts);
+
+    return [
+        'key' => $ymd,
+        'start' => $ymd,
+        'end' => $ymd,
+        'label' => $label,
+        'year' => date('y', $ts),
+    ];
+}
+
+/**
+ * Group detail rows by calendar day (oldest first).
+ *
+ * @param list<array<string, mixed>> $rows
+ * @return list<array{key: string, label: string, start: string, end: string, year: string, rows: list<array<string, mixed>>}>
+ */
+function honey_sales_export_group_by_day(array $rows, string $dateField): array
+{
+    $buckets = [];
+    foreach ($rows as $row) {
+        $when = trim((string) ($row[$dateField] ?? ''));
+        if ($when === '') {
+            $when = date('Y-m-d H:i:s');
+        }
+        $meta = honey_sales_export_day_meta($when);
+        $k = $meta['key'];
+        if (!isset($buckets[$k])) {
+            $buckets[$k] = [
+                'key' => $k,
+                'label' => $meta['label'],
+                'start' => $meta['start'],
+                'end' => $meta['end'],
+                'year' => $meta['year'],
+                'rows' => [],
+            ];
+        }
+        $buckets[$k]['rows'][] = $row;
+    }
+    ksort($buckets);
+
+    return array_values($buckets);
+}
+
+/**
+ * True when the export filter is a single calendar day (Today or custom from=to).
+ *
+ * @param array{period?: string, from?: string|null, to?: string|null}|null $range
+ */
+function honey_sales_export_is_single_day(?array $range): bool
+{
+    if ($range === null) {
+        return false;
+    }
+    if (strtolower((string) ($range['period'] ?? '')) === 'day') {
+        return true;
+    }
+    $from = (string) ($range['from'] ?? '');
+    $to = (string) ($range['to'] ?? '');
+
+    return $from !== '' && $from === $to;
+}
+
+/**
  * Group detail rows into Monday-start weeks (oldest week first).
  *
  * @param list<array<string, mixed>> $rows
@@ -2308,8 +2384,14 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         $shippedRows = honey_sales_fetch_shipped_export($pdo, $period, $from, $to, $product);
     }
 
-    $shippedWeeks = honey_sales_export_group_by_week($shippedRows, 'when_packed');
-    $walkInWeeks = honey_sales_export_group_by_week($walkInRows, 'sold_at');
+    $singleDay = honey_sales_export_is_single_day($range);
+    if ($singleDay) {
+        $shippedWeeks = honey_sales_export_group_by_day($shippedRows, 'when_packed');
+        $walkInWeeks = honey_sales_export_group_by_day($walkInRows, 'sold_at');
+    } else {
+        $shippedWeeks = honey_sales_export_group_by_week($shippedRows, 'when_packed');
+        $walkInWeeks = honey_sales_export_group_by_week($walkInRows, 'sold_at');
+    }
     $shippedMonths = honey_sales_export_group_by_month($shippedRows, 'when_packed');
     $walkInMonths = honey_sales_export_group_by_month($walkInRows, 'sold_at');
 
@@ -2475,10 +2557,13 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
         }
     } else {
         foreach ($weekOrder as $key => $meta) {
-            $weekLabel = (string) $meta['label'];
+            $bucketLabel = (string) $meta['label'];
             $year = (string) $meta['year'];
-            $weekPeriodLabel = $filterLabel . ' · ' . $weekLabel
-                . ' (Mon ' . $meta['start'] . ' – Sun ' . $meta['end'] . ')';
+            // Today → Period: Today (not “Today · SE 14-20 …”)
+            $sheetPeriodLabel = $singleDay
+                ? $filterLabel
+                : ($filterLabel . ' · ' . $bucketLabel
+                    . ' (Mon ' . $meta['start'] . ' – Sun ' . $meta['end'] . ')');
 
             if ($channel !== 'walk_in') {
                 $shpRows = $shippedByKey[$key]['rows'] ?? [];
@@ -2486,7 +2571,7 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
                     $part = $i + 1;
                     $sheet = $spreadsheet->createSheet();
                     $title = honey_sales_export_unique_sheet_title(
-                        $weekLabel,
+                        $bucketLabel,
                         'shp',
                         $part,
                         $includeYear,
@@ -2494,14 +2579,14 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
                         $usedTitles
                     );
                     $sheet->setTitle($title);
-                    $partLabel = 'Shipped / pack-scan · ' . $weekLabel
+                    $partLabel = 'Shipped / pack-scan · ' . $bucketLabel
                         . ($part > 1 ? ' · part ' . $part : '');
                     honey_sales_export_write_shipped_detail(
                         $sheet,
                         $chunk,
                         $partLabel,
                         $shippedEmpty,
-                        $weekPeriodLabel
+                        $sheetPeriodLabel
                     );
                 }
             }
@@ -2512,7 +2597,7 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
                     $part = $i + 1;
                     $sheet = $spreadsheet->createSheet();
                     $title = honey_sales_export_unique_sheet_title(
-                        $weekLabel,
+                        $bucketLabel,
                         'wlk',
                         $part,
                         $includeYear,
@@ -2520,7 +2605,7 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
                         $usedTitles
                     );
                     $sheet->setTitle($title);
-                    $partLabel = 'Walk-in · ' . $weekLabel
+                    $partLabel = 'Walk-in · ' . $bucketLabel
                         . ($part > 1 ? ' · part ' . $part : '');
                     honey_sales_export_write_walk_in_detail(
                         $sheet,
@@ -2529,7 +2614,7 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
                         $canViewAmounts,
                         $partLabel,
                         $walkEmpty,
-                        $weekPeriodLabel
+                        $sheetPeriodLabel
                     );
                 }
             }
