@@ -16,8 +16,17 @@ const HONEY_SALES_SIZE_LABELS = [
 
 const HONEY_SALES_CHECKOUTS_PER_PAGE = 10;
 
-/** Hard cap for Excel export rows per sheet. */
-const HONEY_SALES_EXPORT_MAX_ROWS = 5000;
+/** Rows of detail data per Excel sheet (Shipped 1, Shipped 2, …). */
+const HONEY_SALES_EXPORT_ROWS_PER_SHEET = 5000;
+
+/**
+ * Absolute safety cap for one export (all detail rows across sheets).
+ * Prevents unbounded all-time dumps from exhausting PHP memory.
+ */
+const HONEY_SALES_EXPORT_MAX_TOTAL_ROWS = 100000;
+
+/** @deprecated Use HONEY_SALES_EXPORT_ROWS_PER_SHEET — kept as alias for older references. */
+const HONEY_SALES_EXPORT_MAX_ROWS = HONEY_SALES_EXPORT_ROWS_PER_SHEET;
 
 /** @return array{sql: string, params: list<mixed>, range: array<string, mixed>|null} */
 function honey_sales_resolve_filters(?string $period, ?string $from, ?string $to): array
@@ -992,11 +1001,11 @@ function honey_sales_fetch_checkouts_export(
         $receiptSearch,
         $saleType,
         $product,
-        HONEY_SALES_EXPORT_MAX_ROWS
+        HONEY_SALES_EXPORT_MAX_TOTAL_ROWS
     );
-    if ((int) $page1['total'] > HONEY_SALES_EXPORT_MAX_ROWS) {
+    if ((int) $page1['total'] > HONEY_SALES_EXPORT_MAX_TOTAL_ROWS) {
         throw new InvalidArgumentException(
-            'Too many walk-in checkouts to export (max ' . HONEY_SALES_EXPORT_MAX_ROWS . '). Narrow the period or filters.'
+            'Too many walk-in checkouts to export (max ' . HONEY_SALES_EXPORT_MAX_TOTAL_ROWS . '). Narrow the period or filters.'
         );
     }
 
@@ -1132,7 +1141,7 @@ function honey_sales_fetch_shipped_export(
                 {$packerJoin}
                 {$where}
                 ORDER BY h.created_at DESC, h.id DESC
-                LIMIT " . (HONEY_SALES_EXPORT_MAX_ROWS + 1);
+                LIMIT " . (HONEY_SALES_EXPORT_MAX_TOTAL_ROWS + 1);
         $st = $pdo->prepare($sql);
         $st->execute($params);
         foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -1260,7 +1269,7 @@ function honey_sales_fetch_shipped_export(
                         LEFT JOIN users u_start ON u_start.id = psess.started_by
                         {$packWhere}
                         ORDER BY u.consumed_at DESC, u.id DESC
-                        LIMIT " . (HONEY_SALES_EXPORT_MAX_ROWS + 1);
+                        LIMIT " . (HONEY_SALES_EXPORT_MAX_TOTAL_ROWS + 1);
             $packSt = $pdo->prepare($packSql);
             $packSt->execute($packParams);
             foreach ($packSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -1311,7 +1320,7 @@ function honey_sales_fetch_shipped_export(
                        LEFT JOIN users u_start ON u_start.id = s.started_by
                        {$skuWhere}
                        ORDER BY s.confirmed_at DESC, di.id DESC
-                       LIMIT " . (HONEY_SALES_EXPORT_MAX_ROWS + 1);
+                       LIMIT " . (HONEY_SALES_EXPORT_MAX_TOTAL_ROWS + 1);
             $skuSt = $pdo->prepare($skuSql);
             $skuSt->execute($skuParams);
             foreach ($skuSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
@@ -1345,9 +1354,9 @@ function honey_sales_fetch_shipped_export(
         return strcmp((string) ($b['when_packed'] ?? ''), (string) ($a['when_packed'] ?? ''));
     });
 
-    if (count($rows) > HONEY_SALES_EXPORT_MAX_ROWS) {
+    if (count($rows) > HONEY_SALES_EXPORT_MAX_TOTAL_ROWS) {
         throw new InvalidArgumentException(
-            'Too many shipped/pack-scan rows to export (max ' . HONEY_SALES_EXPORT_MAX_ROWS . '). Narrow the period or filters.'
+            'Too many shipped/pack-scan rows to export (max ' . HONEY_SALES_EXPORT_MAX_TOTAL_ROWS . '). Narrow the period or filters.'
         );
     }
 
@@ -1735,7 +1744,239 @@ function honey_sales_export_write_summary_block(
 }
 
 /**
- * Build a two-sheet sales workbook and return the temp file path.
+ * Split detail rows into chunks for multi-sheet Excel export.
+ *
+ * @param list<array<string, mixed>> $rows
+ * @return list<list<array<string, mixed>>>
+ */
+function honey_sales_export_chunk_rows(array $rows, int $perSheet = HONEY_SALES_EXPORT_ROWS_PER_SHEET): array
+{
+    $perSheet = max(1, $perSheet);
+    if ($rows === []) {
+        return [];
+    }
+
+    return array_chunk($rows, $perSheet);
+}
+
+/** Two-letter month codes for weekly sheet titles (JA, FE, …). */
+function honey_sales_export_month_code(int $month): string
+{
+    static $codes = [
+        1 => 'JA', 2 => 'FE', 3 => 'MR', 4 => 'AP', 5 => 'MY', 6 => 'JN',
+        7 => 'JL', 8 => 'AU', 9 => 'SE', 10 => 'OC', 11 => 'NO', 12 => 'DE',
+    ];
+
+    return $codes[$month] ?? 'XX';
+}
+
+/**
+ * Monday-start week containing $datetime.
+ *
+ * @return array{key: string, start: string, end: string, label: string, year: string}
+ */
+function honey_sales_export_week_meta(string $datetime): array
+{
+    $datePart = substr(trim($datetime), 0, 10);
+    $ts = strtotime($datePart);
+    if ($ts === false) {
+        $ts = time();
+    }
+    $dow = (int) date('N', $ts); // 1=Mon … 7=Sun
+    $weekStart = strtotime('-' . ($dow - 1) . ' days', $ts);
+    $weekEnd = strtotime('+6 days', $weekStart);
+    $sm = (int) date('n', $weekStart);
+    $sd = (int) date('j', $weekStart);
+    $em = (int) date('n', $weekEnd);
+    $ed = (int) date('j', $weekEnd);
+    if ($sm === $em) {
+        $label = honey_sales_export_month_code($sm) . ' ' . $sd . '-' . $ed;
+    } else {
+        $label = honey_sales_export_month_code($sm) . ' ' . $sd . '-'
+            . honey_sales_export_month_code($em) . ' ' . $ed;
+    }
+
+    return [
+        'key' => date('Y-m-d', $weekStart),
+        'start' => date('Y-m-d', $weekStart),
+        'end' => date('Y-m-d', $weekEnd),
+        'label' => $label,
+        'year' => date('y', $weekStart),
+    ];
+}
+
+/**
+ * Excel sheet title (max 31 chars). Examples: SE 4-10-shp, JN 28-JL 4-wlk, SE 4-10-shp (2)
+ *
+ * @param list<string> $usedTitles
+ */
+function honey_sales_export_unique_sheet_title(
+    string $weekLabel,
+    string $channelSuffix,
+    int $part,
+    bool $includeYear,
+    string $year,
+    array &$usedTitles
+): string {
+    $label = $includeYear ? ($weekLabel . ' ' . $year) : $weekLabel;
+    $base = $label . '-' . $channelSuffix;
+    if ($part > 1) {
+        $base .= ' (' . $part . ')';
+    }
+    if (strlen($base) > 31) {
+        $base = substr($base, 0, 31);
+    }
+    $candidate = $base;
+    $n = 2;
+    while (isset($usedTitles[$candidate])) {
+        $suffix = ' (' . $n . ')';
+        $candidate = substr($base, 0, max(1, 31 - strlen($suffix))) . $suffix;
+        $n++;
+    }
+    $usedTitles[$candidate] = true;
+
+    return $candidate;
+}
+
+/**
+ * Group detail rows into Monday-start weeks (oldest week first).
+ *
+ * @param list<array<string, mixed>> $rows
+ * @return list<array{key: string, label: string, start: string, end: string, year: string, rows: list<array<string, mixed>>}>
+ */
+function honey_sales_export_group_by_week(array $rows, string $dateField): array
+{
+    $buckets = [];
+    foreach ($rows as $row) {
+        $when = trim((string) ($row[$dateField] ?? ''));
+        if ($when === '') {
+            $when = date('Y-m-d H:i:s');
+        }
+        $meta = honey_sales_export_week_meta($when);
+        $k = $meta['key'];
+        if (!isset($buckets[$k])) {
+            $buckets[$k] = [
+                'key' => $k,
+                'label' => $meta['label'],
+                'start' => $meta['start'],
+                'end' => $meta['end'],
+                'year' => $meta['year'],
+                'rows' => [],
+            ];
+        }
+        $buckets[$k]['rows'][] = $row;
+    }
+    ksort($buckets);
+
+    return array_values($buckets);
+}
+
+/**
+ * Write shipped detail table (optional part label) onto a sheet.
+ *
+ * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
+ * @param list<array<string, mixed>> $rows
+ */
+function honey_sales_export_write_shipped_detail(
+    $sheet,
+    array $rows,
+    string $partLabel,
+    string $emptyMessage
+): void {
+    $sheet->setCellValue('A1', $partLabel);
+    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
+
+    $headers = ['When packed', 'Variant', 'Size', 'Qty', 'Tracking / pack session', 'Barcode', 'RTS resellable', 'Packed by'];
+    $headerRow = 3;
+    $cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    foreach ($headers as $i => $h) {
+        $sheet->setCellValue($cols[$i] . $headerRow, $h);
+    }
+    $sheet->getStyle('A' . $headerRow . ':H' . $headerRow)->getFont()->setBold(true);
+
+    if ($rows === []) {
+        $sheet->setCellValue('A' . ($headerRow + 1), $emptyMessage);
+    } else {
+        $r = $headerRow + 1;
+        foreach ($rows as $row) {
+            $sheet->setCellValue('A' . $r, (string) $row['when_packed']);
+            $sheet->setCellValue('B' . $r, (string) ($row['variant'] ?? $row['product'] ?? ''));
+            $sheet->setCellValue('C' . $r, (string) ($row['size_label'] ?? '—'));
+            $sheet->setCellValue('D' . $r, (float) $row['qty']);
+            $sheet->setCellValue('E' . $r, (string) $row['tracking_or_session']);
+            $sheet->setCellValue('F' . $r, (string) $row['barcode']);
+            $sheet->setCellValue('G' . $r, !empty($row['is_rts_resellable']) ? 'Yes' : 'No');
+            $packedBy = trim((string) ($row['packed_by_name'] ?? ''));
+            $sheet->setCellValue('H' . $r, $packedBy !== '' ? $packedBy : '—');
+            $r++;
+        }
+    }
+    foreach (range('A', 'H') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+}
+
+/**
+ * Write walk-in detail table onto a sheet.
+ *
+ * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet
+ * @param list<array<string, mixed>> $rows
+ * @param array<int, bool> $rtsFlags
+ */
+function honey_sales_export_write_walk_in_detail(
+    $sheet,
+    array $rows,
+    array $rtsFlags,
+    bool $canViewAmounts,
+    string $partLabel,
+    string $emptyMessage
+): void {
+    $sheet->setCellValue('A1', $partLabel);
+    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(12);
+
+    $headers = ['When sold', 'Receipt', 'Sold by', 'Sold to', 'Items', 'Qty', 'Type', 'RTS resellable'];
+    if ($canViewAmounts) {
+        $headers[] = 'Total';
+    }
+    $headerRow = 3;
+    $cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
+    foreach ($headers as $i => $h) {
+        $sheet->setCellValue($cols[$i] . $headerRow, $h);
+    }
+    $lastCol = $canViewAmounts ? 'I' : 'H';
+    $sheet->getStyle('A' . $headerRow . ':' . $lastCol . $headerRow)->getFont()->setBold(true);
+
+    if ($rows === []) {
+        $sheet->setCellValue('A' . ($headerRow + 1), $emptyMessage);
+    } else {
+        $r = $headerRow + 1;
+        foreach ($rows as $row) {
+            $saleId = (int) ($row['sale_id'] ?? 0);
+            $type = !empty($row['is_ar'])
+                ? 'AR'
+                : (!empty($row['discount_percent']) ? ((int) $row['discount_percent'] . '% off') : 'Regular');
+            $items = is_array($row['items'] ?? null) ? $row['items'] : [];
+            $sheet->setCellValue('A' . $r, (string) ($row['sold_at'] ?? ''));
+            $sheet->setCellValue('B' . $r, (string) ($row['receipt_no'] ?? ''));
+            $sheet->setCellValue('C' . $r, (string) ($row['sold_by_name'] ?? 'POS'));
+            $sheet->setCellValue('D' . $r, (string) ($row['buyer_name'] ?? 'Walk-in'));
+            $sheet->setCellValue('E' . $r, honey_sales_export_checkout_item_labels($items));
+            $sheet->setCellValue('F' . $r, honey_sales_export_checkout_item_qtys($items));
+            $sheet->setCellValue('G' . $r, $type);
+            $sheet->setCellValue('H' . $r, !empty($rtsFlags[$saleId]) ? 'Yes' : 'No');
+            if ($canViewAmounts) {
+                $sheet->setCellValue('I' . $r, (float) ($row['total_amount'] ?? 0));
+            }
+            $r++;
+        }
+    }
+    foreach (range('A', $lastCol) as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+}
+
+/**
+ * Build a multi-sheet sales workbook (Summary + chunked Shipped + Walk-in) and return the temp file path.
  *
  * @param array{period:?string,from:?string,to:?string,receipt:?string,sale_type:string,channel:string,product:string} $opts
  */
@@ -1784,101 +2025,202 @@ function honey_sales_build_export_xlsx(PDO $pdo, array $opts, bool $canViewAmoun
     $walkInSummary = honey_sales_export_summarize_walk_in($walkInRows, $rtsFlags);
     $shippedSummary = honey_sales_export_summarize_shipped($shippedRows);
 
+    $shippedWeeks = honey_sales_export_group_by_week($shippedRows, 'when_packed');
+    $walkInWeeks = honey_sales_export_group_by_week($walkInRows, 'sold_at');
+
+    $weekYears = [];
+    foreach ($shippedWeeks as $w) {
+        $weekYears[$w['year']] = true;
+    }
+    foreach ($walkInWeeks as $w) {
+        $weekYears[$w['year']] = true;
+    }
+    $includeYear = count($weekYears) > 1;
+
+    // Merge week keys chronologically for sheet order (shp then wlk per week).
+    $weekOrder = [];
+    foreach ($shippedWeeks as $w) {
+        $weekOrder[$w['key']] = $w;
+    }
+    foreach ($walkInWeeks as $w) {
+        if (!isset($weekOrder[$w['key']])) {
+            $weekOrder[$w['key']] = $w;
+        }
+    }
+    ksort($weekOrder);
+
+    $shippedByKey = [];
+    foreach ($shippedWeeks as $w) {
+        $shippedByKey[$w['key']] = $w;
+    }
+    $walkInByKey = [];
+    foreach ($walkInWeeks as $w) {
+        $walkInByKey[$w['key']] = $w;
+    }
+
     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $usedTitles = ['Summary' => true];
 
-    // --- Sheet: Shipped ---
-    $shipped = $spreadsheet->getActiveSheet();
-    $shipped->setTitle('Shipped');
-    $nextRow = honey_sales_export_write_summary_block(
-        $shipped,
-        'Shipped / pack-scan',
-        $filterLabel,
-        $shippedSummary,
-        'shipped'
+    // --- Sheet: Summary (month / selected-range report) ---
+    $summary = $spreadsheet->getActiveSheet();
+    $summary->setTitle('Summary');
+    $summary->setCellValue('A1', 'Month / period report');
+    $summary->setCellValue('A2', 'Period');
+    $summary->setCellValue('B2', $filterLabel);
+    $summary->setCellValue('A3', 'Layout');
+    $summary->setCellValue(
+        'B3',
+        'Weekly sheets Mon–Sun (shp = shipped, wlk = walk-in). Overflow (2) if a week exceeds '
+            . HONEY_SALES_EXPORT_ROWS_PER_SHEET . ' rows.'
     );
+    $summary->setCellValue('A4', 'Shipped rows');
+    $summary->setCellValue('B4', count($shippedRows));
+    $summary->setCellValue('A5', 'Walk-in checkouts');
+    $summary->setCellValue('B5', count($walkInRows));
+    $summary->setCellValue('A6', 'Weeks');
+    $summary->setCellValue('B6', count($weekOrder));
+    $summary->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+    $summary->getStyle('A2:A6')->getFont()->setBold(true);
 
-    $shippedHeaders = ['When packed', 'Variant', 'Size', 'Qty', 'Tracking / pack session', 'Barcode', 'RTS resellable', 'Packed by'];
-    $headerRow = $nextRow;
-    $shippedCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-    foreach ($shippedHeaders as $i => $h) {
-        $shipped->setCellValue($shippedCols[$i] . $headerRow, $h);
-    }
-    $shipped->getStyle('A' . $headerRow . ':H' . $headerRow)->getFont()->setBold(true);
+    $summary->setCellValue('A8', 'Shipped / pack-scan (period total)');
+    $summary->getStyle('A8')->getFont()->setBold(true)->setSize(12);
+    $r = 9;
+    $summary->setCellValue('A' . $r, 'Units in export');
+    $summary->setCellValue('B' . $r, (float) ($shippedSummary['total'] ?? 0));
+    $r++;
+    $summary->setCellValue('A' . $r, 'RTS resellable units');
+    $summary->setCellValue('B' . $r, (float) ($shippedSummary['rts_units'] ?? 0));
+    $r += 2;
+    $summary->setCellValue('A' . $r, 'Walk-in sales (period total)');
+    $summary->getStyle('A' . $r)->getFont()->setBold(true)->setSize(12);
+    $r++;
+    $summary->setCellValue('A' . $r, 'Units on receipts');
+    $summary->setCellValue('B' . $r, (float) ($walkInSummary['total'] ?? 0));
+    $r++;
+    $summary->setCellValue('A' . $r, 'RTS resellable units');
+    $summary->setCellValue('B' . $r, (float) ($walkInSummary['rts_units'] ?? 0));
+    $r += 2;
 
-    if ($shippedRows === []) {
-        $shipped->setCellValue('A' . ($headerRow + 1), $channel === 'walk_in'
-            ? 'No shipped rows for Walk-in filter.'
-            : 'No shipped / pack-scan rows for this period.');
-    } else {
-        $r = $headerRow + 1;
-        foreach ($shippedRows as $row) {
-            $shipped->setCellValue('A' . $r, (string) $row['when_packed']);
-            $shipped->setCellValue('B' . $r, (string) ($row['variant'] ?? $row['product'] ?? ''));
-            $shipped->setCellValue('C' . $r, (string) ($row['size_label'] ?? '—'));
-            $shipped->setCellValue('D' . $r, (float) $row['qty']);
-            $shipped->setCellValue('E' . $r, (string) $row['tracking_or_session']);
-            $shipped->setCellValue('F' . $r, (string) $row['barcode']);
-            $shipped->setCellValue('G' . $r, !empty($row['is_rts_resellable']) ? 'Yes' : 'No');
-            $packedBy = trim((string) ($row['packed_by_name'] ?? ''));
-            $shipped->setCellValue('H' . $r, $packedBy !== '' ? $packedBy : '—');
-            $r++;
+    $summary->setCellValue('A' . $r, 'Shipped by size');
+    $summary->setCellValue('B' . $r, 'Qty');
+    $summary->getStyle('A' . $r . ':B' . $r)->getFont()->setBold(true);
+    $r++;
+    $sizeLabels = [
+        '250ml' => '250ml',
+        '350ml' => '350ml',
+        'liter' => '1L',
+        'gallon' => 'Gallon',
+        'dept' => 'Dept / other',
+        'other' => 'Other',
+    ];
+    foreach ($sizeLabels as $key => $label) {
+        $q = (float) (($shippedSummary['by_size'][$key] ?? 0));
+        if ($q <= 0) {
+            continue;
         }
+        $summary->setCellValue('A' . $r, $label);
+        $summary->setCellValue('B' . $r, $q);
+        $r++;
     }
-    foreach (range('A', 'H') as $col) {
-        $shipped->getColumnDimension($col)->setAutoSize(true);
+    $r++;
+    $summary->setCellValue('A' . $r, 'Walk-in by size');
+    $summary->setCellValue('B' . $r, 'Qty');
+    $summary->getStyle('A' . $r . ':B' . $r)->getFont()->setBold(true);
+    $r++;
+    foreach ($sizeLabels as $key => $label) {
+        $q = (float) (($walkInSummary['by_size'][$key] ?? 0));
+        if ($q <= 0) {
+            continue;
+        }
+        $summary->setCellValue('A' . $r, $label);
+        $summary->setCellValue('B' . $r, $q);
+        $r++;
+    }
+    foreach (['A', 'B'] as $col) {
+        $summary->getColumnDimension($col)->setAutoSize(true);
     }
 
-    // --- Sheet: Walk-in ---
-    $walkIn = $spreadsheet->createSheet();
-    $walkIn->setTitle('Walk-in');
-    $walkNext = honey_sales_export_write_summary_block(
-        $walkIn,
-        'Walk-in sales',
-        $filterLabel,
-        $walkInSummary,
-        'walk_in'
-    );
+    $shippedEmpty = $channel === 'walk_in'
+        ? 'No shipped rows for Walk-in filter.'
+        : 'No shipped / pack-scan rows for this period.';
+    $walkEmpty = $channel === 'online'
+        ? 'No walk-in rows for Shipped filter.'
+        : 'No walk-in checkouts for this period.';
 
-    $walkHeaders = ['When sold', 'Receipt', 'Sold by', 'Sold to', 'Items', 'Qty', 'Type', 'RTS resellable'];
-    if ($canViewAmounts) {
-        $walkHeaders[] = 'Total';
-    }
-    $whRow = $walkNext;
-    $walkCols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
-    foreach ($walkHeaders as $i => $h) {
-        $walkIn->setCellValue($walkCols[$i] . $whRow, $h);
-    }
-    $lastCol = $canViewAmounts ? 'I' : 'H';
-    $walkIn->getStyle('A' . $whRow . ':' . $lastCol . $whRow)->getFont()->setBold(true);
-
-    if ($walkInRows === []) {
-        $walkIn->setCellValue('A' . ($whRow + 1), $channel === 'online'
-            ? 'No walk-in rows for Shipped filter.'
-            : 'No walk-in checkouts for this period.');
+    if ($weekOrder === []) {
+        if ($channel !== 'walk_in') {
+            $sheet = $spreadsheet->createSheet();
+            $title = honey_sales_export_unique_sheet_title('No data', 'shp', 1, false, '', $usedTitles);
+            $sheet->setTitle($title);
+            honey_sales_export_write_shipped_detail($sheet, [], 'Shipped / pack-scan', $shippedEmpty);
+        }
+        if ($channel !== 'online') {
+            $sheet = $spreadsheet->createSheet();
+            $title = honey_sales_export_unique_sheet_title('No data', 'wlk', 1, false, '', $usedTitles);
+            $sheet->setTitle($title);
+            honey_sales_export_write_walk_in_detail(
+                $sheet,
+                [],
+                $rtsFlags,
+                $canViewAmounts,
+                'Walk-in sales',
+                $walkEmpty
+            );
+        }
     } else {
-        $r = $whRow + 1;
-        foreach ($walkInRows as $row) {
-            $saleId = (int) ($row['sale_id'] ?? 0);
-            $type = !empty($row['is_ar'])
-                ? 'AR'
-                : (!empty($row['discount_percent']) ? ((int) $row['discount_percent'] . '% off') : 'Regular');
-            $items = is_array($row['items'] ?? null) ? $row['items'] : [];
-            $walkIn->setCellValue('A' . $r, (string) ($row['sold_at'] ?? ''));
-            $walkIn->setCellValue('B' . $r, (string) ($row['receipt_no'] ?? ''));
-            $walkIn->setCellValue('C' . $r, (string) ($row['sold_by_name'] ?? 'POS'));
-            $walkIn->setCellValue('D' . $r, (string) ($row['buyer_name'] ?? 'Walk-in'));
-            $walkIn->setCellValue('E' . $r, honey_sales_export_checkout_item_labels($items));
-            $walkIn->setCellValue('F' . $r, honey_sales_export_checkout_item_qtys($items));
-            $walkIn->setCellValue('G' . $r, $type);
-            $walkIn->setCellValue('H' . $r, !empty($rtsFlags[$saleId]) ? 'Yes' : 'No');
-            if ($canViewAmounts) {
-                $walkIn->setCellValue('I' . $r, (float) ($row['total_amount'] ?? 0));
+        foreach ($weekOrder as $key => $meta) {
+            $weekLabel = (string) $meta['label'];
+            $year = (string) $meta['year'];
+
+            if ($channel !== 'walk_in') {
+                $shpRows = $shippedByKey[$key]['rows'] ?? [];
+                foreach (honey_sales_export_chunk_rows($shpRows) as $i => $chunk) {
+                    $part = $i + 1;
+                    $sheet = $spreadsheet->createSheet();
+                    $title = honey_sales_export_unique_sheet_title(
+                        $weekLabel,
+                        'shp',
+                        $part,
+                        $includeYear,
+                        $year,
+                        $usedTitles
+                    );
+                    $sheet->setTitle($title);
+                    $partLabel = 'Shipped / pack-scan · ' . $weekLabel
+                        . ' (Mon ' . $meta['start'] . ' – Sun ' . $meta['end'] . ')'
+                        . ($part > 1 ? ' · part ' . $part : '');
+                    honey_sales_export_write_shipped_detail($sheet, $chunk, $partLabel, $shippedEmpty);
+                }
             }
-            $r++;
+
+            if ($channel !== 'online') {
+                $wlkRows = $walkInByKey[$key]['rows'] ?? [];
+                foreach (honey_sales_export_chunk_rows($wlkRows) as $i => $chunk) {
+                    $part = $i + 1;
+                    $sheet = $spreadsheet->createSheet();
+                    $title = honey_sales_export_unique_sheet_title(
+                        $weekLabel,
+                        'wlk',
+                        $part,
+                        $includeYear,
+                        $year,
+                        $usedTitles
+                    );
+                    $sheet->setTitle($title);
+                    $partLabel = 'Walk-in · ' . $weekLabel
+                        . ' (Mon ' . $meta['start'] . ' – Sun ' . $meta['end'] . ')'
+                        . ($part > 1 ? ' · part ' . $part : '');
+                    honey_sales_export_write_walk_in_detail(
+                        $sheet,
+                        $chunk,
+                        $rtsFlags,
+                        $canViewAmounts,
+                        $partLabel,
+                        $walkEmpty
+                    );
+                }
+            }
         }
-    }
-    foreach (range('A', $lastCol) as $col) {
-        $walkIn->getColumnDimension($col)->setAutoSize(true);
     }
 
     $spreadsheet->setActiveSheetIndex(0);

@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-18 — Sales Excel weekly named sheets
+**Change:** Export Summary + Mon–Sun weeks as `SE 14-20-shp` / `SE 14-20-wlk` (overflow `(2)`). → [[fixes/sales-excel-weekly-named-sheets]] · [[problems/records/2026-09-18_sales-excel-chunked-export]]
+
+### 2026-09-18 — Sales Excel chunked multi-sheet export
+**Change:** Export uses Summary + Shipped/Walk-in sheets of 5k rows each (100k absolute cap) so monthly volume can export. → [[problems/records/2026-09-18_sales-excel-chunked-export]]
+
 ### 2026-09-18 — Rebuild finished honey pools from stickers (prod recovery)
 **Change:** Phase 86 SQL restores empty POOL `current_*` from `honey_bottle_units` still in packaging; re-links stickers to POOL. SKU packs not included. → [[problems/records/2026-09-17_honey-packaging-variant-pools]]
 

@@ -1,7 +1,7 @@
 ---
 title: dept_jar_cacao_settings
 source: includes/dept_jar_cacao_settings.php
-generated: 2026-09-18T07:08:47+02:00
+generated: 2026-09-18T10:53:57+02:00
 type: module
 function_count: 7
 ---
