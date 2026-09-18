@@ -1,9 +1,9 @@
 ---
 title: honey_sales_report
 source: includes/honey_sales_report.php
-generated: 2026-09-18T10:56:07+02:00
+generated: 2026-09-18T11:28:06+02:00
 type: module
-function_count: 34
+function_count: 38
 ---
 
 
@@ -28,7 +28,7 @@ function_count: 34
 - `includes/honey_sales_report.php`:802 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
 - `includes/honey_sales_report.php`:995 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
 - `includes/honey_sales_report.php`:1067 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
-- `includes/honey_sales_report.php`:2002 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
+- `includes/honey_sales_report.php`:2209 — `$filters = honey_sales_resolve_filters($period, $from, $to);`
 
 ## honey_sales_log_where_clause {#honey_sales_log_where_clause}
 
@@ -151,7 +151,7 @@ function_count: 34
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:2011 — `$exported = honey_sales_fetch_checkouts_export($pdo, $period, $from, $to, $receipt, $saleType, $product);`
+- `includes/honey_sales_report.php`:2218 — `$exported = honey_sales_fetch_checkouts_export($pdo, $period, $from, $to, $receipt, $saleType, $product);`
 
 ## honey_sales_checkout_rts_flags {#honey_sales_checkout_rts_flags}
 
@@ -159,7 +159,7 @@ function_count: 34
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:2014 — `$rtsFlags = honey_sales_checkout_rts_flags($pdo, $saleIds);`
+- `includes/honey_sales_report.php`:2221 — `$rtsFlags = honey_sales_checkout_rts_flags($pdo, $saleIds);`
 
 ## honey_sales_fetch_shipped_export {#honey_sales_fetch_shipped_export}
 
@@ -167,21 +167,21 @@ function_count: 34
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:2022 — `$shippedRows = honey_sales_fetch_shipped_export($pdo, $period, $from, $to, $product);`
+- `includes/honey_sales_report.php`:2229 — `$shippedRows = honey_sales_fetch_shipped_export($pdo, $period, $from, $to, $product);`
 
 ## honey_sales_export_checkout_item_labels {#honey_sales_export_checkout_item_labels}
 
 **Callers (2):**
 
 - `includes/honey_sales_report.php`:1426 — `$labels = explode('; ', honey_sales_export_checkout_item_labels($items));`
-- `includes/honey_sales_report.php`:1963 — `$sheet->setCellValue('E' . $r, honey_sales_export_checkout_item_labels($items));`
+- `includes/honey_sales_report.php`:2170 — `$sheet->setCellValue('E' . $r, honey_sales_export_checkout_item_labels($items));`
 
 ## honey_sales_export_checkout_item_qtys {#honey_sales_export_checkout_item_qtys}
 
 **Callers (2):**
 
 - `includes/honey_sales_report.php`:1427 — `$qtys = explode('; ', honey_sales_export_checkout_item_qtys($items));`
-- `includes/honey_sales_report.php`:1964 — `$sheet->setCellValue('F' . $r, honey_sales_export_checkout_item_qtys($items));`
+- `includes/honey_sales_report.php`:2171 — `$sheet->setCellValue('F' . $r, honey_sales_export_checkout_item_qtys($items));`
 
 ## honey_sales_export_checkout_items_summary {#honey_sales_export_checkout_items_summary}
 
@@ -200,13 +200,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:2025 — `$walkInSummary = honey_sales_export_summarize_walk_in($walkInRows, $rtsFlags);`
+- `includes/honey_sales_report.php`:2305 — `$wlkSum = honey_sales_export_summarize_walk_in($wlkRows, $rtsFlags);`
 
 ## honey_sales_export_summarize_shipped {#honey_sales_export_summarize_shipped}
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:2026 — `$shippedSummary = honey_sales_export_summarize_shipped($shippedRows);`
+- `includes/honey_sales_report.php`:2304 — `$shpSum = honey_sales_export_summarize_shipped($shpRows);`
 
 ## honey_sales_export_write_summary_block {#honey_sales_export_write_summary_block}
 
@@ -218,16 +218,17 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/honey_sales_report.php`:2177 — `foreach (honey_sales_export_chunk_rows($shpRows) as $i => $chunk) {`
-- `includes/honey_sales_report.php`:2198 — `foreach (honey_sales_export_chunk_rows($wlkRows) as $i => $chunk) {`
+- `includes/honey_sales_report.php`:2377 — `foreach (honey_sales_export_chunk_rows($shpRows) as $i => $chunk) {`
+- `includes/honey_sales_report.php`:2398 — `foreach (honey_sales_export_chunk_rows($wlkRows) as $i => $chunk) {`
 
 ## honey_sales_export_month_code {#honey_sales_export_month_code}
 
-**Callers (3):**
+**Callers (4):**
 
 - `includes/honey_sales_report.php`:1793 — `$label = honey_sales_export_month_code($sm) . ' ' . $sd . '-' . $ed;`
 - `includes/honey_sales_report.php`:1795 — `$label = honey_sales_export_month_code($sm) . ' ' . $sd . '-'`
 - `includes/honey_sales_report.php`:1796 — `. honey_sales_export_month_code($em) . ' ' . $ed;`
+- `includes/honey_sales_report.php`:1909 — `$code = honey_sales_export_month_code($month);`
 
 ## honey_sales_export_week_meta {#honey_sales_export_week_meta}
 
@@ -239,31 +240,57 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (4):**
 
-- `includes/honey_sales_report.php`:2153 — `$title = honey_sales_export_unique_sheet_title('No data', 'shp', 1, false, '', $usedTitles);`
-- `includes/honey_sales_report.php`:2159 — `$title = honey_sales_export_unique_sheet_title('No data', 'wlk', 1, false, '', $usedTitles);`
-- `includes/honey_sales_report.php`:2180 — `$title = honey_sales_export_unique_sheet_title(`
-- `includes/honey_sales_report.php`:2201 — `$title = honey_sales_export_unique_sheet_title(`
+- `includes/honey_sales_report.php`:2353 — `$title = honey_sales_export_unique_sheet_title('No data', 'shp', 1, false, '', $usedTitles);`
+- `includes/honey_sales_report.php`:2359 — `$title = honey_sales_export_unique_sheet_title('No data', 'wlk', 1, false, '', $usedTitles);`
+- `includes/honey_sales_report.php`:2380 — `$title = honey_sales_export_unique_sheet_title(`
+- `includes/honey_sales_report.php`:2401 — `$title = honey_sales_export_unique_sheet_title(`
 
 ## honey_sales_export_group_by_week {#honey_sales_export_group_by_week}
 
 **Callers (2):**
 
-- `includes/honey_sales_report.php`:2028 — `$shippedWeeks = honey_sales_export_group_by_week($shippedRows, 'when_packed');`
-- `includes/honey_sales_report.php`:2029 — `$walkInWeeks = honey_sales_export_group_by_week($walkInRows, 'sold_at');`
+- `includes/honey_sales_report.php`:2232 — `$shippedWeeks = honey_sales_export_group_by_week($shippedRows, 'when_packed');`
+- `includes/honey_sales_report.php`:2233 — `$walkInWeeks = honey_sales_export_group_by_week($walkInRows, 'sold_at');`
+
+## honey_sales_export_month_name {#honey_sales_export_month_name}
+
+**Callers (1):**
+
+- `includes/honey_sales_report.php`:1910 — `$name = honey_sales_export_month_name($month);`
+
+## honey_sales_export_group_by_month {#honey_sales_export_group_by_month}
+
+**Callers (2):**
+
+- `includes/honey_sales_report.php`:2234 — `$shippedMonths = honey_sales_export_group_by_month($shippedRows, 'when_packed');`
+- `includes/honey_sales_report.php`:2235 — `$walkInMonths = honey_sales_export_group_by_month($walkInRows, 'sold_at');`
+
+## honey_sales_export_write_channel_breakdown_block {#honey_sales_export_write_channel_breakdown_block}
+
+**Callers (2):**
+
+- `includes/honey_sales_report.php`:2061 — `$r = honey_sales_export_write_channel_breakdown_block(`
+- `includes/honey_sales_report.php`:2068 — `$r = honey_sales_export_write_channel_breakdown_block(`
+
+## honey_sales_export_write_month_summary_sheet {#honey_sales_export_write_month_summary_sheet}
+
+**Callers (1):**
+
+- `includes/honey_sales_report.php`:2331 — `honey_sales_export_write_month_summary_sheet(`
 
 ## honey_sales_export_write_shipped_detail {#honey_sales_export_write_shipped_detail}
 
 **Callers (2):**
 
-- `includes/honey_sales_report.php`:2155 — `honey_sales_export_write_shipped_detail($sheet, [], 'Shipped / pack-scan', $shippedEmpty);`
-- `includes/honey_sales_report.php`:2192 — `honey_sales_export_write_shipped_detail($sheet, $chunk, $partLabel, $shippedEmpty);`
+- `includes/honey_sales_report.php`:2355 — `honey_sales_export_write_shipped_detail($sheet, [], 'Shipped / pack-scan', $shippedEmpty);`
+- `includes/honey_sales_report.php`:2392 — `honey_sales_export_write_shipped_detail($sheet, $chunk, $partLabel, $shippedEmpty);`
 
 ## honey_sales_export_write_walk_in_detail {#honey_sales_export_write_walk_in_detail}
 
 **Callers (2):**
 
-- `includes/honey_sales_report.php`:2161 — `honey_sales_export_write_walk_in_detail(`
-- `includes/honey_sales_report.php`:2213 — `honey_sales_export_write_walk_in_detail(`
+- `includes/honey_sales_report.php`:2361 — `honey_sales_export_write_walk_in_detail(`
+- `includes/honey_sales_report.php`:2413 — `honey_sales_export_write_walk_in_detail(`
 
 ## honey_sales_build_export_xlsx {#honey_sales_build_export_xlsx}
 

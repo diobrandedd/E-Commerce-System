@@ -4,8 +4,11 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-18 — Sales Excel monthly summary = size + variant + variant×size
+**Change:** Each `Sep Summary` / `Aug Summary` sheet now mirrors the old header: by bottle/size, by variant, by variant × size for shipped and walk-in (not totals-only). → [[fixes/sales-excel-weekly-named-sheets]] · [[problems/records/2026-09-18_sales-excel-chunked-export]]
+
 ### 2026-09-18 — Sales Excel weekly named sheets
-**Change:** Export Summary + Mon–Sun weeks as `SE 14-20-shp` / `SE 14-20-wlk` (overflow `(2)`). → [[fixes/sales-excel-weekly-named-sheets]] · [[problems/records/2026-09-18_sales-excel-chunked-export]]
+**Change:** Export one **monthly** summary per calendar month (`Sep Summary`) + Mon–Sun `SE 14-20-shp` / `wlk` (not one all-time Summary). → [[fixes/sales-excel-weekly-named-sheets]] · [[problems/records/2026-09-18_sales-excel-chunked-export]]
 
 ### 2026-09-18 — Sales Excel chunked multi-sheet export
 **Change:** Export uses Summary + Shipped/Walk-in sheets of 5k rows each (100k absolute cap) so monthly volume can export. → [[problems/records/2026-09-18_sales-excel-chunked-export]]
