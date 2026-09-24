@@ -276,9 +276,58 @@ def highlight_workbook(src_path: str, dst_path: str, matches_path: str) -> dict[
     return {"ok": True, "output": dst_path, "exists_col": exists_col}
 
 
+def export_ours_workbook(rows_path: str, dst_path: str) -> dict[str, Any]:
+    """Write our Online Parcels with Exists / Not found (green/red)."""
+    with open(rows_path, encoding="utf-8") as fh:
+        payload = json.load(fh)
+    rows = payload.get("rows", [])
+    if not isinstance(rows, list):
+        rows = []
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = str(payload.get("sheet_title") or "Our parcels")[:31]
+
+    headers = ["Order No", "Tracking Number", "Status", "Ship Date", "Created At", "Exists"]
+    for col, header in enumerate(headers, start=1):
+        ws.cell(row=1, column=col, value=header)
+
+    green = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+    red = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+
+    out_row = 2
+    for entry in rows:
+        if not isinstance(entry, dict):
+            continue
+        status = str(entry.get("status", "")).lower()
+        exists_label = "Exists" if status == "matched" else "Not found"
+        values = [
+            entry.get("order_no") or "",
+            entry.get("tracking_number") or "",
+            entry.get("parcel_status") or "",
+            entry.get("ship_date") or "",
+            entry.get("created_at") or "",
+            exists_label,
+        ]
+        for col, value in enumerate(values, start=1):
+            cell = ws.cell(row=out_row, column=col, value=value)
+            if col in (1, 6):
+                cell.fill = green if status == "matched" else red
+        out_row += 1
+
+    wb.save(dst_path)
+    return {"ok": True, "output": dst_path, "rows": out_row - 2}
+
+
 def main() -> None:
     if len(sys.argv) < 3:
-        print(json.dumps({"error": "Usage: partner_sold_workbook.py <scan|highlight> <workbook> [args...]"}))
+        print(
+            json.dumps(
+                {
+                    "error": "Usage: partner_sold_workbook.py <scan|highlight|export_ours> <path> [args...]"
+                }
+            )
+        )
         sys.exit(1)
     mode = sys.argv[1].lower()
     path = sys.argv[2]
@@ -289,6 +338,10 @@ def main() -> None:
             if len(sys.argv) < 5:
                 raise ValueError("highlight requires destination and matches JSON paths.")
             result = highlight_workbook(path, sys.argv[3], sys.argv[4])
+        elif mode == "export_ours":
+            if len(sys.argv) < 4:
+                raise ValueError("export_ours requires destination path.")
+            result = export_ours_workbook(path, sys.argv[3])
         else:
             raise ValueError("Unknown mode: " + mode)
         print(json.dumps(result, ensure_ascii=False))

@@ -1,7 +1,7 @@
 ---
 title: online_order_parcels
 source: includes/online_order_parcels.php
-generated: 2026-09-24T09:58:22+02:00
+generated: 2026-09-24T10:42:40+02:00
 type: module
 function_count: 29
 ---
@@ -41,7 +41,7 @@ function_count: 29
 - `api/v1/parcels.php`:14 — `if (!online_parcels_user_can_access($user)) {`
 - `includes/courier_soa_reconcile.php`:30 — `return online_parcels_user_can_access($user);`
 - `includes/historical_orders_import.php`:100 — `return online_parcels_user_can_access($user);`
-- `includes/partner_sold_reconcile.php`:29 — `return online_parcels_user_can_access($user);`
+- `includes/partner_sold_reconcile.php`:30 — `return online_parcels_user_can_access($user);`
 
 ## online_parcels_user_can_ship {#online_parcels_user_can_ship}
 

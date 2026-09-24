@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-24 — Partner sold list: our parcels in their Excel
+**Change:** Default direction checks our Online Parcels against their sold list; export our list with Exists. Toggle keeps their→ours. → [[problems/records/2026-09-24_partner-sold-ours-in-theirs]]
+
 ### 2026-09-24 — Partner sold list: Exists vs Not found (any status)
 **Change:** Green/red = parcel exists for partner (packing counts); Exists column on export; blank-row scan fixed; Order No float + Tracking Number match. → [[problems/records/2026-09-24_partner-sold-exists-not-shipped]]
 

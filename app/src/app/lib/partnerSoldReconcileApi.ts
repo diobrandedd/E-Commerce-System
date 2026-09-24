@@ -2,6 +2,8 @@ import { apiPost, apiPostForm, API_BASE, getCsrfToken } from "@/app/lib/api";
 
 export type PartnerSeller = "ian" | "jono" | "joven";
 
+export type PartnerSoldDirection = "ours_in_theirs" | "theirs_in_ours";
+
 export interface PartnerSoldReconcileSummary {
   total_rows: number;
   rows_with_order_no: number;
@@ -11,12 +13,16 @@ export interface PartnerSoldReconcileSummary {
   not_found: number;
   skipped_no_order_no: number;
   skipped_blank_rows?: number;
+  our_parcels?: number;
 }
 
 export interface PartnerSoldReconcilePreviewRow {
   row: number;
   order_no: string | null;
   tracking_number?: string | null;
+  parcel_status?: string | null;
+  ship_date?: string | null;
+  created_at?: string | null;
   remark: string;
   excluded: boolean;
   matched: boolean;
@@ -27,6 +33,7 @@ export interface PartnerSoldReconcilePreviewRow {
 export interface PartnerSoldReconcileResult {
   summary: PartnerSoldReconcileSummary;
   partner_seller: PartnerSeller;
+  direction: PartnerSoldDirection;
   sheet: string;
   download_token: string;
   download_filename: string;
@@ -45,6 +52,7 @@ export async function partnerSoldStashUpload(file: File): Promise<string> {
 export async function partnerSoldReconcile(payload: {
   token: string;
   partner_seller: PartnerSeller;
+  direction?: PartnerSoldDirection;
   date_from?: string;
   date_to?: string;
 }): Promise<PartnerSoldReconcileResult> {

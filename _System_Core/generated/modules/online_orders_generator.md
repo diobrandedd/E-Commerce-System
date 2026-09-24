@@ -1,7 +1,7 @@
 ---
 title: online_orders_generator
 source: includes/online_orders_generator.php
-generated: 2026-09-24T09:58:24+02:00
+generated: 2026-09-24T10:42:41+02:00
 type: module
 function_count: 44
 ---
@@ -36,7 +36,7 @@ function_count: 44
 - `includes/historical_orders_import.php`:307 — `return online_orders_normalize_partner_seller($raw);`
 - `includes/online_orders_generator.php`:50 — `$seller = online_orders_normalize_partner_seller($partnerSeller);`
 - `includes/online_orders_generator.php`:541 — `? online_orders_normalize_partner_seller((string) $line['partner_seller'])`
-- `includes/partner_sold_reconcile.php`:388 — `$partnerSeller = online_orders_normalize_partner_seller((string) ($input['partner_seller'] ?? ''));`
+- `includes/partner_sold_reconcile.php`:738 — `$partnerSeller = online_orders_normalize_partner_seller((string) ($input['partner_seller'] ?? ''));`
 
 ## online_orders_require_partner_seller_for_pipeline {#online_orders_require_partner_seller_for_pipeline}
 

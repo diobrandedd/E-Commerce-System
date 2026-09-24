@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 /**
- * Partner seller sold-list reconciliation vs Online Parcels (exists / not found).
+ * Partner seller sold-list reconciliation vs Online Parcels.
+ * Directions: ours_in_theirs (default) | theirs_in_ours.
  */
 
 require_once __DIR__ . '/online_order_parcels.php';
@@ -142,15 +143,20 @@ function partner_sold_write_temp_json(string $json): string
 /**
  * @return array<string, mixed>
  */
-function partner_sold_run_python(string $mode, string $workbookPath, ?string $dstPath = null, ?string $matchesPath = null): array
+function partner_sold_run_python(string $mode, string $pathA, ?string $pathB = null, ?string $pathC = null): array
 {
-    $args = [$mode, $workbookPath];
+    $args = [$mode, $pathA];
     if ($mode === 'highlight') {
-        if ($dstPath === null || $matchesPath === null) {
+        if ($pathB === null || $pathC === null) {
             throw new RuntimeException('Highlight mode requires destination and matches paths.');
         }
-        $args[] = $dstPath;
-        $args[] = $matchesPath;
+        $args[] = $pathB;
+        $args[] = $pathC;
+    } elseif ($mode === 'export_ours') {
+        if ($pathB === null) {
+            throw new RuntimeException('export_ours requires destination path.');
+        }
+        $args[] = $pathB;
     }
 
     $built = partner_sold_python_command(...$args);
@@ -288,40 +294,10 @@ function partner_sold_existing_parcel_indexes(
     ?string $dateFrom = null,
     ?string $dateTo = null,
 ): array {
-    online_parcels_ensure_schema($pdo);
-    $sql = 'SELECT order_no, tracking_number, ship_date, created_at FROM online_order_parcels
-            WHERE partner_seller = ?';
-    $params = [$partnerSeller];
-    $hasFrom = $dateFrom !== null && $dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom);
-    $hasTo = $dateTo !== null && $dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo);
-    if ($hasFrom || $hasTo) {
-        // Include packing (null ship_date) via created_at so month filters still work.
-        $parts = [];
-        if ($hasFrom && $hasTo) {
-            $parts[] = '((ship_date IS NOT NULL AND ship_date >= ? AND ship_date <= ?)
-                OR (ship_date IS NULL AND DATE(created_at) >= ? AND DATE(created_at) <= ?))';
-            $params[] = $dateFrom;
-            $params[] = $dateTo;
-            $params[] = $dateFrom;
-            $params[] = $dateTo;
-        } elseif ($hasFrom) {
-            $parts[] = '((ship_date IS NOT NULL AND ship_date >= ?)
-                OR (ship_date IS NULL AND DATE(created_at) >= ?))';
-            $params[] = $dateFrom;
-            $params[] = $dateFrom;
-        } else {
-            $parts[] = '((ship_date IS NOT NULL AND ship_date <= ?)
-                OR (ship_date IS NULL AND DATE(created_at) <= ?))';
-            $params[] = $dateTo;
-            $params[] = $dateTo;
-        }
-        $sql .= ' AND ' . $parts[0];
-    }
-    $st = $pdo->prepare($sql);
-    $st->execute($params);
+    $parcels = partner_sold_list_our_parcels($pdo, $partnerSeller, $dateFrom, $dateTo);
     $orderNos = [];
     $trackings = [];
-    while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+    foreach ($parcels as $row) {
         $norm = partner_sold_normalize_order_no(isset($row['order_no']) ? (string) $row['order_no'] : null);
         foreach (partner_sold_order_no_lookup_keys($norm) as $key) {
             $orderNos[$key] = true;
@@ -334,6 +310,113 @@ function partner_sold_existing_parcel_indexes(
     }
 
     return ['order_nos' => $orderNos, 'trackings' => $trackings];
+}
+
+/**
+ * Our Online Parcels for a partner (any status), optional date window.
+ *
+ * @return list<array{id:int, order_no:?string, tracking_number:?string, status:string, ship_date:?string, created_at:?string}>
+ */
+function partner_sold_list_our_parcels(
+    PDO $pdo,
+    string $partnerSeller,
+    ?string $dateFrom = null,
+    ?string $dateTo = null,
+): array {
+    online_parcels_ensure_schema($pdo);
+    $sql = 'SELECT id, order_no, tracking_number, status, ship_date, created_at FROM online_order_parcels
+            WHERE partner_seller = ?';
+    $params = [$partnerSeller];
+    $hasFrom = $dateFrom !== null && $dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom);
+    $hasTo = $dateTo !== null && $dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo);
+    if ($hasFrom || $hasTo) {
+        if ($hasFrom && $hasTo) {
+            $sql .= ' AND ((ship_date IS NOT NULL AND ship_date >= ? AND ship_date <= ?)
+                OR (ship_date IS NULL AND DATE(created_at) >= ? AND DATE(created_at) <= ?))';
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+        } elseif ($hasFrom) {
+            $sql .= ' AND ((ship_date IS NOT NULL AND ship_date >= ?)
+                OR (ship_date IS NULL AND DATE(created_at) >= ?))';
+            $params[] = $dateFrom;
+            $params[] = $dateFrom;
+        } else {
+            $sql .= ' AND ((ship_date IS NOT NULL AND ship_date <= ?)
+                OR (ship_date IS NULL AND DATE(created_at) <= ?))';
+            $params[] = $dateTo;
+            $params[] = $dateTo;
+        }
+    }
+    $sql .= ' ORDER BY id ASC';
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+    $out = [];
+    while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+        $out[] = [
+            'id' => (int) ($row['id'] ?? 0),
+            'order_no' => isset($row['order_no']) && $row['order_no'] !== null && $row['order_no'] !== ''
+                ? (string) $row['order_no'] : null,
+            'tracking_number' => isset($row['tracking_number']) && $row['tracking_number'] !== null && $row['tracking_number'] !== ''
+                ? (string) $row['tracking_number'] : null,
+            'status' => (string) ($row['status'] ?? ''),
+            'ship_date' => isset($row['ship_date']) && $row['ship_date'] !== null ? (string) $row['ship_date'] : null,
+            'created_at' => isset($row['created_at']) && $row['created_at'] !== null ? (string) $row['created_at'] : null,
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * Build Order No / TN indexes from a scanned partner sold-list Excel.
+ *
+ * @param list<mixed> $rows
+ * @return array{order_nos: array<string, true>, trackings: array<string, true>, excluded: int, with_order_no: int, skipped: int}
+ */
+function partner_sold_indexes_from_excel_rows(array $rows): array
+{
+    $orderNos = [];
+    $trackings = [];
+    $excluded = 0;
+    $withOrderNo = 0;
+    $skipped = 0;
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $orderNo = partner_sold_normalize_order_no(isset($row['order_no']) ? (string) $row['order_no'] : null);
+        $tracking = partner_sold_normalize_tracking(
+            isset($row['tracking_number']) ? (string) $row['tracking_number'] : null
+        );
+        if (!empty($row['excluded'])) {
+            $excluded++;
+            continue;
+        }
+        if (($orderNo === null || $orderNo === '') && ($tracking === null || $tracking === '')) {
+            $skipped++;
+            continue;
+        }
+        if ($orderNo !== null && $orderNo !== '') {
+            $withOrderNo++;
+            foreach (partner_sold_order_no_lookup_keys($orderNo) as $key) {
+                $orderNos[$key] = true;
+            }
+        }
+        if ($tracking !== null && $tracking !== '') {
+            $trackings[$tracking] = true;
+            $trackings[strtoupper($tracking)] = true;
+        }
+    }
+
+    return [
+        'order_nos' => $orderNos,
+        'trackings' => $trackings,
+        'excluded' => $excluded,
+        'with_order_no' => $withOrderNo,
+        'skipped' => $skipped,
+    ];
 }
 
 /**
@@ -369,41 +452,43 @@ function partner_sold_row_exists(array $orderNos, array $trackings, ?string $ord
     return false;
 }
 
+function partner_sold_normalize_direction(string $raw): string
+{
+    $d = strtolower(trim($raw));
+    if ($d === 'theirs_in_ours' || $d === 'theirs') {
+        return 'theirs_in_ours';
+    }
+
+    return 'ours_in_theirs';
+}
+
 /**
- * @param array<string, mixed> $input
+ * @param array<string, mixed> $scan
  * @return array{
  *   summary: array<string, int>,
  *   partner_seller: string,
+ *   direction: string,
+ *   sheet: string,
  *   download_token: string,
  *   download_filename: string,
  *   preview: list<array<string, mixed>>
  * }
  */
-function partner_sold_reconcile(PDO $pdo, array $input): array
-{
-    $token = trim((string) ($input['token'] ?? ''));
-    if ($token === '') {
-        throw new RuntimeException('token required.');
-    }
-    $partnerSeller = online_orders_normalize_partner_seller((string) ($input['partner_seller'] ?? ''));
-    if ($partnerSeller === null) {
-        throw new RuntimeException('partner_seller required (ian, jono, or joven).');
-    }
-    $dateFrom = trim((string) ($input['date_from'] ?? ''));
-    $dateTo = trim((string) ($input['date_to'] ?? ''));
-    $srcPath = partner_sold_resolve_stash_path($token);
-    $scan = partner_sold_run_python('scan', $srcPath);
+function partner_sold_reconcile_theirs_in_ours(
+    PDO $pdo,
+    string $partnerSeller,
+    string $srcPath,
+    string $token,
+    array $scan,
+    ?string $dateFrom,
+    ?string $dateTo,
+): array {
     $rows = $scan['rows'] ?? [];
     if (!is_array($rows)) {
         $rows = [];
     }
 
-    $indexes = partner_sold_existing_parcel_indexes(
-        $pdo,
-        $partnerSeller,
-        $dateFrom !== '' ? $dateFrom : null,
-        $dateTo !== '' ? $dateTo : null,
-    );
+    $indexes = partner_sold_existing_parcel_indexes($pdo, $partnerSeller, $dateFrom, $dateTo);
     $orderNos = $indexes['order_nos'];
     $trackings = $indexes['trackings'];
 
@@ -416,6 +501,7 @@ function partner_sold_reconcile(PDO $pdo, array $input): array
         'not_found' => 0,
         'skipped_no_order_no' => 0,
         'skipped_blank_rows' => (int) ($scan['skipped_blank_rows'] ?? 0),
+        'our_parcels' => 0,
     ];
     $highlightRows = [];
     $preview = [];
@@ -461,6 +547,9 @@ function partner_sold_reconcile(PDO $pdo, array $input): array
                 'row' => $excelRow,
                 'order_no' => $orderNo,
                 'tracking_number' => $tracking,
+                'parcel_status' => null,
+                'ship_date' => null,
+                'created_at' => null,
                 'remark' => (string) ($row['remark'] ?? ''),
                 'excluded' => $excluded,
                 'matched' => $status === 'matched',
@@ -501,11 +590,168 @@ function partner_sold_reconcile(PDO $pdo, array $input): array
     return [
         'summary' => $summary,
         'partner_seller' => $partnerSeller,
+        'direction' => 'theirs_in_ours',
         'sheet' => (string) ($scan['sheet'] ?? ''),
         'download_token' => $downloadToken,
         'download_filename' => $downloadFilename,
         'preview' => $preview,
     ];
+}
+
+/**
+ * @param array<string, mixed> $scan
+ * @return array{
+ *   summary: array<string, int>,
+ *   partner_seller: string,
+ *   direction: string,
+ *   sheet: string,
+ *   download_token: string,
+ *   download_filename: string,
+ *   preview: list<array<string, mixed>>
+ * }
+ */
+function partner_sold_reconcile_ours_in_theirs(
+    PDO $pdo,
+    string $partnerSeller,
+    string $token,
+    array $scan,
+    ?string $dateFrom,
+    ?string $dateTo,
+): array {
+    $excelRows = $scan['rows'] ?? [];
+    if (!is_array($excelRows)) {
+        $excelRows = [];
+    }
+    $excelIdx = partner_sold_indexes_from_excel_rows($excelRows);
+    $theirOrderNos = $excelIdx['order_nos'];
+    $theirTrackings = $excelIdx['trackings'];
+
+    $parcels = partner_sold_list_our_parcels($pdo, $partnerSeller, $dateFrom, $dateTo);
+    $summary = [
+        'total_rows' => count($excelRows),
+        'rows_with_order_no' => $excelIdx['with_order_no'],
+        'excluded_status' => $excelIdx['excluded'],
+        'checked' => 0,
+        'matched' => 0,
+        'not_found' => 0,
+        'skipped_no_order_no' => $excelIdx['skipped'],
+        'skipped_blank_rows' => (int) ($scan['skipped_blank_rows'] ?? 0),
+        'our_parcels' => count($parcels),
+    ];
+    $exportRows = [];
+    $preview = [];
+
+    foreach ($parcels as $parcel) {
+        $orderNo = partner_sold_normalize_order_no(
+            isset($parcel['order_no']) ? (string) $parcel['order_no'] : null
+        );
+        $tracking = partner_sold_normalize_tracking(
+            isset($parcel['tracking_number']) ? (string) $parcel['tracking_number'] : null
+        );
+        if (($orderNo === null || $orderNo === '') && ($tracking === null || $tracking === '')) {
+            continue;
+        }
+        $summary['checked']++;
+        $exists = partner_sold_row_exists($theirOrderNos, $theirTrackings, $orderNo, $tracking);
+        if ($exists) {
+            $summary['matched']++;
+            $status = 'matched';
+        } else {
+            $summary['not_found']++;
+            $status = 'missing';
+        }
+        $exportRows[] = [
+            'order_no' => $orderNo,
+            'tracking_number' => $tracking,
+            'parcel_status' => (string) ($parcel['status'] ?? ''),
+            'ship_date' => $parcel['ship_date'] ?? null,
+            'created_at' => $parcel['created_at'] ?? null,
+            'status' => $status,
+        ];
+        if (count($preview) < 25) {
+            $preview[] = [
+                'row' => count($preview) + 1,
+                'order_no' => $orderNo,
+                'tracking_number' => $tracking,
+                'parcel_status' => (string) ($parcel['status'] ?? ''),
+                'ship_date' => $parcel['ship_date'] ?? null,
+                'created_at' => $parcel['created_at'] ?? null,
+                'remark' => '',
+                'excluded' => false,
+                'matched' => $exists,
+                'exists' => $exists,
+                'status' => $status,
+            ];
+        }
+    }
+
+    $outDir = partner_sold_storage_root() . '/outputs';
+    if (!is_dir($outDir) && !mkdir($outDir, 0775, true) && !is_dir($outDir)) {
+        throw new RuntimeException('Could not create output directory.');
+    }
+    $outPath = $outDir . '/ours_in_theirs_' . bin2hex(random_bytes(8)) . '.xlsx';
+    $payload = json_encode([
+        'sheet_title' => 'Our parcels',
+        'rows' => $exportRows,
+    ], JSON_UNESCAPED_UNICODE);
+    if ($payload === false) {
+        throw new RuntimeException('Could not encode export payload.');
+    }
+    $rowsPath = partner_sold_write_temp_json($payload);
+    try {
+        partner_sold_run_python('export_ours', $rowsPath, $outPath);
+    } finally {
+        @unlink($rowsPath);
+    }
+
+    $downloadFilename = 'our-parcels-in-' . $partnerSeller . '-sold-list.xlsx';
+    $downloadToken = partner_sold_register_download($outPath, $downloadFilename);
+
+    return [
+        'summary' => $summary,
+        'partner_seller' => $partnerSeller,
+        'direction' => 'ours_in_theirs',
+        'sheet' => (string) ($scan['sheet'] ?? ''),
+        'download_token' => $downloadToken,
+        'download_filename' => $downloadFilename,
+        'preview' => $preview,
+    ];
+}
+
+/**
+ * @param array<string, mixed> $input
+ * @return array{
+ *   summary: array<string, int>,
+ *   partner_seller: string,
+ *   direction: string,
+ *   download_token: string,
+ *   download_filename: string,
+ *   preview: list<array<string, mixed>>
+ * }
+ */
+function partner_sold_reconcile(PDO $pdo, array $input): array
+{
+    $token = trim((string) ($input['token'] ?? ''));
+    if ($token === '') {
+        throw new RuntimeException('token required.');
+    }
+    $partnerSeller = online_orders_normalize_partner_seller((string) ($input['partner_seller'] ?? ''));
+    if ($partnerSeller === null) {
+        throw new RuntimeException('partner_seller required (ian, jono, or joven).');
+    }
+    $direction = partner_sold_normalize_direction((string) ($input['direction'] ?? 'ours_in_theirs'));
+    $dateFrom = trim((string) ($input['date_from'] ?? ''));
+    $dateTo = trim((string) ($input['date_to'] ?? ''));
+    $from = $dateFrom !== '' ? $dateFrom : null;
+    $to = $dateTo !== '' ? $dateTo : null;
+    $srcPath = partner_sold_resolve_stash_path($token);
+    $scan = partner_sold_run_python('scan', $srcPath);
+
+    if ($direction === 'theirs_in_ours') {
+        return partner_sold_reconcile_theirs_in_ours($pdo, $partnerSeller, $srcPath, $token, $scan, $from, $to);
+    }
+
+    return partner_sold_reconcile_ours_in_theirs($pdo, $partnerSeller, $token, $scan, $from, $to);
 }
 
 function partner_sold_register_download(string $path, string $filename): string
