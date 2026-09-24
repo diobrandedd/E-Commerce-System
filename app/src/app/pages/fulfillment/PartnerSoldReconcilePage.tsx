@@ -84,7 +84,7 @@ export function PartnerSoldReconcilePage() {
     }
   };
 
-  const matchRate =
+  const existsRate =
     result && result.summary.checked > 0
       ? Math.round((result.summary.matched / result.summary.checked) * 100)
       : null;
@@ -92,7 +92,7 @@ export function PartnerSoldReconcilePage() {
   return (
     <PageLayout
       title="Partner sold list"
-      subtitle="Compare a partner seller’s sold-list Excel against shipped Online Parcels (green = found, red = missing)."
+      subtitle="Compare a partner seller’s sold-list Excel against Online Parcels (green = Exists, red = Not found)."
     >
       <FulfillmentSectionEnter className="max-w-4xl space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -113,7 +113,7 @@ export function PartnerSoldReconcilePage() {
           </label>
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Ship date from</span>
+              <span className="text-xs font-medium text-muted-foreground">Date from (optional)</span>
               <input
                 type="date"
                 value={dateFrom}
@@ -123,7 +123,7 @@ export function PartnerSoldReconcilePage() {
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Ship date to</span>
+              <span className="text-xs font-medium text-muted-foreground">Date to (optional)</span>
               <input
                 type="date"
                 value={dateTo}
@@ -136,13 +136,15 @@ export function PartnerSoldReconcilePage() {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Matches only <strong className="font-semibold text-foreground">shipped</strong> parcels for{" "}
-          {partnerSellerLabel(partner)}. Canceled / failed delivery rows are excluded from the check count.
+          Marks Order Nos that <strong className="font-semibold text-foreground">exist</strong> in Online Parcels for{" "}
+          {partnerSellerLabel(partner)} (any status, including packing). Optional dates use ship date when set, or
+          created date for packing. Leave dates blank to check the full partner list. Canceled / failed delivery
+          remark rows are excluded.
         </p>
 
         <FileZone
           label="Partner sold list Excel"
-          hint="Columns: Order Date, Order No, Customer, … (same layout Ian sends monthly)"
+          hint="Columns: Order Date, Order No, Customer, … Tracking Number (same layout Ian sends monthly)"
           accept=".xlsx,.xls"
           icon={FileSpreadsheet}
           files={file ? [file] : []}
@@ -170,12 +172,12 @@ export function PartnerSoldReconcilePage() {
           <div className="space-y-4">
             <AppSuccessNotice>
               Sheet <strong>{result.sheet}</strong> — {result.summary.checked.toLocaleString()} order lines checked
-              {matchRate !== null ? ` · ${matchRate}% matched` : ""}
+              {existsRate !== null ? ` · ${existsRate}% exist` : ""}
             </AppSuccessNotice>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard label="Matched (shipped)" value={result.summary.matched} tone="good" />
-              <StatCard label="Not in system" value={result.summary.not_found} tone="bad" />
+              <StatCard label="Exists" value={result.summary.matched} tone="good" />
+              <StatCard label="Not found" value={result.summary.not_found} tone="bad" />
               <StatCard label="Checked rows" value={result.summary.checked} />
               <StatCard label="Excluded (canceled / failed)" value={result.summary.excluded_status} tone="muted" />
             </div>
@@ -195,7 +197,7 @@ export function PartnerSoldReconcilePage() {
                       <tr className="text-left text-muted-foreground border-b border-border">
                         <th className="px-3 py-2">Row</th>
                         <th className="px-3 py-2">Order No</th>
-                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2">Exists</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -205,7 +207,7 @@ export function PartnerSoldReconcilePage() {
                           <td className="px-3 py-2 font-mono">{row.order_no ?? "—"}</td>
                           <td className="px-3 py-2">
                             {row.status === "matched" ? (
-                              <span className="text-green-700 font-medium">Matched</span>
+                              <span className="text-green-700 font-medium">Exists</span>
                             ) : row.status === "missing" ? (
                               <span className="text-red-700 font-medium">Not found</span>
                             ) : (
@@ -223,8 +225,8 @@ export function PartnerSoldReconcilePage() {
             <FulfillmentSuccessPanel>
               <div className="flex flex-wrap items-center gap-3">
                 <p className="text-sm text-green-800 flex-1 min-w-[12rem]">
-                  Download the same workbook with Order No cells highlighted green (shipped in our system) or red (not
-                  found).
+                  Download the workbook with Order No cells highlighted green (Exists) or red (Not found), plus an
+                  Exists column at the end of each checked row.
                 </p>
                 <FulfillmentPressable
                   className="inline-flex items-center gap-2 px-4 py-2 font-semibold text-primary-foreground bg-primary"

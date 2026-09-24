@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Partner seller sold-list reconciliation vs shipped Online Parcels.
+ * Partner seller sold-list reconciliation vs Online Parcels (exists / not found).
  */
 
 require_once __DIR__ . '/online_order_parcels.php';
@@ -66,6 +66,43 @@ function partner_sold_normalize_order_no(?string $raw): ?string
     }
 
     return $text;
+}
+
+function partner_sold_normalize_tracking(?string $raw): ?string
+{
+    if ($raw === null) {
+        return null;
+    }
+    $text = trim($raw);
+    if ($text === '') {
+        return null;
+    }
+    if (preg_match('/^\d+\.0$/', $text)) {
+        $text = substr($text, 0, -2);
+    }
+
+    return $text;
+}
+
+/**
+ * Lookup keys for a numeric marketplace order id (exact + float round-trip).
+ *
+ * @return list<string>
+ */
+function partner_sold_order_no_lookup_keys(?string $norm): array
+{
+    if ($norm === null || $norm === '') {
+        return [];
+    }
+    $keys = [$norm];
+    if (preg_match('/^\d{15,}$/', $norm)) {
+        $floatKey = sprintf('%.0f', (float) $norm);
+        if ($floatKey !== '' && $floatKey !== $norm) {
+            $keys[] = $floatKey;
+        }
+    }
+
+    return array_values(array_unique($keys));
 }
 
 /**
@@ -241,6 +278,66 @@ function partner_sold_stash_original_name(string $token): string
 }
 
 /**
+ * Existence indexes for a partner (any parcel status).
+ *
+ * @return array{order_nos: array<string, true>, trackings: array<string, true>}
+ */
+function partner_sold_existing_parcel_indexes(
+    PDO $pdo,
+    string $partnerSeller,
+    ?string $dateFrom = null,
+    ?string $dateTo = null,
+): array {
+    online_parcels_ensure_schema($pdo);
+    $sql = 'SELECT order_no, tracking_number, ship_date, created_at FROM online_order_parcels
+            WHERE partner_seller = ?';
+    $params = [$partnerSeller];
+    $hasFrom = $dateFrom !== null && $dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom);
+    $hasTo = $dateTo !== null && $dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo);
+    if ($hasFrom || $hasTo) {
+        // Include packing (null ship_date) via created_at so month filters still work.
+        $parts = [];
+        if ($hasFrom && $hasTo) {
+            $parts[] = '((ship_date IS NOT NULL AND ship_date >= ? AND ship_date <= ?)
+                OR (ship_date IS NULL AND DATE(created_at) >= ? AND DATE(created_at) <= ?))';
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+            $params[] = $dateFrom;
+            $params[] = $dateTo;
+        } elseif ($hasFrom) {
+            $parts[] = '((ship_date IS NOT NULL AND ship_date >= ?)
+                OR (ship_date IS NULL AND DATE(created_at) >= ?))';
+            $params[] = $dateFrom;
+            $params[] = $dateFrom;
+        } else {
+            $parts[] = '((ship_date IS NOT NULL AND ship_date <= ?)
+                OR (ship_date IS NULL AND DATE(created_at) <= ?))';
+            $params[] = $dateTo;
+            $params[] = $dateTo;
+        }
+        $sql .= ' AND ' . $parts[0];
+    }
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+    $orderNos = [];
+    $trackings = [];
+    while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+        $norm = partner_sold_normalize_order_no(isset($row['order_no']) ? (string) $row['order_no'] : null);
+        foreach (partner_sold_order_no_lookup_keys($norm) as $key) {
+            $orderNos[$key] = true;
+        }
+        $tn = partner_sold_normalize_tracking(isset($row['tracking_number']) ? (string) $row['tracking_number'] : null);
+        if ($tn !== null && $tn !== '') {
+            $trackings[$tn] = true;
+            $trackings[strtoupper($tn)] = true;
+        }
+    }
+
+    return ['order_nos' => $orderNos, 'trackings' => $trackings];
+}
+
+/**
+ * @deprecated Use partner_sold_existing_parcel_indexes(); kept for callers/tests expecting the old name.
  * @return array<string, true>
  */
 function partner_sold_shipped_order_no_set(
@@ -249,29 +346,27 @@ function partner_sold_shipped_order_no_set(
     ?string $dateFrom = null,
     ?string $dateTo = null,
 ): array {
-    online_parcels_ensure_schema($pdo);
-    $sql = 'SELECT DISTINCT order_no FROM online_order_parcels
-            WHERE partner_seller = ? AND status = ? AND order_no IS NOT NULL AND order_no <> ""';
-    $params = [$partnerSeller, 'shipped'];
-    if ($dateFrom !== null && $dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
-        $sql .= ' AND ship_date >= ?';
-        $params[] = $dateFrom;
+    return partner_sold_existing_parcel_indexes($pdo, $partnerSeller, $dateFrom, $dateTo)['order_nos'];
+}
+
+/**
+ * @param array<string, true> $orderNos
+ * @param array<string, true> $trackings
+ */
+function partner_sold_row_exists(array $orderNos, array $trackings, ?string $orderNo, ?string $tracking): bool
+{
+    foreach (partner_sold_order_no_lookup_keys($orderNo) as $key) {
+        if (isset($orderNos[$key])) {
+            return true;
+        }
     }
-    if ($dateTo !== null && $dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
-        $sql .= ' AND ship_date <= ?';
-        $params[] = $dateTo;
-    }
-    $st = $pdo->prepare($sql);
-    $st->execute($params);
-    $set = [];
-    while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
-        $norm = partner_sold_normalize_order_no((string) ($row['order_no'] ?? ''));
-        if ($norm !== null && $norm !== '') {
-            $set[$norm] = true;
+    if ($tracking !== null && $tracking !== '') {
+        if (isset($trackings[$tracking]) || isset($trackings[strtoupper($tracking)])) {
+            return true;
         }
     }
 
-    return $set;
+    return false;
 }
 
 /**
@@ -303,12 +398,14 @@ function partner_sold_reconcile(PDO $pdo, array $input): array
         $rows = [];
     }
 
-    $shipped = partner_sold_shipped_order_no_set(
+    $indexes = partner_sold_existing_parcel_indexes(
         $pdo,
         $partnerSeller,
         $dateFrom !== '' ? $dateFrom : null,
         $dateTo !== '' ? $dateTo : null,
     );
+    $orderNos = $indexes['order_nos'];
+    $trackings = $indexes['trackings'];
 
     $summary = [
         'total_rows' => count($rows),
@@ -318,6 +415,7 @@ function partner_sold_reconcile(PDO $pdo, array $input): array
         'matched' => 0,
         'not_found' => 0,
         'skipped_no_order_no' => 0,
+        'skipped_blank_rows' => (int) ($scan['skipped_blank_rows'] ?? 0),
     ];
     $highlightRows = [];
     $preview = [];
@@ -328,19 +426,24 @@ function partner_sold_reconcile(PDO $pdo, array $input): array
         }
         $excelRow = (int) ($row['row'] ?? 0);
         $orderNo = partner_sold_normalize_order_no(isset($row['order_no']) ? (string) $row['order_no'] : null);
+        $tracking = partner_sold_normalize_tracking(
+            isset($row['tracking_number']) ? (string) $row['tracking_number'] : null
+        );
         $excluded = !empty($row['excluded']);
         $status = 'skip';
 
-        if ($orderNo === null || $orderNo === '') {
+        if (($orderNo === null || $orderNo === '') && ($tracking === null || $tracking === '')) {
             $summary['skipped_no_order_no']++;
         } else {
-            $summary['rows_with_order_no']++;
+            if ($orderNo !== null && $orderNo !== '') {
+                $summary['rows_with_order_no']++;
+            }
             if ($excluded) {
                 $summary['excluded_status']++;
                 $status = 'skip';
             } else {
                 $summary['checked']++;
-                if (isset($shipped[$orderNo])) {
+                if (partner_sold_row_exists($orderNos, $trackings, $orderNo, $tracking)) {
                     $summary['matched']++;
                     $status = 'matched';
                 } else {
@@ -357,9 +460,11 @@ function partner_sold_reconcile(PDO $pdo, array $input): array
             $preview[] = [
                 'row' => $excelRow,
                 'order_no' => $orderNo,
+                'tracking_number' => $tracking,
                 'remark' => (string) ($row['remark'] ?? ''),
                 'excluded' => $excluded,
                 'matched' => $status === 'matched',
+                'exists' => $status === 'matched',
                 'status' => $status,
             ];
         }

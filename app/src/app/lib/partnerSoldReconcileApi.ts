@@ -10,14 +10,17 @@ export interface PartnerSoldReconcileSummary {
   matched: number;
   not_found: number;
   skipped_no_order_no: number;
+  skipped_blank_rows?: number;
 }
 
 export interface PartnerSoldReconcilePreviewRow {
   row: number;
   order_no: string | null;
+  tracking_number?: string | null;
   remark: string;
   excluded: boolean;
   matched: boolean;
+  exists?: boolean;
   status: string;
 }
 

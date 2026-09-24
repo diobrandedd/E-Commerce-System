@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-24 — Partner sold list: Exists vs Not found (any status)
+**Change:** Green/red = parcel exists for partner (packing counts); Exists column on export; blank-row scan fixed; Order No float + Tracking Number match. → [[problems/records/2026-09-24_partner-sold-exists-not-shipped]]
+
 ### 2026-09-18 — Sales Excel Today sheets use day label not week
 **Change:** Period Today → tabs `SE 18-shp` / `wlk` and `Period: Today` (was misleading `SE 14-20` week band). → [[fixes/sales-excel-weekly-named-sheets]]
 

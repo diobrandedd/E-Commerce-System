@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-18T11:55:54+02:00
+generated: 2026-09-24T09:57:47+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -589,7 +589,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_rewaybill]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel_log_list]] |
 | `includes/online_orders_generator.php` | [[modules/online_orders_generator#online_orders_existing_tracking_map]] |
-| `includes/partner_sold_reconcile.php` | [[modules/partner_sold_reconcile#partner_sold_shipped_order_no_set]] |
+| `includes/partner_sold_reconcile.php` | [[modules/partner_sold_reconcile#partner_sold_existing_parcel_indexes]] |
 
 ## `online_parcel_deduct_lines`
 

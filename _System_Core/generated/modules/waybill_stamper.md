@@ -1,7 +1,7 @@
 ---
 title: waybill_stamper
 source: includes/waybill_stamper.php
-generated: 2026-09-18T11:56:50+02:00
+generated: 2026-09-24T09:58:45+02:00
 type: module
 function_count: 19
 ---
@@ -77,7 +77,7 @@ function_count: 19
 - `includes/courier_soa_reconcile.php`:191 — `waybill_stamper_upload_preflight();`
 - `includes/historical_orders_import.php`:139 — `waybill_stamper_upload_preflight();`
 - `includes/order_remarks.php`:365 — `waybill_stamper_upload_preflight();`
-- `includes/partner_sold_reconcile.php`:178 — `waybill_stamper_upload_preflight();`
+- `includes/partner_sold_reconcile.php`:215 — `waybill_stamper_upload_preflight();`
 
 ## waybill_stamper_files_field {#waybill_stamper_files_field}
 
@@ -93,7 +93,7 @@ function_count: 19
 - `includes/courier_soa_reconcile.php`:136 — `throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
 - `includes/historical_orders_import.php`:89 — `throw new RuntimeException('Failed to parse workbook output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
 - `includes/order_remarks.php`:328 — `throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
-- `includes/partner_sold_reconcile.php`:147 — `throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
+- `includes/partner_sold_reconcile.php`:184 — `throw new RuntimeException('Failed to parse Python output: ' . substr(waybill_stamper_utf8($out), 0, 400));`
 - `includes/pdf_to_excel.php`:223 — `$hint = waybill_stamper_utf8(trim($output));`
 - `includes/pdf_to_excel.php`:303 — `$logExcerpt = waybill_stamper_utf8($output);`
 - `includes/waybill_stamper.php`:426 — `$hint = waybill_stamper_utf8($hint);`
@@ -106,7 +106,7 @@ function_count: 19
 - `includes/courier_soa_reconcile.php`:65 — `$python = waybill_stamper_resolve_python();`
 - `includes/historical_orders_import.php`:37 — `$python = waybill_stamper_resolve_python();`
 - `includes/order_remarks.php`:224 — `$python = waybill_stamper_resolve_python();`
-- `includes/partner_sold_reconcile.php`:76 — `$python = waybill_stamper_resolve_python();`
+- `includes/partner_sold_reconcile.php`:113 — `$python = waybill_stamper_resolve_python();`
 - `includes/pdf_to_excel.php`:198 — `$python = waybill_stamper_resolve_python();`
 - `includes/waybill_stamper.php`:389 — `$python = waybill_stamper_resolve_python();`
 
@@ -119,7 +119,7 @@ function_count: 19
 - `includes/courier_soa_reconcile.php`:197 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'csoa_', $stashDir);`
 - `includes/historical_orders_import.php`:147 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'hist_', $stashDir);`
 - `includes/order_remarks.php`:373 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'xlsx_', $stashDir);`
-- `includes/partner_sold_reconcile.php`:184 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'ps_', $stashDir);`
+- `includes/partner_sold_reconcile.php`:221 — `$saved = waybill_stamper_collect_uploads($field, ['xlsx', 'xls'], 'ps_', $stashDir);`
 - `includes/pdf_to_excel.php`:60 — `$saved = waybill_stamper_collect_uploads($field, ['pdf'], 'pdf_', $stashDir);`
 - `includes/waybill_stamper.php`:276 — `$saved = waybill_stamper_collect_uploads($field, $allowed, $prefix, $stashDir);`
 
