@@ -252,7 +252,8 @@ function api_honey_warehouse_list(): void
            {$costCol}, supplier_price_id, cost_override, created_at"
         : 'id, supplier_id, supplier_name, supplier_code, arrival_date, variant, current_qty, initial_qty, created_at';
     $st = $pdo->query(
-        "SELECT {$cols} FROM honey_warehouse_rows ORDER BY arrival_date DESC, id DESC"
+        "SELECT {$cols} FROM honey_warehouse_rows
+         ORDER BY (current_qty > 0) DESC, arrival_date DESC, id DESC"
     );
     $rows = $st ? $st->fetchAll(PDO::FETCH_ASSOC) : [];
     if ($costCol !== null) {

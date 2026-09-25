@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-25 — Raw Honey warehouse: in-stock lots first
+**Change:** `warehouse_list` orders `(current_qty > 0) DESC`, then arrival date — stocked lots at top so staff need not scroll past empty rows.
+
 ### 2026-09-25 — Leak / damage accepts SKU barcodes (qty)
 **Change:** SKU scan → qty confirm → packaging deduct + log (no sales). Phase 87 nullable unit/barcode + qty/sku_id. → [[problems/records/2026-09-25_leak-damage-sku-qty]]
 
