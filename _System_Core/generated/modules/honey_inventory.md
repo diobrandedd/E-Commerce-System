@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-09-24T10:42:26+02:00
+generated: 2026-09-25T08:33:47+02:00
 type: module
 function_count: 63
 ---
@@ -97,9 +97,10 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_normalize_variant {#honey_normalize_variant}
 
-**Callers (61):**
+**Callers (62):**
 
 - `api/v1/bottle_barcodes.php`:499 — `$variant = honey_normalize_variant((string) ($scanned['variant'] ?? ''));`
+- `includes/finished_leak_damage.php`:141 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_bottle_barcodes.php`:244 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_bottle_barcodes.php`:295 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_bottle_barcodes.php`:314 — `if (honey_normalize_variant((string) $pk['variant']) !== $variant) {`
@@ -123,8 +124,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_inventory.php`:380 — `$variant = honey_normalize_variant($variant);`
 - `includes/honey_inventory.php`:523 — `$v = honey_normalize_variant((string) $row['variant']);`
 - `includes/honey_inventory.php`:668 — `$variant = honey_normalize_variant((string) ($row['variant'] ?? ''));`
-- `includes/honey_inventory.php`:785 — `$variant = honey_normalize_variant($variant);`
-- _… and 36 more (run impact.php for full list)_
+- _… and 37 more (run impact.php for full list)_
 
 ## honey_normalize_bottling_date {#honey_normalize_bottling_date}
 
@@ -216,8 +216,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_packaging_size_columns {#honey_packaging_size_columns}
 
-**Callers (21):**
+**Callers (22):**
 
+- `includes/finished_leak_damage.php`:149 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_bottle_barcodes.php`:214 — `[$curCol, $iniCol] = honey_packaging_size_columns($size);`
 - `includes/honey_bottle_barcodes.php`:248 — `[$curCol] = honey_packaging_size_columns($size);`
 - `includes/honey_bottle_barcodes.php`:2529 — `[$col] = honey_packaging_size_columns($size);`

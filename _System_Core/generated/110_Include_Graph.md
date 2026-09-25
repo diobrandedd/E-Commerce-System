@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-09-24T10:42:06+02:00
+generated: 2026-09-25T08:33:25+02:00
 type: memory-bank
-edge_count: 451
+edge_count: 455
 ---
 
 
@@ -146,6 +146,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/courier_soa_reconcile.php` | `includes/rts_storage.php` |
 | `includes/courier_soa_reconcile.php` | `includes/waybill_stamper.php` |
 | `includes/dashboard_inventory.php` | `includes/dept_products.php` |
+| `includes/dashboard_stock_ins.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/dashboard_stock_ins.php` | `includes/honey_inventory.php` |
 | `includes/db.php` | `includes/forwarding.php` |
 | `includes/deliveries_upload.php` | `includes/auth.php` |
 | `includes/deliveries_upload.php` | `includes/delivery_edit_requests.php` |
@@ -205,7 +207,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/finished_leak_damage.php` | `includes/dept_inventory.php` |
 | `includes/finished_leak_damage.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/finished_leak_damage.php` | `includes/honey_bottle_barcodes.php` |
+| `includes/finished_leak_damage.php` | `includes/honey_inventory.php` |
 | `includes/finished_leak_damage.php` | `includes/honey_pos.php` |
+| `includes/finished_leak_damage.php` | `includes/sku_barcodes.php` |
 | `includes/fulfillment_packing.php` | `includes/material_inventory.php` |
 | `includes/fulfillment_packing.php` | `includes/parcel_pack_costing.php` |
 | `includes/fulfillment_packing.php` | `includes/permissions.php` |

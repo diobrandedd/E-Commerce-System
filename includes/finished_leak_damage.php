@@ -54,8 +54,14 @@ function variant_label_for_display(string $variant): string
 /**
  * @return array<string, mixed>
  */
-function finished_leak_damage_scan(PDO $pdo, int $userId, string $code, string $reason, ?string $note = null): array
-{
+function finished_leak_damage_scan(
+    PDO $pdo,
+    int $userId,
+    string $code,
+    string $reason,
+    ?string $note = null,
+    ?int $qty = null,
+): array {
     if ($userId < 1) {
         throw new RuntimeException('User is required.');
     }
@@ -73,11 +79,201 @@ function finished_leak_damage_scan(PDO $pdo, int $userId, string $code, string $
     }
 
     $deptCode = dept_pouch_normalize_code($code);
-    if ($deptCode === '') {
-        throw new RuntimeException('Scan a barcode.');
+    if ($deptCode !== '') {
+        try {
+            return finished_leak_damage_scan_dept($pdo, $userId, $deptCode, $reason, $note);
+        } catch (RuntimeException $e) {
+            // Fall through to SKU if sticker unknown / not inventory — only when "Unknown barcode."
+            if ($e->getMessage() !== 'Unknown barcode.') {
+                throw $e;
+            }
+        }
     }
 
-    return finished_leak_damage_scan_dept($pdo, $userId, $deptCode, $reason, $note);
+    $sku = null;
+    require_once __DIR__ . '/sku_barcodes.php';
+    $sku = sku_barcode_fetch_by_code($pdo, $code);
+    if ($sku === null) {
+        throw new RuntimeException('Unknown barcode.');
+    }
+
+    return finished_leak_damage_scan_sku($pdo, $userId, $sku, $reason, $note, $qty);
+}
+
+/**
+ * @param array<string, mixed> $sku
+ * @return array<string, mixed>
+ */
+function finished_leak_damage_sku_pending_payload(array $sku): array
+{
+    $kind = (string) ($sku['kind'] ?? '');
+    $variant = $sku['variant'] !== null && $sku['variant'] !== '' ? (string) $sku['variant'] : null;
+    $size = $sku['size'] !== null && $sku['size'] !== '' ? (string) $sku['size'] : null;
+    $productKey = $sku['product_key'] !== null && $sku['product_key'] !== ''
+        ? (string) $sku['product_key'] : null;
+    $code = (string) ($sku['code'] ?? '');
+
+    return [
+        'requires_qty' => true,
+        'sku' => [
+            'id' => (int) ($sku['id'] ?? 0),
+            'kind' => $kind,
+            'code' => $code,
+            'variant' => $variant,
+            'size' => $size,
+            'product_key' => $productKey,
+            'label' => finished_leak_damage_product_label([
+                'kind' => $kind,
+                'variant' => $variant,
+                'size' => $size,
+                'product_key' => $productKey,
+            ]),
+        ],
+    ];
+}
+
+/**
+ * Deduct packaging pool for honey SKU leak/damage (no sales log).
+ */
+function finished_leak_damage_deduct_honey_packaging(PDO $pdo, string $variant, string $size, int $qty): void
+{
+    require_once __DIR__ . '/honey_inventory.php';
+    $variant = honey_normalize_variant($variant);
+    if (!in_array($size, HONEY_SIZES, true)) {
+        throw new RuntimeException('Invalid size.');
+    }
+    if ($qty < 1) {
+        throw new RuntimeException('Quantity must be at least 1.');
+    }
+    $remaining = $qty;
+    [$curCol] = honey_packaging_size_columns($size);
+    $st = $pdo->prepare(
+        "SELECT id, {$curCol} AS on_hand FROM honey_packaging_rows
+         WHERE variant = ? AND {$curCol} > 0
+         ORDER BY id ASC FOR UPDATE"
+    );
+    $st->execute([$variant]);
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        if ($remaining < 1) {
+            break;
+        }
+        $onHand = (int) floor((float) $row['on_hand']);
+        $take = min($remaining, $onHand);
+        if ($take < 1) {
+            continue;
+        }
+        honey_bottle_adjust_aggregate($pdo, (int) $row['id'], $size, -(float) $take);
+        $remaining -= $take;
+    }
+    if ($remaining > 0) {
+        throw new RuntimeException(
+            'Not enough packaging stock for ' . ucfirst($variant) . ' ' . honey_bottle_size_label($size) . '.'
+        );
+    }
+}
+
+/**
+ * @param array<string, mixed> $sku
+ * @return array<string, mixed>
+ */
+function finished_leak_damage_scan_sku(
+    PDO $pdo,
+    int $userId,
+    array $sku,
+    string $reason,
+    ?string $note,
+    ?int $qty,
+): array {
+    if ($qty === null) {
+        return finished_leak_damage_sku_pending_payload($sku);
+    }
+    if ($qty < 1) {
+        throw new RuntimeException('Quantity must be at least 1.');
+    }
+
+    $kind = (string) ($sku['kind'] ?? '');
+    $skuId = (int) ($sku['id'] ?? 0);
+    $code = (string) ($sku['code'] ?? '');
+    if ($skuId < 1 || $code === '') {
+        throw new RuntimeException('Unknown barcode.');
+    }
+
+    $owns = !$pdo->inTransaction();
+    if ($owns) {
+        $pdo->beginTransaction();
+    }
+    try {
+        if ($kind === 'honey') {
+            $variant = (string) ($sku['variant'] ?? '');
+            $size = (string) ($sku['size'] ?? '');
+            finished_leak_damage_deduct_honey_packaging($pdo, $variant, $size, $qty);
+            $ins = $pdo->prepare(
+                'INSERT INTO finished_unit_leak_damage_log
+                    (kind, product_key, variant, size, barcode_id, unit_id, sku_id, code, qty, batch_no, reason, scanned_by, note)
+                 VALUES ("honey", NULL, ?, ?, NULL, NULL, ?, ?, ?, "", ?, ?, ?)'
+            );
+            $ins->execute([$variant, $size, $skuId, $code, $qty, $reason, $userId, $note]);
+            $logId = (int) $pdo->lastInsertId();
+            $payload = [
+                'id' => $logId,
+                'kind' => 'honey',
+                'product_key' => null,
+                'variant' => $variant,
+                'size' => $size,
+                'sku_id' => $skuId,
+                'qty' => $qty,
+                'code' => $code,
+                'batch_no' => '',
+                'reason' => $reason,
+                'reason_label' => finished_leak_damage_reason_label($reason),
+                'product_label' => finished_leak_damage_product_label([
+                    'kind' => 'honey',
+                    'variant' => $variant,
+                    'size' => $size,
+                ]),
+            ];
+        } elseif ($kind === 'dept') {
+            $productKey = strtolower(trim((string) ($sku['product_key'] ?? '')));
+            if ($productKey === '') {
+                throw new RuntimeException('Unknown barcode.');
+            }
+            dept_inventory_deduct($pdo, $productKey, (float) $qty);
+            $ins = $pdo->prepare(
+                'INSERT INTO finished_unit_leak_damage_log
+                    (kind, product_key, variant, size, barcode_id, unit_id, sku_id, code, qty, batch_no, reason, scanned_by, note)
+                 VALUES ("dept", ?, NULL, NULL, NULL, NULL, ?, ?, ?, "", ?, ?, ?)'
+            );
+            $ins->execute([$productKey, $skuId, $code, $qty, $reason, $userId, $note]);
+            $logId = (int) $pdo->lastInsertId();
+            $payload = [
+                'id' => $logId,
+                'kind' => 'dept',
+                'product_key' => $productKey,
+                'variant' => null,
+                'size' => null,
+                'sku_id' => $skuId,
+                'qty' => $qty,
+                'code' => $code,
+                'batch_no' => '',
+                'reason' => $reason,
+                'reason_label' => finished_leak_damage_reason_label($reason),
+                'product_label' => dept_pouch_product_label($productKey),
+            ];
+        } else {
+            throw new RuntimeException('Unknown barcode.');
+        }
+
+        if ($owns) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($owns && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    return $payload;
 }
 
 /**
@@ -141,8 +337,8 @@ function finished_leak_damage_scan_honey(PDO $pdo, int $userId, array $row, stri
 
         $ins = $pdo->prepare(
             'INSERT INTO finished_unit_leak_damage_log
-                (kind, product_key, variant, size, barcode_id, unit_id, code, batch_no, reason, scanned_by, note)
-             VALUES ("honey", NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                (kind, product_key, variant, size, barcode_id, unit_id, sku_id, code, qty, batch_no, reason, scanned_by, note)
+             VALUES ("honey", NULL, ?, ?, ?, ?, NULL, ?, 1, ?, ?, ?, ?)'
         );
         $ins->execute([$variant, $size, $barcodeId, $unitId, $code, $batchNo, $reason, $userId, $note]);
         $logId = (int) $pdo->lastInsertId();
@@ -160,6 +356,8 @@ function finished_leak_damage_scan_honey(PDO $pdo, int $userId, array $row, stri
             'product_key' => null,
             'variant' => $variant,
             'size' => $size,
+            'sku_id' => null,
+            'qty' => 1,
             'code' => $code,
             'batch_no' => $batchNo,
             'reason' => $reason,
@@ -232,8 +430,8 @@ function finished_leak_damage_scan_dept(PDO $pdo, int $userId, string $code, str
 
         $ins = $pdo->prepare(
             'INSERT INTO finished_unit_leak_damage_log
-                (kind, product_key, variant, size, barcode_id, unit_id, code, batch_no, reason, scanned_by, note)
-             VALUES ("dept", ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?)'
+                (kind, product_key, variant, size, barcode_id, unit_id, sku_id, code, qty, batch_no, reason, scanned_by, note)
+             VALUES ("dept", ?, NULL, NULL, ?, ?, NULL, ?, 1, ?, ?, ?, ?)'
         );
         $ins->execute([$productKey, $barcodeId, $unitId, $code, $batchNo, $reason, $userId, $note]);
         $logId = (int) $pdo->lastInsertId();
@@ -251,6 +449,8 @@ function finished_leak_damage_scan_dept(PDO $pdo, int $userId, string $code, str
             'product_key' => $productKey,
             'variant' => null,
             'size' => null,
+            'sku_id' => null,
+            'qty' => 1,
             'code' => $code,
             'batch_no' => $batchNo,
             'reason' => $reason,
@@ -328,6 +528,8 @@ function finished_leak_damage_history(PDO $pdo, int $page = 1, int $perPage = FI
             'product_key' => $row['product_key'] !== null ? (string) $row['product_key'] : null,
             'variant' => $row['variant'] !== null ? (string) $row['variant'] : null,
             'size' => $row['size'] !== null ? (string) $row['size'] : null,
+            'sku_id' => isset($row['sku_id']) && $row['sku_id'] !== null ? (int) $row['sku_id'] : null,
+            'qty' => isset($row['qty']) ? (int) $row['qty'] : 1,
             'code' => (string) $row['code'],
             'batch_no' => (string) $row['batch_no'],
             'reason' => (string) $row['reason'],

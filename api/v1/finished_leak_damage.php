@@ -32,9 +32,20 @@ function api_finished_leak_damage_scan(): void
     $code = trim((string) ($in['code'] ?? ''));
     $reason = trim((string) ($in['reason'] ?? ''));
     $note = isset($in['note']) ? (string) $in['note'] : null;
+    $qtyRaw = $in['qty'] ?? null;
+    $qty = null;
+    if ($qtyRaw !== null && $qtyRaw !== '') {
+        $qty = (int) $qtyRaw;
+    }
 
     try {
-        api_ok(['row' => finished_leak_damage_scan(ims_pdo(), (int) $user['id'], $code, $reason, $note)]);
+        $result = finished_leak_damage_scan(ims_pdo(), (int) $user['id'], $code, $reason, $note, $qty);
+        if (!empty($result['requires_qty'])) {
+            api_ok($result);
+
+            return;
+        }
+        api_ok(['row' => $result]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

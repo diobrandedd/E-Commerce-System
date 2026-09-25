@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
@@ -15,8 +15,10 @@ import { ApiError } from "@/app/lib/api";
 import { triggerLiveRefresh } from "@/app/lib/liveRefresh";
 import {
   finishedLeakDamageApi,
+  type LeakDamagePendingSku,
   type LeakDamageReason,
   type LeakDamageRow,
+  type LeakDamageScanResult,
 } from "@/app/lib/finishedLeakDamage";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
@@ -30,12 +32,16 @@ function localToday(): string {
 
 export function FinishedLeakDamagePage() {
   const cameraTitleId = useId();
+  const qtyInputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<Tab>("scan");
   const [reason, setReason] = useState<LeakDamageReason>("leaked");
   const [code, setCode] = useState("");
   const [ok, setOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [pendingSku, setPendingSku] = useState<LeakDamagePendingSku | null>(null);
+  const [pendingQty, setPendingQty] = useState("1");
+  const [qtyBusy, setQtyBusy] = useState(false);
   const [rows, setRows] = useState<LeakDamageRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -67,6 +73,16 @@ export function FinishedLeakDamagePage() {
     }
   }, [tab, page, loadHistory]);
 
+  const applySuccess = (row: LeakDamageScanResult) => {
+    const qty = row.qty ?? 1;
+    const qtyBit = qty > 1 ? ` ×${qty}` : "";
+    setOk(`${row.reason_label}: ${row.product_label}${qtyBit} (${row.code}) removed from inventory.`);
+    triggerLiveRefresh("inventory");
+    setPendingSku(null);
+    setPendingQty("1");
+    refocus();
+  };
+
   const onScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     const value = (raw ?? code).trim();
     if (!value) return;
@@ -75,10 +91,22 @@ export function FinishedLeakDamagePage() {
     setError(null);
     try {
       const res = await finishedLeakDamageApi.scan(value, reason);
+      if (res.requires_qty && res.sku) {
+        setPendingSku(res.sku);
+        setPendingQty("1");
+        setCameraOpen(false);
+        playScanBeep("ok");
+        window.setTimeout(() => {
+          qtyInputRef.current?.focus();
+          qtyInputRef.current?.select();
+        }, 40);
+        return { kind: "success", message: `${res.sku.label} · enter qty` };
+      }
+      if (!res.row) {
+        throw new Error("Unexpected scan response.");
+      }
       playScanBeep("ok");
-      setOk(`${res.row.reason_label}: ${res.row.product_label} (${res.row.code}) removed from inventory.`);
-      triggerLiveRefresh("inventory");
-      refocus();
+      applySuccess(res.row);
       return { kind: "success", message: res.row.product_label };
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Scan failed.";
@@ -89,10 +117,36 @@ export function FinishedLeakDamagePage() {
     }
   };
 
+  const confirmSkuQty = async () => {
+    if (!pendingSku) return;
+    const n = Math.max(1, parseInt(pendingQty, 10) || 1);
+    setQtyBusy(true);
+    setError(null);
+    setOk(null);
+    try {
+      const res = await finishedLeakDamageApi.scan(pendingSku.code, reason, { qty: n });
+      if (res.requires_qty) {
+        setError("Enter a quantity of at least 1.");
+        return;
+      }
+      if (!res.row) {
+        throw new Error("Unexpected scan response.");
+      }
+      playScanBeep("ok");
+      applySuccess(res.row);
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Could not record leak/damage.";
+      playScanBeep("bad");
+      setError(msg);
+    } finally {
+      setQtyBusy(false);
+    }
+  };
+
   return (
     <PageLayout
       title="Leak / damage scan"
-      subtitle="Scan any finished sticker — removes from inventory and logs Leaked or Damaged (not RTS)."
+      subtitle="Scan a finished sticker or SKU barcode — removes from inventory and logs Leaked or Damaged (not RTS)."
     >
       <AppSectionEnter className="space-y-4">
         <div className="flex gap-2">
@@ -121,6 +175,7 @@ export function FinishedLeakDamagePage() {
                       type="button"
                       variant={reason === r ? "default" : "outline"}
                       onClick={() => setReason(r)}
+                      disabled={!!pendingSku}
                     >
                       {r === "leaked" ? "Leaked" : "Damaged"}
                     </Button>
@@ -133,9 +188,10 @@ export function FinishedLeakDamagePage() {
                   ref={inputRef}
                   {...inputProps}
                   className="flex-1 border rounded-lg px-3 py-2 text-sm"
-                  placeholder="Scan honey or dept barcode"
+                  placeholder="Scan sticker or SKU barcode"
                   value={code}
                   onChange={e => setCode(e.target.value)}
+                  disabled={!!pendingSku}
                   onKeyDown={e => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -143,10 +199,58 @@ export function FinishedLeakDamagePage() {
                     }
                   }}
                 />
-                <Button type="button" variant="outline" onClick={() => setCameraOpen(true)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!!pendingSku}
+                  onClick={() => setCameraOpen(true)}
+                >
                   <Camera size={16} className="mr-1" /> Camera
                 </Button>
               </div>
+
+              {pendingSku && (
+                <div className="rounded-xl border border-border bg-card p-4 space-y-3 max-w-xl">
+                  <p className="text-sm font-medium">{pendingSku.label}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{pendingSku.code}</p>
+                  <label className="block text-xs text-muted-foreground space-y-1.5">
+                    Quantity
+                    <input
+                      ref={qtyInputRef}
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={pendingQty}
+                      onChange={e => setPendingQty(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void confirmSkuQty();
+                        }
+                      }}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground"
+                    />
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" disabled={qtyBusy} onClick={() => void confirmSkuQty()}>
+                      {qtyBusy ? <Loader2 size={16} className="animate-spin mr-1" /> : null}
+                      Confirm {reason === "leaked" ? "Leaked" : "Damaged"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={qtyBusy}
+                      onClick={() => {
+                        setPendingSku(null);
+                        setPendingQty("1");
+                        refocus();
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {ok && <AppSuccessNotice message={ok} />}
               {error && <AppErrorBanner message={error} />}
@@ -179,6 +283,7 @@ export function FinishedLeakDamagePage() {
                       <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
                         <th className="px-3 py-2">When</th>
                         <th className="px-3 py-2">Product</th>
+                        <th className="px-3 py-2">Qty</th>
                         <th className="px-3 py-2">Code</th>
                         <th className="px-3 py-2">Reason</th>
                         <th className="px-3 py-2">By</th>
@@ -189,6 +294,7 @@ export function FinishedLeakDamagePage() {
                         <tr key={r.id} className={appHoverRow}>
                           <td className="px-3 py-2 whitespace-nowrap">{new Date(r.scanned_at).toLocaleString()}</td>
                           <td className="px-3 py-2">{r.product_label}</td>
+                          <td className="px-3 py-2 tabular-nums">{r.qty ?? 1}</td>
                           <td className="px-3 py-2 font-mono text-xs">{r.code}</td>
                           <td className="px-3 py-2">{r.reason_label}</td>
                           <td className="px-3 py-2">{r.scanned_by_name}</td>
@@ -227,7 +333,7 @@ export function FinishedLeakDamagePage() {
           titleId={cameraTitleId}
           title="Scan leak / damage barcode"
           continuous
-          scanPrompt="Point at a honey or pouch/jar sticker."
+          scanPrompt="Point at a sticker or SKU barcode."
           onClose={() => setCameraOpen(false)}
           onDecoded={onScan}
         />

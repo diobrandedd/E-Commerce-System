@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-24T10:42:06+02:00
+generated: 2026-09-25T08:33:25+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -1028,6 +1028,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_scan_sku]] |
 | `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_scan_honey]] |
 | `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_scan_dept]] |
 | `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_history]] |
@@ -1119,6 +1120,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/dashboard_stock_ins.php` | [[modules/dashboard_stock_ins#dashboard_stock_ins_daily_series]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_scan_report]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_scan_report_by_scanner]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_request_scan_log]] |
@@ -1197,6 +1199,7 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `api/v1/honey.php` | [[modules/honey#api_honey_packaging_list]] |
 | `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_honey_packaging_snapshot]] |
+| `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_deduct_honey_packaging]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_adjust_aggregate]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_deduct_packaging_one]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_get]] |
@@ -1307,6 +1310,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/dashboard_stock_ins.php` | [[modules/dashboard_stock_ins#dashboard_stock_ins_daily_series]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_scan_report]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_scan_report_by_scanner]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_request_scan_log]] |

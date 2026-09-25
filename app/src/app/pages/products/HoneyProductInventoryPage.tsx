@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { PageLayout } from "@/app/components/PageLayout";
 import { HoneyBottledInventoryPanel } from "@/app/components/honey/HoneyBottledInventoryPanel";
+import { StockInsTrendChart } from "@/app/components/dashboard/StockInsTrendChart";
 
 export function HoneyProductInventoryPage() {
   return (
@@ -24,7 +25,12 @@ export function HoneyProductInventoryPage() {
         </div>
       }
     >
-      <HoneyBottledInventoryPanel />
+      <div className="space-y-6">
+        <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+          <StockInsTrendChart mode="full" lockedFamily="honey" defaultDays={30} />
+        </div>
+        <HoneyBottledInventoryPanel />
+      </div>
     </PageLayout>
   );
 }

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-09-24T10:42:07+02:00
+generated: 2026-09-25T08:31:26+02:00
 type: memory-bank
 ---
 
@@ -26,6 +26,7 @@ type: memory-bank
 | [[modules/courier_detect]] | 2 |
 | [[modules/courier_soa_reconcile]] | 20 |
 | [[modules/dashboard_inventory]] | 6 |
+| [[modules/dashboard_stock_ins]] | 10 |
 | [[modules/db]] | 4 |
 | [[modules/deliveries_review_nav]] | 2 |
 | [[modules/deliveries_upload]] | 3 |
@@ -40,7 +41,7 @@ type: memory-bank
 | [[modules/dept_production]] | 29 |
 | [[modules/dept_products]] | 23 |
 | [[modules/dept_pt_settings]] | 8 |
-| [[modules/finished_leak_damage]] | 8 |
+| [[modules/finished_leak_damage]] | 11 |
 | [[modules/forwarding]] | 15 |
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 33 |

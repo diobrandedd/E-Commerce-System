@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/_bootstrap.php';
 require_once dirname(__DIR__, 2) . '/includes/dashboard_inventory.php';
+require_once dirname(__DIR__, 2) . '/includes/dashboard_stock_ins.php';
 
 /**
  * Dashboard data for the SPA.  Replaces queries from
@@ -15,6 +16,7 @@ api_dispatch([
     'summary' => 'api_dashboard_index',
     'inventory_snapshot' => 'api_dashboard_inventory_snapshot',
     'shipped_summary' => 'api_dashboard_shipped_summary',
+    'stock_ins_series' => 'api_dashboard_stock_ins_series',
 ]);
 
 function api_dashboard_view_for_user(array $user): string
@@ -351,4 +353,52 @@ function api_dashboard_shipped_summary(): void
     }
 
     api_ok($payload);
+}
+
+function api_dashboard_stock_ins_can_view(array $user): bool
+{
+    $role = (string) ($user['role'] ?? '');
+    if (in_array($role, ['executive', 'prod_manager', 'hr'], true)) {
+        return true;
+    }
+    $perms = [
+        'reports.view',
+        'inventory.products.view',
+        'inventory.raw.view',
+        'honey.view',
+        'dept.paragis.view',
+        'dept.brc.view',
+        'dept.cacao.view',
+        'dept.comb.view',
+        'packaging.view',
+    ];
+    foreach ($perms as $perm) {
+        if (ims_user_can($user, $perm)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function api_dashboard_stock_ins_series(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    if (!api_dashboard_stock_ins_can_view($user)) {
+        api_fail('Not available for this role.', 403);
+    }
+
+    $family = isset($_GET['family']) ? (string) $_GET['family'] : 'all';
+    $variant = isset($_GET['variant']) ? (string) $_GET['variant'] : '';
+    $size = isset($_GET['size']) ? (string) $_GET['size'] : '';
+    $days = isset($_GET['days']) ? (int) $_GET['days'] : 30;
+
+    try {
+        $series = dashboard_stock_ins_daily_series(ims_pdo(), $family, $variant, $size, $days);
+    } catch (InvalidArgumentException $e) {
+        api_fail($e->getMessage(), 422);
+    }
+
+    api_ok($series);
 }

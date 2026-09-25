@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-09-24T10:42:15+02:00
+generated: 2026-09-25T08:33:35+02:00
 type: module
 function_count: 37
 ---
@@ -73,7 +73,7 @@ function_count: 37
 
 ## dept_pouch_product_label {#dept_pouch_product_label}
 
-**Callers (42):**
+**Callers (43):**
 
 - `api/v1/rts_barcode_labels.php`:49 — `'label' => dept_pouch_product_label($key),`
 - `includes/barcode_verify.php`:132 — `$productLabel = dept_pouch_product_label($productKey);`
@@ -85,7 +85,8 @@ function_count: 37
 - `includes/dept_pouch_barcodes.php`:1346 — `'product_label' => dept_pouch_product_label($productKey),`
 - `includes/dept_pouch_barcodes.php`:1389 — `$label = dept_pouch_product_label($productKey);`
 - `includes/finished_leak_damage.php`:39 — `return dept_pouch_product_label((string) ($row['product_key'] ?? ''));`
-- `includes/finished_leak_damage.php`:258 — `'product_label' => dept_pouch_product_label($productKey),`
+- `includes/finished_leak_damage.php`:260 — `'product_label' => dept_pouch_product_label($productKey),`
+- `includes/finished_leak_damage.php`:458 — `'product_label' => dept_pouch_product_label($productKey),`
 - `includes/honey_bottle_barcodes.php`:1349 — `$productLabel = dept_pouch_product_label($productKey);`
 - `includes/honey_bottle_barcodes.php`:1788 — `'product_label' => dept_pouch_product_label($productKey),`
 - `includes/honey_bottle_barcodes.php`:1874 — `$productLabel = dept_pouch_product_label($productKey);`
@@ -99,8 +100,7 @@ function_count: 37
 - `includes/inventory_check.php`:1140 — `'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label((string) $row['product_key']),`
 - `includes/inventory_check.php`:1215 — `$productLabel = $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey);`
 - `includes/pack_cancel_restock.php`:143 — `: dept_pouch_product_label($productKey);`
-- `includes/pack_cancel_restock.php`:184 — `$productLabel = dept_pouch_product_label($productKey);`
-- _… and 17 more (run impact.php for full list)_
+- _… and 18 more (run impact.php for full list)_
 
 ## dept_pouch_unit_singular {#dept_pouch_unit_singular}
 
@@ -130,7 +130,7 @@ function_count: 37
 - `includes/dept_pouch_barcodes.php`:1189 — `$code = dept_pouch_normalize_code($code);`
 - `includes/dept_pouch_barcodes.php`:1302 — `$code = dept_pouch_normalize_code((string) $raw);`
 - `includes/dept_pouch_barcodes.php`:1366 — `$code = dept_pouch_normalize_code($code);`
-- `includes/finished_leak_damage.php`:75 — `$deptCode = dept_pouch_normalize_code($code);`
+- `includes/finished_leak_damage.php`:81 — `$deptCode = dept_pouch_normalize_code($code);`
 - `includes/honey_bottle_barcodes.php`:1852 — `$code = dept_pouch_normalize_code($code);`
 - `includes/pack_cancel_restock.php`:383 — `$code = dept_pouch_normalize_code($code);`
 - `includes/rts_stock_in_sessions.php`:193 — `$st->execute([dept_pouch_normalize_code($code)]);`

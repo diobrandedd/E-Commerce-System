@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-09-24T10:42:24+02:00
+generated: 2026-09-25T08:33:44+02:00
 type: module
 function_count: 63
 ---
@@ -28,14 +28,17 @@ function_count: 63
 
 ## honey_bottle_size_label {#honey_bottle_size_label}
 
-**Callers (50):**
+**Callers (53):**
 
 - `api/v1/bottle_barcodes.php`:119 — `static fn ($s) => ['value' => $s, 'label' => honey_bottle_size_label($s)],`
 - `api/v1/bottle_barcodes.php`:484 — `'size_label' => honey_bottle_size_label((string) $sku['size']),`
 - `api/v1/rts_barcode_labels.php`:55 — `static fn ($s) => ['value' => $s, 'label' => honey_bottle_size_label($s)],`
 - `includes/barcode_verify.php`:43 — `'size_label' => honey_bottle_size_label((string) $sku['size']),`
 - `includes/barcode_verify.php`:103 — `'size_label' => honey_bottle_size_label((string) $row['size']),`
+- `includes/dashboard_stock_ins.php`:85 — `? honey_bottle_size_label($size)`
+- `includes/dashboard_stock_ins.php`:350 — `? honey_bottle_size_label($size)`
 - `includes/finished_leak_damage.php`:34 — `$size = honey_bottle_size_label((string) ($row['size'] ?? ''));`
+- `includes/finished_leak_damage.php`:170 — `'Not enough packaging stock for ' . ucfirst($variant) . ' ' . honey_bottle_size_label($size) . '.'`
 - `includes/honey_bottle_barcodes.php`:149 — `'size_label' => honey_bottle_size_label((string) $row['size']),`
 - `includes/honey_bottle_barcodes.php`:185 — `'size_label' => honey_bottle_size_label((string) $row['size']),`
 - `includes/honey_bottle_barcodes.php`:274 — `. ucfirst($variant) . ' ' . honey_bottle_size_label($size) . '.'`
@@ -52,10 +55,7 @@ function_count: 63
 - `includes/inventory_check.php`:818 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
 - `includes/inventory_check.php`:1070 — `$sizeLabel = $size !== '' ? honey_bottle_size_label($size) : null;`
 - `includes/inventory_check.php`:1147 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
-- `includes/inventory_check.php`:1213 — `? honey_bottle_size_label($size)`
-- `includes/inventory_check_apply.php`:245 — `'No honey packaging lot for ' . ucfirst($variant) . ' ' . honey_bottle_size_label($size)`
-- `includes/pack_cancel_restock.php`:101 — `$sizeLabel = honey_bottle_size_label($size);`
-- _… and 25 more (run impact.php for full list)_
+- _… and 28 more (run impact.php for full list)_
 
 ## honey_bottle_can_request {#honey_bottle_can_request}
 
@@ -114,7 +114,7 @@ function_count: 63
 
 **Callers (9):**
 
-- `includes/finished_leak_damage.php`:94 — `$code = honey_bottle_normalize_code((string) ($row['code'] ?? ''));`
+- `includes/finished_leak_damage.php`:290 — `$code = honey_bottle_normalize_code((string) ($row['code'] ?? ''));`
 - `includes/honey_bottle_barcodes.php`:635 — `$code = honey_bottle_normalize_code($code);`
 - `includes/honey_bottle_barcodes.php`:681 — `$code = honey_bottle_normalize_code($code);`
 - `includes/honey_bottle_barcodes.php`:1022 — `$code = honey_bottle_normalize_code($code);`
@@ -158,9 +158,10 @@ function_count: 63
 
 **Tables:** `honey_packaging_rows`
 
-**Callers (13):**
+**Callers (14):**
 
-- `includes/finished_leak_damage.php`:139 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, -1.0);`
+- `includes/finished_leak_damage.php`:165 — `honey_bottle_adjust_aggregate($pdo, (int) $row['id'], $size, -(float) $take);`
+- `includes/finished_leak_damage.php`:335 — `honey_bottle_adjust_aggregate($pdo, $packId, $size, -1.0);`
 - `includes/honey_bottle_barcodes.php`:278 — `honey_bottle_adjust_aggregate($pdo, $id, $size, -1.0);`
 - `includes/honey_bottle_barcodes.php`:1080 — `honey_bottle_adjust_aggregate($pdo, $packId, (string) $row['size'], 1);`
 - `includes/honey_bottle_barcodes.php`:2435 — `honey_bottle_adjust_aggregate($pdo, $packId, (string) $unit['size'], 1);`
@@ -290,7 +291,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (10):**
 
-- `includes/finished_leak_damage.php`:70 — `$honeyRow = honey_bottle_fetch_code_row($pdo, $code);`
+- `includes/finished_leak_damage.php`:76 — `$honeyRow = honey_bottle_fetch_code_row($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:704 — `$row = honey_bottle_fetch_code_row($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:1110 — `$fresh = honey_bottle_fetch_code_row($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:1218 — `$fresh = honey_bottle_fetch_code_row($pdo, $code);`

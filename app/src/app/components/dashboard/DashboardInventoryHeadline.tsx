@@ -3,11 +3,11 @@ import { Link } from "react-router";
 import { Loader2, Package } from "lucide-react";
 import { AppErrorBanner } from "@/app/components/layout/appFeedbackMotion";
 import { DashboardSectionShell } from "@/app/components/dashboard/DashboardSectionShell";
+import { StockInsTrendChart } from "@/app/components/dashboard/StockInsTrendChart";
 import { apiGet, ApiError } from "@/app/lib/api";
 
 interface InventorySnapshot {
   honey_packaging: { total_bottles_on_hand: number };
-  dept_products: { products: { key: string; label: string; total_qty: number }[] };
 }
 
 function fmtQty(n: number): string {
@@ -16,8 +16,12 @@ function fmtQty(n: number): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 }
 
+/**
+ * Exec dashboard stock strip: compact on-hand headline + daily stock-ins quick chart.
+ * Full pool / size mix stays on Inventory product pages — not duplicated here.
+ */
 export function DashboardInventoryHeadline() {
-  const [data, setData] = useState<InventorySnapshot | null>(null);
+  const [honeyTotal, setHoneyTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,69 +29,64 @@ export function DashboardInventoryHeadline() {
     setLoading(true);
     setError(null);
     try {
-      const payload = await apiGet<InventorySnapshot>("dashboard.php", "inventory_snapshot", { period: "all" });
-      setData(payload);
+      const payload = await apiGet<InventorySnapshot>("dashboard.php", "inventory_snapshot", {
+        period: "all",
+      });
+      setHoneyTotal(payload.honey_packaging.total_bottles_on_hand ?? 0);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not load inventory summary.");
+      setHoneyTotal(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
-
-  const honeyTotal = data?.honey_packaging.total_bottles_on_hand ?? 0;
-  const products = data?.dept_products.products ?? [];
 
   return (
     <DashboardSectionShell
-      title="Display stock"
-      description="Packaged honey and finished goods on hand — open Inventory for full breakdown"
+      title="Stock"
+      description="On-hand honey + daily finished stock-ins — open Inventory for pool detail"
       index={2}
       action={
-        <Link to="/inventory/products/honey" className="text-xs font-medium text-[#C8900A] hover:underline">
+        <Link
+          to="/inventory/products/honey"
+          className="text-xs font-medium text-[#C8900A] hover:underline"
+        >
           Open inventory →
         </Link>
       }
     >
-      <div className="px-5 sm:px-8 py-6 sm:py-7">
-        <AppErrorBanner message={error} className="mb-4" />
+      <div className="px-4 sm:px-6 py-5 sm:py-6 space-y-5">
+        <AppErrorBanner message={error} />
 
-        {loading ? (
-          <div className="flex justify-center py-6 text-muted-foreground">
-            <Loader2 size={22} className="animate-spin" />
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/30 px-4 py-3">
+          <div className="w-9 h-9 rounded-lg bg-[#C8900A]/12 flex items-center justify-center shrink-0">
+            <Package size={18} className="text-[#C8900A]" />
           </div>
-        ) : (
-          <div className="flex flex-col items-center text-center gap-5">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-[#C8900A]/12 flex items-center justify-center">
-                <Package size={20} className="text-[#C8900A]" />
-              </div>
-              <div>
-                <p className="text-3xl sm:text-4xl font-bold text-foreground tabular-nums leading-none">
-                  {fmtQty(honeyTotal)}
+          <div className="min-w-0">
+            {loading && honeyTotal == null ? (
+              <Loader2 size={18} className="animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <p className="text-2xl font-bold text-foreground tabular-nums leading-none">
+                  {fmtQty(honeyTotal ?? 0)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Honey bottles on display</p>
-              </div>
-            </div>
-
-            {products.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-2 max-w-lg">
-                {products.map(p => (
-                  <span
-                    key={p.key}
-                    className="inline-flex items-center gap-1.5 text-xs rounded-full border border-border bg-secondary/30 px-3 py-1.5"
-                  >
-                    <span className="text-muted-foreground">{p.label}</span>
-                    <span className="font-semibold text-foreground tabular-nums">{fmtQty(p.total_qty)}</span>
-                  </span>
-                ))}
-              </div>
+              </>
             )}
           </div>
-        )}
+          <Link
+            to="/inventory/products/honey"
+            className="ml-auto text-xs font-medium text-[#C8900A] hover:underline shrink-0"
+          >
+            Honey pool →
+          </Link>
+        </div>
+
+        <StockInsTrendChart mode="quick" defaultFamily="all" defaultDays={7} />
       </div>
     </DashboardSectionShell>
   );

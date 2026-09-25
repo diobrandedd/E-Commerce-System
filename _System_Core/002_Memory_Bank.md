@@ -4,6 +4,15 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-25 — Leak / damage accepts SKU barcodes (qty)
+**Change:** SKU scan → qty confirm → packaging deduct + log (no sales). Phase 87 nullable unit/barcode + qty/sku_id. → [[problems/records/2026-09-25_leak-damage-sku-qty]]
+
+### 2026-09-25 — Honey stock-ins multi-line chart
+**Change:** Honey = line chart; All variants → one colored line per variant; pick a variant → one line per size; variant+size → single line. Filters show whenever Honey is selected (incl. exec quick view). → [[problems/records/2026-09-25_exec-dashboard-stock-ins-trends]]
+
+### 2026-09-25 — Exec dashboard action hub + daily stock-ins charts
+**Change:** Clickable fulfillment metrics with packing urgency; compact on-hand + daily stock-in quick chart on exec Stock; full family/variant/size chart on inventory product pages (`stock_ins_series`). → [[problems/records/2026-09-25_exec-dashboard-stock-ins-trends]]
+
 ### 2026-09-24 — Partner sold list: our parcels in their Excel
 **Change:** Default direction checks our Online Parcels against their sold list; export our list with Exists. Toggle keeps their→ours. → [[problems/records/2026-09-24_partner-sold-ours-in-theirs]]
 

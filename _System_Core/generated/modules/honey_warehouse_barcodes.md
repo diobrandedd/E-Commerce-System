@@ -1,7 +1,7 @@
 ---
 title: honey_warehouse_barcodes
 source: includes/honey_warehouse_barcodes.php
-generated: 2026-09-24T10:42:34+02:00
+generated: 2026-09-25T08:33:55+02:00
 type: module
 function_count: 12
 ---

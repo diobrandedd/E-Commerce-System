@@ -103,6 +103,7 @@ export function DashboardShippedSection() {
               hint={`Marked shipped · ${periodHint}`}
               index={0}
               centered
+              to="/fulfillment/online-parcels"
             />
             <DashboardStatCard
               icon={PackageCheck}
@@ -111,6 +112,8 @@ export function DashboardShippedSection() {
               hint="Awaiting ship (now)"
               index={0}
               centered
+              to="/fulfillment/packing-materials"
+              emphasize={!loading && (data?.packing ?? 0) > 0}
             />
             <DashboardStatCard
               icon={RotateCcw}
@@ -119,6 +122,7 @@ export function DashboardShippedSection() {
               hint={`New return cases · ${periodHint}`}
               index={0}
               centered
+              to="/rts"
             />
             <DashboardStatCard
               icon={XCircle}
@@ -127,6 +131,8 @@ export function DashboardShippedSection() {
               hint="Courier cancel or paused (now)"
               index={0}
               centered
+              to="/fulfillment/online-parcels"
+              emphasize={!loading && (data?.cancelled_or_hold ?? 0) > 0}
             />
           </motion.div>
         </AnimatePresence>
