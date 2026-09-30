@@ -1,7 +1,7 @@
 ---
 title: app_settings
 source: includes/app_settings.php
-generated: 2026-09-25T09:41:10+02:00
+generated: 2026-09-30T07:38:59+02:00
 type: module
 function_count: 3
 ---

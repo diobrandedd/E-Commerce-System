@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-30 — Production empty lots auto-deactivate after 1h
+**Change:** Phase 88 `depleted_at`; empty/overdrawn lots deactivate after 1 hour (lazy on list/FIFO). Warehouse refill reactivates. → [[problems/records/2026-09-30_honey-production-auto-deactivate]]
+
+### 2026-09-30 — Production FIFO drains all lots before overdraw
+**Change:** Bottle/SKU stock-in no longer overdraws one production row while another same-variant lot still has gallons (incl. inactive stranded stock). Lot list sorts stock first. → [[problems/records/2026-09-30_honey-production-fifo-multi-lot]]
+
 ### 2026-09-25 — Raw Honey warehouse: in-stock lots first
 **Change:** `warehouse_list` orders `(current_qty > 0) DESC`, then arrival date — stocked lots at top so staff need not scroll past empty rows.
 

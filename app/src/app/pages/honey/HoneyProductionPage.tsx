@@ -293,6 +293,7 @@ export function HoneyProductionPage() {
           <AppModalBody className="space-y-3 text-sm text-muted-foreground">
             <p>Stock out gallons from Warehouse first. Scan bottles or SKUs here to credit finished packaging pools.</p>
             <p>Gallons deduct FIFO by variant across supplier lots — no lot picker. Expand a variant to see suppliers.</p>
+            <p>Lots at 0 or overdrawn stay visible for one hour, then auto-deactivate (dimmed). Warehouse stock-out to that supplier lot reactivates it.</p>
           </AppModalBody>
         </AppModal>
       )}

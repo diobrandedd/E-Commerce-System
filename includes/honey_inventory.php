@@ -23,6 +23,53 @@ function honey_inventory_pricing(): void
 const HONEY_VARIANTS = ['light', 'amber', 'dark', 'other'];
 const HONEY_SIZES = ['liter', '250ml', '350ml', 'gallon'];
 
+/** Empty/overdrawn production lots auto-deactivate after this many hours. */
+const HONEY_PRODUCTION_AUTO_DEACTIVATE_HOURS = 1;
+
+/**
+ * Whether honey_production_rows.depleted_at exists (phase 88).
+ */
+function honey_production_has_depleted_at(PDO $pdo): bool
+{
+    static $ready = null;
+    if ($ready !== null) {
+        return $ready;
+    }
+    try {
+        $st = $pdo->query("SHOW COLUMNS FROM honey_production_rows LIKE 'depleted_at'");
+        $ready = $st !== false && $st->fetch(PDO::FETCH_ASSOC) !== false;
+    } catch (Throwable $e) {
+        $ready = false;
+    }
+
+    return $ready;
+}
+
+/**
+ * Deactivate lots that have been empty/overdrawn for >= HONEY_PRODUCTION_AUTO_DEACTIVATE_HOURS.
+ * Lazy sweep — no cron required. Safe no-op before phase 88.
+ *
+ * @return int rows deactivated
+ */
+function honey_production_auto_deactivate_stale_empty(PDO $pdo): int
+{
+    if (!honey_production_has_depleted_at($pdo)) {
+        return 0;
+    }
+    $hours = max(1, (int) HONEY_PRODUCTION_AUTO_DEACTIVATE_HOURS);
+    $st = $pdo->prepare(
+        "UPDATE honey_production_rows
+         SET is_active = 0
+         WHERE COALESCE(is_active, 1) = 1
+           AND current_qty <= 0
+           AND depleted_at IS NOT NULL
+           AND depleted_at <= (NOW() - INTERVAL {$hours} HOUR)"
+    );
+    $st->execute();
+
+    return $st->rowCount();
+}
+
 function honey_role_can_view(array $user): bool
 {
     return ims_user_can($user, 'honey.view');
@@ -277,7 +324,10 @@ function honey_packaging_ensure_variant_pool(PDO $pdo, int $userId, string $vari
 }
 
 /**
- * FIFO deduct gallons from production lots of one variant. Allows overdraw on the last lot.
+ * FIFO deduct gallons from production lots of one variant.
+ * Drains every lot with positive gallons (oldest stock-out first), including inactive
+ * lots that still hold stock, before any overdraw. Overdraw only after the variant
+ * has no positive gallons left — never deepen one row while another still has stock.
  *
  * @return array{used_gallons: float, remaining_production_gallons: float, production_overdrawn: bool, warning: ?string, lot_deductions: list<array<string,mixed>>, ml_per_gallon: float}
  */
@@ -288,12 +338,16 @@ function honey_production_fifo_deduct_gallons(PDO $pdo, string $variant, float $
         throw new RuntimeException('Bottle volume must be greater than zero.');
     }
 
+    honey_production_auto_deactivate_stale_empty($pdo);
+
+    // Lock all lots for the variant. Empty inactive shells are kept only as possible
+    // overdraw anchors when nothing else exists; positive inactive stock is drained.
     $st = $pdo->prepare(
         'SELECT id, supplier_code, current_qty, initial_qty,
+                COALESCE(is_active, 1) AS is_active,
                 COALESCE(stock_out_date, DATE(transferred_at)) AS stock_out_date
          FROM honey_production_rows
          WHERE variant = ?
-           AND COALESCE(is_active, 1) = 1
          ORDER BY COALESCE(stock_out_date, DATE(transferred_at)) ASC, id ASC
          FOR UPDATE'
     );
@@ -308,40 +362,97 @@ function honey_production_fifo_deduct_gallons(PDO $pdo, string $variant, float $
     $remainingNeed = $usedGallons;
     $deductions = [];
     $totalRemainingAfter = 0.0;
-    $lastId = (int) $lots[array_key_last($lots)]['id'];
+    foreach ($lots as $lot) {
+        $totalRemainingAfter += (float) $lot['current_qty'];
+    }
+
+    $lastTouchedId = 0;
+    $lastTouchedCode = '';
+
+    $takeFromLot = static function (int $lotId, string $code, float $take, bool $overdraw = false) use (
+        $pdo,
+        &$remainingNeed,
+        &$totalRemainingAfter,
+        &$deductions,
+        &$lastTouchedId,
+        &$lastTouchedCode
+    ): void {
+        if ($take <= 1e-9) {
+            return;
+        }
+        honey_production_deduct_gallons($pdo, $lotId, $take);
+        $remainingNeed -= $take;
+        $totalRemainingAfter -= $take;
+        $row = [
+            'production_row_id' => $lotId,
+            'supplier_code' => $code,
+            'taken_gallons' => round($take, 4),
+        ];
+        if ($overdraw) {
+            $row['overdraw'] = true;
+        }
+        $deductions[] = $row;
+        $lastTouchedId = $lotId;
+        $lastTouchedCode = $code;
+    };
 
     foreach ($lots as $lot) {
-        $lotId = (int) $lot['id'];
-        $avail = (float) $lot['current_qty'];
-        $totalRemainingAfter += $avail;
         if ($remainingNeed <= 1e-9) {
+            break;
+        }
+        $avail = (float) $lot['current_qty'];
+        if ($avail <= 1e-9) {
             continue;
         }
-        if ($avail > 1e-9) {
+        $take = min($avail, $remainingNeed);
+        $takeFromLot((int) $lot['id'], (string) $lot['supplier_code'], $take);
+    }
+
+    // Safety: never overdraw while any lot still has positive gallons (e.g. stranded
+    // inactive stock that an older filter would have skipped).
+    if ($remainingNeed > 1e-9) {
+        $st2 = $pdo->prepare(
+            'SELECT id, supplier_code, current_qty
+             FROM honey_production_rows
+             WHERE variant = ? AND current_qty > 0
+             ORDER BY COALESCE(stock_out_date, DATE(transferred_at)) ASC, id ASC
+             FOR UPDATE'
+        );
+        $st2->execute([$variant]);
+        foreach ($st2->fetchAll(PDO::FETCH_ASSOC) as $lot) {
+            if ($remainingNeed <= 1e-9) {
+                break;
+            }
+            $avail = (float) $lot['current_qty'];
+            if ($avail <= 1e-9) {
+                continue;
+            }
             $take = min($avail, $remainingNeed);
-            honey_production_deduct_gallons($pdo, $lotId, $take);
-            $remainingNeed -= $take;
-            $totalRemainingAfter -= $take;
-            $deductions[] = [
-                'production_row_id' => $lotId,
-                'supplier_code' => (string) $lot['supplier_code'],
-                'taken_gallons' => round($take, 4),
-            ];
-            $lastId = $lotId;
+            $takeFromLot((int) $lot['id'], (string) $lot['supplier_code'], $take);
         }
     }
 
     $warning = null;
     $overdrawn = false;
     if ($remainingNeed > 1e-9) {
-        honey_production_deduct_gallons($pdo, $lastId, $remainingNeed);
-        $totalRemainingAfter -= $remainingNeed;
-        $deductions[] = [
-            'production_row_id' => $lastId,
-            'supplier_code' => (string) ($lots[array_key_last($lots)]['supplier_code'] ?? ''),
-            'taken_gallons' => round($remainingNeed, 4),
-            'overdraw' => true,
-        ];
+        // Prefer the lot we just emptied; else newest active lot; else newest lot.
+        $overdrawId = $lastTouchedId;
+        $overdrawCode = $lastTouchedCode;
+        if ($overdrawId < 1) {
+            foreach (array_reverse($lots) as $lot) {
+                if ((int) ($lot['is_active'] ?? 1) === 1) {
+                    $overdrawId = (int) $lot['id'];
+                    $overdrawCode = (string) $lot['supplier_code'];
+                    break;
+                }
+            }
+        }
+        if ($overdrawId < 1) {
+            $tail = $lots[array_key_last($lots)];
+            $overdrawId = (int) $tail['id'];
+            $overdrawCode = (string) $tail['supplier_code'];
+        }
+        $takeFromLot($overdrawId, $overdrawCode, $remainingNeed, true);
         $overdrawn = true;
         $warning = sprintf(
             'Bottled volume uses %s gallon/s but production only had enough for part of that — lot may go negative.',
@@ -502,6 +613,8 @@ function honey_packaging_variant_pools_snapshot(PDO $pdo): array
  */
 function honey_production_variant_summary(PDO $pdo): array
 {
+    honey_production_auto_deactivate_stale_empty($pdo);
+
     $st = $pdo->query(
         'SELECT pr.id, pr.warehouse_row_id, pr.supplier_code, pr.arrival_date,
                 COALESCE(pr.stock_out_date, DATE(pr.transferred_at)) AS stock_out_date,
@@ -511,6 +624,8 @@ function honey_production_variant_summary(PDO $pdo): array
          FROM honey_production_rows pr
          WHERE pr.variant IN ("light", "amber", "dark")
          ORDER BY FIELD(pr.variant, "light", "amber", "dark"),
+                  (pr.current_qty > 0) DESC,
+                  (pr.current_qty < 0) DESC,
                   COALESCE(pr.stock_out_date, DATE(pr.transferred_at)) DESC,
                   pr.id DESC'
     );
@@ -870,6 +985,7 @@ function honey_production_upsert_daily_lot(
                 $lotKey,
                 $productionId,
             ]);
+            honey_production_clear_depleted_and_activate($pdo, $productionId);
         } else {
             $ins = $pdo->prepare(
                 'INSERT INTO honey_production_rows
@@ -947,6 +1063,7 @@ function honey_production_upsert_daily_lot(
             $stockOutDate,
             $productionId,
         ]);
+        honey_production_clear_depleted_and_activate($pdo, $productionId);
     }
 
     $event = $pdo->prepare(
@@ -1144,6 +1261,7 @@ function honey_production_stock_out(PDO $pdo, int $userId, int $productionRowId,
         if ($upd->rowCount() < 1) {
             throw new RuntimeException('Could not deduct production quantity.');
         }
+        honey_production_sync_depleted_at($pdo, $productionRowId);
 
         if ($isNew) {
             $ins = $pdo->prepare(
@@ -1272,6 +1390,59 @@ function honey_production_deduct_gallons(PDO $pdo, int $productionRowId, float $
     if ($upd->rowCount() < 1) {
         throw new RuntimeException('Could not deduct production quantity.');
     }
+    honey_production_sync_depleted_at($pdo, $productionRowId);
+}
+
+/**
+ * Stamp or clear depleted_at from the row's current_qty (phase 88).
+ */
+function honey_production_sync_depleted_at(PDO $pdo, int $productionRowId): void
+{
+    if ($productionRowId < 1 || !honey_production_has_depleted_at($pdo)) {
+        return;
+    }
+    $pdo->prepare(
+        'UPDATE honey_production_rows
+         SET depleted_at = CASE
+             WHEN current_qty <= 1e-9 THEN COALESCE(depleted_at, NOW())
+             ELSE NULL
+         END
+         WHERE id = ?'
+    )->execute([$productionRowId]);
+}
+
+/**
+ * After gallons are added back via warehouse stock-out: clear depleted_at and reactivate.
+ */
+function honey_production_clear_depleted_and_activate(PDO $pdo, int $productionRowId): void
+{
+    if ($productionRowId < 1) {
+        return;
+    }
+    if (honey_production_has_depleted_at($pdo)) {
+        $pdo->prepare(
+            'UPDATE honey_production_rows
+             SET depleted_at = NULL, is_active = 1
+             WHERE id = ?'
+        )->execute([$productionRowId]);
+    } else {
+        $pdo->prepare(
+            'UPDATE honey_production_rows SET is_active = 1 WHERE id = ?'
+        )->execute([$productionRowId]);
+    }
+}
+
+/**
+ * Clear depleted_at only (e.g. executive set qty > 0 without forcing active).
+ */
+function honey_production_clear_depleted_at(PDO $pdo, int $productionRowId): void
+{
+    if ($productionRowId < 1 || !honey_production_has_depleted_at($pdo)) {
+        return;
+    }
+    $pdo->prepare(
+        'UPDATE honey_production_rows SET depleted_at = NULL WHERE id = ?'
+    )->execute([$productionRowId]);
 }
 
 /**
@@ -1636,6 +1807,11 @@ function honey_apply_correction_request(PDO $pdo, array $req): void
                      END
                  WHERE id = ?'
             )->execute([$delta, $delta, $rowId]);
+            honey_production_sync_depleted_at($pdo, $rowId);
+            $pr = honey_fetch_production($pdo, $rowId);
+            if ($pr && (float) $pr['current_qty'] > 1e-9) {
+                honey_production_clear_depleted_at($pdo, $rowId);
+            }
 
             return;
         }
@@ -1668,6 +1844,10 @@ function honey_apply_correction_request(PDO $pdo, array $req): void
         }
         if ($rowTable === 'honey_production_rows') {
             $pdo->prepare('UPDATE honey_production_rows SET current_qty = ?, initial_qty = ? WHERE id = ?')->execute([$qty, $qty, $rowId]);
+            honey_production_sync_depleted_at($pdo, $rowId);
+            if ($qty > 1e-9) {
+                honey_production_clear_depleted_at($pdo, $rowId);
+            }
 
             return;
         }
@@ -2000,12 +2180,26 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
             } else {
                 $pdo->prepare('UPDATE honey_production_rows SET current_qty = ? WHERE id = ?')->execute([$qty, $rowId]);
             }
+            honey_production_sync_depleted_at($pdo, $rowId);
+            if ($qty > 1e-9) {
+                honey_production_clear_depleted_at($pdo, $rowId);
+            }
         }
         if (array_key_exists('is_active', $fields)) {
             $active = !empty($fields['is_active']) ? 1 : 0;
             $oldActive = isset($pr['is_active']) ? (string) (int) $pr['is_active'] : '1';
             honey_log_edit($pdo, $userId, $rowTable, $rowId, 'is_active', $oldActive, (string) $active, $logSource, $editReason);
             $pdo->prepare('UPDATE honey_production_rows SET is_active = ? WHERE id = ?')->execute([$active, $rowId]);
+            // Manual reactivate of an empty lot: restart the 1h grace window.
+            if ($active === 1 && honey_production_has_depleted_at($pdo)) {
+                $fresh = honey_fetch_production($pdo, $rowId);
+                $cur = $fresh ? (float) $fresh['current_qty'] : (float) ($pr['current_qty'] ?? 0);
+                if ($cur <= 1e-9) {
+                    $pdo->prepare(
+                        'UPDATE honey_production_rows SET depleted_at = NOW() WHERE id = ?'
+                    )->execute([$rowId]);
+                }
+            }
         }
 
         return;
