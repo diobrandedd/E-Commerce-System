@@ -70,6 +70,38 @@ function honey_production_auto_deactivate_stale_empty(PDO $pdo): int
     return $st->rowCount();
 }
 
+/**
+ * Lots that still hold gallons must stay active — inactive+stock made Available show
+ * gallons while FIFO (older builds) threw "No production gallons".
+ *
+ * @return int rows reactivated
+ */
+function honey_production_auto_reactivate_with_stock(PDO $pdo): int
+{
+    $sql = honey_production_has_depleted_at($pdo)
+        ? 'UPDATE honey_production_rows
+            SET is_active = 1, depleted_at = NULL
+            WHERE COALESCE(is_active, 1) = 0
+              AND current_qty > 0'
+        : 'UPDATE honey_production_rows
+            SET is_active = 1
+            WHERE COALESCE(is_active, 1) = 0
+              AND current_qty > 0';
+    $st = $pdo->prepare($sql);
+    $st->execute();
+
+    return $st->rowCount();
+}
+
+/**
+ * Keep active flags consistent: reactivate stocked lots, then retire long-empty ones.
+ */
+function honey_production_sync_active_flags(PDO $pdo): void
+{
+    honey_production_auto_reactivate_with_stock($pdo);
+    honey_production_auto_deactivate_stale_empty($pdo);
+}
+
 function honey_role_can_view(array $user): bool
 {
     return ims_user_can($user, 'honey.view');
@@ -338,7 +370,7 @@ function honey_production_fifo_deduct_gallons(PDO $pdo, string $variant, float $
         throw new RuntimeException('Bottle volume must be greater than zero.');
     }
 
-    honey_production_auto_deactivate_stale_empty($pdo);
+    honey_production_sync_active_flags($pdo);
 
     // Lock all lots for the variant. Empty inactive shells are kept only as possible
     // overdraw anchors when nothing else exists; positive inactive stock is drained.
@@ -613,7 +645,7 @@ function honey_packaging_variant_pools_snapshot(PDO $pdo): array
  */
 function honey_production_variant_summary(PDO $pdo): array
 {
-    honey_production_auto_deactivate_stale_empty($pdo);
+    honey_production_sync_active_flags($pdo);
 
     $st = $pdo->query(
         'SELECT pr.id, pr.warehouse_row_id, pr.supplier_code, pr.arrival_date,
@@ -2187,18 +2219,21 @@ function honey_executive_edit_row(PDO $pdo, int $userId, string $stage, string $
         }
         if (array_key_exists('is_active', $fields)) {
             $active = !empty($fields['is_active']) ? 1 : 0;
+            $fresh = honey_fetch_production($pdo, $rowId) ?: $pr;
+            $cur = (float) ($fresh['current_qty'] ?? 0);
+            if ($active === 0 && $cur > 1e-9) {
+                throw new RuntimeException(
+                    'Cannot deactivate a lot that still has gallons. Set quantity to 0 first, or leave it active so stock-in can use it.'
+                );
+            }
             $oldActive = isset($pr['is_active']) ? (string) (int) $pr['is_active'] : '1';
             honey_log_edit($pdo, $userId, $rowTable, $rowId, 'is_active', $oldActive, (string) $active, $logSource, $editReason);
             $pdo->prepare('UPDATE honey_production_rows SET is_active = ? WHERE id = ?')->execute([$active, $rowId]);
             // Manual reactivate of an empty lot: restart the 1h grace window.
-            if ($active === 1 && honey_production_has_depleted_at($pdo)) {
-                $fresh = honey_fetch_production($pdo, $rowId);
-                $cur = $fresh ? (float) $fresh['current_qty'] : (float) ($pr['current_qty'] ?? 0);
-                if ($cur <= 1e-9) {
-                    $pdo->prepare(
-                        'UPDATE honey_production_rows SET depleted_at = NOW() WHERE id = ?'
-                    )->execute([$rowId]);
-                }
+            if ($active === 1 && honey_production_has_depleted_at($pdo) && $cur <= 1e-9) {
+                $pdo->prepare(
+                    'UPDATE honey_production_rows SET depleted_at = NOW() WHERE id = ?'
+                )->execute([$rowId]);
             }
         }
 

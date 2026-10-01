@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-09-30 — Production lots with gallons stay active
+**Change:** Sync reactivates any inactive lot that still has `current_qty > 0`; Edit cannot deactivate stocked lots. Fixes Available vs “No production gallons” mismatch. → [[problems/records/2026-09-30_honey-production-auto-deactivate]]
+
 ### 2026-09-30 — Production empty lots auto-deactivate after 1h
 **Change:** Phase 88 `depleted_at`; empty/overdrawn lots deactivate after 1 hour (lazy on list/FIFO). Warehouse refill reactivates. → [[problems/records/2026-09-30_honey-production-auto-deactivate]]
 

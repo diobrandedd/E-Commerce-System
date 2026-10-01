@@ -182,6 +182,7 @@ export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () 
   const [code, setCode] = useState("");
   const [flash, setFlash] = useState<"ok" | "err" | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [msgKind, setMsgKind] = useState<"ok" | "err" | null>(null);
   const [warn, setWarn] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -237,6 +238,7 @@ export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () 
       const res = await bottleBarcodesApi.scanStockIn(value, { qty: opts.qty });
       playScanBeep("ok");
       setFlash("ok");
+      setMsgKind("ok");
       clearPending();
       const qtyBit = res.qty ? ` ×${res.qty}` : "";
       const remain = res.remaining_production_gallons;
@@ -269,6 +271,7 @@ export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () 
       const isDup = /already|duplicate/i.test(reason);
       playScanBeep(isDup ? "dup" : "bad");
       setFlash("err");
+      setMsgKind("err");
       setWarn(null);
       setMsg(reason);
       window.setTimeout(() => setFlash(null), 700);
@@ -281,6 +284,7 @@ export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () 
 
   const confirmPending = async (): Promise<ScannerDecodeFeedback | void> => {
     if (!pending) {
+      setMsgKind("err");
       setMsg("Scan a barcode first.");
       refocus();
       return;
@@ -291,6 +295,7 @@ export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () 
     const n = Number(qty);
     if (!Number.isFinite(n) || n < 1) {
       setFlash("err");
+      setMsgKind("err");
       setMsg("Enter how many bottles to stock in.");
       window.setTimeout(() => setFlash(null), 700);
       qtyInputRef.current?.focus();
@@ -312,6 +317,7 @@ export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () 
         setFlash("ok");
         setWarn(null);
         setMsg(null);
+        setMsgKind(null);
         setQty("1");
         setPending({
           code: value,
@@ -333,6 +339,7 @@ export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () 
       setFlash("ok");
       setWarn(null);
       setMsg(null);
+      setMsgKind(null);
       setQty("1");
       setPending({
         code: value,
@@ -348,6 +355,7 @@ export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () 
       const reason = e instanceof ApiError ? e.message : "Unknown barcode.";
       playScanBeep("bad");
       setFlash("err");
+      setMsgKind("err");
       setWarn(null);
       setMsg(reason);
       window.setTimeout(() => setFlash(null), 700);
@@ -484,7 +492,7 @@ export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () 
               )}
               {pending.kind === "sku" && previewGallons > 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Uses ~{formatGallons(previewGallons)} gal from {pending.variant} production (FIFO)
+                  Uses about {formatGallons(previewGallons)} gal from {pending.variant} production (FIFO)
                 </p>
               ) : null}
             </motion.div>
@@ -510,7 +518,7 @@ export function HoneyProductionScanStockInPanel({ onStocked }: { onStocked?: () 
                 ? "Enter quantity"
                 : "Ready"}
         </div>
-        {flash === "err" ? (
+        {msgKind === "err" ? (
           <AppErrorBanner message={msg ?? "Not accepted."} />
         ) : (
           <AppSuccessNotice message={msg} />

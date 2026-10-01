@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-09-30T07:38:56+02:00
+generated: 2026-09-30T09:41:47+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -1181,6 +1181,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `api/v1/honey.php` | [[modules/honey#api_honey_production_list]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_has_depleted_at]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_auto_deactivate_stale_empty]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_auto_reactivate_with_stock]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_fifo_deduct_gallons]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_variant_summary]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_fetch_production]] |
