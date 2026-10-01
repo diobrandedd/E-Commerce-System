@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-01 — Add deliveries auto-opens parcel camera after scan
+**Change:** Photo tab auto-clicks capture input once per TN after waybill scan → preview. → [[problems/records/2026-10-01_deliveries-auto-open-parcel-camera]]
+
 ### 2026-10-01 — Packaging scanned-by shows variant + size
 **Change:** `by_scanner` includes `lines[]` (variant×size qty) under each person on Packaging stock-in report. → [[problems/records/2026-10-01_honey-packaging-scanner-variant-size]]
 

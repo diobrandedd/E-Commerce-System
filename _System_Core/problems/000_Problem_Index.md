@@ -54,6 +54,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-10-01_deliveries-auto-open-parcel-camera]] — Add deliveries auto-opens parcel camera after scan
 - [[records/2026-10-01_honey-packaging-scanner-variant-size]] — Packaging scanned-by person shows variant + size
 - [[records/2026-10-01_honey-production-stock-out-actor]] — Production lots show who moved WH → production
 - [[records/2026-10-01_honey-production-voided-lots]] — Soft-void empty production lots (exec + 2-day auto)

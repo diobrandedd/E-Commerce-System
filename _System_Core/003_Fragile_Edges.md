@@ -40,6 +40,8 @@ Full-resolution phone photos (multi‑MB) uploaded on a **Confirm** button are t
 
 **Two tables, one workflow (updated 2026-09-11):** `delivery_batch_items` holds the **before-shipment photo** (documentary). CSR `online_order_parcels` is optional for the Photo tab — SPA no longer requires a parcel to save a photo and does **not** call `ship_parcel` / deduct inventory from Add deliveries Photo. RTS before-shipment thumbs resolve by **tracking** on `delivery_batch_items`. On hold / Re-waybill remain parcel-based.
 
+**Photo auto-capture (2026-10-01):** After waybill scan → preview, SPA auto-clicks the always-mounted `capture=environment` file input once per TN (short delay so QR modal releases the camera). Manual Take/Retake stay for iOS/gesture blocks or cancel. → [[problems/records/2026-10-01_deliveries-auto-open-parcel-camera]]
+
 - Deleting only the **delivery row** without reverting parcel left **`shipped`** + deducted stock — rescan showed *"already shipped"*.
 - **Now:** `deliveries_delete_item_by_id()` reverts ship + `honey_parcel_revert_deduct()` when **no** active delivery photos remain for that parcel/tracking.
 - **Orphan repair:** `parcel_by_tracking` calls `deliveries_repair_orphaned_shipped_parcel()` — `shipped` with zero photos → auto `packing` (fixes rows deleted before this fix).

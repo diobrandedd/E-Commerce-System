@@ -73,6 +73,7 @@ export function DeliveriesPage() {
   const [duplicateRecordings, setDuplicateRecordings] = useState<DeliveryExistingRecording[]>([]);
   const [guideOpen, setGuideOpen] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const autoPhotoForTnRef = useRef<string | null>(null);
   const uploadGenRef = useRef(0);
   const uploadPromiseRef = useRef<Promise<number | null> | null>(null);
 
@@ -90,6 +91,17 @@ export function DeliveriesPage() {
       if (photoPreview) URL.revokeObjectURL(photoPreview);
     };
   }, [photoPreview]);
+
+  /** After waybill scan → preview, open parcel camera once per TN (wait for QR modal to release camera). */
+  useEffect(() => {
+    if (mode !== "ship" || step !== "preview" || !tracking || photoPreview || scannerOpen) return;
+    if (autoPhotoForTnRef.current === tracking) return;
+    autoPhotoForTnRef.current = tracking;
+    const id = window.setTimeout(() => {
+      photoInputRef.current?.click();
+    }, 220);
+    return () => window.clearTimeout(id);
+  }, [mode, step, tracking, photoPreview, scannerOpen]);
 
   const uploadPhoto = useCallback(
     async (file: File, tn: string, date: string, gen: number): Promise<number | null> => {
@@ -205,6 +217,7 @@ export function DeliveriesPage() {
   const resetFlow = (keepScanning: boolean) => {
     uploadGenRef.current += 1;
     uploadPromiseRef.current = null;
+    autoPhotoForTnRef.current = null;
     if (photoPreview) URL.revokeObjectURL(photoPreview);
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -253,6 +266,7 @@ export function DeliveriesPage() {
       setPhotoUploadState("idle");
       setDeliveryItemId(null);
       setTracking("");
+      autoPhotoForTnRef.current = null;
 
       if (scanNext) {
         setStep("idle");
@@ -381,6 +395,19 @@ export function DeliveriesPage() {
         <>
           <FulfillmentToast message={toast} />
 
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            data-testid="deliveries-photo-capture-input"
+            onChange={e => {
+              onPhotoSelected(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
+
           <FulfillmentSectionEnter className="max-w-lg space-y-5">
             <FulfillmentErrorBanner message={error} />
 
@@ -420,14 +447,6 @@ export function DeliveriesPage() {
                       <p className="text-sm text-muted-foreground leading-relaxed">
                         Photograph the wrapped parcel. This image shows on RTS when that tracking returns.
                       </p>
-                      <input
-                        ref={photoInputRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={e => onPhotoSelected(e.target.files?.[0] ?? null)}
-                      />
                       <FulfillmentPressable
                         variant="outline"
                         className="w-full min-h-12 flex items-center justify-center gap-2 rounded-xl py-3.5 font-semibold"
@@ -469,14 +488,6 @@ export function DeliveriesPage() {
                       >
                         Retake photo
                       </button>
-                      <input
-                        ref={photoInputRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={e => onPhotoSelected(e.target.files?.[0] ?? null)}
-                      />
                     </div>
                   )}
 
@@ -559,12 +570,14 @@ export function DeliveriesPage() {
               setDuplicateOpen(false);
               setDuplicateRecordings([]);
               setTracking("");
+              autoPhotoForTnRef.current = null;
               setStep("idle");
             }}
             onScanDifferent={() => {
               setDuplicateOpen(false);
               setDuplicateRecordings([]);
               setTracking("");
+              autoPhotoForTnRef.current = null;
               setError(null);
               startScanner();
             }}
