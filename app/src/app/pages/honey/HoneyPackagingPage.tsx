@@ -32,6 +32,22 @@ const HONEY_COMB_KEY = "honey_comb";
 const HONEY_COMB_LABEL = "Honey Comb";
 const VARIANT_ORDER = ["light", "amber", "dark"] as const;
 
+type ScannerLine = { variant: string; size: string; qty: number };
+type ScannerPerson = {
+  user_id: number | null;
+  name: string;
+  qty: number;
+  lines?: ScannerLine[];
+};
+
+function sizeDisplay(size: string): string {
+  const s = size.toLowerCase();
+  if (s === "250ml" || s === "350ml") return s;
+  if (s === "liter") return "Liter";
+  if (s === "gallon") return "Gallon";
+  return size;
+}
+
 type SizeKey = (typeof HONEY_SIZES)[number];
 
 interface VariantScanned {
@@ -85,7 +101,7 @@ export function HoneyPackagingPage() {
   const [scanDates, setScanDates] = useState<string[]>([]);
   const [byVariant, setByVariant] = useState<VariantScanned[]>([]);
   const [grandTotal, setGrandTotal] = useState(0);
-  const [byScanner, setByScanner] = useState<{ user_id: number | null; name: string; qty: number }[]>([]);
+  const [byScanner, setByScanner] = useState<ScannerPerson[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -317,16 +333,32 @@ export function HoneyPackagingPage() {
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
                 Scanned by person · {filterScanLabel(scanDate)}
               </p>
-              <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              <ul className="mt-2 space-y-3">
                 {byScanner.map(row => (
-                  <li
-                    key={`${row.user_id ?? "unk"}-${row.name}`}
-                    className="flex items-baseline justify-between gap-3 text-sm"
-                  >
-                    <span className="font-medium truncate">{row.name}</span>
-                    <span className="tabular-nums shrink-0 text-muted-foreground">
-                      {row.qty.toLocaleString()} bottles
-                    </span>
+                  <li key={`${row.user_id ?? "unk"}-${row.name}`} className="text-sm">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-medium truncate">{row.name}</span>
+                      <span className="tabular-nums shrink-0 text-muted-foreground">
+                        {row.qty.toLocaleString()} bottles
+                      </span>
+                    </div>
+                    {(row.lines?.length ?? 0) > 0 && (
+                      <ul className="mt-1.5 space-y-0.5 border-l border-border/80 pl-3">
+                        {row.lines!.map(line => (
+                          <li
+                            key={`${line.variant}-${line.size}`}
+                            className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground"
+                          >
+                            <span className="truncate">
+                              {variantLabel(line.variant)} · {sizeDisplay(line.size)}
+                            </span>
+                            <span className="tabular-nums shrink-0">
+                              {line.qty.toLocaleString()}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>

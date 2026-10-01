@@ -59,7 +59,7 @@ const fmtDate = (s: string | null) => {
 };
 
 export function ARCreditsPage() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const isExec = can("ar.view_all");
   const canTakeCredit = user
     ? ["executive", "prod_manager", "team_leader", "csr_tl", "staff", "csr_staff"].includes(user.role)

@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-01 — Packaging scanned-by shows variant + size
+**Change:** `by_scanner` includes `lines[]` (variant×size qty) under each person on Packaging stock-in report. → [[problems/records/2026-10-01_honey-packaging-scanner-variant-size]]
+
+### 2026-10-01 — Production lots show who moved WH → production
+**Change:** Attach latest stock-out actor (`stocked_out_by_name` / `stocked_out_at`) on variant + voided lists; SPA “Moved by … · when”. → [[problems/records/2026-10-01_honey-production-stock-out-actor]]
+
 ### 2026-10-01 — Production empty lots soft-void archive
 **Change:** Phase 89 `voided_at`; exec Void + Voided modal per variant; auto-void empty+inactive after 2 days from `depleted_at`. → [[problems/records/2026-10-01_honey-production-voided-lots]]
 

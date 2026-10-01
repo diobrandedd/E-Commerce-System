@@ -41,6 +41,10 @@ interface PrLot {
   depleted_at?: string | null;
   voided_at?: string | null;
   voided_by?: number | null;
+  stocked_out_by?: number | null;
+  stocked_out_by_name?: string | null;
+  stocked_out_at?: string | null;
+  last_stock_out_gallons?: number | null;
 }
 
 interface VariantGroup {
@@ -52,6 +56,13 @@ interface VariantGroup {
   voided_count?: number;
   lots: PrLot[];
 }
+
+const fmtStockOutAt = (s: string | null | undefined) => {
+  if (!s) return "";
+  const d = new Date(String(s).includes("T") ? s : String(s).replace(" ", "T"));
+  if (Number.isNaN(d.getTime())) return String(s).slice(0, 16);
+  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+};
 
 type ModalKind = "request" | "admin" | "guide" | null;
 
@@ -335,9 +346,17 @@ export function HoneyProductionPage() {
                                             <span className="font-mono font-medium">{lot.supplier_code}</span>
                                           )}
                                         </div>
-                                        <div className="text-xs text-muted-foreground">
-                                          WH {lot.arrival_date}
-                                          {lot.stock_out_date ? ` · out ${lot.stock_out_date}` : ""}
+                                        <div className="text-xs text-muted-foreground min-w-[10rem] max-w-[16rem]">
+                                          <p>
+                                            WH {lot.arrival_date}
+                                            {lot.stock_out_date ? ` · out ${lot.stock_out_date}` : ""}
+                                          </p>
+                                          {(lot.stocked_out_by_name || lot.stocked_out_at) && (
+                                            <p className="mt-0.5 text-[11px] leading-snug">
+                                              Moved by {lot.stocked_out_by_name?.trim() || "Unknown"}
+                                              {lot.stocked_out_at ? ` · ${fmtStockOutAt(lot.stocked_out_at)}` : ""}
+                                            </p>
+                                          )}
                                         </div>
                                         <div className="flex-1 min-w-[8rem]">
                                           <HoneyLotGallonProgress
@@ -447,6 +466,12 @@ export function HoneyProductionPage() {
                       WH {lot.arrival_date}
                       {lot.stock_out_date ? ` · out ${lot.stock_out_date}` : ""}
                       {lot.voided_at ? ` · voided ${String(lot.voided_at).slice(0, 10)}` : ""}
+                      {(lot.stocked_out_by_name || lot.stocked_out_at) && (
+                        <span className="block mt-0.5">
+                          Moved by {lot.stocked_out_by_name?.trim() || "Unknown"}
+                          {lot.stocked_out_at ? ` · ${fmtStockOutAt(lot.stocked_out_at)}` : ""}
+                        </span>
+                      )}
                     </div>
                     <div className="tabular-nums text-muted-foreground">{Number(lot.current_qty)} gal</div>
                     {canExecEdit && (

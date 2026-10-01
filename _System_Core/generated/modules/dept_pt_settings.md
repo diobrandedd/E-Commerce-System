@@ -1,7 +1,7 @@
 ---
 title: dept_pt_settings
 source: includes/dept_pt_settings.php
-generated: 2026-10-01T06:47:40+02:00
+generated: 2026-10-01T11:31:08+02:00
 type: module
 function_count: 8
 ---

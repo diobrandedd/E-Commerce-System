@@ -703,6 +703,100 @@ function honey_packaging_variant_pools_snapshot(PDO $pdo): array
 }
 
 /**
+ * Attach latest warehouse→production stock-out actor to production lot rows.
+ *
+ * @param list<array<string,mixed>> $lots
+ * @return list<array<string,mixed>>
+ */
+function honey_production_lots_attach_stock_out_actors(PDO $pdo, array $lots): array
+{
+    if ($lots === []) {
+        return $lots;
+    }
+    $ids = [];
+    foreach ($lots as $lot) {
+        $id = (int) ($lot['id'] ?? 0);
+        if ($id > 0) {
+            $ids[$id] = true;
+        }
+    }
+    $idList = array_keys($ids);
+    if ($idList === []) {
+        return $lots;
+    }
+
+    $byId = [];
+    $placeholders = implode(',', array_fill(0, count($idList), '?'));
+    try {
+        $st = $pdo->prepare(
+            "SELECT e.production_row_id,
+                    e.stocked_out_by,
+                    e.created_at AS stocked_out_at,
+                    e.quantity_gallons AS last_stock_out_gallons,
+                    COALESCE(NULLIF(TRIM(u.name), ''), u.username, '') AS stocked_out_by_name
+             FROM honey_warehouse_stock_out_events e
+             INNER JOIN (
+                 SELECT production_row_id, MAX(id) AS max_id
+                 FROM honey_warehouse_stock_out_events
+                 WHERE production_row_id IN ($placeholders)
+                 GROUP BY production_row_id
+             ) latest ON latest.max_id = e.id
+             LEFT JOIN users u ON u.id = e.stocked_out_by"
+        );
+        $st->execute($idList);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $byId[(int) $row['production_row_id']] = $row;
+        }
+    } catch (Throwable $e) {
+        // Table missing on old DBs — leave actor fields null.
+    }
+
+    // Fallback: lot creator when no stock-out event exists.
+    $needFallback = [];
+    foreach ($idList as $id) {
+        if (!isset($byId[$id])) {
+            $needFallback[] = $id;
+        }
+    }
+    if ($needFallback !== []) {
+        $ph = implode(',', array_fill(0, count($needFallback), '?'));
+        try {
+            $st = $pdo->prepare(
+                "SELECT pr.id AS production_row_id,
+                        pr.created_by AS stocked_out_by,
+                        COALESCE(pr.transferred_at, pr.created_at) AS stocked_out_at,
+                        NULL AS last_stock_out_gallons,
+                        COALESCE(NULLIF(TRIM(u.name), ''), u.username, '') AS stocked_out_by_name
+                 FROM honey_production_rows pr
+                 LEFT JOIN users u ON u.id = pr.created_by
+                 WHERE pr.id IN ($ph)"
+            );
+            $st->execute($needFallback);
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $byId[(int) $row['production_row_id']] = $row;
+            }
+        } catch (Throwable $e) {
+            // ignore
+        }
+    }
+
+    foreach ($lots as $i => $lot) {
+        $id = (int) ($lot['id'] ?? 0);
+        $actor = $byId[$id] ?? null;
+        $lots[$i]['stocked_out_by'] = $actor !== null ? (int) ($actor['stocked_out_by'] ?? 0) ?: null : null;
+        $lots[$i]['stocked_out_by_name'] = $actor !== null
+            ? (string) ($actor['stocked_out_by_name'] ?? '')
+            : '';
+        $lots[$i]['stocked_out_at'] = $actor !== null ? ($actor['stocked_out_at'] ?? null) : null;
+        $lots[$i]['last_stock_out_gallons'] = $actor !== null && $actor['last_stock_out_gallons'] !== null
+            ? (float) $actor['last_stock_out_gallons']
+            : null;
+    }
+
+    return $lots;
+}
+
+/**
  * @return array{variants: list<array<string,mixed>>}
  */
 function honey_production_variant_summary(PDO $pdo): array
@@ -756,7 +850,7 @@ function honey_production_variant_summary(PDO $pdo): array
 
     $out = [];
     foreach (['light', 'amber', 'dark'] as $variant) {
-        $lots = $byVariant[$variant];
+        $lots = honey_production_lots_attach_stock_out_actors($pdo, $byVariant[$variant]);
         $current = 0.0;
         $initial = 0.0;
         $activeLots = 0;
@@ -817,7 +911,7 @@ function honey_production_voided_list(PDO $pdo, string $variant): array
 
     return [
         'variant' => $variant,
-        'lots' => $st->fetchAll(PDO::FETCH_ASSOC) ?: [],
+        'lots' => honey_production_lots_attach_stock_out_actors($pdo, $st->fetchAll(PDO::FETCH_ASSOC) ?: []),
     ];
 }
 

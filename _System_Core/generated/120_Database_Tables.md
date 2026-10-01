@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-10-01T06:47:27+02:00
+generated: 2026-10-01T11:30:53+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -231,6 +231,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_log]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_list]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_lots_attach_stock_out_actors]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_unread_list]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_shipped_export]] |
@@ -1185,6 +1186,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_auto_reactivate_with_stock]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_auto_void_stale_empty]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_fifo_deduct_gallons]] |
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_lots_attach_stock_out_actors]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_variant_summary]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_voided_list]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_void_lot]] |
@@ -1344,6 +1346,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_lots_attach_stock_out_actors]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_production_upsert_daily_lot]] |
 
 ## `pack_cancel_restock_sku_items`

@@ -54,6 +54,8 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-10-01_honey-packaging-scanner-variant-size]] — Packaging scanned-by person shows variant + size
+- [[records/2026-10-01_honey-production-stock-out-actor]] — Production lots show who moved WH → production
 - [[records/2026-10-01_honey-production-voided-lots]] — Soft-void empty production lots (exec + 2-day auto)
 - [[records/2026-09-30_honey-production-auto-deactivate]] — Empty/overdrawn production lots auto-deactivate after 1h
 - [[records/2026-09-30_honey-production-fifo-multi-lot]] — FIFO drains all positive production lots before overdraw

@@ -880,22 +880,52 @@ function honey_bottle_packaging_scan_report(
     $byScannerSt = $pdo->prepare(
         "SELECT scan_events.scanned_by,
                 COALESCE(u.name, IF(scan_events.scanned_by IS NULL, 'Unknown', CONCAT('User #', scan_events.scanned_by))) AS name,
+                LOWER(pk.variant) AS variant,
+                LOWER(scan_events.size) AS size,
                 SUM(scan_events.qty) AS qty
          FROM {$scanSourceSql} scan_events
          INNER JOIN honey_packaging_rows pk ON pk.id = scan_events.packaging_row_id
          LEFT JOIN users u ON u.id = scan_events.scanned_by
          WHERE {$where}
-         GROUP BY scan_events.scanned_by, u.name
-         ORDER BY qty DESC, name ASC"
+         GROUP BY scan_events.scanned_by, u.name, LOWER(pk.variant), LOWER(scan_events.size)
+         ORDER BY name ASC, LOWER(pk.variant) ASC, LOWER(scan_events.size) ASC"
     );
     $byScannerSt->execute($params);
-    $byScanner = [];
+    $byScannerMap = [];
     foreach ($byScannerSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $byScanner[] = [
-            'user_id' => $row['scanned_by'] !== null ? (int) $row['scanned_by'] : null,
-            'name' => (string) $row['name'],
-            'qty' => (int) $row['qty'],
+        $uidKey = $row['scanned_by'] !== null ? (string) (int) $row['scanned_by'] : 'null';
+        if (!isset($byScannerMap[$uidKey])) {
+            $byScannerMap[$uidKey] = [
+                'user_id' => $row['scanned_by'] !== null ? (int) $row['scanned_by'] : null,
+                'name' => (string) $row['name'],
+                'qty' => 0,
+                'lines' => [],
+            ];
+        }
+        $lineQty = (int) $row['qty'];
+        $byScannerMap[$uidKey]['qty'] += $lineQty;
+        $byScannerMap[$uidKey]['lines'][] = [
+            'variant' => (string) $row['variant'],
+            'size' => (string) $row['size'],
+            'qty' => $lineQty,
         ];
+    }
+    $byScanner = array_values($byScannerMap);
+    usort($byScanner, static function (array $a, array $b): int {
+        $cmp = ($b['qty'] <=> $a['qty']);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+        return strcasecmp((string) $a['name'], (string) $b['name']);
+    });
+    foreach ($byScanner as $i => $person) {
+        usort($byScanner[$i]['lines'], static function (array $a, array $b): int {
+            $vc = strcasecmp((string) $a['variant'], (string) $b['variant']);
+            if ($vc !== 0) {
+                return $vc;
+            }
+            return strcasecmp((string) $a['size'], (string) $b['size']);
+        });
     }
 
     return [

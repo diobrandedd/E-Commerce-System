@@ -177,7 +177,19 @@ test.describe("raw materials responsive UI", () => {
                 { variant: "dark", total: 0, liter: 0, "250ml": 0, "350ml": 0, gallon: 0 },
               ],
             },
-            by_scanner: [{ user_id: 1, name: "Test Scanner", qty: 10 }],
+            by_scanner: [
+              {
+                user_id: 1,
+                name: "Test Scanner",
+                qty: 10,
+                lines: [
+                  { variant: "light", size: "liter", qty: 4 },
+                  { variant: "light", size: "250ml", qty: 3 },
+                  { variant: "light", size: "350ml", qty: 2 },
+                  { variant: "light", size: "gallon", qty: 1 },
+                ],
+              },
+            ],
             rows: [],
           },
         }),
