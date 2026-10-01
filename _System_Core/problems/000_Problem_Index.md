@@ -54,6 +54,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-10-01_honey-production-voided-lots]] — Soft-void empty production lots (exec + 2-day auto)
 - [[records/2026-09-30_honey-production-auto-deactivate]] — Empty/overdrawn production lots auto-deactivate after 1h
 - [[records/2026-09-30_honey-production-fifo-multi-lot]] — FIFO drains all positive production lots before overdraw
 - [[records/2026-09-17_inventory-check-applied-run-history]] — Confirmed/merged audit stock-apply history + mismatches

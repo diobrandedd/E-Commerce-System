@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-09-30T09:41:00+02:00
+generated: 2026-10-01T06:39:19+02:00
 type: memory-bank
 ---
 
@@ -35,6 +35,7 @@ Backend index: [[100_API_Index]]
 | `app/src/app/lib/deptRawInventory.ts` | `honey.php` |
 | `app/src/app/pages/InventoryRequestsPage.tsx` | `honey.php` |
 | `app/src/app/pages/exec/MonthlyInventoryPage.tsx` | `honey.php` |
+| `app/src/app/pages/honey/HoneyProductionPage.tsx` | `honey.php` |
 | `app/src/app/pages/honey/HoneyWarehousePage.tsx` | `honey.php` |
 | `app/src/app/lib/materials.ts` | `materials.php` |
 | `app/src/app/lib/onlineOrdersApi.ts` | `online_orders.php` |

@@ -26,6 +26,9 @@ const HONEY_SIZES = ['liter', '250ml', '350ml', 'gallon'];
 /** Empty/overdrawn production lots auto-deactivate after this many hours. */
 const HONEY_PRODUCTION_AUTO_DEACTIVATE_HOURS = 1;
 
+/** Inactive empty lots auto-void after this many days from depleted_at. */
+const HONEY_PRODUCTION_AUTO_VOID_DAYS = 2;
+
 /**
  * Whether honey_production_rows.depleted_at exists (phase 88).
  */
@@ -46,6 +49,25 @@ function honey_production_has_depleted_at(PDO $pdo): bool
 }
 
 /**
+ * Whether honey_production_rows.voided_at exists (phase 89).
+ */
+function honey_production_has_voided_at(PDO $pdo): bool
+{
+    static $ready = null;
+    if ($ready !== null) {
+        return $ready;
+    }
+    try {
+        $st = $pdo->query("SHOW COLUMNS FROM honey_production_rows LIKE 'voided_at'");
+        $ready = $st !== false && $st->fetch(PDO::FETCH_ASSOC) !== false;
+    } catch (Throwable $e) {
+        $ready = false;
+    }
+
+    return $ready;
+}
+
+/**
  * Deactivate lots that have been empty/overdrawn for >= HONEY_PRODUCTION_AUTO_DEACTIVATE_HOURS.
  * Lazy sweep — no cron required. Safe no-op before phase 88.
  *
@@ -57,13 +79,15 @@ function honey_production_auto_deactivate_stale_empty(PDO $pdo): int
         return 0;
     }
     $hours = max(1, (int) HONEY_PRODUCTION_AUTO_DEACTIVATE_HOURS);
+    $voidPred = honey_production_has_voided_at($pdo) ? ' AND voided_at IS NULL' : '';
     $st = $pdo->prepare(
         "UPDATE honey_production_rows
          SET is_active = 0
          WHERE COALESCE(is_active, 1) = 1
            AND current_qty <= 0
            AND depleted_at IS NOT NULL
-           AND depleted_at <= (NOW() - INTERVAL {$hours} HOUR)"
+           AND depleted_at <= (NOW() - INTERVAL {$hours} HOUR)
+           {$voidPred}"
     );
     $st->execute();
 
@@ -78,28 +102,64 @@ function honey_production_auto_deactivate_stale_empty(PDO $pdo): int
  */
 function honey_production_auto_reactivate_with_stock(PDO $pdo): int
 {
-    $sql = honey_production_has_depleted_at($pdo)
-        ? 'UPDATE honey_production_rows
-            SET is_active = 1, depleted_at = NULL
-            WHERE COALESCE(is_active, 1) = 0
-              AND current_qty > 0'
-        : 'UPDATE honey_production_rows
-            SET is_active = 1
-            WHERE COALESCE(is_active, 1) = 0
-              AND current_qty > 0';
-    $st = $pdo->prepare($sql);
+    $sets = ['is_active = 1'];
+    if (honey_production_has_depleted_at($pdo)) {
+        $sets[] = 'depleted_at = NULL';
+    }
+    if (honey_production_has_voided_at($pdo)) {
+        $sets[] = 'voided_at = NULL';
+        $sets[] = 'voided_by = NULL';
+    }
+    $st = $pdo->prepare(
+        'UPDATE honey_production_rows
+         SET ' . implode(', ', $sets) . '
+         WHERE current_qty > 0
+           AND (
+             COALESCE(is_active, 1) = 0'
+            . (honey_production_has_voided_at($pdo) ? ' OR voided_at IS NOT NULL' : '')
+            . '
+           )'
+    );
     $st->execute();
 
     return $st->rowCount();
 }
 
 /**
- * Keep active flags consistent: reactivate stocked lots, then retire long-empty ones.
+ * Soft-void lots that are still empty + inactive for >= HONEY_PRODUCTION_AUTO_VOID_DAYS
+ * since depleted_at (phase 89).
+ *
+ * @return int rows voided
+ */
+function honey_production_auto_void_stale_empty(PDO $pdo): int
+{
+    if (!honey_production_has_voided_at($pdo) || !honey_production_has_depleted_at($pdo)) {
+        return 0;
+    }
+    $days = max(1, (int) HONEY_PRODUCTION_AUTO_VOID_DAYS);
+    $st = $pdo->prepare(
+        "UPDATE honey_production_rows
+         SET voided_at = COALESCE(voided_at, NOW()),
+             is_active = 0
+         WHERE voided_at IS NULL
+           AND current_qty <= 0
+           AND COALESCE(is_active, 1) = 0
+           AND depleted_at IS NOT NULL
+           AND depleted_at <= (NOW() - INTERVAL {$days} DAY)"
+    );
+    $st->execute();
+
+    return $st->rowCount();
+}
+
+/**
+ * Keep active/void flags consistent: reactivate stocked lots, retire long-empty, then void stale.
  */
 function honey_production_sync_active_flags(PDO $pdo): void
 {
     honey_production_auto_reactivate_with_stock($pdo);
     honey_production_auto_deactivate_stale_empty($pdo);
+    honey_production_auto_void_stale_empty($pdo);
 }
 
 function honey_role_can_view(array $user): bool
@@ -372,14 +432,15 @@ function honey_production_fifo_deduct_gallons(PDO $pdo, string $variant, float $
 
     honey_production_sync_active_flags($pdo);
 
-    // Lock all lots for the variant. Empty inactive shells are kept only as possible
-    // overdraw anchors when nothing else exists; positive inactive stock is drained.
+    // Lock lots for the variant (skip soft-voided empty shells).
+    $voidFilter = honey_production_has_voided_at($pdo) ? ' AND voided_at IS NULL' : '';
     $st = $pdo->prepare(
         'SELECT id, supplier_code, current_qty, initial_qty,
                 COALESCE(is_active, 1) AS is_active,
                 COALESCE(stock_out_date, DATE(transferred_at)) AS stock_out_date
          FROM honey_production_rows
-         WHERE variant = ?
+         WHERE variant = ?'
+         . $voidFilter . '
          ORDER BY COALESCE(stock_out_date, DATE(transferred_at)) ASC, id ASC
          FOR UPDATE'
     );
@@ -446,7 +507,8 @@ function honey_production_fifo_deduct_gallons(PDO $pdo, string $variant, float $
         $st2 = $pdo->prepare(
             'SELECT id, supplier_code, current_qty
              FROM honey_production_rows
-             WHERE variant = ? AND current_qty > 0
+             WHERE variant = ? AND current_qty > 0'
+             . (honey_production_has_voided_at($pdo) ? ' AND voided_at IS NULL' : '') . '
              ORDER BY COALESCE(stock_out_date, DATE(transferred_at)) ASC, id ASC
              FOR UPDATE'
         );
@@ -647,6 +709,7 @@ function honey_production_variant_summary(PDO $pdo): array
 {
     honey_production_sync_active_flags($pdo);
 
+    $voidFilter = honey_production_has_voided_at($pdo) ? ' AND pr.voided_at IS NULL' : '';
     $st = $pdo->query(
         'SELECT pr.id, pr.warehouse_row_id, pr.supplier_code, pr.arrival_date,
                 COALESCE(pr.stock_out_date, DATE(pr.transferred_at)) AS stock_out_date,
@@ -654,7 +717,8 @@ function honey_production_variant_summary(PDO $pdo): array
                 COALESCE(pr.is_active, 1) AS is_active,
                 pr.transferred_at, pr.created_at
          FROM honey_production_rows pr
-         WHERE pr.variant IN ("light", "amber", "dark")
+         WHERE pr.variant IN ("light", "amber", "dark")'
+         . $voidFilter . '
          ORDER BY FIELD(pr.variant, "light", "amber", "dark"),
                   (pr.current_qty > 0) DESC,
                   (pr.current_qty < 0) DESC,
@@ -666,6 +730,22 @@ function honey_production_variant_summary(PDO $pdo): array
         'amber' => [],
         'dark' => [],
     ];
+    $voidedCounts = ['light' => 0, 'amber' => 0, 'dark' => 0];
+    if (honey_production_has_voided_at($pdo)) {
+        $vc = $pdo->query(
+            'SELECT variant, COUNT(*) AS c
+             FROM honey_production_rows
+             WHERE variant IN ("light", "amber", "dark")
+               AND voided_at IS NOT NULL
+             GROUP BY variant'
+        );
+        foreach ($vc ? $vc->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
+            $v = honey_normalize_variant((string) $row['variant']);
+            if (isset($voidedCounts[$v])) {
+                $voidedCounts[$v] = (int) $row['c'];
+            }
+        }
+    }
     foreach ($st ? $st->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
         $v = honey_normalize_variant((string) $row['variant']);
         if (!isset($byVariant[$v])) {
@@ -699,11 +779,119 @@ function honey_production_variant_summary(PDO $pdo): array
             'initial_qty' => $initial,
             'lot_count' => count($lots),
             'active_lot_count' => $activeLots,
+            'voided_count' => $voidedCounts[$variant],
             'lots' => $lots,
         ];
     }
 
     return ['variants' => $out];
+}
+
+/**
+ * Voided production lots for one variant (modal list).
+ *
+ * @return array{variant: string, lots: list<array<string,mixed>>}
+ */
+function honey_production_voided_list(PDO $pdo, string $variant): array
+{
+    $variant = honey_normalize_variant($variant);
+    if (!in_array($variant, ['light', 'amber', 'dark'], true)) {
+        throw new RuntimeException('Invalid variant.');
+    }
+    honey_production_sync_active_flags($pdo);
+    if (!honey_production_has_voided_at($pdo)) {
+        return ['variant' => $variant, 'lots' => []];
+    }
+    $st = $pdo->prepare(
+        'SELECT pr.id, pr.supplier_code, pr.arrival_date,
+                COALESCE(pr.stock_out_date, DATE(pr.transferred_at)) AS stock_out_date,
+                pr.variant, pr.current_qty, pr.initial_qty,
+                COALESCE(pr.is_active, 1) AS is_active,
+                pr.depleted_at, pr.voided_at, pr.voided_by
+         FROM honey_production_rows pr
+         WHERE pr.variant = ?
+           AND pr.voided_at IS NOT NULL
+         ORDER BY pr.voided_at DESC, pr.id DESC'
+    );
+    $st->execute([$variant]);
+
+    return [
+        'variant' => $variant,
+        'lots' => $st->fetchAll(PDO::FETCH_ASSOC) ?: [],
+    ];
+}
+
+/**
+ * Executive soft-void an empty production lot.
+ *
+ * @return array<string, mixed>
+ */
+function honey_production_void_lot(PDO $pdo, int $userId, int $productionRowId): array
+{
+    if (!honey_production_has_voided_at($pdo)) {
+        throw new RuntimeException('Voided lots require migration phase 89.');
+    }
+    $pr = honey_fetch_production($pdo, $productionRowId);
+    if (!$pr) {
+        throw new RuntimeException('Production row not found.');
+    }
+    if (!empty($pr['voided_at'])) {
+        throw new RuntimeException('This lot is already voided.');
+    }
+    if ((float) $pr['current_qty'] > 1e-9) {
+        throw new RuntimeException('Cannot void a lot that still has gallons.');
+    }
+    $pdo->prepare(
+        'UPDATE honey_production_rows
+         SET voided_at = NOW(), voided_by = ?, is_active = 0
+         WHERE id = ?'
+    )->execute([$userId > 0 ? $userId : null, $productionRowId]);
+    $fresh = honey_fetch_production($pdo, $productionRowId);
+    if ($fresh === null) {
+        throw new RuntimeException('Could not void production lot.');
+    }
+
+    return $fresh;
+}
+
+/**
+ * Executive restore a voided empty lot to the main list (still inactive until refill).
+ *
+ * @return array<string, mixed>
+ */
+function honey_production_unvoid_lot(PDO $pdo, int $productionRowId): array
+{
+    if (!honey_production_has_voided_at($pdo)) {
+        throw new RuntimeException('Voided lots require migration phase 89.');
+    }
+    $pr = honey_fetch_production($pdo, $productionRowId);
+    if (!$pr) {
+        throw new RuntimeException('Production row not found.');
+    }
+    if (empty($pr['voided_at'])) {
+        throw new RuntimeException('This lot is not voided.');
+    }
+    $pdo->prepare(
+        'UPDATE honey_production_rows
+         SET voided_at = NULL, voided_by = NULL
+         WHERE id = ?'
+    )->execute([$productionRowId]);
+    // If it somehow has stock, sync will reactivate; else keep inactive + restart grace if empty.
+    if ((float) $pr['current_qty'] > 1e-9) {
+        honey_production_auto_reactivate_with_stock($pdo);
+    } elseif (honey_production_has_depleted_at($pdo)) {
+        $pdo->prepare(
+            'UPDATE honey_production_rows
+             SET is_active = 0, depleted_at = COALESCE(depleted_at, NOW())
+             WHERE id = ?'
+        )->execute([$productionRowId]);
+    }
+    $fresh = honey_fetch_production($pdo, $productionRowId);
+    if ($fresh === null) {
+        throw new RuntimeException('Could not unvoid production lot.');
+    }
+
+    return $fresh;
 }
 
 function honey_packaging_size_columns(string $size): array
@@ -1451,17 +1639,17 @@ function honey_production_clear_depleted_and_activate(PDO $pdo, int $productionR
     if ($productionRowId < 1) {
         return;
     }
+    $sets = ['is_active = 1'];
     if (honey_production_has_depleted_at($pdo)) {
-        $pdo->prepare(
-            'UPDATE honey_production_rows
-             SET depleted_at = NULL, is_active = 1
-             WHERE id = ?'
-        )->execute([$productionRowId]);
-    } else {
-        $pdo->prepare(
-            'UPDATE honey_production_rows SET is_active = 1 WHERE id = ?'
-        )->execute([$productionRowId]);
+        $sets[] = 'depleted_at = NULL';
     }
+    if (honey_production_has_voided_at($pdo)) {
+        $sets[] = 'voided_at = NULL';
+        $sets[] = 'voided_by = NULL';
+    }
+    $pdo->prepare(
+        'UPDATE honey_production_rows SET ' . implode(', ', $sets) . ' WHERE id = ?'
+    )->execute([$productionRowId]);
 }
 
 /**

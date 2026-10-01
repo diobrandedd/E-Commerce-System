@@ -25,6 +25,9 @@ api_dispatch([
     'warehouse_barcode_stock_out' => 'api_honey_warehouse_barcode_stock_out',
     'production_list' => 'api_honey_production_list',
     'production_variant_list' => 'api_honey_production_variant_list',
+    'production_voided_list' => 'api_honey_production_voided_list',
+    'production_void' => 'api_honey_production_void',
+    'production_unvoid' => 'api_honey_production_unvoid',
     'production_stock_out' => 'api_honey_production_stock_out',
     'packaging_list' => 'api_honey_packaging_list',
     'packaging_total_inventory' => 'api_honey_packaging_total_inventory',
@@ -172,7 +175,7 @@ function honey_assert_staff_dept_scope(array $user): void
     $action = (string) ($_GET['action'] ?? '');
     // Honey warehouse / production / packaging lists — gated by honey.view already.
     // Do not also require home dept = honey (Staff Management may grant honey.* cross-dept).
-    $honeyOnly = ['warehouse_list', 'production_list', 'production_variant_list', 'packaging_list', 'packaging_total_inventory', 'packaging_variant_pools', 'traceability'];
+    $honeyOnly = ['warehouse_list', 'production_list', 'production_variant_list', 'production_voided_list', 'packaging_list', 'packaging_total_inventory', 'packaging_variant_pools', 'traceability'];
     if (in_array($action, $honeyOnly, true)) {
         if (
             !ims_user_can($user, 'honey.view')
@@ -522,6 +525,53 @@ function api_honey_production_variant_list(): void
     api_method_allowed(['GET']);
     api_honey_require_view();
     api_ok(honey_production_variant_summary(ims_pdo()));
+}
+
+function api_honey_production_voided_list(): void
+{
+    api_method_allowed(['GET']);
+    api_honey_require_view();
+    $variant = trim((string) ($_GET['variant'] ?? ''));
+    try {
+        api_ok(honey_production_voided_list(ims_pdo(), $variant));
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+}
+
+function api_honey_production_void(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_permission('honey.executive_edit');
+    try {
+        $row = honey_production_void_lot(
+            ims_pdo(),
+            (int) $user['id'],
+            (int) ($input['production_row_id'] ?? 0)
+        );
+        api_ok(['lot' => $row]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+}
+
+function api_honey_production_unvoid(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_require_permission('honey.executive_edit');
+    try {
+        $row = honey_production_unvoid_lot(
+            ims_pdo(),
+            (int) ($input['production_row_id'] ?? 0)
+        );
+        api_ok(['lot' => $row]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
 }
 
 function api_honey_production_stock_out(): void

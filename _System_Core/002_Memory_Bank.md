@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-01 — Production empty lots soft-void archive
+**Change:** Phase 89 `voided_at`; exec Void + Voided modal per variant; auto-void empty+inactive after 2 days from `depleted_at`. → [[problems/records/2026-10-01_honey-production-voided-lots]]
+
 ### 2026-09-30 — Production lots with gallons stay active
 **Change:** Sync reactivates any inactive lot that still has `current_qty > 0`; Edit cannot deactivate stocked lots. Fixes Available vs “No production gallons” mismatch. → [[problems/records/2026-09-30_honey-production-auto-deactivate]]
 

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-09-30T09:41:47+02:00
+generated: 2026-10-01T06:47:26+02:00
 type: memory-bank
 ---
 
@@ -293,6 +293,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `warehouse_barcode_stock_out` | `api_honey_warehouse_barcode_stock_out()` | `honey_warehouse_barcode_stock_out()`, `ims_pdo()` |
 | `production_list` | `api_honey_production_list()` | `ims_pdo()` |
 | `production_variant_list` | `api_honey_production_variant_list()` | `honey_production_variant_summary()`, `ims_pdo()` |
+| `production_voided_list` | `api_honey_production_voided_list()` | `honey_production_voided_list()`, `ims_pdo()` |
+| `production_void` | `api_honey_production_void()` | `honey_production_void_lot()`, `ims_pdo()` |
+| `production_unvoid` | `api_honey_production_unvoid()` | `honey_production_unvoid_lot()`, `ims_pdo()` |
 | `production_stock_out` | `api_honey_production_stock_out()` | `honey_parse_bottle_lines_from_input()`, `honey_production_stock_out()`, `ims_pdo()` |
 | `packaging_list` | `api_honey_packaging_list()` | `ims_pdo()`, `honey_normalize_bottling_date()` |
 | `packaging_total_inventory` | `api_honey_packaging_total_inventory()` | `honey_packaging_total_inventory_snapshot()`, `ims_pdo()` |

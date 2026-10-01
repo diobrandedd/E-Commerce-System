@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-09-30T09:42:18+02:00
+generated: 2026-10-01T06:47:54+02:00
 type: module
 function_count: 13
 ---
@@ -29,7 +29,7 @@ function_count: 13
 
 - `api/v1/settings.php`:258 — `'packaging_deduct' => honey_packaging_deduct_enabled($pdo),`
 - `api/v1/settings.php`:275 — `$packagingDeduct = honey_packaging_deduct_enabled(ims_pdo());`
-- `includes/honey_inventory.php`:1672 — `if (!honey_packaging_deduct_enabled($pdo)) {`
+- `includes/honey_inventory.php`:1860 — `if (!honey_packaging_deduct_enabled($pdo)) {`
 
 ## honey_packaging_deduct_save {#honey_packaging_deduct_save}
 
@@ -49,11 +49,11 @@ function_count: 13
 
 - `api/v1/bottle_barcodes.php`:503 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
 - `api/v1/settings.php`:254 — `'ml_per_gallon' => honey_ml_per_gallon($pdo),`
-- `includes/honey_inventory.php`:496 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
-- `includes/honey_inventory.php`:531 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
-- `includes/honey_inventory.php`:1245 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
-- `includes/honey_inventory.php`:1532 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
-- `includes/honey_inventory.php`:1634 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
+- `includes/honey_inventory.php`:558 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
+- `includes/honey_inventory.php`:593 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
+- `includes/honey_inventory.php`:1433 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
+- `includes/honey_inventory.php`:1720 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
+- `includes/honey_inventory.php`:1822 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
 - `includes/rts_damaged_use.php`:313 — `$volumeGallons = honey_lines_to_gallons($deductLines, honey_ml_per_gallon($pdo));`
 
 ## honey_ml_per_gallon_save {#honey_ml_per_gallon_save}
@@ -69,9 +69,9 @@ function_count: 13
 - `api/v1/_costing_helpers.php`:143 — `$norm = honey_normalize_bottle_size((string) $size);`
 - `includes/catalog_bootstrap.php`:27 — `$norm = honey_normalize_bottle_size($size);`
 - `includes/catalog_bootstrap.php`:50 — `return honey_bottle_size_ml(honey_normalize_bottle_size($size)) / 1000.0;`
-- `includes/honey_inventory.php`:524 — `$size = honey_normalize_bottle_size($size);`
-- `includes/honey_inventory.php`:1514 — `$size = honey_normalize_bottle_size($size);`
-- `includes/honey_inventory.php`:1633 — `$size = honey_normalize_bottle_size($size);`
+- `includes/honey_inventory.php`:586 — `$size = honey_normalize_bottle_size($size);`
+- `includes/honey_inventory.php`:1702 — `$size = honey_normalize_bottle_size($size);`
+- `includes/honey_inventory.php`:1821 — `$size = honey_normalize_bottle_size($size);`
 - `includes/honey_volume.php`:115 — `return match (honey_normalize_bottle_size($size)) {`
 - `includes/honey_volume.php`:135 — `$size = honey_normalize_bottle_size((string) ($line['size'] ?? ''));`
 - `includes/honey_volume.php`:205 — `'size' => honey_normalize_bottle_size((string) ($line['size'] ?? '')),`
@@ -90,10 +90,10 @@ function_count: 13
 **Callers (5):**
 
 - `api/v1/bottle_barcodes.php`:509 — `honey_aggregate_bottle_lines([['size' => $size, 'qty' => 1]]),`
-- `includes/honey_inventory.php`:530 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
-- `includes/honey_inventory.php`:1244 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
-- `includes/honey_inventory.php`:1531 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
-- `includes/honey_inventory.php`:1650 — `honey_aggregate_bottle_lines([['size' => $size, 'qty' => 1]]),`
+- `includes/honey_inventory.php`:592 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
+- `includes/honey_inventory.php`:1432 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
+- `includes/honey_inventory.php`:1719 — `$sizeQtys = honey_aggregate_bottle_lines($lines);`
+- `includes/honey_inventory.php`:1838 — `honey_aggregate_bottle_lines([['size' => $size, 'qty' => 1]]),`
 
 ## honey_lines_total_ml {#honey_lines_total_ml}
 
@@ -112,15 +112,15 @@ function_count: 13
 **Callers (6):**
 
 - `api/v1/bottle_barcodes.php`:504 — `$usedGallons = honey_lines_to_gallons([['size' => $size, 'qty' => 1]], $mlPerGallon);`
-- `includes/honey_inventory.php`:532 — `$usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);`
-- `includes/honey_inventory.php`:1246 — `$usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);`
-- `includes/honey_inventory.php`:1533 — `$usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);`
-- `includes/honey_inventory.php`:1635 — `$usedGallons = honey_lines_to_gallons([['size' => $size, 'qty' => 1]], $mlPerGallon);`
+- `includes/honey_inventory.php`:594 — `$usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);`
+- `includes/honey_inventory.php`:1434 — `$usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);`
+- `includes/honey_inventory.php`:1721 — `$usedGallons = honey_lines_to_gallons($lines, $mlPerGallon);`
+- `includes/honey_inventory.php`:1823 — `$usedGallons = honey_lines_to_gallons([['size' => $size, 'qty' => 1]], $mlPerGallon);`
 - `includes/rts_damaged_use.php`:313 — `$volumeGallons = honey_lines_to_gallons($deductLines, honey_ml_per_gallon($pdo));`
 
 ## honey_parse_bottle_lines_from_input {#honey_parse_bottle_lines_from_input}
 
 **Callers (1):**
 
-- `api/v1/honey.php`:534 — `$lines = honey_parse_bottle_lines_from_input($input);`
+- `api/v1/honey.php`:584 — `$lines = honey_parse_bottle_lines_from_input($input);`
 
