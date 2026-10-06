@@ -100,6 +100,45 @@ function pos_mobile_authenticate(string $employeeId): ?array
     ];
 }
 
+/**
+ * Step-up check: employee ID must belong to an active executive.
+ * Does not create a session or token — caller keeps the current POS login.
+ *
+ * @return array{id:int,name:string,employee_id:string,role:string}|null
+ */
+function pos_mobile_verify_executive(string $employeeId): ?array
+{
+    $employeeId = trim($employeeId);
+    if ($employeeId === '') {
+        return null;
+    }
+    require_once __DIR__ . '/auth_check.php';
+    $pdo = ims_pdo();
+    $st = $pdo->prepare(
+        'SELECT u.id, u.name, u.employee_id, u.is_active, r.name AS role_name
+         FROM users u
+         INNER JOIN roles r ON r.id = u.role_id
+         WHERE u.employee_id = ?
+         LIMIT 1'
+    );
+    $st->execute([$employeeId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false || !(int) $row['is_active']) {
+        return null;
+    }
+    $role = (string) $row['role_name'];
+    if (!ims_is_executive($role)) {
+        return null;
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'name' => (string) $row['name'],
+        'employee_id' => trim((string) $row['employee_id']),
+        'role' => $role,
+    ];
+}
+
 /** @return list<array{id:int,username:string,name:string,role:string,dept_name:?string,assigned:bool}> */
 function pos_mobile_staff_candidates(PDO $pdo): array
 {

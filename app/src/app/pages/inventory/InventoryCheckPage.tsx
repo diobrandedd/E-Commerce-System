@@ -31,6 +31,8 @@ import {
 } from "@/app/lib/inventoryCheck";
 
 const SCAN_COOLDOWN_MS = 500;
+const HISTORY_PAGE_SIZE = 10;
+const APPLIED_PAGE_SIZE = 10;
 
 function varianceTone(variance: number): string {
   if (Math.abs(variance) < 0.001) return "text-muted-foreground";
@@ -41,6 +43,60 @@ function formatQty(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+function ListPager({
+  page,
+  perPage,
+  total,
+  loading,
+  onPrev,
+  onNext,
+  label,
+}: {
+  page: number;
+  perPage: number;
+  total: number;
+  loading?: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+  label: string;
+}) {
+  if (total <= 0) return null;
+  const from = (page - 1) * perPage + 1;
+  const to = Math.min(page * perPage, total);
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-1">
+      <p className="text-xs text-muted-foreground">
+        Showing {from}–{to} of {total} {label}
+        {loading ? "…" : ""}
+      </p>
+      {total > perPage ? (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="min-h-11"
+            disabled={page <= 1 || loading}
+            onClick={onPrev}
+          >
+            Previous
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="min-h-11"
+            disabled={page * perPage >= total || loading}
+            onClick={onNext}
+          >
+            Next
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function InventoryCheckPage() {
   const cameraTitleId = useId();
   const addCameraTitleId = useId();
@@ -49,6 +105,9 @@ export function InventoryCheckPage() {
   const [summary, setSummary] = useState<InventoryCheckSummary | null>(null);
   const [lines, setLines] = useState<InventoryCheckScan[]>([]);
   const [history, setHistory] = useState<InventoryCheckEvent[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [ok, setOk] = useState<string | null>(null);
@@ -90,6 +149,8 @@ export function InventoryCheckPage() {
   const [historyDetail, setHistoryDetail] = useState<InventoryCheckEvent | null>(null);
   const [appliedRuns, setAppliedRuns] = useState<InventoryCheckAppliedRun[]>([]);
   const [appliedRunsTotal, setAppliedRunsTotal] = useState(0);
+  const [appliedRunsPage, setAppliedRunsPage] = useState(1);
+  const [appliedRunsLoading, setAppliedRunsLoading] = useState(false);
   const [appliedRunDetail, setAppliedRunDetail] = useState<InventoryCheckAppliedRun | null>(null);
 
   const [editId, setEditId] = useState<number | null>(null);
@@ -149,23 +210,40 @@ export function InventoryCheckPage() {
   useEffect(() => {
     if (!showHistory) return;
     void (async () => {
+      setHistoryLoading(true);
       try {
-        const res = await inventoryCheckApi.eventList(1);
+        const res = await inventoryCheckApi.eventList(historyPage, HISTORY_PAGE_SIZE);
         setHistory(res.rows);
-        setSelectedHistoryIds([]);
-        if (canViewAll) {
-          const applied = await inventoryCheckApi.appliedRunsList(1, 25);
-          setAppliedRuns(applied.rows);
-          setAppliedRunsTotal(applied.total);
-        } else {
-          setAppliedRuns([]);
-          setAppliedRunsTotal(0);
-        }
+        setHistoryTotal(res.total);
+        setHistoryPage(res.page);
       } catch (e) {
         setError(e instanceof ApiError ? e.message : "Could not load audit history.");
+      } finally {
+        setHistoryLoading(false);
       }
     })();
-  }, [showHistory, canViewAll]);
+  }, [showHistory, historyPage]);
+
+  useEffect(() => {
+    if (!showHistory || !canViewAll) {
+      setAppliedRuns([]);
+      setAppliedRunsTotal(0);
+      return;
+    }
+    void (async () => {
+      setAppliedRunsLoading(true);
+      try {
+        const applied = await inventoryCheckApi.appliedRunsList(appliedRunsPage, APPLIED_PAGE_SIZE);
+        setAppliedRuns(applied.rows);
+        setAppliedRunsTotal(applied.total);
+        setAppliedRunsPage(applied.page);
+      } catch (e) {
+        setError(e instanceof ApiError ? e.message : "Could not load confirmed updates.");
+      } finally {
+        setAppliedRunsLoading(false);
+      }
+    })();
+  }, [showHistory, canViewAll, appliedRunsPage]);
 
   const openCount = async () => {
     setBusy(true);
@@ -182,7 +260,8 @@ export function InventoryCheckPage() {
   };
 
   const compareSelectedHistory = async () => {
-    const closedIds = selectedHistoryIds.filter(id => history.find(h => h.id === id)?.status === "closed");
+    // Selection may span pages — only closed audits can be checked in the UI.
+    const closedIds = [...selectedHistoryIds];
     if (closedIds.length < 1) {
       setError("Select at least one closed audit to compare.");
       return;
@@ -517,6 +596,9 @@ export function InventoryCheckPage() {
       setOk("Audit completed and saved to history. Stock was not changed.");
       closeAddModal();
       await loadContext({ silent: true });
+      setHistoryPage(1);
+      setAppliedRunsPage(1);
+      setSelectedHistoryIds([]);
       setShowHistory(true);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not complete the audit.");
@@ -541,7 +623,7 @@ export function InventoryCheckPage() {
     setBusy(true);
     setError(null);
     try {
-      const closedIds = selectedHistoryIds.filter(id => history.find(h => h.id === id)?.status === "closed");
+      const closedIds = [...selectedHistoryIds];
       if (closedIds.length < 1) throw new Error("Select at least one closed audit.");
       const res = await inventoryCheckApi.finalizeMerged(closedIds, adminPassword);
       setCompare(res.compare);
@@ -556,11 +638,14 @@ export function InventoryCheckPage() {
       setCompareOpen(false);
       await loadContext({ silent: true });
       try {
-        const applied = await inventoryCheckApi.appliedRunsList(1, 25);
+        setHistoryPage(1);
+        setAppliedRunsPage(1);
+        const applied = await inventoryCheckApi.appliedRunsList(1, APPLIED_PAGE_SIZE);
         setAppliedRuns(applied.rows);
         setAppliedRunsTotal(applied.total);
-        const hist = await inventoryCheckApi.eventList(1);
+        const hist = await inventoryCheckApi.eventList(1, HISTORY_PAGE_SIZE);
         setHistory(hist.rows);
+        setHistoryTotal(hist.total);
       } catch {
         /* history refresh is best-effort */
       }
@@ -623,7 +708,16 @@ export function InventoryCheckPage() {
               size="sm"
               variant="outline"
               className="min-h-11 flex-1 sm:flex-none"
-              onClick={() => setShowHistory(h => !h)}
+              onClick={() =>
+                setShowHistory(h => {
+                  if (!h) {
+                    setHistoryPage(1);
+                    setAppliedRunsPage(1);
+                    setSelectedHistoryIds([]);
+                  }
+                  return !h;
+                })
+              }
             >
               {showHistory ? "My session" : "History"}
             </Button>
@@ -799,6 +893,15 @@ export function InventoryCheckPage() {
                     </tbody>
                   </table>
                 </div>
+                <ListPager
+                  page={historyPage}
+                  perPage={HISTORY_PAGE_SIZE}
+                  total={historyTotal}
+                  loading={historyLoading}
+                  label="audits"
+                  onPrev={() => setHistoryPage(p => Math.max(1, p - 1))}
+                  onNext={() => setHistoryPage(p => p + 1)}
+                />
               </>
             )}
             {canViewAll ? (
@@ -902,11 +1005,15 @@ export function InventoryCheckPage() {
                         </tbody>
                       </table>
                     </div>
-                    {appliedRunsTotal > appliedRuns.length ? (
-                      <p className="text-xs text-muted-foreground">
-                        Showing {appliedRuns.length} of {appliedRunsTotal} confirmed updates.
-                      </p>
-                    ) : null}
+                    <ListPager
+                      page={appliedRunsPage}
+                      perPage={APPLIED_PAGE_SIZE}
+                      total={appliedRunsTotal}
+                      loading={appliedRunsLoading}
+                      label="confirmed updates"
+                      onPrev={() => setAppliedRunsPage(p => Math.max(1, p - 1))}
+                      onNext={() => setAppliedRunsPage(p => p + 1)}
+                    />
                   </>
                 )}
               </div>

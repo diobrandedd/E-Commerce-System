@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-02 — Check inventory history paginated (10/page)
+**Change:** Audit history + confirmed updates lists use Previous/Next at 10 rows per page. → [[problems/records/2026-10-02_inventory-check-history-pagination]]
+
 ### 2026-10-01 — Add deliveries auto-opens parcel camera after scan
 **Change:** Photo tab auto-clicks capture input once per TN after waybill scan → preview. → [[problems/records/2026-10-01_deliveries-auto-open-parcel-camera]]
 

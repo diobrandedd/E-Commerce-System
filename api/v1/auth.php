@@ -14,6 +14,8 @@ require_once dirname(__DIR__, 2) . '/includes/api_tokens.php';
  *   GET  ?action=me                 -> current user + csrf token
  *   POST ?action=login              -> {username, password}
  *   POST ?action=pos_login          -> {pin}
+ *   POST ?action=pos_staff_login    -> {pin|password|employee_id}
+ *   POST ?action=verify_executive   -> {pin|password|employee_id} (Bearer required; no new token)
  *   POST ?action=logout             -> destroys both IMS + POS sessions
  *   POST ?action=change_password    -> {current, next}
  */
@@ -23,6 +25,7 @@ api_dispatch([
     'login' => 'api_auth_login',
     'pos_login' => 'api_auth_pos_login',
     'pos_staff_login' => 'api_auth_pos_staff_login',
+    'verify_executive' => 'api_auth_verify_executive',
     'logout' => 'api_auth_logout',
     'change_password' => 'api_auth_change_password',
 ]);
@@ -261,6 +264,50 @@ function api_auth_pos_staff_login(): void
     }
 
     api_ok($payload);
+}
+
+/**
+ * Step-up: confirm an executive employee ID without replacing the POS session/token.
+ * Requires an already-authenticated IMS/POS Bearer (or session) user.
+ */
+function api_auth_verify_executive(): void
+{
+    api_method_allowed(['POST']);
+    api_require_ims_user();
+    $input = api_input();
+    if (!api_is_bearer_auth()) {
+        api_require_csrf($input);
+    }
+    $pin = trim((string) ($input['pin'] ?? $input['password'] ?? $input['employee_id'] ?? ''));
+    if ($pin === '') {
+        api_fail('Executive employee ID is required.', 422);
+    }
+
+    $exec = pos_mobile_verify_executive($pin);
+    if ($exec === null) {
+        $pdo = ims_pdo();
+        $st = $pdo->prepare(
+            'SELECT u.id, u.is_active, r.name AS role_name
+             FROM users u
+             INNER JOIN roles r ON r.id = u.role_id
+             WHERE u.employee_id = ?
+             LIMIT 1'
+        );
+        $st->execute([$pin]);
+        $probe = $st->fetch(PDO::FETCH_ASSOC);
+        if ($probe !== false && (int) $probe['is_active'] === 1) {
+            api_fail('Only an executive employee ID can authorize this.', 403);
+        }
+        api_fail('Invalid executive employee ID.', 401);
+    }
+
+    api_ok([
+        'ok' => true,
+        'executive' => [
+            'name' => $exec['name'],
+            'employee_id' => $exec['employee_id'],
+        ],
+    ]);
 }
 
 function api_auth_logout(): void

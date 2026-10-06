@@ -54,6 +54,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-10-02_inventory-check-history-pagination]] — Check inventory history + confirmed updates 10/page
 - [[records/2026-10-01_deliveries-auto-open-parcel-camera]] — Add deliveries auto-opens parcel camera after scan
 - [[records/2026-10-01_honey-packaging-scanner-variant-size]] — Packaging scanned-by person shows variant + size
 - [[records/2026-10-01_honey-production-stock-out-actor]] — Production lots show who moved WH → production
