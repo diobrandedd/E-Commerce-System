@@ -4,6 +4,7 @@ import {
   ArrowUp,
   BookOpen,
   ChevronRight,
+  History,
   Loader2,
   Package,
   Plus,
@@ -18,6 +19,7 @@ import { PageLayout } from "@/app/components/PageLayout";
 import { MaterialCatalogModal } from "@/app/components/inventory/MaterialCatalogModal";
 import { PackagingInventoryGuideModal } from "@/app/components/inventory/PackagingInventoryGuideModal";
 import { PackagingScanStockOutModal } from "@/app/components/inventory/PackagingScanStockOutModal";
+import { PackagingStockOutHistoryModal } from "@/app/components/inventory/PackagingStockOutHistoryModal";
 import { runPackagingInventoryTour } from "@/app/components/tour/guides/packagingInventoryTour";
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { PackagingMaterialDetailModal } from "@/app/components/inventory/PackagingMaterialDetailModal";
@@ -201,6 +203,7 @@ export function PackagingMaterialsPage() {
   const [detailRow, setDetailRow] = useState<MaterialStockRow | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StockFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("name");
@@ -341,6 +344,15 @@ export function PackagingMaterialsPage() {
             <AppPressable type="button" onClick={() => setGuideOpen(true)} className={appHeaderActionClass}>
               <BookOpen size={13} /> Guide
             </AppPressable>
+            {canView && (
+              <AppPressable
+                type="button"
+                onClick={() => setHistoryOpen(true)}
+                className={appHeaderActionClass}
+              >
+                <History size={13} /> History
+              </AppPressable>
+            )}
             <Button type="button" variant="outline" size="sm" onClick={openPrintSheet}>
               <Printer className="size-3.5" /> Generate all barcodes
             </Button>
@@ -670,6 +682,7 @@ export function PackagingMaterialsPage() {
         <PackagingMobileActionsModal
           canCreate={isExec}
           canDeduct={canDeduct}
+          canViewHistory={canView}
           onClose={() => setActionsOpen(false)}
           onAddItem={() => {
             setActionsOpen(false);
@@ -683,6 +696,16 @@ export function PackagingMaterialsPage() {
             setActionsOpen(false);
             openPrintSheet();
           }}
+          onHistory={() => {
+            setActionsOpen(false);
+            setHistoryOpen(true);
+          }}
+        />
+      )}
+      {historyOpen && canView && (
+        <PackagingStockOutHistoryModal
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
         />
       )}
       {detailRow && (
@@ -711,22 +734,39 @@ export function PackagingMaterialsPage() {
 function PackagingMobileActionsModal({
   canCreate,
   canDeduct,
+  canViewHistory,
   onClose,
   onAddItem,
   onScan,
   onPrint,
+  onHistory,
 }: {
   canCreate: boolean;
   canDeduct: boolean;
+  canViewHistory: boolean;
   onClose: () => void;
   onAddItem: () => void;
   onScan: () => void;
   onPrint: () => void;
+  onHistory: () => void;
 }) {
   return (
     <AppModal open onClose={onClose} panelClassName="max-w-sm w-full" labelledBy="packaging-actions-title">
       <AppModalHeader title="Packaging actions" titleId="packaging-actions-title" onClose={onClose} />
       <AppModalBody className="space-y-2">
+        {canViewHistory && (
+          <button
+            type="button"
+            onClick={onHistory}
+            className={cn(
+              "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-border text-sm font-medium",
+              appHoverRow,
+            )}
+          >
+            <History size={16} className="text-muted-foreground shrink-0" aria-hidden />
+            Stock-out history
+          </button>
+        )}
         <button
           type="button"
           onClick={onPrint}

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-06T06:43:51+02:00
+generated: 2026-10-06T09:41:23+02:00
 type: memory-bank
 ---
 
@@ -406,6 +406,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `packaging_print_sheet` | `api_materials_packaging_print_sheet()` | `ims_user_can()`, `material_inventory_role_can_issue_packing()`, `material_packaging_print_sheet_html()`, `ims_pdo()` |
 | `packaging_lookup_barcode` | `api_materials_packaging_lookup_barcode()` | `ims_user_can()`, `material_inventory_role_can_deduct_packaging()`, `material_packaging_lookup_by_barcode()`, `ims_pdo()`, `material_inventory_role_can_stock_in_packaging()` |
 | `packaging_access_roster` | `api_materials_packaging_access_roster()` | `ims_user_can()`, `material_packaging_access_roster()`, `ims_pdo()` |
+| `packaging_stock_out_history` | `api_materials_packaging_stock_out_history()` | `ims_user_can()`, `material_packaging_stock_out_history()`, `ims_pdo()` |
 
 ### `online_orders.php`
 

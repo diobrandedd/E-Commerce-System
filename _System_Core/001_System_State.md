@@ -8,7 +8,7 @@
 |-------|------|
 | **Active Spec** | — |
 | **Active Plan** | — |
-| **Status** | `shipped` - Packaging barcodes + scan stock-out + level % |
+| **Status** | `shipped` - Packaging stock-out history page |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

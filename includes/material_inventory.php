@@ -1431,6 +1431,151 @@ function material_packaging_recent_entries(PDO $pdo, int $stockId, int $limit = 
     return material_pool_recent_entries($pdo, $stockId, $limit);
 }
 
+/**
+ * Cross-item packaging scan/manual stock-out history (`use:` entries only).
+ *
+ * @param array{
+ *   q?: string,
+ *   stock_id?: int,
+ *   user_id?: int,
+ *   from?: string,
+ *   to?: string
+ * } $filters
+ * @return array{
+ *   rows: list<array<string, mixed>>,
+ *   total: int,
+ *   page: int,
+ *   per_page: int,
+ *   actors: list<array{id: int, name: string}>
+ * }
+ */
+function material_packaging_stock_out_history(
+    PDO $pdo,
+    array $filters = [],
+    int $page = 1,
+    int $perPage = 50
+): array {
+    $page = max(1, $page);
+    $perPage = max(1, min(100, $perPage));
+    $offset = ($page - 1) * $perPage;
+
+    $where = [
+        "s.category = 'packaging'",
+        'se.qty < 0',
+        "se.supplier_batch_no LIKE 'use:%'",
+    ];
+    $params = [];
+
+    $q = trim((string) ($filters['q'] ?? ''));
+    if ($q !== '') {
+        $where[] = '(s.name LIKE ? OR se.supplier_batch_no LIKE ? OR u.name LIKE ?)';
+        $like = '%' . $q . '%';
+        $params[] = $like;
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    $stockId = (int) ($filters['stock_id'] ?? 0);
+    if ($stockId > 0) {
+        $where[] = 'se.stock_id = ?';
+        $params[] = $stockId;
+    }
+
+    $userId = (int) ($filters['user_id'] ?? 0);
+    if ($userId > 0) {
+        $where[] = 'se.entered_by = ?';
+        $params[] = $userId;
+    }
+
+    $from = trim((string) ($filters['from'] ?? ''));
+    if ($from !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+        $where[] = 'se.created_at >= ?';
+        $params[] = $from . ' 00:00:00';
+    }
+
+    $to = trim((string) ($filters['to'] ?? ''));
+    if ($to !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
+        $where[] = 'se.created_at <= ?';
+        $params[] = $to . ' 23:59:59';
+    }
+
+    $whereSql = implode(' AND ', $where);
+
+    $countSt = $pdo->prepare(
+        "SELECT COUNT(*)
+         FROM stock_entries se
+         INNER JOIN stocks s ON s.id = se.stock_id
+         LEFT JOIN users u ON u.id = se.entered_by
+         WHERE {$whereSql}"
+    );
+    $countSt->execute($params);
+    $total = (int) $countSt->fetchColumn();
+
+    $listSt = $pdo->prepare(
+        "SELECT se.id, se.stock_id, se.qty, se.supplier_batch_no, se.created_at, se.entered_by,
+                s.name AS stock_name, s.unit,
+                u.name AS entered_by_name
+         FROM stock_entries se
+         INNER JOIN stocks s ON s.id = se.stock_id
+         LEFT JOIN users u ON u.id = se.entered_by
+         WHERE {$whereSql}
+         ORDER BY se.created_at DESC, se.id DESC
+         LIMIT {$perPage} OFFSET {$offset}"
+    );
+    $listSt->execute($params);
+    $rawRows = $listSt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    $rows = [];
+    foreach ($rawRows as $row) {
+        $label = (string) ($row['supplier_batch_no'] ?? '');
+        $reason = $label;
+        if (str_starts_with($label, 'use:')) {
+            $reason = trim(substr($label, 4));
+        }
+        $qtyAbs = abs(round((float) ($row['qty'] ?? 0), 2));
+        $rows[] = [
+            'id' => (int) $row['id'],
+            'stock_id' => (int) $row['stock_id'],
+            'stock_name' => (string) $row['stock_name'],
+            'unit' => (string) ($row['unit'] ?? 'pcs'),
+            'qty' => $qtyAbs,
+            'reason' => $reason,
+            'entered_by' => (int) ($row['entered_by'] ?? 0),
+            'entered_by_name' => $row['entered_by_name'] !== null && $row['entered_by_name'] !== ''
+                ? (string) $row['entered_by_name']
+                : null,
+            'created_at' => (string) ($row['created_at'] ?? ''),
+        ];
+    }
+
+    $actorsSt = $pdo->query(
+        "SELECT DISTINCT u.id, u.name
+         FROM stock_entries se
+         INNER JOIN stocks s ON s.id = se.stock_id
+         INNER JOIN users u ON u.id = se.entered_by
+         WHERE s.category = 'packaging'
+           AND se.qty < 0
+           AND se.supplier_batch_no LIKE 'use:%'
+         ORDER BY u.name ASC"
+    );
+    $actorsRaw = $actorsSt ? ($actorsSt->fetchAll(PDO::FETCH_ASSOC) ?: []) : [];
+    $actors = [];
+    foreach ($actorsRaw as $actor) {
+        $actors[] = [
+            'id' => (int) $actor['id'],
+            'name' => (string) $actor['name'],
+        ];
+    }
+
+    return [
+        'rows' => $rows,
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'actors' => $actors,
+    ];
+}
+
 /** @return list<array<string, mixed>> */
 function material_supply_recent_entries(PDO $pdo, int $stockId, int $limit = 25): array
 {

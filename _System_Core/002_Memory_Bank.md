@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-06 — Packaging stock-out history page
+**Change:** Cross-item history of scan/manual packaging stock-outs (who, qty, reason, when) via History modal on Packaging Materials (`packaging.view`). → [[problems/records/2026-10-06_packaging-stock-out-history]]
+
 ### 2026-10-06 — Packaging barcodes + scan stock-out + level %
 **Change:** Permanent packaging barcodes, Generate all A4 (name under bars), scan stock-out, level % vs last lot, exec-only stock-in; remove bottling/produce packaging auto-deduct. → [[problems/records/2026-10-06_packaging-barcode-scan-stockout]]
 

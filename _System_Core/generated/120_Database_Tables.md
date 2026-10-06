@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-10-06T06:43:52+02:00
+generated: 2026-10-06T09:41:23+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -253,6 +253,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_applied_runs_list]] |
 | `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_out_history]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_unread_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_access_roster]] |
@@ -343,6 +344,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_for_use]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_fulfillment_line]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#parcel_fulfillment_revert_deduct]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_out_history]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_set_on_hand]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_apply_issue]] |
@@ -388,6 +390,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_for_use]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_fulfillment_line]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_stock_out_history]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_stock_in_lot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_set_on_hand]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_apply_issue]] |

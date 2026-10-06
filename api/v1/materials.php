@@ -33,6 +33,7 @@ api_dispatch([
     'packaging_print_sheet' => 'api_materials_packaging_print_sheet',
     'packaging_lookup_barcode' => 'api_materials_packaging_lookup_barcode',
     'packaging_access_roster' => 'api_materials_packaging_access_roster',
+    'packaging_stock_out_history' => 'api_materials_packaging_stock_out_history',
 ]);
 
 function api_materials_require_view(): array
@@ -762,4 +763,23 @@ function api_materials_packaging_access_roster(): void
         api_fail('Forbidden.', 403);
     }
     api_ok(material_packaging_access_roster(ims_pdo()));
+}
+
+function api_materials_packaging_stock_out_history(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'packaging.view')) {
+        api_fail('Forbidden.', 403);
+    }
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $perPage = max(1, min(100, (int) ($_GET['per_page'] ?? 50)));
+    $filters = [
+        'q' => trim((string) ($_GET['q'] ?? '')),
+        'stock_id' => (int) ($_GET['stock_id'] ?? 0),
+        'user_id' => (int) ($_GET['user_id'] ?? 0),
+        'from' => trim((string) ($_GET['from'] ?? '')),
+        'to' => trim((string) ($_GET['to'] ?? '')),
+    ];
+    api_ok(material_packaging_stock_out_history(ims_pdo(), $filters, $page, $perPage));
 }

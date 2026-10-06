@@ -202,6 +202,49 @@ export function fetchPackagingAccessRoster() {
   }>("materials.php", "packaging_access_roster");
 }
 
+export interface PackagingStockOutHistoryRow {
+  id: number;
+  stock_id: number;
+  stock_name: string;
+  unit: string;
+  qty: number;
+  reason: string;
+  entered_by: number;
+  entered_by_name: string | null;
+  created_at: string;
+}
+
+export interface PackagingStockOutHistoryActor {
+  id: number;
+  name: string;
+}
+
+export function fetchPackagingStockOutHistory(params: {
+  q?: string;
+  stock_id?: number;
+  user_id?: number;
+  from?: string;
+  to?: string;
+  page?: number;
+  per_page?: number;
+}) {
+  const query: Record<string, string | number> = {};
+  if (params.q) query.q = params.q;
+  if (params.stock_id && params.stock_id > 0) query.stock_id = params.stock_id;
+  if (params.user_id && params.user_id > 0) query.user_id = params.user_id;
+  if (params.from) query.from = params.from;
+  if (params.to) query.to = params.to;
+  if (params.page) query.page = params.page;
+  if (params.per_page) query.per_page = params.per_page;
+  return apiGet<{
+    rows: PackagingStockOutHistoryRow[];
+    total: number;
+    page: number;
+    per_page: number;
+    actors: PackagingStockOutHistoryActor[];
+  }>("materials.php", "packaging_stock_out_history", query);
+}
+
 export function setPackagingPoolYield(payload: {
   stock_id: number;
   pool_yield_qty: number;

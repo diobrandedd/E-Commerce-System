@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-10-06T06:37:58+02:00
+generated: 2026-10-06T09:40:43+02:00
 type: spa
 ---
 
@@ -185,6 +185,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/inventory/PackagingPriceLotModal.tsx`
 - `app/src/app/components/inventory/PackagingScanStockOutModal.tsx`
 - `app/src/app/components/inventory/PackagingStockInLotModal.tsx`
+- `app/src/app/components/inventory/PackagingStockOutHistoryModal.tsx`
 - `app/src/app/components/inventory/ParagisProductionGuideModal.tsx`
 - `app/src/app/components/inventory/SuppliesInventoryGuideModal.tsx`
 - `app/src/app/components/inventory/SupplyIssueRequestModal.tsx`
