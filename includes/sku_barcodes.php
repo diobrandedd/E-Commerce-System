@@ -1332,7 +1332,8 @@ function sku_barcode_dept_deduct(
     string $productKey,
     int $qty,
     string $pool,
-    string $saleType
+    string $saleType,
+    ?int $saleId = null
 ): void {
     require_once __DIR__ . '/dept_pouch_barcodes.php';
     require_once __DIR__ . '/rts_inventory_sync.php';
@@ -1350,6 +1351,7 @@ function sku_barcode_dept_deduct(
             'sellable',
             [
                 'used_where' => $saleType === 'walk_in' ? 'pos' : 'packaging',
+                'pos_sale_id' => $saleId,
                 'actor_user_id' => $userId > 0 ? $userId : null,
             ]
         );

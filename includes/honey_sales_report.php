@@ -82,6 +82,10 @@ function honey_sales_rts_scan_units(PDO $pdo, ?array $range): array
     $parcelExpr = $hasParcelCol ? 'h.online_parcel_id' : 'NULL';
     $qtyOtherExpr = $hasQtyOther ? 'COALESCE(h.qty_other, 0)' : '0';
 
+    // Count real RTS pack/POS lines: unique stickers, pack sessions, parcels, dept qty,
+    // or POS SKU honey rows linked via pos_sale_id (skip bare FIFO deduct mirrors).
+    $hasPosCol = rts_db_has_column($pdo, 'honey_sales_log', 'pos_sale_id');
+    $posExpr = $hasPosCol ? 'h.pos_sale_id' : 'NULL';
     $where = " WHERE h.source = 'rts'
                  AND h.sale_type IN ('walk_in','parcel')
                  AND (
@@ -89,6 +93,7 @@ function honey_sales_rts_scan_units(PDO $pdo, ?array $range): array
                    OR ({$sessExpr} IS NOT NULL)
                    OR ({$parcelExpr} IS NOT NULL)
                    OR ({$qtyOtherExpr} > 0)
+                   OR ({$posExpr} IS NOT NULL)
                  )";
     $params = [];
     if ($range !== null) {
@@ -133,7 +138,8 @@ function honey_sales_rts_scan_units(PDO $pdo, ?array $range): array
  */
 function honey_sales_pos_checkout_where_clause(?array $range, ?string $receiptSearch = null, string $saleType = 'all'): array
 {
-    $where = ' WHERE h.source = "packaging" AND h.sale_type = "walk_in" AND h.pos_sale_id IS NOT NULL';
+    // Packaging pool + RTS sellable pool walk-in POS lines (both write honey_sales_log with pos_sale_id).
+    $where = ' WHERE h.source IN ("packaging", "rts") AND h.sale_type = "walk_in" AND h.pos_sale_id IS NOT NULL';
     $params = [];
     if ($range !== null) {
         $where .= ' AND ps.sale_date >= ? AND ps.sale_date <= ?';
@@ -206,8 +212,10 @@ function honey_sales_product_exists_clause(string $product): array
  */
 function honey_sales_checkout_where_clause(?array $range, ?string $receiptSearch = null, string $saleType = 'all', string $product = 'all'): array
 {
+    // Include RTS sellable POS honey (source=rts). Previously only packaging honey was listed,
+    // so RTS SKU checkouts deducted stock but vanished from app History / RTS sales.
     $where = ' WHERE (EXISTS (SELECT 1 FROM honey_sales_log h
-                              WHERE h.pos_sale_id = ps.id AND h.source = "packaging" AND h.sale_type = "walk_in")
+                              WHERE h.pos_sale_id = ps.id AND h.source IN ("packaging", "rts") AND h.sale_type = "walk_in")
                       OR EXISTS (SELECT 1 FROM pos_receipt_items pri
                                  INNER JOIN products p ON p.id = pri.product_id
                                  WHERE pri.sale_id = ps.id

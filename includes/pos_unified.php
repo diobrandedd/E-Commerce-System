@@ -468,7 +468,8 @@ function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buye
                         (string) $line['product_key'],
                         (int) $line['qty'],
                         (string) ($line['pool'] ?? 'finished'),
-                        'walk_in'
+                        'walk_in',
+                        $saleId
                     );
                 } else {
                     dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);
@@ -632,7 +633,8 @@ function pos_unified_ar_checkout(PDO $pdo, array $actor, array $items, array $de
                         (string) $line['product_key'],
                         (int) $line['qty'],
                         (string) ($line['pool'] ?? 'finished'),
-                        'walk_in'
+                        'walk_in',
+                        $saleId
                     );
                 } else {
                     dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);
