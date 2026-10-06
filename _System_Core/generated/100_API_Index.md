@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-02T09:55:03+02:00
+generated: 2026-10-06T05:01:39+02:00
 type: memory-bank
 ---
 
@@ -47,6 +47,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `login` | `api_auth_login()` | `ims_login_user()`, `ims_current_user()`, `ims_user_permissions()`, `rts_forwarding_api_payload()` |
 | `pos_login` | `api_auth_pos_login()` | `ims_login_pos()`, `rts_forwarding_api_payload()`, `pos_api_token_issue()`, `ims_pdo()` |
 | `pos_staff_login` | `api_auth_pos_staff_login()` | `pos_mobile_authenticate()`, `ims_pdo()`, `pos_mobile_user_can_login()`, `ims_user_permissions()`, `rts_forwarding_api_payload()`, `pos_api_token_issue()` |
+| `verify_executive` | `api_auth_verify_executive()` | `pos_mobile_verify_executive()`, `ims_pdo()` |
 | `logout` | `api_auth_logout()` | `pos_api_bearer_from_request()`, `pos_api_token_revoke_plain()`, `ims_pdo()`, `ims_logout()` |
 | `change_password` | `api_auth_change_password()` | `ims_change_password()` |
 

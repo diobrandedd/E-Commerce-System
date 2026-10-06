@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-10-02T09:55:14+02:00
+generated: 2026-10-06T05:01:48+02:00
 type: module
 function_count: 4
 ---
@@ -62,7 +62,7 @@ function_count: 4
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (394):**
+**Callers (396):**
 
 - `api/v1/_bootstrap.php`:204 — `$pdo = ims_pdo();`
 - `api/v1/ar.php`:33 — `api_ok(['products' => ar_credits_sellable_products(ims_pdo())]);`
@@ -71,10 +71,11 @@ function_count: 4
 - `api/v1/ar.php`:87 — `$result = ar_credits_take_for_user(ims_pdo(), (int) $user['id'], $productId, $qty);`
 - `api/v1/ar.php`:107 — `ar_credits_mark_paid(ims_pdo(), $id, (int) $user['id']);`
 - `api/v1/ar.php`:127 — `ar_credits_mark_unpaid(ims_pdo(), $id);`
-- `api/v1/auth.php`:173 — `$issued = pos_api_token_issue(ims_pdo(), [`
-- `api/v1/auth.php`:205 — `$pdo = ims_pdo();`
-- `api/v1/auth.php`:251 — `$issued = pos_api_token_issue(ims_pdo(), [`
-- `api/v1/auth.php`:272 — `pos_api_token_revoke_plain(ims_pdo(), $plain);`
+- `api/v1/auth.php`:176 — `$issued = pos_api_token_issue(ims_pdo(), [`
+- `api/v1/auth.php`:208 — `$pdo = ims_pdo();`
+- `api/v1/auth.php`:254 — `$issued = pos_api_token_issue(ims_pdo(), [`
+- `api/v1/auth.php`:288 — `$pdo = ims_pdo();`
+- `api/v1/auth.php`:319 — `pos_api_token_revoke_plain(ims_pdo(), $plain);`
 - `api/v1/barcode_verify.php`:25 — `api_ok(['result' => barcode_verify_lookup(ims_pdo(), $code)]);`
 - `api/v1/bottle_barcodes.php`:129 — `api_ok(['rows' => honey_bottle_packaging_options(ims_pdo())]);`
 - `api/v1/bottle_barcodes.php`:140 — `ims_pdo(),`
@@ -88,6 +89,5 @@ function_count: 4
 - `api/v1/bottle_barcodes.php`:247 — `ims_pdo(),`
 - `api/v1/bottle_barcodes.php`:263 — `api_ok(['count' => honey_bottle_pending_request_count(ims_pdo())]);`
 - `api/v1/bottle_barcodes.php`:277 — `$req = honey_bottle_request_get(ims_pdo(), $requestId);`
-- `api/v1/bottle_barcodes.php`:278 — `$sku = sku_barcode_fetch_honey(ims_pdo(), (string) $req['variant'], (string) $req['size']);`
-- _… and 369 more (run impact.php for full list)_
+- _… and 371 more (run impact.php for full list)_
 
