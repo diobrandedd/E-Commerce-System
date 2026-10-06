@@ -1,42 +1,46 @@
 ---
 type: fix
-tags: [fix, packaging, inventory, roles, hr, prod_manager, executive, staging]
+tags: [pattern, packaging, inventory, roles, hr, prod_manager, executive, barcodes, scan]
 ---
 
-# Fix: Packaging Materials — HR price / PM stock-in / packing staging
+# Fix: Packaging Materials — exec stock-in / scan stock-out / barcodes
 
-## Operational model (2026-06-17)
+## Operational model (2026-10-06)
 
 | Role | Warehouse packaging (`stocks.on_hand`) | For-packing staging | On-hold parcels |
 |------|----------------------------------------|---------------------|-----------------|
-| **HR** | **Update price from invoice** only — no qty stock-in | — | — |
-| **prod_manager** | **Stock in lot** + **deduct for use** | **Issue** materials, view counters | Re-waybill + ship (Deliveries) |
+| **HR** | View / requests (no stock-in) | — | — |
+| **prod_manager** (+ staff with `packaging.deduct`) | **Scan / deduct for use** | **Issue** materials, view counters | Re-waybill + ship (Deliveries) |
 | **csr_tl** | No access | No access | **View only** (Online Parcels `on_hold`) |
-| **Executive** | All + set on-hand, pool yield, catalog | All | All |
+| **Executive** | Stock-in lot, catalog, set on-hand, pool yield, print barcodes, deduct | All | All |
 
 **Ship deduct:** fulfillment packaging consumes **staging** (`fulfillment_packing_balances.consumed_qty`), not warehouse `on_hand`. PM must **issue** to packing before ship.
+
+**Product create:** honey bottling / dept produce **do not** auto-deduct packaging materials. Scan stock-out is required.
+
+**Level %:** `on_hand / last lot:% stock_entries qty × 100`.
 
 ## API / helpers
 
 | Action | Role | Helper |
 |--------|------|--------|
-| `stock_in_lot` (packaging) | PM, exec | `material_inventory_role_can_stock_in_packaging()` |
-| `packaging_price_lot` | HR, exec | `material_inventory_role_can_edit_packaging_price()` |
+| `stock_in_lot` (packaging) | Executive only | `material_inventory_role_can_stock_in_packaging()` |
+| `packaging_deduct` / scan | `packaging.deduct` | `material_packaging_deduct_for_use` |
+| `packaging_print_sheet` | `packaging.view` | `material_packaging_print_sheet_html` |
+| `packaging_lookup_barcode` | view/deduct | `material_packaging_lookup_by_barcode` |
+| `packaging_access_roster` | view | `material_packaging_access_roster` |
 | `packing_issue_create` | PM, exec | `material_inventory_role_can_issue_packing()` |
-| `hold_parcel` / `rewaybill` | PM, exec | Deliveries |
 
 ## SPA
 
-- **For packing:** `/fulfillment/packing-materials` — `PackingMaterialsStagingPage.tsx`
-- **HR:** `PackagingPriceLotModal` on packaging detail (not stock-in)
-- **PM:** stock-in + staging issue; Deliveries tabs Ship / On hold / Re-waybill
-- **CSR TL:** Online Parcels filter `on_hold` (read-only)
+- Packaging Materials: Level column, Generate all barcodes, Scan stock out, access strip
+- Guide updated for scan-first workflow
 
 ## Files
 
-- `includes/fulfillment_packing.php`
-- `includes/material_inventory.php` — `parcel_fulfillment_apply_deduct` → staging
-- `api/v1/fulfillment_packing.php`, `api/v1/materials.php`, `api/v1/deliveries.php`
-- `sql/migration_phase34_fulfillment_packing_staging.sql`
-
-Supersedes HR stock-in row in prior version of this doc.
+- `sql/migration_phase90_packaging_material_barcodes.sql`
+- `includes/material_inventory.php`, `honey_inventory.php`, `dept_production.php`, `honey_volume.php`, `permissions.php`
+- `api/v1/materials.php`
+- `app/src/app/pages/inventory/PackagingMaterialsPage.tsx`
+- `app/src/app/components/inventory/PackagingScanStockOutModal.tsx`
+- Spec: [[specs/2026-10-06_packaging-barcode-stock-out]]

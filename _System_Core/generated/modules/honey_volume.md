@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-10-06T05:02:10+02:00
+generated: 2026-10-06T06:40:01+02:00
 type: module
 function_count: 13
 ---
@@ -19,17 +19,16 @@ function_count: 13
 
 ## honey_setting_parse_bool {#honey_setting_parse_bool}
 
-**Callers (1):**
+**Callers (0):**
 
-- `includes/honey_volume.php`:44 — `return honey_setting_parse_bool(app_setting_get($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, null), true);`
+_No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_packaging_deduct_enabled {#honey_packaging_deduct_enabled}
 
-**Callers (3):**
+**Callers (2):**
 
 - `api/v1/settings.php`:258 — `'packaging_deduct' => honey_packaging_deduct_enabled($pdo),`
 - `api/v1/settings.php`:275 — `$packagingDeduct = honey_packaging_deduct_enabled(ims_pdo());`
-- `includes/honey_inventory.php`:1954 — `if (!honey_packaging_deduct_enabled($pdo)) {`
 
 ## honey_packaging_deduct_save {#honey_packaging_deduct_save}
 

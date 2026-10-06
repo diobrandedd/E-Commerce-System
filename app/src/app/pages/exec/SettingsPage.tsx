@@ -81,7 +81,6 @@ export function SettingsPage() {
 
   const [mlPerGallon, setMlPerGallon] = useState(String(DEFAULT_ML_PER_US_GALLON));
   const [mlDefault, setMlDefault] = useState(DEFAULT_ML_PER_US_GALLON);
-  const [mlPackagingDeduct, setMlPackagingDeduct] = useState(true);
   const [mlLoading, setMlLoading] = useState(true);
   const [mlSaving, setMlSaving] = useState(false);
   const [mlOk, setMlOk] = useState<string | null>(null);
@@ -194,11 +193,9 @@ export function SettingsPage() {
       const data = await apiGet<{
         ml_per_gallon: number;
         default_ml_per_gallon: number;
-        packaging_deduct?: boolean;
       }>("settings.php", "honey_volume_get");
       setMlPerGallon(String(data.ml_per_gallon));
       setMlDefault(data.default_ml_per_gallon ?? DEFAULT_ML_PER_US_GALLON);
-      setMlPackagingDeduct(data.packaging_deduct !== false);
     } catch (e) {
       setMlErr(e instanceof ApiError ? e.message : "Could not load honey volume setting.");
     } finally {
@@ -343,23 +340,15 @@ export function SettingsPage() {
     setMlErr(null);
     try {
       const n = Number(mlPerGallon);
-      const res = await apiPost<{ ml_per_gallon: number; packaging_deduct?: boolean }>(
+      const res = await apiPost<{ ml_per_gallon: number }>(
         "settings.php",
         "honey_volume_save",
         {
           ml_per_gallon: n,
-          packaging_deduct: mlPackagingDeduct ? 1 : 0,
         }
       );
       setMlPerGallon(String(res.ml_per_gallon));
-      if (typeof res.packaging_deduct === "boolean") {
-        setMlPackagingDeduct(res.packaging_deduct);
-      }
-      setMlOk(
-        `Saved ml per gallon (${res.ml_per_gallon}) · packaging deduct ${
-          (res.packaging_deduct ?? mlPackagingDeduct) ? "on" : "off"
-        }.`
-      );
+      setMlOk(`Saved ml per gallon (${res.ml_per_gallon}).`);
     } catch (e) {
       setMlErr(e instanceof ApiError ? e.message : "Could not save honey volume.");
     } finally {
@@ -627,21 +616,12 @@ export function SettingsPage() {
             </div>
           ) : (
             <div className="px-6 py-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Deduct packaging materials on bottle stock-in</p>
-                  <p className="text-xs text-muted-foreground">
-                    When on, each bottled unit uses empty <span className="font-mono">Honey bottle w/ cap</span> + sticker
-                    from Packaging Materials. When off, stock-in still credits finished honey without that deduct.
-                  </p>
-                </div>
-                <Switch
-                  checked={mlPackagingDeduct}
-                  onCheckedChange={setMlPackagingDeduct}
-                  data-testid="honey-packaging-deduct-switch"
-                  className="data-[state=checked]:bg-[#C8900A]"
-                  aria-label="Deduct packaging materials on bottle stock-in"
-                />
+              <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
+                <p className="text-sm font-medium text-foreground">Packaging materials on bottle stock-in</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Auto-deduct from Packaging Materials on bottling is retired. Stock out bottles and stickers with{" "}
+                  <span className="font-medium text-foreground">Scan stock out</span> on Packaging Materials.
+                </p>
               </div>
               <div className="flex flex-wrap items-end gap-3">
               <div className="w-48">

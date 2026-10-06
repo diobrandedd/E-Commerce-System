@@ -1,7 +1,7 @@
 ---
 title: app_settings
 source: includes/app_settings.php
-generated: 2026-10-06T05:01:42+02:00
+generated: 2026-10-06T06:39:34+02:00
 type: module
 function_count: 3
 ---
@@ -24,7 +24,7 @@ function_count: 3
 
 **Tables:** `app_settings`
 
-**Callers (13):**
+**Callers (12):**
 
 - `includes/admin_override_password.php`:12 — `$hash = app_setting_get($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, null);`
 - `includes/admin_override_password.php`:22 — `$hash = app_setting_get($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, null);`
@@ -37,7 +37,6 @@ function_count: 3
 - `includes/dept_pt_settings.php`:44 — `return dept_pt_setting_parse_bool(app_setting_get($pdo, PT_BAG_POOL_DEDUCT_SETTING_KEY, null), true);`
 - `includes/dept_pt_settings.php`:52 — `$raw = app_setting_get($pdo, PT_GRAMS_PER_TEA_BAG_SETTING_KEY, null);`
 - `includes/dept_pt_settings.php`:69 — `$raw = app_setting_get($pdo, PT_TEA_BAGS_PER_POUCH_SETTING_KEY, null);`
-- `includes/honey_volume.php`:44 — `return honey_setting_parse_bool(app_setting_get($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, null), true);`
 - `includes/honey_volume.php`:67 — `$raw = app_setting_get($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, null);`
 
 ## app_setting_set {#app_setting_set}
@@ -56,6 +55,6 @@ function_count: 3
 - `includes/dept_pt_settings.php`:150 — `app_setting_set($pdo, PT_GRAMS_PER_TEA_BAG_SETTING_KEY, (string) $gramsPerTeaBag, $userId);`
 - `includes/dept_pt_settings.php`:151 — `app_setting_set($pdo, PT_TEA_BAGS_PER_POUCH_SETTING_KEY, (string) $teaBagsPerPouch, $userId);`
 - `includes/dept_pt_settings.php`:152 — `app_setting_set($pdo, PT_BAG_POOL_DEDUCT_SETTING_KEY, $bagPoolDeduct ? '1' : '0', $userId);`
-- `includes/honey_volume.php`:49 — `app_setting_set($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, $enabled ? '1' : '0', $userId);`
+- `includes/honey_volume.php`:48 — `app_setting_set($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, '0', $userId);`
 - `includes/honey_volume.php`:91 — `app_setting_set($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, $stored, $userId);`
 

@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-10-06T05:01:40+02:00
+generated: 2026-10-06T06:39:33+02:00
 type: memory-bank
-edge_count: 456
+edge_count: 460
 ---
 
 
@@ -283,13 +283,17 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/inventory_check.php` | `includes/sku_barcodes.php` |
 | `includes/inventory_edit_log.php` | `includes/db.php` |
 | `includes/labels.php` | `includes/rts_products.php` |
+| `includes/material_inventory.php` | `includes/auth_check.php` |
+| `includes/material_inventory.php` | `includes/auth_check.php` |
 | `includes/material_inventory.php` | `includes/catalog_bootstrap.php` |
 | `includes/material_inventory.php` | `includes/dept_products.php` |
 | `includes/material_inventory.php` | `includes/fulfillment_packing.php` |
 | `includes/material_inventory.php` | `includes/fulfillment_packing.php` |
+| `includes/material_inventory.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/material_inventory.php` | `includes/inventory_edit_log.php` |
 | `includes/material_inventory.php` | `includes/inventory_edit_log.php` |
 | `includes/material_inventory.php` | `includes/permissions.php` |
+| `includes/material_inventory.php` | `includes/sku_barcodes.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_inventory.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_item_parser.php` |
 | `includes/online_order_parcels.php` | `includes/online_orders_generator.php` |

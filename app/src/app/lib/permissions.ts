@@ -27,7 +27,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionKey | PermissionKey[]> 
   "/inventory/raw-materials/black-rice": "dept.brc.view",
   "/inventory/raw-materials/cacao": "dept.cacao.view",
   "/inventory/raw-materials/honey-comb": "dept.comb.view",
-  "/inventory/packaging-materials": "packaging.view",
+  "/inventory/packaging-materials": ["packaging.view", "packaging.deduct"],
   "/inventory/supplies": "supplies.view",
   "/inventory/products/honey": "inventory.products.view",
   "/inventory/products/paragis-tea": "dept.paragis.view",

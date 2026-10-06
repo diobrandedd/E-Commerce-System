@@ -1,7 +1,7 @@
 ---
 title: dept_brc_settings
 source: includes/dept_brc_settings.php
-generated: 2026-10-06T05:01:49+02:00
+generated: 2026-10-06T06:39:40+02:00
 type: module
 function_count: 7
 ---
@@ -67,7 +67,7 @@ function_count: 7
 - `includes/dept_brc_settings.php`:147 — `$snap = dept_brc_bom_snapshot($pdo);`
 - `includes/dept_inventory.php`:267 — `$bom = dept_brc_bom_snapshot($pdo);`
 - `includes/dept_inventory.php`:796 — `$bom = dept_brc_bom_snapshot($pdo);`
-- `includes/dept_production.php`:994 — `$bom = dept_brc_bom_snapshot($pdo);`
+- `includes/dept_production.php`:991 — `$bom = dept_brc_bom_snapshot($pdo);`
 
 ## dept_brc_bom_save {#dept_brc_bom_save}
 

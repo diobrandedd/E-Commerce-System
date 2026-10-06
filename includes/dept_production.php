@@ -368,18 +368,15 @@ function dept_production_apply_deduct_lines(
                 'allocations' => $alloc,
             ];
         } elseif ($line['kind'] === 'packaging') {
-            $stockId = (int) $line['stock_id'];
-            if ($stockId < 1) {
-                throw new RuntimeException('Missing stock_id for packaging line.');
-            }
-            $res = dept_packaging_deduct($pdo, $stockId, (float) $line['qty'], $userId, $label);
+            // Packaging materials leave warehouse only via Packaging Materials scan/manual deduct.
             $applied[] = [
                 'kind' => 'packaging',
-                'stock_id' => $stockId,
+                'stock_id' => (int) $line['stock_id'],
                 'stock_name' => $line['stock_name'],
                 'qty' => (float) $line['qty'],
                 'unit' => $line['unit'],
-                'on_hand' => $res['on_hand'],
+                'skipped' => true,
+                'skip_reason' => 'Packaging stock-out is scan-only; not deducted on produce.',
             ];
         }
     }

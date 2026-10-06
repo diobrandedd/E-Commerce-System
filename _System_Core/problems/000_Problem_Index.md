@@ -33,7 +33,8 @@ flowchart LR
 - [[fixes/inventory-check-applied-run-history]] — Confirmed/merged audit stock-apply history + mismatch detail
 - [[fixes/sales-dept-shipped-include-sku]] — Dept Sales shipped includes SKU pack qty + unique stickers
 - [[fixes/sku-barcode-permanent-catalog]] — One permanent SKU code per product; print N copies; scan→qty
-- [[fixes/packaging-inventory-roles]] — HR stock-in / PM deduct / exec all
+- [[fixes/packaging-barcode-scan-stockout]] — Packaging barcodes, A4 print-all, scan stock-out, level %, exec stock-in
+- [[fixes/packaging-inventory-roles]] — Exec stock-in / PM scan-deduct / access roster
 - [[fixes/inventory-role-permissions]] — PHP helpers + API `permissions` + SPA guides
 - [[fixes/page-guide-button-modal]] — Guide header button + modal (not inline panel)
 - [[fixes/page-layout-centered-content]] — `PageLayout` centered column (`contentWidth`)
@@ -54,6 +55,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-10-06_packaging-barcode-scan-stockout]] — Packaging barcodes, scan stock-out, level %, exec stock-in
 - [[records/2026-10-02_inventory-check-history-pagination]] — Check inventory history + confirmed updates 10/page
 - [[records/2026-10-01_deliveries-auto-open-parcel-camera]] — Add deliveries auto-opens parcel camera after scan
 - [[records/2026-10-01_honey-packaging-scanner-variant-size]] — Packaging scanned-by person shows variant + size

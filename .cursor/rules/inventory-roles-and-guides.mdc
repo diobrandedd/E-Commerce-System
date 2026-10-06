@@ -27,9 +27,11 @@ alwaysApply: false
 
 | Role | Actions |
 |------|---------|
-| **HR** | Stock in lot only |
-| **Production manager** | Deduct for use only |
-| **Executive** | All + set on-hand + pool yield + catalog + extended activity log |
+| **HR** | View / requests (no stock-in) |
+| **Production manager** (+ `packaging.deduct`) | **Scan / deduct for use** |
+| **Executive** | Stock-in lot + catalog + set on-hand + pool yield + print barcodes + deduct |
+
+Stock-out is scan-first (`PackagingScanStockOutModal`). Level % = on_hand / last lot qty. Bottling/produce do **not** auto-deduct packaging materials.
 
 Enforce in `material_inventory.php` helpers + `materials.php` API. Return `permissions` from `packaging_detail`. Do not reintroduce HR count-fix requests on the packaging page.
 

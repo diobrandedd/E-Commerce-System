@@ -41,7 +41,10 @@ function material_inventory_role_can_request_packaging(array $user): bool
 /** @param array{id:int,role:string,dept_id:?int} $user */
 function material_inventory_role_can_stock_in_packaging(array $user): bool
 {
-    return ims_user_can($user, 'packaging.stock_in');
+    require_once __DIR__ . '/auth_check.php';
+
+    return ims_user_can($user, 'packaging.stock_in')
+        && ims_is_executive((string) ($user['role'] ?? ''));
 }
 
 /** @param array{id:int,role:string,dept_id:?int} $user */
@@ -149,8 +152,130 @@ function material_inventory_has_pool_columns(PDO $pdo): bool
     return $cache;
 }
 
-/** @param array<string, mixed> $row */
-function material_inventory_enrich_packaging_row(array $row): array
+function material_inventory_has_barcode_column(PDO $pdo): bool
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    try {
+        $st = $pdo->query(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stocks' AND COLUMN_NAME = 'barcode'"
+        );
+        $cache = ((int) $st->fetchColumn()) > 0;
+    } catch (Throwable) {
+        $cache = false;
+    }
+
+    return $cache;
+}
+
+function material_packaging_barcode_for_id(int $stockId): string
+{
+    return 'PKG' . str_pad((string) max(0, $stockId), 6, '0', STR_PAD_LEFT);
+}
+
+/**
+ * Ensure a packaging stock has a permanent Code128-safe barcode.
+ */
+function material_packaging_ensure_barcode(PDO $pdo, int $stockId): string
+{
+    if ($stockId < 1 || !material_inventory_has_barcode_column($pdo)) {
+        return material_packaging_barcode_for_id($stockId);
+    }
+    $st = $pdo->prepare('SELECT barcode, category FROM stocks WHERE id = ? LIMIT 1');
+    $st->execute([$stockId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        return material_packaging_barcode_for_id($stockId);
+    }
+    $existing = trim((string) ($row['barcode'] ?? ''));
+    if ($existing !== '') {
+        return $existing;
+    }
+    if ((string) ($row['category'] ?? '') !== 'packaging') {
+        return material_packaging_barcode_for_id($stockId);
+    }
+    $code = material_packaging_barcode_for_id($stockId);
+    try {
+        $pdo->prepare('UPDATE stocks SET barcode = ? WHERE id = ? AND (barcode IS NULL OR barcode = "")')
+            ->execute([$code, $stockId]);
+    } catch (Throwable) {
+        // Unique collision: leave lookup to caller / next ensure.
+    }
+    $again = $pdo->prepare('SELECT barcode FROM stocks WHERE id = ? LIMIT 1');
+    $again->execute([$stockId]);
+    $saved = trim((string) $again->fetchColumn());
+
+    return $saved !== '' ? $saved : $code;
+}
+
+/** Latest purchase lot qty for capacity % (supplier_batch_no LIKE 'lot:%'). */
+function material_packaging_last_lot_qty(PDO $pdo, int $stockId): ?float
+{
+    if ($stockId < 1) {
+        return null;
+    }
+    $st = $pdo->prepare(
+        "SELECT qty FROM stock_entries
+         WHERE stock_id = ? AND supplier_batch_no LIKE 'lot:%' AND qty > 0
+         ORDER BY created_at DESC, id DESC
+         LIMIT 1"
+    );
+    $st->execute([$stockId]);
+    $qty = $st->fetchColumn();
+    if ($qty === false) {
+        return null;
+    }
+    $n = (float) $qty;
+
+    return $n > 0 ? round($n, 2) : null;
+}
+
+/**
+ * @param list<int> $stockIds
+ * @return array<int, float>
+ */
+function material_packaging_last_lot_qty_map(PDO $pdo, array $stockIds): array
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', $stockIds), static fn (int $id): bool => $id > 0)));
+    if ($ids === []) {
+        return [];
+    }
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $st = $pdo->prepare(
+        "SELECT se.stock_id, se.qty
+         FROM stock_entries se
+         INNER JOIN (
+             SELECT stock_id, MAX(CONCAT(LPAD(UNIX_TIMESTAMP(created_at), 12, '0'), LPAD(id, 12, '0'))) AS mx
+             FROM stock_entries
+             WHERE stock_id IN ({$placeholders})
+               AND supplier_batch_no LIKE 'lot:%'
+               AND qty > 0
+             GROUP BY stock_id
+         ) latest ON latest.stock_id = se.stock_id
+           AND CONCAT(LPAD(UNIX_TIMESTAMP(se.created_at), 12, '0'), LPAD(se.id, 12, '0')) = latest.mx
+         WHERE se.supplier_batch_no LIKE 'lot:%'"
+    );
+    $st->execute($ids);
+    $out = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $sid = (int) $row['stock_id'];
+        $qty = round((float) $row['qty'], 2);
+        if ($qty > 0) {
+            $out[$sid] = $qty;
+        }
+    }
+
+    return $out;
+}
+
+/**
+ * @param array<string, mixed> $row
+ * @param float|null $lastLotQty optional preloaded last lot qty
+ */
+function material_inventory_enrich_packaging_row(array $row, ?float $lastLotQty = null): array
 {
     $row['on_hand'] = round((float) ($row['on_hand'] ?? 0), 2);
     $row['current_price'] = round((float) ($row['current_price'] ?? 0), 2);
@@ -168,6 +293,26 @@ function material_inventory_enrich_packaging_row(array $row): array
         $row['pool_yield_qty'] = null;
         $row['pool_yield_unit'] = null;
         $row['pool_estimated_remaining'] = null;
+    }
+
+    $isPackaging = (string) ($row['category'] ?? '') === 'packaging';
+    if ($isPackaging) {
+        $barcode = trim((string) ($row['barcode'] ?? ''));
+        if ($barcode === '' && isset($row['id'])) {
+            $barcode = material_packaging_barcode_for_id((int) $row['id']);
+        }
+        $row['barcode'] = $barcode !== '' ? $barcode : null;
+        $lotQty = $lastLotQty;
+        $row['last_lot_qty'] = $lotQty !== null && $lotQty > 0 ? round($lotQty, 2) : null;
+        if ($row['last_lot_qty'] !== null && $row['last_lot_qty'] > 0) {
+            $row['level_pct'] = round(max(0.0, min(100.0, ($row['on_hand'] / $row['last_lot_qty']) * 100.0)), 1);
+        } else {
+            $row['level_pct'] = null;
+        }
+    } else {
+        $row['barcode'] = null;
+        $row['last_lot_qty'] = null;
+        $row['level_pct'] = null;
     }
 
     return $row;
@@ -209,9 +354,10 @@ function material_inventory_list(PDO $pdo, ?string $category = null, bool $activ
     $poolCols = material_inventory_has_pool_columns($pdo)
         ? ', s.production_deduct, s.pool_yield_qty, s.pool_yield_unit'
         : '';
+    $barcodeCol = material_inventory_has_barcode_column($pdo) ? ', s.barcode' : '';
     $sql = 'SELECT s.id, s.name, s.dept_id, s.unit, s.category, s.on_hand, s.is_active,
                    s.current_price, s.supplier_id, s.supplier_name, s.supplier_code'
-        . $poolCols . ',
+        . $poolCols . $barcodeCol . ',
                    d.name AS dept_name,
                    (SELECT MAX(se.created_at) FROM stock_entries se WHERE se.stock_id = s.id) AS last_entry_at
             FROM stocks s
@@ -221,8 +367,24 @@ function material_inventory_list(PDO $pdo, ?string $category = null, bool $activ
     $st = $pdo->prepare($sql);
     $st->execute($params);
     $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    $packagingIds = [];
+    foreach ($rows as $row) {
+        if ((string) ($row['category'] ?? '') === 'packaging') {
+            $packagingIds[] = (int) $row['id'];
+        }
+    }
+    $lotMap = material_packaging_last_lot_qty_map($pdo, $packagingIds);
     foreach ($rows as &$row) {
-        $row = material_inventory_enrich_packaging_row($row);
+        $sid = (int) ($row['id'] ?? 0);
+        $lotQty = $lotMap[$sid] ?? null;
+        if (
+            (string) ($row['category'] ?? '') === 'packaging'
+            && material_inventory_has_barcode_column($pdo)
+            && trim((string) ($row['barcode'] ?? '')) === ''
+        ) {
+            $row['barcode'] = material_packaging_ensure_barcode($pdo, $sid);
+        }
+        $row = material_inventory_enrich_packaging_row($row, $lotQty);
     }
 
     return $rows;
@@ -280,6 +442,9 @@ function material_inventory_create(
     );
     $ins->execute([$name, $deptId, $unit, $category, $userId]);
     $id = (int) $pdo->lastInsertId();
+    if ($category === 'packaging') {
+        material_packaging_ensure_barcode($pdo, $id);
+    }
     $row = material_inventory_fetch_stock($pdo, $id);
     if ($row === null) {
         throw new RuntimeException('Could not create stock.');
@@ -1819,4 +1984,135 @@ function material_inventory_raw_stock_by_slug(PDO $pdo, string $slug): ?array
     $row = $st->fetch(PDO::FETCH_ASSOC);
 
     return $row ?: null;
+}
+
+/** @return array<string, mixed>|null */
+function material_packaging_lookup_by_barcode(PDO $pdo, string $code): ?array
+{
+    $code = strtoupper(trim($code));
+    if ($code === '') {
+        return null;
+    }
+    if (!material_inventory_has_barcode_column($pdo)) {
+        if (preg_match('/^PKG(\d+)$/i', $code, $m) === 1) {
+            $id = (int) $m[1];
+            $row = material_inventory_fetch_stock($pdo, $id);
+            if ($row !== null && (string) ($row['category'] ?? '') === 'packaging') {
+                $lot = material_packaging_last_lot_qty($pdo, $id);
+
+                return material_inventory_enrich_packaging_row($row, $lot);
+            }
+        }
+
+        return null;
+    }
+    $st = $pdo->prepare(
+        'SELECT s.*, d.name AS dept_name
+         FROM stocks s
+         INNER JOIN departments d ON d.id = s.dept_id
+         WHERE s.category = \'packaging\' AND UPPER(TRIM(s.barcode)) = ?
+         LIMIT 1'
+    );
+    $st->execute([$code]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        return null;
+    }
+    $id = (int) $row['id'];
+    if (trim((string) ($row['barcode'] ?? '')) === '') {
+        $row['barcode'] = material_packaging_ensure_barcode($pdo, $id);
+    }
+    $lot = material_packaging_last_lot_qty($pdo, $id);
+
+    return material_inventory_enrich_packaging_row($row, $lot);
+}
+
+function material_packaging_label_cell_html(string $code, string $name): string
+{
+    require_once __DIR__ . '/honey_bottle_barcodes.php';
+    try {
+        $svg = honey_bottle_code128_svg($code);
+    } catch (Throwable) {
+        $svg = '<div class="err">barcode lib missing</div>';
+    }
+    $safeCode = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
+    $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+
+    // Name under barcode (packaging materials requirement).
+    return '<div class="label label-product">'
+        . '<div class="bc" title="' . $safeCode . '">' . $svg . '</div>'
+        . '<div class="product-info" title="' . $safeName . '">' . $safeName . '</div>'
+        . '</div>';
+}
+
+function material_packaging_print_sheet_html(PDO $pdo): string
+{
+    require_once __DIR__ . '/sku_barcodes.php';
+    $items = material_inventory_list($pdo, 'packaging', true);
+    $stream = [];
+    foreach ($items as $row) {
+        if (preg_match('/^bubble wrap roll - \d+ cm$/i', trim((string) $row['name']))) {
+            continue;
+        }
+        if (preg_match('/^insulation foam roll - /i', trim((string) $row['name']))) {
+            continue;
+        }
+        $id = (int) $row['id'];
+        $code = material_packaging_ensure_barcode($pdo, $id);
+        $name = (string) $row['name'];
+        $stream[] = [
+            'slots' => 1,
+            'html' => material_packaging_label_cell_html($code, $name),
+        ];
+    }
+    $count = count($stream);
+
+    return sku_barcode_render_packed_label_sheet(
+        $stream,
+        'Packaging materials barcodes (' . $count . ')',
+        $count
+    );
+}
+
+/**
+ * Who can access Packaging Materials for stock-out (and note stock-in = executives).
+ *
+ * @return array{stock_out: list<array{id:int,name:string,role:string,employee_id:string}>, stock_in_note: string}
+ */
+function material_packaging_access_roster(PDO $pdo): array
+{
+    require_once __DIR__ . '/auth_check.php';
+    $st = $pdo->query(
+        "SELECT u.id, u.name, u.employee_id, u.is_active, r.name AS role_name
+         FROM users u
+         INNER JOIN roles r ON r.id = u.role_id
+         WHERE u.is_active = 1
+         ORDER BY u.name ASC"
+    );
+    $stockOut = [];
+    foreach ($st ? $st->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
+        $role = (string) $row['role_name'];
+        if (ims_is_executive($role)) {
+            continue;
+        }
+        $user = [
+            'id' => (int) $row['id'],
+            'role' => $role,
+            'dept_id' => null,
+        ];
+        if (!material_inventory_role_can_deduct_packaging($user)) {
+            continue;
+        }
+        $stockOut[] = [
+            'id' => (int) $row['id'],
+            'name' => (string) $row['name'],
+            'role' => $role,
+            'employee_id' => trim((string) ($row['employee_id'] ?? '')),
+        ];
+    }
+
+    return [
+        'stock_out' => $stockOut,
+        'stock_in_note' => 'Only executives can stock in packaging lots. Assign Stock out packaging (scan) to staff below.',
+    ];
 }

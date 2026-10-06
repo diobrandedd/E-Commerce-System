@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-10-06T05:02:00+02:00
+generated: 2026-10-06T06:39:51+02:00
 type: module
 function_count: 63
 ---
@@ -308,7 +308,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/bottle_barcodes.php`:441 — `api_ok(['barcode' => honey_bottle_lookup(ims_pdo(), $code)]);`
 - `includes/honey_bottle_barcodes.php`:2488 — `return honey_bottle_lookup($pdo, $code);`
-- `includes/honey_inventory.php`:2298 — `$lookup = honey_bottle_lookup($pdo, strtoupper($query));`
+- `includes/honey_inventory.php`:2248 — `$lookup = honey_bottle_lookup($pdo, strtoupper($query));`
 
 ## honey_bottle_serialize_lookup {#honey_bottle_serialize_lookup}
 
@@ -572,10 +572,11 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## honey_bottle_code128_svg {#honey_bottle_code128_svg}
 
-**Callers (3):**
+**Callers (4):**
 
 - `includes/dept_pouch_barcodes.php`:1087 — `$svg = honey_bottle_code128_svg($code);`
 - `includes/honey_bottle_barcodes.php`:2889 — `$svg = honey_bottle_code128_svg($code);`
+- `includes/material_inventory.php`:2034 — `$svg = honey_bottle_code128_svg($code);`
 - `includes/sku_barcodes.php`:1488 — `$svg = honey_bottle_code128_svg($code);`
 
 ## honey_bottle_batch_codes {#honey_bottle_batch_codes}

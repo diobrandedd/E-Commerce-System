@@ -30,6 +30,9 @@ api_dispatch([
     'set_foam_cacao_cut_yields' => 'api_materials_set_foam_cacao_cut_yields',
     'packaging_deduct' => 'api_materials_packaging_deduct',
     'packaging_price_lot' => 'api_materials_packaging_price_lot',
+    'packaging_print_sheet' => 'api_materials_packaging_print_sheet',
+    'packaging_lookup_barcode' => 'api_materials_packaging_lookup_barcode',
+    'packaging_access_roster' => 'api_materials_packaging_access_roster',
 ]);
 
 function api_materials_require_view(): array
@@ -341,7 +344,11 @@ function api_materials_packaging_detail(): void
     if ($row === null || (string) $row['category'] !== 'packaging') {
         api_fail('Packaging stock not found.', 404);
     }
-    $row = material_inventory_enrich_packaging_row($row);
+    if (material_inventory_has_barcode_column($pdo)) {
+        $row['barcode'] = material_packaging_ensure_barcode($pdo, $stockId);
+    }
+    $lot = material_packaging_last_lot_qty($pdo, $stockId);
+    $row = material_inventory_enrich_packaging_row($row, $lot);
     $logLimit = ims_user_can($user, 'packaging.set_on_hand') ? 100 : 25;
     $entries = material_packaging_recent_entries($pdo, $stockId, $logLimit);
     $isGenericFoam = material_packaging_is_generic_foam_roll_name((string) $row['name']);
@@ -706,4 +713,53 @@ function api_materials_packaging_price_lot(): void
         api_fail($e->getMessage(), 400);
     }
     api_ok($result);
+}
+
+function api_materials_packaging_print_sheet(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'packaging.view') && !material_inventory_role_can_issue_packing($user)) {
+        api_fail('Forbidden.', 403);
+    }
+    $html = material_packaging_print_sheet_html(ims_pdo());
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo $html;
+    exit;
+}
+
+function api_materials_packaging_lookup_barcode(): void
+{
+    api_method_allowed(['GET', 'POST']);
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'packaging.view') && !material_inventory_role_can_deduct_packaging($user)) {
+        api_fail('Forbidden.', 403);
+    }
+    $input = api_input();
+    $code = trim((string) ($input['code'] ?? $_GET['code'] ?? ''));
+    if ($code === '') {
+        api_fail('Barcode code is required.', 422);
+    }
+    $row = material_packaging_lookup_by_barcode(ims_pdo(), $code);
+    if ($row === null) {
+        api_fail('No packaging material matches that barcode.', 404);
+    }
+    api_ok([
+        'stock' => $row,
+        'permissions' => [
+            'can_deduct' => material_inventory_role_can_deduct_packaging($user),
+            'can_stock_in' => material_inventory_role_can_stock_in_packaging($user),
+        ],
+    ]);
+}
+
+function api_materials_packaging_access_roster(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'packaging.view')) {
+        api_fail('Forbidden.', 403);
+    }
+    api_ok(material_packaging_access_roster(ims_pdo()));
 }

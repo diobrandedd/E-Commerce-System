@@ -1,7 +1,7 @@
 ---
 title: catalog_bootstrap
 source: includes/catalog_bootstrap.php
-generated: 2026-10-06T05:01:46+02:00
+generated: 2026-10-06T06:39:37+02:00
 type: module
 function_count: 8
 ---
@@ -19,10 +19,9 @@ function_count: 8
 
 ## catalog_honey_bottle_stock_name {#catalog_honey_bottle_stock_name}
 
-**Callers (2):**
+**Callers (1):**
 
 - `includes/catalog_bootstrap.php`:120 — `$bottleName = catalog_honey_bottle_stock_name($productSize);`
-- `includes/honey_inventory.php`:1975 — `$bottleName = catalog_honey_bottle_stock_name($size);`
 
 ## catalog_honey_raw_stock_name {#catalog_honey_raw_stock_name}
 
@@ -59,7 +58,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/material_inventory.php`:166 — `$row['pool_estimated_remaining'] = catalog_pool_estimated_remaining($row);`
+- `includes/material_inventory.php`:291 — `$row['pool_estimated_remaining'] = catalog_pool_estimated_remaining($row);`
 
 ## catalog_honey_packaging_formula_qty {#catalog_honey_packaging_formula_qty}
 

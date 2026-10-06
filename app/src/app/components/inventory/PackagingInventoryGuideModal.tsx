@@ -28,7 +28,7 @@ function TypeLegend() {
           Pouches, bottles, stickers
         </p>
         <p className="mt-1">
-          Counted one-by-one. Production manager <strong className="text-foreground">deducts for use</strong> when materials go to the floor.
+          Counted one-by-one. Staff with deduct permission <strong className="text-foreground">scan stock out</strong> when materials go to the floor.
         </p>
       </div>
       <div className="rounded-lg border border-dashed bg-secondary/20 px-3 py-2">
@@ -57,22 +57,22 @@ function ExecutiveGuide() {
   return (
     <ol className="list-decimal pl-4 space-y-1.5">
       <li>
-        <strong className="text-foreground">Stock in lot</strong> — same as HR: total invoice amount + quantity received when packaging arrives.
+        <strong className="text-foreground">Stock in lot</strong> — only executives record purchase lots (total invoice + qty).
       </li>
       <li>
-        <strong className="text-foreground">Deduct for use</strong> — record usage when you pull packaging for production (or override counts).
+        <strong className="text-foreground">Scan stock out</strong> — scan a packaging barcode, confirm, enter qty + reason. This is the warehouse norm (no auto-deduct on produce).
       </li>
       <li>
-        <strong className="text-foreground">Set on-hand</strong> — direct quantity edit after a physical count (whole rolls for pool items).
+        <strong className="text-foreground">Generate all barcodes</strong> — print one A4 sheet with names under each barcode.
       </li>
       <li>
-        <strong className="text-foreground">Pool yield</strong> — adjust yield per roll so executive costing stays accurate.
+        <strong className="text-foreground">Level %</strong> — each row shows on-hand vs the last stock-in lot qty.
       </li>
       <li>
-        <strong className="text-foreground">Activity log</strong> — full stock-in, deduct, and correction history on each item.
+        <strong className="text-foreground">Set on-hand / pool yield</strong> — count corrections and costing yield.
       </li>
       <li>
-        <strong className="text-foreground">Add catalog item</strong> — when a new packaging SKU is needed.
+        <strong className="text-foreground">Add catalog item</strong> — new packaging SKUs get a permanent barcode.
       </li>
     </ol>
   );
@@ -82,16 +82,10 @@ function HrGuide() {
   return (
     <ol className="list-decimal pl-4 space-y-1.5">
       <li>
-        <strong className="text-foreground">Stock in lot</strong> — your main job: when packaging is delivered, open the item and enter <strong className="text-foreground">total price paid</strong> and <strong className="text-foreground">quantity received</strong> (pieces or whole rolls).
+        <strong className="text-foreground">View only / requests</strong> — packaging stock-in is executive-only. Ask an executive to record purchase lots.
       </li>
       <li>
-        Unit cost updates automatically from purchase lots — you do not type unit price manually.
-      </li>
-      <li>
-        <strong className="text-foreground">You do not deduct</strong> — production manager records usage. You do not edit on-hand directly — ask executive for a count correction.
-      </li>
-      <li>
-        <strong className="text-foreground">Recent activity</strong> — confirm your stock-in entries appear on each item after saving.
+        <strong className="text-foreground">You do not deduct</strong> — production staff with deduct permission scan stock out. Flag low level % to executive.
       </li>
     </ol>
   );
@@ -101,19 +95,19 @@ function ProdManagerGuide() {
   return (
     <ol className="list-decimal pl-4 space-y-1.5">
       <li>
-        <strong className="text-foreground">Check on-hand</strong> — before production, open items and confirm enough per-unit packaging (pouches, bottles, stickers).
+        <strong className="text-foreground">Scan stock out</strong> — use <strong className="text-foreground">Scan stock out</strong> (or open a row → Deduct) when packaging goes to the floor. Qty + reason required.
       </li>
       <li>
-        <strong className="text-foreground">Deduct for use</strong> — when you take packaging to the floor, open the item and enter quantity + reason (e.g. “50 PT pouches” or “1 yarn roll opened”).
+        <strong className="text-foreground">Check level %</strong> — each row shows remaining vs the last stock-in lot so you can see materials running low.
       </li>
       <li>
-        <strong className="text-foreground">Pool rolls</strong> — deduct <strong className="text-foreground">1 whole roll</strong> when a roll is opened (yarn, paper, seals, foil).
+        <strong className="text-foreground">Pool rolls</strong> — deduct <strong className="text-foreground">1 whole roll</strong> when a roll is opened.
       </li>
       <li>
-        <strong className="text-foreground">You do not stock in</strong> — HR records deliveries. Flag low stock to HR or executive.
+        <strong className="text-foreground">You do not stock in</strong> — executives record deliveries. Flag low stock to executive.
       </li>
       <li>
-        <strong className="text-foreground">BOM preview</strong> — on department production screens, <em>Will deduct</em> lines must be in stock before you run produce.
+        Produce no longer auto-deducts packaging materials — scan stock out is required.
       </li>
     </ol>
   );
@@ -123,14 +117,15 @@ function TipsCopy({ isExec }: { isExec: boolean }) {
   if (isExec) {
     return (
       <p>
-        Click any row for details and actions. Unit cost is weighted average from HR stock-in lots and feeds{" "}
+        Click any row for details and actions. Unit cost is weighted average from stock-in lots and feeds{" "}
         <Link to="/costing" className="text-[#C8900A] hover:underline">Product Costing</Link>.
+        Stock-out access is listed at the top of the page.
       </p>
     );
   }
   return (
     <p>
-      Click any row for details and your role actions. HR stocks in purchases; production manager deducts for use; executive can correct counts and view the full log.
+      Click any row for details. Stock-out uses barcode scan (or deduct on the detail modal) when you have packaging deduct permission. Only executives stock in.
     </p>
   );
 }

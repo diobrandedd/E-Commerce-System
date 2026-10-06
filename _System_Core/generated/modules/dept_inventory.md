@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-10-06T05:01:49+02:00
+generated: 2026-10-06T06:39:41+02:00
 type: module
 function_count: 21
 ---
@@ -37,10 +37,10 @@ function_count: 21
 - `includes/dept_inventory.php`:682 — `$row = dept_inventory_fetch_row($pdo, $productKey, true);`
 - `includes/dept_inventory.php`:730 — `$row = dept_inventory_fetch_row($pdo, $def['key']);`
 - `includes/dept_pouch_barcodes.php`:730 — `$finished = dept_inventory_fetch_row($pdo, $productKey);`
-- `includes/dept_production.php`:916 — `$finished = dept_inventory_fetch_row($pdo, 'pt');`
-- `includes/dept_production.php`:964 — `$finished = dept_inventory_fetch_row($pdo, 'brc');`
-- `includes/dept_production.php`:1043 — `$finished = dept_inventory_fetch_row($pdo, 'jar_cacao');`
-- `includes/dept_production.php`:1073 — `$finished = dept_inventory_fetch_row($pdo, 'honey_comb');`
+- `includes/dept_production.php`:913 — `$finished = dept_inventory_fetch_row($pdo, 'pt');`
+- `includes/dept_production.php`:961 — `$finished = dept_inventory_fetch_row($pdo, 'brc');`
+- `includes/dept_production.php`:1040 — `$finished = dept_inventory_fetch_row($pdo, 'jar_cacao');`
+- `includes/dept_production.php`:1070 — `$finished = dept_inventory_fetch_row($pdo, 'honey_comb');`
 - `includes/inventory_check.php`:1102 — `$row = dept_inventory_fetch_row($pdo, $productKey);`
 - `includes/pos_refund.php`:161 — `$fin = dept_inventory_fetch_row($pdo, $productKey, true);`
 
@@ -53,10 +53,10 @@ function_count: 21
 - `includes/dept_inventory.php`:578 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/dept_inventory.php`:621 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/dept_pouch_barcodes.php`:582 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
-- `includes/dept_production.php`:901 — `$row = dept_inventory_ensure_row($pdo, $userId, 'pt');`
-- `includes/dept_production.php`:954 — `$row = dept_inventory_ensure_row($pdo, $userId, 'brc');`
-- `includes/dept_production.php`:1033 — `$row = dept_inventory_ensure_row($pdo, $userId, 'jar_cacao');`
-- `includes/dept_production.php`:1063 — `$row = dept_inventory_ensure_row($pdo, $userId, 'honey_comb');`
+- `includes/dept_production.php`:898 — `$row = dept_inventory_ensure_row($pdo, $userId, 'pt');`
+- `includes/dept_production.php`:951 — `$row = dept_inventory_ensure_row($pdo, $userId, 'brc');`
+- `includes/dept_production.php`:1030 — `$row = dept_inventory_ensure_row($pdo, $userId, 'jar_cacao');`
+- `includes/dept_production.php`:1060 — `$row = dept_inventory_ensure_row($pdo, $userId, 'honey_comb');`
 - `includes/inventory_check_apply.php`:305 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/pack_cancel_restock.php`:592 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/pos_refund.php`:167 — `$fin = dept_inventory_ensure_row($pdo, 0, $productKey);`
@@ -100,12 +100,12 @@ function_count: 21
 - `includes/dept_pouch_barcodes.php`:614 — `$onHand = dept_raw_bags_on_hand($pdo, 'pt');`
 - `includes/dept_pouch_barcodes.php`:651 — `$onHand = dept_raw_bags_on_hand($pdo, 'brc');`
 - `includes/dept_pouch_barcodes.php`:688 — `$onHand = dept_raw_bags_on_hand($pdo, 'jar_cacao');`
-- `includes/dept_production.php`:835 — `$onHand = dept_raw_bags_on_hand($pdo, 'pt');`
-- `includes/dept_production.php`:853 — `'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'pt'),`
-- `includes/dept_production.php`:878 — `'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'pt'),`
-- `includes/dept_production.php`:970 — `'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'brc'),`
-- `includes/dept_production.php`:1049 — `'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'jar_cacao'),`
-- `includes/dept_production.php`:1079 — `'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'honey_comb'),`
+- `includes/dept_production.php`:832 — `$onHand = dept_raw_bags_on_hand($pdo, 'pt');`
+- `includes/dept_production.php`:850 — `'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'pt'),`
+- `includes/dept_production.php`:875 — `'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'pt'),`
+- `includes/dept_production.php`:967 — `'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'brc'),`
+- `includes/dept_production.php`:1046 — `'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'jar_cacao'),`
+- `includes/dept_production.php`:1076 — `'bags_on_hand' => dept_raw_bags_on_hand($pdo, 'honey_comb'),`
 - `includes/sku_barcodes.php`:1087 — `$onHand = dept_raw_bags_on_hand($pdo, 'pt');`
 - `includes/sku_barcodes.php`:1118 — `$onHand = dept_raw_bags_on_hand($pdo, 'brc');`
 - `includes/sku_barcodes.php`:1149 — `$onHand = dept_raw_bags_on_hand($pdo, 'jar_cacao');`
@@ -122,7 +122,7 @@ function_count: 21
 
 **Callers (1):**
 
-- `includes/dept_production.php`:978 — `$snap = dept_raw_material_snapshot($pdo, $slug);`
+- `includes/dept_production.php`:975 — `$snap = dept_raw_material_snapshot($pdo, $slug);`
 
 ## dept_raw_stock_in_bags {#dept_raw_stock_in_bags}
 

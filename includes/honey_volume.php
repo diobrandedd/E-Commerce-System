@@ -32,23 +32,23 @@ function honey_setting_parse_bool(?string $raw, bool $default = true): bool
 }
 
 /**
- * When true (default), bottling / bottle barcode stock-in deducts empty bottles + stickers
- * from Packaging Materials (`stocks.on_hand`).
+ * Bottling no longer auto-deducts packaging materials (always false).
+ * Warehouse packaging leaves via Packaging Materials scan/manual deduct only.
  */
 function honey_packaging_deduct_enabled(?PDO $pdo = null): bool
 {
-    if ($pdo === null) {
-        return true;
-    }
+    unset($pdo);
 
-    return honey_setting_parse_bool(app_setting_get($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, null), true);
+    return false;
 }
 
 function honey_packaging_deduct_save(PDO $pdo, bool $enabled, ?int $userId = null): bool
 {
-    app_setting_set($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, $enabled ? '1' : '0', $userId);
+    // Persist off; product-create packaging deduct is retired.
+    app_setting_set($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, '0', $userId);
+    unset($enabled);
 
-    return $enabled;
+    return false;
 }
 
 function honey_price_per_liter_from_gallon(float $pricePerGallon): float

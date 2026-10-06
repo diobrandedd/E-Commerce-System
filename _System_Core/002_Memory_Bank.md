@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-06 — Packaging barcodes + scan stock-out + level %
+**Change:** Permanent packaging barcodes, Generate all A4 (name under bars), scan stock-out, level % vs last lot, exec-only stock-in; remove bottling/produce packaging auto-deduct. → [[problems/records/2026-10-06_packaging-barcode-scan-stockout]]
+
 ### 2026-10-02 — Check inventory history paginated (10/page)
 **Change:** Audit history + confirmed updates lists use Previous/Next at 10 rows per page. → [[problems/records/2026-10-02_inventory-check-history-pagination]]
 

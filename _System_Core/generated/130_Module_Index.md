@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-10-01T11:28:51+02:00
+generated: 2026-10-06T06:36:51+02:00
 type: memory-bank
 ---
 
@@ -60,7 +60,7 @@ type: memory-bank
 | [[modules/inventory_check_apply]] | 9 |
 | [[modules/inventory_edit_log]] | 4 |
 | [[modules/labels]] | 3 |
-| [[modules/material_inventory]] | 64 |
+| [[modules/material_inventory]] | 73 |
 | [[modules/online_order_parcels]] | 29 |
 | [[modules/online_orders_generator]] | 44 |
 | [[modules/order_remarks]] | 19 |
@@ -70,7 +70,7 @@ type: memory-bank
 | [[modules/pdf_to_excel]] | 15 |
 | [[modules/permissions]] | 19 |
 | [[modules/pos_discount_requests]] | 10 |
-| [[modules/pos_mobile_staff]] | 8 |
+| [[modules/pos_mobile_staff]] | 9 |
 | [[modules/pos_refund]] | 2 |
 | [[modules/pos_sales_helpers]] | 3 |
 | [[modules/pos_thermal_print]] | 4 |

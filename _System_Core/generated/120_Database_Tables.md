@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-10-06T05:01:40+02:00
+generated: 2026-10-06T06:39:33+02:00
 type: memory-bank
 table_count: 99
 ---
@@ -137,6 +137,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/api_tokens.php` | [[modules/api_tokens#pos_api_apply_bearer_auth]] |
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_access_roster]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_authenticate]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_verify_executive]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
@@ -169,7 +170,6 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_inventory.php` | [[modules/dept_inventory#dept_inventory_fetch_row]] |
 | `includes/dept_products.php` | [[modules/dept_products#dept_product_dept_id]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_user_dept_key]] |
-| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_bottling_deduct_packaging_stocks]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_resolve_honey_dept_id]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_canonical_dept_id]] |
@@ -177,6 +177,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_lookup_by_barcode]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_user_is_csr_dept]] |
 | `includes/permissions.php` | [[modules/permissions#ims_user_dept_key]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
@@ -254,6 +255,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_pool_recent_entries]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_unread_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_access_roster]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel_log_list]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_list]] |
@@ -323,8 +325,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#material_packaging_record_invoice_price]] |
-| `includes/honey_inventory.php` | [[modules/honey_inventory#honey_bottling_deduct_packaging_stocks]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_upsert_supplier_costing_stocks]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_ensure_barcode]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_fetch_stock]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_create]] |
@@ -348,6 +350,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_unread_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_raw_stock_by_slug]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_lookup_by_barcode]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_tier_lines]] |
 | `includes/parcel_pack_costing.php` | [[modules/parcel_pack_costing#parcel_pack_fetch_product_unit_cogs]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_deduct_cap_seals]] |
@@ -374,6 +377,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_production.php` | [[modules/dept_production#dept_packaging_deduct]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issue_create]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#material_packaging_record_invoice_price]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_last_lot_qty]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_last_lot_qty_map]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_adjust]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_set_values]] |

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-06T05:01:39+02:00
+generated: 2026-10-06T06:39:33+02:00
 type: memory-bank
 ---
 
@@ -396,13 +396,16 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `raw_detail` | `api_materials_raw_detail()` | `material_inventory_raw_stock_by_slug()`, `ims_pdo()` |
 | `departments` | `api_materials_departments()` | `ims_pdo()` |
 | `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_role_can_stock_in_packaging()`, `material_packaging_stock_in_lot()`, `material_supply_stock_in_lot()` |
-| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_enrich_packaging_row()`, `ims_user_can()`, `material_packaging_recent_entries()`, `material_packaging_is_generic_foam_roll_name()`, `material_inventory_role_can_stock_in_packaging()`, `material_inventory_role_can_edit_packaging_price()`, … |
+| `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_has_barcode_column()`, `material_packaging_ensure_barcode()`, `material_packaging_last_lot_qty()`, `material_inventory_enrich_packaging_row()`, `ims_user_can()`, `material_packaging_recent_entries()`, … |
 | `supply_detail` | `api_materials_supply_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `ims_user_can()`, `material_supply_recent_entries()`, `material_supply_detail_permissions()` |
 | `set_on_hand` | `api_materials_set_on_hand()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_set_on_hand()`, `material_supply_set_on_hand()` |
 | `set_pool_yield` | `api_materials_set_pool_yield()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_pool_yield()`, `material_inventory_enrich_packaging_row()` |
 | `set_foam_cacao_cut_yields` | `api_materials_set_foam_cacao_cut_yields()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_foam_cacao_cut_yields()`, `material_packaging_foam_cacao_cut_yields()` |
 | `packaging_deduct` | `api_materials_packaging_deduct()` | `material_inventory_role_can_deduct_packaging()`, `ims_pdo()`, `material_packaging_deduct_for_use()` |
 | `packaging_price_lot` | `api_materials_packaging_price_lot()` | `material_inventory_role_can_edit_packaging_price()`, `ims_pdo()`, `material_packaging_record_invoice_price()` |
+| `packaging_print_sheet` | `api_materials_packaging_print_sheet()` | `ims_user_can()`, `material_inventory_role_can_issue_packing()`, `material_packaging_print_sheet_html()`, `ims_pdo()` |
+| `packaging_lookup_barcode` | `api_materials_packaging_lookup_barcode()` | `ims_user_can()`, `material_inventory_role_can_deduct_packaging()`, `material_packaging_lookup_by_barcode()`, `ims_pdo()`, `material_inventory_role_can_stock_in_packaging()` |
+| `packaging_access_roster` | `api_materials_packaging_access_roster()` | `ims_user_can()`, `material_packaging_access_roster()`, `ims_pdo()` |
 
 ### `online_orders.php`
 

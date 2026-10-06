@@ -19,6 +19,9 @@ export interface MaterialStockRow {
   pool_yield_qty?: number | null;
   pool_yield_unit?: string | null;
   pool_estimated_remaining?: number | null;
+  barcode?: string | null;
+  last_lot_qty?: number | null;
+  level_pct?: number | null;
 }
 
 export interface PackagingStockEntry {
@@ -172,6 +175,31 @@ export function deductPackagingForUse(payload: {
     "packaging_deduct",
     payload
   );
+}
+
+export function packagingPrintSheetUrl(): string {
+  return "/rts/api/v1/materials.php?action=packaging_print_sheet";
+}
+
+export function lookupPackagingBarcode(code: string) {
+  return apiGet<{
+    stock: MaterialStockRow;
+    permissions: { can_deduct: boolean; can_stock_in: boolean };
+  }>("materials.php", "packaging_lookup_barcode", { code });
+}
+
+export interface PackagingAccessPerson {
+  id: number;
+  name: string;
+  role: string;
+  employee_id: string;
+}
+
+export function fetchPackagingAccessRoster() {
+  return apiGet<{
+    stock_out: PackagingAccessPerson[];
+    stock_in_note: string;
+  }>("materials.php", "packaging_access_roster");
 }
 
 export function setPackagingPoolYield(payload: {

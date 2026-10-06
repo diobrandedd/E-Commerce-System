@@ -1951,61 +1951,11 @@ function honey_production_deduct_for_unique_stock_in(
  */
 function honey_bottling_deduct_packaging_stocks(PDO $pdo, int $userId, array $sizeQtys, string $label): array
 {
-    if (!honey_packaging_deduct_enabled($pdo)) {
-        return [];
-    }
-    if (!material_inventory_has_pool_columns($pdo)) {
-        return [];
-    }
+    // Warehouse packaging leaves only via Packaging Materials scan/manual deduct.
+    // Product creation (bottling) must not auto-deduct stocks.on_hand.
+    unset($pdo, $userId, $sizeQtys, $label);
 
-    $deptSt = $pdo->query("SELECT id FROM departments WHERE name IN ('honey', 'Honey') ORDER BY id ASC LIMIT 1");
-    $deptId = $deptSt ? (int) $deptSt->fetchColumn() : 0;
-    if ($deptId < 1) {
-        return [];
-    }
-
-    $applied = [];
-    $totalBottles = 0.0;
-    foreach (HONEY_SIZES as $size) {
-        $qty = (float) ($sizeQtys[$size] ?? 0);
-        if ($qty <= 0) {
-            continue;
-        }
-        $totalBottles += $qty;
-        $bottleName = catalog_honey_bottle_stock_name($size);
-        $st = $pdo->prepare(
-            'SELECT id FROM stocks WHERE dept_id = ? AND name = ? AND supplier_id IS NULL AND production_deduct = 1 LIMIT 1'
-        );
-        $st->execute([$deptId, $bottleName]);
-        $stockId = (int) $st->fetchColumn();
-        if ($stockId < 1) {
-            continue;
-        }
-        $res = dept_packaging_deduct($pdo, $stockId, $qty, $userId, 'bottling: ' . substr($label, 0, 100));
-        $applied[] = [
-            'stock_name' => $bottleName,
-            'qty' => $qty,
-            'on_hand' => $res['on_hand'],
-        ];
-    }
-
-    if ($totalBottles > 0) {
-        $st = $pdo->prepare(
-            'SELECT id FROM stocks WHERE dept_id = ? AND name = ? AND supplier_id IS NULL AND production_deduct = 1 LIMIT 1'
-        );
-        $st->execute([$deptId, CATALOG_HONEY_STICKER_STOCK_NAME]);
-        $stickerId = (int) $st->fetchColumn();
-        if ($stickerId > 0) {
-            $res = dept_packaging_deduct($pdo, $stickerId, $totalBottles, $userId, 'bottling: ' . substr($label, 0, 100));
-            $applied[] = [
-                'stock_name' => CATALOG_HONEY_STICKER_STOCK_NAME,
-                'qty' => $totalBottles,
-                'on_hand' => $res['on_hand'],
-            ];
-        }
-    }
-
-    return $applied;
+    return [];
 }
 
 function honey_packaging_stock_out_sold(PDO $pdo, int $userId, int $packagingRowId, array $sizeQtys, string $saleType): array
