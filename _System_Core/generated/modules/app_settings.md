@@ -1,7 +1,7 @@
 ---
 title: app_settings
 source: includes/app_settings.php
-generated: 2026-10-06T09:41:24+02:00
+generated: 2026-10-08T11:21:46+02:00
 type: module
 function_count: 3
 ---
@@ -24,7 +24,7 @@ function_count: 3
 
 **Tables:** `app_settings`
 
-**Callers (12):**
+**Callers (15):**
 
 - `includes/admin_override_password.php`:12 — `$hash = app_setting_get($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, null);`
 - `includes/admin_override_password.php`:22 — `$hash = app_setting_get($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, null);`
@@ -38,12 +38,15 @@ function_count: 3
 - `includes/dept_pt_settings.php`:52 — `$raw = app_setting_get($pdo, PT_GRAMS_PER_TEA_BAG_SETTING_KEY, null);`
 - `includes/dept_pt_settings.php`:69 — `$raw = app_setting_get($pdo, PT_TEA_BAGS_PER_POUCH_SETTING_KEY, null);`
 - `includes/honey_volume.php`:67 — `$raw = app_setting_get($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, null);`
+- `includes/pyxacct_ap_sync.php`:23 — `$raw = app_setting_get($rtsPdo, 'pyxacct_honey_ap_sync_enabled', '1');`
+- `includes/pyxacct_ap_sync.php`:37 — `return rtrim(trim((string) app_setting_get($rtsPdo, 'pyxacct_api_base_url', '')), '/');`
+- `includes/pyxacct_ap_sync.php`:42 — `return trim((string) app_setting_get($rtsPdo, 'pyxacct_api_token', ''));`
 
 ## app_setting_set {#app_setting_set}
 
 **Tables:** `app_settings`
 
-**Callers (12):**
+**Callers (15):**
 
 - `includes/admin_override_password.php`:49 — `app_setting_set($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, $hash, $userId);`
 - `includes/dept_brc_settings.php`:143 — `app_setting_set($pdo, BRC_GRAMS_PER_POUCH_SETTING_KEY, (string) $gramsPerPouch, $userId);`
@@ -57,4 +60,7 @@ function_count: 3
 - `includes/dept_pt_settings.php`:152 — `app_setting_set($pdo, PT_BAG_POOL_DEDUCT_SETTING_KEY, $bagPoolDeduct ? '1' : '0', $userId);`
 - `includes/honey_volume.php`:48 — `app_setting_set($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, '0', $userId);`
 - `includes/honey_volume.php`:91 — `app_setting_set($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, $stored, $userId);`
+- `includes/pyxacct_ap_sync.php`:30 — `app_setting_set($rtsPdo, 'pyxacct_honey_ap_sync_enabled', $enabled ? '1' : '0', $userId);`
+- `includes/pyxacct_ap_sync.php`:58 — `app_setting_set($rtsPdo, 'pyxacct_api_base_url', $baseUrl, $userId);`
+- `includes/pyxacct_ap_sync.php`:63 — `app_setting_set($rtsPdo, 'pyxacct_api_token', $token, $userId);`
 

@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-10-06T09:41:23+02:00
+generated: 2026-10-08T11:21:45+02:00
 type: memory-bank
-edge_count: 460
+edge_count: 463
 ---
 
 
@@ -264,6 +264,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_pricing.php` | `includes/honey_inventory.php` |
 | `includes/honey_pricing.php` | `includes/honey_pos.php` |
 | `includes/honey_pricing.php` | `includes/honey_volume.php` |
+| `includes/honey_pricing.php` | `includes/pyxacct_ap_sync.php` |
 | `includes/honey_sales_report.php` | `includes/dashboard_inventory.php` |
 | `includes/honey_sales_report.php` | `includes/dept_products.php` |
 | `includes/honey_sales_report.php` | `includes/honey_pos.php` |
@@ -352,6 +353,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_unified.php` | `includes/sku_barcodes.php` |
 | `includes/pos_unified.php` | `includes/sku_barcodes.php` |
 | `includes/pos_unified.php` | `includes/sku_barcodes.php` |
+| `includes/pyxacct_ap_sync.php` | `includes/app_settings.php` |
+| `includes/pyxacct_ap_sync.php` | `includes/db.php` |
 | `includes/rts_attachments.php` | `includes/rts_storage.php` |
 | `includes/rts_barcode_labels.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/rts_barcode_labels.php` | `includes/honey_bottle_barcodes.php` |

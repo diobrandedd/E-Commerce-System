@@ -86,6 +86,16 @@ export function SettingsPage() {
   const [mlOk, setMlOk] = useState<string | null>(null);
   const [mlErr, setMlErr] = useState<string | null>(null);
 
+  const [pyxacctSyncEnabled, setPyxacctSyncEnabled] = useState(true);
+  const [pyxacctApiBaseUrl, setPyxacctApiBaseUrl] = useState("");
+  const [pyxacctApiToken, setPyxacctApiToken] = useState("");
+  const [pyxacctTokenSet, setPyxacctTokenSet] = useState(false);
+  const [pyxacctSyncLoading, setPyxacctSyncLoading] = useState(true);
+  const [pyxacctSyncSaving, setPyxacctSyncSaving] = useState(false);
+  const [pyxacctSyncTesting, setPyxacctSyncTesting] = useState(false);
+  const [pyxacctSyncOk, setPyxacctSyncOk] = useState<string | null>(null);
+  const [pyxacctSyncErr, setPyxacctSyncErr] = useState<string | null>(null);
+
   const [ptGramsTea, setPtGramsTea] = useState("2");
   const [ptBagsPouch, setPtBagsPouch] = useState("24");
   const [ptDefaultGrams, setPtDefaultGrams] = useState(2);
@@ -291,16 +301,47 @@ export function SettingsPage() {
     }
   }, []);
 
+  const loadPyxacctSync = useCallback(async () => {
+    setPyxacctSyncLoading(true);
+    setPyxacctSyncErr(null);
+    try {
+      const data = await apiGet<{
+        enabled: boolean;
+        api_base_url?: string;
+        token_set?: boolean;
+      }>("settings.php", "pyxacct_sync_get");
+      setPyxacctSyncEnabled(!!data.enabled);
+      setPyxacctApiBaseUrl(data.api_base_url ?? "");
+      setPyxacctTokenSet(!!data.token_set);
+      setPyxacctApiToken("");
+    } catch (e) {
+      setPyxacctSyncErr(e instanceof ApiError ? e.message : "Could not load PyxAcct sync setting.");
+    } finally {
+      setPyxacctSyncLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadPins();
     void loadMobileStaff();
     void loadSkuRows();
     void loadHoneyVolume();
+    void loadPyxacctSync();
     void loadPtBom();
     void loadBrcBom();
     void loadCacaoBom();
     void loadAdminPassword();
-  }, [loadPins, loadMobileStaff, loadSkuRows, loadHoneyVolume, loadPtBom, loadBrcBom, loadCacaoBom, loadAdminPassword]);
+  }, [
+    loadPins,
+    loadMobileStaff,
+    loadSkuRows,
+    loadHoneyVolume,
+    loadPyxacctSync,
+    loadPtBom,
+    loadBrcBom,
+    loadCacaoBom,
+    loadAdminPassword,
+  ]);
 
   const saveAdminPassword = async () => {
     setAdminPwSaving(true);
@@ -331,6 +372,63 @@ export function SettingsPage() {
       setAdminPwErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not save.");
     } finally {
       setAdminPwSaving(false);
+    }
+  };
+
+  const savePyxacctSync = async (opts?: { enabled?: boolean }) => {
+    setPyxacctSyncSaving(true);
+    setPyxacctSyncOk(null);
+    setPyxacctSyncErr(null);
+    try {
+      const nextEnabled = opts?.enabled ?? pyxacctSyncEnabled;
+      const payload: {
+        enabled: boolean;
+        api_base_url: string;
+        api_token?: string;
+      } = {
+        enabled: nextEnabled,
+        api_base_url: pyxacctApiBaseUrl.trim(),
+      };
+      if (pyxacctApiToken.trim() !== "") {
+        payload.api_token = pyxacctApiToken.trim();
+      }
+      const res = await apiPost<{
+        enabled: boolean;
+        api_base_url?: string;
+        token_set?: boolean;
+      }>("settings.php", "pyxacct_sync_save", payload);
+      setPyxacctSyncEnabled(!!res.enabled);
+      setPyxacctApiBaseUrl(res.api_base_url ?? pyxacctApiBaseUrl.trim());
+      setPyxacctTokenSet(!!res.token_set);
+      setPyxacctApiToken("");
+      setPyxacctSyncOk(
+        res.enabled
+          ? "PyxAcct honey AP sync saved — priced stock-ins will POST to the API URL."
+          : "PyxAcct honey AP sync is OFF — stock-ins will not create payables.",
+      );
+    } catch (e) {
+      setPyxacctSyncErr(e instanceof ApiError ? e.message : "Could not save PyxAcct sync setting.");
+      await loadPyxacctSync();
+    } finally {
+      setPyxacctSyncSaving(false);
+    }
+  };
+
+  const testPyxacctSync = async () => {
+    setPyxacctSyncTesting(true);
+    setPyxacctSyncOk(null);
+    setPyxacctSyncErr(null);
+    try {
+      const res = await apiPost<{ sync_enabled?: boolean }>("settings.php", "pyxacct_sync_test", {});
+      setPyxacctSyncOk(
+        res.sync_enabled
+          ? "Connection OK — PyxAcct is reachable and accepting honey AP sync."
+          : "Connection OK — PyxAcct is reachable, but honey AP sync is OFF in PyxAcct Settings.",
+      );
+    } catch (e) {
+      setPyxacctSyncErr(e instanceof ApiError ? e.message : "Connection test failed.");
+    } finally {
+      setPyxacctSyncTesting(false);
     }
   };
 
@@ -591,6 +689,8 @@ export function SettingsPage() {
         {skuErr && <AppErrorBanner message={skuErr} />}
         {mlOk && <AppSuccessNotice message={mlOk} />}
         {mlErr && <AppErrorBanner message={mlErr} />}
+        {pyxacctSyncOk && <AppSuccessNotice message={pyxacctSyncOk} />}
+        {pyxacctSyncErr && <AppErrorBanner message={pyxacctSyncErr} />}
         {ptOk && <AppSuccessNotice message={ptOk} />}
         {ptErr && <AppErrorBanner message={ptErr} />}
         {brcOk && <AppSuccessNotice message={brcOk} />}
@@ -655,6 +755,99 @@ export function SettingsPage() {
               >
                 Reset to default
               </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <Shield size={18} className="text-[#C8900A]" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">PyxAcct integration</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                When on, priced honey warehouse stock-ins POST to PyxAcct accounts payable (gallons × unit cost).
+                Set the API base URL for this environment (local, ngrok, or live) and a token matching PyxAcct
+                config <span className="font-mono text-[11px]">integration.tracker_honey_token</span>. PyxAcct
+                must also allow sync in its Settings.
+              </p>
+            </div>
+          </div>
+          {pyxacctSyncLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Sync honey stock-in → accounts payable</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {pyxacctSyncEnabled ? "Currently ON" : "Currently OFF"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {pyxacctSyncSaving ? <Loader2 className="animate-spin text-muted-foreground" size={16} /> : null}
+                  <Switch
+                    checked={pyxacctSyncEnabled}
+                    disabled={pyxacctSyncSaving || pyxacctSyncTesting}
+                    onCheckedChange={checked => {
+                      setPyxacctSyncEnabled(checked);
+                      void savePyxacctSync({ enabled: checked });
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="text-xs text-muted-foreground">PyxAcct API base URL</label>
+                  <input
+                    type="url"
+                    placeholder="http://localhost/PyxAcct"
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={pyxacctApiBaseUrl}
+                    onChange={e => setPyxacctApiBaseUrl(e.target.value)}
+                    disabled={pyxacctSyncSaving || pyxacctSyncTesting}
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    No trailing slash. Example: https://xxxx.ngrok-free.app/PyxAcct
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs text-muted-foreground">API token</label>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder={pyxacctTokenSet ? "•••••••• (saved — leave blank to keep)" : "Paste shared secret"}
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={pyxacctApiToken}
+                    onChange={e => setPyxacctApiToken(e.target.value)}
+                    disabled={pyxacctSyncSaving || pyxacctSyncTesting}
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {pyxacctTokenSet
+                      ? "A token is already stored. Enter a new value only to replace it."
+                      : "Required for sync. Must match the token in PyxAcct config."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  disabled={pyxacctSyncSaving || pyxacctSyncTesting}
+                  onClick={() => void savePyxacctSync()}
+                  className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+                >
+                  {pyxacctSyncSaving ? <Loader2 className="animate-spin" size={14} /> : "Save connection"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pyxacctSyncSaving || pyxacctSyncTesting}
+                  onClick={() => void testPyxacctSync()}
+                >
+                  {pyxacctSyncTesting ? <Loader2 className="animate-spin" size={14} /> : "Test connection"}
+                </Button>
               </div>
             </div>
           )}

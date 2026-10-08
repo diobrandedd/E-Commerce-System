@@ -28,7 +28,7 @@ alwaysApply: false
 | Role | Actions |
 |------|---------|
 | **HR** | View / requests (no stock-in) |
-| **Production manager** (+ `packaging.deduct`) | **Scan / deduct for use** |
+| **Production manager** (+ `packaging.deduct`) | **Scan stock out** + **Report damage** |
 | **Executive** | Stock-in lot + catalog + set on-hand + pool yield + print barcodes + deduct |
 
 Stock-out is scan-first (`PackagingScanStockOutModal`). Level % = on_hand / last lot qty. Bottling/produce do **not** auto-deduct packaging materials.

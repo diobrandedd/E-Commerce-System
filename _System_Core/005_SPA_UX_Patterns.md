@@ -640,9 +640,9 @@ Use `costingMotion.tsx` (`CostingCollapsible`, `CostingDetailReveal`) for varian
 
 | Role | Packaging page actions |
 |------|------------------------|
-| **HR** | **Stock in lot** (total ₱ + qty) — primary receiver |
-| **Production Manager** | **Deduct for use** (qty + reason) — records production usage |
-| **Executive** | All of the above + **set on-hand**, **pool yield**, **add catalog**, extended **activity log** (100 entries) |
+| **HR** | View / requests (no packaging stock-in) |
+| **Production Manager** (+ `packaging.deduct`) | **Scan stock out** + **Report damage** (qty + reason) |
+| **Executive** | Stock-in lot + scan/report + **set on-hand**, **pool yield**, **add catalog**, extended **activity log** |
 
 Shared **Per-unit vs Pool** legend in the modal.
 
@@ -663,7 +663,7 @@ Shared **Per-unit vs Pool** legend in the modal.
 1. `AppModal` `max-h-[90vh]`; `AppModalBody` with `flex flex-col min-h-0 overflow-hidden` (override default body scroll).
 2. Metrics + action buttons: `shrink-0`.
 3. **Recent activity** (or **Activity log** for executive): inner `max-h-44` (or `max-h-64` when extended) `overflow-y-auto` — never let the modal body grow unbounded.
-4. Role actions in modal: **Stock in lot** (HR + exec), **Deduct for use** (prod manager + exec), **Set on-hand** (exec only). Permissions from `packaging_detail` API.
+4. Role actions in modal: **Stock in lot** (exec), **Set on-hand** (exec only). Deduct / damage from list header or row — not Deduct for use. Permissions from `packaging_detail` API.
 
 ### Material modals (inventory folder)
 
@@ -671,7 +671,9 @@ Shared **Per-unit vs Pool** legend in the modal.
 |-------|-----|
 | `PackagingStockInLotModal` | Total ₱ + qty received → unit cost preview |
 | `PackagingOnHandSetModal` | Executive absolute count |
-| `PackagingDeductModal` | Prod manager / exec usage deduct (qty + reason) |
+| `PackagingScanStockOutModal` | Scan barcode → qty + reason stock-out |
+| `PackagingReportDamageModal` | Scan barcode → qty + reason damage (deduct + damaged pool) |
+| `PackagingDamageConfirmModal` | Row Damaged → qty + reason |
 | `PackagingMaterialDetailModal` | Row detail shell + recent entries |
 | `MaterialAdjustModal` | Legacy add/deduct (not used for supplies v2) |
 

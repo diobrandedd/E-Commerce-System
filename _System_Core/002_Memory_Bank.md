@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-08 — Packaging scan-only close + Report damage visible
+**Change:** Scan-only staff landing no longer auto-opens stock-out; X/Done always closes; Report damage button reachable. → [[problems/records/2026-10-08_packaging-report-damage]]
+
+### 2026-10-08 — Packaging report damage + damaged pool
+**Change:** Report damage (scan + row) deducts on-hand (`damage:`) and logs `packaging_material_damage_log`; period totals (Today/Week/Custom); remove Deduct for use. → [[problems/records/2026-10-08_packaging-report-damage]]
+
 ### 2026-10-06 — Packaging stock-out history page
 **Change:** Cross-item history of scan/manual packaging stock-outs (who, qty, reason, when) via History modal on Packaging Materials (`packaging.view`). → [[problems/records/2026-10-06_packaging-stock-out-history]]
 

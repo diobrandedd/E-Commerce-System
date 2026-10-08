@@ -1,7 +1,7 @@
 ---
 title: dept_jar_cacao_settings
 source: includes/dept_jar_cacao_settings.php
-generated: 2026-10-06T09:41:32+02:00
+generated: 2026-10-08T11:21:54+02:00
 type: module
 function_count: 7
 ---
@@ -62,8 +62,8 @@ function_count: 7
 
 **Callers (6):**
 
-- `api/v1/settings.php`:363 — `api_ok(dept_jar_cacao_bom_snapshot(ims_pdo()));`
-- `api/v1/settings.php`:387 — `api_ok(array_merge($saved, dept_jar_cacao_bom_snapshot(ims_pdo())));`
+- `api/v1/settings.php`:369 — `api_ok(dept_jar_cacao_bom_snapshot(ims_pdo()));`
+- `api/v1/settings.php`:393 — `api_ok(array_merge($saved, dept_jar_cacao_bom_snapshot(ims_pdo())));`
 - `includes/dept_inventory.php`:286 — `$bom = dept_jar_cacao_bom_snapshot($pdo);`
 - `includes/dept_inventory.php`:802 — `$bom = dept_jar_cacao_bom_snapshot($pdo);`
 - `includes/dept_jar_cacao_settings.php`:150 — `$snap = dept_jar_cacao_bom_snapshot($pdo);`
@@ -73,5 +73,5 @@ function_count: 7
 
 **Callers (1):**
 
-- `api/v1/settings.php`:376 — `$saved = dept_jar_cacao_bom_save(`
+- `api/v1/settings.php`:382 — `$saved = dept_jar_cacao_bom_save(`
 

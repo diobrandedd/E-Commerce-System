@@ -1190,6 +1190,171 @@ function material_packaging_deduct_for_use(
     ];
 }
 
+/** Username whose login password is required to remove packaging catalog rows. */
+const MATERIAL_PACKAGING_REMOVE_PASSWORD_USERNAME = 'Noli_F';
+
+/**
+ * Verify plain password against the active IMS user Noli_F (live password_hash).
+ */
+function material_packaging_verify_remove_password(PDO $pdo, string $plain): bool
+{
+    $plain = (string) $plain;
+    if ($plain === '') {
+        return false;
+    }
+    $st = $pdo->prepare(
+        'SELECT password_hash FROM users WHERE username = ? AND is_active = 1 LIMIT 1'
+    );
+    $st->execute([MATERIAL_PACKAGING_REMOVE_PASSWORD_USERNAME]);
+    $hash = $st->fetchColumn();
+    if ($hash === false || $hash === null || $hash === '') {
+        return false;
+    }
+
+    return password_verify($plain, (string) $hash);
+}
+
+/**
+ * Soft-remove packaging catalog row (is_active = 0). Requires Noli_F password.
+ *
+ * @return array{stock_id: int, name: string, is_active: int}
+ */
+function material_packaging_catalog_remove(PDO $pdo, int $stockId, string $confirmPassword): array
+{
+    if (!material_packaging_verify_remove_password($pdo, $confirmPassword)) {
+        throw new RuntimeException('Invalid removal password.');
+    }
+    $row = material_inventory_fetch_stock($pdo, $stockId, true);
+    if ($row === null) {
+        throw new RuntimeException('Stock not found.');
+    }
+    if ((string) $row['category'] !== 'packaging') {
+        throw new RuntimeException('Only packaging catalog items can be removed here.');
+    }
+    if (!(int) ($row['is_active'] ?? 1)) {
+        throw new RuntimeException('This item is already removed from the catalog.');
+    }
+    $updated = material_inventory_update($pdo, $stockId, null, null, false);
+
+    return [
+        'stock_id' => (int) $updated['id'],
+        'name' => (string) $updated['name'],
+        'is_active' => (int) ($updated['is_active'] ?? 0),
+    ];
+}
+
+/**
+ * Report packaging damaged: deduct warehouse on-hand (damage: stock entry) and write damaged-pool log.
+ *
+ * @return array{stock_id: int, on_hand: float, entry_id: int, damage_log_id: int}
+ */
+function material_packaging_report_damage(
+    PDO $pdo,
+    int $stockId,
+    float $qty,
+    int $userId,
+    string $reason
+): array {
+    if ($qty <= 0) {
+        throw new RuntimeException('Quantity must be greater than 0.');
+    }
+    $reason = trim($reason);
+    if ($reason === '') {
+        throw new RuntimeException('Reason is required.');
+    }
+    $row = material_inventory_fetch_stock($pdo, $stockId, true);
+    if ($row === null) {
+        throw new RuntimeException('Stock not found.');
+    }
+    if ((string) $row['category'] !== 'packaging') {
+        throw new RuntimeException('Only packaging materials can be reported as damaged.');
+    }
+    if (!(int) ($row['is_active'] ?? 1)) {
+        throw new RuntimeException('Stock item is inactive.');
+    }
+
+    $stockUnit = trim((string) ($row['unit'] ?? 'pcs'));
+    if ($stockUnit === '') {
+        $stockUnit = 'pcs';
+    }
+    if ($stockUnit === 'roll' && abs($qty - round($qty)) > 0.0001) {
+        throw new RuntimeException('Roll quantity must be a whole number (e.g. 1 roll).');
+    }
+
+    $current = round((float) ($row['on_hand'] ?? 0), 2);
+    $deductQty = round($qty, 2);
+    $next = round($current - $deductQty, 2);
+    if ($next < 0) {
+        throw new RuntimeException('Insufficient on-hand quantity.');
+    }
+
+    $batchLabel = substr('damage: ' . $reason, 0, 120);
+    $ins = $pdo->prepare(
+        'INSERT INTO stock_entries (stock_id, dept_id, qty, batching_date, supplier_batch_no, entered_by)
+         VALUES (?, ?, ?, ?, ?, ?)'
+    );
+    $ins->execute([
+        $stockId,
+        (int) $row['dept_id'],
+        -$deductQty,
+        date('Y-m-d H:i:s'),
+        $batchLabel,
+        $userId,
+    ]);
+    $entryId = (int) $pdo->lastInsertId();
+    $pdo->prepare('UPDATE stocks SET on_hand = ? WHERE id = ?')->execute([$next, $stockId]);
+
+    $log = $pdo->prepare(
+        'INSERT INTO packaging_material_damage_log (stock_id, qty, reason, stock_entry_id, reported_by)
+         VALUES (?, ?, ?, ?, ?)'
+    );
+    $log->execute([
+        $stockId,
+        $deductQty,
+        substr($reason, 0, 255),
+        $entryId,
+        $userId,
+    ]);
+    $damageLogId = (int) $pdo->lastInsertId();
+
+    return [
+        'stock_id' => $stockId,
+        'on_hand' => $next,
+        'entry_id' => $entryId,
+        'damage_log_id' => $damageLogId,
+    ];
+}
+
+/**
+ * Sum damaged qty per packaging stock for a date range (inclusive days).
+ *
+ * @return array<int, float> stock_id => qty
+ */
+function material_packaging_damage_totals(PDO $pdo, string $from, string $to): array
+{
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
+        throw new RuntimeException('from and to must be YYYY-MM-DD.');
+    }
+    if ($from > $to) {
+        throw new RuntimeException('from must be on or before to.');
+    }
+
+    $st = $pdo->prepare(
+        "SELECT d.stock_id, SUM(d.qty) AS qty
+         FROM packaging_material_damage_log d
+         INNER JOIN stocks s ON s.id = d.stock_id AND s.category = 'packaging'
+         WHERE d.created_at >= ? AND d.created_at <= ?
+         GROUP BY d.stock_id"
+    );
+    $st->execute([$from . ' 00:00:00', $to . ' 23:59:59']);
+    $out = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+        $out[(int) $row['stock_id']] = round((float) ($row['qty'] ?? 0), 2);
+    }
+
+    return $out;
+}
+
 /** Snap fulfillment roll consumption to 1/16 increments. */
 function material_fulfillment_snap_sixteenths(float $qty): float
 {
@@ -1414,7 +1579,9 @@ function material_pool_recent_entries(PDO $pdo, int $stockId, int $limit = 25): 
                 ? 'count_correction'
                 : (str_starts_with($label, 'use:')
                     ? 'use'
-                    : (str_starts_with($label, 'issue:') ? 'issue' : 'other')));
+                    : (str_starts_with($label, 'damage:')
+                        ? 'damage'
+                        : (str_starts_with($label, 'issue:') ? 'issue' : 'other'))));
         if ($parsed !== null) {
             $row['lot_total_price'] = $parsed['total'];
             $row['lot_qty'] = $parsed['qty'];

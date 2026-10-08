@@ -11,6 +11,9 @@ return [
         'pass' => '',
         'charset' => 'utf8mb4',
     ],
+    // Deprecated: honey AP auto-sync now uses HTTP (System Settings → PyxAcct URL + token).
+    // Kept only so old installs do not break if something still reads the key.
+    // 'pyxacct_db' => [ ... ],
     // Uploads outside this git folder — see config/config.sample.php and README.md
     'storage' => [
         'root' => 'C:/xampp/htdocs/rts_storage',

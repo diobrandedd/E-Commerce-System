@@ -55,7 +55,7 @@ export function PackagingScanStockOutModal({
 
   const handleClose = () => {
     reset();
-    if (!persistOpen) onClose();
+    onClose();
   };
 
   const resolveCode = async (code: string) => {
@@ -233,11 +233,9 @@ export function PackagingScanStockOutModal({
           )}
         </AppModalBody>
         <AppModalFooter>
-          {!persistOpen && (
-            <Button type="button" variant="outline" onClick={handleClose} disabled={busy}>
-              Cancel
-            </Button>
-          )}
+          <Button type="button" variant="outline" onClick={handleClose} disabled={busy}>
+            {persistOpen ? "Done" : "Cancel"}
+          </Button>
           {step === "scan" ? (
             <Button type="button" onClick={() => void resolveCode(manualCode)} disabled={busy || !manualCode.trim()}>
               {busy ? <Loader2 className="size-4 animate-spin" /> : null}

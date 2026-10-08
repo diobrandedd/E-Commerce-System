@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-06T09:41:23+02:00
+generated: 2026-10-08T11:21:45+02:00
 type: memory-bank
 ---
 
@@ -402,6 +402,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `set_pool_yield` | `api_materials_set_pool_yield()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_pool_yield()`, `material_inventory_enrich_packaging_row()` |
 | `set_foam_cacao_cut_yields` | `api_materials_set_foam_cacao_cut_yields()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_foam_cacao_cut_yields()`, `material_packaging_foam_cacao_cut_yields()` |
 | `packaging_deduct` | `api_materials_packaging_deduct()` | `material_inventory_role_can_deduct_packaging()`, `ims_pdo()`, `material_packaging_deduct_for_use()` |
+| `packaging_report_damage` | `api_materials_packaging_report_damage()` | `material_inventory_role_can_deduct_packaging()`, `ims_pdo()`, `material_packaging_report_damage()` |
+| `packaging_damage_totals` | `api_materials_packaging_damage_totals()` | `material_packaging_damage_totals()`, `ims_pdo()` |
+| `packaging_catalog_remove` | `api_materials_packaging_catalog_remove()` | `ims_pdo()`, `material_packaging_catalog_remove()` |
 | `packaging_price_lot` | `api_materials_packaging_price_lot()` | `material_inventory_role_can_edit_packaging_price()`, `ims_pdo()`, `material_packaging_record_invoice_price()` |
 | `packaging_print_sheet` | `api_materials_packaging_print_sheet()` | `ims_user_can()`, `material_inventory_role_can_issue_packing()`, `material_packaging_print_sheet_html()`, `ims_pdo()` |
 | `packaging_lookup_barcode` | `api_materials_packaging_lookup_barcode()` | `ims_user_can()`, `material_inventory_role_can_deduct_packaging()`, `material_packaging_lookup_by_barcode()`, `ims_pdo()`, `material_inventory_role_can_stock_in_packaging()` |
@@ -671,6 +674,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `jar_cacao_bom_save` | `api_settings_jar_cacao_bom_save()` | `dept_jar_cacao_bom_save()`, `ims_pdo()`, `dept_jar_cacao_bom_snapshot()` |
 | `admin_password_get` | `api_settings_admin_password_get()` | `admin_override_password_configured()`, `ims_pdo()` |
 | `admin_password_save` | `api_settings_admin_password_save()` | `admin_override_password_set()`, `ims_pdo()` |
+| `pyxacct_sync_get` | `api_settings_pyxacct_sync_get()` | `pyxacct_api_settings_public()`, `ims_pdo()` |
+| `pyxacct_sync_save` | `api_settings_pyxacct_sync_save()` | `pyxacct_api_settings_save()`, `ims_pdo()` |
+| `pyxacct_sync_test` | `api_settings_pyxacct_sync_test()` | `pyxacct_test_connection()`, `ims_pdo()` |
 
 ### `sku_barcodes.php`
 

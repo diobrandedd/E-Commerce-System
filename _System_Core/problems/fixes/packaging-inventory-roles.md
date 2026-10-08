@@ -10,7 +10,7 @@ tags: [pattern, packaging, inventory, roles, hr, prod_manager, executive, barcod
 | Role | Warehouse packaging (`stocks.on_hand`) | For-packing staging | On-hold parcels |
 |------|----------------------------------------|---------------------|-----------------|
 | **HR** | View / requests (no stock-in) | — | — |
-| **prod_manager** (+ staff with `packaging.deduct`) | **Scan / deduct for use** | **Issue** materials, view counters | Re-waybill + ship (Deliveries) |
+| **prod_manager** (+ staff with `packaging.deduct`) | **Scan stock out** + **Report damage** | **Issue** materials, view counters | Re-waybill + ship (Deliveries) |
 | **csr_tl** | No access | No access | **View only** (Online Parcels `on_hold`) |
 | **Executive** | Stock-in lot, catalog, set on-hand, pool yield, print barcodes, deduct | All | All |
 
@@ -26,6 +26,8 @@ tags: [pattern, packaging, inventory, roles, hr, prod_manager, executive, barcod
 |--------|------|--------|
 | `stock_in_lot` (packaging) | Executive only | `material_inventory_role_can_stock_in_packaging()` |
 | `packaging_deduct` / scan | `packaging.deduct` | `material_packaging_deduct_for_use` |
+| `packaging_report_damage` | `packaging.deduct` | `material_packaging_report_damage` |
+| `packaging_damage_totals` | view | `material_packaging_damage_totals` |
 | `packaging_print_sheet` | `packaging.view` | `material_packaging_print_sheet_html` |
 | `packaging_lookup_barcode` | view/deduct | `material_packaging_lookup_by_barcode` |
 | `packaging_access_roster` | view | `material_packaging_access_roster` |
@@ -33,8 +35,9 @@ tags: [pattern, packaging, inventory, roles, hr, prod_manager, executive, barcod
 
 ## SPA
 
-- Packaging Materials: Level column, Generate all barcodes, Scan stock out, access strip
-- Guide updated for scan-first workflow
+- Packaging Materials: Level column, Generate all barcodes, Scan stock out, Report damage, damage period totals, access strip
+- No Deduct for use on detail modal — scan stock out / report damage only
+- Guide updated for scan-first + damage workflow
 
 ## Files
 

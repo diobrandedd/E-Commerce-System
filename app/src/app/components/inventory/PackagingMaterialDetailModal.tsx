@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
-import { PackagingDeductModal } from "@/app/components/inventory/PackagingDeductModal";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PackagingOnHandSetModal } from "@/app/components/inventory/PackagingOnHandSetModal";
 import { PackagingStockInLotModal } from "@/app/components/inventory/PackagingStockInLotModal";
 import { PackagingPriceLotModal } from "@/app/components/inventory/PackagingPriceLotModal";
+import { AppErrorBanner, AppStepSwitch } from "@/app/components/layout/appFeedbackMotion";
 import {
+  fetchPackagingDamageTotals,
   fetchPackagingDetail,
   isGenericInsulationFoamRoll,
+  removePackagingCatalogItem,
   setPackagingFoamCacaoCutYields,
   setPackagingPoolYield,
   type FoamCacaoCutYield,
@@ -17,6 +19,26 @@ import {
 } from "@/app/lib/materials";
 import { ApiError } from "@/app/lib/api";
 import { Button } from "@/app/components/ui/button";
+import { cn } from "@/app/components/ui/utils";
+
+type ActivityTab = "stock_out" | "stock_in" | "damaged";
+
+const ACTIVITY_TABS: { id: ActivityTab; label: string }[] = [
+  { id: "stock_out", label: "Stock out" },
+  { id: "stock_in", label: "Stock in" },
+  { id: "damaged", label: "Damaged history" },
+];
+
+function entryMatchesTab(entry: PackagingStockEntry, tab: ActivityTab): boolean {
+  const kind = entry.entry_kind;
+  const qty = Number(entry.qty ?? 0);
+  if (tab === "damaged") return kind === "damage";
+  if (tab === "stock_in") return kind === "lot" || qty > 0;
+  // Stock out: use / issue / other negatives (legacy produce, etc.) — not damage
+  if (kind === "damage") return false;
+  if (kind === "use" || kind === "issue") return true;
+  return qty < 0;
+}
 
 interface PackagingMaterialDetailModalProps {
   stock: MaterialStockRow;
@@ -42,7 +64,11 @@ function formatEntryLine(entry: PackagingStockEntry, unit: string) {
   }
   if (entry.entry_kind === "use") {
     const note = entry.supplier_batch_no?.replace(/^use:\s*/i, "").trim();
-    return `Deduct for use · ${Math.abs(entry.qty)} ${unit}${note ? ` · ${note}` : ""}`;
+    return `Stock out · ${Math.abs(entry.qty)} ${unit}${note ? ` · ${note}` : ""}`;
+  }
+  if (entry.entry_kind === "damage") {
+    const note = entry.supplier_batch_no?.replace(/^damage:\s*/i, "").trim();
+    return `Damaged · ${Math.abs(entry.qty)} ${unit}${note ? ` · ${note}` : ""}`;
   }
   const label = entry.supplier_batch_no || "Adjustment";
   return `${label} · ${entry.qty >= 0 ? "+" : ""}${entry.qty} ${unit}`;
@@ -60,6 +86,7 @@ const defaultPermissions = (
   can_set_pool_yield: isExec,
   can_set_foam_cacao_cut_yields: false,
   can_view_extended_log: isExec,
+  can_remove_catalog: isExec,
 });
 
 export function PackagingMaterialDetailModal({
@@ -79,7 +106,6 @@ export function PackagingMaterialDetailModal({
   const [error, setError] = useState<string | null>(null);
   const [showStockIn, setShowStockIn] = useState(false);
   const [showPriceLot, setShowPriceLot] = useState(false);
-  const [showDeduct, setShowDeduct] = useState(false);
   const [showSetOnHand, setShowSetOnHand] = useState(false);
   const [yieldQty, setYieldQty] = useState("");
   const [yieldSaving, setYieldSaving] = useState(false);
@@ -87,17 +113,30 @@ export function PackagingMaterialDetailModal({
   const [foamCuts9x12, setFoamCuts9x12] = useState("");
   const [foamCuts12_5x12, setFoamCuts12_5x12] = useState("");
   const [foamCutsSaving, setFoamCutsSaving] = useState(false);
+  const [activityTab, setActivityTab] = useState<ActivityTab>("stock_out");
+  const [damagedTotal, setDamagedTotal] = useState(0);
+  const [showRemove, setShowRemove] = useState(false);
+  const [removePassword, setRemovePassword] = useState("");
+  const [removeBusy, setRemoveBusy] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchPackagingDetail(stock.id);
+      const today = new Date();
+      const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      const [data, damage] = await Promise.all([
+        fetchPackagingDetail(stock.id),
+        fetchPackagingDamageTotals({ from: "2020-01-01", to: ymd }).catch(() => null),
+      ]);
       setDetail(data.stock);
       setEntries(data.entries);
       if (data.permissions) {
         setPermissions(data.permissions);
       }
+      const dmg = damage?.totals.find(t => t.stock_id === stock.id);
+      setDamagedTotal(dmg ? Number(dmg.qty) || 0 : 0);
       if (data.stock.is_pool_packaging && data.stock.pool_yield_qty != null) {
         setYieldQty(String(data.stock.pool_yield_qty));
       }
@@ -121,10 +160,13 @@ export function PackagingMaterialDetailModal({
 
   useEffect(() => { void refresh(); }, [refresh]);
 
+  useEffect(() => {
+    setActivityTab("stock_out");
+  }, [stock.id]);
+
   const row = detail ?? stock;
   const onHand = Number(row.on_hand ?? 0);
   const unitCost = Number(row.current_price ?? 0);
-  const poolValue = onHand * unitCost;
   const isPool = Boolean(row.is_pool_packaging);
   const isGenericFoam = isGenericInsulationFoamRoll(row.name);
   const poolRemaining = row.pool_estimated_remaining;
@@ -188,11 +230,55 @@ export function PackagingMaterialDetailModal({
   const handleChildDone = () => {
     setShowStockIn(false);
     setShowPriceLot(false);
-    setShowDeduct(false);
     setShowSetOnHand(false);
     void refresh();
     onChanged();
   };
+
+  const closeRemove = () => {
+    if (removeBusy) return;
+    setShowRemove(false);
+    setRemovePassword("");
+    setRemoveError(null);
+  };
+
+  const submitRemove = async () => {
+    if (!removePassword.trim()) {
+      setRemoveError("Enter the removal password.");
+      return;
+    }
+    setRemoveBusy(true);
+    setRemoveError(null);
+    try {
+      await removePackagingCatalogItem({
+        stock_id: row.id,
+        confirm_password: removePassword,
+      });
+      setShowRemove(false);
+      setRemovePassword("");
+      onChanged();
+      onClose();
+    } catch (e) {
+      setRemoveError(e instanceof ApiError ? e.message : "Could not remove catalog item.");
+    } finally {
+      setRemoveBusy(false);
+    }
+  };
+
+  const tabEntries = useMemo(
+    () => entries.filter(e => entryMatchesTab(e, activityTab)),
+    [entries, activityTab],
+  );
+
+  const tabCounts = useMemo(() => {
+    const counts: Record<ActivityTab, number> = { stock_out: 0, stock_in: 0, damaged: 0 };
+    for (const e of entries) {
+      if (entryMatchesTab(e, "stock_out")) counts.stock_out += 1;
+      if (entryMatchesTab(e, "stock_in")) counts.stock_in += 1;
+      if (entryMatchesTab(e, "damaged")) counts.damaged += 1;
+    }
+    return counts;
+  }, [entries]);
 
   return (
     <>
@@ -321,21 +407,23 @@ export function PackagingMaterialDetailModal({
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-3 shrink-0">
-            <div className="rounded-xl border bg-secondary/30 px-3 py-3">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Unit cost</p>
-              <p className="text-sm font-semibold mt-1">{peso(row.current_price)}</p>
-              <p className="text-[10px] text-muted-foreground">per {row.unit}</p>
-            </div>
+          <div className="grid grid-cols-2 gap-3 shrink-0">
             <div className="rounded-xl border bg-secondary/30 px-3 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">On hand</p>
-              <p className="text-sm font-semibold mt-1">{onHand.toLocaleString()}</p>
+              <p className="text-sm font-semibold mt-1 tabular-nums">{onHand.toLocaleString()}</p>
               <p className="text-[10px] text-muted-foreground">{row.unit}</p>
             </div>
             <div className="rounded-xl border bg-secondary/30 px-3 py-3">
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Pool value</p>
-              <p className="text-sm font-semibold mt-1">{peso(poolValue)}</p>
-              <p className="text-[10px] text-muted-foreground">at unit cost</p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Damaged</p>
+              <p
+                className={cn(
+                  "text-sm font-semibold mt-1 tabular-nums",
+                  damagedTotal > 0 ? "text-destructive" : "text-foreground",
+                )}
+              >
+                {damagedTotal.toLocaleString()}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{row.unit} · all time</p>
             </div>
           </div>
 
@@ -360,15 +448,6 @@ export function PackagingMaterialDetailModal({
                 Stock in lot
               </button>
             )}
-            {permissions.can_deduct && (
-              <button
-                type="button"
-                onClick={() => setShowDeduct(true)}
-                className="text-xs font-semibold px-3 py-2 rounded-lg border border-border hover:bg-secondary/50"
-              >
-                Deduct for use
-              </button>
-            )}
             {permissions.can_set_on_hand && (
               <button
                 type="button"
@@ -382,35 +461,91 @@ export function PackagingMaterialDetailModal({
 
           <div className="flex flex-col min-h-0 flex-1">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 shrink-0">
-              {permissions.can_view_extended_log ? "Activity log" : "Recent activity"}
+              History
             </h4>
+            <div
+              className="flex gap-1 p-1 rounded-xl border border-border bg-secondary/30 shrink-0 mb-2"
+              role="tablist"
+              aria-label="Movement history"
+            >
+              {ACTIVITY_TABS.map(tab => {
+                const active = activityTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setActivityTab(tab.id)}
+                    className={cn(
+                      "flex-1 min-h-8 rounded-lg px-2 text-[11px] font-semibold transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                      active
+                        ? tab.id === "damaged"
+                          ? "bg-destructive/15 text-destructive shadow-sm"
+                          : "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-card/60",
+                    )}
+                  >
+                    {tab.label}
+                    <span className="ml-1 tabular-nums opacity-70">({tabCounts[tab.id]})</span>
+                  </button>
+                );
+              })}
+            </div>
             {loading ? (
               <div className="py-6 text-center text-muted-foreground shrink-0">
                 <Loader2 className="inline animate-spin" size={14} />
               </div>
-            ) : entries.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center shrink-0">No stock movements yet.</p>
             ) : (
-              <div
-                className={`min-h-0 overflow-y-auto overscroll-contain rounded-xl border border-border ${
-                  permissions.can_view_extended_log ? "max-h-64" : "max-h-44"
-                }`}
-                aria-label="Activity log"
-              >
-                <ul className="divide-y divide-border">
-                  {entries.map(entry => (
-                    <li key={entry.id} className="px-3 py-2.5 text-xs">
-                      <p className="font-medium text-foreground">{formatEntryLine(entry, row.unit)}</p>
-                      <p className="text-muted-foreground mt-0.5">
-                        {new Date(entry.created_at.replace(" ", "T")).toLocaleString()}
-                        {entry.entered_by_name ? ` · ${entry.entered_by_name}` : ""}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <AppStepSwitch stepKey={activityTab} className="min-h-0 flex-1 flex flex-col">
+                {tabEntries.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center shrink-0">
+                    {activityTab === "damaged"
+                      ? "No damaged reports yet."
+                      : activityTab === "stock_in"
+                        ? "No stock-in lots yet."
+                        : "No stock-out entries yet."}
+                  </p>
+                ) : (
+                  <div
+                    className={`min-h-0 overflow-y-auto overscroll-contain rounded-xl border border-border ${
+                      permissions.can_view_extended_log ? "max-h-64" : "max-h-44"
+                    }`}
+                    aria-label={`${ACTIVITY_TABS.find(t => t.id === activityTab)?.label ?? "History"} list`}
+                  >
+                    <ul className="divide-y divide-border">
+                      {tabEntries.map(entry => (
+                        <li key={entry.id} className="px-3 py-2.5 text-xs">
+                          <p className="font-medium text-foreground">{formatEntryLine(entry, row.unit)}</p>
+                          <p className="text-muted-foreground mt-0.5">
+                            {new Date(entry.created_at.replace(" ", "T")).toLocaleString()}
+                            {entry.entered_by_name ? ` · ${entry.entered_by_name}` : ""}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </AppStepSwitch>
             )}
           </div>
+
+          {permissions.can_remove_catalog && (
+            <div className="shrink-0 pt-2 border-t border-border/50">
+              <button
+                type="button"
+                onClick={() => {
+                  setRemoveError(null);
+                  setRemovePassword("");
+                  setShowRemove(true);
+                }}
+                className="text-[11px] text-muted-foreground/60 hover:text-destructive transition-colors underline-offset-2 hover:underline"
+              >
+                Remove from catalog…
+              </button>
+            </div>
+          )}
         </AppModalBody>
       </AppModal>
 
@@ -420,11 +555,59 @@ export function PackagingMaterialDetailModal({
       {showPriceLot && (
         <PackagingPriceLotModal stock={row} onClose={() => setShowPriceLot(false)} onDone={handleChildDone} />
       )}
-      {showDeduct && (
-        <PackagingDeductModal stock={row} onClose={() => setShowDeduct(false)} onDone={handleChildDone} />
-      )}
       {showSetOnHand && (
         <PackagingOnHandSetModal stock={row} onClose={() => setShowSetOnHand(false)} onDone={handleChildDone} />
+      )}
+
+      {showRemove && (
+        <AppModal open onClose={closeRemove} panelClassName="max-w-sm w-full">
+          <AppModalHeader
+            title="Remove from catalog"
+            subtitle={`${row.name} will be hidden from Packaging Materials. History is kept.`}
+            onClose={closeRemove}
+          />
+          <AppModalBody className="space-y-3">
+            {removeError && <AppErrorBanner message={removeError} />}
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Enter Noli_F&apos;s account password to confirm. This does not erase stock history.
+            </p>
+            <div>
+              <label htmlFor="packaging-remove-pw" className="text-xs text-muted-foreground">
+                Password
+              </label>
+              <input
+                id="packaging-remove-pw"
+                type="password"
+                autoComplete="current-password"
+                value={removePassword}
+                onChange={e => setRemovePassword(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void submitRemove();
+                  }
+                }}
+                disabled={removeBusy}
+                autoFocus
+                className="mt-1 w-full rounded-lg border-2 border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+              />
+            </div>
+          </AppModalBody>
+          <AppModalFooter>
+            <Button type="button" variant="outline" onClick={closeRemove} disabled={removeBusy}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void submitRemove()}
+              disabled={removeBusy || !removePassword.trim()}
+            >
+              {removeBusy ? <Loader2 className="size-4 animate-spin" /> : null}
+              Remove
+            </Button>
+          </AppModalFooter>
+        </AppModal>
       )}
     </>
   );

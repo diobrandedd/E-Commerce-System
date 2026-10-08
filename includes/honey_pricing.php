@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/honey_inventory.php';
 require_once __DIR__ . '/honey_pos.php';
 require_once __DIR__ . '/honey_volume.php';
+require_once __DIR__ . '/pyxacct_ap_sync.php';
 require_once __DIR__ . '/../api/v1/_costing_helpers.php';
 
 const HONEY_PRICING_VARIANTS = ['light', 'amber', 'dark'];
@@ -58,6 +59,11 @@ function honey_pricing_apply_row_cost(PDO $pdo, int $warehouseRowId, ?float $uni
         $override ? 1 : 0,
         $warehouseRowId,
     ]);
+
+    // Auto-create / update PyxAcct AP when a peso unit cost is set
+    if ($unitCost !== null && $unitCost > 0) {
+        pyxacct_sync_honey_warehouse_payable($pdo, $warehouseRowId);
+    }
 }
 
 /**

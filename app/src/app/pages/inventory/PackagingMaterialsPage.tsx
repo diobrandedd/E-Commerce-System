@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowUp,
   BookOpen,
+  ChevronDown,
   ChevronRight,
   History,
   Loader2,
@@ -17,7 +19,9 @@ import {
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { MaterialCatalogModal } from "@/app/components/inventory/MaterialCatalogModal";
+import { PackagingDamageConfirmModal } from "@/app/components/inventory/PackagingDamageConfirmModal";
 import { PackagingInventoryGuideModal } from "@/app/components/inventory/PackagingInventoryGuideModal";
+import { PackagingReportDamageModal } from "@/app/components/inventory/PackagingReportDamageModal";
 import { PackagingScanStockOutModal } from "@/app/components/inventory/PackagingScanStockOutModal";
 import { PackagingStockOutHistoryModal } from "@/app/components/inventory/PackagingStockOutHistoryModal";
 import { runPackagingInventoryTour } from "@/app/components/tour/guides/packagingInventoryTour";
@@ -34,6 +38,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import {
   fetchPackagingAccessRoster,
+  fetchPackagingDamageTotals,
   listMaterials,
   packagingPrintSheetUrl,
   type MaterialStockRow,
@@ -44,6 +49,36 @@ import { cn } from "@/app/components/ui/utils";
 type StockFilter = "all" | "per_unit" | "pool" | "out_of_stock" | "fulfillment";
 type SortKey = "name" | "on_hand" | "level" | "last_stock_in";
 type SortDir = "asc" | "desc";
+type DamagePeriod = "today" | "week" | "custom";
+
+function ymdLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function damagePeriodRange(
+  period: DamagePeriod,
+  customFrom: string,
+  customTo: string,
+): { from: string; to: string } {
+  const now = new Date();
+  const to = ymdLocal(now);
+  if (period === "today") {
+    return { from: to, to };
+  }
+  if (period === "week") {
+    const start = new Date(now);
+    const day = start.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    start.setDate(start.getDate() + mondayOffset);
+    return { from: ymdLocal(start), to };
+  }
+  const from = customFrom || to;
+  const end = customTo || to;
+  return from <= end ? { from, to: end } : { from: end, to: from };
+}
 
 const FILTER_CHIPS: { id: StockFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -61,8 +96,84 @@ const SORT_OPTIONS: { id: SortKey; label: string }[] = [
 ];
 
 const SEARCH_INPUT_CLASS =
-  "w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border-2 border-border bg-card " +
+  "w-full min-h-10 sm:min-h-11 pl-9 pr-3 py-2 text-base sm:text-sm rounded-lg border-2 border-border bg-card " +
   "focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-shadow";
+
+function PackagingMobileCatalogRow({
+  row,
+  damagedQty,
+  canDeduct,
+  onOpen,
+  onReportDamage,
+}: {
+  row: MaterialStockRow;
+  damagedQty: number;
+  canDeduct: boolean;
+  onOpen: () => void;
+  onReportDamage: () => void;
+}) {
+  const onHand = Number(row.on_hand ?? 0);
+  const hasStock = onHand > 0;
+  const isPool = Boolean(row.is_pool_packaging);
+  const pct = row.level_pct;
+  const levelLabel = pct != null && Number.isFinite(pct) ? `${Math.round(pct)}%` : "—";
+
+  return (
+    <div
+      className={cn(
+        "flex items-stretch border-b border-border last:border-b-0",
+        !hasStock && "bg-amber-50/70 dark:bg-amber-950/20",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        className={cn(
+          "min-w-0 flex-1 text-left px-3 py-2.5 space-y-1 transition-colors",
+          "active:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
+          appHoverRow,
+        )}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="font-medium text-sm text-foreground truncate leading-snug">{row.name}</p>
+          <TypeBadge isPool={isPool} />
+          {!hasStock && (
+            <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">
+              Empty
+            </span>
+          )}
+          <ChevronRight size={14} className="text-muted-foreground shrink-0 ml-auto" aria-hidden />
+        </div>
+        <div className="flex items-center gap-2.5 text-xs tabular-nums text-muted-foreground">
+          <span className={cn("font-semibold text-foreground", !hasStock && "text-amber-800 dark:text-amber-300")}>
+            {onHand.toLocaleString()} {row.unit}
+          </span>
+          <span aria-hidden>·</span>
+          <span>{levelLabel}</span>
+          <span aria-hidden>·</span>
+          <span className={cn(damagedQty > 0 ? "text-destructive font-medium" : undefined)}>
+            {damagedQty.toLocaleString()} dmg
+          </span>
+        </div>
+      </button>
+      {canDeduct && (
+        <button
+          type="button"
+          onClick={onReportDamage}
+          className={cn(
+            "shrink-0 w-11 flex flex-col items-center justify-center gap-0.5 border-l border-border",
+            "text-destructive active:bg-destructive/10",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-destructive/40",
+          )}
+          aria-label={`Report damage for ${row.name}`}
+        >
+          <AlertTriangle size={15} aria-hidden />
+          <span className="text-[9px] font-semibold leading-none">Dmg</span>
+        </button>
+      )}
+    </div>
+  );
+}
 
 function comparePackagingRows(a: MaterialStockRow, b: MaterialStockRow, key: SortKey, dir: SortDir): number {
   const mul = dir === "asc" ? 1 : -1;
@@ -200,6 +311,8 @@ export function PackagingMaterialsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
+  const [reportDamageOpen, setReportDamageOpen] = useState(false);
+  const [damageRow, setDamageRow] = useState<MaterialStockRow | null>(null);
   const [detailRow, setDetailRow] = useState<MaterialStockRow | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -208,6 +321,11 @@ export function PackagingMaterialsPage() {
   const [filter, setFilter] = useState<StockFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [damagePeriod, setDamagePeriod] = useState<DamagePeriod>("today");
+  const [damageCustomFrom, setDamageCustomFrom] = useState(() => ymdLocal(new Date()));
+  const [damageCustomTo, setDamageCustomTo] = useState(() => ymdLocal(new Date()));
+  const [damageTotals, setDamageTotals] = useState<Record<number, number>>({});
+  const [rosterExpanded, setRosterExpanded] = useState(false);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -217,6 +335,28 @@ export function PackagingMaterialsPage() {
     setSortKey(key);
     setSortDir(key === "name" ? "asc" : "desc");
   };
+
+  const damageRange = useMemo(
+    () => damagePeriodRange(damagePeriod, damageCustomFrom, damageCustomTo),
+    [damagePeriod, damageCustomFrom, damageCustomTo],
+  );
+
+  const refreshDamageTotals = useCallback(async () => {
+    if (scanOnly || !canView) {
+      setDamageTotals({});
+      return;
+    }
+    try {
+      const data = await fetchPackagingDamageTotals(damageRange);
+      const map: Record<number, number> = {};
+      for (const row of data.totals) {
+        map[row.stock_id] = Number(row.qty) || 0;
+      }
+      setDamageTotals(map);
+    } catch {
+      setDamageTotals({});
+    }
+  }, [scanOnly, canView, damageRange]);
 
   const refresh = useCallback(async () => {
     if (scanOnly) {
@@ -234,17 +374,15 @@ export function PackagingMaterialsPage() {
         setRoster(access.stock_out);
         setStockInNote(access.stock_in_note);
       }
+      await refreshDamageTotals();
     } finally {
       setLoading(false);
     }
-  }, [scanOnly, canView]);
+  }, [scanOnly, canView, refreshDamageTotals]);
 
   useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => { void refreshDamageTotals(); }, [refreshDamageTotals]);
   useLiveRefresh(refresh);
-
-  useEffect(() => {
-    if (scanOnly) setScanOpen(true);
-  }, [scanOnly]);
 
   const stats = useMemo(() => {
     const inStock = items.filter(i => Number(i.on_hand) > 0).length;
@@ -291,7 +429,7 @@ export function PackagingMaterialsPage() {
     return (
       <PageLayout
         title="Packaging stock out"
-        subtitle="Scan a barcode to deduct packaging from on-hand"
+        subtitle="Scan to stock out or report damaged packaging"
       >
         <AppSectionEnter className="max-w-md mx-auto">
           <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm space-y-5 text-center">
@@ -299,20 +437,37 @@ export function PackagingMaterialsPage() {
               <ScanLine size={28} strokeWidth={1.75} aria-hidden />
             </div>
             <div className="space-y-2">
-              <h2 className="text-lg font-semibold text-foreground tracking-tight">Ready to stock out</h2>
+              <h2 className="text-lg font-semibold text-foreground tracking-tight">Choose an action</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Point the camera at a packaging label or type the code. Confirm quantity and reason before deducting.
+                Scan stock out for floor use. Report damage when packaging is ruined — still deducts on-hand and logs the damaged pool.
               </p>
             </div>
-            <Button type="button" className="w-full min-h-11" onClick={() => setScanOpen(true)}>
-              <ScanLine className="size-4" /> Scan packaging barcode
-            </Button>
+            <div className="flex flex-col gap-2.5">
+              <Button type="button" className="w-full min-h-12 text-base" onClick={() => setScanOpen(true)}>
+                <ScanLine className="size-4" /> Scan stock out
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-12 text-base border-destructive/40 text-destructive hover:bg-destructive/5"
+                onClick={() => setReportDamageOpen(true)}
+              >
+                <AlertTriangle className="size-4" /> Report damage
+              </Button>
+            </div>
           </div>
         </AppSectionEnter>
         <PackagingScanStockOutModal
           open={scanOpen}
           onClose={() => setScanOpen(false)}
           onDone={() => undefined}
+          persistOpen
+        />
+        <PackagingReportDamageModal
+          open={reportDamageOpen}
+          onClose={() => setReportDamageOpen(false)}
+          onDone={() => undefined}
+          persistOpen
         />
       </PageLayout>
     );
@@ -321,7 +476,7 @@ export function PackagingMaterialsPage() {
   return (
     <PageLayout
       title="Packaging Materials"
-      subtitle="Warehouse packaging · scan stock-out · level vs last lot"
+      subtitle="Warehouse packaging · scan stock-out · report damage · level vs last lot"
       actions={
         <div className="flex items-center gap-2">
           <div className="sm:hidden flex items-center gap-2">
@@ -357,9 +512,20 @@ export function PackagingMaterialsPage() {
               <Printer className="size-3.5" /> Generate all barcodes
             </Button>
             {canDeduct && (
-              <Button type="button" size="sm" onClick={() => setScanOpen(true)}>
-                <ScanLine className="size-3.5" /> Scan stock out
-              </Button>
+              <>
+                <Button type="button" size="sm" onClick={() => setScanOpen(true)}>
+                  <ScanLine className="size-3.5" /> Scan stock out
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-destructive/40 text-destructive hover:bg-destructive/5"
+                  onClick={() => setReportDamageOpen(true)}
+                >
+                  <AlertTriangle className="size-3.5" /> Report damage
+                </Button>
+              </>
             )}
             {isExec && (
               <Button type="button" size="sm" onClick={() => setShowCreate(true)}>
@@ -370,66 +536,100 @@ export function PackagingMaterialsPage() {
         </div>
       }
     >
-      <div className="flex flex-col h-[calc(100dvh-8rem)] min-h-[18rem] min-w-0 gap-3 sm:gap-4">
-        <AppSectionEnter index={0} className="shrink-0">
+      <div className="flex flex-col h-[calc(100dvh-8rem)] min-h-[18rem] min-w-0 gap-2 sm:gap-4">
+        <AppSectionEnter index={0} className="shrink-0 hidden sm:block">
           <div
-            className="rounded-xl border border-border bg-card px-3.5 py-3 sm:px-4 space-y-2.5"
+            className="rounded-xl border border-border bg-card overflow-hidden"
             data-tour="packaging-access"
           >
-            <div className="flex items-start gap-2.5">
-              <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
+            <button
+              type="button"
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3.5 py-3 sm:px-4 text-left sm:cursor-default",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
+                "sm:pointer-events-none",
+              )}
+              onClick={() => setRosterExpanded(v => !v)}
+              aria-expanded={rosterExpanded}
+              aria-controls="packaging-roster-body"
+            >
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
                 <Users size={15} aria-hidden />
               </div>
-              <div className="min-w-0 flex-1 space-y-1">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-foreground">Assigned stock-out staff</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{stockInNote}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 truncate sm:whitespace-normal sm:leading-relaxed">
+                  {roster.length === 0
+                    ? "Nobody assigned yet"
+                    : `${roster.length} can scan stock out / report damage`}
+                  <span className="hidden sm:inline"> · {stockInNote}</span>
+                </p>
               </div>
-            </div>
-            {roster.length === 0 ? (
-              <p className="text-xs text-muted-foreground pl-0 sm:pl-[2.625rem] leading-relaxed">
-                Nobody assigned yet. In Staff Management, enable{" "}
-                <strong className="text-foreground font-medium">Stock out packaging (scan)</strong>.
+              <ChevronDown
+                size={16}
+                className={cn(
+                  "text-muted-foreground shrink-0 transition-transform sm:hidden",
+                  rosterExpanded && "rotate-180",
+                )}
+                aria-hidden
+              />
+            </button>
+            <div
+              id="packaging-roster-body"
+              className={cn(
+                "px-3.5 pb-3 sm:px-4 sm:pb-3.5 space-y-2",
+                !rosterExpanded && "hidden sm:block",
+              )}
+            >
+              <p className="text-xs text-muted-foreground leading-relaxed sm:hidden pl-[2.625rem]">
+                {stockInNote}
               </p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5 pl-0 sm:pl-[2.625rem]">
-                {roster.map(p => (
-                  <span
-                    key={p.id}
-                    className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-xs text-foreground"
-                  >
-                    <span className="font-medium">{p.name}</span>
-                    <span className="text-muted-foreground">· {p.role.replace(/_/g, " ")}</span>
-                  </span>
-                ))}
-              </div>
-            )}
+              {roster.length === 0 ? (
+                <p className="text-xs text-muted-foreground pl-[2.625rem] leading-relaxed">
+                  In Staff Management, enable{" "}
+                  <strong className="text-foreground font-medium">Stock out packaging (scan)</strong>.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5 pl-[2.625rem]">
+                  {roster.map(p => (
+                    <span
+                      key={p.id}
+                      className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary/40 px-2.5 py-1 text-xs text-foreground"
+                    >
+                      <span className="font-medium">{p.name}</span>
+                      <span className="text-muted-foreground">· {p.role.replace(/_/g, " ")}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </AppSectionEnter>
 
-        <AppSectionEnter index={1} className="shrink-0">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3" data-tour="packaging-stats">
-            <div className="rounded-xl border border-border bg-card px-3 py-2.5 sm:px-4 sm:py-3">
+        <AppSectionEnter index={1} className="shrink-0 hidden sm:block">
+          <div data-tour="packaging-stats" className="grid grid-cols-4 gap-3">
+            <div className="rounded-xl border border-border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Catalog</p>
               <p className="text-xl font-semibold mt-0.5 tabular-nums text-foreground">{stats.count}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
                 {stats.perUnit} per-unit · {stats.pool} pool
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card px-3 py-2.5 sm:px-4 sm:py-3">
+            <div className="rounded-xl border border-border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">In stock</p>
               <p className="text-xl font-semibold mt-0.5 tabular-nums text-emerald-800 dark:text-emerald-300">{stats.inStock}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
                 {stats.perUnitStocked} per-unit · {stats.poolStocked} pool
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card px-3 py-2.5 sm:px-4 sm:py-3">
+            <div className="rounded-xl border border-border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Empty</p>
               <p className={cn("text-xl font-semibold mt-0.5 tabular-nums", stats.outOfStock > 0 ? "text-amber-800 dark:text-amber-300" : "text-foreground")}>
                 {stats.outOfStock}
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5">Zero on-hand</p>
             </div>
-            <div className="rounded-xl border border-border bg-card px-3 py-2.5 sm:px-4 sm:py-3">
+            <div className="rounded-xl border border-border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Low level</p>
               <p className={cn("text-xl font-semibold mt-0.5 tabular-nums", stats.lowLevel > 0 ? "text-amber-800 dark:text-amber-300" : "text-foreground")}>
                 {stats.lowLevel}
@@ -440,7 +640,7 @@ export function PackagingMaterialsPage() {
         </AppSectionEnter>
 
         <AppSectionEnter index={2} className="shrink-0">
-          <div className="flex flex-col gap-2.5" data-tour="packaging-filters">
+          <div className="flex flex-col gap-1.5 sm:gap-2.5" data-tour="packaging-filters">
             <div className="relative min-w-0">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" aria-hidden />
               <input
@@ -460,7 +660,7 @@ export function PackagingMaterialsPage() {
                   type="button"
                   onClick={() => setFilter(chip.id)}
                   className={cn(
-                    "snap-start shrink-0 text-[11px] font-medium min-h-8 px-3 rounded-full border transition-colors",
+                    "snap-start shrink-0 text-[11px] sm:text-xs font-medium min-h-8 sm:min-h-9 px-2.5 sm:px-3.5 rounded-full border transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                     filter === chip.id
                       ? "border-primary/40 bg-primary/10 text-primary"
@@ -472,41 +672,75 @@ export function PackagingMaterialsPage() {
               ))}
             </div>
 
-            <div className="sm:hidden flex items-center gap-2">
-              <label className="sr-only" htmlFor="packaging-sort">Sort by</label>
-              <select
-                id="packaging-sort"
-                value={sortKey}
-                onChange={e => {
-                  const next = e.target.value as SortKey;
-                  setSortKey(next);
-                  setSortDir(next === "name" ? "asc" : "desc");
-                }}
-                className="flex-1 min-h-10 rounded-lg border-2 border-border bg-card px-3 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
-              >
-                {SORT_OPTIONS.map(opt => (
-                  <option key={opt.id} value={opt.id}>Sort: {opt.label}</option>
+            <div
+              className="flex flex-row items-center gap-1.5 flex-wrap"
+              data-tour="packaging-damage-period"
+            >
+              <p className="hidden sm:inline text-[11px] text-muted-foreground shrink-0">
+                Damaged column
+              </p>
+              <div className="flex gap-1 flex-1 min-w-0 overflow-x-auto no-pyx-scroll" role="group" aria-label="Damaged column period">
+                {(
+                  [
+                    { id: "today" as const, label: "Dmg today" },
+                    { id: "week" as const, label: "Dmg week" },
+                    { id: "custom" as const, label: "Dmg custom" },
+                  ] as const
+                ).map(chip => (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => setDamagePeriod(chip.id)}
+                    className={cn(
+                      "shrink-0 text-[11px] font-medium min-h-7 sm:min-h-8 px-2 rounded-full border transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                      damagePeriod === chip.id
+                        ? "border-destructive/35 bg-destructive/10 text-destructive"
+                        : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                    )}
+                  >
+                    <span className="sm:hidden">{chip.label}</span>
+                    <span className="hidden sm:inline">
+                      {chip.id === "today" ? "Today" : chip.id === "week" ? "This week" : "Custom"}
+                    </span>
+                  </button>
                 ))}
-              </select>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="min-h-10 px-3"
-                onClick={() => setSortDir(d => (d === "asc" ? "desc" : "asc"))}
-                aria-label={sortDir === "asc" ? "Sort descending" : "Sort ascending"}
-              >
-                {sortDir === "asc" ? <ArrowUp className="size-4" /> : <ArrowDown className="size-4" />}
-              </Button>
+              </div>
+              {damagePeriod === "custom" && (
+                <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                  <input
+                    type="date"
+                    value={damageCustomFrom}
+                    onChange={e => setDamageCustomFrom(e.target.value)}
+                    className="min-h-8 flex-1 sm:flex-none rounded-lg border border-border bg-card px-2 text-xs outline-none focus:border-primary"
+                    aria-label="Damage from date"
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">–</span>
+                  <input
+                    type="date"
+                    value={damageCustomTo}
+                    onChange={e => setDamageCustomTo(e.target.value)}
+                    className="min-h-8 flex-1 sm:flex-none rounded-lg border border-border bg-card px-2 text-xs outline-none focus:border-primary"
+                    aria-label="Damage to date"
+                  />
+                </div>
+              )}
             </div>
+
+            <p className="sm:hidden text-[11px] text-muted-foreground tabular-nums px-0.5">
+              {stats.inStock} in stock · {stats.outOfStock} empty
+              {stats.lowLevel > 0 ? ` · ${stats.lowLevel} low` : ""}
+              <span className="text-muted-foreground/80"> · sort in Actions</span>
+            </p>
           </div>
         </AppSectionEnter>
 
         <div className="bg-card rounded-xl border border-border overflow-hidden flex flex-col min-h-0 flex-1 shadow-sm" data-tour="packaging-catalog">
-          <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_7.5rem_5.5rem_9rem_1.5rem] gap-2 px-4 py-2.5 border-b border-border bg-secondary/35 text-[10px] shrink-0">
+          <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_7rem_5rem_7.5rem_8.5rem_1.5rem] gap-2 px-4 py-2.5 border-b border-border bg-secondary/35 text-[10px] shrink-0">
             <SortHeader label="Item" column="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
             <SortHeader label="On hand" column="on_hand" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
             <SortHeader label="Level" column="level" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+            <span className="uppercase tracking-wide font-medium text-muted-foreground self-center">Damaged</span>
             <SortHeader label="Last stock-in" column="last_stock_in" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
             <span />
           </div>
@@ -537,64 +771,17 @@ export function PackagingMaterialsPage() {
             )}
 
             {!loading && (
-              <div className="sm:hidden divide-y divide-border">
-                {filteredItems.map(row => {
-                  const onHand = Number(row.on_hand ?? 0);
-                  const hasStock = onHand > 0;
-                  const isPool = Boolean(row.is_pool_packaging);
-                  return (
-                    <button
-                      key={row.id}
-                      type="button"
-                      onClick={() => setDetailRow(row)}
-                      className={cn(
-                        "w-full text-left px-4 py-3.5 space-y-2.5 active:bg-secondary/50 transition-colors",
-                        appHoverRow,
-                        !hasStock && "bg-amber-50/60 dark:bg-amber-950/15",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 space-y-1">
-                          <p className="font-medium text-sm text-foreground leading-snug break-words">{row.name}</p>
-                          <p className="text-xs text-muted-foreground tabular-nums">
-                            {row.unit}
-                            {row.barcode ? ` · ${row.barcode}` : ""}
-                          </p>
-                        </div>
-                        <ChevronRight size={16} className="text-muted-foreground mt-0.5 shrink-0" aria-hidden />
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        <TypeBadge isPool={isPool} />
-                        {!hasStock && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">
-                            Empty
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="rounded-lg bg-secondary/40 px-2.5 py-2">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">On hand</p>
-                          <p className={cn("mt-0.5 text-sm font-medium tabular-nums", !hasStock && "text-amber-800 dark:text-amber-300")}>
-                            {onHand.toLocaleString()}
-                            <span className="text-muted-foreground font-normal"> {row.unit}</span>
-                          </p>
-                        </div>
-                        <div className="rounded-lg bg-secondary/40 px-2.5 py-2">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Level</p>
-                          <div className="mt-1">
-                            <LevelCell pct={row.level_pct} compact />
-                          </div>
-                        </div>
-                        <div className="rounded-lg bg-secondary/40 px-2.5 py-2">
-                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Last in</p>
-                          <p className="mt-0.5 text-[11px] text-foreground leading-snug">
-                            {formatLastStockIn(row.last_entry_at)}
-                          </p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
+              <div className="sm:hidden">
+                {filteredItems.map(row => (
+                  <PackagingMobileCatalogRow
+                    key={row.id}
+                    row={row}
+                    damagedQty={damageTotals[row.id] ?? 0}
+                    canDeduct={canDeduct}
+                    onOpen={() => setDetailRow(row)}
+                    onReportDamage={() => setDamageRow(row)}
+                  />
+                ))}
               </div>
             )}
 
@@ -604,18 +791,28 @@ export function PackagingMaterialsPage() {
                   const onHand = Number(row.on_hand ?? 0);
                   const hasStock = onHand > 0;
                   const isPool = Boolean(row.is_pool_packaging);
+                  const damagedQty = damageTotals[row.id] ?? 0;
                   return (
-                    <button
+                    <div
                       key={row.id}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Open ${row.name}`}
                       onClick={() => setDetailRow(row)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setDetailRow(row);
+                        }
+                      }}
                       className={cn(
-                        "w-full text-left border-b border-border last:border-b-0 px-4 py-2.5 group",
+                        "w-full text-left border-b border-border last:border-b-0 px-4 py-2.5 group cursor-pointer",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
                         appHoverRow,
                         !hasStock && "bg-amber-50/50 dark:bg-amber-950/10",
                       )}
                     >
-                      <div className="grid grid-cols-[minmax(0,1fr)_7.5rem_5.5rem_9rem_1.5rem] gap-2 items-center">
+                      <div className="grid grid-cols-[minmax(0,1fr)_7rem_5rem_7.5rem_8.5rem_1.5rem] gap-2 items-center">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 min-w-0">
                             <p className="font-medium text-sm truncate text-foreground">{row.name}</p>
@@ -648,6 +845,32 @@ export function PackagingMaterialsPage() {
                           </span>
                         </div>
                         <LevelCell pct={row.level_pct} />
+                        <div
+                          className="min-w-0 space-y-1"
+                          onClick={e => e.stopPropagation()}
+                          onKeyDown={e => e.stopPropagation()}
+                        >
+                          <p className={cn(
+                            "text-xs font-medium tabular-nums",
+                            damagedQty > 0 ? "text-destructive" : "text-muted-foreground",
+                          )}>
+                            {damagedQty.toLocaleString()} {row.unit}
+                          </p>
+                          {canDeduct && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-[11px] border-destructive/35 text-destructive"
+                              onClick={e => {
+                                e.stopPropagation();
+                                setDamageRow(row);
+                              }}
+                            >
+                              <AlertTriangle className="size-3" /> Damaged
+                            </Button>
+                          )}
+                        </div>
                         <div className="text-xs text-muted-foreground leading-snug">
                           {formatLastStockIn(row.last_entry_at)}
                         </div>
@@ -655,7 +878,7 @@ export function PackagingMaterialsPage() {
                           <ChevronRight size={16} aria-hidden />
                         </div>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -678,11 +901,33 @@ export function PackagingMaterialsPage() {
           onDone={() => void refresh()}
         />
       )}
+      {reportDamageOpen && (
+        <PackagingReportDamageModal
+          open={reportDamageOpen}
+          onClose={() => setReportDamageOpen(false)}
+          onDone={() => void refresh()}
+        />
+      )}
+      {damageRow && (
+        <PackagingDamageConfirmModal
+          open
+          stock={damageRow}
+          onClose={() => setDamageRow(null)}
+          onDone={() => {
+            setDamageRow(null);
+            void refresh();
+          }}
+        />
+      )}
       {actionsOpen && (
         <PackagingMobileActionsModal
           canCreate={isExec}
           canDeduct={canDeduct}
           canViewHistory={canView}
+          roster={roster}
+          stockInNote={stockInNote}
+          sortKey={sortKey}
+          sortDir={sortDir}
           onClose={() => setActionsOpen(false)}
           onAddItem={() => {
             setActionsOpen(false);
@@ -692,6 +937,10 @@ export function PackagingMaterialsPage() {
             setActionsOpen(false);
             setScanOpen(true);
           }}
+          onReportDamage={() => {
+            setActionsOpen(false);
+            setReportDamageOpen(true);
+          }}
           onPrint={() => {
             setActionsOpen(false);
             openPrintSheet();
@@ -700,6 +949,11 @@ export function PackagingMaterialsPage() {
             setActionsOpen(false);
             setHistoryOpen(true);
           }}
+          onSortKey={key => {
+            setSortKey(key);
+            setSortDir(key === "name" ? "asc" : "desc");
+          }}
+          onToggleSortDir={() => setSortDir(d => (d === "asc" ? "desc" : "asc"))}
         />
       )}
       {historyOpen && canView && (
@@ -735,75 +989,141 @@ function PackagingMobileActionsModal({
   canCreate,
   canDeduct,
   canViewHistory,
+  roster,
+  stockInNote,
+  sortKey,
+  sortDir,
   onClose,
   onAddItem,
   onScan,
+  onReportDamage,
   onPrint,
   onHistory,
+  onSortKey,
+  onToggleSortDir,
 }: {
   canCreate: boolean;
   canDeduct: boolean;
   canViewHistory: boolean;
+  roster: PackagingAccessPerson[];
+  stockInNote: string;
+  sortKey: SortKey;
+  sortDir: SortDir;
   onClose: () => void;
   onAddItem: () => void;
   onScan: () => void;
+  onReportDamage: () => void;
   onPrint: () => void;
   onHistory: () => void;
+  onSortKey: (key: SortKey) => void;
+  onToggleSortDir: () => void;
 }) {
   return (
     <AppModal open onClose={onClose} panelClassName="max-w-sm w-full" labelledBy="packaging-actions-title">
       <AppModalHeader title="Packaging actions" titleId="packaging-actions-title" onClose={onClose} />
-      <AppModalBody className="space-y-2">
-        {canViewHistory && (
-          <button
-            type="button"
-            onClick={onHistory}
-            className={cn(
-              "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-border text-sm font-medium",
-              appHoverRow,
-            )}
-          >
-            <History size={16} className="text-muted-foreground shrink-0" aria-hidden />
-            Stock-out history
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={onPrint}
-          className={cn(
-            "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-border text-sm font-medium",
-            appHoverRow,
+      <AppModalBody className="space-y-3">
+        <div className="rounded-xl border border-border bg-secondary/20 px-3 py-2.5 space-y-1.5">
+          <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+            <Users size={14} className="text-muted-foreground" aria-hidden />
+            Stock-out staff ({roster.length})
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">{stockInNote}</p>
+          {roster.length > 0 && (
+            <p className="text-[11px] text-foreground leading-snug">
+              {roster.map(p => p.name).join(" · ")}
+            </p>
           )}
-        >
-          <Printer size={16} className="text-muted-foreground shrink-0" aria-hidden />
-          Generate all barcodes
-        </button>
-        {canDeduct && (
-          <button
-            type="button"
-            onClick={onScan}
-            className={cn(
-              "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-primary/30 bg-primary/5 text-sm font-medium text-primary",
-              appHoverRow,
-            )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="sr-only" htmlFor="packaging-actions-sort">Sort by</label>
+          <select
+            id="packaging-actions-sort"
+            value={sortKey}
+            onChange={e => onSortKey(e.target.value as SortKey)}
+            className="flex-1 min-h-10 rounded-lg border border-border bg-card px-3 text-sm outline-none focus:border-primary"
           >
-            <ScanLine size={16} className="shrink-0" aria-hidden />
-            Scan stock out
-          </button>
-        )}
-        {canCreate && (
+            {SORT_OPTIONS.map(opt => (
+              <option key={opt.id} value={opt.id}>Sort: {opt.label}</option>
+            ))}
+          </select>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-10 min-w-10 px-3"
+            onClick={onToggleSortDir}
+            aria-label={sortDir === "asc" ? "Sort descending" : "Sort ascending"}
+          >
+            {sortDir === "asc" ? <ArrowUp className="size-4" /> : <ArrowDown className="size-4" />}
+          </Button>
+        </div>
+
+        <div className="space-y-2">
+          {canViewHistory && (
+            <button
+              type="button"
+              onClick={onHistory}
+              className={cn(
+                "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-border text-sm font-medium",
+                appHoverRow,
+              )}
+            >
+              <History size={16} className="text-muted-foreground shrink-0" aria-hidden />
+              Stock-out history
+            </button>
+          )}
           <button
             type="button"
-            onClick={onAddItem}
+            onClick={onPrint}
             className={cn(
               "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-border text-sm font-medium",
               appHoverRow,
             )}
           >
-            <Plus size={16} className="text-muted-foreground shrink-0" aria-hidden />
-            Add catalog item
+            <Printer size={16} className="text-muted-foreground shrink-0" aria-hidden />
+            Generate all barcodes
           </button>
-        )}
+          {canDeduct && (
+            <>
+              <button
+                type="button"
+                onClick={onScan}
+                className={cn(
+                  "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-primary/30 bg-primary/5 text-sm font-medium text-primary",
+                  appHoverRow,
+                )}
+              >
+                <ScanLine size={16} className="shrink-0" aria-hidden />
+                Scan stock out
+              </button>
+              <button
+                type="button"
+                onClick={onReportDamage}
+                className={cn(
+                  "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-destructive/30 bg-destructive/5 text-sm font-medium text-destructive",
+                  appHoverRow,
+                )}
+              >
+                <AlertTriangle size={16} className="shrink-0" aria-hidden />
+                Report damage
+              </button>
+            </>
+          )}
+          {canCreate && (
+            <button
+              type="button"
+              onClick={onAddItem}
+              className={cn(
+                "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-border text-sm font-medium",
+                appHoverRow,
+              )}
+            >
+              <Plus size={16} className="text-muted-foreground shrink-0" aria-hidden />
+              Add catalog item
+            </button>
+          )}
+        </div>
       </AppModalBody>
       <AppModalFooter>
         <Button type="button" variant="outline" onClick={onClose}>
