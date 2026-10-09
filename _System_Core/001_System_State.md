@@ -8,11 +8,11 @@
 |-------|------|
 | **Active Spec** | — |
 | **Active Plan** | — |
-| **Status** | `shipped` - Packaging report damage |
+| **Status** | `shipped` - Inventory check freebies |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending
-- **Latest shipped:** [[plans/archive/2026-10-08_packaging-report-damage_plan]] · [[problems/records/2026-10-08_packaging-report-damage]] · [[plans/archive/2026-09-25_exec-dashboard-stock-ins_plan]] · [[problems/records/2026-09-25_exec-dashboard-stock-ins-trends]] · [[specs/2026-09-18_inventory-check-no-batch-docs]] · [[specs/2026-09-17_honey-packaging-pool-no-lots]] · [[problems/records/2026-09-17_honey-packaging-variant-pools]] · [[specs/2026-09-11_deliveries-photo-only]] · [[specs/2026-09-11_inventory-check-batch-docs]] · [[specs/2026-09-11_inventory-check-scoped-compare]] · [[problems/records/2026-09-11_inventory-check-private-sessions]] · [[specs/2026-09-10_sales-view-amounts]]
+- **Latest shipped:** [[plans/archive/2026-10-09_inventory-check-freebies_plan]] · [[problems/records/2026-10-09_inventory-check-freebies]] · [[plans/archive/2026-10-08_raw-freebie-samples_plan]] · [[problems/records/2026-10-08_raw-freebie-samples]] · [[plans/archive/2026-10-08_packaging-report-damage_plan]] · [[problems/records/2026-10-08_packaging-report-damage]] · [[plans/archive/2026-09-25_exec-dashboard-stock-ins_plan]] · [[problems/records/2026-09-25_exec-dashboard-stock-ins-trends]] · [[specs/2026-09-18_inventory-check-no-batch-docs]] · [[specs/2026-09-17_honey-packaging-pool-no-lots]] · [[problems/records/2026-09-17_honey-packaging-variant-pools]] · [[specs/2026-09-11_deliveries-photo-only]] · [[specs/2026-09-11_inventory-check-batch-docs]] · [[specs/2026-09-11_inventory-check-scoped-compare]] · [[problems/records/2026-09-11_inventory-check-private-sessions]] · [[specs/2026-09-10_sales-view-amounts]]
 - **Agent entry:** [[problems/records/2026-06-12_dept-raw-ux-session]] â€” checklist for next dept raw / PageLayout work
 
 ## ðŸ› ï¸ Current Todo List

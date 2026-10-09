@@ -320,7 +320,8 @@ function api_settings_pt_bom_save(): void
             (float) ($input['grams_per_tea_bag'] ?? 0),
             (float) ($input['tea_bags_per_pouch'] ?? 0),
             api_settings_bool($input['bag_pool_deduct'] ?? true, true),
-            (int) ($user['id'] ?? 0) ?: null
+            (int) ($user['id'] ?? 0) ?: null,
+            isset($input['freebie_grams']) ? (float) $input['freebie_grams'] : null
         );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
@@ -352,7 +353,8 @@ function api_settings_brc_bom_save(): void
             (float) ($input['grams_per_pouch'] ?? 0),
             (float) ($input['grams_per_bag'] ?? 0),
             api_settings_bool($input['bag_pool_deduct'] ?? true, true),
-            (int) ($user['id'] ?? 0) ?: null
+            (int) ($user['id'] ?? 0) ?: null,
+            isset($input['freebie_grams']) ? (float) $input['freebie_grams'] : null
         );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
@@ -384,7 +386,8 @@ function api_settings_jar_cacao_bom_save(): void
             (float) ($input['grams_per_jar'] ?? 0),
             (float) ($input['grams_per_bag'] ?? 0),
             api_settings_bool($input['bag_pool_deduct'] ?? true, true),
-            (int) ($user['id'] ?? 0) ?: null
+            (int) ($user['id'] ?? 0) ?: null,
+            isset($input['freebie_grams']) ? (float) $input['freebie_grams'] : null
         );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);

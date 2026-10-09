@@ -1,9 +1,9 @@
 ---
 title: dept_pt_settings
 source: includes/dept_pt_settings.php
-generated: 2026-10-08T11:21:59+02:00
+generated: 2026-10-09T05:57:41+02:00
 type: module
-function_count: 8
+function_count: 9
 ---
 
 
@@ -22,41 +22,49 @@ function_count: 8
 
 **Callers (1):**
 
-- `includes/dept_pt_settings.php`:44 — `return dept_pt_setting_parse_bool(app_setting_get($pdo, PT_BAG_POOL_DEDUCT_SETTING_KEY, null), true);`
+- `includes/dept_pt_settings.php`:48 — `return dept_pt_setting_parse_bool(app_setting_get($pdo, PT_BAG_POOL_DEDUCT_SETTING_KEY, null), true);`
 
 ## dept_pt_setting_bag_pool_deduct_enabled {#dept_pt_setting_bag_pool_deduct_enabled}
 
 **Callers (4):**
 
 - `includes/dept_pouch_barcodes.php`:592 — `if (dept_pt_setting_bag_pool_deduct_enabled($pdo)) {`
-- `includes/dept_pt_settings.php`:124 — `'bag_pool_deduct' => dept_pt_setting_bag_pool_deduct_enabled($pdo),`
-- `includes/dept_pt_settings.php`:158 — `'bag_pool_deduct' => dept_pt_setting_bag_pool_deduct_enabled($pdo),`
+- `includes/dept_pt_settings.php`:147 — `'bag_pool_deduct' => dept_pt_setting_bag_pool_deduct_enabled($pdo),`
+- `includes/dept_pt_settings.php`:191 — `'bag_pool_deduct' => dept_pt_setting_bag_pool_deduct_enabled($pdo),`
 - `includes/sku_barcodes.php`:1071 — `if (dept_pt_setting_bag_pool_deduct_enabled($pdo)) {`
 
 ## dept_pt_setting_grams_per_tea_bag {#dept_pt_setting_grams_per_tea_bag}
 
 **Callers (3):**
 
-- `includes/dept_pt_settings.php`:84 — `dept_pt_setting_grams_per_tea_bag($pdo) * dept_pt_setting_tea_bags_per_pouch($pdo),`
-- `includes/dept_pt_settings.php`:114 — `$gTea = dept_pt_setting_grams_per_tea_bag($pdo);`
-- `includes/dept_pt_settings.php`:155 — `'grams_per_tea_bag' => dept_pt_setting_grams_per_tea_bag($pdo),`
+- `includes/dept_pt_settings.php`:88 — `dept_pt_setting_grams_per_tea_bag($pdo) * dept_pt_setting_tea_bags_per_pouch($pdo),`
+- `includes/dept_pt_settings.php`:137 — `$gTea = dept_pt_setting_grams_per_tea_bag($pdo);`
+- `includes/dept_pt_settings.php`:188 — `'grams_per_tea_bag' => dept_pt_setting_grams_per_tea_bag($pdo),`
 
 ## dept_pt_setting_tea_bags_per_pouch {#dept_pt_setting_tea_bags_per_pouch}
 
 **Callers (3):**
 
-- `includes/dept_pt_settings.php`:84 — `dept_pt_setting_grams_per_tea_bag($pdo) * dept_pt_setting_tea_bags_per_pouch($pdo),`
-- `includes/dept_pt_settings.php`:115 — `$perPouch = dept_pt_setting_tea_bags_per_pouch($pdo);`
-- `includes/dept_pt_settings.php`:156 — `'tea_bags_per_pouch' => dept_pt_setting_tea_bags_per_pouch($pdo),`
+- `includes/dept_pt_settings.php`:88 — `dept_pt_setting_grams_per_tea_bag($pdo) * dept_pt_setting_tea_bags_per_pouch($pdo),`
+- `includes/dept_pt_settings.php`:138 — `$perPouch = dept_pt_setting_tea_bags_per_pouch($pdo);`
+- `includes/dept_pt_settings.php`:189 — `'tea_bags_per_pouch' => dept_pt_setting_tea_bags_per_pouch($pdo),`
 
 ## dept_pt_setting_grams_per_pouch {#dept_pt_setting_grams_per_pouch}
 
 **Callers (4):**
 
 - `includes/dept_pouch_barcodes.php`:604 — `'grams_deducted' => dept_pt_setting_grams_per_pouch($pdo),`
-- `includes/dept_pt_settings.php`:92 — `$g = dept_pt_setting_grams_per_pouch($pdo);`
-- `includes/dept_pt_settings.php`:157 — `'grams_per_pouch' => dept_pt_setting_grams_per_pouch($pdo),`
+- `includes/dept_pt_settings.php`:113 — `$g = dept_pt_setting_grams_per_pouch($pdo);`
+- `includes/dept_pt_settings.php`:190 — `'grams_per_pouch' => dept_pt_setting_grams_per_pouch($pdo),`
 - `includes/sku_barcodes.php`:1077 — `'grams_deducted' => round(dept_pt_setting_grams_per_pouch($pdo) * $qty, 2),`
+
+## dept_pt_setting_freebie_grams {#dept_pt_setting_freebie_grams}
+
+**Callers (3):**
+
+- `includes/dept_pt_settings.php`:148 — `'freebie_grams' => dept_pt_setting_freebie_grams($pdo),`
+- `includes/dept_pt_settings.php`:176 — `$freebie = $freebieGrams !== null ? $freebieGrams : dept_pt_setting_freebie_grams($pdo);`
+- `includes/dept_pt_settings.php`:192 — `'freebie_grams' => dept_pt_setting_freebie_grams($pdo),`
 
 ## dept_pt_setting_bags_per_pouch {#dept_pt_setting_bags_per_pouch}
 
@@ -70,10 +78,10 @@ function_count: 8
 **Callers (5):**
 
 - `api/v1/settings.php`:305 — `api_ok(dept_pt_bom_snapshot(ims_pdo()));`
-- `api/v1/settings.php`:329 — `api_ok(array_merge($saved, dept_pt_bom_snapshot(ims_pdo())));`
+- `api/v1/settings.php`:330 — `api_ok(array_merge($saved, dept_pt_bom_snapshot(ims_pdo())));`
 - `includes/dept_inventory.php`:248 — `$bom = dept_pt_bom_snapshot($pdo);`
 - `includes/dept_inventory.php`:790 — `$bom = dept_pt_bom_snapshot($pdo);`
-- `includes/dept_production.php`:983 — `$bom = dept_pt_bom_snapshot($pdo);`
+- `includes/dept_production.php`:984 — `$bom = dept_pt_bom_snapshot($pdo);`
 
 ## dept_pt_bom_save {#dept_pt_bom_save}
 

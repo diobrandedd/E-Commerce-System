@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-10-08T11:21:45+02:00
+generated: 2026-10-09T05:57:24+02:00
 type: memory-bank
-table_count: 100
+table_count: 102
 ---
 
 
@@ -224,6 +224,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_defect_history]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_recent_entries]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_production_list_entries]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_history]] |
 | `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_history]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_damage_list]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
@@ -1100,6 +1101,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_fetch]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_cancel]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_event_list]] |
+| `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_add_freebie]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_update]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_scan_get]] |
@@ -1480,4 +1482,22 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_report_damage]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_damage_totals]] |
+
+## `dept_raw_freebie_balances`
+
+| File | Function |
+|------|----------|
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_ensure_balance_row]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_on_hand]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_create]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_give_out]] |
+| `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_apply_freebie_qty]] |
+
+## `dept_raw_freebie_log`
+
+| File | Function |
+|------|----------|
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_create]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_give_out]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_history]] |
 

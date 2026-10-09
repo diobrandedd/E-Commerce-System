@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, AlertTriangle, History, Loader2, Minus, MoreHorizontal, Plus, Package, Printer, ScanLine, Tag } from "lucide-react";
+import { BookOpen, AlertTriangle, Gift, History, Loader2, Minus, MoreHorizontal, Plus, Package, Printer, ScanLine, Tag } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
@@ -22,6 +22,8 @@ import {
   deptPtMakeTeaBags,
   deptPtUseRawBags,
   type DeptProductionEntry,
+  deptRawFreebieCreate,
+  deptRawFreebieHistory,
   deptRawStockIn,
   deptRawStockOut,
   deptWipWaste,
@@ -31,6 +33,7 @@ import {
   recordDeptProductionDaily,
   type DeptProductionDailyRow,
   type DeptProductionPreviewLine,
+  type DeptRawFreebieLogRow,
   type DeptRawSnapshot,
 } from "@/app/lib/deptRawInventory";
 import { listSuppliers, type Supplier } from "@/app/lib/suppliers";
@@ -132,6 +135,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showStockIn, setShowStockIn] = useState(false);
   const [showWarehouseWaste, setShowWarehouseWaste] = useState(false);
+  const [showFreebies, setShowFreebies] = useState(false);
   const [showUseRawBags, setShowUseRawBags] = useState(false);
   const [showMakeTeaBagsAdvanced, setShowMakeTeaBagsAdvanced] = useState(false);
   const [showWipWaste, setShowWipWaste] = useState(false);
@@ -228,7 +232,14 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
               . Use this page for stock-in raw bags and bag waste only.
             </div>
           )}
-          <div className={`grid gap-3 ${isParagis ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`} data-tour="raw-dept-metrics">
+          <div
+            className={`grid gap-3 ${
+              bagPoolWorkflow
+                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+            }`}
+            data-tour="raw-dept-metrics"
+          >
             <div className="rounded-xl border bg-card px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 {bagPoolWorkflow ? "Raw (kg)" : "Raw bags"}
@@ -263,7 +274,21 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 <p className="text-[10px] text-muted-foreground mt-0.5">{data.finished_label}</p>
               </div>
             )}
-            <div className="rounded-xl border bg-card px-4 py-3 col-span-2 lg:col-span-1">
+            {bagPoolWorkflow ? (
+              <button
+                type="button"
+                onClick={() => setShowFreebies(true)}
+                className={`rounded-xl border bg-card px-4 py-3 text-left w-full ${appHoverCard}`}
+                data-tour="raw-dept-freebies-metric"
+              >
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Freebies</p>
+                <p className="text-2xl font-semibold mt-1">{(data.freebie_on_hand ?? 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  sample pouches · {(data.freebie_grams ?? 0).toLocaleString()} g each
+                </p>
+              </button>
+            ) : null}
+            <div className={`rounded-xl border bg-card px-4 py-3 ${bagPoolWorkflow ? "" : "col-span-2 lg:col-span-1"}`}>
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Costing stock</p>
               <p className="text-sm font-semibold mt-1 leading-snug">{data.stock_name ?? "—"}</p>
             </div>
@@ -316,6 +341,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 onGeneratePrint={() => setPouchModal("admin")}
                 pendingPouchLabels={pendingPouchLabels}
                 onBagWaste={() => setShowWarehouseWaste(true)}
+                onFreebies={() => setShowFreebies(true)}
             />
           )}
 
@@ -477,6 +503,17 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           onDone={() => { setShowWarehouseWaste(false); void refresh(); }}
         />
       )}
+      {showFreebies && data && bagPoolWorkflow && (
+        <DeptRawFreebiesModal
+          productKey={productKey as "pt" | "brc" | "jar_cacao"}
+          freebieGrams={data.freebie_grams ?? 0}
+          freebieOnHand={data.freebie_on_hand ?? 0}
+          gramsPerBag={data.bag_pool?.grams_per_bag ?? 1000}
+          canMutate={canMutate}
+          onClose={() => setShowFreebies(false)}
+          onDone={() => { void refresh(); }}
+        />
+      )}
       {showUseRawBags && data && (
         <UseRawBagsModal
           maxBags={data.bags_on_hand}
@@ -578,6 +615,7 @@ function RawDeptInlineActions({
   onGeneratePrint,
   pendingPouchLabels,
   onBagWaste,
+  onFreebies,
 }: {
   bagPoolWorkflow: boolean;
   finishedProductPath: string;
@@ -594,6 +632,7 @@ function RawDeptInlineActions({
   onGeneratePrint: () => void;
   pendingPouchLabels: number;
   onBagWaste: () => void;
+  onFreebies: () => void;
 }) {
   const canBags = bagsOnHand > 0;
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
@@ -717,6 +756,15 @@ function RawDeptInlineActions({
             <Minus size={16} /> {bagPoolWorkflow ? "Leaf waste (kg)" : "Bag waste"}
           </AppPressable>
         )}
+        {bagPoolWorkflow ? (
+          <AppPressable
+            variant="outline"
+            onClick={onFreebies}
+            className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
+          >
+            <Gift size={16} /> + Freebies
+          </AppPressable>
+        ) : null}
         <Link
           to={finishedProductPath}
           className="w-full inline-flex items-center justify-start gap-2 py-3 px-3 text-sm font-semibold rounded-xl border border-border hover:bg-secondary"
@@ -781,6 +829,15 @@ function RawDeptInlineActions({
               className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
             >
               <Minus size={16} /> {bagPoolWorkflow ? "Leaf waste (kg)" : "Bag waste"}
+            </AppPressable>
+          ) : null}
+          {bagPoolWorkflow ? (
+            <AppPressable
+              variant="outline"
+              onClick={() => runMobileAction(onFreebies)}
+              className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
+            >
+              <Gift size={16} /> + Freebies
             </AppPressable>
           ) : null}
           <Link
@@ -1174,6 +1231,215 @@ function RawStockInModal({
           </button>
         </AppModalFooter>
       </form>
+    </AppModal>
+  );
+}
+
+function DeptRawFreebiesModal({
+  productKey,
+  freebieGrams,
+  freebieOnHand,
+  gramsPerBag,
+  canMutate,
+  onClose,
+  onDone,
+}: {
+  productKey: "pt" | "brc" | "jar_cacao";
+  freebieGrams: number;
+  freebieOnHand: number;
+  gramsPerBag: number;
+  canMutate: boolean;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [tab, setTab] = useState<"create" | "history">(canMutate ? "create" : "history");
+  const [qty, setQty] = useState("1");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [onHand, setOnHand] = useState(freebieOnHand);
+  const [page, setPage] = useState(1);
+  const [rows, setRows] = useState<DeptRawFreebieLogRow[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [histLoading, setHistLoading] = useState(false);
+  const inputCls = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background";
+
+  const qtyNum = Math.max(0, Math.floor(Number(qty) || 0));
+  const gramsTotal = Math.round(qtyNum * freebieGrams * 10000) / 10000;
+  const bagsEst = gramsPerBag > 0 ? Math.round((gramsTotal / gramsPerBag) * 1e6) / 1e6 : 0;
+
+  const loadHistory = useCallback(async () => {
+    setHistLoading(true);
+    setError(null);
+    try {
+      const res = await deptRawFreebieHistory({ product_key: productKey, page, per_page: 15 });
+      setRows(res.rows ?? []);
+      setTotalPages(Math.max(1, res.total_pages ?? 1));
+      setOnHand(res.freebie_on_hand);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not load freebie history.");
+    } finally {
+      setHistLoading(false);
+    }
+  }, [page, productKey]);
+
+  useEffect(() => {
+    if (tab === "history") void loadHistory();
+  }, [tab, loadHistory]);
+
+  useEffect(() => {
+    setOnHand(freebieOnHand);
+  }, [freebieOnHand]);
+
+  const submitCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (freebieGrams <= 0) {
+      setError("Set freebie grams in Settings before creating freebies.");
+      return;
+    }
+    if (qtyNum < 1) {
+      setError("Enter a whole number of samples ≥ 1.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await deptRawFreebieCreate({
+        product_key: productKey,
+        qty: qtyNum,
+      });
+      setOnHand(res.freebie_on_hand);
+      setSuccess(`Created ${qtyNum} freebie sample${qtyNum === 1 ? "" : "s"} (${gramsTotal} g · ${bagsEst} kg leaf).`);
+      setQty("1");
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not create freebies.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const tabBtn = (id: "create" | "history", label: string) => (
+    <button
+      type="button"
+      key={id}
+      onClick={() => {
+        setTab(id);
+        setError(null);
+        setSuccess(null);
+      }}
+      className={`min-h-10 flex-1 rounded-lg px-3 text-sm font-semibold transition-colors ${
+        tab === id ? "bg-[#C8900A] text-white" : "border border-border hover:bg-secondary/50"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <AppModal open onClose={onClose} panelClassName="max-w-lg w-full" labelledBy="raw-freebies-title">
+      <AppModalHeader
+        title="Freebies"
+        titleId="raw-freebies-title"
+        subtitle={`${onHand.toLocaleString()} on hand · ${freebieGrams} g per sample`}
+        onClose={onClose}
+      />
+      <AppModalBody className="space-y-4">
+        <div className="flex gap-2">
+          {canMutate ? tabBtn("create", "Create") : null}
+          {tabBtn("history", "History")}
+        </div>
+        {error ? <AppErrorBanner message={error} /> : null}
+        {success ? <AppSuccessNotice message={success} /> : null}
+
+        {tab === "create" && canMutate ? (
+          <form onSubmit={submitCreate} className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Deducts leaf from the raw pool and adds samples to the Freebies pool. Correct counts via Inventory Check.
+            </p>
+            <div>
+              <label htmlFor="freebie-create-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+                Samples
+              </label>
+              <input
+                id="freebie-create-qty"
+                type="number"
+                min={1}
+                step={1}
+                value={qty}
+                onChange={e => setQty(e.target.value)}
+                required
+                className={inputCls}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {freebieGrams} g each · {gramsTotal} g total · ~{bagsEst} kg leaf
+            </p>
+            <Button type="submit" disabled={saving || freebieGrams <= 0} className="w-full bg-[#C8900A] hover:bg-[#b07f09] text-white">
+              {saving ? "Saving…" : "Create freebies"}
+            </Button>
+          </form>
+        ) : null}
+
+        {tab === "history" ? (
+          <div className="space-y-3">
+            {histLoading ? (
+              <div className="flex justify-center py-6 text-muted-foreground">
+                <Loader2 className="animate-spin" size={20} />
+              </div>
+            ) : rows.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No freebie history yet.</p>
+            ) : (
+              <ul className="divide-y rounded-xl border">
+                {rows.map(row => (
+                  <li key={row.id} className={`px-3 py-2.5 text-sm ${appHoverRow}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-semibold">
+                          {row.action === "create" ? "Created" : row.action === "give_out" ? "Gave out" : row.action}{" "}
+                          {row.qty_samples.toLocaleString()}
+                        </p>
+                        {row.reason.trim() ? (
+                          <p className="text-xs text-muted-foreground mt-0.5">{row.reason}</p>
+                        ) : null}
+                        {row.action === "create" && row.grams_total != null ? (
+                          <p className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">
+                            {row.grams_total} g · {row.bags_deducted ?? 0} kg leaf
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="text-right text-[11px] text-muted-foreground shrink-0">
+                        <p>{formatWhen(row.created_at)}</p>
+                        <p>{row.reported_by_name ?? "—"}</p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {totalPages > 1 ? (
+              <div className="flex items-center justify-between gap-2">
+                <Button type="button" variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                  Prev
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Page {page} / {totalPages}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </AppModalBody>
     </AppModal>
   );
 }

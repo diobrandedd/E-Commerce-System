@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-10-08T11:21:45+02:00
+generated: 2026-10-09T05:57:24+02:00
 type: memory-bank
-edge_count: 463
+edge_count: 471
 ---
 
 
@@ -201,9 +201,15 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_production.php` | `includes/dept_inventory.php` |
 | `includes/dept_production.php` | `includes/dept_jar_cacao_settings.php` |
 | `includes/dept_production.php` | `includes/dept_pt_settings.php` |
+| `includes/dept_production.php` | `includes/dept_raw_freebies.php` |
+| `includes/dept_production.php` | `includes/dept_raw_freebies.php` |
+| `includes/dept_production.php` | `includes/dept_raw_freebies.php` |
 | `includes/dept_production.php` | `includes/material_inventory.php` |
 | `includes/dept_pt_settings.php` | `includes/app_settings.php` |
 | `includes/dept_pt_settings.php` | `includes/dept_products.php` |
+| `includes/dept_raw_freebies.php` | `includes/app_settings.php` |
+| `includes/dept_raw_freebies.php` | `includes/dept_inventory.php` |
+| `includes/dept_raw_freebies.php` | `includes/dept_products.php` |
 | `includes/finished_leak_damage.php` | `includes/dept_inventory.php` |
 | `includes/finished_leak_damage.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/finished_leak_damage.php` | `includes/honey_bottle_barcodes.php` |
@@ -275,6 +281,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_warehouse_barcodes.php` | `includes/sku_barcodes.php` |
 | `includes/inventory_check.php` | `includes/dept_inventory.php` |
 | `includes/inventory_check.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/inventory_check.php` | `includes/dept_raw_freebies.php` |
 | `includes/inventory_check.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/inventory_check.php` | `includes/honey_inventory.php` |
 | `includes/inventory_check.php` | `includes/honey_inventory.php` |
@@ -282,6 +289,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/inventory_check.php` | `includes/inventory_edit_log.php` |
 | `includes/inventory_check.php` | `includes/permissions.php` |
 | `includes/inventory_check.php` | `includes/sku_barcodes.php` |
+| `includes/inventory_check_apply.php` | `includes/dept_raw_freebies.php` |
 | `includes/inventory_edit_log.php` | `includes/db.php` |
 | `includes/labels.php` | `includes/rts_products.php` |
 | `includes/material_inventory.php` | `includes/auth_check.php` |

@@ -1,7 +1,7 @@
 ---
 title: forwarding
 source: includes/forwarding.php
-generated: 2026-10-08T11:22:00+02:00
+generated: 2026-10-09T05:57:42+02:00
 type: module
 function_count: 15
 ---

@@ -17,9 +17,11 @@ export interface InventoryCheckEvent {
   compare_run_count: number;
 }
 
+export type InventoryCheckKind = "honey" | "dept" | "freebie";
+
 export interface InventoryCheckScan {
   id: number;
-  kind: "honey" | "dept";
+  kind: InventoryCheckKind;
   product_key: string;
   product_label: string;
   code: string;
@@ -39,7 +41,7 @@ export interface InventoryCheckScan {
 }
 
 export interface InventoryCheckSummaryRow {
-  kind: "honey" | "dept";
+  kind: InventoryCheckKind;
   product_key: string;
   product_label: string;
   packaging_row_id: number | null;
@@ -75,7 +77,7 @@ export interface InventoryCheckContext {
 
 export interface InventoryCheckVarianceLine {
   id: number;
-  kind: "honey" | "dept";
+  kind: InventoryCheckKind;
   product_key: string;
   product_label: string;
   packaging_row_id: number | null;
@@ -194,6 +196,13 @@ export const inventoryCheckApi = {
       ...(opts?.qty != null ? { qty: opts.qty } : {}),
       ...(opts?.batch_no != null ? { batch_no: opts.batch_no } : {}),
       ...(opts?.bottling_date != null ? { bottling_date: opts.bottling_date } : {}),
+    }),
+
+  scanFreebie: (eventId: number, productKey: "pt" | "brc" | "jar_cacao", qty: number) =>
+    apiPost<InventoryCheckScanResult>(ENDPOINT, "scan_freebie", {
+      event_id: eventId,
+      product_key: productKey,
+      qty,
     }),
 
   scanUpdate: (

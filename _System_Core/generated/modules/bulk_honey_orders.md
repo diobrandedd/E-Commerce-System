@@ -1,7 +1,7 @@
 ---
 title: bulk_honey_orders
 source: includes/bulk_honey_orders.php
-generated: 2026-10-08T11:21:49+02:00
+generated: 2026-10-09T05:57:29+02:00
 type: module
 function_count: 21
 ---

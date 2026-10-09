@@ -115,6 +115,11 @@ export function InventoryCheckPage() {
   const [showHistory, setShowHistory] = useState(false);
 
   const [addOpen, setAddOpen] = useState(false);
+  const [addMode, setAddMode] = useState<"scan" | "freebie">("scan");
+  const [freebieProduct, setFreebieProduct] = useState<"pt" | "brc" | "jar_cacao">("pt");
+  const [freebieQty, setFreebieQty] = useState("0");
+  const [freebieBusy, setFreebieBusy] = useState(false);
+  const [freebieError, setFreebieError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [code, setCode] = useState("");
   /** Last successful scan — close camera and set qty here for SKUs. */
@@ -296,7 +301,41 @@ export function InventoryCheckPage() {
     setScanFlash(null);
     setScanFlashMsg(null);
     setScanPopup(null);
+    setAddMode("scan");
+    setFreebieProduct("pt");
+    setFreebieQty("0");
+    setFreebieBusy(false);
+    setFreebieError(null);
     lastAcceptedScanAtRef.current = 0;
+  };
+
+  const confirmFreebie = async () => {
+    if (!event) return;
+    const qty = Math.floor(Number(freebieQty));
+    if (!Number.isFinite(qty) || qty < 0) {
+      setFreebieError("Enter a whole-number freebie count (0 or more).");
+      return;
+    }
+    setFreebieBusy(true);
+    setFreebieError(null);
+    try {
+      const res = await inventoryCheckApi.scanFreebie(event.id, freebieProduct, qty);
+      if (res.summary) setSummary(res.summary);
+      setScanPopup(res.message || "Freebie count saved.");
+      setScanFlash("ok");
+      setScanFlashMsg(res.message);
+      playScanBeep("ok");
+      await loadContext({ silent: true });
+      window.setTimeout(() => {
+        setScanPopup(null);
+        setScanFlash(null);
+      }, 2500);
+    } catch (e) {
+      setFreebieError(e instanceof ApiError ? e.message : "Could not save freebie count.");
+      playScanBeep("bad");
+    } finally {
+      setFreebieBusy(false);
+    }
   };
 
   const closeAddModal = () => {
@@ -1142,10 +1181,48 @@ export function InventoryCheckPage() {
       <AppModal open={addOpen} onClose={closeAddModal} panelClassName="max-w-lg w-full">
         <AppModalHeader title="Add to list" onClose={closeAddModal} />
         <AppModalBody className="space-y-4 relative">
-          <p className="text-xs text-muted-foreground">
-            Scan a product barcode — variant and size come from the code. For SKU stickers, enter how many
-            you counted; unique unit stickers count as 1 right away.
-          </p>
+          <div className="flex gap-2" data-testid="inventory-check-add-mode">
+            <Button
+              type="button"
+              variant={addMode === "scan" ? "default" : "outline"}
+              className={addMode === "scan" ? "bg-[#C8900A] hover:bg-[#b07f09] text-white flex-1" : "flex-1"}
+              onClick={() => {
+                setAddMode("scan");
+                setFreebieError(null);
+                setCameraOpen(false);
+              }}
+              disabled={!!pending}
+            >
+              Scan
+            </Button>
+            <Button
+              type="button"
+              variant={addMode === "freebie" ? "default" : "outline"}
+              className={addMode === "freebie" ? "bg-[#C8900A] hover:bg-[#b07f09] text-white flex-1" : "flex-1"}
+              onClick={() => {
+                setAddMode("freebie");
+                setPending(null);
+                setCameraOpen(false);
+                setFreebieError(null);
+              }}
+              disabled={!!pending}
+              data-testid="inventory-check-add-freebie-mode"
+            >
+              Freebie
+            </Button>
+          </div>
+
+          {addMode === "scan" ? (
+            <p className="text-xs text-muted-foreground">
+              Scan a product barcode — variant and size come from the code. For SKU stickers, enter how many
+              you counted; unique unit stickers count as 1 right away.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Count freebie sample pouches (no barcode). Pick the product and enter how many are on hand.
+            </p>
+          )}
+
           <AnimatePresence>
             {scanPopup ? (
               <motion.div
@@ -1162,7 +1239,58 @@ export function InventoryCheckPage() {
               </motion.div>
             ) : null}
           </AnimatePresence>
-          {pending ? (
+
+          {addMode === "freebie" ? (
+            <div className="space-y-3 rounded-xl border border-border bg-secondary/20 p-3" data-testid="inventory-check-freebie-panel">
+              {freebieError ? <AppErrorBanner message={freebieError} /> : null}
+              <div>
+                <label htmlFor="inv-check-freebie-product" className="text-xs text-muted-foreground">
+                  Freebie product
+                </label>
+                <select
+                  id="inv-check-freebie-product"
+                  className="mt-1 w-full border rounded-lg px-3 py-2.5 text-sm bg-background"
+                  value={freebieProduct}
+                  onChange={e => setFreebieProduct(e.target.value as "pt" | "brc" | "jar_cacao")}
+                  data-testid="inventory-check-freebie-product"
+                >
+                  <option value="pt">Paragis Tea</option>
+                  <option value="brc">Black Rice</option>
+                  <option value="jar_cacao">Jar Cacao</option>
+                </select>
+              </div>
+              <div className="w-36">
+                <label htmlFor="inv-check-freebie-qty" className="text-xs text-muted-foreground">
+                  Counted samples
+                </label>
+                <input
+                  id="inv-check-freebie-qty"
+                  className="mt-1 w-full border rounded-lg px-2 py-2 text-sm"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={freebieQty}
+                  onChange={e => setFreebieQty(e.target.value)}
+                  data-testid="inventory-check-freebie-qty"
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void confirmFreebie();
+                    }
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                className="w-full bg-[#C8900A] hover:bg-[#b07f09] text-white"
+                onClick={() => void confirmFreebie()}
+                disabled={freebieBusy}
+                data-testid="inventory-check-freebie-confirm"
+              >
+                {freebieBusy ? <Loader2 className="animate-spin" size={16} /> : "Confirm freebie count"}
+              </Button>
+            </div>
+          ) : pending ? (
             <div
               className="rounded-xl border border-border bg-secondary/20 p-3 space-y-3"
               data-testid="inventory-check-pending-qty-panel"
@@ -1289,14 +1417,14 @@ export function InventoryCheckPage() {
             </>
           )}
           <div className="flex justify-end">
-            <Button type="button" variant="outline" onClick={closeAddModal} disabled={!!pending}>
+            <Button type="button" variant="outline" onClick={closeAddModal} disabled={!!pending || freebieBusy}>
               Done
             </Button>
           </div>
         </AppModalBody>
       </AppModal>
 
-      {cameraOpen && addOpen && !pending ? (
+      {cameraOpen && addOpen && addMode === "scan" && !pending ? (
         <BarcodeCameraScannerModal
           titleId={addCameraTitleId || cameraTitleId}
           title="Scan barcode"

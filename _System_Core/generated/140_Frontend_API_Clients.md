@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-10-08T10:00:32+02:00
+generated: 2026-10-09T05:54:12+02:00
 type: memory-bank
 ---
 
@@ -14,6 +14,7 @@ Backend index: [[100_API_Index]]
 | Client file | API path / action |
 |-------------|-------------------|
 | `app/src/app/lib/materials.ts` | `(action: add)` |
+| `app/src/app/lib/deptRawInventory.ts` | `(action: create)` |
 | `app/src/app/lib/materials.ts` | `(action: issue)` |
 | `app/src/app/pages/inventory/RawDeptMaterialPage.tsx` | `(action: make_tea_bags)` |
 | `app/src/app/lib/materials.ts` | `(action: set_on_hand)` |

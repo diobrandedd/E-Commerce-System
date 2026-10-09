@@ -8,6 +8,7 @@ require_once dirname(__DIR__, 2) . '/includes/honey_pricing.php';
 require_once dirname(__DIR__, 2) . '/includes/dept_inventory.php';
 require_once dirname(__DIR__, 2) . '/includes/dept_production.php';
 require_once dirname(__DIR__, 2) . '/includes/dept_pricing.php';
+require_once dirname(__DIR__, 2) . '/includes/dept_raw_freebies.php';
 require_once dirname(__DIR__, 2) . '/includes/inventory_edit_log.php';
 require_once dirname(__DIR__, 2) . '/includes/honey_warehouse_barcodes.php';
 
@@ -51,6 +52,9 @@ api_dispatch([
     'dept_raw_detail' => 'api_honey_dept_raw_detail',
     'dept_raw_stock_in' => 'api_honey_dept_raw_stock_in',
     'dept_raw_stock_out' => 'api_honey_dept_raw_stock_out',
+    'dept_raw_freebie_create' => 'api_honey_dept_raw_freebie_create',
+    'dept_raw_freebie_give_out' => 'api_honey_dept_raw_freebie_give_out',
+    'dept_raw_freebie_history' => 'api_honey_dept_raw_freebie_history',
     'dept_raw_produce' => 'api_honey_dept_raw_produce',
     'dept_pt_use_raw_bags' => 'api_honey_dept_pt_use_raw_bags',
     'dept_pt_make_tea_bags' => 'api_honey_dept_pt_make_tea_bags',
@@ -1085,6 +1089,79 @@ function api_honey_dept_raw_stock_out(): void
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_raw_freebie_create(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $productKey = trim((string) ($input['product_key'] ?? ''));
+    $user = api_honey_require_dept_produce($productKey);
+    if (!dept_raw_freebie_product_allowed($productKey)) {
+        api_fail('Freebies are only for Paragis, Black Rice, and Jar Cacao.', 422);
+    }
+    $qty = (int) ($input['qty'] ?? $input['qty_samples'] ?? 0);
+    $reason = trim((string) ($input['reason'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_raw_record_freebie_create($pdo, (int) $user['id'], $productKey, $qty, $reason);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_raw_freebie_give_out(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $productKey = trim((string) ($input['product_key'] ?? ''));
+    $user = api_honey_require_dept_produce($productKey);
+    if (!dept_raw_freebie_product_allowed($productKey)) {
+        api_fail('Freebies are only for Paragis, Black Rice, and Jar Cacao.', 422);
+    }
+    $qty = (int) ($input['qty'] ?? $input['qty_samples'] ?? 0);
+    $reason = trim((string) ($input['reason'] ?? ''));
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = dept_raw_record_freebie_give_out($pdo, (int) $user['id'], $productKey, $qty, $reason);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_honey_dept_raw_freebie_history(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    $productKey = trim((string) ($_GET['product_key'] ?? ''));
+    if (!dept_raw_freebie_product_allowed($productKey)) {
+        api_fail('Unknown freebie product.', 404);
+    }
+    if (!ims_user_can_dept_line($user, $productKey, 'view')) {
+        api_fail('Forbidden.', 403);
+    }
+    $page = max(1, (int) ($_GET['page'] ?? 1));
+    $perPage = max(1, min(100, (int) ($_GET['per_page'] ?? 20)));
+    try {
+        $result = dept_raw_freebie_history(ims_pdo(), $productKey, $page, $perPage);
+    } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }
     api_ok($result);

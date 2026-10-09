@@ -980,33 +980,44 @@ function dept_raw_detail_enriched(PDO $pdo, string $slug): ?array
     $snap['wip_tea_bags'] = $productKey === 'pt' ? dept_wip_on_hand($pdo, 'pt') : null;
     if ($productKey === 'pt') {
         require_once __DIR__ . '/dept_pt_settings.php';
+        require_once __DIR__ . '/dept_raw_freebies.php';
         $bom = dept_pt_bom_snapshot($pdo);
         $snap['tea_bags_per_pouch'] = $bom['tea_bags_per_pouch'];
         // Floor workflow skips WIP; keep historical wip_tea_bags for reference only.
         $snap['supports_wip'] = false;
         $snap['bag_pool_workflow'] = true;
         $snap['bag_pool_deduct_enabled'] = !empty($bom['bag_pool_deduct']);
+        $snap['freebie_on_hand'] = dept_raw_freebie_on_hand($pdo, $productKey);
+        $snap['freebie_grams'] = (float) $bom['freebie_grams'];
     } elseif ($productKey === 'brc') {
         require_once __DIR__ . '/dept_brc_settings.php';
+        require_once __DIR__ . '/dept_raw_freebies.php';
         $bom = dept_brc_bom_snapshot($pdo);
         $snap['tea_bags_per_pouch'] = null;
         $snap['supports_wip'] = false;
         $snap['bag_pool_workflow'] = true;
         $snap['sell_units_per_bag'] = $bom['pouches_per_bag'];
         $snap['bag_pool_deduct_enabled'] = !empty($bom['bag_pool_deduct']);
+        $snap['freebie_on_hand'] = dept_raw_freebie_on_hand($pdo, $productKey);
+        $snap['freebie_grams'] = (float) $bom['freebie_grams'];
     } elseif ($productKey === 'jar_cacao') {
         require_once __DIR__ . '/dept_jar_cacao_settings.php';
+        require_once __DIR__ . '/dept_raw_freebies.php';
         $bom = dept_jar_cacao_bom_snapshot($pdo);
         $snap['tea_bags_per_pouch'] = null;
         $snap['supports_wip'] = false;
         $snap['bag_pool_workflow'] = true;
         $snap['sell_units_per_bag'] = $bom['jars_per_bag'];
         $snap['bag_pool_deduct_enabled'] = !empty($bom['bag_pool_deduct']);
+        $snap['freebie_on_hand'] = dept_raw_freebie_on_hand($pdo, $productKey);
+        $snap['freebie_grams'] = (float) $bom['freebie_grams'];
     } else {
         $snap['tea_bags_per_pouch'] = null;
         $snap['supports_wip'] = false;
         $snap['bag_pool_workflow'] = false;
         $snap['bag_pool_deduct_enabled'] = false;
+        $snap['freebie_on_hand'] = 0;
+        $snap['freebie_grams'] = 0.0;
     }
     $snap['production_entries'] = dept_production_recent_entries($pdo, $productKey, 20);
     $snap['produce_action'] = match ($productKey) {

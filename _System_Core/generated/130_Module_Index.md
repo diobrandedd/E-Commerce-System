@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-10-08T09:59:25+02:00
+generated: 2026-10-09T05:53:04+02:00
 type: memory-bank
 ---
 
@@ -32,15 +32,16 @@ type: memory-bank
 | [[modules/deliveries_upload]] | 3 |
 | [[modules/delivery_duplicates]] | 1 |
 | [[modules/delivery_edit_requests]] | 15 |
-| [[modules/dept_brc_settings]] | 7 |
+| [[modules/dept_brc_settings]] | 8 |
 | [[modules/dept_inventory]] | 21 |
-| [[modules/dept_jar_cacao_settings]] | 7 |
+| [[modules/dept_jar_cacao_settings]] | 8 |
 | [[modules/dept_pos]] | 5 |
 | [[modules/dept_pouch_barcodes]] | 37 |
 | [[modules/dept_pricing]] | 8 |
 | [[modules/dept_production]] | 29 |
 | [[modules/dept_products]] | 23 |
-| [[modules/dept_pt_settings]] | 8 |
+| [[modules/dept_pt_settings]] | 9 |
+| [[modules/dept_raw_freebies]] | 9 |
 | [[modules/finished_leak_damage]] | 11 |
 | [[modules/forwarding]] | 15 |
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
@@ -56,11 +57,11 @@ type: memory-bank
 | [[modules/honey_volume]] | 13 |
 | [[modules/honey_warehouse_barcodes]] | 12 |
 | [[modules/ims_exec_sidebar]] | 1 |
-| [[modules/inventory_check]] | 37 |
-| [[modules/inventory_check_apply]] | 9 |
+| [[modules/inventory_check]] | 40 |
+| [[modules/inventory_check_apply]] | 10 |
 | [[modules/inventory_edit_log]] | 4 |
 | [[modules/labels]] | 3 |
-| [[modules/material_inventory]] | 76 |
+| [[modules/material_inventory]] | 78 |
 | [[modules/online_order_parcels]] | 29 |
 | [[modules/online_orders_generator]] | 44 |
 | [[modules/order_remarks]] | 19 |

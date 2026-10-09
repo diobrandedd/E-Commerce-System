@@ -13,6 +13,10 @@ require_once __DIR__ . '/dept_products.php';
 const BRC_GRAMS_PER_POUCH_SETTING_KEY = 'brc.grams_per_pouch';
 const BRC_GRAMS_PER_BAG_SETTING_KEY = 'brc.grams_per_bag';
 const BRC_BAG_POOL_DEDUCT_SETTING_KEY = 'brc.bag_pool_deduct';
+const BRC_FREEBIE_GRAMS_SETTING_KEY = 'brc.freebie_grams';
+const BRC_FREEBIE_GRAMS_DEFAULT = 5.0;
+const BRC_FREEBIE_GRAMS_MIN = 0.1;
+const BRC_FREEBIE_GRAMS_MAX = 500.0;
 const BRC_GRAMS_PER_POUCH_MIN = 1.0;
 const BRC_GRAMS_PER_POUCH_MAX = 2000.0;
 const BRC_GRAMS_PER_BAG_MIN = 100.0;
@@ -78,6 +82,23 @@ function dept_brc_setting_grams_per_bag(?PDO $pdo = null): float
     return $n;
 }
 
+function dept_brc_setting_freebie_grams(?PDO $pdo = null): float
+{
+    if ($pdo === null) {
+        return BRC_FREEBIE_GRAMS_DEFAULT;
+    }
+    $raw = app_setting_get($pdo, BRC_FREEBIE_GRAMS_SETTING_KEY, null);
+    if ($raw === null || $raw === '') {
+        return BRC_FREEBIE_GRAMS_DEFAULT;
+    }
+    $n = (float) $raw;
+    if (!is_finite($n) || $n < BRC_FREEBIE_GRAMS_MIN || $n > BRC_FREEBIE_GRAMS_MAX) {
+        return BRC_FREEBIE_GRAMS_DEFAULT;
+    }
+
+    return $n;
+}
+
 /** Fraction of one supplier bag consumed by one pouch. */
 function dept_brc_setting_bags_per_pouch(?PDO $pdo = null): float
 {
@@ -97,8 +118,10 @@ function dept_brc_setting_bags_per_pouch(?PDO $pdo = null): float
  *   pouches_per_bag: float,
  *   bags_per_pouch: float,
  *   bag_pool_deduct: bool,
+ *   freebie_grams: float,
  *   default_grams_per_pouch: float,
- *   default_grams_per_bag: float
+ *   default_grams_per_bag: float,
+ *   default_freebie_grams: float
  * }
  */
 function dept_brc_bom_snapshot(?PDO $pdo = null): array
@@ -112,20 +135,23 @@ function dept_brc_bom_snapshot(?PDO $pdo = null): array
         'pouches_per_bag' => $gPouch > 0 ? round($gBag / $gPouch, 4) : 0.0,
         'bags_per_pouch' => dept_brc_setting_bags_per_pouch($pdo),
         'bag_pool_deduct' => dept_brc_setting_bag_pool_deduct_enabled($pdo),
+        'freebie_grams' => dept_brc_setting_freebie_grams($pdo),
         'default_grams_per_pouch' => (float) BRC_GRAMS_PER_POUCH,
         'default_grams_per_bag' => (float) BRC_GRAMS_PER_BAG,
+        'default_freebie_grams' => BRC_FREEBIE_GRAMS_DEFAULT,
     ];
 }
 
 /**
- * @return array{grams_per_pouch: float, grams_per_bag: float, pouches_per_bag: float, bag_pool_deduct: bool}
+ * @return array{grams_per_pouch: float, grams_per_bag: float, pouches_per_bag: float, bag_pool_deduct: bool, freebie_grams: float}
  */
 function dept_brc_bom_save(
     PDO $pdo,
     float $gramsPerPouch,
     float $gramsPerBag,
     bool $bagPoolDeduct = true,
-    ?int $userId = null
+    ?int $userId = null,
+    ?float $freebieGrams = null
 ): array {
     if (!is_finite($gramsPerPouch) || $gramsPerPouch < BRC_GRAMS_PER_POUCH_MIN || $gramsPerPouch > BRC_GRAMS_PER_POUCH_MAX) {
         throw new RuntimeException(
@@ -140,9 +166,16 @@ function dept_brc_bom_save(
     if ($gramsPerPouch > $gramsPerBag) {
         throw new RuntimeException('Grams per pouch cannot exceed grams per bag.');
     }
+    $freebie = $freebieGrams !== null ? $freebieGrams : dept_brc_setting_freebie_grams($pdo);
+    if (!is_finite($freebie) || $freebie < BRC_FREEBIE_GRAMS_MIN || $freebie > BRC_FREEBIE_GRAMS_MAX) {
+        throw new RuntimeException(
+            'Freebie grams must be between ' . BRC_FREEBIE_GRAMS_MIN . ' and ' . BRC_FREEBIE_GRAMS_MAX . '.'
+        );
+    }
     app_setting_set($pdo, BRC_GRAMS_PER_POUCH_SETTING_KEY, (string) $gramsPerPouch, $userId);
     app_setting_set($pdo, BRC_GRAMS_PER_BAG_SETTING_KEY, (string) $gramsPerBag, $userId);
     app_setting_set($pdo, BRC_BAG_POOL_DEDUCT_SETTING_KEY, $bagPoolDeduct ? '1' : '0', $userId);
+    app_setting_set($pdo, BRC_FREEBIE_GRAMS_SETTING_KEY, (string) $freebie, $userId);
 
     $snap = dept_brc_bom_snapshot($pdo);
 
@@ -151,5 +184,6 @@ function dept_brc_bom_save(
         'grams_per_bag' => $snap['grams_per_bag'],
         'pouches_per_bag' => $snap['pouches_per_bag'],
         'bag_pool_deduct' => $snap['bag_pool_deduct'],
+        'freebie_grams' => $snap['freebie_grams'],
     ];
 }

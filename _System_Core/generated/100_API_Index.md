@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-08T11:21:45+02:00
+generated: 2026-10-09T05:57:24+02:00
 type: memory-bank
 ---
 
@@ -320,6 +320,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `dept_raw_detail` | `api_honey_dept_raw_detail()` | `dept_raw_material_slug_to_product_key()`, `ims_user_can_dept_line()`, `dept_raw_detail_enriched()`, `ims_pdo()` |
 | `dept_raw_stock_in` | `api_honey_dept_raw_stock_in()` | `dept_product_by_key()`, `ims_pdo()`, `dept_raw_stock_in_bags()` |
 | `dept_raw_stock_out` | `api_honey_dept_raw_stock_out()` | `dept_product_key_valid()`, `ims_pdo()`, `dept_raw_stock_out_bags()` |
+| `dept_raw_freebie_create` | `api_honey_dept_raw_freebie_create()` | `dept_raw_freebie_product_allowed()`, `ims_pdo()`, `dept_raw_record_freebie_create()` |
+| `dept_raw_freebie_give_out` | `api_honey_dept_raw_freebie_give_out()` | `dept_raw_freebie_product_allowed()`, `ims_pdo()`, `dept_raw_record_freebie_give_out()` |
+| `dept_raw_freebie_history` | `api_honey_dept_raw_freebie_history()` | `dept_raw_freebie_product_allowed()`, `ims_user_can_dept_line()`, `dept_raw_freebie_history()`, `ims_pdo()` |
 | `dept_raw_produce` | `api_honey_dept_raw_produce()` | — |
 | `dept_pt_use_raw_bags` | `api_honey_dept_pt_use_raw_bags()` | `ims_pdo()`, `dept_pt_use_raw_bags()` |
 | `dept_pt_make_tea_bags` | `api_honey_dept_pt_make_tea_bags()` | `ims_pdo()`, `dept_pt_make_tea_bags()` |
@@ -359,6 +362,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `event_cancel` | `api_inventory_check_event_cancel()` | `inventory_check_event_cancel()`, `ims_pdo()` |
 | `event_list` | `api_inventory_check_event_list()` | `inventory_check_can_view_all()`, `inventory_check_event_list()`, `ims_pdo()` |
 | `scan` | `api_inventory_check_scan()` | `ims_pdo()`, `inventory_check_scan()`, `inventory_check_summary()` |
+| `scan_freebie` | `api_inventory_check_scan_freebie()` | `ims_pdo()`, `inventory_check_add_freebie()`, `inventory_check_summary()` |
 | `scan_update` | `api_inventory_check_scan_update()` | `ims_pdo()`, `inventory_check_scan_update()`, `inventory_check_can_manage()`, `inventory_check_summary()` |
 | `scan_remove` | `api_inventory_check_scan_remove()` | `ims_pdo()`, `inventory_check_scan_remove()`, `inventory_check_can_manage()`, `inventory_check_summary()` |
 | `summary` | `api_inventory_check_summary()` | `inventory_check_summary()`, `ims_pdo()` |
