@@ -125,5 +125,5 @@ export function MaterialsCategoryPage({ category, title, subtitle }: MaterialsCa
   );
 }
 
-/** @deprecated Use SuppliesMaterialsPage — org-wide HR pool with lot stock-in */
-export { SuppliesMaterialsPage as SuppliesInventoryPage } from "./SuppliesMaterialsPage";
+/** @deprecated Supplies catalog is PackagingMaterialsPage at /inventory/supplies */
+export { PackagingMaterialsPage as SuppliesInventoryPage } from "./PackagingMaterialsPage";

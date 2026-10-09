@@ -113,11 +113,11 @@ export function CostingGuideModal({
               <strong className="text-foreground">PT / BRC / Jar Cacao raw</strong> — Supplier Master ₱/kg (leaf pool unit = 1 kg).
             </li>
             <li>
-              <strong className="text-foreground">Packaging</strong> — Packaging Materials lot stock-in → WAC ₱/pc (or pouch).
+              <strong className="text-foreground">Packaging</strong> — Supplies lot stock-in → WAC ₱/pc (or pouch).
             </li>
             <li>
             <strong className="text-foreground">Production packaging</strong> — bottles, stickers, seals, dept pouches/rolls
-            (from Packaging Materials, not parcel fulfillment like bubble wrap or LAD cushions).
+            (from Supplies, not parcel fulfillment like bubble wrap or LAD cushions).
             </li>
           </ul>
         </GuideSection>
@@ -182,7 +182,7 @@ export function CostingGuideModal({
             materials — bubble wrap, cushions, courier pouch, foam wrap. These are <em>not</em> duplicated in each product formula.
           </p>
           <p>
-            <strong className="text-foreground">Bubble wrap</strong> — stock in whole rolls on Packaging Materials (unsized SKU).
+            <strong className="text-foreground">Bubble wrap</strong> — stock in whole rolls on Supplies (unsized SKU).
             Costing divides that one roll WAC by pieces-per-roll (13 / 17 / 22 cm yields); you do not price sized bubble SKUs separately.
           </p>
           <p>
@@ -201,14 +201,14 @@ export function CostingGuideModal({
           <p>
             On any product, use <strong className="text-foreground">Add formula line → Custom cost</strong> to enter a
             name and ₱ amount (e.g. Labor ₱15/jar, Shipping ₱5/pouch). These are fixed on the formula — they do not pull
-            from Supplier Master or Packaging Materials.
+            from Supplier Master or Supplies.
           </p>
         </GuideSection>
 
         <GuideSection title="End-to-end workflow">
           <ol className="list-decimal pl-4 space-y-1">
             <li>Set supplier prices (Supplier Master for honey / dept raw).</li>
-            <li>Stock in packaging lots (Packaging Materials) for WAC.</li>
+            <li>Stock in packaging lots (Supplies) for WAC.</li>
             <li>Stock in finished dept inventory (Products → stock-in bags → sell units).</li>
             <li>Build or verify formula on each costing product (auto-suggested qty for dept lines).</li>
             <li>Set selling price; margin updates live when costs move.</li>

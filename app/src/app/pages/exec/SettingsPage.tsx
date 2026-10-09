@@ -733,7 +733,7 @@ export function SettingsPage() {
               <p className="text-xs text-muted-foreground mt-0.5">
                 Milliliters per 1 production gallon used when bottling deducts gallons. Default is the US gallon (
                 {mlDefault} ml). Changing this does not rewrite past deductions. Toggle packaging deduct to consume
-                empty bottles + stickers from Packaging Materials on bottle stock-in.
+                empty bottles + stickers from Supplies on bottle stock-in.
               </p>
             </div>
           </div>
@@ -746,8 +746,8 @@ export function SettingsPage() {
               <div className="rounded-lg border border-border bg-secondary/20 px-3 py-2.5">
                 <p className="text-sm font-medium text-foreground">Packaging materials on bottle stock-in</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Auto-deduct from Packaging Materials on bottling is retired. Stock out bottles and stickers with{" "}
-                  <span className="font-medium text-foreground">Scan stock out</span> on Packaging Materials.
+                  Auto-deduct from Supplies on bottling is retired. Stock out bottles and stickers with{" "}
+                  <span className="font-medium text-foreground">Scan stock out</span> on Supplies.
                 </p>
               </div>
               <div className="flex flex-wrap items-end gap-3">

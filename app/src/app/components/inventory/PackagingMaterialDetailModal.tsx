@@ -563,7 +563,7 @@ export function PackagingMaterialDetailModal({
         <AppModal open onClose={closeRemove} panelClassName="max-w-sm w-full">
           <AppModalHeader
             title="Remove from catalog"
-            subtitle={`${row.name} will be hidden from Packaging Materials. History is kept.`}
+            subtitle={`${row.name} will be hidden from Supplies. History is kept.`}
             onClose={closeRemove}
           />
           <AppModalBody className="space-y-3">

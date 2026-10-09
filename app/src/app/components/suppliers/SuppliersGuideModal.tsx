@@ -71,7 +71,7 @@ export function SuppliersGuideModal({
             Honey uses <strong className="text-foreground">₱/US gallon</strong> (costing converts to ₱/liter). Paragis,
             BRC, and Jar Cacao use <strong className="text-foreground">₱/kg</strong> of raw leaf. Honey Comb stays{" "}
             <strong className="text-foreground">₱/1 kg bag</strong>. Packaging suppliers are catalog-only
-            on this page — stock-in happens on Packaging Materials.
+            on this page — stock-in happens on Supplies.
           </p>
         </GuideSection>
         <GuideWalkthroughSection />

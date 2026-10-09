@@ -19,7 +19,7 @@ function buildSteps(role: Role | undefined): DriveStep[] {
   return [
     {
       popover: {
-        title: "Packaging Materials",
+        title: "Supplies",
         description:
           "Track pouches, bottles, stickers, and pool rolls (yarn, foil, seals). Executives stock in; production scan stock-out or report damage; no manual Deduct for use.",
         side: "over",

@@ -84,7 +84,7 @@ When a page needs user-facing help or role-specific workflow docs:
 | Page | Modal component |
 |------|-----------------|
 | Product Costing | `CostingGuideModal` |
-| Packaging Materials | `PackagingInventoryGuideModal` |
+| Supplies (packaging catalog) | `PackagingInventoryGuideModal` |
 | Supplies | `SuppliesInventoryGuideModal` |
 | Requests | `InventoryRequestsGuideModal` |
 | Dried Paragis (raw) | `ParagisProductionGuideModal` |
@@ -112,7 +112,7 @@ When a process benefits from click-by-click onboarding:
 |------|-------------|
 | Deliveries review | `deliveriesReviewTour.ts` |
 | Product Costing | `costingTour.ts` |
-| Packaging Materials | `packagingInventoryTour.ts` |
+| Supplies (packaging catalog) | `packagingInventoryTour.ts` |
 | Supplies | `suppliesInventoryTour.ts` |
 | Requests | `inventoryRequestsTour.ts` |
 | Dried Paragis (raw) | `paragisProductionTour.ts` |
@@ -611,7 +611,7 @@ Prefer **`FulfillmentPressable`** / **`FulfillmentTableRow`** / **`FulfillmentPi
 - **Landed list** — `products_list&parcel=1` adds `parcel_addon_typical`, `landed_typical`, `margin_typical` per reference parcel shape (1L honey, 1-2 dept units, etc.).
 - **Tier modal** — tabs **Try an order** (Item/s preview) | **Edit tier rules** (material qty min/typ/max). Exclude TBD / inactive tiers from preview dropdown.
 - **Tiers (backend)** — `parcel_pack_tiers` + `parcel_pack_tier_lines`; **single recipe** per order (combo-first matcher in `parcel_pack_costing.php`). Seed: `php tools/seed_fulfillment_pack_tiers.php` after phase 33.
-- **Fulfillment SKUs** — bubble rolls (13/17/22 cm), cushion pieces (LAD, liter sizes), column rolls, pouches, foam, cardboard — filter **Fulfillment** on Packaging Materials page.
+- **Fulfillment SKUs** — bubble rolls (13/17/22 cm), cushion pieces (LAD, liter sizes), column rolls, pouches, foam, cardboard — filter **Fulfillment** on Supplies (`/inventory/supplies`, packaging catalog).
 - **Ship deduct** — `parcel_fulfillment_apply_deduct` on parcel ship; blocks if insufficient on-hand. **Spec:** [[specs/2026-06-17_fulfillment-packaging-recipes]].
 - **Migrations** — phase 33 fulfillment catalog; phase 31 ASCII labels if UI shows `???`.
 

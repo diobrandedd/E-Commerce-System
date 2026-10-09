@@ -158,7 +158,7 @@ export function PackagingInventoryGuideModal({ open, onClose, role, onStartTour 
         title={
           <span className="flex items-center gap-2">
             <BookOpen size={18} className="text-[#C8900A] flex-shrink-0" />
-            Packaging inventory guide
+            Supplies inventory guide
             {roleLabel && (
               <span className="text-[10px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
                 {roleLabel}

@@ -134,7 +134,6 @@ function getNavItems(role: Role, _dept: string, pendingCorrections: number, labe
   const leakDamageNav: NavLinkChild = { label: "Leak / damage", to: "/inventory/leak-damage" };
   const inventoryChildren: NavChild[] = [
     { label: "Raw Materials", children: rawMaterialsChildren(labels), badge: labelBadge },
-    { label: "Packaging Materials", to: "/inventory/packaging-materials" },
     { label: "Supplies", to: "/inventory/supplies" },
     { label: "Products", children: PRODUCTS_CHILDREN },
     leakDamageNav,

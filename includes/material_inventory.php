@@ -412,29 +412,21 @@ function material_inventory_create(
     if ($name === '') {
         throw new RuntimeException('Name is required.');
     }
-    if ($category === 'supply') {
-        $deptId = material_supply_canonical_dept_id($pdo);
-        if ($deptId < 1) {
-            throw new RuntimeException('No department available for supplies catalog.');
-        }
-        $dup = $pdo->prepare(
-            'SELECT id FROM stocks WHERE name = ? AND category = ? AND supplier_id IS NULL LIMIT 1'
+    // Packaging (shown as Supplies in SPA) and supply catalogs are org-wide — dept is internal only.
+    $deptId = material_supply_canonical_dept_id($pdo);
+    if ($deptId < 1) {
+        throw new RuntimeException('No department available for supplies catalog.');
+    }
+    $dup = $pdo->prepare(
+        'SELECT id FROM stocks WHERE name = ? AND category = ? AND supplier_id IS NULL LIMIT 1'
+    );
+    $dup->execute([$name, $category]);
+    if ($dup->fetch()) {
+        throw new RuntimeException(
+            $category === 'supply'
+                ? 'A supply item with this name already exists.'
+                : 'A stock with this name already exists.'
         );
-        $dup->execute([$name, $category]);
-        if ($dup->fetch()) {
-            throw new RuntimeException('A supply item with this name already exists.');
-        }
-    } else {
-        if ($deptId < 1) {
-            throw new RuntimeException('Name and department are required.');
-        }
-        $dup = $pdo->prepare(
-            'SELECT id FROM stocks WHERE dept_id = ? AND name = ? AND category = ? AND (supplier_id IS NULL) LIMIT 1'
-        );
-        $dup->execute([$deptId, $name, $category]);
-        if ($dup->fetch()) {
-            throw new RuntimeException('A stock with this name already exists in this department.');
-        }
     }
     $ins = $pdo->prepare(
         'INSERT INTO stocks (name, dept_id, unit, category, on_hand, is_active, current_price, created_by)

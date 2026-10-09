@@ -23,7 +23,9 @@ alwaysApply: false
 
 `supply_detail.permissions` from API. Guides: `SuppliesInventoryGuideModal`, `InventoryRequestsGuideModal`.
 
-## Packaging Materials roles (canonical)
+## Supplies page (= packaging catalog) roles (canonical)
+
+SPA label **Supplies** at `/inventory/supplies` (legacy `/inventory/packaging-materials` redirects). Backend category remains `packaging`. The old org-wide `supply` catalog page is removed from nav.
 
 | Role | Actions |
 |------|---------|
@@ -31,7 +33,7 @@ alwaysApply: false
 | **Production manager** (+ `packaging.deduct`) | **Scan stock out** + **Report damage** |
 | **Executive** | Stock-in lot + catalog + set on-hand + pool yield + print barcodes + deduct |
 
-Stock-out is scan-first (`PackagingScanStockOutModal`). Level % = on_hand / last lot qty. Bottling/produce do **not** auto-deduct packaging materials.
+Stock-out is scan-first (`PackagingScanStockOutModal`). Level % = on_hand / last lot qty. Bottling/produce do **not** auto-deduct packaging materials. **Add item** does not ask for department (canonical dept assigned server-side).
 
 Enforce in `material_inventory.php` helpers + `materials.php` API. Return `permissions` from `packaging_detail`. Do not reintroduce HR count-fix requests on the packaging page.
 

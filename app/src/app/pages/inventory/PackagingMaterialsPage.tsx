@@ -475,8 +475,8 @@ export function PackagingMaterialsPage() {
 
   return (
     <PageLayout
-      title="Packaging Materials"
-      subtitle="Warehouse packaging · scan stock-out · report damage · level vs last lot"
+      title="Supplies"
+      subtitle="Warehouse supplies · scan stock-out · report damage · level vs last lot"
       actions={
         <div className="flex items-center gap-2">
           <div className="sm:hidden flex items-center gap-2">
@@ -1020,7 +1020,7 @@ function PackagingMobileActionsModal({
 }) {
   return (
     <AppModal open onClose={onClose} panelClassName="max-w-sm w-full" labelledBy="packaging-actions-title">
-      <AppModalHeader title="Packaging actions" titleId="packaging-actions-title" onClose={onClose} />
+      <AppModalHeader title="Supplies actions" titleId="packaging-actions-title" onClose={onClose} />
       <AppModalBody className="space-y-3">
         <div className="rounded-xl border border-border bg-secondary/20 px-3 py-2.5 space-y-1.5">
           <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
