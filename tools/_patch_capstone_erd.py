@@ -1,4 +1,10 @@
-"""Regenerate a clean single-page ERD and replace media in the existing DOCX in place."""
+"""Regenerate Pyx Tracker ERD in sample academic style and patch the capstone DOCX.
+
+Visual conventions match the institutional sample ERD:
+- Entity boxes with blue headers and light body fill
+- # primary key, * attributes (FK noted in attribute text)
+- Crow's-foot 1:N connectors with bidirectional verb labels
+"""
 
 from __future__ import annotations
 
@@ -9,28 +15,31 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-DOC = Path(r"C:/xampp/htdocs/rts/output/documents/Pyx_Tracker_Capstone_SQL_ERD.docx.new")
+SRC_DOC = Path(r"C:/Users/Admin/Downloads/Pyx_Tracker_Capstone_SQL_ERD.docx")
+WORK_DOC = Path(r"C:/xampp/htdocs/rts/output/documents/Pyx_Tracker_Capstone_SQL_ERD.docx")
 OUT_IMG = Path(r"C:/xampp/htdocs/rts/output/documents/_erd_pyx_tracker.png")
-DESKTOP = Path(r"C:/Users/Admin/Desktop/capstone/Pyx_Tracker_Capstone_SQL_ERD.docx")
+DESKTOP_DIR = Path(r"C:/Users/Admin/Desktop/capstone")
+DESKTOP_DOC = DESKTOP_DIR / "Pyx_Tracker_Capstone_SQL_ERD.docx"
 
+# Sample-style palette (blue headers, light entity bodies)
 BG = "#FFFFFF"
-INK = "#1A1A1A"
+INK = "#1F2A37"
 HEADER = "#2F80ED"
 HEADER_TEXT = "#FFFFFF"
-BORDER = "#333333"
-MUTED = "#555555"
-LINE = "#5A5A5A"
-PK_BG = "#FFF3B0"
+BODY_FILL = "#F7FBFF"
+BORDER = "#2F80ED"
+MUTED = "#5B6B7C"
+LINE = "#4A5568"
+DASHED = "#7A8699"
 
-font_reg = ImageFont.truetype(r"C:/Windows/Fonts/arial.ttf", 16)
-font_title = ImageFont.truetype(r"C:/Windows/Fonts/arialbd.ttf", 34)
-font_sub = ImageFont.truetype(r"C:/Windows/Fonts/arial.ttf", 18)
-font_hdr = ImageFont.truetype(r"C:/Windows/Fonts/arialbd.ttf", 17)
+font_reg = ImageFont.truetype(r"C:/Windows/Fonts/arial.ttf", 15)
+font_title = ImageFont.truetype(r"C:/Windows/Fonts/arialbd.ttf", 32)
+font_sub = ImageFont.truetype(r"C:/Windows/Fonts/arial.ttf", 16)
+font_hdr = ImageFont.truetype(r"C:/Windows/Fonts/arialbd.ttf", 15)
 font_attr = ImageFont.truetype(r"C:/Windows/Fonts/arial.ttf", 13)
 font_attr_b = ImageFont.truetype(r"C:/Windows/Fonts/arialbd.ttf", 13)
-font_pk = ImageFont.truetype(r"C:/Windows/Fonts/arialbd.ttf", 10)
-font_lane = ImageFont.truetype(r"C:/Windows/Fonts/arialbd.ttf", 14)
-font_rel = ImageFont.truetype(r"C:/Windows/Fonts/ariali.ttf", 12)  # italic relationship comments
+font_lane = ImageFont.truetype(r"C:/Windows/Fonts/arialbd.ttf", 13)
+font_rel = ImageFont.truetype(r"C:/Windows/Fonts/ariali.ttf", 11)
 
 ENTITIES = {
     "ROLES": {"pk": "id", "attrs": ["name", "created_at"]},
@@ -283,37 +292,39 @@ LANES = [
     (2420, "Delivery"),
 ]
 
-# (one_side, many_side, route_kind, relationship comment) — comment style: "...has a..."
+# (one_side, many_side, route_kind, from_verb, to_verb, dashed)
+# from_verb sits near the one-side; to_verb sits near the many-side (sample style).
 RELS = [
-    ("ROLES", "USERS", "down", "assigns"),
-    ("DEPARTMENTS", "USERS", "up", "employs"),
-    ("SUPPLIERS", "STOCKS", "down", "supplies"),
-    ("STOCKS", "STOCK_ENTRIES", "down", "has a"),
-    ("PRODUCTS", "PRODUCT_FORMULA", "down", "has a"),
-    ("POS_SALES", "POS_RECEIPT_ITEMS", "down", "contains"),
-    ("HONEY_WAREHOUSE_ROWS", "HONEY_PRODUCTION_ROWS", "down", "feeds"),
-    ("HONEY_PRODUCTION_ROWS", "HONEY_PACKAGING_ROWS", "down", "bottles into"),
-    ("CSR_ONLINE_BATCHES", "CSR_ONLINE_ORDER_LINES", "down", "has a"),
-    ("CSR_ONLINE_ORDER_LINES", "ONLINE_ORDER_PARCELS", "down", "ships as"),
-    ("ONLINE_ORDER_PARCELS", "RTS_CASES", "down", "may return as"),
-    ("RTS_CASES", "RTS_LINE_ITEMS", "down", "lists"),
-    ("DELIVERY_BATCHES", "DELIVERY_BATCH_ITEMS", "down", "has a"),
-    ("SUPPLIERS", "HONEY_WAREHOUSE_ROWS", "right", "delivers"),
-    ("STOCKS", "PRODUCT_FORMULA", "right", "used in"),
-    ("USERS", "CSR_ONLINE_BATCHES", "top_bus", "prepares"),
-    ("USERS", "DELIVERY_BATCHES", "top_bus", "submits"),
-    ("USERS", "POS_SALES", "corridor", "records"),
-    ("DEPARTMENTS", "STOCKS", "right", "owns"),
-    ("DEPARTMENTS", "PRODUCTS", "top_from_dept", "catalogs"),
-    ("DEPARTMENTS", "STOCK_ENTRIES", "right", "tracks"),
-    ("PRODUCTS", "POS_RECEIPT_ITEMS", "right_bypass", "sold as"),
-    ("CSR_ONLINE_BATCHES", "ONLINE_ORDER_PARCELS", "right_bypass", "creates"),
-    ("ONLINE_ORDER_PARCELS", "DELIVERY_BATCH_ITEMS", "right", "delivered in"),
+    ("ROLES", "USERS", "down", "Assigns", "Assigned to", False),
+    ("DEPARTMENTS", "USERS", "up", "Employs", "Belongs to", False),
+    ("SUPPLIERS", "STOCKS", "down", "Supplies", "Sourced from", False),
+    ("STOCKS", "STOCK_ENTRIES", "down", "Records", "Logged under", False),
+    ("PRODUCTS", "PRODUCT_FORMULA", "down", "Defines", "Composes", False),
+    ("POS_SALES", "POS_RECEIPT_ITEMS", "down", "Contains", "Listed in", False),
+    ("HONEY_WAREHOUSE_ROWS", "HONEY_PRODUCTION_ROWS", "down", "Feeds", "Drawn from", False),
+    ("HONEY_PRODUCTION_ROWS", "HONEY_PACKAGING_ROWS", "down", "Bottles into", "Packed from", False),
+    ("CSR_ONLINE_BATCHES", "CSR_ONLINE_ORDER_LINES", "down", "Groups", "Belongs to", False),
+    ("CSR_ONLINE_ORDER_LINES", "ONLINE_ORDER_PARCELS", "down", "Ships as", "Created from", False),
+    ("ONLINE_ORDER_PARCELS", "RTS_CASES", "down", "May return as", "Linked to", True),
+    ("RTS_CASES", "RTS_LINE_ITEMS", "down", "Lists", "Itemized in", False),
+    ("DELIVERY_BATCHES", "DELIVERY_BATCH_ITEMS", "down", "Contains", "Packed in", False),
+    ("SUPPLIERS", "HONEY_WAREHOUSE_ROWS", "right", "Delivers", "Received from", False),
+    ("STOCKS", "PRODUCT_FORMULA", "right", "Used in", "Requires", True),
+    ("USERS", "CSR_ONLINE_BATCHES", "top_bus", "Prepares", "Prepared by", False),
+    ("USERS", "DELIVERY_BATCHES", "top_bus", "Submits", "Submitted by", False),
+    ("USERS", "POS_SALES", "corridor", "Records", "Sold by", False),
+    ("DEPARTMENTS", "STOCKS", "right", "Owns", "Assigned to", False),
+    ("DEPARTMENTS", "PRODUCTS", "top_from_dept", "Catalogs", "Belongs to", False),
+    ("DEPARTMENTS", "STOCK_ENTRIES", "right", "Tracks", "Recorded under", False),
+    ("PRODUCTS", "POS_RECEIPT_ITEMS", "right_bypass", "Sold as", "Sold from", False),
+    ("CSR_ONLINE_BATCHES", "ONLINE_ORDER_PARCELS", "right_bypass", "Creates", "Issued from", True),
+    ("ONLINE_ORDER_PARCELS", "DELIVERY_BATCH_ITEMS", "right", "Delivered in", "Scans", False),
 ]
 
 
 def measure_box(data: dict) -> tuple[int, int]:
-    return BOX_W, 34 + 24 + len(data["attrs"]) * 18 + 10
+    # header + pk line + attrs + padding (sample #/* density)
+    return BOX_W, 34 + 20 + len(data["attrs"]) * 18 + 12
 
 
 def anchor(box, side: str, t: float = 0.5):
@@ -328,36 +339,66 @@ def anchor(box, side: str, t: float = 0.5):
     return (x1 + (x2 - x1) * t, y2)
 
 
-def draw_poly(draw, pts, width=2):
-    for i in range(len(pts) - 1):
-        draw.line((pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]), fill=LINE, width=width)
-
-
-def midpoint_of_polyline(pts):
-    """Point near the visual middle of the connector for the relationship comment."""
-    if len(pts) == 2:
-        return ((pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2)
-    # Prefer the middle segment of elbow routes
-    mid_i = len(pts) // 2 - 1
-    a, b = pts[mid_i], pts[mid_i + 1]
-    return ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
-
-
-def draw_rel_comment(draw, pts, comment: str):
-    """Draw italic relationship comment on the line, e.g. ----has a----> style."""
-    if not comment:
+def draw_poly(draw, pts, width=2, dashed=False):
+    if not dashed:
+        for i in range(len(pts) - 1):
+            draw.line((pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]), fill=LINE, width=width)
         return
-    cx, cy = midpoint_of_polyline(pts)
-    label = f" {comment} "
+    # approximate dashed segments
+    for i in range(len(pts) - 1):
+        x0, y0 = pts[i]
+        x1, y1 = pts[i + 1]
+        length = math.hypot(x1 - x0, y1 - y0) or 1
+        dx, dy = (x1 - x0) / length, (y1 - y0) / length
+        pos = 0.0
+        on = True
+        dash, gap = 8.0, 6.0
+        while pos < length:
+            seg = dash if on else gap
+            end = min(pos + seg, length)
+            if on:
+                sx, sy = x0 + dx * pos, y0 + dy * pos
+                ex, ey = x0 + dx * end, y0 + dy * end
+                draw.line((sx, sy, ex, ey), fill=DASHED, width=width)
+            pos = end
+            on = not on
+
+
+def point_along(pts, t: float):
+    """Point at fraction t along total polyline length (0..1)."""
+    segs = []
+    total = 0.0
+    for i in range(len(pts) - 1):
+        a, b = pts[i], pts[i + 1]
+        d = math.hypot(b[0] - a[0], b[1] - a[1])
+        segs.append((a, b, d))
+        total += d
+    if total <= 0:
+        return pts[0]
+    target = total * max(0.0, min(1.0, t))
+    acc = 0.0
+    for a, b, d in segs:
+        if acc + d >= target:
+            u = 0 if d == 0 else (target - acc) / d
+            return (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u)
+        acc += d
+    return pts[-1]
+
+
+def draw_rel_label(draw, pts, text: str, t: float):
+    if not text:
+        return
+    cx, cy = point_along(pts, t)
+    label = f" {text} "
     bbox = draw.textbbox((0, 0), label, font=font_rel)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
     pad_x, pad_y = 3, 1
     x0 = cx - tw / 2 - pad_x
-    y0 = cy - th / 2 - pad_y
+    y0 = cy - th / 2 - pad_y - 8
     x1 = cx + tw / 2 + pad_x
-    y1 = cy + th / 2 + pad_y
+    y1 = cy + th / 2 + pad_y - 8
     draw.rectangle((x0, y0, x1, y1), fill=BG)
-    draw.text((cx - tw / 2, cy - th / 2 - 1), label, font=font_rel, fill=INK)
+    draw.text((cx - tw / 2, cy - th / 2 - 9), label, font=font_rel, fill=INK)
 
 
 def draw_crows(draw, tip, prev):
@@ -434,58 +475,65 @@ def generate_erd(path: Path) -> None:
     img = Image.new("RGB", (w, h), BG)
     draw = ImageDraw.Draw(img)
 
-    draw.text((80, 24), "Entity Relationship Diagram", font=font_title, fill=INK)
+    title = "Entity Relationship Diagram for Pyx Tracker"
+    title_bbox = draw.textbbox((0, 0), title, font=font_title)
+    title_w = title_bbox[2] - title_bbox[0]
+    draw.text(((w - title_w) / 2, 22), title, font=font_title, fill=INK)
     draw.text(
-        (82, 66),
-        "Figure 3.12: Pyx Tracker — Web-based Enterprise Operations Management System",
+        (82, 68),
+        "Web-based Enterprise Operations Management System  |  Crow's-foot = 1 : N  |  # = PK, * = attribute",
         font=font_sub,
         fill=MUTED,
     )
     draw.text(
         (82, 92),
-        "Single schema ERD (live rts_system). Crow's-foot = 1 : N. Italic line comments name each relationship (e.g. has a).",
+        "Derived from live rts_system schema / SQL migrations. Bidirectional relationship verbs follow the institutional ERD sample style.",
         font=font_sub,
         fill=MUTED,
     )
     for x, label in LANES:
-        draw.text((x, 130), label, font=font_lane, fill=HEADER)
+        draw.text((x, 128), label, font=font_lane, fill=HEADER)
 
     counts: dict[str, int] = {}
     seen: dict[str, int] = {}
-    for a, _b, _k, _c in RELS:
+    for a, _b, _k, _f, _t, _d in RELS:
         counts[a] = counts.get(a, 0) + 1
     slots: dict[tuple[str, str], float] = {}
-    for a, b, _k, _c in RELS:
+    for a, b, _k, _f, _t, _d in RELS:
         i = seen.get(a, 0)
         seen[a] = i + 1
         n = counts[a]
         slots[(a, b)] = 0.5 if n == 1 else 0.25 + 0.5 * i / max(n - 1, 1)
 
-    for a, b, kind, comment in RELS:
+    for a, b, kind, from_verb, to_verb, dashed in RELS:
         pts = route(boxes, a, b, kind, slots[(a, b)])
-        draw_poly(draw, pts)
+        draw_poly(draw, pts, dashed=dashed)
         draw_one(draw, pts[0], pts[1])
         draw_crows(draw, pts[-1], pts[-2])
-        draw_rel_comment(draw, pts, comment)
+        draw_rel_label(draw, pts, from_verb, 0.22)
+        draw_rel_label(draw, pts, to_verb, 0.78)
 
     for name, data in ENTITIES.items():
         x1, y1, x2, y2 = boxes[name]
-        draw.rectangle((x1, y1, x2, y2), fill="white", outline=BORDER, width=2)
-        draw.rectangle((x1, y1, x2, y1 + 30), fill=HEADER, outline=BORDER, width=2)
-        draw.text((x1 + 8, y1 + 6), name, font=font_hdr, fill=HEADER_TEXT)
-        y = y1 + 36
-        draw.rounded_rectangle((x1 + 7, y, x1 + 26, y + 15), radius=2, fill=PK_BG, outline="#D4A017")
-        draw.text((x1 + 10, y), "PK", font=font_pk, fill="#7A5A00")
-        draw.text((x1 + 30, y - 1), data["pk"], font=font_attr_b, fill=INK)
-        y += 20
-        draw.line((x1 + 5, y - 3, x2 - 5, y - 3), fill="#CCCCCC", width=1)
+        draw.rounded_rectangle((x1, y1, x2, y2), radius=8, fill=BODY_FILL, outline=BORDER, width=2)
+        draw.rounded_rectangle((x1, y1, x2, y1 + 30), radius=8, fill=HEADER, outline=BORDER, width=2)
+        # square off bottom of header band
+        draw.rectangle((x1, y1 + 16, x2, y1 + 30), fill=HEADER, outline=HEADER)
+        draw.line((x1, y1 + 30, x2, y1 + 30), fill=BORDER, width=1)
+        draw.text((x1 + 10, y1 + 6), name, font=font_hdr, fill=HEADER_TEXT)
+
+        y = y1 + 38
+        # sample style: # pk
+        draw.text((x1 + 10, y), f"# {data['pk']}", font=font_attr_b, fill=INK)
+        y += 18
+        draw.line((x1 + 8, y - 2, x2 - 8, y - 2), fill="#D0D7E2", width=1)
         for attr in data["attrs"]:
-            draw.text((x1 + 10, y), attr, font=font_attr, fill=INK)
+            draw.text((x1 + 10, y), f"* {attr}", font=font_attr, fill=INK)
             y += 18
 
     draw.text(
         (80, h - 36),
-        "Source: live rts_system schema / SQL migrations. One diagram — relationship comments follow [entity] ----verb----> [entity] style.",
+        "Source: live rts_system schema. Solid = required association; dashed = optional / conditional link.",
         font=font_reg,
         fill=MUTED,
     )
@@ -493,43 +541,82 @@ def generate_erd(path: Path) -> None:
     print(f"wrote {path} {img.size} {path.stat().st_size} bytes")
 
 
-def patch_docx_inplace(doc_path: Path, erd_png: Path) -> None:
+def patch_docx(doc_path: Path, erd_png: Path) -> None:
     if not doc_path.exists():
         raise FileNotFoundError(doc_path)
     png = erd_png.read_bytes()
     tmp = doc_path.parent / (doc_path.name + ".tmpzip")
+    replaced = 0
     with zipfile.ZipFile(doc_path, "r") as zin, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zout:
         for info in zin.infolist():
             data = zin.read(info.filename)
             name = info.filename.replace("\\", "/")
-            if name in {
-                "word/media/image14.png",
-                "word/media/image15.png",
-                "word/media/image16.png",
-                "word/media/image17.png",
-            }:
+            # Only replace the ERD media slot (Figure 3.12), not Network Design images.
+            if name == "word/media/image14.png":
                 data = png
+                replaced += 1
                 print("replaced", name)
             zout.writestr(info, data)
-    # Replace in place; if locked, write bytes directly after unlink attempt
+    if replaced != 1:
+        raise RuntimeError(f"Expected to replace image14.png once, got {replaced}")
     try:
         tmp.replace(doc_path)
     except PermissionError:
-        # File may be open — overwrite via read/write on a short retry
         data = tmp.read_bytes()
         tmp.unlink(missing_ok=True)
         doc_path.write_bytes(data)
-    print(f"updated in place {doc_path} ({doc_path.stat().st_size} bytes)")
+    print(f"updated {doc_path} ({doc_path.stat().st_size} bytes)")
 
 
 def main() -> None:
+    if not SRC_DOC.exists():
+        raise FileNotFoundError(SRC_DOC)
+
+    DESKTOP_DIR.mkdir(parents=True, exist_ok=True)
+    WORK_DOC.parent.mkdir(parents=True, exist_ok=True)
+
+    # Start from the user-provided Downloads manuscript
+    shutil.copy2(SRC_DOC, WORK_DOC)
+
     generate_erd(OUT_IMG)
-    patch_docx_inplace(DOC, OUT_IMG)
-    DESKTOP.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(DOC, DESKTOP)
-    print(f"mirrored {DESKTOP} ({DESKTOP.stat().st_size} bytes)")
-    assert DOC.exists() and DOC.stat().st_size > 0
-    assert DESKTOP.exists() and DESKTOP.stat().st_size > 0
+    patch_docx(WORK_DOC, OUT_IMG)
+
+    # Update ERD caption/description to mention sample-style notation
+    from docx import Document
+
+    d = Document(str(WORK_DOC))
+    for p in d.paragraphs:
+        t = p.text.strip()
+        if t.startswith("Figure 3.12  Entity Relationship Diagram"):
+            for r in p.runs:
+                r.text = ""
+            if p.runs:
+                p.runs[0].text = "Figure 3.12  Entity Relationship Diagram of Pyx Tracker"
+            else:
+                p.add_run("Figure 3.12  Entity Relationship Diagram of Pyx Tracker")
+        if t.startswith("Figure 3.12 presents the single Entity Relationship Diagram"):
+            new = (
+                "Figure 3.12 presents the single Entity Relationship Diagram of Pyx Tracker derived from the "
+                "project SQL schema (full_schema.sql, applied migrations, and live rts_system metadata). "
+                "Entity boxes follow the institutional sample style: primary keys are marked with # and "
+                "attributes with *. Crow's-foot connectors show one-to-many relationships, with bidirectional "
+                "verb labels on each end. Solid lines mark required associations; dashed lines mark optional "
+                "or conditional links among inventory, honey production, products, POS, online orders, "
+                "deliveries, and RTS cases."
+            )
+            for r in p.runs:
+                r.text = ""
+            if p.runs:
+                p.runs[0].text = new
+            else:
+                p.add_run(new)
+    d.save(str(WORK_DOC))
+
+    shutil.copy2(WORK_DOC, DESKTOP_DOC)
+    print(f"mirrored {DESKTOP_DOC} ({DESKTOP_DOC.stat().st_size} bytes)")
+
+    assert DESKTOP_DOC.exists() and DESKTOP_DOC.stat().st_size > 0
+    assert OUT_IMG.exists() and OUT_IMG.stat().st_size > 0
     print("DONE")
 
 

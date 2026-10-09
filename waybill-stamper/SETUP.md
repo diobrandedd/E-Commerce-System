@@ -48,6 +48,8 @@ tesseract --version
 python -c "import fitz, openpyxl, pytesseract, pdf2image; print('All OK')"
 ```
 
+**Multiple Pythons on Windows:** the app prefers `python` (with `openpyxl` installed) over `py -3`. If you recently installed Python 3.14+, `pip install …` may have gone into one interpreter while Apache still saw another. Always install with the same launcher you verified above, e.g. `python -m pip install …` (or `py -3.12 -m pip install …`).
+
 ---
 
 ## PHP upload limits (Pyx Tracker SPA)

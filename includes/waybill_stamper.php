@@ -166,17 +166,46 @@ function waybill_stamper_resolve_python(): string
         );
     }
 
+    // Prefer `python` before the Windows `py` launcher: `py -3` often tracks the
+    // newest bare install, while project deps (openpyxl, pdfplumber, …) live on
+    // the older PATH `python` the operator already set up.
     $candidates = ['python', 'python3'];
     if (DIRECTORY_SEPARATOR === '\\') {
-        $candidates = ['py', 'python', 'python3', ...$candidates];
+        $candidates = ['python', 'py', 'python3'];
     }
 
+    $versionOk = [];
     foreach (array_unique($candidates) as $bin) {
-        $cmd = $bin . ' --version 2>&1';
-        $out = shell_exec($cmd);
-        if (is_string($out) && stripos($out, 'python') !== false) {
-            return $bin;
+        $pyArgs = $bin === 'py' ? ' -3' : '';
+        $out = shell_exec($bin . $pyArgs . ' --version 2>&1');
+        if (!is_string($out) || stripos($out, 'python') === false) {
+            continue;
         }
+        $versionOk[] = $bin;
+
+        // Pick an interpreter that already has waybill deps — bare `pip install`
+        // often lands on a different Python than `py -3`.
+        // Always print on success: Windows shell_exec returns null for empty stdout.
+        $probe = shell_exec($bin . $pyArgs . ' -c "import openpyxl; print(1)" 2>&1');
+        if (!is_string($probe) || strpos(trim($probe), '1') === false) {
+            continue;
+        }
+        if (stripos($probe, 'ModuleNotFoundError') !== false || stripos($probe, 'ImportError') !== false) {
+            continue;
+        }
+
+        return $bin;
+    }
+
+    if ($versionOk !== []) {
+        $hintBin = $versionOk[0];
+        $hintArgs = $hintBin === 'py' ? ' -3' : '';
+        throw new RuntimeException(
+            'Python is on PATH but openpyxl is missing for the interpreter this app uses. '
+            . 'Install into that same interpreter (not a different one): '
+            . $hintBin . $hintArgs . ' -m pip install openpyxl pdfplumber PyMuPDF pytesseract pdf2image'
+            . ' (see waybill-stamper/SETUP.md).',
+        );
     }
 
     throw new RuntimeException(

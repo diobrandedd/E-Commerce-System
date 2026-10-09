@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-09 — SPX packing list `openpyxl` ModuleNotFoundError
+**Change:** `waybill_stamper_resolve_python()` prefers PATH `python` with an `openpyxl` probe so Windows `py -3` (bare 3.14) is not chosen over the installed 3.12 deps. → [[problems/records/2026-10-09_python-openpyxl-resolver]]
+
 ### 2026-10-06 — Packaging stock-out history page
 **Change:** Cross-item history of scan/manual packaging stock-outs (who, qty, reason, when) via History modal on Packaging Materials (`packaging.view`). → [[problems/records/2026-10-06_packaging-stock-out-history]]
 
