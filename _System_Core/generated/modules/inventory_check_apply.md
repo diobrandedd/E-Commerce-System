@@ -1,9 +1,9 @@
 ---
 title: inventory_check_apply
 source: includes/inventory_check_apply.php
-generated: 2026-10-09T05:12:22+02:00
+generated: 2026-10-09T06:32:24+02:00
 type: module
-function_count: 9
+function_count: 10
 ---
 
 
@@ -13,14 +13,18 @@ function_count: 9
 
 [[../130_Module_Index]] · [[../120_Database_Tables]] · [[../100_API_Index]]
 
+## Includes
+
+- `includes/dept_raw_freebies.php`
+
 ## inventory_check_compare_run_for_events {#inventory_check_compare_run_for_events}
 
 **Tables:** `inventory_check_compare_runs`, `inventory_check_variance_lines`
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:909 — `return inventory_check_compare_run_for_events($pdo, [$eventId], $userId);`
-- `includes/inventory_check_apply.php`:423 — `$compare = inventory_check_compare_run_for_events($pdo, $eventIds, $userId);`
+- `includes/inventory_check.php`:1000 — `return inventory_check_compare_run_for_events($pdo, [$eventId], $userId);`
+- `includes/inventory_check_apply.php`:460 — `$compare = inventory_check_compare_run_for_events($pdo, $eventIds, $userId);`
 
 ## inventory_check_audited_unique_codes {#inventory_check_audited_unique_codes}
 
@@ -28,7 +32,7 @@ function_count: 9
 
 **Callers (1):**
 
-- `includes/inventory_check_apply.php`:427 — `$uniques = inventory_check_audited_unique_codes($pdo, $eventIds);`
+- `includes/inventory_check_apply.php`:464 — `$uniques = inventory_check_audited_unique_codes($pdo, $eventIds);`
 
 ## inventory_check_void_missing_uniques {#inventory_check_void_missing_uniques}
 
@@ -36,7 +40,7 @@ function_count: 9
 
 **Callers (1):**
 
-- `includes/inventory_check_apply.php`:428 — `$voided = inventory_check_void_missing_uniques($pdo, $uniques, $runId);`
+- `includes/inventory_check_apply.php`:465 — `$voided = inventory_check_void_missing_uniques($pdo, $uniques, $runId);`
 
 ## inventory_check_apply_honey_qty {#inventory_check_apply_honey_qty}
 
@@ -44,7 +48,7 @@ function_count: 9
 
 **Callers (1):**
 
-- `includes/inventory_check_apply.php`:349 — `inventory_check_apply_honey_qty($pdo, $userId, $variant, $size, $target);`
+- `includes/inventory_check_apply.php`:378 — `inventory_check_apply_honey_qty($pdo, $userId, $variant, $size, $target);`
 
 ## inventory_check_apply_dept_qty {#inventory_check_apply_dept_qty}
 
@@ -52,13 +56,21 @@ function_count: 9
 
 **Callers (1):**
 
-- `includes/inventory_check_apply.php`:357 — `inventory_check_apply_dept_qty($pdo, $userId, $pk, $target);`
+- `includes/inventory_check_apply.php`:386 — `inventory_check_apply_dept_qty($pdo, $userId, $pk, $target);`
+
+## inventory_check_apply_freebie_qty {#inventory_check_apply_freebie_qty}
+
+**Tables:** `dept_raw_freebie_balances`
+
+**Callers (1):**
+
+- `includes/inventory_check_apply.php`:394 — `inventory_check_apply_freebie_qty($pdo, $userId, $pk, $target);`
 
 ## inventory_check_apply_qty_to_audited {#inventory_check_apply_qty_to_audited}
 
 **Callers (1):**
 
-- `includes/inventory_check_apply.php`:429 — `inventory_check_apply_qty_to_audited($pdo, $userId, $lines);`
+- `includes/inventory_check_apply.php`:466 — `inventory_check_apply_qty_to_audited($pdo, $userId, $lines);`
 
 ## inventory_check_assert_not_already_applied {#inventory_check_assert_not_already_applied}
 
@@ -66,7 +78,7 @@ function_count: 9
 
 **Callers (1):**
 
-- `includes/inventory_check_apply.php`:416 — `inventory_check_assert_not_already_applied($pdo, $eventIds);`
+- `includes/inventory_check_apply.php`:453 — `inventory_check_assert_not_already_applied($pdo, $eventIds);`
 
 ## inventory_check_finalize_with_sync {#inventory_check_finalize_with_sync}
 
@@ -74,13 +86,13 @@ function_count: 9
 
 **Callers (2):**
 
-- `api/v1/inventory_check.php`:373 — `$result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], false);`
-- `api/v1/inventory_check.php`:405 — `$result = inventory_check_finalize_with_sync($pdo, $user, $eventIds, false);`
+- `api/v1/inventory_check.php`:403 — `$result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], false);`
+- `api/v1/inventory_check.php`:435 — `$result = inventory_check_finalize_with_sync($pdo, $user, $eventIds, false);`
 
 ## inventory_check_serialize_compare_run {#inventory_check_serialize_compare_run}
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:1164 — `'run' => inventory_check_serialize_compare_run($run),`
-- `includes/inventory_check.php`:1380 — `$run = inventory_check_serialize_compare_run($row);`
+- `includes/inventory_check.php`:1290 — `'run' => inventory_check_serialize_compare_run($run),`
+- `includes/inventory_check.php`:1506 — `$run = inventory_check_serialize_compare_run($row);`
 

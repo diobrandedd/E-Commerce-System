@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-10-09T05:11:57+02:00
+generated: 2026-10-09T06:31:56+02:00
 type: module
 function_count: 23
 ---
@@ -36,7 +36,7 @@ function_count: 23
 **Callers (2):**
 
 - `includes/dept_products.php`:123 — `'pt' => dept_pt_bags_per_pouch(),`
-- `includes/dept_pt_settings.php`:94 — `return dept_pt_bags_per_pouch();`
+- `includes/dept_pt_settings.php`:115 — `return dept_pt_bags_per_pouch();`
 
 ## dept_brc_pouches_per_bag {#dept_brc_pouches_per_bag}
 
@@ -48,7 +48,7 @@ function_count: 23
 
 **Callers (3):**
 
-- `includes/dept_brc_settings.php`:87 — `return dept_brc_bags_per_pouch();`
+- `includes/dept_brc_settings.php`:108 — `return dept_brc_bags_per_pouch();`
 - `includes/dept_production.php`:158 — `'qty' => round($qty * dept_brc_bags_per_pouch(), 6),`
 - `includes/dept_products.php`:124 — `'brc' => dept_brc_bags_per_pouch(),`
 
@@ -62,7 +62,7 @@ function_count: 23
 
 **Callers (3):**
 
-- `includes/dept_jar_cacao_settings.php`:90 — `return dept_jar_cacao_bags_per_jar();`
+- `includes/dept_jar_cacao_settings.php`:111 — `return dept_jar_cacao_bags_per_jar();`
 - `includes/dept_production.php`:176 — `'qty' => round($qty * dept_jar_cacao_bags_per_jar(), 6),`
 - `includes/dept_products.php`:125 — `'jar_cacao' => dept_jar_cacao_bags_per_jar(),`
 
@@ -135,7 +135,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (36):**
 
-- `api/v1/honey.php`:1030 — `$def = dept_product_by_key($productKey);`
+- `api/v1/honey.php`:1034 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:12 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:40 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:77 — `$def = dept_product_by_key($productKey);`
@@ -156,8 +156,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_production.php`:390 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_production.php`:419 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_production.php`:953 — `$def = dept_product_by_key('brc');`
-- `includes/dept_production.php`:1032 — `$def = dept_product_by_key('jar_cacao');`
-- `includes/dept_production.php`:1062 — `$def = dept_product_by_key('honey_comb');`
+- `includes/dept_production.php`:1043 — `$def = dept_product_by_key('jar_cacao');`
+- `includes/dept_production.php`:1073 — `$def = dept_product_by_key('honey_comb');`
 - `includes/dept_products.php`:98 — `$def = dept_product_by_key($key);`
 - `includes/dept_products.php`:223 — `return dept_product_by_key($key) !== null;`
 - _… and 11 more (run impact.php for full list)_
@@ -166,9 +166,9 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (6):**
 
-- `api/v1/honey.php`:1068 — `if (!dept_product_key_valid($productKey)) {`
-- `api/v1/honey.php`:1208 — `if (!dept_product_key_valid($productKey)) {`
-- `api/v1/honey.php`:1227 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:1072 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:1285 — `if (!dept_product_key_valid($productKey)) {`
+- `api/v1/honey.php`:1304 — `if (!dept_product_key_valid($productKey)) {`
 - `includes/dept_pos.php`:82 — `if (!dept_product_key_valid($productKey) || $qty <= 0) {`
 - `includes/honey_parcel_inventory.php`:41 — `if ($key === '' || !dept_product_key_valid($key)) {`
 - `includes/pos_discount_requests.php`:18 — `return $productKey !== '' && dept_product_key_valid($productKey);`

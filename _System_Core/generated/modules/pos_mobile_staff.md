@@ -1,7 +1,7 @@
 ---
 title: pos_mobile_staff
 source: includes/pos_mobile_staff.php
-generated: 2026-10-09T05:12:40+02:00
+generated: 2026-10-09T06:32:44+02:00
 type: module
 function_count: 9
 ---
@@ -67,7 +67,7 @@ function_count: 9
 
 **Callers (1):**
 
-- `api/v1/settings.php`:103 — `api_ok(['users' => pos_mobile_staff_candidates(ims_pdo())]);`
+- `api/v1/settings.php`:109 — `api_ok(['users' => pos_mobile_staff_candidates(ims_pdo())]);`
 
 ## pos_mobile_staff_list {#pos_mobile_staff_list}
 
@@ -75,9 +75,9 @@ function_count: 9
 
 **Callers (3):**
 
-- `api/v1/settings.php`:96 — `api_ok(['staff' => pos_mobile_staff_list(ims_pdo())]);`
-- `api/v1/settings.php`:118 — `api_ok(['assigned' => true, 'staff' => pos_mobile_staff_list(ims_pdo())]);`
-- `api/v1/settings.php`:133 — `api_ok(['assigned' => false, 'staff' => pos_mobile_staff_list(ims_pdo())]);`
+- `api/v1/settings.php`:102 — `api_ok(['staff' => pos_mobile_staff_list(ims_pdo())]);`
+- `api/v1/settings.php`:124 — `api_ok(['assigned' => true, 'staff' => pos_mobile_staff_list(ims_pdo())]);`
+- `api/v1/settings.php`:139 — `api_ok(['assigned' => false, 'staff' => pos_mobile_staff_list(ims_pdo())]);`
 
 ## pos_mobile_staff_assign {#pos_mobile_staff_assign}
 
@@ -85,7 +85,7 @@ function_count: 9
 
 **Callers (1):**
 
-- `api/v1/settings.php`:114 — `pos_mobile_staff_assign(ims_pdo(), $userId, (int) ($exec['id'] ?? 0));`
+- `api/v1/settings.php`:120 — `pos_mobile_staff_assign(ims_pdo(), $userId, (int) ($exec['id'] ?? 0));`
 
 ## pos_mobile_staff_unassign {#pos_mobile_staff_unassign}
 
@@ -93,5 +93,5 @@ function_count: 9
 
 **Callers (1):**
 
-- `api/v1/settings.php`:129 — `pos_mobile_staff_unassign(ims_pdo(), $userId);`
+- `api/v1/settings.php`:135 — `pos_mobile_staff_unassign(ims_pdo(), $userId);`
 

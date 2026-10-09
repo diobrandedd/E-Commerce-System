@@ -13,7 +13,7 @@ tags: [fix, inventory, roles, permissions, spa, api]
 
 | Surface | HR | Production manager | Executive | Dept TL (`tl`) |
 |---------|----|--------------------|-----------|----------------|
-| **Packaging Materials** | Stock in lot | Deduct for use | All + set on-hand + pool yield + catalog + full log | — |
+| **Packaging Materials** | View / requests (no stock-in) | Scan stock out + Report damage | All + set on-hand + pool yield + catalog + full log | — |
 | **Supplies** | Add item, stock in lot, **issue request** | View only | All HR actions + set on-hand; approve on Requests | — |
 | **Requests hub** | Track supply issues; submit packaging count | Honey corrections | Review supply issues, corrections, edits, discounts | — |
 | **Product Costing** | — | — | **Only role** (route + `costing.php` API) | — |

@@ -1,7 +1,7 @@
 ---
 title: suppliers
 source: includes/suppliers.php
-generated: 2026-10-09T05:12:56+02:00
+generated: 2026-10-09T06:33:02+02:00
 type: module
 function_count: 12
 ---
@@ -23,8 +23,8 @@ function_count: 12
 **Callers (13):**
 
 - `api/v1/costing.php`:95 — `$row['supplier_display_name'] = supplier_display_name(`
-- `api/v1/honey.php`:1324 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
-- `api/v1/honey.php`:1386 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
+- `api/v1/honey.php`:1401 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
+- `api/v1/honey.php`:1463 — `'supplier_name' => supplier_display_name((string) $p['first_name'], (string) $p['last_name']),`
 - `includes/dept_inventory.php`:190 — `$supplierName = supplier_display_name(`
 - `includes/dept_pricing.php`:156 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:1077 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
@@ -32,7 +32,7 @@ function_count: 12
 - `includes/honey_inventory.php`:2205 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:2385 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_inventory.php`:2754 — `? supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name'])`
-- `includes/honey_pricing.php`:133 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
+- `includes/honey_pricing.php`:139 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/honey_warehouse_barcodes.php`:54 — `$supplierName = supplier_display_name((string) $supplier['first_name'], (string) $supplier['last_name']);`
 - `includes/suppliers.php`:74 — `'display_name' => supplier_display_name((string) $row['first_name'], (string) $row['last_name']),`
 
@@ -61,8 +61,8 @@ function_count: 12
 - `includes/dept_pricing.php`:151 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_inventory.php`:2203 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/honey_inventory.php`:2752 — `$supplier = supplier_fetch($pdo, $supplierId);`
-- `includes/honey_pricing.php`:128 — `$supplier = supplier_fetch($pdo, $supplierId);`
-- `includes/honey_pricing.php`:249 — `$supplier = supplier_fetch($pdo, $supplierId);`
+- `includes/honey_pricing.php`:134 — `$supplier = supplier_fetch($pdo, $supplierId);`
+- `includes/honey_pricing.php`:255 — `$supplier = supplier_fetch($pdo, $supplierId);`
 - `includes/suppliers.php`:175 — `$row = supplier_fetch($pdo, (int) $pdo->lastInsertId());`
 - `includes/suppliers.php`:182 — `$row = supplier_fetch($pdo, $id);`
 - `includes/suppliers.php`:209 — `return supplier_serialize(supplier_fetch($pdo, $id), true);`

@@ -1,7 +1,7 @@
 ---
 title: admin_override_password
 source: includes/admin_override_password.php
-generated: 2026-10-09T05:11:42+02:00
+generated: 2026-10-09T06:31:39+02:00
 type: module
 function_count: 4
 ---
@@ -21,7 +21,7 @@ function_count: 4
 
 **Callers (3):**
 
-- `api/v1/settings.php`:396 — `'configured' => admin_override_password_configured(ims_pdo()),`
+- `api/v1/settings.php`:405 — `'configured' => admin_override_password_configured(ims_pdo()),`
 - `includes/admin_override_password.php`:40 — `if (admin_override_password_configured($pdo)) {`
 - `includes/admin_override_password.php`:61 — `if (!admin_override_password_configured($pdo)) {`
 
@@ -36,21 +36,21 @@ function_count: 4
 
 **Callers (1):**
 
-- `api/v1/settings.php`:415 — `admin_override_password_set(`
+- `api/v1/settings.php`:424 — `admin_override_password_set(`
 
 ## api_require_admin_override_password {#api_require_admin_override_password}
 
 **Callers (11):**
 
-- `api/v1/honey.php`:284 — `api_require_admin_override_password($input);`
-- `api/v1/honey.php`:890 — `api_require_admin_override_password($input);`
-- `api/v1/honey.php`:1506 — `api_require_admin_override_password($input);`
-- `api/v1/honey.php`:1534 — `api_require_admin_override_password($input);`
-- `api/v1/honey.php`:1562 — `api_require_admin_override_password($input);`
-- `api/v1/inventory_check.php`:364 — `api_require_admin_override_password($in);`
-- `api/v1/inventory_check.php`:390 — `api_require_admin_override_password($in);`
-- `api/v1/materials.php`:539 — `api_require_admin_override_password($input);`
-- `api/v1/materials.php`:597 — `api_require_admin_override_password($input);`
+- `api/v1/honey.php`:288 — `api_require_admin_override_password($input);`
+- `api/v1/honey.php`:894 — `api_require_admin_override_password($input);`
+- `api/v1/honey.php`:1583 — `api_require_admin_override_password($input);`
+- `api/v1/honey.php`:1611 — `api_require_admin_override_password($input);`
+- `api/v1/honey.php`:1639 — `api_require_admin_override_password($input);`
+- `api/v1/inventory_check.php`:394 — `api_require_admin_override_password($in);`
+- `api/v1/inventory_check.php`:420 — `api_require_admin_override_password($in);`
+- `api/v1/materials.php`:638 — `api_require_admin_override_password($input);`
+- `api/v1/materials.php`:696 — `api_require_admin_override_password($input);`
 - `api/v1/rts.php`:452 — `api_require_admin_override_password($input);`
 - `api/v1/rts.php`:482 — `api_require_admin_override_password($input);`
 

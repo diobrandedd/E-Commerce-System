@@ -7,6 +7,7 @@ require_once __DIR__ . '/honey_bottle_barcodes.php';
 require_once __DIR__ . '/honey_inventory.php';
 require_once __DIR__ . '/dept_pouch_barcodes.php';
 require_once __DIR__ . '/dept_inventory.php';
+require_once __DIR__ . '/dept_raw_freebies.php';
 require_once __DIR__ . '/inventory_edit_log.php';
 
 const INVENTORY_CHECK_HONEY_SIZE_COLUMNS = [
@@ -252,6 +253,23 @@ function inventory_check_event_list(PDO $pdo, int $page = 1, int $perPage = 25, 
  * @param array<string, mixed> $row
  * @return array<string, mixed>
  */
+function inventory_check_freebie_product_label(string $productKey): string
+{
+    return 'Freebie · ' . dept_pouch_product_label($productKey);
+}
+
+function inventory_check_scan_product_label(string $kind, string $productKey): string
+{
+    if ($kind === 'honey') {
+        return 'Honey';
+    }
+    if ($kind === 'freebie') {
+        return inventory_check_freebie_product_label($productKey);
+    }
+
+    return dept_pouch_product_label($productKey);
+}
+
 function inventory_check_serialize_scan(array $row): array
 {
     $kind = (string) $row['kind'];
@@ -262,7 +280,7 @@ function inventory_check_serialize_scan(array $row): array
         'id' => (int) $row['id'],
         'kind' => $kind,
         'product_key' => $productKey,
-        'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey),
+        'product_label' => inventory_check_scan_product_label($kind, $productKey),
         'code' => (string) $row['code'],
         'packaging_row_id' => $row['packaging_row_id'] !== null ? (int) $row['packaging_row_id'] : null,
         'supplier_code' => $row['supplier_code'] !== null ? (string) $row['supplier_code'] : null,
@@ -270,7 +288,9 @@ function inventory_check_serialize_scan(array $row): array
         'bottling_date' => $row['bottling_date'] !== null ? (string) $row['bottling_date'] : null,
         'variant' => $row['variant'] !== null ? (string) $row['variant'] : null,
         'size' => $size,
-        'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,
+        'size_label' => $kind === 'honey' && $size !== null
+            ? honey_bottle_size_label($size)
+            : ($kind === 'freebie' ? 'sample' : $size),
         'flag' => (string) $row['flag'],
         'counted_qty' => isset($row['counted_qty']) ? (int) $row['counted_qty'] : 1,
         'sku_id' => isset($row['sku_id']) && $row['sku_id'] !== null ? (int) $row['sku_id'] : null,
@@ -308,6 +328,75 @@ function inventory_check_optional_doc_fields(?string $batchNo, ?string $bottling
     }
 
     return [$batch !== '' ? $batch : null, $date !== '' ? $date : null];
+}
+
+/**
+ * Manual freebie count line (no barcode). Synthetic code FREEBIE:{product_key}; re-confirm replaces qty.
+ *
+ * @return array{result: string, scan: array<string, mixed>|null, message: string}
+ */
+function inventory_check_add_freebie(
+    PDO $pdo,
+    int $eventId,
+    int $userId,
+    string $productKey,
+    int $qty
+): array {
+    $event = inventory_check_event_fetch($pdo, $eventId);
+    if ($event === null) {
+        throw new RuntimeException('Inventory count not found.');
+    }
+    if ((string) $event['status'] !== 'open') {
+        throw new RuntimeException('This inventory count is already closed.');
+    }
+    if ((int) ($event['opened_by'] ?? 0) !== $userId) {
+        throw new RuntimeException('You can only add lines to your own audit session.');
+    }
+    if (!dept_raw_freebie_product_allowed($productKey)) {
+        throw new RuntimeException('Pick Paragis Tea, Black Rice, or Jar Cacao freebies.');
+    }
+    if ($qty < 0 || $qty > 100000) {
+        throw new RuntimeException('Enter a whole-number freebie count from 0 to 100000.');
+    }
+
+    $code = 'FREEBIE:' . $productKey;
+    $label = inventory_check_freebie_product_label($productKey);
+
+    $dup = $pdo->prepare(
+        'SELECT id FROM inventory_check_scans WHERE event_id = ? AND code = ? LIMIT 1'
+    );
+    $dup->execute([$eventId, $code]);
+    $existingId = (int) ($dup->fetchColumn() ?: 0);
+
+    if ($existingId > 0) {
+        $pdo->prepare(
+            'UPDATE inventory_check_scans
+             SET counted_qty = ?, scanned_by = ?, scanned_at = NOW(), flag = "ok",
+                 kind = "freebie", product_key = ?, variant = ?, size = "sample"
+             WHERE id = ?'
+        )->execute([$qty, $userId, $productKey, $label, $existingId]);
+        $scan = inventory_check_scan_get($pdo, $existingId);
+
+        return [
+            'result' => 'ok',
+            'scan' => $scan,
+            'message' => 'Updated ' . $label . ' freebie count to ' . $qty . '.',
+        ];
+    }
+
+    $pdo->prepare(
+        'INSERT INTO inventory_check_scans
+            (event_id, kind, product_key, barcode_id, sku_id, unit_id, code, packaging_row_id,
+             supplier_code, batch_no, bottling_date, variant, size, flag, counted_qty, scanned_by)
+         VALUES (?, "freebie", ?, NULL, NULL, NULL, ?, NULL, NULL, NULL, NULL, ?, "sample", "ok", ?, ?)'
+    )->execute([$eventId, $productKey, $code, $label, $qty, $userId]);
+    $scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());
+
+    return [
+        'result' => 'ok',
+        'scan' => $scan,
+        'message' => 'Counted ' . $qty . ' ' . $label . '.',
+    ];
 }
 
 function inventory_check_scan(
@@ -799,7 +888,7 @@ function inventory_check_summary(PDO $pdo, int $eventId, ?int $onlyUserId = null
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
         $kind = (string) $r['kind'];
         $productKey = (string) $r['product_key'];
-        $productLabel = $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey);
+        $productLabel = inventory_check_scan_product_label($kind, $productKey);
         $size = $r['size'] !== null ? (string) $r['size'] : null;
         $qty = (int) $r['qty'];
         $total += $qty;
@@ -815,7 +904,9 @@ function inventory_check_summary(PDO $pdo, int $eventId, ?int $onlyUserId = null
             'bottling_date' => $r['bottling_date'] !== null ? (string) $r['bottling_date'] : null,
             'variant' => $r['variant'] !== null ? (string) $r['variant'] : null,
             'size' => $size,
-            'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,
+            'size_label' => $kind === 'honey' && $size !== null
+                ? honey_bottle_size_label($size)
+                : ($kind === 'freebie' ? 'sample' : $size),
             'qty' => $qty,
             'flagged_qty' => (int) $r['flagged_qty'],
             'scanner_count' => (int) $r['scanner_count'],
@@ -940,12 +1031,14 @@ function inventory_check_compare_build(PDO $pdo, array $eventIds): array
     $honeyBatches = [];
     $deptCounted = [];
     $deptBatches = [];
+    $freebieCounted = [];
 
     foreach ($counted as $row) {
         $kind = (string) $row['kind'];
         $productKey = (string) $row['product_key'];
         $qty = (int) $row['qty'];
-        if ($qty <= 0) {
+        // Freebie allows 0 (explicit zero count); other kinds skip empty groups.
+        if ($qty <= 0 && $kind !== 'freebie') {
             continue;
         }
 
@@ -965,6 +1058,16 @@ function inventory_check_compare_build(PDO $pdo, array $eventIds): array
             if ($bn !== '') {
                 $honeyBatches[$key][$bn] = true;
             }
+            continue;
+        }
+
+        if ($kind === 'freebie') {
+            $scopeKey = 'freebie:' . $productKey;
+            if (!in_array($scopeKey, $scope, true)) {
+                $scope[] = $scopeKey;
+                $scopeLabels[] = inventory_check_freebie_product_label($productKey);
+            }
+            $freebieCounted[$productKey] = ($freebieCounted[$productKey] ?? 0) + $qty;
             continue;
         }
 
@@ -1014,6 +1117,27 @@ function inventory_check_compare_build(PDO $pdo, array $eventIds): array
                 ],
                 $deptBatches[$productKey] ?? []
             ),
+        ];
+    }
+
+    foreach ($freebieCounted as $productKey => $qty) {
+        $systemQty = (float) dept_raw_freebie_on_hand($pdo, (string) $productKey);
+        $label = inventory_check_freebie_product_label((string) $productKey);
+        $lines[] = [
+            'kind' => 'freebie',
+            'product_key' => (string) $productKey,
+            'product_label' => $label,
+            'packaging_row_id' => null,
+            'supplier_code' => null,
+            'batch_no' => null,
+            'bottling_date' => null,
+            'variant' => $label,
+            'size' => 'sample',
+            'size_label' => 'sample',
+            'counted_qty' => $qty,
+            'system_qty' => $systemQty,
+            'variance' => round($qty - $systemQty, 2),
+            'counted_batches' => [],
         ];
     }
 
@@ -1137,14 +1261,16 @@ function inventory_check_compare_get(PDO $pdo, int $runId, ?array $event = null,
             'id' => (int) $row['id'],
             'kind' => $kind,
             'product_key' => (string) $row['product_key'],
-            'product_label' => $kind === 'honey' ? 'Honey' : dept_pouch_product_label((string) $row['product_key']),
+            'product_label' => inventory_check_scan_product_label($kind, (string) $row['product_key']),
             'packaging_row_id' => $row['packaging_row_id'] !== null ? (int) $row['packaging_row_id'] : null,
             'supplier_code' => $row['supplier_code'] !== null ? (string) $row['supplier_code'] : null,
             'batch_no' => $row['batch_no'] !== null ? (string) $row['batch_no'] : null,
             'bottling_date' => $row['bottling_date'] !== null ? (string) $row['bottling_date'] : null,
             'variant' => $row['variant'] !== null ? (string) $row['variant'] : null,
             'size' => $size,
-            'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,
+            'size_label' => $kind === 'honey' && $size !== null
+                ? honey_bottle_size_label($size)
+                : ($kind === 'freebie' ? 'sample' : $size),
             'counted_qty' => (int) $row['counted_qty'],
             'system_qty' => round((float) $row['system_qty'], 2),
             'variance' => round((float) $row['variance'], 2),
@@ -1211,8 +1337,8 @@ function inventory_check_batch_docs_build(PDO $pdo, array $eventIds): array
         $size = $row['size'] !== null ? (string) $row['size'] : null;
         $sizeLabel = $kind === 'honey' && $size !== null
             ? honey_bottle_size_label($size)
-            : ($kind === 'dept' ? dept_pouch_unit_singular($productKey) : $size);
-        $productLabel = $kind === 'honey' ? 'Honey' : dept_pouch_product_label($productKey);
+            : ($kind === 'dept' ? dept_pouch_unit_singular($productKey) : ($kind === 'freebie' ? 'sample' : $size));
+        $productLabel = inventory_check_scan_product_label($kind, $productKey);
 
         if (!isset($groups[$batch])) {
             $groups[$batch] = [

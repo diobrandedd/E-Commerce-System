@@ -13,6 +13,13 @@ return [
     ],
 
     /**
+     * Deprecated: honey AP sync uses HTTP.
+     * Configure base URL + token in System Settings → PyxAcct integration
+     * (must match PyxAcct config integration.tracker_honey_token).
+     */
+    // 'pyxacct_db' => [ ... ],
+
+    /**
      * Upload storage OUTSIDE the RTS git folder (recommended).
      *
      * Create the folder (e.g. C:/xampp/htdocs/rts_storage) with subfolders:

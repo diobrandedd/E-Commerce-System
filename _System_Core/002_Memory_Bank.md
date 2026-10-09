@@ -4,8 +4,17 @@
 
 ## 📅 Recent Log Entries
 
-### 2026-10-09 — SPX packing list `openpyxl` ModuleNotFoundError
-**Change:** `waybill_stamper_resolve_python()` prefers PATH `python` with an `openpyxl` probe so Windows `py -3` (bare 3.14) is not chosen over the installed 3.12 deps. → [[problems/records/2026-10-09_python-openpyxl-resolver]]
+### 2026-10-09 — Inventory check freebies + drop Give out
+**Change:** Freebies modal Create/History only; Add-to-list Freebie mode (PT/BRC/Cacao + qty); compare/apply syncs freebie balances. → [[problems/records/2026-10-09_inventory-check-freebies]]
+
+### 2026-10-08 — Raw freebie sample pool (PT/BRC/Cacao)
+**Change:** Freebie grams in Settings; Create deducts leaf + credits Freebies on-hand; Give out; metric card beside Finished; History modal. → [[problems/records/2026-10-08_raw-freebie-samples]]
+
+### 2026-10-08 — Packaging scan-only close + Report damage visible
+**Change:** Scan-only staff landing no longer auto-opens stock-out; X/Done always closes; Report damage button reachable. → [[problems/records/2026-10-08_packaging-report-damage]]
+
+### 2026-10-08 — Packaging report damage + damaged pool
+**Change:** Report damage (scan + row) deducts on-hand (`damage:`) and logs `packaging_material_damage_log`; period totals (Today/Week/Custom); remove Deduct for use. → [[problems/records/2026-10-08_packaging-report-damage]]
 
 ### 2026-10-06 — Packaging stock-out history page
 **Change:** Cross-item history of scan/manual packaging stock-outs (who, qty, reason, when) via History modal on Packaging Materials (`packaging.view`). → [[problems/records/2026-10-06_packaging-stock-out-history]]

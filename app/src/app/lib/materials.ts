@@ -30,7 +30,7 @@ export interface PackagingStockEntry {
   supplier_batch_no: string;
   created_at: string;
   entered_by_name?: string | null;
-  entry_kind?: "lot" | "count_correction" | "issue" | "use" | "other";
+  entry_kind?: "lot" | "count_correction" | "issue" | "use" | "damage" | "other";
   lot_total_price?: number;
   lot_qty?: number;
   lot_unit?: number;
@@ -102,6 +102,17 @@ export function createMaterial(payload: {
   return apiPost<{ stock: MaterialStockRow }>("materials.php", "catalog_create", payload);
 }
 
+export function removePackagingCatalogItem(payload: {
+  stock_id: number;
+  confirm_password: string;
+}) {
+  return apiPost<{ stock_id: number; name: string; is_active: number }>(
+    "materials.php",
+    "packaging_catalog_remove",
+    payload,
+  );
+}
+
 export function adjustMaterial(payload: {
   stock_id: number;
   action: "add" | "deduct";
@@ -138,6 +149,7 @@ export interface PackagingDetailPermissions {
   can_set_pool_yield: boolean;
   can_set_foam_cacao_cut_yields?: boolean;
   can_view_extended_log: boolean;
+  can_remove_catalog?: boolean;
 }
 
 export interface FoamCacaoCutYield {
@@ -175,6 +187,30 @@ export function deductPackagingForUse(payload: {
     "packaging_deduct",
     payload
   );
+}
+
+export function reportPackagingDamage(payload: {
+  stock_id: number;
+  qty: number;
+  reason: string;
+}) {
+  return apiPost<{
+    stock_id: number;
+    on_hand: number;
+    entry_id: number;
+    damage_log_id: number;
+  }>("materials.php", "packaging_report_damage", payload);
+}
+
+export function fetchPackagingDamageTotals(params: { from: string; to: string }) {
+  return apiGet<{
+    from: string;
+    to: string;
+    totals: { stock_id: number; qty: number }[];
+  }>("materials.php", "packaging_damage_totals", {
+    from: params.from,
+    to: params.to,
+  });
 }
 
 export function packagingPrintSheetUrl(): string {

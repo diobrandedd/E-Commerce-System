@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-10-09T05:12:52+02:00
+generated: 2026-10-09T06:32:58+02:00
 type: module
 function_count: 40
 ---
@@ -134,7 +134,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/barcode_verify.php`:22 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/finished_leak_damage.php`:95 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:1681 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
-- `includes/inventory_check.php`:340 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
+- `includes/inventory_check.php`:429 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/pack_cancel_restock.php`:254 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/pos_unified.php`:103 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
 - `includes/rts_stock_in_sessions.php`:256 — `$sku = sku_barcode_fetch_by_code($pdo, $code);`
@@ -366,7 +366,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/honey_warehouse_barcodes.php`:308 — `return sku_barcode_render_packed_label_sheet(`
 - `includes/honey_warehouse_barcodes.php`:370 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
-- `includes/material_inventory.php`:2215 — `return sku_barcode_render_packed_label_sheet(`
+- `includes/material_inventory.php`:2382 — `return sku_barcode_render_packed_label_sheet(`
 - `includes/rts_barcode_labels.php`:468 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
 - `includes/sku_barcodes.php`:1794 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
 

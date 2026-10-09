@@ -67,6 +67,7 @@ api_dispatch([
     'event_cancel' => 'api_inventory_check_event_cancel',
     'event_list' => 'api_inventory_check_event_list',
     'scan' => 'api_inventory_check_scan',
+    'scan_freebie' => 'api_inventory_check_scan_freebie',
     'scan_update' => 'api_inventory_check_scan_update',
     'scan_remove' => 'api_inventory_check_scan_remove',
     'summary' => 'api_inventory_check_summary',
@@ -182,6 +183,35 @@ function api_inventory_check_scan(): void
             isset($in['qty']) ? (int) $in['qty'] : null,
             isset($in['batch_no']) ? (string) $in['batch_no'] : null,
             isset($in['bottling_date']) ? (string) $in['bottling_date'] : null
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+        return;
+    }
+
+    api_ok([
+        'result' => $res['result'],
+        'message' => $res['message'],
+        'scan' => $res['scan'],
+        'summary' => inventory_check_summary($pdo, $eventId, null),
+    ]);
+}
+
+function api_inventory_check_scan_freebie(): void
+{
+    api_method_allowed(['POST']);
+    api_inventory_check_require_csrf();
+    $user = api_inventory_check_require_scan();
+    $in = api_input();
+    $pdo = ims_pdo();
+    $eventId = (int) ($in['event_id'] ?? 0);
+    try {
+        $res = inventory_check_add_freebie(
+            $pdo,
+            $eventId,
+            (int) $user['id'],
+            trim((string) ($in['product_key'] ?? '')),
+            (int) ($in['qty'] ?? -1)
         );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);

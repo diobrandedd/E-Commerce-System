@@ -332,6 +332,35 @@ function inventory_check_apply_dept_qty(PDO $pdo, int $userId, string $productKe
         ->execute([(float) $target, (float) $target, $rowId]);
 }
 
+function inventory_check_apply_freebie_qty(PDO $pdo, int $userId, string $productKey, int $target): void
+{
+    if ($target < 0) {
+        throw new RuntimeException('Audited freebie quantity cannot be negative.');
+    }
+    if (!dept_raw_freebie_product_allowed($productKey)) {
+        throw new RuntimeException('Unknown freebie product.');
+    }
+    require_once __DIR__ . '/dept_raw_freebies.php';
+    dept_raw_freebie_ensure_balance_row($pdo, $productKey);
+    $old = dept_raw_freebie_on_hand($pdo, $productKey);
+    if ($old === $target) {
+        return;
+    }
+    honey_log_edit(
+        $pdo,
+        $userId,
+        'dept_raw_freebie_balances',
+        0,
+        $productKey . ':on_hand',
+        (string) $old,
+        (string) $target,
+        'inventory_check_apply'
+    );
+    $pdo->prepare(
+        'UPDATE dept_raw_freebie_balances SET on_hand = ? WHERE product_key = ?'
+    )->execute([$target, $productKey]);
+}
+
 /**
  * @param list<array<string, mixed>> $lines
  */
@@ -355,6 +384,14 @@ function inventory_check_apply_qty_to_audited(PDO $pdo, int $userId, array $line
                 continue;
             }
             inventory_check_apply_dept_qty($pdo, $userId, $pk, $target);
+            continue;
+        }
+        if ($kind === 'freebie') {
+            $pk = (string) ($line['product_key'] ?? '');
+            if ($pk === '') {
+                continue;
+            }
+            inventory_check_apply_freebie_qty($pdo, $userId, $pk, $target);
         }
     }
 }

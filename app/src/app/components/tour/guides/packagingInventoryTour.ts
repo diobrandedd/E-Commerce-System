@@ -7,10 +7,10 @@ function detailStepCopy(role: Role | undefined): string {
     return "Open any row for Stock in lot — enter total ₱ paid and quantity received when packaging arrives.";
   }
   if (role === "prod_manager") {
-    return "Open a row to Deduct for use when materials go to the production floor.";
+    return "Use Scan stock out for floor use, or Damaged / Report damage when packaging is damaged (deducts on-hand + damaged pool).";
   }
   if (role === "executive") {
-    return "Open a row for stock-in, deduct, set on-hand, pool yield, and the full activity log.";
+    return "Open a row for stock-in, set on-hand, pool yield, and the full activity log. Use Scan stock out or Report damage from the header.";
   }
   return "Click a row to open the detail modal and see role-specific actions.";
 }
@@ -21,7 +21,7 @@ function buildSteps(role: Role | undefined): DriveStep[] {
       popover: {
         title: "Packaging Materials",
         description:
-          "Track pouches, bottles, stickers, and pool rolls (yarn, foil, seals). HR stocks in purchases; production deducts for use; executives have full control.",
+          "Track pouches, bottles, stickers, and pool rolls (yarn, foil, seals). Executives stock in; production scan stock-out or report damage; no manual Deduct for use.",
         side: "over",
         align: "center",
       },

@@ -1,7 +1,7 @@
 ---
 title: rts_stock_in_sessions
 source: includes/rts_stock_in_sessions.php
-generated: 2026-10-09T05:12:49+02:00
+generated: 2026-10-09T06:32:55+02:00
 type: module
 function_count: 13
 ---

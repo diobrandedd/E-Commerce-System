@@ -1,7 +1,7 @@
 ---
 title: permissions
 source: includes/permissions.php
-generated: 2026-10-09T05:12:38+02:00
+generated: 2026-10-09T06:32:42+02:00
 type: module
 function_count: 19
 ---
@@ -96,7 +96,7 @@ function_count: 19
 
 ## ims_user_can {#ims_user_can}
 
-**Callers (122):**
+**Callers (123):**
 
 - `api/v1/_bootstrap.php`:168 — `if (ims_user_can($u, $key)) {`
 - `api/v1/_costing_helpers.php`:73 — `return ims_user_can($user, 'costing.manage');`
@@ -114,28 +114,29 @@ function_count: 19
 - `api/v1/edit_requests.php`:50 — `'is_reviewer' => ims_user_can($user, 'inventory.edit_requests.approve'),`
 - `api/v1/finished_leak_damage.php`:11 — `if (!ims_user_can($user, 'inventory.leak_damage.record') && !ims_user_can($user, 'inventory.leak_damage.view')) {`
 - `api/v1/finished_leak_damage.php`:28 — `if (!ims_user_can($user, 'inventory.leak_damage.record')) {`
-- `api/v1/honey.php`:160 — `'honey' => ims_user_can($user, 'honey.view')`
-- `api/v1/honey.php`:161 — `|| ims_user_can($user, 'honey.ops')`
-- `api/v1/honey.php`:162 — `|| ims_user_can($user, 'honey.mutate')`
-- `api/v1/honey.php`:167 — `'csr' => ims_user_can($user, 'honey.view') || ims_user_can($user, 'honey.bottle.generate'),`
-- `api/v1/honey.php`:181 — `!ims_user_can($user, 'honey.view')`
-- `api/v1/honey.php`:182 — `&& !ims_user_can($user, 'honey.mutate')`
-- `api/v1/honey.php`:183 — `&& !ims_user_can($user, 'honey.ops')`
-- `api/v1/honey.php`:184 — `&& !ims_user_can($user, 'honey.bottle.request')`
-- `api/v1/honey.php`:185 — `&& !ims_user_can($user, 'honey.bottle.scan')`
-- _… and 97 more (run impact.php for full list)_
+- `api/v1/honey.php`:164 — `'honey' => ims_user_can($user, 'honey.view')`
+- `api/v1/honey.php`:165 — `|| ims_user_can($user, 'honey.ops')`
+- `api/v1/honey.php`:166 — `|| ims_user_can($user, 'honey.mutate')`
+- `api/v1/honey.php`:171 — `'csr' => ims_user_can($user, 'honey.view') || ims_user_can($user, 'honey.bottle.generate'),`
+- `api/v1/honey.php`:185 — `!ims_user_can($user, 'honey.view')`
+- `api/v1/honey.php`:186 — `&& !ims_user_can($user, 'honey.mutate')`
+- `api/v1/honey.php`:187 — `&& !ims_user_can($user, 'honey.ops')`
+- `api/v1/honey.php`:188 — `&& !ims_user_can($user, 'honey.bottle.request')`
+- `api/v1/honey.php`:189 — `&& !ims_user_can($user, 'honey.bottle.scan')`
+- _… and 98 more (run impact.php for full list)_
 
 ## ims_user_can_dept_line {#ims_user_can_dept_line}
 
-**Callers (9):**
+**Callers (10):**
 
-- `api/v1/honey.php`:163 — `|| ims_user_can_dept_line($user, 'honey_comb', 'view'),`
-- `api/v1/honey.php`:164 — `'paragis' => ims_user_can_dept_line($user, 'pt', 'view'),`
-- `api/v1/honey.php`:165 — `'cacao_brc' => ims_user_can_dept_line($user, 'brc', 'view')`
-- `api/v1/honey.php`:166 — `|| ims_user_can_dept_line($user, 'jar_cacao', 'view'),`
-- `api/v1/honey.php`:919 — `if ($productKey !== '' && !ims_user_can_dept_line($user, $productKey, 'view')) {`
-- `api/v1/honey.php`:930 — `static fn(array $item): bool => ims_user_can_dept_line($user, (string) $item['key'], 'view')`
-- `api/v1/honey.php`:1013 — `if (!ims_user_can_dept_line($user, $productKey, 'view')) {`
+- `api/v1/honey.php`:167 — `|| ims_user_can_dept_line($user, 'honey_comb', 'view'),`
+- `api/v1/honey.php`:168 — `'paragis' => ims_user_can_dept_line($user, 'pt', 'view'),`
+- `api/v1/honey.php`:169 — `'cacao_brc' => ims_user_can_dept_line($user, 'brc', 'view')`
+- `api/v1/honey.php`:170 — `|| ims_user_can_dept_line($user, 'jar_cacao', 'view'),`
+- `api/v1/honey.php`:923 — `if ($productKey !== '' && !ims_user_can_dept_line($user, $productKey, 'view')) {`
+- `api/v1/honey.php`:934 — `static fn(array $item): bool => ims_user_can_dept_line($user, (string) $item['key'], 'view')`
+- `api/v1/honey.php`:1017 — `if (!ims_user_can_dept_line($user, $productKey, 'view')) {`
+- `api/v1/honey.php`:1157 — `if (!ims_user_can_dept_line($user, $productKey, 'view')) {`
 - `includes/dept_pouch_barcodes.php`:21 — `return ims_user_can_dept_line($user, $productKey, 'barcodes');`
 - `includes/honey_inventory.php`:183 — `return ims_user_can_dept_line($user, $productKey, 'produce');`
 

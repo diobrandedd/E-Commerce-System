@@ -57,6 +57,8 @@ export interface DeptRawSnapshot {
   bags_on_hand: number;
   finished_on_hand: number;
   finished_label: string;
+  freebie_on_hand?: number;
+  freebie_grams?: number;
   wip_tea_bags: number | null;
   tea_bags_per_pouch: number | null;
   supports_wip: boolean;
@@ -66,6 +68,20 @@ export interface DeptRawSnapshot {
   produce_action: string | null;
   entries: DeptRawEntry[];
   production_entries: DeptProductionEntry[];
+}
+
+export interface DeptRawFreebieLogRow {
+  id: number;
+  product_key: string;
+  action: "create" | "give_out" | string;
+  qty_samples: number;
+  grams_per_sample: number | null;
+  grams_total: number | null;
+  bags_deducted: number | null;
+  reason: string;
+  reported_by: number;
+  reported_by_name: string | null;
+  created_at: string;
 }
 
 export function fetchDeptRawDetail(slug: string) {
@@ -176,6 +192,58 @@ export function deptRawStockOut(payload: {
   reason?: string;
 }) {
   return apiPost("honey.php", "dept_raw_stock_out", payload);
+}
+
+export function deptRawFreebieCreate(payload: {
+  product_key: string;
+  qty: number;
+  reason?: string;
+}) {
+  return apiPost<{
+    product_key: string;
+    action: string;
+    qty_samples: number;
+    grams_per_sample: number;
+    grams_total: number;
+    bags_deducted: number;
+    freebie_on_hand: number;
+    bags_on_hand: number;
+    log_id: number;
+  }>("honey.php", "dept_raw_freebie_create", payload);
+}
+
+export function deptRawFreebieGiveOut(payload: {
+  product_key: string;
+  qty: number;
+  reason: string;
+}) {
+  return apiPost<{
+    product_key: string;
+    action: string;
+    qty_samples: number;
+    freebie_on_hand: number;
+    log_id: number;
+  }>("honey.php", "dept_raw_freebie_give_out", payload);
+}
+
+export function deptRawFreebieHistory(params: {
+  product_key: string;
+  page?: number;
+  per_page?: number;
+}) {
+  return apiGet<{
+    rows: DeptRawFreebieLogRow[];
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+    freebie_on_hand: number;
+    freebie_grams: number;
+  }>("honey.php", "dept_raw_freebie_history", {
+    product_key: params.product_key,
+    page: String(params.page ?? 1),
+    per_page: String(params.per_page ?? 20),
+  });
 }
 
 export function deptPtUseRawBags(payload: { qty: number; note?: string }) {

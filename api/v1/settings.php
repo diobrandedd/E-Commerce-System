@@ -23,6 +23,9 @@ require_once __DIR__ . '/../../includes/pos_mobile_staff.php';
  *   POST ?action=brc_bom_save -> { grams_per_pouch, grams_per_bag, bag_pool_deduct? }
  *   GET  ?action=jar_cacao_bom_get
  *   POST ?action=jar_cacao_bom_save -> { grams_per_jar, grams_per_bag, bag_pool_deduct? }
+ *   GET  ?action=pyxacct_sync_get
+ *   POST ?action=pyxacct_sync_save -> { enabled, api_base_url, api_token? }
+ *   POST ?action=pyxacct_sync_test
  */
 
 api_dispatch([
@@ -43,6 +46,9 @@ api_dispatch([
     'jar_cacao_bom_save' => 'api_settings_jar_cacao_bom_save',
     'admin_password_get' => 'api_settings_admin_password_get',
     'admin_password_save' => 'api_settings_admin_password_save',
+    'pyxacct_sync_get' => 'api_settings_pyxacct_sync_get',
+    'pyxacct_sync_save' => 'api_settings_pyxacct_sync_save',
+    'pyxacct_sync_test' => 'api_settings_pyxacct_sync_test',
 ]);
 
 function api_settings_require_executive(): void
@@ -314,7 +320,8 @@ function api_settings_pt_bom_save(): void
             (float) ($input['grams_per_tea_bag'] ?? 0),
             (float) ($input['tea_bags_per_pouch'] ?? 0),
             api_settings_bool($input['bag_pool_deduct'] ?? true, true),
-            (int) ($user['id'] ?? 0) ?: null
+            (int) ($user['id'] ?? 0) ?: null,
+            isset($input['freebie_grams']) ? (float) $input['freebie_grams'] : null
         );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
@@ -346,7 +353,8 @@ function api_settings_brc_bom_save(): void
             (float) ($input['grams_per_pouch'] ?? 0),
             (float) ($input['grams_per_bag'] ?? 0),
             api_settings_bool($input['bag_pool_deduct'] ?? true, true),
-            (int) ($user['id'] ?? 0) ?: null
+            (int) ($user['id'] ?? 0) ?: null,
+            isset($input['freebie_grams']) ? (float) $input['freebie_grams'] : null
         );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
@@ -378,7 +386,8 @@ function api_settings_jar_cacao_bom_save(): void
             (float) ($input['grams_per_jar'] ?? 0),
             (float) ($input['grams_per_bag'] ?? 0),
             api_settings_bool($input['bag_pool_deduct'] ?? true, true),
-            (int) ($user['id'] ?? 0) ?: null
+            (int) ($user['id'] ?? 0) ?: null,
+            isset($input['freebie_grams']) ? (float) $input['freebie_grams'] : null
         );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
@@ -422,4 +431,55 @@ function api_settings_admin_password_save(): void
         api_fail($e->getMessage(), 422);
     }
     api_ok(['configured' => true, 'saved' => true]);
+}
+
+function api_settings_pyxacct_sync_get(): void
+{
+    api_method_allowed(['GET']);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/pyxacct_ap_sync.php';
+    api_ok(pyxacct_api_settings_public(ims_pdo()));
+}
+
+function api_settings_pyxacct_sync_save(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/pyxacct_ap_sync.php';
+    $user = api_require_ims_user();
+    $enabled = api_settings_bool($input['enabled'] ?? true, true);
+    $baseUrl = trim((string) ($input['api_base_url'] ?? ''));
+    $tokenRaw = $input['api_token'] ?? null;
+    $token = null;
+    if (array_key_exists('api_token', $input)) {
+        $token = is_string($tokenRaw) ? $tokenRaw : (string) $tokenRaw;
+    }
+    try {
+        $public = pyxacct_api_settings_save(
+            ims_pdo(),
+            $enabled,
+            $baseUrl,
+            $token,
+            (int) ($user['id'] ?? 0) ?: null
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+    api_ok(array_merge($public, ['saved' => true]));
+}
+
+function api_settings_pyxacct_sync_test(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/pyxacct_ap_sync.php';
+    $result = pyxacct_test_connection(ims_pdo());
+    if (empty($result['ok'])) {
+        api_fail((string) ($result['error'] ?? 'Connection test failed.'), 422, $result);
+    }
+    api_ok($result);
 }

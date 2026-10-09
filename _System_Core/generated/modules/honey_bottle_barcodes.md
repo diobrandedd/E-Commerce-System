@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-10-09T05:12:04+02:00
+generated: 2026-10-09T06:32:04+02:00
 type: module
 function_count: 63
 ---
@@ -51,10 +51,10 @@ function_count: 63
 - `includes/honey_inventory.php`:650 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`
 - `includes/honey_inventory.php`:1873 — `'size_label' => honey_bottle_size_label($size),`
 - `includes/honey_inventory.php`:1878 — `'label' => ucfirst($variant) . ' · ' . honey_bottle_size_label($size),`
-- `includes/inventory_check.php`:273 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
-- `includes/inventory_check.php`:818 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
-- `includes/inventory_check.php`:1070 — `$sizeLabel = $size !== '' ? honey_bottle_size_label($size) : null;`
-- `includes/inventory_check.php`:1147 — `'size_label' => $kind === 'honey' && $size !== null ? honey_bottle_size_label($size) : $size,`
+- `includes/inventory_check.php`:292 — `? honey_bottle_size_label($size)`
+- `includes/inventory_check.php`:908 — `? honey_bottle_size_label($size)`
+- `includes/inventory_check.php`:1194 — `$sizeLabel = $size !== '' ? honey_bottle_size_label($size) : null;`
+- `includes/inventory_check.php`:1272 — `? honey_bottle_size_label($size)`
 - _… and 28 more (run impact.php for full list)_
 
 ## honey_bottle_can_request {#honey_bottle_can_request}
@@ -576,7 +576,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/dept_pouch_barcodes.php`:1087 — `$svg = honey_bottle_code128_svg($code);`
 - `includes/honey_bottle_barcodes.php`:2889 — `$svg = honey_bottle_code128_svg($code);`
-- `includes/material_inventory.php`:2179 — `$svg = honey_bottle_code128_svg($code);`
+- `includes/material_inventory.php`:2346 — `$svg = honey_bottle_code128_svg($code);`
 - `includes/sku_barcodes.php`:1488 — `$svg = honey_bottle_code128_svg($code);`
 
 ## honey_bottle_batch_codes {#honey_bottle_batch_codes}

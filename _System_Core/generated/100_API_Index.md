@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-09T05:11:41+02:00
+generated: 2026-10-09T06:31:34+02:00
 type: memory-bank
 ---
 
@@ -320,6 +320,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `dept_raw_detail` | `api_honey_dept_raw_detail()` | `dept_raw_material_slug_to_product_key()`, `ims_user_can_dept_line()`, `dept_raw_detail_enriched()`, `ims_pdo()` |
 | `dept_raw_stock_in` | `api_honey_dept_raw_stock_in()` | `dept_product_by_key()`, `ims_pdo()`, `dept_raw_stock_in_bags()` |
 | `dept_raw_stock_out` | `api_honey_dept_raw_stock_out()` | `dept_product_key_valid()`, `ims_pdo()`, `dept_raw_stock_out_bags()` |
+| `dept_raw_freebie_create` | `api_honey_dept_raw_freebie_create()` | `dept_raw_freebie_product_allowed()`, `ims_pdo()`, `dept_raw_record_freebie_create()` |
+| `dept_raw_freebie_give_out` | `api_honey_dept_raw_freebie_give_out()` | `dept_raw_freebie_product_allowed()`, `ims_pdo()`, `dept_raw_record_freebie_give_out()` |
+| `dept_raw_freebie_history` | `api_honey_dept_raw_freebie_history()` | `dept_raw_freebie_product_allowed()`, `ims_user_can_dept_line()`, `dept_raw_freebie_history()`, `ims_pdo()` |
 | `dept_raw_produce` | `api_honey_dept_raw_produce()` | — |
 | `dept_pt_use_raw_bags` | `api_honey_dept_pt_use_raw_bags()` | `ims_pdo()`, `dept_pt_use_raw_bags()` |
 | `dept_pt_make_tea_bags` | `api_honey_dept_pt_make_tea_bags()` | `ims_pdo()`, `dept_pt_make_tea_bags()` |
@@ -359,6 +362,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `event_cancel` | `api_inventory_check_event_cancel()` | `inventory_check_event_cancel()`, `ims_pdo()` |
 | `event_list` | `api_inventory_check_event_list()` | `inventory_check_can_view_all()`, `inventory_check_event_list()`, `ims_pdo()` |
 | `scan` | `api_inventory_check_scan()` | `ims_pdo()`, `inventory_check_scan()`, `inventory_check_summary()` |
+| `scan_freebie` | `api_inventory_check_scan_freebie()` | `ims_pdo()`, `inventory_check_add_freebie()`, `inventory_check_summary()` |
 | `scan_update` | `api_inventory_check_scan_update()` | `ims_pdo()`, `inventory_check_scan_update()`, `inventory_check_can_manage()`, `inventory_check_summary()` |
 | `scan_remove` | `api_inventory_check_scan_remove()` | `ims_pdo()`, `inventory_check_scan_remove()`, `inventory_check_can_manage()`, `inventory_check_summary()` |
 | `summary` | `api_inventory_check_summary()` | `inventory_check_summary()`, `ims_pdo()` |
@@ -402,6 +406,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `set_pool_yield` | `api_materials_set_pool_yield()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_pool_yield()`, `material_inventory_enrich_packaging_row()` |
 | `set_foam_cacao_cut_yields` | `api_materials_set_foam_cacao_cut_yields()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_foam_cacao_cut_yields()`, `material_packaging_foam_cacao_cut_yields()` |
 | `packaging_deduct` | `api_materials_packaging_deduct()` | `material_inventory_role_can_deduct_packaging()`, `ims_pdo()`, `material_packaging_deduct_for_use()` |
+| `packaging_report_damage` | `api_materials_packaging_report_damage()` | `material_inventory_role_can_deduct_packaging()`, `ims_pdo()`, `material_packaging_report_damage()` |
+| `packaging_damage_totals` | `api_materials_packaging_damage_totals()` | `material_packaging_damage_totals()`, `ims_pdo()` |
+| `packaging_catalog_remove` | `api_materials_packaging_catalog_remove()` | `ims_pdo()`, `material_packaging_catalog_remove()` |
 | `packaging_price_lot` | `api_materials_packaging_price_lot()` | `material_inventory_role_can_edit_packaging_price()`, `ims_pdo()`, `material_packaging_record_invoice_price()` |
 | `packaging_print_sheet` | `api_materials_packaging_print_sheet()` | `ims_user_can()`, `material_inventory_role_can_issue_packing()`, `material_packaging_print_sheet_html()`, `ims_pdo()` |
 | `packaging_lookup_barcode` | `api_materials_packaging_lookup_barcode()` | `ims_user_can()`, `material_inventory_role_can_deduct_packaging()`, `material_packaging_lookup_by_barcode()`, `ims_pdo()`, `material_inventory_role_can_stock_in_packaging()` |
@@ -671,6 +678,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `jar_cacao_bom_save` | `api_settings_jar_cacao_bom_save()` | `dept_jar_cacao_bom_save()`, `ims_pdo()`, `dept_jar_cacao_bom_snapshot()` |
 | `admin_password_get` | `api_settings_admin_password_get()` | `admin_override_password_configured()`, `ims_pdo()` |
 | `admin_password_save` | `api_settings_admin_password_save()` | `admin_override_password_set()`, `ims_pdo()` |
+| `pyxacct_sync_get` | `api_settings_pyxacct_sync_get()` | `pyxacct_api_settings_public()`, `ims_pdo()` |
+| `pyxacct_sync_save` | `api_settings_pyxacct_sync_save()` | `pyxacct_api_settings_save()`, `ims_pdo()` |
+| `pyxacct_sync_test` | `api_settings_pyxacct_sync_test()` | `pyxacct_test_connection()`, `ims_pdo()` |
 
 ### `sku_barcodes.php`
 

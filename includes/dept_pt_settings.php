@@ -13,6 +13,10 @@ require_once __DIR__ . '/dept_products.php';
 const PT_GRAMS_PER_TEA_BAG_SETTING_KEY = 'pt.grams_per_tea_bag';
 const PT_TEA_BAGS_PER_POUCH_SETTING_KEY = 'pt.tea_bags_per_pouch';
 const PT_BAG_POOL_DEDUCT_SETTING_KEY = 'pt.bag_pool_deduct';
+const PT_FREEBIE_GRAMS_SETTING_KEY = 'pt.freebie_grams';
+const PT_FREEBIE_GRAMS_DEFAULT = 5.0;
+const PT_FREEBIE_GRAMS_MIN = 0.1;
+const PT_FREEBIE_GRAMS_MAX = 500.0;
 const PT_GRAMS_PER_TEA_BAG_MIN = 0.1;
 const PT_GRAMS_PER_TEA_BAG_MAX = 50.0;
 const PT_TEA_BAGS_PER_POUCH_MIN = 1.0;
@@ -86,6 +90,23 @@ function dept_pt_setting_grams_per_pouch(?PDO $pdo = null): float
     );
 }
 
+function dept_pt_setting_freebie_grams(?PDO $pdo = null): float
+{
+    if ($pdo === null) {
+        return PT_FREEBIE_GRAMS_DEFAULT;
+    }
+    $raw = app_setting_get($pdo, PT_FREEBIE_GRAMS_SETTING_KEY, null);
+    if ($raw === null || $raw === '') {
+        return PT_FREEBIE_GRAMS_DEFAULT;
+    }
+    $n = (float) $raw;
+    if (!is_finite($n) || $n < PT_FREEBIE_GRAMS_MIN || $n > PT_FREEBIE_GRAMS_MAX) {
+        return PT_FREEBIE_GRAMS_DEFAULT;
+    }
+
+    return $n;
+}
+
 /** Fraction of a 1 kg supplier bag consumed by one pouch. */
 function dept_pt_setting_bags_per_pouch(?PDO $pdo = null): float
 {
@@ -105,8 +126,10 @@ function dept_pt_setting_bags_per_pouch(?PDO $pdo = null): float
  *   grams_per_bag: float,
  *   pouches_per_bag: float,
  *   bag_pool_deduct: bool,
+ *   freebie_grams: float,
  *   default_grams_per_tea_bag: float,
- *   default_tea_bags_per_pouch: float
+ *   default_tea_bags_per_pouch: float,
+ *   default_freebie_grams: float
  * }
  */
 function dept_pt_bom_snapshot(?PDO $pdo = null): array
@@ -122,20 +145,23 @@ function dept_pt_bom_snapshot(?PDO $pdo = null): array
         'grams_per_bag' => (float) PT_GRAMS_PER_BAG,
         'pouches_per_bag' => $gPouch > 0 ? round((float) PT_GRAMS_PER_BAG / $gPouch, 4) : 0.0,
         'bag_pool_deduct' => dept_pt_setting_bag_pool_deduct_enabled($pdo),
+        'freebie_grams' => dept_pt_setting_freebie_grams($pdo),
         'default_grams_per_tea_bag' => (float) PT_GRAMS_PER_TEA_BAG,
         'default_tea_bags_per_pouch' => (float) PT_TEA_BAGS_PER_POUCH,
+        'default_freebie_grams' => PT_FREEBIE_GRAMS_DEFAULT,
     ];
 }
 
 /**
- * @return array{grams_per_tea_bag: float, tea_bags_per_pouch: float, grams_per_pouch: float, bag_pool_deduct: bool}
+ * @return array{grams_per_tea_bag: float, tea_bags_per_pouch: float, grams_per_pouch: float, bag_pool_deduct: bool, freebie_grams: float}
  */
 function dept_pt_bom_save(
     PDO $pdo,
     float $gramsPerTeaBag,
     float $teaBagsPerPouch,
     bool $bagPoolDeduct = true,
-    ?int $userId = null
+    ?int $userId = null,
+    ?float $freebieGrams = null
 ): array {
     if (!is_finite($gramsPerTeaBag) || $gramsPerTeaBag < PT_GRAMS_PER_TEA_BAG_MIN || $gramsPerTeaBag > PT_GRAMS_PER_TEA_BAG_MAX) {
         throw new RuntimeException(
@@ -147,14 +173,22 @@ function dept_pt_bom_save(
             'Tea bags per pouch must be between ' . PT_TEA_BAGS_PER_POUCH_MIN . ' and ' . PT_TEA_BAGS_PER_POUCH_MAX . '.'
         );
     }
+    $freebie = $freebieGrams !== null ? $freebieGrams : dept_pt_setting_freebie_grams($pdo);
+    if (!is_finite($freebie) || $freebie < PT_FREEBIE_GRAMS_MIN || $freebie > PT_FREEBIE_GRAMS_MAX) {
+        throw new RuntimeException(
+            'Freebie grams must be between ' . PT_FREEBIE_GRAMS_MIN . ' and ' . PT_FREEBIE_GRAMS_MAX . '.'
+        );
+    }
     app_setting_set($pdo, PT_GRAMS_PER_TEA_BAG_SETTING_KEY, (string) $gramsPerTeaBag, $userId);
     app_setting_set($pdo, PT_TEA_BAGS_PER_POUCH_SETTING_KEY, (string) $teaBagsPerPouch, $userId);
     app_setting_set($pdo, PT_BAG_POOL_DEDUCT_SETTING_KEY, $bagPoolDeduct ? '1' : '0', $userId);
+    app_setting_set($pdo, PT_FREEBIE_GRAMS_SETTING_KEY, (string) $freebie, $userId);
 
     return [
         'grams_per_tea_bag' => dept_pt_setting_grams_per_tea_bag($pdo),
         'tea_bags_per_pouch' => dept_pt_setting_tea_bags_per_pouch($pdo),
         'grams_per_pouch' => dept_pt_setting_grams_per_pouch($pdo),
         'bag_pool_deduct' => dept_pt_setting_bag_pool_deduct_enabled($pdo),
+        'freebie_grams' => dept_pt_setting_freebie_grams($pdo),
     ];
 }

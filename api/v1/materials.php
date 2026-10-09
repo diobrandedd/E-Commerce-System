@@ -29,6 +29,9 @@ api_dispatch([
     'set_pool_yield' => 'api_materials_set_pool_yield',
     'set_foam_cacao_cut_yields' => 'api_materials_set_foam_cacao_cut_yields',
     'packaging_deduct' => 'api_materials_packaging_deduct',
+    'packaging_report_damage' => 'api_materials_packaging_report_damage',
+    'packaging_damage_totals' => 'api_materials_packaging_damage_totals',
+    'packaging_catalog_remove' => 'api_materials_packaging_catalog_remove',
     'packaging_price_lot' => 'api_materials_packaging_price_lot',
     'packaging_print_sheet' => 'api_materials_packaging_print_sheet',
     'packaging_lookup_barcode' => 'api_materials_packaging_lookup_barcode',
@@ -364,12 +367,43 @@ function api_materials_packaging_detail(): void
             'can_set_pool_yield' => ims_user_can($user, 'packaging.set_on_hand') && !$isGenericFoam,
             'can_set_foam_cacao_cut_yields' => ims_user_can($user, 'packaging.set_on_hand') && $isGenericFoam,
             'can_view_extended_log' => ims_user_can($user, 'packaging.set_on_hand'),
+            'can_remove_catalog' => ims_user_can($user, 'packaging.catalog'),
         ],
     ];
     if ($isGenericFoam) {
         $payload['foam_cacao_cut_yields'] = material_packaging_foam_cacao_cut_yields($pdo);
     }
     api_ok($payload);
+}
+
+function api_materials_packaging_catalog_remove(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_require_permission('packaging.catalog');
+    $stockId = (int) ($input['stock_id'] ?? 0);
+    $password = (string) ($input['confirm_password'] ?? $input['password'] ?? '');
+    if ($stockId < 1) {
+        api_fail('stock_id required.', 422);
+    }
+    if (trim($password) === '') {
+        api_fail('Removal password is required.', 422);
+    }
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = material_packaging_catalog_remove($pdo, $stockId, $password);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        $msg = $e->getMessage();
+        $code = str_contains(strtolower($msg), 'password') ? 403 : 400;
+        api_fail($msg, $code);
+    }
+    api_ok($result);
 }
 
 function api_materials_set_foam_cacao_cut_yields(): void
@@ -419,7 +453,6 @@ function api_materials_packaging_deduct(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_ims_user();
-    $role = (string) $user['role'];
     if (!material_inventory_role_can_deduct_packaging($user)) {
         api_fail('Forbidden.', 403);
     }
@@ -453,6 +486,72 @@ function api_materials_packaging_deduct(): void
         api_fail($e->getMessage(), 400);
     }
     api_ok($result);
+}
+
+function api_materials_packaging_report_damage(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_ims_user();
+    if (!material_inventory_role_can_deduct_packaging($user)) {
+        api_fail('Forbidden.', 403);
+    }
+    $stockId = (int) ($input['stock_id'] ?? 0);
+    $qtyRaw = trim((string) ($input['qty'] ?? $input['amount'] ?? ''));
+    $reason = trim((string) ($input['reason'] ?? ''));
+    if ($stockId < 1) {
+        api_fail('stock_id required.', 422);
+    }
+    if (!is_numeric($qtyRaw) || (float) $qtyRaw <= 0) {
+        api_fail('Quantity must be greater than 0.', 422);
+    }
+    if ($reason === '') {
+        api_fail('Reason is required.', 422);
+    }
+    $pdo = ims_pdo();
+    $pdo->beginTransaction();
+    try {
+        $result = material_packaging_report_damage(
+            $pdo,
+            $stockId,
+            (float) $qtyRaw,
+            (int) $user['id'],
+            $reason
+        );
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        api_fail($e->getMessage(), 400);
+    }
+    api_ok($result);
+}
+
+function api_materials_packaging_damage_totals(): void
+{
+    api_method_allowed(['GET']);
+    api_materials_require_view();
+    $from = trim((string) ($_GET['from'] ?? ''));
+    $to = trim((string) ($_GET['to'] ?? ''));
+    if ($from === '' || $to === '') {
+        api_fail('from and to (YYYY-MM-DD) are required.', 422);
+    }
+    try {
+        $totals = material_packaging_damage_totals(ims_pdo(), $from, $to);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+    $rows = [];
+    foreach ($totals as $stockId => $qty) {
+        $rows[] = ['stock_id' => (int) $stockId, 'qty' => (float) $qty];
+    }
+    api_ok([
+        'from' => $from,
+        'to' => $to,
+        'totals' => $rows,
+    ]);
 }
 
 function api_materials_set_pool_yield(): void

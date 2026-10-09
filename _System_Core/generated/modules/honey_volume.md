@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-10-09T05:12:17+02:00
+generated: 2026-10-09T06:32:19+02:00
 type: module
 function_count: 13
 ---
@@ -27,27 +27,27 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/settings.php`:258 — `'packaging_deduct' => honey_packaging_deduct_enabled($pdo),`
-- `api/v1/settings.php`:275 — `$packagingDeduct = honey_packaging_deduct_enabled(ims_pdo());`
+- `api/v1/settings.php`:264 — `'packaging_deduct' => honey_packaging_deduct_enabled($pdo),`
+- `api/v1/settings.php`:281 — `$packagingDeduct = honey_packaging_deduct_enabled(ims_pdo());`
 
 ## honey_packaging_deduct_save {#honey_packaging_deduct_save}
 
 **Callers (1):**
 
-- `api/v1/settings.php`:277 — `$packagingDeduct = honey_packaging_deduct_save(`
+- `api/v1/settings.php`:283 — `$packagingDeduct = honey_packaging_deduct_save(`
 
 ## honey_price_per_liter_from_gallon {#honey_price_per_liter_from_gallon}
 
 **Callers (1):**
 
-- `includes/honey_pricing.php`:144 — `$pricePerLiter = round(honey_price_per_liter_from_gallon((float) $priceRow['price_per_gallon']), 6);`
+- `includes/honey_pricing.php`:150 — `$pricePerLiter = round(honey_price_per_liter_from_gallon((float) $priceRow['price_per_gallon']), 6);`
 
 ## honey_ml_per_gallon {#honey_ml_per_gallon}
 
 **Callers (8):**
 
 - `api/v1/bottle_barcodes.php`:503 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
-- `api/v1/settings.php`:254 — `'ml_per_gallon' => honey_ml_per_gallon($pdo),`
+- `api/v1/settings.php`:260 — `'ml_per_gallon' => honey_ml_per_gallon($pdo),`
 - `includes/honey_inventory.php`:558 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
 - `includes/honey_inventory.php`:593 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
 - `includes/honey_inventory.php`:1527 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
@@ -59,7 +59,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/settings.php`:274 — `$saved = honey_ml_per_gallon_save(ims_pdo(), $ml, $userId);`
+- `api/v1/settings.php`:280 — `$saved = honey_ml_per_gallon_save(ims_pdo(), $ml, $userId);`
 
 ## honey_normalize_bottle_size {#honey_normalize_bottle_size}
 
@@ -121,5 +121,5 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/honey.php`:584 — `$lines = honey_parse_bottle_lines_from_input($input);`
+- `api/v1/honey.php`:588 — `$lines = honey_parse_bottle_lines_from_input($input);`
 

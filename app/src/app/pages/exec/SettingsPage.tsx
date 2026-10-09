@@ -86,12 +86,24 @@ export function SettingsPage() {
   const [mlOk, setMlOk] = useState<string | null>(null);
   const [mlErr, setMlErr] = useState<string | null>(null);
 
+  const [pyxacctSyncEnabled, setPyxacctSyncEnabled] = useState(true);
+  const [pyxacctApiBaseUrl, setPyxacctApiBaseUrl] = useState("");
+  const [pyxacctApiToken, setPyxacctApiToken] = useState("");
+  const [pyxacctTokenSet, setPyxacctTokenSet] = useState(false);
+  const [pyxacctSyncLoading, setPyxacctSyncLoading] = useState(true);
+  const [pyxacctSyncSaving, setPyxacctSyncSaving] = useState(false);
+  const [pyxacctSyncTesting, setPyxacctSyncTesting] = useState(false);
+  const [pyxacctSyncOk, setPyxacctSyncOk] = useState<string | null>(null);
+  const [pyxacctSyncErr, setPyxacctSyncErr] = useState<string | null>(null);
+
   const [ptGramsTea, setPtGramsTea] = useState("2");
   const [ptBagsPouch, setPtBagsPouch] = useState("24");
   const [ptDefaultGrams, setPtDefaultGrams] = useState(2);
   const [ptDefaultBags, setPtDefaultBags] = useState(24);
   const [ptGramsPouch, setPtGramsPouch] = useState(48);
   const [ptBagPoolDeduct, setPtBagPoolDeduct] = useState(true);
+  const [ptFreebieGrams, setPtFreebieGrams] = useState("5");
+  const [ptDefaultFreebieGrams, setPtDefaultFreebieGrams] = useState(5);
   const [ptLoading, setPtLoading] = useState(true);
   const [ptSaving, setPtSaving] = useState(false);
   const [ptOk, setPtOk] = useState<string | null>(null);
@@ -103,6 +115,8 @@ export function SettingsPage() {
   const [brcDefaultBag, setBrcDefaultBag] = useState(1000);
   const [brcPouchesPerBag, setBrcPouchesPerBag] = useState(10);
   const [brcBagPoolDeduct, setBrcBagPoolDeduct] = useState(true);
+  const [brcFreebieGrams, setBrcFreebieGrams] = useState("5");
+  const [brcDefaultFreebieGrams, setBrcDefaultFreebieGrams] = useState(5);
   const [brcLoading, setBrcLoading] = useState(true);
   const [brcSaving, setBrcSaving] = useState(false);
   const [brcOk, setBrcOk] = useState<string | null>(null);
@@ -114,6 +128,8 @@ export function SettingsPage() {
   const [cacaoDefaultBag, setCacaoDefaultBag] = useState(1000);
   const [cacaoJarsPerBag, setCacaoJarsPerBag] = useState(1000 / 220);
   const [cacaoBagPoolDeduct, setCacaoBagPoolDeduct] = useState(true);
+  const [cacaoFreebieGrams, setCacaoFreebieGrams] = useState("5");
+  const [cacaoDefaultFreebieGrams, setCacaoDefaultFreebieGrams] = useState(5);
   const [cacaoLoading, setCacaoLoading] = useState(true);
   const [cacaoSaving, setCacaoSaving] = useState(false);
   const [cacaoOk, setCacaoOk] = useState<string | null>(null);
@@ -212,15 +228,19 @@ export function SettingsPage() {
         tea_bags_per_pouch: number;
         grams_per_pouch: number;
         bag_pool_deduct: boolean;
+        freebie_grams: number;
         default_grams_per_tea_bag: number;
         default_tea_bags_per_pouch: number;
+        default_freebie_grams: number;
       }>("settings.php", "pt_bom_get");
       setPtGramsTea(String(data.grams_per_tea_bag));
       setPtBagsPouch(String(data.tea_bags_per_pouch));
       setPtGramsPouch(data.grams_per_pouch);
       setPtBagPoolDeduct(data.bag_pool_deduct !== false);
+      setPtFreebieGrams(String(data.freebie_grams ?? 5));
       setPtDefaultGrams(data.default_grams_per_tea_bag);
       setPtDefaultBags(data.default_tea_bags_per_pouch);
+      setPtDefaultFreebieGrams(data.default_freebie_grams ?? 5);
     } catch (e) {
       setPtErr(e instanceof ApiError ? e.message : "Could not load Paragis BOM settings.");
     } finally {
@@ -237,15 +257,19 @@ export function SettingsPage() {
         grams_per_bag: number;
         pouches_per_bag: number;
         bag_pool_deduct: boolean;
+        freebie_grams: number;
         default_grams_per_pouch: number;
         default_grams_per_bag: number;
+        default_freebie_grams: number;
       }>("settings.php", "brc_bom_get");
       setBrcGramsPouch(String(data.grams_per_pouch));
       setBrcGramsBag(String(data.grams_per_bag));
       setBrcPouchesPerBag(data.pouches_per_bag);
       setBrcBagPoolDeduct(data.bag_pool_deduct !== false);
+      setBrcFreebieGrams(String(data.freebie_grams ?? 5));
       setBrcDefaultPouch(data.default_grams_per_pouch);
       setBrcDefaultBag(data.default_grams_per_bag);
+      setBrcDefaultFreebieGrams(data.default_freebie_grams ?? 5);
     } catch (e) {
       setBrcErr(e instanceof ApiError ? e.message : "Could not load Black Rice BOM settings.");
     } finally {
@@ -262,15 +286,19 @@ export function SettingsPage() {
         grams_per_bag: number;
         jars_per_bag: number;
         bag_pool_deduct: boolean;
+        freebie_grams: number;
         default_grams_per_jar: number;
         default_grams_per_bag: number;
+        default_freebie_grams: number;
       }>("settings.php", "jar_cacao_bom_get");
       setCacaoGramsJar(String(data.grams_per_jar));
       setCacaoGramsBag(String(data.grams_per_bag));
       setCacaoJarsPerBag(data.jars_per_bag);
       setCacaoBagPoolDeduct(data.bag_pool_deduct !== false);
+      setCacaoFreebieGrams(String(data.freebie_grams ?? 5));
       setCacaoDefaultJar(data.default_grams_per_jar);
       setCacaoDefaultBag(data.default_grams_per_bag);
+      setCacaoDefaultFreebieGrams(data.default_freebie_grams ?? 5);
     } catch (e) {
       setCacaoErr(e instanceof ApiError ? e.message : "Could not load Jar Cacao BOM settings.");
     } finally {
@@ -291,16 +319,47 @@ export function SettingsPage() {
     }
   }, []);
 
+  const loadPyxacctSync = useCallback(async () => {
+    setPyxacctSyncLoading(true);
+    setPyxacctSyncErr(null);
+    try {
+      const data = await apiGet<{
+        enabled: boolean;
+        api_base_url?: string;
+        token_set?: boolean;
+      }>("settings.php", "pyxacct_sync_get");
+      setPyxacctSyncEnabled(!!data.enabled);
+      setPyxacctApiBaseUrl(data.api_base_url ?? "");
+      setPyxacctTokenSet(!!data.token_set);
+      setPyxacctApiToken("");
+    } catch (e) {
+      setPyxacctSyncErr(e instanceof ApiError ? e.message : "Could not load PyxAcct sync setting.");
+    } finally {
+      setPyxacctSyncLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadPins();
     void loadMobileStaff();
     void loadSkuRows();
     void loadHoneyVolume();
+    void loadPyxacctSync();
     void loadPtBom();
     void loadBrcBom();
     void loadCacaoBom();
     void loadAdminPassword();
-  }, [loadPins, loadMobileStaff, loadSkuRows, loadHoneyVolume, loadPtBom, loadBrcBom, loadCacaoBom, loadAdminPassword]);
+  }, [
+    loadPins,
+    loadMobileStaff,
+    loadSkuRows,
+    loadHoneyVolume,
+    loadPyxacctSync,
+    loadPtBom,
+    loadBrcBom,
+    loadCacaoBom,
+    loadAdminPassword,
+  ]);
 
   const saveAdminPassword = async () => {
     setAdminPwSaving(true);
@@ -331,6 +390,63 @@ export function SettingsPage() {
       setAdminPwErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not save.");
     } finally {
       setAdminPwSaving(false);
+    }
+  };
+
+  const savePyxacctSync = async (opts?: { enabled?: boolean }) => {
+    setPyxacctSyncSaving(true);
+    setPyxacctSyncOk(null);
+    setPyxacctSyncErr(null);
+    try {
+      const nextEnabled = opts?.enabled ?? pyxacctSyncEnabled;
+      const payload: {
+        enabled: boolean;
+        api_base_url: string;
+        api_token?: string;
+      } = {
+        enabled: nextEnabled,
+        api_base_url: pyxacctApiBaseUrl.trim(),
+      };
+      if (pyxacctApiToken.trim() !== "") {
+        payload.api_token = pyxacctApiToken.trim();
+      }
+      const res = await apiPost<{
+        enabled: boolean;
+        api_base_url?: string;
+        token_set?: boolean;
+      }>("settings.php", "pyxacct_sync_save", payload);
+      setPyxacctSyncEnabled(!!res.enabled);
+      setPyxacctApiBaseUrl(res.api_base_url ?? pyxacctApiBaseUrl.trim());
+      setPyxacctTokenSet(!!res.token_set);
+      setPyxacctApiToken("");
+      setPyxacctSyncOk(
+        res.enabled
+          ? "PyxAcct honey AP sync saved — priced stock-ins will POST to the API URL."
+          : "PyxAcct honey AP sync is OFF — stock-ins will not create payables.",
+      );
+    } catch (e) {
+      setPyxacctSyncErr(e instanceof ApiError ? e.message : "Could not save PyxAcct sync setting.");
+      await loadPyxacctSync();
+    } finally {
+      setPyxacctSyncSaving(false);
+    }
+  };
+
+  const testPyxacctSync = async () => {
+    setPyxacctSyncTesting(true);
+    setPyxacctSyncOk(null);
+    setPyxacctSyncErr(null);
+    try {
+      const res = await apiPost<{ sync_enabled?: boolean }>("settings.php", "pyxacct_sync_test", {});
+      setPyxacctSyncOk(
+        res.sync_enabled
+          ? "Connection OK — PyxAcct is reachable and accepting honey AP sync."
+          : "Connection OK — PyxAcct is reachable, but honey AP sync is OFF in PyxAcct Settings.",
+      );
+    } catch (e) {
+      setPyxacctSyncErr(e instanceof ApiError ? e.message : "Connection test failed.");
+    } finally {
+      setPyxacctSyncTesting(false);
     }
   };
 
@@ -366,17 +482,20 @@ export function SettingsPage() {
         tea_bags_per_pouch: number;
         grams_per_pouch: number;
         bag_pool_deduct: boolean;
+        freebie_grams: number;
       }>("settings.php", "pt_bom_save", {
         grams_per_tea_bag: Number(ptGramsTea),
         tea_bags_per_pouch: Number(ptBagsPouch),
         bag_pool_deduct: ptBagPoolDeduct ? 1 : 0,
+        freebie_grams: Number(ptFreebieGrams),
       });
       setPtGramsTea(String(res.grams_per_tea_bag));
       setPtBagsPouch(String(res.tea_bags_per_pouch));
       setPtGramsPouch(res.grams_per_pouch);
       setPtBagPoolDeduct(res.bag_pool_deduct !== false);
+      setPtFreebieGrams(String(res.freebie_grams ?? ptFreebieGrams));
       setPtOk(
-        `Saved Paragis BOM (${res.grams_per_pouch} g per pouch · deduct ${res.bag_pool_deduct ? "on" : "off"}).`,
+        `Saved Paragis BOM (${res.grams_per_pouch} g per pouch · freebie ${res.freebie_grams} g · deduct ${res.bag_pool_deduct ? "on" : "off"}).`,
       );
     } catch (e) {
       setPtErr(e instanceof ApiError ? e.message : "Could not save Paragis BOM.");
@@ -395,17 +514,20 @@ export function SettingsPage() {
         grams_per_bag: number;
         pouches_per_bag: number;
         bag_pool_deduct: boolean;
+        freebie_grams: number;
       }>("settings.php", "brc_bom_save", {
         grams_per_pouch: Number(brcGramsPouch),
         grams_per_bag: Number(brcGramsBag),
         bag_pool_deduct: brcBagPoolDeduct ? 1 : 0,
+        freebie_grams: Number(brcFreebieGrams),
       });
       setBrcGramsPouch(String(res.grams_per_pouch));
       setBrcGramsBag(String(res.grams_per_bag));
       setBrcPouchesPerBag(res.pouches_per_bag);
       setBrcBagPoolDeduct(res.bag_pool_deduct !== false);
+      setBrcFreebieGrams(String(res.freebie_grams ?? brcFreebieGrams));
       setBrcOk(
-        `Saved Black Rice BOM (${res.grams_per_pouch} g per pouch · deduct ${res.bag_pool_deduct ? "on" : "off"}).`,
+        `Saved Black Rice BOM (${res.grams_per_pouch} g per pouch · freebie ${res.freebie_grams} g · deduct ${res.bag_pool_deduct ? "on" : "off"}).`,
       );
     } catch (e) {
       setBrcErr(e instanceof ApiError ? e.message : "Could not save Black Rice BOM.");
@@ -424,17 +546,20 @@ export function SettingsPage() {
         grams_per_bag: number;
         jars_per_bag: number;
         bag_pool_deduct: boolean;
+        freebie_grams: number;
       }>("settings.php", "jar_cacao_bom_save", {
         grams_per_jar: Number(cacaoGramsJar),
         grams_per_bag: Number(cacaoGramsBag),
         bag_pool_deduct: cacaoBagPoolDeduct ? 1 : 0,
+        freebie_grams: Number(cacaoFreebieGrams),
       });
       setCacaoGramsJar(String(res.grams_per_jar));
       setCacaoGramsBag(String(res.grams_per_bag));
       setCacaoJarsPerBag(res.jars_per_bag);
       setCacaoBagPoolDeduct(res.bag_pool_deduct !== false);
+      setCacaoFreebieGrams(String(res.freebie_grams ?? cacaoFreebieGrams));
       setCacaoOk(
-        `Saved Jar Cacao BOM (${res.grams_per_jar} g per jar · deduct ${res.bag_pool_deduct ? "on" : "off"}).`,
+        `Saved Jar Cacao BOM (${res.grams_per_jar} g per jar · freebie ${res.freebie_grams} g · deduct ${res.bag_pool_deduct ? "on" : "off"}).`,
       );
     } catch (e) {
       setCacaoErr(e instanceof ApiError ? e.message : "Could not save Jar Cacao BOM.");
@@ -591,6 +716,8 @@ export function SettingsPage() {
         {skuErr && <AppErrorBanner message={skuErr} />}
         {mlOk && <AppSuccessNotice message={mlOk} />}
         {mlErr && <AppErrorBanner message={mlErr} />}
+        {pyxacctSyncOk && <AppSuccessNotice message={pyxacctSyncOk} />}
+        {pyxacctSyncErr && <AppErrorBanner message={pyxacctSyncErr} />}
         {ptOk && <AppSuccessNotice message={ptOk} />}
         {ptErr && <AppErrorBanner message={ptErr} />}
         {brcOk && <AppSuccessNotice message={brcOk} />}
@@ -655,6 +782,99 @@ export function SettingsPage() {
               >
                 Reset to default
               </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <Shield size={18} className="text-[#C8900A]" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">PyxAcct integration</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                When on, priced honey warehouse stock-ins POST to PyxAcct accounts payable (gallons × unit cost).
+                Set the API base URL for this environment (local, ngrok, or live) and a token matching PyxAcct
+                config <span className="font-mono text-[11px]">integration.tracker_honey_token</span>. PyxAcct
+                must also allow sync in its Settings.
+              </p>
+            </div>
+          </div>
+          {pyxacctSyncLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="px-6 py-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Sync honey stock-in → accounts payable</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {pyxacctSyncEnabled ? "Currently ON" : "Currently OFF"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {pyxacctSyncSaving ? <Loader2 className="animate-spin text-muted-foreground" size={16} /> : null}
+                  <Switch
+                    checked={pyxacctSyncEnabled}
+                    disabled={pyxacctSyncSaving || pyxacctSyncTesting}
+                    onCheckedChange={checked => {
+                      setPyxacctSyncEnabled(checked);
+                      void savePyxacctSync({ enabled: checked });
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="text-xs text-muted-foreground">PyxAcct API base URL</label>
+                  <input
+                    type="url"
+                    placeholder="http://localhost/PyxAcct"
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={pyxacctApiBaseUrl}
+                    onChange={e => setPyxacctApiBaseUrl(e.target.value)}
+                    disabled={pyxacctSyncSaving || pyxacctSyncTesting}
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    No trailing slash. Example: https://xxxx.ngrok-free.app/PyxAcct
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs text-muted-foreground">API token</label>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder={pyxacctTokenSet ? "•••••••• (saved — leave blank to keep)" : "Paste shared secret"}
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={pyxacctApiToken}
+                    onChange={e => setPyxacctApiToken(e.target.value)}
+                    disabled={pyxacctSyncSaving || pyxacctSyncTesting}
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {pyxacctTokenSet
+                      ? "A token is already stored. Enter a new value only to replace it."
+                      : "Required for sync. Must match the token in PyxAcct config."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  disabled={pyxacctSyncSaving || pyxacctSyncTesting}
+                  onClick={() => void savePyxacctSync()}
+                  className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+                >
+                  {pyxacctSyncSaving ? <Loader2 className="animate-spin" size={14} /> : "Save connection"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pyxacctSyncSaving || pyxacctSyncTesting}
+                  onClick={() => void testPyxacctSync()}
+                >
+                  {pyxacctSyncTesting ? <Loader2 className="animate-spin" size={14} /> : "Test connection"}
+                </Button>
               </div>
             </div>
           )}
@@ -737,6 +957,21 @@ export function SettingsPage() {
                 <p className="text-xs text-muted-foreground">g per pouch</p>
                 <p className="mt-1 text-sm font-semibold tabular-nums">{ptGramsPouch}</p>
               </div>
+              <div className="w-40">
+                <label htmlFor="pt-freebie-grams" className="text-xs text-muted-foreground">
+                  freebie sample (g)
+                </label>
+                <input
+                  id="pt-freebie-grams"
+                  type="number"
+                  min={0.1}
+                  max={500}
+                  step="any"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={ptFreebieGrams}
+                  onChange={e => setPtFreebieGrams(e.target.value)}
+                />
+              </div>
               <Button
                 type="button"
                 disabled={ptSaving}
@@ -754,6 +989,7 @@ export function SettingsPage() {
                   setPtBagsPouch(String(ptDefaultBags));
                   setPtGramsPouch(ptDefaultGrams * ptDefaultBags);
                   setPtBagPoolDeduct(true);
+                  setPtFreebieGrams(String(ptDefaultFreebieGrams));
                 }}
               >
                 Reset to default
@@ -844,6 +1080,21 @@ export function SettingsPage() {
                 <p className="text-xs text-muted-foreground">pouches per kg</p>
                 <p className="mt-1 text-sm font-semibold tabular-nums">{brcPouchesPerBag}</p>
               </div>
+              <div className="w-40">
+                <label htmlFor="brc-freebie-grams" className="text-xs text-muted-foreground">
+                  freebie sample (g)
+                </label>
+                <input
+                  id="brc-freebie-grams"
+                  type="number"
+                  min={0.1}
+                  max={500}
+                  step="any"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={brcFreebieGrams}
+                  onChange={e => setBrcFreebieGrams(e.target.value)}
+                />
+              </div>
               <Button
                 type="button"
                 disabled={brcSaving}
@@ -861,6 +1112,7 @@ export function SettingsPage() {
                   setBrcGramsBag(String(brcDefaultBag));
                   setBrcPouchesPerBag(brcDefaultBag / brcDefaultPouch);
                   setBrcBagPoolDeduct(true);
+                  setBrcFreebieGrams(String(brcDefaultFreebieGrams));
                 }}
               >
                 Reset to default
@@ -952,6 +1204,21 @@ export function SettingsPage() {
                 <p className="text-xs text-muted-foreground">jars per kg</p>
                 <p className="mt-1 text-sm font-semibold tabular-nums">{cacaoJarsPerBag}</p>
               </div>
+              <div className="w-40">
+                <label htmlFor="cacao-freebie-grams" className="text-xs text-muted-foreground">
+                  freebie sample (g)
+                </label>
+                <input
+                  id="cacao-freebie-grams"
+                  type="number"
+                  min={0.1}
+                  max={500}
+                  step="any"
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                  value={cacaoFreebieGrams}
+                  onChange={e => setCacaoFreebieGrams(e.target.value)}
+                />
+              </div>
               <Button
                 type="button"
                 disabled={cacaoSaving}
@@ -969,6 +1236,7 @@ export function SettingsPage() {
                   setCacaoGramsBag(String(cacaoDefaultBag));
                   setCacaoJarsPerBag(cacaoDefaultBag / cacaoDefaultJar);
                   setCacaoBagPoolDeduct(true);
+                  setCacaoFreebieGrams(String(cacaoDefaultFreebieGrams));
                 }}
               >
                 Reset to default
