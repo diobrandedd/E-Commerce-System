@@ -1278,36 +1278,8 @@ function sku_barcode_honey_deduct(
             ]
         );
     } else {
-        if ($packagingRowId === null || $packagingRowId < 1) {
-            // Deduct from any packaging rows with stock for this variant+size (FIFO by id).
-            $remaining = $qty;
-            [$curCol] = honey_packaging_size_columns($size);
-            $st = $pdo->prepare(
-                "SELECT id, {$curCol} AS on_hand FROM honey_packaging_rows
-                 WHERE variant = ? AND {$curCol} > 0
-                 ORDER BY id ASC FOR UPDATE"
-            );
-            $st->execute([$variant]);
-            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
-                if ($remaining < 1) {
-                    break;
-                }
-                $onHand = (int) floor((float) $row['on_hand']);
-                $take = min($remaining, $onHand);
-                if ($take < 1) {
-                    continue;
-                }
-                honey_bottle_adjust_aggregate($pdo, (int) $row['id'], $size, -(float) $take);
-                $remaining -= $take;
-            }
-            if ($remaining > 0) {
-                throw new RuntimeException(
-                    'Not enough packaging stock for ' . ucfirst($variant) . ' ' . honey_bottle_size_label($size) . '.'
-                );
-            }
-        } else {
-            honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, -(float) $qty);
-        }
+        $poolId = honey_bottle_adjust_variant_pool($pdo, $userId, $variant, $size, -(float) $qty);
+        $packagingRowId = $poolId;
     }
 
     $hasSessCol = rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id');
@@ -1379,10 +1351,8 @@ function sku_barcode_honey_credit(
     }
     if ($pool === 'rts_sellable') {
         rts_inventory_credit_sellable_honey($pdo, $variant, $size, (float) $qty);
-    } elseif ($packagingRowId !== null && $packagingRowId > 0) {
-        honey_bottle_adjust_aggregate($pdo, $packagingRowId, $size, (float) $qty);
     } else {
-        throw new RuntimeException('Cannot restock SKU honey without a packaging batch or RTS pool.');
+        honey_bottle_adjust_variant_pool($pdo, 1, $variant, $size, (float) $qty);
     }
 }
 

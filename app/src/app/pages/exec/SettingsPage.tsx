@@ -716,8 +716,6 @@ export function SettingsPage() {
         {skuErr && <AppErrorBanner message={skuErr} />}
         {mlOk && <AppSuccessNotice message={mlOk} />}
         {mlErr && <AppErrorBanner message={mlErr} />}
-        {pyxacctSyncOk && <AppSuccessNotice message={pyxacctSyncOk} />}
-        {pyxacctSyncErr && <AppErrorBanner message={pyxacctSyncErr} />}
         {ptOk && <AppSuccessNotice message={ptOk} />}
         {ptErr && <AppErrorBanner message={ptErr} />}
         {brcOk && <AppSuccessNotice message={brcOk} />}
@@ -858,6 +856,8 @@ export function SettingsPage() {
                   </p>
                 </div>
               </div>
+              {pyxacctSyncOk && <AppSuccessNotice message={pyxacctSyncOk} />}
+              {pyxacctSyncErr && <AppErrorBanner message={pyxacctSyncErr} />}
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"

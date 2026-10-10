@@ -538,8 +538,8 @@ function pack_cancel_restock_confirm(PDO $pdo, int $userId, int $sessionId): arr
             $packId = (int) ($item['packaging_row_id'] ?? 0);
             if ($pool === 'rts_sellable') {
                 rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);
-            } elseif ($packId > 0) {
-                honey_bottle_adjust_aggregate($pdo, $packId, $size, 1.0);
+            } else {
+                $packId = honey_bottle_adjust_variant_pool($pdo, $userId, $variant, $size, 1.0);
             }
             // Reverse POS walk-in sales qty + receipt money so Sales totals stay honest.
             if ($status === 'sold') {
@@ -614,12 +614,6 @@ function pack_cancel_restock_confirm(PDO $pdo, int $userId, int $sessionId): arr
                 $size = (string) $item['size'];
                 if (!in_array($size, HONEY_SIZES, true)) {
                     throw new RuntimeException('A SKU honey size is invalid. Discard and rescan.');
-                }
-                if ($pool === 'packaging' && ($packagingRowId === null || $packagingRowId < 1)) {
-                    $packagingRowId = pack_cancel_restock_system_packaging_row($pdo, $userId, $variant);
-                    $pdo->prepare(
-                        'UPDATE pack_cancel_restock_sku_items SET packaging_row_id = ? WHERE id = ?'
-                    )->execute([$packagingRowId, (int) $item['id']]);
                 }
                 sku_barcode_honey_credit(
                     $pdo,

@@ -220,81 +220,25 @@ function inventory_check_apply_honey_qty(PDO $pdo, int $userId, string $variant,
     if (!in_array($size, HONEY_SIZES, true)) {
         throw new RuntimeException('Invalid honey size.');
     }
-    [$curCol, $iniCol] = honey_packaging_size_columns($size);
-
-    $st = $pdo->prepare(
-        "SELECT id, {$curCol} AS cur, {$iniCol} AS ini
-         FROM honey_packaging_rows
-         WHERE variant = ?
-         ORDER BY id ASC
-         FOR UPDATE"
+    [$curCol] = honey_packaging_size_columns($size);
+    $pool = honey_packaging_ensure_variant_pool($pdo, $userId, $variant);
+    $id = (int) $pool['id'];
+    $old = (float) ($pool[$curCol] ?? 0);
+    if (abs($old - (float) $target) < 0.001) {
+        return;
+    }
+    honey_log_edit(
+        $pdo,
+        $userId,
+        'honey_packaging_rows',
+        $id,
+        $curCol,
+        (string) $old,
+        (string) $target,
+        'inventory_check_apply'
     );
-    $st->execute([$variant]);
-    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-    $sum = 0.0;
-    foreach ($rows as $row) {
-        $sum += (float) $row['cur'];
-    }
-    $delta = (float) $target - $sum;
-    if (abs($delta) < 0.001) {
-        return;
-    }
-
-    if ($rows === []) {
-        throw new RuntimeException(
-            'No honey packaging lot for ' . ucfirst($variant) . ' ' . honey_bottle_size_label($size)
-            . '. Seed a packaging batch before applying this audit.'
-        );
-    }
-
-    if ($delta > 0) {
-        $last = $rows[count($rows) - 1];
-        $id = (int) $last['id'];
-        $old = (float) $last['cur'];
-        $new = $old + $delta;
-        honey_log_edit($pdo, $userId, 'honey_packaging_rows', $id, $curCol, (string) $old, (string) $new, 'inventory_check_apply');
-        $pdo->prepare(
-            "UPDATE honey_packaging_rows SET {$curCol} = {$curCol} + ?, {$iniCol} = {$iniCol} + ? WHERE id = ?"
-        )->execute([$delta, $delta, $id]);
-
-        return;
-    }
-
-    $need = abs($delta);
-    foreach ($rows as $row) {
-        if ($need < 0.001) {
-            break;
-        }
-        $id = (int) $row['id'];
-        $cur = (float) $row['cur'];
-        if ($cur <= 0) {
-            continue;
-        }
-        $take = min($cur, $need);
-        honey_log_edit(
-            $pdo,
-            $userId,
-            'honey_packaging_rows',
-            $id,
-            $curCol,
-            (string) $cur,
-            (string) ($cur - $take),
-            'inventory_check_apply'
-        );
-        $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = {$curCol} - ? WHERE id = ? AND {$curCol} >= ?")
-            ->execute([$take, $id, $take]);
-        $need -= $take;
-    }
-
-    if ($need > 0.001) {
-        foreach ($rows as $row) {
-            $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = 0 WHERE id = ?")->execute([(int) $row['id']]);
-        }
-        $lastId = (int) $rows[count($rows) - 1]['id'];
-        honey_log_edit($pdo, $userId, 'honey_packaging_rows', $lastId, $curCol, '0', (string) $target, 'inventory_check_apply');
-        $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = ?, {$iniCol} = GREATEST({$iniCol}, ?) WHERE id = ?")
-            ->execute([(float) $target, (float) $target, $lastId]);
-    }
+    $pdo->prepare("UPDATE honey_packaging_rows SET {$curCol} = ? WHERE id = ?")
+        ->execute([(float) $target, $id]);
 }
 
 function inventory_check_apply_dept_qty(PDO $pdo, int $userId, string $productKey, int $target): void

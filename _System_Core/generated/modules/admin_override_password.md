@@ -1,7 +1,7 @@
 ---
 title: admin_override_password
 source: includes/admin_override_password.php
-generated: 2026-10-09T12:12:14+02:00
+generated: 2026-10-10T10:28:16+02:00
 type: module
 function_count: 4
 ---

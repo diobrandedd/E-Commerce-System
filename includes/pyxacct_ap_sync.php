@@ -37,9 +37,26 @@ function pyxacct_api_base_url_get(PDO $rtsPdo): string
     return rtrim(trim((string) app_setting_get($rtsPdo, 'pyxacct_api_base_url', '')), '/');
 }
 
+/** Accept a raw secret or a pasted `TRACKER_HONEY_TOKEN=secret` line. */
+function pyxacct_api_token_normalize(string $token): string
+{
+    $token = trim($token);
+    if (preg_match('/^[A-Za-z0-9_.-]+\s*=\s*(.+)$/', $token, $m)) {
+        $token = trim($m[1]);
+    }
+    if (strlen($token) >= 2) {
+        $quote = $token[0];
+        if (($quote === '"' || $quote === "'") && str_ends_with($token, $quote)) {
+            $token = substr($token, 1, -1);
+        }
+    }
+
+    return trim($token);
+}
+
 function pyxacct_api_token_get(PDO $rtsPdo): string
 {
-    return trim((string) app_setting_get($rtsPdo, 'pyxacct_api_token', ''));
+    return pyxacct_api_token_normalize((string) app_setting_get($rtsPdo, 'pyxacct_api_token', ''));
 }
 
 function pyxacct_api_settings_save(
@@ -58,7 +75,7 @@ function pyxacct_api_settings_save(
     app_setting_set($rtsPdo, 'pyxacct_api_base_url', $baseUrl, $userId);
 
     if ($token !== null) {
-        $token = trim($token);
+        $token = pyxacct_api_token_normalize($token);
         // Empty string clears; non-empty replaces. null (caller omitted) keeps existing.
         app_setting_set($rtsPdo, 'pyxacct_api_token', $token, $userId);
     }
@@ -141,6 +158,9 @@ function pyxacct_test_connection(PDO $rtsPdo): array
     }
 
     $msg = trim((string) ($decoded['error'] ?? ''));
+    if ($msg === 'Invalid or missing integration token.') {
+        $msg = 'PyxAcct rejected the saved token. Paste integration.tracker_honey_token into API token and save again. A blank token field keeps the current value.';
+    }
 
     return [
         'ok' => false,
