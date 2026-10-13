@@ -42,9 +42,11 @@ import {
   fetchPackagingAccessRoster,
   fetchPackagingDamageTotals,
   listMaterials,
+  listSupplyCategories,
   packagingPrintSheetUrl,
   type MaterialStockRow,
   type PackagingAccessPerson,
+  type SupplyCategory,
 } from "@/app/lib/materials";
 import { cn } from "@/app/components/ui/utils";
 
@@ -330,6 +332,8 @@ export function PackagingMaterialsPage() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StockFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [supplyCategories, setSupplyCategories] = useState<SupplyCategory[]>([]);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [damagePeriod, setDamagePeriod] = useState<DamagePeriod>("today");
@@ -376,11 +380,13 @@ export function PackagingMaterialsPage() {
     }
     setLoading(true);
     try {
-      const [data, access] = await Promise.all([
+      const [data, access, categories] = await Promise.all([
         listMaterials("packaging"),
         canView ? fetchPackagingAccessRoster().catch(() => null) : Promise.resolve(null),
+        canView ? listSupplyCategories().catch(() => ({ categories: [] as SupplyCategory[] })) : Promise.resolve({ categories: [] as SupplyCategory[] }),
       ]);
       setItems(data.items);
+      setSupplyCategories(categories.categories);
       if (access) {
         setRoster(access.stock_out);
         setStockInNote(access.stock_in_note);
@@ -418,6 +424,8 @@ export function PackagingMaterialsPage() {
       if (filter === "per_unit" && row.is_pool_packaging) return false;
       if (filter === "pool" && !row.is_pool_packaging) return false;
       if (filter === "out_of_stock" && Number(row.on_hand ?? 0) > 0) return false;
+      if (categoryFilter === "none" && row.supply_category_id) return false;
+      if (categoryFilter && categoryFilter !== "none" && row.supply_category_id !== Number(categoryFilter)) return false;
       if (
         q
         && !row.name.toLowerCase().includes(q)
@@ -432,7 +440,7 @@ export function PackagingMaterialsPage() {
     });
     rows.sort((a, b) => comparePackagingRows(a, b, sortKey, sortDir));
     return rows;
-  }, [items, search, filter, sortKey, sortDir]);
+  }, [items, search, filter, categoryFilter, sortKey, sortDir]);
 
   const openPrintSheet = () => {
     window.open(packagingPrintSheetUrl(), "_blank", "noopener,noreferrer");
@@ -671,7 +679,8 @@ export function PackagingMaterialsPage() {
               />
             </div>
 
-            <div className="flex gap-1.5 overflow-x-auto no-pyx-scroll pb-0.5 -mx-0.5 px-0.5 snap-x">
+            <div className="flex items-center gap-2">
+            <div className="flex gap-1.5 overflow-x-auto no-pyx-scroll pb-0.5 -mx-0.5 px-0.5 snap-x min-w-0 flex-1">
               {FILTER_CHIPS.map(chip => (
                 <button
                   key={chip.id}
@@ -688,6 +697,19 @@ export function PackagingMaterialsPage() {
                   {chip.label}
                 </button>
               ))}
+            </div>
+            <select
+              value={categoryFilter}
+              onChange={e => setCategoryFilter(e.target.value)}
+              aria-label="Filter by category"
+              className="shrink-0 min-h-8 sm:min-h-9 max-w-[11rem] rounded-lg border border-border bg-card px-2.5 text-[11px] sm:text-xs outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+            >
+              <option value="">All categories</option>
+              <option value="none">Uncategorized</option>
+              {supplyCategories.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
             </div>
 
             <div
