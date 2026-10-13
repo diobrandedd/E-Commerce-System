@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-10-13T08:06:41+02:00
+generated: 2026-10-13T10:03:26+02:00
 type: memory-bank
 ---
 
@@ -61,7 +61,7 @@ type: memory-bank
 | [[modules/inventory_check_apply]] | 10 |
 | [[modules/inventory_edit_log]] | 4 |
 | [[modules/labels]] | 3 |
-| [[modules/material_inventory]] | 78 |
+| [[modules/material_inventory]] | 86 |
 | [[modules/online_order_parcels]] | 29 |
 | [[modules/online_orders_generator]] | 44 |
 | [[modules/order_remarks]] | 19 |

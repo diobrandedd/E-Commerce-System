@@ -1,7 +1,7 @@
 ---
 title: labels
 source: includes/labels.php
-generated: 2026-10-13T08:09:00+02:00
+generated: 2026-10-13T10:05:59+02:00
 type: module
 function_count: 3
 ---

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-13T08:08:27+02:00
+generated: 2026-10-13T10:05:26+02:00
 type: memory-bank
 ---
 
@@ -414,6 +414,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `packaging_lookup_barcode` | `api_materials_packaging_lookup_barcode()` | `ims_user_can()`, `material_inventory_role_can_deduct_packaging()`, `material_packaging_lookup_by_barcode()`, `ims_pdo()`, `material_inventory_role_can_stock_in_packaging()` |
 | `packaging_access_roster` | `api_materials_packaging_access_roster()` | `ims_user_can()`, `material_packaging_access_roster()`, `ims_pdo()` |
 | `packaging_stock_out_history` | `api_materials_packaging_stock_out_history()` | `ims_user_can()`, `material_packaging_stock_out_history()`, `ims_pdo()` |
+| `supply_categories_list` | `api_materials_supply_categories_list()` | `material_supply_categories_list()`, `ims_pdo()` |
+| `supply_category_create` | `api_materials_supply_category_create()` | `material_supply_category_create()`, `ims_pdo()` |
+| `supply_category_assign` | `api_materials_supply_category_assign()` | `material_supply_category_assign_many()`, `ims_pdo()` |
 
 ### `online_orders.php`
 

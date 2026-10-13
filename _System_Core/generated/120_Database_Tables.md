@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-10-13T08:08:27+02:00
+generated: 2026-10-13T10:05:26+02:00
 type: memory-bank
-table_count: 102
+table_count: 103
 ---
 
 
@@ -329,6 +329,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#material_packaging_record_invoice_price]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_upsert_supplier_costing_stocks]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_category_assign_many]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_ensure_barcode]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_fetch_stock]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
@@ -1500,4 +1501,14 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_create]] |
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_give_out]] |
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_history]] |
+
+## `packaging_supply_categories`
+
+| File | Function |
+|------|----------|
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_categories_list]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_category_create]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_supply_category_id_or_null]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_attach_supply_category]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
 

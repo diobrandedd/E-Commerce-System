@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-10-13T08:08:30+02:00
+generated: 2026-10-13T10:05:29+02:00
 type: module
 function_count: 14
 ---
@@ -168,7 +168,7 @@ function_count: 14
 - `dept/stock_entries.php`:364 — `<?php if (ims_is_executive($role)): ?>`
 - `includes/auth_check.php`:216 — `return ims_is_executive($role) || ims_is_prod_manager($role);`
 - `includes/material_inventory.php`:47 — `&& ims_is_executive((string) ($user['role'] ?? ''));`
-- `includes/material_inventory.php`:2399 — `if (ims_is_executive($role)) {`
+- `includes/material_inventory.php`:2625 — `if (ims_is_executive($role)) {`
 - `includes/pos_mobile_staff.php`:55 — `if (ims_is_executive($role)) {`
 - `includes/pos_mobile_staff.php`:130 — `if (!ims_is_executive($role)) {`
 

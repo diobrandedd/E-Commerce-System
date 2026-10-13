@@ -22,6 +22,9 @@ export interface MaterialStockRow {
   barcode?: string | null;
   last_lot_qty?: number | null;
   level_pct?: number | null;
+  supply_category_id?: number | null;
+  supply_category_name?: string | null;
+  supply_note?: string | null;
 }
 
 export interface PackagingStockEntry {
@@ -89,6 +92,11 @@ export interface Department {
   name: string;
 }
 
+export interface SupplyCategory {
+  id: number;
+  name: string;
+}
+
 export function listMaterials(category: MaterialCategory) {
   return apiGet<{ items: MaterialStockRow[] }>("materials.php", "catalog_list", { category });
 }
@@ -98,8 +106,39 @@ export function createMaterial(payload: {
   dept_id: number;
   category: MaterialCategory;
   unit?: string;
+  supply_category_id?: number | null;
+  supply_note?: string | null;
 }) {
   return apiPost<{ stock: MaterialStockRow }>("materials.php", "catalog_create", payload);
+}
+
+export function listSupplyCategories() {
+  return apiGet<{ categories: SupplyCategory[] }>("materials.php", "supply_categories_list");
+}
+
+export function createSupplyCategory(name: string) {
+  return apiPost<{ category: SupplyCategory }>("materials.php", "supply_category_create", { name });
+}
+
+export function setMaterialSupplyCategory(stockId: number, supplyCategoryId: number | null) {
+  return apiPost<{ stock: MaterialStockRow }>("materials.php", "catalog_update", {
+    stock_id: stockId,
+    supply_category_id: supplyCategoryId ?? 0,
+  });
+}
+
+export function setMaterialSupplyNote(stockId: number, supplyNote: string) {
+  return apiPost<{ stock: MaterialStockRow }>("materials.php", "catalog_update", {
+    stock_id: stockId,
+    supply_note: supplyNote,
+  });
+}
+
+export function assignSuppliesToCategory(supplyCategoryId: number, stockIds: number[]) {
+  return apiPost<{ updated: number }>("materials.php", "supply_category_assign", {
+    supply_category_id: supplyCategoryId,
+    stock_ids: stockIds,
+  });
 }
 
 export function removePackagingCatalogItem(payload: {

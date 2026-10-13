@@ -37,6 +37,9 @@ api_dispatch([
     'packaging_lookup_barcode' => 'api_materials_packaging_lookup_barcode',
     'packaging_access_roster' => 'api_materials_packaging_access_roster',
     'packaging_stock_out_history' => 'api_materials_packaging_stock_out_history',
+    'supply_categories_list' => 'api_materials_supply_categories_list',
+    'supply_category_create' => 'api_materials_supply_category_create',
+    'supply_category_assign' => 'api_materials_supply_category_assign',
 ]);
 
 function api_materials_require_view(): array
@@ -92,6 +95,11 @@ function api_materials_catalog_create(): void
     $deptId = (int) ($input['dept_id'] ?? 0);
     $category = trim((string) ($input['category'] ?? ''));
     $unit = trim((string) ($input['unit'] ?? 'pcs'));
+    $supplyCategoryId = isset($input['supply_category_id']) ? (int) $input['supply_category_id'] : null;
+    if ($supplyCategoryId !== null && $supplyCategoryId < 1) {
+        $supplyCategoryId = null;
+    }
+    $supplyNote = array_key_exists('supply_note', $input) ? trim((string) $input['supply_note']) : null;
     if ($category === 'supply') {
         if (!material_inventory_role_can_create_supply_catalog($user)) {
             api_fail('Forbidden.', 403);
@@ -101,7 +109,16 @@ function api_materials_catalog_create(): void
     }
     $pdo = ims_pdo();
     try {
-        $row = material_inventory_create($pdo, (int) $user['id'], $name, $deptId, $category, $unit);
+        $row = material_inventory_create(
+            $pdo,
+            (int) $user['id'],
+            $name,
+            $deptId,
+            $category,
+            $unit,
+            $supplyCategoryId,
+            $supplyNote
+        );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
     }
@@ -118,16 +135,74 @@ function api_materials_catalog_update(): void
     $name = isset($input['name']) ? trim((string) $input['name']) : null;
     $unit = isset($input['unit']) ? trim((string) $input['unit']) : null;
     $isActive = isset($input['is_active']) ? (bool) $input['is_active'] : null;
+    $setSupplyCategory = array_key_exists('supply_category_id', $input);
+    $supplyCategoryId = $setSupplyCategory ? (int) ($input['supply_category_id'] ?? 0) : null;
+    if ($supplyCategoryId !== null && $supplyCategoryId < 1) {
+        $supplyCategoryId = null;
+    }
+    $setNote = array_key_exists('supply_note', $input);
+    $supplyNote = $setNote ? trim((string) $input['supply_note']) : null;
     if ($stockId < 1) {
         api_fail('stock_id required.', 422);
     }
     $pdo = ims_pdo();
     try {
-        $row = material_inventory_update($pdo, $stockId, $name, $unit, $isActive);
+        $row = material_inventory_update(
+            $pdo,
+            $stockId,
+            $name,
+            $unit,
+            $isActive,
+            $setSupplyCategory,
+            $supplyCategoryId,
+            $setNote,
+            $supplyNote
+        );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
     }
     api_ok(['stock' => $row]);
+}
+
+function api_materials_supply_categories_list(): void
+{
+    api_method_allowed(['GET']);
+    api_materials_require_view();
+    api_ok(['categories' => material_supply_categories_list(ims_pdo())]);
+}
+
+function api_materials_supply_category_create(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    $user = api_require_permission('packaging.catalog');
+    $name = trim((string) ($input['name'] ?? ''));
+    try {
+        $row = material_supply_category_create(ims_pdo(), (int) $user['id'], $name);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+    api_ok(['category' => $row]);
+}
+
+function api_materials_supply_category_assign(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_require_permission('packaging.catalog');
+    $categoryId = (int) ($input['supply_category_id'] ?? 0);
+    $stockIds = $input['stock_ids'] ?? [];
+    if (!is_array($stockIds)) {
+        api_fail('stock_ids must be a list.', 422);
+    }
+    try {
+        $updated = material_supply_category_assign_many(ims_pdo(), $categoryId, $stockIds);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+    api_ok(['updated' => $updated]);
 }
 
 function api_materials_adjust(): void

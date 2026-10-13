@@ -1,7 +1,7 @@
 ---
 title: catalog_bootstrap
 source: includes/catalog_bootstrap.php
-generated: 2026-10-13T08:08:32+02:00
+generated: 2026-10-13T10:05:30+02:00
 type: module
 function_count: 8
 ---
@@ -58,7 +58,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/material_inventory.php`:291 — `$row['pool_estimated_remaining'] = catalog_pool_estimated_remaining($row);`
+- `includes/material_inventory.php`:471 — `$row['pool_estimated_remaining'] = catalog_pool_estimated_remaining($row);`
 
 ## catalog_honey_packaging_formula_qty {#catalog_honey_packaging_formula_qty}
 

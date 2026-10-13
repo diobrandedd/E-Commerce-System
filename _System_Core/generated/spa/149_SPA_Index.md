@@ -1,6 +1,6 @@
 ---
 title: SPA Index
-generated: 2026-10-13T08:07:45+02:00
+generated: 2026-10-13T10:04:31+02:00
 type: spa
 ---
 

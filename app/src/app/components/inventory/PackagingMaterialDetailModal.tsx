@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
+import { Button } from "@/app/components/ui/button";
 import { PackagingOnHandSetModal } from "@/app/components/inventory/PackagingOnHandSetModal";
 import { PackagingStockInLotModal } from "@/app/components/inventory/PackagingStockInLotModal";
 import { PackagingPriceLotModal } from "@/app/components/inventory/PackagingPriceLotModal";
@@ -10,15 +11,18 @@ import {
   fetchPackagingDetail,
   isGenericInsulationFoamRoll,
   removePackagingCatalogItem,
+  setMaterialSupplyCategory,
+  setMaterialSupplyNote,
+  listSupplyCategories,
   setPackagingFoamCacaoCutYields,
   setPackagingPoolYield,
   type FoamCacaoCutYield,
   type MaterialStockRow,
   type PackagingDetailPermissions,
   type PackagingStockEntry,
+  type SupplyCategory,
 } from "@/app/lib/materials";
 import { ApiError } from "@/app/lib/api";
-import { Button } from "@/app/components/ui/button";
 import { cn } from "@/app/components/ui/utils";
 
 type ActivityTab = "stock_out" | "stock_in" | "damaged";
@@ -119,6 +123,10 @@ export function PackagingMaterialDetailModal({
   const [removePassword, setRemovePassword] = useState("");
   const [removeBusy, setRemoveBusy] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const [supplyCategories, setSupplyCategories] = useState<SupplyCategory[]>([]);
+  const [categorySaving, setCategorySaving] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -131,6 +139,7 @@ export function PackagingMaterialDetailModal({
         fetchPackagingDamageTotals({ from: "2020-01-01", to: ymd }).catch(() => null),
       ]);
       setDetail(data.stock);
+      setNoteDraft(data.stock.supply_note ?? "");
       setEntries(data.entries);
       if (data.permissions) {
         setPermissions(data.permissions);
@@ -159,6 +168,13 @@ export function PackagingMaterialDetailModal({
   }, [stock.id]);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  useEffect(() => {
+    if (!isExec) return;
+    void listSupplyCategories()
+      .then(res => setSupplyCategories(res.categories))
+      .catch(() => setSupplyCategories([]));
+  }, [isExec]);
 
   useEffect(() => {
     setActivityTab("stock_out");
@@ -290,6 +306,78 @@ export function PackagingMaterialDetailModal({
         />
         <AppModalBody className="flex flex-col min-h-0 overflow-hidden gap-5">
           {error && <p className="text-sm text-red-600 shrink-0">{error}</p>}
+
+          {!isExec && row.supply_note ? (
+            <p className="text-sm text-muted-foreground shrink-0 whitespace-pre-wrap">{row.supply_note}</p>
+          ) : null}
+
+          {isExec && (
+            <div className="shrink-0 space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground" htmlFor="supply-detail-category">
+                  Category
+                </label>
+                <select
+                  id="supply-detail-category"
+                  value={row.supply_category_id ?? ""}
+                  disabled={categorySaving}
+                  onChange={e => {
+                    const next = e.target.value ? Number(e.target.value) : null;
+                    setCategorySaving(true);
+                    setError(null);
+                    void setMaterialSupplyCategory(row.id, next)
+                      .then(res => {
+                        setDetail(prev => (prev ? { ...prev, ...res.stock } : res.stock));
+                        onChanged();
+                      })
+                      .catch(err => setError(err instanceof ApiError ? err.message : "Could not assign category."))
+                      .finally(() => setCategorySaving(false));
+                  }}
+                  className="mt-1 w-full min-h-10 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                >
+                  <option value="">Uncategorized</option>
+                  {supplyCategories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground" htmlFor="supply-detail-note">
+                  Note
+                </label>
+                <textarea
+                  id="supply-detail-note"
+                  value={noteDraft}
+                  onChange={e => setNoteDraft(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  className="mt-1 w-full rounded-lg border border-border px-3 py-2 text-sm"
+                  placeholder="Where it came from, or any other detail"
+                />
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={noteSaving || noteDraft.trim() === (row.supply_note ?? "").trim()}
+                    onClick={() => {
+                      setNoteSaving(true);
+                      setError(null);
+                      void setMaterialSupplyNote(row.id, noteDraft.trim())
+                        .then(res => {
+                          setDetail(prev => (prev ? { ...prev, ...res.stock } : res.stock));
+                          setNoteDraft(res.stock.supply_note ?? "");
+                          onChanged();
+                        })
+                        .catch(err => setError(err instanceof ApiError ? err.message : "Could not save note."))
+                        .finally(() => setNoteSaving(false));
+                    }}
+                  >
+                    {noteSaving ? <Loader2 className="animate-spin" size={14} /> : "Save note"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {isPool && isGenericFoam && (
             <div className="rounded-xl border border-dashed bg-secondary/20 px-3 py-3 shrink-0 space-y-3">

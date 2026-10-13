@@ -171,6 +171,186 @@ function material_inventory_has_barcode_column(PDO $pdo): bool
     return $cache;
 }
 
+function material_inventory_has_supply_category(PDO $pdo): bool
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    try {
+        $st = $pdo->query(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stocks' AND COLUMN_NAME = 'supply_category_id'"
+        );
+        $cache = ((int) $st->fetchColumn()) > 0;
+    } catch (Throwable) {
+        $cache = false;
+    }
+
+    return $cache;
+}
+
+/**
+ * @return list<array{id:int,name:string}>
+ */
+function material_supply_categories_list(PDO $pdo): array
+{
+    if (!material_inventory_has_supply_category($pdo)) {
+        return [];
+    }
+    $st = $pdo->query('SELECT id, name FROM packaging_supply_categories ORDER BY name ASC');
+    $rows = [];
+    foreach ($st ? $st->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
+        $rows[] = ['id' => (int) $row['id'], 'name' => (string) $row['name']];
+    }
+
+    return $rows;
+}
+
+/**
+ * @return array{id:int,name:string}
+ */
+function material_supply_category_create(PDO $pdo, int $userId, string $name): array
+{
+    if (!material_inventory_has_supply_category($pdo)) {
+        throw new RuntimeException('Supply categories are not available yet. Run the latest database migration.');
+    }
+    $name = trim(preg_replace('/\s+/', ' ', $name) ?? '');
+    if ($name === '') {
+        throw new RuntimeException('Category name is required.');
+    }
+    if (mb_strlen($name) > 80) {
+        throw new RuntimeException('Category name must be 80 characters or fewer.');
+    }
+    $dup = $pdo->prepare('SELECT id, name FROM packaging_supply_categories WHERE name = ? LIMIT 1');
+    $dup->execute([$name]);
+    $existing = $dup->fetch(PDO::FETCH_ASSOC);
+    if ($existing) {
+        return ['id' => (int) $existing['id'], 'name' => (string) $existing['name']];
+    }
+    $ins = $pdo->prepare(
+        'INSERT INTO packaging_supply_categories (name, created_by) VALUES (?, ?)'
+    );
+    $ins->execute([$name, $userId > 0 ? $userId : null]);
+
+    return ['id' => (int) $pdo->lastInsertId(), 'name' => $name];
+}
+
+function material_supply_category_id_or_null(PDO $pdo, ?int $categoryId): ?int
+{
+    if ($categoryId === null || $categoryId < 1) {
+        return null;
+    }
+    if (!material_inventory_has_supply_category($pdo)) {
+        throw new RuntimeException('Supply categories are not available yet. Run the latest database migration.');
+    }
+    $st = $pdo->prepare('SELECT id FROM packaging_supply_categories WHERE id = ? LIMIT 1');
+    $st->execute([$categoryId]);
+    if (!$st->fetchColumn()) {
+        throw new RuntimeException('That supply category does not exist.');
+    }
+
+    return $categoryId;
+}
+
+/**
+ * @param array<string, mixed> $row
+ * @return array<string, mixed>
+ */
+function material_inventory_attach_supply_category(PDO $pdo, array $row): array
+{
+    if (!array_key_exists('supply_category_id', $row)) {
+        $row['supply_category_id'] = null;
+    } elseif ($row['supply_category_id'] !== null && $row['supply_category_id'] !== '') {
+        $row['supply_category_id'] = (int) $row['supply_category_id'];
+    } else {
+        $row['supply_category_id'] = null;
+    }
+    if (!array_key_exists('supply_category_name', $row) || $row['supply_category_name'] === '') {
+        $row['supply_category_name'] = null;
+    }
+    if ($row['supply_category_name'] === null && $row['supply_category_id'] !== null && material_inventory_has_supply_category($pdo)) {
+        $st = $pdo->prepare('SELECT name FROM packaging_supply_categories WHERE id = ? LIMIT 1');
+        $st->execute([$row['supply_category_id']]);
+        $name = $st->fetchColumn();
+        $row['supply_category_name'] = $name !== false ? (string) $name : null;
+    }
+    if (!array_key_exists('supply_note', $row) || $row['supply_note'] === null || trim((string) $row['supply_note']) === '') {
+        $row['supply_note'] = null;
+    } else {
+        $row['supply_note'] = trim((string) $row['supply_note']);
+    }
+
+    return $row;
+}
+
+function material_inventory_has_supply_note(PDO $pdo): bool
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    try {
+        $st = $pdo->query(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stocks' AND COLUMN_NAME = 'supply_note'"
+        );
+        $cache = ((int) $st->fetchColumn()) > 0;
+    } catch (Throwable) {
+        $cache = false;
+    }
+
+    return $cache;
+}
+
+function material_supply_note_or_null(?string $note): ?string
+{
+    $note = trim((string) $note);
+    if ($note === '') {
+        return null;
+    }
+    if (mb_strlen($note) > 500) {
+        throw new RuntimeException('Note must be 500 characters or fewer.');
+    }
+
+    return $note;
+}
+
+/**
+ * Assign many packaging supplies to one category.
+ *
+ * @param list<int> $stockIds
+ */
+function material_supply_category_assign_many(PDO $pdo, int $categoryId, array $stockIds): int
+{
+    if (!material_inventory_has_supply_category($pdo)) {
+        throw new RuntimeException('Supply categories are not available yet. Run the latest database migration.');
+    }
+    $categoryId = material_supply_category_id_or_null($pdo, $categoryId);
+    if ($categoryId === null) {
+        throw new RuntimeException('Choose a category.');
+    }
+    $ids = [];
+    foreach ($stockIds as $id) {
+        $id = (int) $id;
+        if ($id > 0) {
+            $ids[$id] = $id;
+        }
+    }
+    $ids = array_values($ids);
+    if ($ids === []) {
+        throw new RuntimeException('Select at least one supply.');
+    }
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $st = $pdo->prepare(
+        "UPDATE stocks SET supply_category_id = ?
+         WHERE category = 'packaging' AND is_active = 1 AND id IN ({$placeholders})"
+    );
+    $st->execute(array_merge([$categoryId], $ids));
+
+    return $st->rowCount();
+}
+
 function material_packaging_barcode_for_id(int $stockId): string
 {
     return 'PKG' . str_pad((string) max(0, $stockId), 6, '0', STR_PAD_LEFT);
@@ -333,7 +513,7 @@ function material_inventory_fetch_stock(PDO $pdo, int $stockId, bool $forUpdate 
     $st->execute([$stockId]);
     $row = $st->fetch(PDO::FETCH_ASSOC);
 
-    return $row ?: null;
+    return $row ? material_inventory_attach_supply_category($pdo, $row) : null;
 }
 
 /** @return list<array<string, mixed>> */
@@ -355,13 +535,21 @@ function material_inventory_list(PDO $pdo, ?string $category = null, bool $activ
         ? ', s.production_deduct, s.pool_yield_qty, s.pool_yield_unit'
         : '';
     $barcodeCol = material_inventory_has_barcode_column($pdo) ? ', s.barcode' : '';
+    $categoryCol = material_inventory_has_supply_category($pdo)
+        ? ', s.supply_category_id, sc.name AS supply_category_name'
+        : '';
+    $noteCol = material_inventory_has_supply_note($pdo) ? ', s.supply_note' : '';
+    $categoryJoin = material_inventory_has_supply_category($pdo)
+        ? ' LEFT JOIN packaging_supply_categories sc ON sc.id = s.supply_category_id'
+        : '';
     $sql = 'SELECT s.id, s.name, s.dept_id, s.unit, s.category, s.on_hand, s.is_active,
                    s.current_price, s.supplier_id, s.supplier_name, s.supplier_code'
-        . $poolCols . $barcodeCol . ',
+        . $poolCols . $barcodeCol . $categoryCol . $noteCol . ',
                    d.name AS dept_name,
                    (SELECT MAX(se.created_at) FROM stock_entries se WHERE se.stock_id = s.id) AS last_entry_at
             FROM stocks s
-            INNER JOIN departments d ON d.id = s.dept_id
+            INNER JOIN departments d ON d.id = s.dept_id'
+        . $categoryJoin . '
             WHERE ' . implode(' AND ', $where) . '
             ORDER BY s.category ASC, s.name ASC';
     $st = $pdo->prepare($sql);
@@ -399,7 +587,9 @@ function material_inventory_create(
     string $name,
     int $deptId,
     string $category,
-    string $unit = 'pcs'
+    string $unit = 'pcs',
+    ?int $supplyCategoryId = null,
+    ?string $supplyNote = null
 ): array {
     if (!material_inventory_has_columns($pdo)) {
         throw new RuntimeException('Inventory arrangement migration not applied.');
@@ -417,6 +607,12 @@ function material_inventory_create(
     if ($deptId < 1) {
         throw new RuntimeException('No department available for supplies catalog.');
     }
+    $supplyCategoryId = $category === 'packaging'
+        ? material_supply_category_id_or_null($pdo, $supplyCategoryId)
+        : null;
+    $supplyNote = material_inventory_has_supply_note($pdo)
+        ? material_supply_note_or_null($supplyNote)
+        : null;
     $dup = $pdo->prepare(
         'SELECT id FROM stocks WHERE name = ? AND category = ? AND supplier_id IS NULL LIMIT 1'
     );
@@ -428,11 +624,23 @@ function material_inventory_create(
                 : 'A stock with this name already exists.'
         );
     }
+    $columns = ['name', 'dept_id', 'unit', 'category'];
+    $values = [$name, $deptId, $unit, $category];
+    if ($category === 'packaging' && material_inventory_has_supply_category($pdo)) {
+        $columns[] = 'supply_category_id';
+        $values[] = $supplyCategoryId;
+    }
+    if (material_inventory_has_supply_note($pdo)) {
+        $columns[] = 'supply_note';
+        $values[] = $supplyNote;
+    }
+    $columns = array_merge($columns, ['on_hand', 'is_active', 'current_price', 'created_by']);
+    $values = array_merge($values, [0, 1, 0, $userId]);
+    $placeholders = implode(', ', array_fill(0, count($columns), '?'));
     $ins = $pdo->prepare(
-        'INSERT INTO stocks (name, dept_id, unit, category, on_hand, is_active, current_price, created_by)
-         VALUES (?, ?, ?, ?, 0, 1, 0, ?)'
+        'INSERT INTO stocks (' . implode(', ', $columns) . ') VALUES (' . $placeholders . ')'
     );
-    $ins->execute([$name, $deptId, $unit, $category, $userId]);
+    $ins->execute($values);
     $id = (int) $pdo->lastInsertId();
     if ($category === 'packaging') {
         material_packaging_ensure_barcode($pdo, $id);
@@ -450,7 +658,11 @@ function material_inventory_update(
     int $stockId,
     ?string $name = null,
     ?string $unit = null,
-    ?bool $isActive = null
+    ?bool $isActive = null,
+    bool $setSupplyCategory = false,
+    ?int $supplyCategoryId = null,
+    bool $setNote = false,
+    ?string $supplyNote = null
 ): array {
     $row = material_inventory_fetch_stock($pdo, $stockId, true);
     if ($row === null) {
@@ -480,6 +692,20 @@ function material_inventory_update(
     if ($isActive !== null) {
         $fields[] = 'is_active = ?';
         $params[] = $isActive ? 1 : 0;
+    }
+    if ($setSupplyCategory) {
+        if ((string) $row['category'] !== 'packaging') {
+            throw new RuntimeException('Categories apply to supplies catalog items.');
+        }
+        $fields[] = 'supply_category_id = ?';
+        $params[] = material_supply_category_id_or_null($pdo, $supplyCategoryId);
+    }
+    if ($setNote) {
+        if (!material_inventory_has_supply_note($pdo)) {
+            throw new RuntimeException('Supply notes are not available yet. Run the latest database migration.');
+        }
+        $fields[] = 'supply_note = ?';
+        $params[] = material_supply_note_or_null($supplyNote);
     }
     if ($fields === []) {
         return $row;

@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-13 — Supply notes and bulk categories
+**Change:** Supplies header **Categories** creates a category and assigns many items. Each row can store a note (source or other detail). → [[problems/records/2026-10-13_supply-notes-and-category-assign]]
+
+### 2026-10-13 — Supply categories on Add item
+**Change:** Executives can create categories and assign one when adding or opening a supply. Catalog rows show the category. → [[problems/records/2026-10-13_supply-categories]]
+
 ### 2026-10-13 — Check inventory history date filter
 **Change:** History and confirmed updates can filter to one day or a custom range (`count_date` vs applied date). → [[problems/records/2026-10-13_inventory-check-history-date-filter]]
 

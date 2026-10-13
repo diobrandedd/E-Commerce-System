@@ -14,11 +14,13 @@ import {
   ScanLine,
   Search,
   ListChecks,
+  Tags,
   Users,
 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { MaterialCatalogModal } from "@/app/components/inventory/MaterialCatalogModal";
+import { SupplyCategoriesModal } from "@/app/components/inventory/SupplyCategoriesModal";
 import { PackagingDamageConfirmModal } from "@/app/components/inventory/PackagingDamageConfirmModal";
 import { PackagingInventoryGuideModal } from "@/app/components/inventory/PackagingInventoryGuideModal";
 import { PackagingReportDamageModal } from "@/app/components/inventory/PackagingReportDamageModal";
@@ -137,6 +139,11 @@ function PackagingMobileCatalogRow({
         <div className="flex items-center gap-2 min-w-0">
           <p className="font-medium text-sm text-foreground truncate leading-snug">{row.name}</p>
           <TypeBadge isPool={isPool} />
+          {row.supply_category_name ? (
+            <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-foreground truncate max-w-[7rem]">
+              {row.supply_category_name}
+            </span>
+          ) : null}
           {!hasStock && (
             <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">
               Empty
@@ -144,6 +151,9 @@ function PackagingMobileCatalogRow({
           )}
           <ChevronRight size={14} className="text-muted-foreground shrink-0 ml-auto" aria-hidden />
         </div>
+        {row.supply_note ? (
+          <p className="text-xs text-muted-foreground line-clamp-2">{row.supply_note}</p>
+        ) : null}
         <div className="flex items-center gap-2.5 text-xs tabular-nums text-muted-foreground">
           <span className={cn("font-semibold text-foreground", !hasStock && "text-amber-800 dark:text-amber-300")}>
             {onHand.toLocaleString()} {row.unit}
@@ -310,6 +320,7 @@ export function PackagingMaterialsPage() {
   const [stockInNote, setStockInNote] = useState("Only executives can stock in packaging lots.");
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [reportDamageOpen, setReportDamageOpen] = useState(false);
   const [damageRow, setDamageRow] = useState<MaterialStockRow | null>(null);
@@ -412,6 +423,8 @@ export function PackagingMaterialsPage() {
         && !row.name.toLowerCase().includes(q)
         && !row.unit.toLowerCase().includes(q)
         && !(row.barcode ?? "").toLowerCase().includes(q)
+        && !(row.supply_note ?? "").toLowerCase().includes(q)
+        && !(row.supply_category_name ?? "").toLowerCase().includes(q)
       ) {
         return false;
       }
@@ -528,9 +541,14 @@ export function PackagingMaterialsPage() {
               </>
             )}
             {isExec && (
-              <Button type="button" size="sm" onClick={() => setShowCreate(true)}>
-                <Plus className="size-3.5" /> Add item
-              </Button>
+              <>
+                <Button type="button" size="sm" variant="outline" onClick={() => setShowCategories(true)}>
+                  <Tags className="size-3.5" /> Categories
+                </Button>
+                <Button type="button" size="sm" onClick={() => setShowCreate(true)}>
+                  <Plus className="size-3.5" /> Add item
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -647,7 +665,7 @@ export function PackagingMaterialsPage() {
                 type="search"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search name or barcode…"
+                placeholder="Search name, barcode, or note…"
                 className={SEARCH_INPUT_CLASS}
                 aria-label="Search packaging"
               />
@@ -817,6 +835,11 @@ export function PackagingMaterialsPage() {
                           <div className="flex items-center gap-2 min-w-0">
                             <p className="font-medium text-sm truncate text-foreground">{row.name}</p>
                             <TypeBadge isPool={isPool} />
+                            {row.supply_category_name ? (
+                              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-foreground">
+                                {row.supply_category_name}
+                              </span>
+                            ) : null}
                             {!hasStock && (
                               <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">
                                 Empty
@@ -832,6 +855,9 @@ export function PackagingMaterialsPage() {
                               </span>
                             )}
                           </p>
+                          {row.supply_note ? (
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{row.supply_note}</p>
+                          ) : null}
                         </div>
                         <div className="tabular-nums">
                           <span
@@ -894,6 +920,13 @@ export function PackagingMaterialsPage() {
           onDone={() => { setShowCreate(false); void refresh(); }}
         />
       )}
+      {showCategories && (
+        <SupplyCategoriesModal
+          items={items}
+          onClose={() => setShowCategories(false)}
+          onDone={() => void refresh()}
+        />
+      )}
       {scanOpen && (
         <PackagingScanStockOutModal
           open={scanOpen}
@@ -932,6 +965,10 @@ export function PackagingMaterialsPage() {
           onAddItem={() => {
             setActionsOpen(false);
             setShowCreate(true);
+          }}
+          onCategories={() => {
+            setActionsOpen(false);
+            setShowCategories(true);
           }}
           onScan={() => {
             setActionsOpen(false);
@@ -995,6 +1032,7 @@ function PackagingMobileActionsModal({
   sortDir,
   onClose,
   onAddItem,
+  onCategories,
   onScan,
   onReportDamage,
   onPrint,
@@ -1011,6 +1049,7 @@ function PackagingMobileActionsModal({
   sortDir: SortDir;
   onClose: () => void;
   onAddItem: () => void;
+  onCategories: () => void;
   onScan: () => void;
   onReportDamage: () => void;
   onPrint: () => void;
@@ -1111,17 +1150,30 @@ function PackagingMobileActionsModal({
             </>
           )}
           {canCreate && (
-            <button
-              type="button"
-              onClick={onAddItem}
-              className={cn(
-                "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-border text-sm font-medium",
-                appHoverRow,
-              )}
-            >
-              <Plus size={16} className="text-muted-foreground shrink-0" aria-hidden />
-              Add catalog item
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onCategories}
+                className={cn(
+                  "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-border text-sm font-medium",
+                  appHoverRow,
+                )}
+              >
+                <Tags size={16} className="text-muted-foreground shrink-0" aria-hidden />
+                Categories
+              </button>
+              <button
+                type="button"
+                onClick={onAddItem}
+                className={cn(
+                  "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-border text-sm font-medium",
+                  appHoverRow,
+                )}
+              >
+                <Plus size={16} className="text-muted-foreground shrink-0" aria-hidden />
+                Add catalog item
+              </button>
+            </>
           )}
         </div>
       </AppModalBody>
