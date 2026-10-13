@@ -25,7 +25,6 @@ import { ProductInventoryEntry } from "./pages/products/ProductInventoryEntry";
 import { RawMaterialsHubPage } from "./pages/inventory/RawMaterialsHubPage";
 import { RawMaterialDetailPage } from "./pages/inventory/RawMaterialDetailPage";
 import { PackagingMaterialsPage } from "./pages/inventory/PackagingMaterialsPage";
-import { SuppliesMaterialsPage } from "./pages/inventory/SuppliesMaterialsPage";
 import { CacaoBrcHubPage } from "./pages/inventory/CacaoBrcHubPage";
 import { FinishedLeakDamagePage } from "./pages/inventory/FinishedLeakDamagePage";
 import { InventoryCheckPage } from "./pages/inventory/InventoryCheckPage";
@@ -126,8 +125,11 @@ export const router = createBrowserRouter(
         { path: "inventory/raw-materials/cacao", element: permGuard(RawMaterialDetailPage, "dept.cacao.view") },
         { path: "inventory/raw-materials/honey-comb", element: permGuard(RawMaterialDetailPage, "dept.comb.view") },
         { path: "inventory/raw-materials/:slug", element: invViewGuard(RawMaterialDetailPage) },
-        { path: "inventory/packaging-materials", element: permGuard(PackagingMaterialsPage, ["packaging.view", "packaging.deduct"]) },
-        { path: "inventory/supplies", element: invGuard(SuppliesMaterialsPage) },
+        { path: "inventory/supplies", element: permGuard(PackagingMaterialsPage, ["packaging.view", "packaging.deduct"]) },
+        {
+          path: "inventory/packaging-materials",
+          element: createElement(Navigate, { to: "/inventory/supplies", replace: true }),
+        },
         { path: "inventory/products/honey", element: invViewGuard(HoneyProductInventoryPage) },
         { path: "inventory/products/honey/warehouse", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
         { path: "inventory/products/honey/production", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/production", replace: true }) },

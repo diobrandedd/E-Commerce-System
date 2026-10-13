@@ -55,6 +55,7 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-10-09_supplies-replaces-packaging-page]] — Supplies nav = packaging catalog; old supply page removed; Add item no dept
 - [[records/2026-10-06_packaging-barcode-scan-stockout]] — Packaging barcodes, scan stock-out, level %, exec stock-in
 - [[records/2026-10-02_inventory-check-history-pagination]] — Check inventory history + confirmed updates 10/page
 - [[records/2026-10-01_deliveries-auto-open-parcel-camera]] — Add deliveries auto-opens parcel camera after scan

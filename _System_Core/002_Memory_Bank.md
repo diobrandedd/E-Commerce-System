@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-09 — Supplies replaces Packaging Materials page
+**Change:** Nav **Supplies** = packaging catalog; old supply page route removed; Add item no department. → [[problems/records/2026-10-09_supplies-replaces-packaging-page]]
+
 ### 2026-10-09 — Inventory check freebies + drop Give out
 **Change:** Freebies modal Create/History only; Add-to-list Freebie mode (PT/BRC/Cacao + qty); compare/apply syncs freebie balances. → [[problems/records/2026-10-09_inventory-check-freebies]]
 

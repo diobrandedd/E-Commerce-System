@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-10-09T06:34:24+02:00
+generated: 2026-10-09T12:12:44+02:00
 type: module
 function_count: 13
 ---

@@ -431,7 +431,7 @@ function ParcelPackTiersModalContent({
       ) : (
         <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1">
           <p className="text-xs text-muted-foreground">
-            Adjust how much of each packaging material is used per parcel size. Prices come from Packaging Materials stock-in.
+            Adjust how much of each packaging material is used per parcel size. Prices come from Supplies stock-in.
           </p>
           {(["honey", "paragis", "cacao_brc"] as const).map(bucket => {
             const bucketTiers = tiersByDept[bucket] ?? [];
