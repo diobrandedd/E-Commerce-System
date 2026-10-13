@@ -730,8 +730,7 @@ export function SettingsPage() {
               <h3 className="text-sm font-semibold text-foreground">Honey volume</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Milliliters per 1 production gallon used when bottling deducts gallons. Default is the US gallon (
-                {mlDefault} ml). Changing this does not rewrite past deductions. Toggle packaging deduct to consume
-                empty bottles + stickers from Supplies on bottle stock-in.
+                {mlDefault} ml). Changing this does not rewrite past deductions.
               </p>
             </div>
           </div>
@@ -775,7 +774,6 @@ export function SettingsPage() {
                 disabled={mlSaving}
                 onClick={() => {
                   setMlPerGallon(String(mlDefault));
-                  setMlPackagingDeduct(true);
                 }}
               >
                 Reset to default
