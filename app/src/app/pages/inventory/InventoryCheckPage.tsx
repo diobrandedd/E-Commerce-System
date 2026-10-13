@@ -43,6 +43,21 @@ function formatQty(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+function historyDateQuery(
+  mode: "all" | "day" | "range",
+  day: string,
+  from: string,
+  to: string,
+): { from: string; to: string } | undefined {
+  if (mode === "day" && /^\d{4}-\d{2}-\d{2}$/.test(day)) {
+    return { from: day, to: day };
+  }
+  if (mode === "range" && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    return from <= to ? { from, to } : { from: to, to: from };
+  }
+  return undefined;
+}
+
 function ListPager({
   page,
   perPage,
@@ -108,6 +123,10 @@ export function InventoryCheckPage() {
   const [historyPage, setHistoryPage] = useState(1);
   const [historyTotal, setHistoryTotal] = useState(0);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyDateMode, setHistoryDateMode] = useState<"all" | "day" | "range">("all");
+  const [historyDay, setHistoryDay] = useState("");
+  const [historyFrom, setHistoryFrom] = useState("");
+  const [historyTo, setHistoryTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [ok, setOk] = useState<string | null>(null);
@@ -217,7 +236,11 @@ export function InventoryCheckPage() {
     void (async () => {
       setHistoryLoading(true);
       try {
-        const res = await inventoryCheckApi.eventList(historyPage, HISTORY_PAGE_SIZE);
+        const res = await inventoryCheckApi.eventList(
+          historyPage,
+          HISTORY_PAGE_SIZE,
+          historyDateQuery(historyDateMode, historyDay, historyFrom, historyTo),
+        );
         setHistory(res.rows);
         setHistoryTotal(res.total);
         setHistoryPage(res.page);
@@ -227,7 +250,7 @@ export function InventoryCheckPage() {
         setHistoryLoading(false);
       }
     })();
-  }, [showHistory, historyPage]);
+  }, [showHistory, historyPage, historyDateMode, historyDay, historyFrom, historyTo]);
 
   useEffect(() => {
     if (!showHistory || !canViewAll) {
@@ -238,7 +261,11 @@ export function InventoryCheckPage() {
     void (async () => {
       setAppliedRunsLoading(true);
       try {
-        const applied = await inventoryCheckApi.appliedRunsList(appliedRunsPage, APPLIED_PAGE_SIZE);
+        const applied = await inventoryCheckApi.appliedRunsList(
+          appliedRunsPage,
+          APPLIED_PAGE_SIZE,
+          historyDateQuery(historyDateMode, historyDay, historyFrom, historyTo),
+        );
         setAppliedRuns(applied.rows);
         setAppliedRunsTotal(applied.total);
         setAppliedRunsPage(applied.page);
@@ -248,7 +275,7 @@ export function InventoryCheckPage() {
         setAppliedRunsLoading(false);
       }
     })();
-  }, [showHistory, canViewAll, appliedRunsPage]);
+  }, [showHistory, canViewAll, appliedRunsPage, historyDateMode, historyDay, historyFrom, historyTo]);
 
   const openCount = async () => {
     setBusy(true);
@@ -679,10 +706,11 @@ export function InventoryCheckPage() {
       try {
         setHistoryPage(1);
         setAppliedRunsPage(1);
-        const applied = await inventoryCheckApi.appliedRunsList(1, APPLIED_PAGE_SIZE);
+        const range = historyDateQuery(historyDateMode, historyDay, historyFrom, historyTo);
+        const applied = await inventoryCheckApi.appliedRunsList(1, APPLIED_PAGE_SIZE, range);
         setAppliedRuns(applied.rows);
         setAppliedRunsTotal(applied.total);
-        const hist = await inventoryCheckApi.eventList(1, HISTORY_PAGE_SIZE);
+        const hist = await inventoryCheckApi.eventList(1, HISTORY_PAGE_SIZE, range);
         setHistory(hist.rows);
         setHistoryTotal(hist.total);
       } catch {
@@ -823,8 +851,81 @@ export function InventoryCheckPage() {
                 </Button>
               ) : null}
             </div>
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-end gap-2">
+              <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                Date
+                <select
+                  value={historyDateMode}
+                  onChange={e => {
+                    setHistoryDateMode(e.target.value as "all" | "day" | "range");
+                    setHistoryPage(1);
+                    setAppliedRunsPage(1);
+                  }}
+                  className="mt-1 block text-sm border rounded-lg px-2 py-1.5 bg-card min-h-11 min-w-[9rem]"
+                >
+                  <option value="all">All dates</option>
+                  <option value="day">One day</option>
+                  <option value="range">Custom range</option>
+                </select>
+              </label>
+              {historyDateMode === "day" ? (
+                <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                  Day
+                  <input
+                    type="date"
+                    value={historyDay}
+                    onChange={e => {
+                      setHistoryDay(e.target.value);
+                      setHistoryPage(1);
+                      setAppliedRunsPage(1);
+                    }}
+                    className="mt-1 block text-sm border rounded-lg px-2 py-1.5 bg-card min-h-11"
+                  />
+                </label>
+              ) : null}
+              {historyDateMode === "range" ? (
+                <>
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                    From
+                    <input
+                      type="date"
+                      value={historyFrom}
+                      onChange={e => {
+                        setHistoryFrom(e.target.value);
+                        setHistoryPage(1);
+                        setAppliedRunsPage(1);
+                      }}
+                      className="mt-1 block text-sm border rounded-lg px-2 py-1.5 bg-card min-h-11"
+                    />
+                  </label>
+                  <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                    To
+                    <input
+                      type="date"
+                      value={historyTo}
+                      onChange={e => {
+                        setHistoryTo(e.target.value);
+                        setHistoryPage(1);
+                        setAppliedRunsPage(1);
+                      }}
+                      className="mt-1 block text-sm border rounded-lg px-2 py-1.5 bg-card min-h-11"
+                    />
+                  </label>
+                </>
+              ) : null}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Audit history uses the session date. Confirmed updates use the date stock was applied.
+              {historyDateMode === "range" && (!historyFrom || !historyTo)
+                ? " Choose both dates to filter."
+                : ""}
+            </p>
             {history.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No audits recorded yet.</p>
+              <p className="text-sm text-muted-foreground">
+                {historyDateQuery(historyDateMode, historyDay, historyFrom, historyTo)
+                  ? "No audits in this date range."
+                  : "No audits recorded yet."}
+              </p>
             ) : (
               <>
                 <div className="sm:hidden space-y-3">
@@ -954,7 +1055,11 @@ export function InventoryCheckPage() {
                   </p>
                 </div>
                 {appliedRuns.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No confirmed inventory updates yet.</p>
+                  <p className="text-sm text-muted-foreground">
+                    {historyDateQuery(historyDateMode, historyDay, historyFrom, historyTo)
+                      ? "No confirmed updates in this date range."
+                      : "No confirmed inventory updates yet."}
+                  </p>
                 ) : (
                   <>
                     <div className="sm:hidden space-y-3">

@@ -206,24 +206,73 @@ function inventory_check_event_cancel(PDO $pdo, int $eventId): void
 }
 
 /**
+ * Normalize an optional YYYY-MM-DD bound. Empty becomes null.
+ */
+function inventory_check_history_date_bound(?string $raw): ?string
+{
+    $raw = trim((string) $raw);
+    if ($raw === '') {
+        return null;
+    }
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw)) {
+        throw new InvalidArgumentException('Use a date in YYYY-MM-DD.');
+    }
+    $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $raw);
+    if ($dt === false || $dt->format('Y-m-d') !== $raw) {
+        throw new InvalidArgumentException('Invalid date.');
+    }
+
+    return $raw;
+}
+
+/**
+ * @return array{0:?string,1:?string}
+ */
+function inventory_check_history_date_span(?string $from, ?string $to): array
+{
+    $from = inventory_check_history_date_bound($from);
+    $to = inventory_check_history_date_bound($to);
+    if ($from !== null && $to !== null && $from > $to) {
+        return [$to, $from];
+    }
+
+    return [$from, $to];
+}
+
+/**
  * @return array{rows: list<array<string, mixed>>, total: int, page: int, per_page: int}
  */
-function inventory_check_event_list(PDO $pdo, int $page = 1, int $perPage = 25, ?int $onlyOpenedBy = null): array
-{
+function inventory_check_event_list(
+    PDO $pdo,
+    int $page = 1,
+    int $perPage = 25,
+    ?int $onlyOpenedBy = null,
+    ?string $fromDate = null,
+    ?string $toDate = null
+): array {
     $page = max(1, $page);
     $perPage = max(1, min(100, $perPage));
+    [$fromDate, $toDate] = inventory_check_history_date_span($fromDate, $toDate);
 
-    $where = '';
+    $clauses = [];
     $params = [];
     if ($onlyOpenedBy !== null && $onlyOpenedBy > 0) {
-        $where = ' WHERE e.opened_by = ?';
+        $clauses[] = 'e.opened_by = ?';
         $params[] = $onlyOpenedBy;
-        $countSt = $pdo->prepare('SELECT COUNT(*) FROM inventory_check_events e' . $where);
-        $countSt->execute($params);
-        $total = (int) $countSt->fetchColumn();
-    } else {
-        $total = (int) $pdo->query('SELECT COUNT(*) FROM inventory_check_events')->fetchColumn();
     }
+    if ($fromDate !== null) {
+        $clauses[] = 'e.count_date >= ?';
+        $params[] = $fromDate;
+    }
+    if ($toDate !== null) {
+        $clauses[] = 'e.count_date <= ?';
+        $params[] = $toDate;
+    }
+    $where = $clauses === [] ? '' : ' WHERE ' . implode(' AND ', $clauses);
+
+    $countSt = $pdo->prepare('SELECT COUNT(*) FROM inventory_check_events e' . $where);
+    $countSt->execute($params);
+    $total = (int) $countSt->fetchColumn();
 
     $st = $pdo->prepare(
         'SELECT e.*, uo.name AS opened_by_name, uc.name AS closed_by_name,
@@ -1479,15 +1528,35 @@ function inventory_check_user_can_access_compare_run(PDO $pdo, array $user, arra
  *
  * @return array{rows:list<array<string,mixed>>,total:int,page:int,per_page:int}
  */
-function inventory_check_applied_runs_list(PDO $pdo, int $page = 1, int $perPage = 25): array
-{
+function inventory_check_applied_runs_list(
+    PDO $pdo,
+    int $page = 1,
+    int $perPage = 25,
+    ?string $fromDate = null,
+    ?string $toDate = null
+): array {
     $page = max(1, $page);
     $perPage = max(1, min(100, $perPage));
     $offset = ($page - 1) * $perPage;
+    [$fromDate, $toDate] = inventory_check_history_date_span($fromDate, $toDate);
 
-    $total = (int) $pdo->query(
-        'SELECT COUNT(*) FROM inventory_check_compare_runs WHERE stock_applied = 1'
-    )->fetchColumn();
+    $clauses = ['r.stock_applied = 1'];
+    $params = [];
+    if ($fromDate !== null) {
+        $clauses[] = 'DATE(COALESCE(r.stock_applied_at, r.run_at)) >= ?';
+        $params[] = $fromDate;
+    }
+    if ($toDate !== null) {
+        $clauses[] = 'DATE(COALESCE(r.stock_applied_at, r.run_at)) <= ?';
+        $params[] = $toDate;
+    }
+    $where = implode(' AND ', $clauses);
+
+    $countSt = $pdo->prepare(
+        'SELECT COUNT(*) FROM inventory_check_compare_runs r WHERE ' . $where
+    );
+    $countSt->execute($params);
+    $total = (int) $countSt->fetchColumn();
 
     $st = $pdo->prepare(
         'SELECT r.*, u.name AS run_by_name, ua.name AS stock_applied_by_name,
@@ -1497,11 +1566,11 @@ function inventory_check_applied_runs_list(PDO $pdo, int $page = 1, int $perPage
          LEFT JOIN users ua ON ua.id = r.stock_applied_by
          LEFT JOIN inventory_check_events e ON e.id = r.event_id
          LEFT JOIN users eo ON eo.id = e.opened_by
-         WHERE r.stock_applied = 1
+         WHERE ' . $where . '
          ORDER BY COALESCE(r.stock_applied_at, r.run_at) DESC, r.id DESC
          LIMIT ' . (int) $perPage . ' OFFSET ' . (int) $offset
     );
-    $st->execute();
+    $st->execute($params);
 
     $rows = [];
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {

@@ -158,11 +158,21 @@ function api_inventory_check_event_list(): void
     api_method_allowed(['GET']);
     $user = api_inventory_check_require_scan();
     $onlyMine = inventory_check_can_view_all($user) ? null : (int) $user['id'];
+    try {
+        [$from, $to] = inventory_check_history_date_span(
+            isset($_GET['from']) ? (string) $_GET['from'] : null,
+            isset($_GET['to']) ? (string) $_GET['to'] : null
+        );
+    } catch (InvalidArgumentException $e) {
+        api_fail($e->getMessage(), 422);
+    }
     api_ok(inventory_check_event_list(
         ims_pdo(),
         (int) ($_GET['page'] ?? 1),
         (int) ($_GET['per_page'] ?? 25),
-        $onlyMine
+        $onlyMine,
+        $from,
+        $to
     ));
 }
 
@@ -486,9 +496,19 @@ function api_inventory_check_applied_runs_list(): void
 {
     api_method_allowed(['GET']);
     api_inventory_check_require_view_all();
+    try {
+        [$from, $to] = inventory_check_history_date_span(
+            isset($_GET['from']) ? (string) $_GET['from'] : null,
+            isset($_GET['to']) ? (string) $_GET['to'] : null
+        );
+    } catch (InvalidArgumentException $e) {
+        api_fail($e->getMessage(), 422);
+    }
     api_ok(inventory_check_applied_runs_list(
         ims_pdo(),
         (int) ($_GET['page'] ?? 1),
-        (int) ($_GET['per_page'] ?? 25)
+        (int) ($_GET['per_page'] ?? 25),
+        $from,
+        $to
     ));
 }

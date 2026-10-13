@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-13 — Check inventory history date filter
+**Change:** History and confirmed updates can filter to one day or a custom range (`count_date` vs applied date). → [[problems/records/2026-10-13_inventory-check-history-date-filter]]
+
 ### 2026-10-10 — PyxAcct test rejected the saved token
 **Change:** Test connection uses the stored token; a blank field on Save keeps it. Local token aligned to PyxAcct; mismatch error now says to paste `integration.tracker_honey_token`. → [[problems/records/2026-10-10_pyxacct-test-rejected-token]]
 

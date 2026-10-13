@@ -178,11 +178,16 @@ export const inventoryCheckApi = {
   cancelEvent: (eventId: number) =>
     apiPost<{ cancelled: boolean }>(ENDPOINT, "event_cancel", { event_id: eventId }),
 
-  eventList: (page = 1, perPage = 10) =>
+  eventList: (page = 1, perPage = 10, range?: { from?: string; to?: string }) =>
     apiGet<{ rows: InventoryCheckEvent[]; total: number; page: number; per_page: number }>(
       ENDPOINT,
       "event_list",
-      { page, per_page: perPage },
+      {
+        page,
+        per_page: perPage,
+        ...(range?.from ? { from: range.from } : {}),
+        ...(range?.to ? { to: range.to } : {}),
+      },
     ),
 
   scan: (
@@ -269,11 +274,16 @@ export const inventoryCheckApi = {
   compareList: (eventId: number) =>
     apiGet<{ runs: InventoryCheckCompareRun[] }>(ENDPOINT, "compare_list", { event_id: eventId }),
 
-  appliedRunsList: (page = 1, perPage = 10) =>
+  appliedRunsList: (page = 1, perPage = 10, range?: { from?: string; to?: string }) =>
     apiGet<{
       rows: InventoryCheckAppliedRun[];
       total: number;
       page: number;
       per_page: number;
-    }>(ENDPOINT, "applied_runs_list", { page, per_page: perPage }),
+    }>(ENDPOINT, "applied_runs_list", {
+      page,
+      per_page: perPage,
+      ...(range?.from ? { from: range.from } : {}),
+      ...(range?.to ? { to: range.to } : {}),
+    }),
 };

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-10-10T07:23:15+02:00
+generated: 2026-10-13T08:06:41+02:00
 type: memory-bank
 ---
 
@@ -57,7 +57,7 @@ type: memory-bank
 | [[modules/honey_volume]] | 13 |
 | [[modules/honey_warehouse_barcodes]] | 12 |
 | [[modules/ims_exec_sidebar]] | 1 |
-| [[modules/inventory_check]] | 40 |
+| [[modules/inventory_check]] | 42 |
 | [[modules/inventory_check_apply]] | 10 |
 | [[modules/inventory_edit_log]] | 4 |
 | [[modules/labels]] | 3 |
