@@ -1,7 +1,7 @@
 ---
 title: sku_barcodes
 source: includes/sku_barcodes.php
-generated: 2026-10-09T06:34:57+02:00
+generated: 2026-10-13T04:35:07+02:00
 type: module
 function_count: 40
 ---
@@ -366,7 +366,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/honey_warehouse_barcodes.php`:308 — `return sku_barcode_render_packed_label_sheet(`
 - `includes/honey_warehouse_barcodes.php`:370 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
-- `includes/material_inventory.php`:2382 — `return sku_barcode_render_packed_label_sheet(`
+- `includes/material_inventory.php`:2374 — `return sku_barcode_render_packed_label_sheet(`
 - `includes/rts_barcode_labels.php`:468 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
 - `includes/sku_barcodes.php`:1794 — `return sku_barcode_render_packed_label_sheet($stream, $title, $labelCount);`
 

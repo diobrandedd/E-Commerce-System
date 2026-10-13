@@ -1,7 +1,7 @@
 ---
 title: pyxacct_ap_sync
 source: includes/pyxacct_ap_sync.php
-generated: 2026-10-09T06:34:46+02:00
+generated: 2026-10-13T04:34:58+02:00
 type: module
 function_count: 8
 ---
