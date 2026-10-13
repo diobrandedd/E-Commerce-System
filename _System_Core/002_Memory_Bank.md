@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-10 — PyxAcct test rejected the saved token
+**Change:** Test connection uses the stored token; a blank field on Save keeps it. Local token aligned to PyxAcct; mismatch error now says to paste `integration.tracker_honey_token`. → [[problems/records/2026-10-10_pyxacct-test-rejected-token]]
+
+### 2026-10-10 — Honey pool pack deduct and cancel restock
+**Change:** Pack confirm and Deliveries → Cancelled restock move the variant POOL that Products → Honey shows. Inventory check compare/apply uses that pool. → [[problems/records/2026-10-10_honey-pool-pack-cancel]]
+
 ### 2026-10-09 — Supplies replaces Packaging Materials page
 **Change:** Nav **Supplies** = packaging catalog; old supply page route removed; Add item no department. → [[problems/records/2026-10-09_supplies-replaces-packaging-page]]
 

@@ -1161,10 +1161,12 @@ function inventory_check_compare_honey_lines(
     $sizeCols = INVENTORY_CHECK_HONEY_SIZE_COLUMNS;
     $system = [];
 
-    $st = $pdo->query(
+    $st = $pdo->prepare(
         'SELECT variant, current_250ml, current_350ml, current_liter, current_gallon
-         FROM honey_packaging_rows'
+         FROM honey_packaging_rows
+         WHERE batch_no = ? AND bottling_date = ?'
     );
+    $st->execute([HONEY_PACKAGING_POOL_BATCH, HONEY_PACKAGING_POOL_DATE]);
     foreach ($st ? $st->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
         $variantKey = strtolower(trim((string) ($row['variant'] ?? '')));
         foreach ($sizeCols as $size => $col) {

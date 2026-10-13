@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-10-09T12:12:14+02:00
+generated: 2026-10-10T10:28:16+02:00
 type: memory-bank
 table_count: 102
 ---
@@ -1232,6 +1232,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `api/v1/honey.php` | [[modules/honey#api_honey_packaging_list]] |
 | `includes/dashboard_inventory.php` | [[modules/dashboard_inventory#dashboard_honey_packaging_snapshot]] |
 | `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_deduct_honey_packaging]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_adjust_variant_pool]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_adjust_aggregate]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_deduct_packaging_one]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_get]] |
@@ -1276,7 +1277,6 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_system_packaging_row]] |
 | `includes/pos_refund.php` | [[modules/pos_refund#pos_refund_credit_honey_packaging]] |
 | `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
-| `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_honey_deduct]] |
 
 ## `honey_sales_log`
 

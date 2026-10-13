@@ -1,7 +1,7 @@
 ---
 title: app_settings
 source: includes/app_settings.php
-generated: 2026-10-09T12:12:15+02:00
+generated: 2026-10-10T10:28:17+02:00
 type: module
 function_count: 3
 ---
@@ -44,7 +44,7 @@ function_count: 3
 - `includes/honey_volume.php`:67 — `$raw = app_setting_get($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, null);`
 - `includes/pyxacct_ap_sync.php`:23 — `$raw = app_setting_get($rtsPdo, 'pyxacct_honey_ap_sync_enabled', '1');`
 - `includes/pyxacct_ap_sync.php`:37 — `return rtrim(trim((string) app_setting_get($rtsPdo, 'pyxacct_api_base_url', '')), '/');`
-- `includes/pyxacct_ap_sync.php`:42 — `return trim((string) app_setting_get($rtsPdo, 'pyxacct_api_token', ''));`
+- `includes/pyxacct_ap_sync.php`:59 — `return pyxacct_api_token_normalize((string) app_setting_get($rtsPdo, 'pyxacct_api_token', ''));`
 
 ## app_setting_set {#app_setting_set}
 
@@ -69,6 +69,6 @@ function_count: 3
 - `includes/honey_volume.php`:48 — `app_setting_set($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, '0', $userId);`
 - `includes/honey_volume.php`:91 — `app_setting_set($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, $stored, $userId);`
 - `includes/pyxacct_ap_sync.php`:30 — `app_setting_set($rtsPdo, 'pyxacct_honey_ap_sync_enabled', $enabled ? '1' : '0', $userId);`
-- `includes/pyxacct_ap_sync.php`:58 — `app_setting_set($rtsPdo, 'pyxacct_api_base_url', $baseUrl, $userId);`
-- `includes/pyxacct_ap_sync.php`:63 — `app_setting_set($rtsPdo, 'pyxacct_api_token', $token, $userId);`
+- `includes/pyxacct_ap_sync.php`:75 — `app_setting_set($rtsPdo, 'pyxacct_api_base_url', $baseUrl, $userId);`
+- `includes/pyxacct_ap_sync.php`:80 — `app_setting_set($rtsPdo, 'pyxacct_api_token', $token, $userId);`
 

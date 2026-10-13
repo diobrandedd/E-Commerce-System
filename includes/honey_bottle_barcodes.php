@@ -206,6 +206,50 @@ function honey_bottle_next_sequence(PDO $pdo, int $count): int
     return $start;
 }
 
+/**
+ * Move finished bottles on the Light/Amber/Dark pool (Products → Honey).
+ * Credits change on-hand only. Debits require enough pool qty.
+ *
+ * @return int pool packaging row id
+ */
+function honey_bottle_adjust_variant_pool(
+    PDO $pdo,
+    int $userId,
+    string $variant,
+    string $size,
+    float $delta
+): int {
+    if (abs($delta) < 1e-9) {
+        throw new RuntimeException('Quantity must not be zero.');
+    }
+    $variant = honey_normalize_variant($variant);
+    if (!in_array($size, HONEY_SIZES, true)) {
+        throw new RuntimeException('Invalid size.');
+    }
+    $pool = honey_packaging_ensure_variant_pool($pdo, $userId > 0 ? $userId : 1, $variant);
+    $poolId = (int) $pool['id'];
+    [$curCol] = honey_packaging_size_columns($size);
+    if ($delta < 0) {
+        $take = abs($delta);
+        $upd = $pdo->prepare(
+            "UPDATE honey_packaging_rows SET {$curCol} = {$curCol} - ? WHERE id = ? AND {$curCol} >= ?"
+        );
+        $upd->execute([$take, $poolId, $take]);
+        if ($upd->rowCount() < 1) {
+            throw new RuntimeException(
+                'Not enough ' . ucfirst($variant) . ' ' . honey_bottle_size_label($size) . ' in the finished pool.'
+            );
+        }
+
+        return $poolId;
+    }
+    $pdo->prepare(
+        "UPDATE honey_packaging_rows SET {$curCol} = {$curCol} + ? WHERE id = ?"
+    )->execute([$delta, $poolId]);
+
+    return $poolId;
+}
+
 function honey_bottle_adjust_aggregate(PDO $pdo, int $packagingRowId, string $size, float $delta): void
 {
     if ($packagingRowId < 1 || abs($delta) < 1e-9) {
@@ -2083,7 +2127,7 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
                     ]
                 );
             } else {
-                $packId = honey_bottle_deduct_packaging_one($pdo, $variant, $size, $packId);
+                $packId = honey_bottle_adjust_variant_pool($pdo, $userId, $variant, $size, -1.0);
             }
             honey_bottle_write_sale_log($pdo, [
                 'source' => $pool === 'rts_sellable' ? 'rts' : 'packaging',

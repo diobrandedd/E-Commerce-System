@@ -55,6 +55,8 @@ flowchart LR
 
 ## Records (newest first)
 
+- [[records/2026-10-10_pyxacct-test-rejected-token]] — Test connection rejected a saved token that did not match PyxAcct
+- [[records/2026-10-10_honey-pool-pack-cancel]] — Pack and cancel restock update the honey variant pool; audit matches Products → Honey
 - [[records/2026-10-09_supplies-replaces-packaging-page]] — Supplies nav = packaging catalog; old supply page removed; Add item no dept
 - [[records/2026-10-06_packaging-barcode-scan-stockout]] — Packaging barcodes, scan stock-out, level %, exec stock-in
 - [[records/2026-10-02_inventory-check-history-pagination]] — Check inventory history + confirmed updates 10/page

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-10-09T12:10:27+02:00
+generated: 2026-10-10T07:23:15+02:00
 type: memory-bank
 ---
 
@@ -47,7 +47,7 @@ type: memory-bank
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 33 |
 | [[modules/historical_orders_import]] | 25 |
-| [[modules/honey_bottle_barcodes]] | 63 |
+| [[modules/honey_bottle_barcodes]] | 64 |
 | [[modules/honey_inventory]] | 76 |
 | [[modules/honey_parcel_inventory]] | 4 |
 | [[modules/honey_parcel_item_parser]] | 17 |
@@ -76,7 +76,7 @@ type: memory-bank
 | [[modules/pos_sales_helpers]] | 3 |
 | [[modules/pos_thermal_print]] | 4 |
 | [[modules/pos_unified]] | 9 |
-| [[modules/pyxacct_ap_sync]] | 8 |
+| [[modules/pyxacct_ap_sync]] | 9 |
 | [[modules/qr_decode]] | 13 |
 | [[modules/rts_attachments]] | 6 |
 | [[modules/rts_barcode_labels]] | 11 |
