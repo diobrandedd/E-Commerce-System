@@ -1490,14 +1490,23 @@ function sku_barcode_label_banner_html(string $text): string
 }
 
 /**
- * Pack banner + label cells onto 8×20 A4 pages (continuous, batch banners start new rows).
+ * Pack banner + label cells onto A4 pages (continuous, batch banners start new rows).
+ * Default grid is 8×20. Pass layout cols/rows/variant to override (supplies uses a wider grid).
  *
  * @param list<array{slots:int,html:string}> $stream
+ * @param array{cols?:int,rows?:int,variant?:string}|null $layout
  */
-function sku_barcode_render_packed_label_sheet(array $stream, string $title, int $labelCount = 0): string
+function sku_barcode_render_packed_label_sheet(array $stream, string $title, int $labelCount = 0, ?array $layout = null): string
 {
-    $cols = SKU_LABEL_SHEET_COLS;
-    $rowsPerPage = SKU_LABEL_SHEET_ROWS;
+    $cols = (int) ($layout['cols'] ?? SKU_LABEL_SHEET_COLS);
+    $rowsPerPage = (int) ($layout['rows'] ?? SKU_LABEL_SHEET_ROWS);
+    if ($cols < 1) {
+        $cols = SKU_LABEL_SHEET_COLS;
+    }
+    if ($rowsPerPage < 1) {
+        $rowsPerPage = SKU_LABEL_SHEET_ROWS;
+    }
+    $variant = (string) ($layout['variant'] ?? '');
     $sheetHeight = SKU_LABEL_SHEET_HEIGHT_MM;
     $rowMm = $sheetHeight / $rowsPerPage;
 
@@ -1589,6 +1598,34 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
 
     $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
     $slotsPerPage = $cols * $rowsPerPage;
+    $bodyClass = $variant === 'supply' ? ' class="sheet-supply"' : '';
+    $hint = $variant === 'supply'
+        ? 'name under each barcode · print at 100% scale'
+        : 'barcode + code text · print at 100% scale';
+    $supplyCss = $variant === 'supply'
+        ? '
+        .sheet-supply .label-supply {
+          padding: 1.4mm 2mm 1.6mm;
+          justify-content: center;
+          gap: 1mm;
+        }
+        .sheet-supply .supply-name {
+          width: 100%;
+          max-height: 9mm;
+          font-size: 11pt;
+          font-weight: 700;
+          line-height: 1.15;
+          white-space: normal;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
+        }
+        .sheet-supply .label-supply .bc,
+        .sheet-supply .label-supply .bc svg { max-height: 10mm; }
+        .sheet-supply .human-code { font-size: 8pt; min-height: 3.2mm; }
+        '
+        : '';
 
     return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>'
         . $safeTitle
@@ -1691,6 +1728,7 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
         .label-product .bc svg { max-height: 8.5mm; }
         .err { font-size: 6pt; color: #c00; }
         .page-break { page-break-before: always; break-before: page; }
+        ' . $supplyCss . '
         @media print {
           .toolbar { display: none; }
           body { margin: 0; }
@@ -1700,11 +1738,11 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
             print-color-adjust: exact;
           }
         }
-        </style></head><body>
+        </style></head><body' . $bodyClass . '>
         <div class="toolbar">
           <button type="button" onclick="window.print()">Print A4</button>
           <span class="hint">' . (int) $labelCount . ' label(s) · '
-        . $cols . '×' . $rowsPerPage . ' (' . (int) $slotsPerPage . '/page) · barcode + code text · print at 100% scale</span>
+        . $cols . '×' . $rowsPerPage . ' (' . (int) $slotsPerPage . '/page) · ' . $hint . '</span>
         </div>
         ' . $pagesHtml . '
         </body></html>';

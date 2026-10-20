@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-20 — Readable names on supplies barcode sheet
+**Change:** Generate all barcodes uses a 4×10 sheet so each supply name wraps at 11pt, with the PKG code under it. Product sticker sheets stay 8×20. → [[problems/records/2026-10-20_supply-barcode-name-readable]]
+
 ### 2026-10-13 — Supply notes and bulk categories
 **Change:** Supplies header **Categories** creates a category and assigns many items. Each row can store a note (source or other detail). → [[problems/records/2026-10-13_supply-notes-and-category-assign]]
 

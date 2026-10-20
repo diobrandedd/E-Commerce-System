@@ -2568,10 +2568,10 @@ function material_packaging_label_cell_html(string $code, string $name): string
     $safeCode = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
     $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
 
-    // Name under barcode (packaging materials requirement).
-    return '<div class="label label-product">'
+    return '<div class="label label-supply">'
         . '<div class="bc" title="' . $safeCode . '">' . $svg . '</div>'
-        . '<div class="product-info" title="' . $safeName . '">' . $safeName . '</div>'
+        . '<div class="supply-name" title="' . $safeName . '">' . $safeName . '</div>'
+        . '<div class="human-code" title="' . $safeCode . '">' . $safeCode . '</div>'
         . '</div>';
 }
 
@@ -2599,8 +2599,9 @@ function material_packaging_print_sheet_html(PDO $pdo): string
 
     return sku_barcode_render_packed_label_sheet(
         $stream,
-        'Packaging materials barcodes (' . $count . ')',
-        $count
+        'Supplies barcodes (' . $count . ')',
+        $count,
+        ['cols' => 4, 'rows' => 10, 'variant' => 'supply']
     );
 }
 

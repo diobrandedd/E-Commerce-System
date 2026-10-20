@@ -1,7 +1,7 @@
 ---
 title: material_inventory
 source: includes/material_inventory.php
-generated: 2026-10-15T11:17:51+02:00
+generated: 2026-10-20T09:54:27+02:00
 type: module
 function_count: 86
 ---
@@ -76,7 +76,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `api/v1/materials.php`:572 — `if (!material_inventory_role_can_deduct_packaging($user)) {`
 - `api/v1/materials.php`:911 — `if (!ims_user_can($user, 'packaging.view') && !material_inventory_role_can_deduct_packaging($user)) {`
 - `api/v1/materials.php`:926 — `'can_deduct' => material_inventory_role_can_deduct_packaging($user),`
-- `includes/material_inventory.php`:2633 — `if (!material_inventory_role_can_deduct_packaging($user)) {`
+- `includes/material_inventory.php`:2634 — `if (!material_inventory_role_can_deduct_packaging($user)) {`
 
 ## material_inventory_role_can_set_packaging_on_hand {#material_inventory_role_can_set_packaging_on_hand}
 
