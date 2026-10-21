@@ -45,7 +45,7 @@ function ims_permission_catalog(): array
         'packaging.catalog' => ['label' => 'Edit packaging catalog', 'group' => 'Packaging & supplies', 'description' => 'Create and edit packaging SKUs.'],
         'packaging.adjust' => ['label' => 'Adjust packaging', 'group' => 'Packaging & supplies', 'description' => 'Manual packaging quantity adjustments.'],
         'packaging.stock_in' => ['label' => 'Stock in packaging', 'group' => 'Packaging & supplies', 'description' => 'Receive packaging lots (executive only in practice).'],
-        'packaging.deduct' => ['label' => 'Stock out packaging (scan)', 'group' => 'Packaging & supplies', 'description' => 'Assign staff who may scan barcodes to stock out supplies. They see Scan stock out only — not the catalog, history, or report damage.'],
+        'packaging.deduct' => ['label' => 'Stock out packaging (scan)', 'group' => 'Packaging & supplies', 'description' => 'Assign staff who may scan barcodes to stock out supplies or report damage. They do not see the catalog or history.'],
         'packaging.set_on_hand' => ['label' => 'Set packaging on-hand', 'group' => 'Packaging & supplies', 'description' => 'Override packaging on-hand counts.'],
         'packaging.edit_price' => ['label' => 'Edit packaging price', 'group' => 'Packaging & supplies', 'description' => 'Edit packaging unit costs.'],
         'packaging.request' => ['label' => 'Request packaging', 'group' => 'Packaging & supplies', 'description' => 'Submit packaging stock requests.'],

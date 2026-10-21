@@ -569,7 +569,7 @@ function api_materials_packaging_report_damage(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_ims_user();
-    if (!ims_user_can($user, 'packaging.catalog')) {
+    if (!material_inventory_role_can_deduct_packaging($user)) {
         api_fail('Forbidden.', 403);
     }
     $stockId = (int) ($input['stock_id'] ?? 0);

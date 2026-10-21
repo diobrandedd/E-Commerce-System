@@ -5,7 +5,7 @@
 ## 📅 Recent Log Entries
 
 ### 2026-10-21 — Supplies page: executives + scan-only assigned staff
-**Change:** Supplies nav/page is executives (`packaging.catalog`) and assigned stock-out staff (`packaging.deduct`). Assigned staff see Scan stock out only; report damage is executive-only. → [[problems/records/2026-10-21_supplies-scan-only-assigned]]
+**Change:** Supplies nav/page is executives (`packaging.catalog`) and assigned stock-out staff (`packaging.deduct`). Assigned staff scan stock out from the page card; Report damage sits in the header. No catalog or history. → [[problems/records/2026-10-21_supplies-scan-only-assigned]]
 
 ### 2026-10-20 — Readable names on supplies barcode sheet
 **Change:** Generate all barcodes uses a 4×10 sheet so each supply name wraps at 11pt, with the PKG code under it. Product sticker sheets stay 8×20. → [[problems/records/2026-10-20_supply-barcode-name-readable]]

@@ -30,7 +30,7 @@ SPA label **Supplies** at `/inventory/supplies` (legacy `/inventory/packaging-ma
 | Role | Actions |
 |------|---------|
 | **HR** | No Supplies page (view permission does not open the catalog) |
-| **Assigned** (`packaging.deduct`, not executive) | **Scan stock out** only — no catalog, history, or report damage |
+| **Assigned** (`packaging.deduct`, not executive) | **Scan stock out** and **Report damage** — no catalog or history |
 | **Executive** | Stock-in lot + catalog + set on-hand + pool yield + print barcodes + scan stock out + report damage |
 
 Stock-out is scan-first (`PackagingScanStockOutModal`). Level % = on_hand / last lot qty. Bottling/produce do **not** auto-deduct packaging materials. **Add item** does not ask for department (canonical dept assigned server-side).

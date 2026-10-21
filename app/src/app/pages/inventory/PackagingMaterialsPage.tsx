@@ -451,8 +451,19 @@ export function PackagingMaterialsPage() {
   if (scanOnly) {
     return (
       <PageLayout
-        title="Scan stock out"
+        title="Supplies"
         subtitle="Scan a supply barcode, then enter quantity"
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="border-destructive/40 text-destructive hover:bg-destructive/5"
+            onClick={() => setReportDamageOpen(true)}
+          >
+            <AlertTriangle className="size-3.5" /> Report damage
+          </Button>
+        }
       >
         <AppSectionEnter className="max-w-md mx-auto">
           <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm space-y-5 text-center">
@@ -473,6 +484,12 @@ export function PackagingMaterialsPage() {
         <PackagingScanStockOutModal
           open={scanOpen}
           onClose={() => setScanOpen(false)}
+          onDone={() => undefined}
+          persistOpen
+        />
+        <PackagingReportDamageModal
+          open={reportDamageOpen}
+          onClose={() => setReportDamageOpen(false)}
           onDone={() => undefined}
           persistOpen
         />
@@ -573,7 +590,7 @@ export function PackagingMaterialsPage() {
                 <p className="text-xs text-muted-foreground mt-0.5 truncate sm:whitespace-normal sm:leading-relaxed">
                   {roster.length === 0
                     ? "Nobody assigned yet"
-                    : `${roster.length} can scan stock out`}
+                    : `${roster.length} can scan stock out or report damage`}
                   <span className="hidden sm:inline"> · {stockInNote}</span>
                 </p>
               </div>

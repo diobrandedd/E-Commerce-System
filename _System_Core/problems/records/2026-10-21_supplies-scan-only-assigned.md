@@ -12,7 +12,7 @@ tags: [supplies, roles, scan]
 
 ## Symptom
 
-Supplies showed the full catalog to anyone with `packaging.view`, and the scan-only landing still offered Report damage.
+Supplies showed the full catalog to anyone with `packaging.view`. Assigned staff should stock out and report damage without that table.
 
 ## Cause
 
@@ -27,7 +27,7 @@ Supplies showed the full catalog to anyone with `packaging.view`, and the scan-o
 | Role | Path / note |
 |------|-------------|
 | SPA | `PackagingMaterialsPage.tsx`, `routes.ts`, `permissions.ts` |
-| API | `api/v1/materials.php` `packaging_report_damage` requires `packaging.catalog` |
+| API | `api/v1/materials.php` `packaging_report_damage` stays on `packaging.deduct` |
 | Roles | `includes/permissions.php` |
 
 ## Deploy

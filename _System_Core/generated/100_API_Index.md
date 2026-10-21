@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-21T11:07:20+02:00
+generated: 2026-10-21T11:21:42+02:00
 type: memory-bank
 ---
 
@@ -406,7 +406,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `set_pool_yield` | `api_materials_set_pool_yield()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_pool_yield()`, `material_inventory_enrich_packaging_row()` |
 | `set_foam_cacao_cut_yields` | `api_materials_set_foam_cacao_cut_yields()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_is_generic_foam_roll_name()`, `material_packaging_set_foam_cacao_cut_yields()`, `material_packaging_foam_cacao_cut_yields()` |
 | `packaging_deduct` | `api_materials_packaging_deduct()` | `material_inventory_role_can_deduct_packaging()`, `ims_pdo()`, `material_packaging_deduct_for_use()` |
-| `packaging_report_damage` | `api_materials_packaging_report_damage()` | `ims_user_can()`, `ims_pdo()`, `material_packaging_report_damage()` |
+| `packaging_report_damage` | `api_materials_packaging_report_damage()` | `material_inventory_role_can_deduct_packaging()`, `ims_pdo()`, `material_packaging_report_damage()` |
 | `packaging_damage_totals` | `api_materials_packaging_damage_totals()` | `material_packaging_damage_totals()`, `ims_pdo()` |
 | `packaging_catalog_remove` | `api_materials_packaging_catalog_remove()` | `ims_pdo()`, `material_packaging_catalog_remove()` |
 | `packaging_price_lot` | `api_materials_packaging_price_lot()` | `material_inventory_role_can_edit_packaging_price()`, `ims_pdo()`, `material_packaging_record_invoice_price()` |
