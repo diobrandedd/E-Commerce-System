@@ -316,7 +316,9 @@ export function PackagingMaterialsPage() {
   const isPm = can("packaging.deduct") && !can("packaging.catalog");
   const canView = can("packaging.view");
   const canDeduct = can("packaging.deduct");
-  const scanOnly = canDeduct && !canView;
+  // Assigned stock-out staff (including production managers) scan only.
+  // Executives keep the catalog, history, and report-damage actions.
+  const scanOnly = canDeduct && !isExec;
   const [items, setItems] = useState<MaterialStockRow[]>([]);
   const [roster, setRoster] = useState<PackagingAccessPerson[]>([]);
   const [stockInNote, setStockInNote] = useState("Only executives can stock in packaging lots.");
@@ -449,8 +451,8 @@ export function PackagingMaterialsPage() {
   if (scanOnly) {
     return (
       <PageLayout
-        title="Packaging stock out"
-        subtitle="Scan to stock out or report damaged packaging"
+        title="Scan stock out"
+        subtitle="Scan a supply barcode, then enter quantity"
       >
         <AppSectionEnter className="max-w-md mx-auto">
           <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm space-y-5 text-center">
@@ -458,35 +460,19 @@ export function PackagingMaterialsPage() {
               <ScanLine size={28} strokeWidth={1.75} aria-hidden />
             </div>
             <div className="space-y-2">
-              <h2 className="text-lg font-semibold text-foreground tracking-tight">Choose an action</h2>
+              <h2 className="text-lg font-semibold text-foreground tracking-tight">Scan stock out</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Scan stock out for floor use. Report damage when packaging is ruined — still deducts on-hand and logs the damaged pool.
+                Scan the supply barcode and enter how many you are taking for floor use.
               </p>
             </div>
-            <div className="flex flex-col gap-2.5">
-              <Button type="button" className="w-full min-h-12 text-base" onClick={() => setScanOpen(true)}>
-                <ScanLine className="size-4" /> Scan stock out
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full min-h-12 text-base border-destructive/40 text-destructive hover:bg-destructive/5"
-                onClick={() => setReportDamageOpen(true)}
-              >
-                <AlertTriangle className="size-4" /> Report damage
-              </Button>
-            </div>
+            <Button type="button" className="w-full min-h-12 text-base" onClick={() => setScanOpen(true)}>
+              <ScanLine className="size-4" /> Scan stock out
+            </Button>
           </div>
         </AppSectionEnter>
         <PackagingScanStockOutModal
           open={scanOpen}
           onClose={() => setScanOpen(false)}
-          onDone={() => undefined}
-          persistOpen
-        />
-        <PackagingReportDamageModal
-          open={reportDamageOpen}
-          onClose={() => setReportDamageOpen(false)}
           onDone={() => undefined}
           persistOpen
         />
@@ -587,7 +573,7 @@ export function PackagingMaterialsPage() {
                 <p className="text-xs text-muted-foreground mt-0.5 truncate sm:whitespace-normal sm:leading-relaxed">
                   {roster.length === 0
                     ? "Nobody assigned yet"
-                    : `${roster.length} can scan stock out / report damage`}
+                    : `${roster.length} can scan stock out`}
                   <span className="hidden sm:inline"> · {stockInNote}</span>
                 </p>
               </div>

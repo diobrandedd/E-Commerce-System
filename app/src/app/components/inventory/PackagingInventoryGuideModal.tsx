@@ -98,19 +98,13 @@ function ProdManagerGuide() {
   return (
     <ol className="list-decimal pl-4 space-y-1.5">
       <li>
-        <strong className="text-foreground">Scan stock out</strong> — use <strong className="text-foreground">Scan stock out</strong> when packaging goes to the floor. Qty + reason required.
-      </li>
-      <li>
-        <strong className="text-foreground">Report damage</strong> — header scan or row <strong className="text-foreground">Damaged</strong>; still deducts on-hand and records the damaged pool. Reason required.
-      </li>
-      <li>
-        <strong className="text-foreground">Check level %</strong> — each row shows remaining vs the last stock-in lot so you can see materials running low.
+        <strong className="text-foreground">Scan stock out only</strong> — assigned staff scan a supply barcode and enter quantity. The catalog, history, and report damage stay with executives.
       </li>
       <li>
         <strong className="text-foreground">Pool rolls</strong> — stock out <strong className="text-foreground">1 whole roll</strong> when a roll is opened.
       </li>
       <li>
-        <strong className="text-foreground">You do not stock in</strong> — executives record deliveries. Flag low stock to executive.
+        <strong className="text-foreground">You do not stock in</strong> — executives record deliveries. Flag low stock or damage to an executive.
       </li>
       <li>
         Produce no longer auto-deducts packaging materials — scan stock out is required.

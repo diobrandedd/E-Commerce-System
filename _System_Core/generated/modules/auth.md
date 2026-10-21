@@ -1,7 +1,7 @@
 ---
 title: auth
 source: includes/auth.php
-generated: 2026-10-20T09:53:51+02:00
+generated: 2026-10-21T11:07:22+02:00
 type: module
 function_count: 22
 ---

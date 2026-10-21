@@ -640,9 +640,9 @@ Use `costingMotion.tsx` (`CostingCollapsible`, `CostingDetailReveal`) for varian
 
 | Role | Packaging page actions |
 |------|------------------------|
-| **HR** | View / requests (no packaging stock-in) |
-| **Production Manager** (+ `packaging.deduct`) | **Scan stock out** + **Report damage** (qty + reason) |
-| **Executive** | Stock-in lot + scan/report + **set on-hand**, **pool yield**, **add catalog**, extended **activity log** |
+| **HR** | Supplies nav hidden — `packaging.view` does not open the page |
+| **Assigned** (`packaging.deduct`, not executive) | **Scan stock out** only (no inventory table, history, or report damage) |
+| **Executive** | Stock-in lot + scan + **report damage** + **set on-hand**, **pool yield**, **add catalog**, extended **activity log** |
 
 Shared **Per-unit vs Pool** legend in the modal.
 
