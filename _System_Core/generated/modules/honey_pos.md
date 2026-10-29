@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-10-21T11:22:10+02:00
+generated: 2026-10-29T10:07:00+01:00
 type: module
 function_count: 16
 ---
@@ -21,6 +21,7 @@ function_count: 16
 - `includes/rts_inventory_sync.php`
 - `includes/rts_inventory_sync.php`
 - `includes/honey_bottle_barcodes.php`
+- `includes/pyxacct_walkin_sync.php`
 - `includes/pos_sales_helpers.php`
 - `includes/rts_inventory_sync.php`
 - `includes/rts_inventory_sync.php`
@@ -62,7 +63,7 @@ function_count: 16
 
 - `includes/honey_pos.php`:108 — `$products = honey_pos_product_map($pdo);`
 - `includes/honey_pos.php`:321 — `$productMap = honey_pos_product_map($pdo);`
-- `includes/honey_pos.php`:556 — `$productMap = honey_pos_product_map($pdo);`
+- `includes/honey_pos.php`:561 — `$productMap = honey_pos_product_map($pdo);`
 - `includes/pos_discount_requests.php`:71 — `$productMap = honey_pos_product_map($pdo);`
 
 ## honey_pos_honey_catalog {#honey_pos_honey_catalog}
@@ -79,7 +80,7 @@ function_count: 16
 
 - `includes/honey_pos.php`:165 — `$available = honey_pos_available_qty($pdo, $variant, $size);`
 - `includes/honey_pos.php`:355 — `: honey_pos_available_qty($pdo, $variant, $size);`
-- `includes/honey_pos.php`:590 — `: honey_pos_available_qty($pdo, $variant, $size);`
+- `includes/honey_pos.php`:595 — `: honey_pos_available_qty($pdo, $variant, $size);`
 
 ## honey_pos_deduct_packaging_aggregate {#honey_pos_deduct_packaging_aggregate}
 
@@ -89,7 +90,7 @@ function_count: 16
 
 - `includes/honey_parcel_inventory.php`:69 — `$used = honey_pos_deduct_packaging_aggregate($pdo, $variant, $size, $qty);`
 - `includes/honey_pos.php`:433 — `honey_pos_deduct_packaging_aggregate($pdo, $line['variant'], $line['size'], $line['qty']);`
-- `includes/honey_pos.php`:664 — `honey_pos_deduct_packaging_aggregate($pdo, $line['variant'], $line['size'], $line['qty']);`
+- `includes/honey_pos.php`:669 — `honey_pos_deduct_packaging_aggregate($pdo, $line['variant'], $line['size'], $line['qty']);`
 
 ## honey_pos_log_sale {#honey_pos_log_sale}
 
@@ -99,15 +100,15 @@ function_count: 16
 
 - `includes/honey_pos.php`:431 — `honey_pos_log_sale($pdo, $line['variant'], $line['size'], $line['qty'], $saleId, $posPinId);`
 - `includes/honey_pos.php`:434 — `honey_pos_log_sale($pdo, $line['variant'], $line['size'], $line['qty'], $saleId, $posPinId);`
-- `includes/honey_pos.php`:662 — `honey_pos_log_sale($pdo, $line['variant'], $line['size'], $line['qty'], $saleId, $posPinId);`
-- `includes/honey_pos.php`:665 — `honey_pos_log_sale($pdo, $line['variant'], $line['size'], $line['qty'], $saleId, $posPinId);`
+- `includes/honey_pos.php`:667 — `honey_pos_log_sale($pdo, $line['variant'], $line['size'], $line['qty'], $saleId, $posPinId);`
+- `includes/honey_pos.php`:670 — `honey_pos_log_sale($pdo, $line['variant'], $line['size'], $line['qty'], $saleId, $posPinId);`
 
 ## honey_pos_line_unit_ids {#honey_pos_line_unit_ids}
 
 **Callers (3):**
 
 - `includes/honey_pos.php`:330 — `$unitIds = honey_pos_line_unit_ids($entry);`
-- `includes/honey_pos.php`:565 — `$unitIds = honey_pos_line_unit_ids($entry);`
+- `includes/honey_pos.php`:570 — `$unitIds = honey_pos_line_unit_ids($entry);`
 - `includes/pos_unified.php`:245 — `$unitIds = honey_pos_line_unit_ids($entry);`
 
 ## honey_pos_column_exists {#honey_pos_column_exists}
@@ -118,17 +119,17 @@ function_count: 16
 - `includes/honey_pos.php`:218 — `$hasPinCol = honey_pos_column_exists($pdo, 'honey_sales_log', 'sold_by_pin_id');`
 - `includes/honey_pos.php`:219 — `$hasSaleCol = honey_pos_column_exists($pdo, 'honey_sales_log', 'pos_sale_id');`
 - `includes/honey_pos.php`:410 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
-- `includes/honey_pos.php`:532 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
-- `includes/honey_pos.php`:640 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
-- `includes/honey_pos.php`:757 — `$hasList = honey_pos_column_exists($pdo, 'pos_receipt_items', 'list_unit_price');`
-- `includes/honey_pos.php`:777 — `$hasSub = honey_pos_column_exists($pdo, 'pos_sales', 'subtotal_amount');`
-- `includes/honey_pos.php`:778 — `$hasDiscAmt = honey_pos_column_exists($pdo, 'pos_sales', 'discount_amount');`
-- `includes/honey_pos.php`:803 — `$hasVariant = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
-- `includes/honey_pos.php`:804 — `$hasList = honey_pos_column_exists($pdo, 'pos_receipt_items', 'list_unit_price');`
-- `includes/honey_pos.php`:933 — `$hasVariant = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
+- `includes/honey_pos.php`:537 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
+- `includes/honey_pos.php`:645 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
+- `includes/honey_pos.php`:762 — `$hasList = honey_pos_column_exists($pdo, 'pos_receipt_items', 'list_unit_price');`
+- `includes/honey_pos.php`:782 — `$hasSub = honey_pos_column_exists($pdo, 'pos_sales', 'subtotal_amount');`
+- `includes/honey_pos.php`:783 — `$hasDiscAmt = honey_pos_column_exists($pdo, 'pos_sales', 'discount_amount');`
+- `includes/honey_pos.php`:808 — `$hasVariant = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
+- `includes/honey_pos.php`:809 — `$hasList = honey_pos_column_exists($pdo, 'pos_receipt_items', 'list_unit_price');`
+- `includes/honey_pos.php`:938 — `$hasVariant = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
 - `includes/honey_sales_report.php`:604 — `$hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');`
 - `includes/honey_sales_report.php`:619 — `$hasRefunded = honey_pos_column_exists($pdo, 'pos_sales', 'refunded_at');`
-- `includes/pos_discount_requests.php`:331 — `$hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');`
+- `includes/pos_discount_requests.php`:340 — `$hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');`
 - `includes/pos_refund.php`:180 — `if (honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant')`
 - `includes/pos_refund.php`:181 — `&& honey_pos_column_exists($pdo, 'pos_receipt_items', 'size')) {`
 - `includes/pos_refund.php`:243 — `if (honey_pos_column_exists($pdo, 'pos_sales', 'subtotal_amount')) {`
@@ -161,7 +162,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/honey_pos.php`:871 — `pos_sale_recalc_totals($pdo, $saleId);`
+- `includes/honey_pos.php`:876 — `pos_sale_recalc_totals($pdo, $saleId);`
 
 ## pos_sale_reverse_one_unit {#pos_sale_reverse_one_unit}
 
@@ -169,7 +170,7 @@ function_count: 16
 
 **Callers (5):**
 
-- `includes/honey_pos.php`:954 — `pos_sale_reverse_one_unit($pdo, $saleId, 'honey', [`
+- `includes/honey_pos.php`:959 — `pos_sale_reverse_one_unit($pdo, $saleId, 'honey', [`
 - `includes/pack_cancel_restock.php`:547 — `pos_sale_reverse_one_unit($pdo, $saleId, 'honey', [`
 - `includes/pack_cancel_restock.php`:598 — `pos_sale_reverse_one_unit($pdo, $saleId, 'dept', [`
 - `includes/pos_refund.php`:112 — `pos_sale_reverse_one_unit($pdo, $saleId, 'honey', [`

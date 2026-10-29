@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-21T11:21:42+02:00
+generated: 2026-10-29T10:06:29+01:00
 type: memory-bank
 ---
 
@@ -684,6 +684,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pyxacct_sync_get` | `api_settings_pyxacct_sync_get()` | `pyxacct_api_settings_public()`, `ims_pdo()` |
 | `pyxacct_sync_save` | `api_settings_pyxacct_sync_save()` | `pyxacct_api_settings_save()`, `ims_pdo()` |
 | `pyxacct_sync_test` | `api_settings_pyxacct_sync_test()` | `pyxacct_test_connection()`, `ims_pdo()` |
+| `pyxacct_walkin_save` | `api_settings_pyxacct_walkin_save()` | `pyxacct_walkin_sync_enabled_save()`, `ims_pdo()`, `pyxacct_api_settings_public()` |
+| `pyxacct_walkin_backfill` | `api_settings_pyxacct_walkin_backfill()` | `pyxacct_sync_existing_walkin()`, `ims_pdo()` |
 
 ### `sku_barcodes.php`
 

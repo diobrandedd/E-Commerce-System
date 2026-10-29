@@ -252,8 +252,12 @@ export function fetchPackagingDamageTotals(params: { from: string; to: string })
   });
 }
 
-export function packagingPrintSheetUrl(): string {
-  return "/rts/api/v1/materials.php?action=packaging_print_sheet";
+export function packagingPrintSheetUrl(stockIds?: number[]): string {
+  const base = "/rts/api/v1/materials.php?action=packaging_print_sheet";
+  if (!stockIds || stockIds.length === 0) return base;
+  const ids = [...new Set(stockIds.filter(id => Number.isInteger(id) && id > 0))];
+  if (ids.length === 0) return base;
+  return `${base}&ids=${ids.join(",")}`;
 }
 
 export function lookupPackagingBarcode(code: string) {

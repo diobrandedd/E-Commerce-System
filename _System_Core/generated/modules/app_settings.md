@@ -1,7 +1,7 @@
 ---
 title: app_settings
 source: includes/app_settings.php
-generated: 2026-10-21T11:21:43+02:00
+generated: 2026-10-29T10:06:30+01:00
 type: module
 function_count: 3
 ---
@@ -24,7 +24,7 @@ function_count: 3
 
 **Tables:** `app_settings`
 
-**Callers (19):**
+**Callers (20):**
 
 - `includes/admin_override_password.php`:12 — `$hash = app_setting_get($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, null);`
 - `includes/admin_override_password.php`:22 — `$hash = app_setting_get($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, null);`
@@ -45,12 +45,13 @@ function_count: 3
 - `includes/pyxacct_ap_sync.php`:23 — `$raw = app_setting_get($rtsPdo, 'pyxacct_honey_ap_sync_enabled', '1');`
 - `includes/pyxacct_ap_sync.php`:37 — `return rtrim(trim((string) app_setting_get($rtsPdo, 'pyxacct_api_base_url', '')), '/');`
 - `includes/pyxacct_ap_sync.php`:59 — `return pyxacct_api_token_normalize((string) app_setting_get($rtsPdo, 'pyxacct_api_token', ''));`
+- `includes/pyxacct_walkin_sync.php`:19 — `$raw = app_setting_get($rtsPdo, 'pyxacct_walkin_sync_enabled', '0');`
 
 ## app_setting_set {#app_setting_set}
 
 **Tables:** `app_settings`
 
-**Callers (19):**
+**Callers (20):**
 
 - `includes/admin_override_password.php`:49 — `app_setting_set($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, $hash, $userId);`
 - `includes/dept_brc_settings.php`:175 — `app_setting_set($pdo, BRC_GRAMS_PER_POUCH_SETTING_KEY, (string) $gramsPerPouch, $userId);`
@@ -71,4 +72,5 @@ function_count: 3
 - `includes/pyxacct_ap_sync.php`:30 — `app_setting_set($rtsPdo, 'pyxacct_honey_ap_sync_enabled', $enabled ? '1' : '0', $userId);`
 - `includes/pyxacct_ap_sync.php`:75 — `app_setting_set($rtsPdo, 'pyxacct_api_base_url', $baseUrl, $userId);`
 - `includes/pyxacct_ap_sync.php`:80 — `app_setting_set($rtsPdo, 'pyxacct_api_token', $token, $userId);`
+- `includes/pyxacct_walkin_sync.php`:26 — `app_setting_set($rtsPdo, 'pyxacct_walkin_sync_enabled', $enabled ? '1' : '0', $userId);`
 

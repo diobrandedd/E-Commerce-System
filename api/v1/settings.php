@@ -49,6 +49,8 @@ api_dispatch([
     'pyxacct_sync_get' => 'api_settings_pyxacct_sync_get',
     'pyxacct_sync_save' => 'api_settings_pyxacct_sync_save',
     'pyxacct_sync_test' => 'api_settings_pyxacct_sync_test',
+    'pyxacct_walkin_save' => 'api_settings_pyxacct_walkin_save',
+    'pyxacct_walkin_backfill' => 'api_settings_pyxacct_walkin_backfill',
 ]);
 
 function api_settings_require_executive(): void
@@ -482,4 +484,36 @@ function api_settings_pyxacct_sync_test(): void
         api_fail((string) ($result['error'] ?? 'Connection test failed.'), 422, $result);
     }
     api_ok($result);
+}
+
+function api_settings_pyxacct_walkin_save(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/pyxacct_walkin_sync.php';
+    $user = api_require_ims_user();
+    $enabled = api_settings_bool($input['enabled'] ?? false, false);
+    pyxacct_walkin_sync_enabled_save(
+        ims_pdo(),
+        $enabled,
+        (int) ($user['id'] ?? 0) ?: null
+    );
+    api_ok(array_merge(pyxacct_api_settings_public(ims_pdo()), ['saved' => true]));
+}
+
+function api_settings_pyxacct_walkin_backfill(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/pyxacct_walkin_sync.php';
+    try {
+        $counts = pyxacct_sync_existing_walkin(ims_pdo());
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+    api_ok($counts);
 }

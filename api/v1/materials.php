@@ -897,7 +897,26 @@ function api_materials_packaging_print_sheet(): void
     if (!ims_user_can($user, 'packaging.view') && !material_inventory_role_can_issue_packing($user)) {
         api_fail('Forbidden.', 403);
     }
-    $html = material_packaging_print_sheet_html(ims_pdo());
+    $rawIds = trim((string) ($_GET['ids'] ?? ''));
+    $onlyIds = null;
+    if ($rawIds !== '') {
+        $onlyIds = [];
+        foreach (explode(',', $rawIds) as $part) {
+            $id = (int) trim($part);
+            if ($id > 0) {
+                $onlyIds[$id] = $id;
+            }
+        }
+        $onlyIds = array_values($onlyIds);
+        if (count($onlyIds) > 400) {
+            api_fail('Select 400 supplies or fewer.', 422);
+        }
+    }
+    try {
+        $html = material_packaging_print_sheet_html(ims_pdo(), $onlyIds);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
     header('Content-Type: text/html; charset=utf-8');
     header('Cache-Control: no-store');
     echo $html;

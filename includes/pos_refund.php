@@ -278,6 +278,9 @@ function pos_sale_full_refund(PDO $pdo, int $saleId, string $reason = ''): array
         throw $e;
     }
 
+    require_once __DIR__ . '/pyxacct_walkin_sync.php';
+    pyxacct_void_walkin_sale($pdo, $saleId);
+
     return [
         'sale_id' => $saleId,
         'receipt_no' => (string) $sale['receipt_no'],

@@ -1,7 +1,7 @@
 ---
 title: dept_raw_freebies
 source: includes/dept_raw_freebies.php
-generated: 2026-10-21T11:21:57+02:00
+generated: 2026-10-29T10:06:46+01:00
 type: module
 function_count: 9
 ---

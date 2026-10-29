@@ -2575,19 +2575,39 @@ function material_packaging_label_cell_html(string $code, string $name): string
         . '</div>';
 }
 
-function material_packaging_print_sheet_html(PDO $pdo): string
+/**
+ * @param list<int>|null $onlyIds When set, print those catalog rows only (any category filter is ignored).
+ */
+function material_packaging_print_sheet_html(PDO $pdo, ?array $onlyIds = null): string
 {
     require_once __DIR__ . '/sku_barcodes.php';
+    $only = null;
+    if ($onlyIds !== null) {
+        $only = [];
+        foreach ($onlyIds as $id) {
+            $id = (int) $id;
+            if ($id > 0) {
+                $only[$id] = true;
+            }
+        }
+        if ($only === []) {
+            throw new RuntimeException('Select at least one supply to print.');
+        }
+    }
     $items = material_inventory_list($pdo, 'packaging', true);
     $stream = [];
     foreach ($items as $row) {
-        if (preg_match('/^bubble wrap roll - \d+ cm$/i', trim((string) $row['name']))) {
-            continue;
-        }
-        if (preg_match('/^insulation foam roll - /i', trim((string) $row['name']))) {
-            continue;
-        }
         $id = (int) $row['id'];
+        if ($only !== null) {
+            if (!isset($only[$id])) {
+                continue;
+            }
+        } elseif (
+            preg_match('/^bubble wrap roll - \d+ cm$/i', trim((string) $row['name']))
+            || preg_match('/^insulation foam roll - /i', trim((string) $row['name']))
+        ) {
+            continue;
+        }
         $code = material_packaging_ensure_barcode($pdo, $id);
         $name = (string) $row['name'];
         $stream[] = [
@@ -2596,6 +2616,9 @@ function material_packaging_print_sheet_html(PDO $pdo): string
         ];
     }
     $count = count($stream);
+    if ($count < 1) {
+        throw new RuntimeException('No supplies to print.');
+    }
 
     return sku_barcode_render_packed_label_sheet(
         $stream,

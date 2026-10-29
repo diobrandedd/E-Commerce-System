@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-29 — Print selected supply barcodes
+**Change:** Supplies rows can be ticked across category and search filters; Print selected sends only those ids. Generate all still prints the full sheet. → [[problems/records/2026-10-29_supplies-print-selected-barcodes]]
+
 ### 2026-10-21 — Supplies page: executives + scan-only assigned staff
 **Change:** Supplies nav/page is executives (`packaging.catalog`) and assigned stock-out staff (`packaging.deduct`). Assigned staff scan stock out from the page card; Report damage sits in the header. No catalog or history. → [[problems/records/2026-10-21_supplies-scan-only-assigned]]
 

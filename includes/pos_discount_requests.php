@@ -273,6 +273,15 @@ function pos_discount_request_approve(PDO $pdo, int $requestId, int $reviewerId)
         throw $e;
     }
 
+    if (
+        !pos_discount_cart_is_unified($items)
+        && !pos_discount_cart_is_dept($items)
+        && (int) ($result['sale_id'] ?? 0) > 0
+    ) {
+        require_once __DIR__ . '/pyxacct_walkin_sync.php';
+        pyxacct_sync_walkin_sale($pdo, (int) $result['sale_id']);
+    }
+
     return $result;
 }
 

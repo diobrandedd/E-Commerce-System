@@ -95,6 +95,9 @@ export function SettingsPage() {
   const [pyxacctSyncTesting, setPyxacctSyncTesting] = useState(false);
   const [pyxacctSyncOk, setPyxacctSyncOk] = useState<string | null>(null);
   const [pyxacctSyncErr, setPyxacctSyncErr] = useState<string | null>(null);
+  const [walkinSyncEnabled, setWalkinSyncEnabled] = useState(false);
+  const [walkinSyncSaving, setWalkinSyncSaving] = useState(false);
+  const [walkinBackfilling, setWalkinBackfilling] = useState(false);
 
   const [ptGramsTea, setPtGramsTea] = useState("2");
   const [ptBagsPouch, setPtBagsPouch] = useState("24");
@@ -327,10 +330,12 @@ export function SettingsPage() {
         enabled: boolean;
         api_base_url?: string;
         token_set?: boolean;
+        walkin_enabled?: boolean;
       }>("settings.php", "pyxacct_sync_get");
       setPyxacctSyncEnabled(!!data.enabled);
       setPyxacctApiBaseUrl(data.api_base_url ?? "");
       setPyxacctTokenSet(!!data.token_set);
+      setWalkinSyncEnabled(!!data.walkin_enabled);
       setPyxacctApiToken("");
     } catch (e) {
       setPyxacctSyncErr(e instanceof ApiError ? e.message : "Could not load PyxAcct sync setting.");
@@ -429,6 +434,55 @@ export function SettingsPage() {
       await loadPyxacctSync();
     } finally {
       setPyxacctSyncSaving(false);
+    }
+  };
+
+  const saveWalkinSync = async (enabled: boolean) => {
+    setWalkinSyncSaving(true);
+    setPyxacctSyncOk(null);
+    setPyxacctSyncErr(null);
+    try {
+      const res = await apiPost<{ walkin_enabled?: boolean }>("settings.php", "pyxacct_walkin_save", {
+        enabled,
+      });
+      setWalkinSyncEnabled(!!res.walkin_enabled);
+      setPyxacctSyncOk(
+        res.walkin_enabled
+          ? "Walk-in sync is ON. New cash receipts will post to this PyxAcct URL."
+          : "Walk-in sync is OFF. Receipts will not post.",
+      );
+    } catch (e) {
+      setPyxacctSyncErr(e instanceof ApiError ? e.message : "Could not save walk-in sync.");
+      await loadPyxacctSync();
+    } finally {
+      setWalkinSyncSaving(false);
+    }
+  };
+
+  const backfillWalkin = async () => {
+    setWalkinBackfilling(true);
+    setPyxacctSyncOk(null);
+    setPyxacctSyncErr(null);
+    try {
+      const res = await apiPost<{
+        posted?: number;
+        updated?: number;
+        voided?: number;
+        skipped?: number;
+        failed?: number;
+      }>("settings.php", "pyxacct_walkin_backfill", {});
+      const posted = res.posted ?? 0;
+      const updated = res.updated ?? 0;
+      const voided = res.voided ?? 0;
+      const failed = res.failed ?? 0;
+      setPyxacctSyncOk(
+        `Existing walk-in sync finished. Posted ${posted}, updated ${updated}, voided ${voided}` +
+          (failed ? `, failed ${failed}.` : "."),
+      );
+    } catch (e) {
+      setPyxacctSyncErr(e instanceof ApiError ? e.message : "Could not sync existing walk-in receipts.");
+    } finally {
+      setWalkinBackfilling(false);
     }
   };
 
@@ -789,10 +843,9 @@ export function SettingsPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground">PyxAcct integration</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                When on, priced honey warehouse stock-ins POST to PyxAcct accounts payable (gallons × unit cost).
-                Set the API base URL for this environment (local, ngrok, or live) and a token matching PyxAcct
-                config <span className="font-mono text-[11px]">integration.tracker_honey_token</span>. PyxAcct
-                must also allow sync in its Settings.
+                Honey stock-ins and walk-in receipts use this URL and token. Walk-in sync stays off until you
+                turn it on here, so another RTS database does not post into these books. PyxAcct must also
+                accept the sync in its Settings.
               </p>
             </div>
           </div>
@@ -874,6 +927,33 @@ export function SettingsPage() {
                   {pyxacctSyncTesting ? <Loader2 className="animate-spin" size={14} /> : "Test connection"}
                 </Button>
               </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Sync walk-in sales → revenue</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {walkinSyncEnabled ? "Currently ON" : "Currently OFF"}. Cash receipts only. Credit sales stay out.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {walkinSyncSaving ? <Loader2 className="animate-spin text-muted-foreground" size={16} /> : null}
+                  <Switch
+                    checked={walkinSyncEnabled}
+                    disabled={walkinSyncSaving || walkinBackfilling || pyxacctSyncSaving}
+                    onCheckedChange={checked => {
+                      setWalkinSyncEnabled(checked);
+                      void saveWalkinSync(checked);
+                    }}
+                  />
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!walkinSyncEnabled || walkinBackfilling || walkinSyncSaving || pyxacctSyncSaving}
+                onClick={() => void backfillWalkin()}
+              >
+                {walkinBackfilling ? <Loader2 className="animate-spin" size={14} /> : "Sync existing walk-in"}
+              </Button>
             </div>
           )}
         </div>

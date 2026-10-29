@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-10-21T11:21:42+02:00
+generated: 2026-10-29T10:06:30+01:00
 type: memory-bank
 table_count: 103
 ---
@@ -962,6 +962,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
 | `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_checkout]] |
 | `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_ar_checkout]] |
+| `includes/pyxacct_walkin_sync.php` | [[modules/pyxacct_walkin_sync#pyxacct_walkin_load_sale]] |
+| `includes/pyxacct_walkin_sync.php` | [[modules/pyxacct_walkin_sync#pyxacct_sync_existing_walkin]] |
 
 ## `pos_receipt_items`
 

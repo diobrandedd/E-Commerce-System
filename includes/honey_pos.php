@@ -488,6 +488,11 @@ function honey_pos_checkout(PDO $pdo, int $posPinId, array $items, string $buyer
         throw $e;
     }
 
+    if ($ownsTransaction) {
+        require_once __DIR__ . '/pyxacct_walkin_sync.php';
+        pyxacct_sync_walkin_sale($pdo, $saleId);
+    }
+
     return [
         'sale_id' => $saleId,
         'receipt_no' => $receiptNo,

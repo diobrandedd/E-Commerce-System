@@ -1,7 +1,7 @@
 ---
 title: honey_volume
 source: includes/honey_volume.php
-generated: 2026-10-21T11:22:14+02:00
+generated: 2026-10-29T10:07:05+01:00
 type: module
 function_count: 13
 ---
@@ -27,14 +27,14 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `api/v1/settings.php`:264 — `'packaging_deduct' => honey_packaging_deduct_enabled($pdo),`
-- `api/v1/settings.php`:281 — `$packagingDeduct = honey_packaging_deduct_enabled(ims_pdo());`
+- `api/v1/settings.php`:266 — `'packaging_deduct' => honey_packaging_deduct_enabled($pdo),`
+- `api/v1/settings.php`:283 — `$packagingDeduct = honey_packaging_deduct_enabled(ims_pdo());`
 
 ## honey_packaging_deduct_save {#honey_packaging_deduct_save}
 
 **Callers (1):**
 
-- `api/v1/settings.php`:283 — `$packagingDeduct = honey_packaging_deduct_save(`
+- `api/v1/settings.php`:285 — `$packagingDeduct = honey_packaging_deduct_save(`
 
 ## honey_price_per_liter_from_gallon {#honey_price_per_liter_from_gallon}
 
@@ -47,7 +47,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (8):**
 
 - `api/v1/bottle_barcodes.php`:503 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
-- `api/v1/settings.php`:260 — `'ml_per_gallon' => honey_ml_per_gallon($pdo),`
+- `api/v1/settings.php`:262 — `'ml_per_gallon' => honey_ml_per_gallon($pdo),`
 - `includes/honey_inventory.php`:558 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
 - `includes/honey_inventory.php`:593 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
 - `includes/honey_inventory.php`:1527 — `$mlPerGallon = honey_ml_per_gallon($pdo);`
@@ -59,7 +59,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `api/v1/settings.php`:280 — `$saved = honey_ml_per_gallon_save(ims_pdo(), $ml, $userId);`
+- `api/v1/settings.php`:282 — `$saved = honey_ml_per_gallon_save(ims_pdo(), $ml, $userId);`
 
 ## honey_normalize_bottle_size {#honey_normalize_bottle_size}
 

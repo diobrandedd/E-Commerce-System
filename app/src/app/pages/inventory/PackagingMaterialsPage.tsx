@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowDown,
@@ -99,6 +99,38 @@ const SORT_OPTIONS: { id: SortKey; label: string }[] = [
   { id: "last_stock_in", label: "Last stock-in" },
 ];
 
+const CATALOG_GRID =
+  "sm:grid sm:grid-cols-[2rem_minmax(0,1fr)_7rem_5rem_7.5rem_8.5rem_1.5rem] gap-2";
+
+function SelectBox({
+  checked,
+  indeterminate = false,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  indeterminate?: boolean;
+  label: string;
+  onChange: () => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate && !checked;
+  }, [indeterminate, checked]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+      onClick={e => e.stopPropagation()}
+      onKeyDown={e => e.stopPropagation()}
+      aria-label={label}
+      className="size-4 rounded border-border accent-primary cursor-pointer"
+    />
+  );
+}
+
 const SEARCH_INPUT_CLASS =
   "w-full min-h-10 sm:min-h-11 pl-9 pr-3 py-2 text-base sm:text-sm rounded-lg border-2 border-border bg-card " +
   "focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-shadow";
@@ -107,12 +139,16 @@ function PackagingMobileCatalogRow({
   row,
   damagedQty,
   canDeduct,
+  selected,
+  onToggleSelect,
   onOpen,
   onReportDamage,
 }: {
   row: MaterialStockRow;
   damagedQty: number;
   canDeduct: boolean;
+  selected: boolean;
+  onToggleSelect: () => void;
   onOpen: () => void;
   onReportDamage: () => void;
 }) {
@@ -127,8 +163,16 @@ function PackagingMobileCatalogRow({
       className={cn(
         "flex items-stretch border-b border-border last:border-b-0",
         !hasStock && "bg-amber-50/70 dark:bg-amber-950/20",
+        selected && "bg-primary/5",
       )}
     >
+      <div className="flex items-center pl-3">
+        <SelectBox
+          checked={selected}
+          label={`Select ${row.name}`}
+          onChange={onToggleSelect}
+        />
+      </div>
       <button
         type="button"
         onClick={onOpen}
@@ -343,6 +387,7 @@ export function PackagingMaterialsPage() {
   const [damageCustomTo, setDamageCustomTo] = useState(() => ymdLocal(new Date()));
   const [damageTotals, setDamageTotals] = useState<Record<number, number>>({});
   const [rosterExpanded, setRosterExpanded] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -444,8 +489,33 @@ export function PackagingMaterialsPage() {
     return rows;
   }, [items, search, filter, categoryFilter, sortKey, sortDir]);
 
-  const openPrintSheet = () => {
-    window.open(packagingPrintSheetUrl(), "_blank", "noopener,noreferrer");
+  const openPrintSheet = (ids?: number[]) => {
+    window.open(packagingPrintSheetUrl(ids), "_blank", "noopener,noreferrer");
+  };
+
+  const toggleSelected = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const visibleIds = useMemo(() => filteredItems.map(row => row.id), [filteredItems]);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
+  const someVisibleSelected = visibleIds.some(id => selectedIds.has(id));
+
+  const toggleVisibleSelection = () => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        for (const id of visibleIds) next.delete(id);
+      } else {
+        for (const id of visibleIds) next.add(id);
+      }
+      return next;
+    });
   };
 
   if (scanOnly) {
@@ -532,9 +602,14 @@ export function PackagingMaterialsPage() {
                 <History size={13} /> History
               </AppPressable>
             )}
-            <Button type="button" variant="outline" size="sm" onClick={openPrintSheet}>
+            <Button type="button" variant="outline" size="sm" onClick={() => openPrintSheet()}>
               <Printer className="size-3.5" /> Generate all barcodes
             </Button>
+            {selectedIds.size > 0 && (
+              <Button type="button" size="sm" onClick={() => openPrintSheet([...selectedIds])}>
+                <Printer className="size-3.5" /> Print selected ({selectedIds.size})
+              </Button>
+            )}
             {canDeduct && (
               <>
                 <Button type="button" size="sm" onClick={() => setScanOpen(true)}>
@@ -779,7 +854,25 @@ export function PackagingMaterialsPage() {
         </AppSectionEnter>
 
         <div className="bg-card rounded-xl border border-border overflow-hidden flex flex-col min-h-0 flex-1 shadow-sm" data-tour="packaging-catalog">
-          <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_7rem_5rem_7.5rem_8.5rem_1.5rem] gap-2 px-4 py-2.5 border-b border-border bg-secondary/35 text-[10px] shrink-0">
+          {selectedIds.size > 0 && (
+            <div className="shrink-0 flex flex-wrap items-center gap-2 px-3 py-2 border-b border-border bg-primary/5">
+              <p className="text-sm font-medium text-foreground">{selectedIds.size} selected</p>
+              <p className="text-xs text-muted-foreground">Selection stays when you change category or search.</p>
+              <Button type="button" size="sm" className="sm:ml-auto" onClick={() => openPrintSheet([...selectedIds])}>
+                <Printer className="size-3.5" /> Print barcodes
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+                Clear
+              </Button>
+            </div>
+          )}
+          <div className={cn("hidden px-4 py-2.5 border-b border-border bg-secondary/35 text-[10px] shrink-0 items-center", CATALOG_GRID)}>
+            <SelectBox
+              checked={allVisibleSelected}
+              indeterminate={someVisibleSelected}
+              label={allVisibleSelected ? "Clear visible supplies" : "Select visible supplies"}
+              onChange={toggleVisibleSelection}
+            />
             <SortHeader label="Item" column="name" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
             <SortHeader label="On hand" column="on_hand" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
             <SortHeader label="Level" column="level" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
@@ -821,6 +914,8 @@ export function PackagingMaterialsPage() {
                     row={row}
                     damagedQty={damageTotals[row.id] ?? 0}
                     canDeduct={canDeduct}
+                    selected={selectedIds.has(row.id)}
+                    onToggleSelect={() => toggleSelected(row.id)}
                     onOpen={() => setDetailRow(row)}
                     onReportDamage={() => setDamageRow(row)}
                   />
@@ -853,9 +948,15 @@ export function PackagingMaterialsPage() {
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
                         appHoverRow,
                         !hasStock && "bg-amber-50/50 dark:bg-amber-950/10",
+                        selectedIds.has(row.id) && "bg-primary/5",
                       )}
                     >
-                      <div className="grid grid-cols-[minmax(0,1fr)_7rem_5rem_7.5rem_8.5rem_1.5rem] gap-2 items-center">
+                      <div className={cn(CATALOG_GRID, "items-center")}>
+                        <SelectBox
+                          checked={selectedIds.has(row.id)}
+                          label={`Select ${row.name}`}
+                          onChange={() => toggleSelected(row.id)}
+                        />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 min-w-0">
                             <p className="font-medium text-sm truncate text-foreground">{row.name}</p>
@@ -1007,6 +1108,11 @@ export function PackagingMaterialsPage() {
             setActionsOpen(false);
             openPrintSheet();
           }}
+          selectedCount={selectedIds.size}
+          onPrintSelected={() => {
+            setActionsOpen(false);
+            openPrintSheet([...selectedIds]);
+          }}
           onHistory={() => {
             setActionsOpen(false);
             setHistoryOpen(true);
@@ -1061,6 +1167,8 @@ function PackagingMobileActionsModal({
   onScan,
   onReportDamage,
   onPrint,
+  selectedCount,
+  onPrintSelected,
   onHistory,
   onSortKey,
   onToggleSortDir,
@@ -1078,6 +1186,8 @@ function PackagingMobileActionsModal({
   onScan: () => void;
   onReportDamage: () => void;
   onPrint: () => void;
+  selectedCount: number;
+  onPrintSelected: () => void;
   onHistory: () => void;
   onSortKey: (key: SortKey) => void;
   onToggleSortDir: () => void;
@@ -1148,6 +1258,19 @@ function PackagingMobileActionsModal({
             <Printer size={16} className="text-muted-foreground shrink-0" aria-hidden />
             Generate all barcodes
           </button>
+          {selectedCount > 0 && (
+            <button
+              type="button"
+              onClick={onPrintSelected}
+              className={cn(
+                "w-full flex items-center gap-3 text-left px-3.5 py-3 rounded-xl border border-primary/30 bg-primary/5 text-sm font-medium text-primary",
+                appHoverRow,
+              )}
+            >
+              <Printer size={16} className="shrink-0" aria-hidden />
+              Print selected ({selectedCount})
+            </button>
+          )}
           {canDeduct && (
             <>
               <button

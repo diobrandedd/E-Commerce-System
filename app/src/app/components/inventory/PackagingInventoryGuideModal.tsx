@@ -66,7 +66,7 @@ function ExecutiveGuide() {
         <strong className="text-foreground">Report damage</strong> — same deduct permission; deducts on-hand and logs the damaged pool. Filter row damage totals by Today / This week / Custom.
       </li>
       <li>
-        <strong className="text-foreground">Generate all barcodes</strong> — print one A4 sheet with names under each barcode.
+        <strong className="text-foreground">Generate all barcodes</strong> — print one A4 sheet with names under each barcode. Tick rows to print only those; the ticks stay when you switch category or search.
       </li>
       <li>
         <strong className="text-foreground">Level %</strong> — each row shows on-hand vs the last stock-in lot qty.

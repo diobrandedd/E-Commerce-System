@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-10-21T11:21:42+02:00
+generated: 2026-10-29T10:06:29+01:00
 type: memory-bank
-edge_count: 471
+edge_count: 477
 ---
 
 
@@ -260,6 +260,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_pos.php` | `includes/honey_inventory.php` |
 | `includes/honey_pos.php` | `includes/pos_sales_helpers.php` |
 | `includes/honey_pos.php` | `includes/pos_sales_helpers.php` |
+| `includes/honey_pos.php` | `includes/pyxacct_walkin_sync.php` |
 | `includes/honey_pos.php` | `includes/rts_inventory_sync.php` |
 | `includes/honey_pos.php` | `includes/rts_inventory_sync.php` |
 | `includes/honey_pos.php` | `includes/rts_inventory_sync.php` |
@@ -339,6 +340,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_discount_requests.php` | `includes/dept_pos.php` |
 | `includes/pos_discount_requests.php` | `includes/honey_pos.php` |
 | `includes/pos_discount_requests.php` | `includes/pos_unified.php` |
+| `includes/pos_discount_requests.php` | `includes/pyxacct_walkin_sync.php` |
 | `includes/pos_mobile_staff.php` | `includes/auth_check.php` |
 | `includes/pos_mobile_staff.php` | `includes/auth_check.php` |
 | `includes/pos_mobile_staff.php` | `includes/db.php` |
@@ -348,6 +350,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_refund.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/pos_refund.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/pos_refund.php` | `includes/honey_pos.php` |
+| `includes/pos_refund.php` | `includes/pyxacct_walkin_sync.php` |
 | `includes/pos_refund.php` | `includes/rts_schema.php` |
 | `includes/pos_refund.php` | `includes/sku_barcodes.php` |
 | `includes/pos_sales_helpers.php` | `includes/honey_pos.php` |
@@ -363,6 +366,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_unified.php` | `includes/sku_barcodes.php` |
 | `includes/pyxacct_ap_sync.php` | `includes/app_settings.php` |
 | `includes/pyxacct_ap_sync.php` | `includes/db.php` |
+| `includes/pyxacct_ap_sync.php` | `includes/pyxacct_walkin_sync.php` |
+| `includes/pyxacct_walkin_sync.php` | `includes/pyxacct_ap_sync.php` |
+| `includes/pyxacct_walkin_sync.php` | `includes/rts_schema.php` |
 | `includes/rts_attachments.php` | `includes/rts_storage.php` |
 | `includes/rts_barcode_labels.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/rts_barcode_labels.php` | `includes/honey_bottle_barcodes.php` |
