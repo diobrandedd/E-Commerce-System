@@ -1,7 +1,7 @@
 ---
 title: dept_jar_cacao_settings
 source: includes/dept_jar_cacao_settings.php
-generated: 2026-10-29T10:06:40+01:00
+generated: 2026-10-30T04:55:29+01:00
 type: module
 function_count: 8
 ---
@@ -30,7 +30,7 @@ function_count: 8
 
 - `includes/dept_jar_cacao_settings.php`:140 — `'bag_pool_deduct' => dept_jar_cacao_setting_bag_pool_deduct_enabled($pdo),`
 - `includes/dept_pouch_barcodes.php`:666 — `if (dept_jar_cacao_setting_bag_pool_deduct_enabled($pdo)) {`
-- `includes/sku_barcodes.php`:1133 — `if (dept_jar_cacao_setting_bag_pool_deduct_enabled($pdo)) {`
+- `includes/sku_barcodes.php`:1154 — `if (dept_jar_cacao_setting_bag_pool_deduct_enabled($pdo)) {`
 
 ## dept_jar_cacao_setting_grams_per_jar {#dept_jar_cacao_setting_grams_per_jar}
 
@@ -39,7 +39,7 @@ function_count: 8
 - `includes/dept_jar_cacao_settings.php`:108 — `$gJar = dept_jar_cacao_setting_grams_per_jar($pdo);`
 - `includes/dept_jar_cacao_settings.php`:132 — `$gJar = dept_jar_cacao_setting_grams_per_jar($pdo);`
 - `includes/dept_pouch_barcodes.php`:678 — `'grams_deducted' => dept_jar_cacao_setting_grams_per_jar($pdo),`
-- `includes/sku_barcodes.php`:1139 — `'grams_deducted' => round(dept_jar_cacao_setting_grams_per_jar($pdo) * $qty, 2),`
+- `includes/sku_barcodes.php`:1160 — `'grams_deducted' => round(dept_jar_cacao_setting_grams_per_jar($pdo) * $qty, 2),`
 
 ## dept_jar_cacao_setting_grams_per_bag {#dept_jar_cacao_setting_grams_per_bag}
 
@@ -48,7 +48,7 @@ function_count: 8
 - `includes/dept_jar_cacao_settings.php`:109 — `$gBag = dept_jar_cacao_setting_grams_per_bag($pdo);`
 - `includes/dept_jar_cacao_settings.php`:133 — `$gBag = dept_jar_cacao_setting_grams_per_bag($pdo);`
 - `includes/dept_pouch_barcodes.php`:665 — `$gramsPerBag = dept_jar_cacao_setting_grams_per_bag($pdo);`
-- `includes/sku_barcodes.php`:1132 — `$gramsPerBag = dept_jar_cacao_setting_grams_per_bag($pdo);`
+- `includes/sku_barcodes.php`:1153 — `$gramsPerBag = dept_jar_cacao_setting_grams_per_bag($pdo);`
 
 ## dept_jar_cacao_setting_freebie_grams {#dept_jar_cacao_setting_freebie_grams}
 
@@ -63,7 +63,7 @@ function_count: 8
 
 - `includes/dept_jar_cacao_settings.php`:139 — `'bags_per_jar' => dept_jar_cacao_setting_bags_per_jar($pdo),`
 - `includes/dept_pouch_barcodes.php`:667 — `$bagsPerJar = dept_jar_cacao_setting_bags_per_jar($pdo);`
-- `includes/sku_barcodes.php`:1134 — `$bags = dept_jar_cacao_setting_bags_per_jar($pdo) * $qty;`
+- `includes/sku_barcodes.php`:1155 — `$bags = dept_jar_cacao_setting_bags_per_jar($pdo) * $qty;`
 
 ## dept_jar_cacao_bom_snapshot {#dept_jar_cacao_bom_snapshot}
 

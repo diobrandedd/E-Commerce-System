@@ -315,7 +315,38 @@ function api_dept_pouch_scan_stock_in(): void
     $code = (string) ($in['code'] ?? '');
     $qty = isset($in['qty']) ? (int) $in['qty'] : null;
     require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
-    $sku = sku_barcode_fetch_by_code(ims_pdo(), $code);
+    require_once dirname(__DIR__, 2) . '/includes/dept_raw_freebies.php';
+    $pdo = ims_pdo();
+    $freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);
+    if ($freebie !== null) {
+        if ($freebie['product_key'] !== $productKey) {
+            api_fail('This freebie barcode belongs to ' . dept_raw_freebie_label($freebie['product_key']) . '.', 422);
+        }
+        if ($qty === null || $qty < 1) {
+            api_fail('Enter how many freebie samples to stock in.', 422);
+        }
+        $owns = !$pdo->inTransaction();
+        if ($owns) {
+            $pdo->beginTransaction();
+        }
+        try {
+            $created = dept_raw_record_freebie_create($pdo, (int) $user['id'], $productKey, $qty, 'Scan stock-in');
+            if ($owns) {
+                $pdo->commit();
+            }
+            api_ok(array_merge($created, [
+                'lookup_kind' => 'freebie',
+                'code' => $freebie['code'],
+                'label' => dept_raw_freebie_label($productKey),
+            ]));
+        } catch (Throwable $e) {
+            if ($owns && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            api_fail($e->getMessage(), 422);
+        }
+    }
+    $sku = sku_barcode_fetch_by_code($pdo, $code);
     if ($sku !== null) {
         if ((string) $sku['kind'] !== 'dept') {
             api_fail('This SKU is not a dept product.', 422);
@@ -327,7 +358,7 @@ function api_dept_pouch_scan_stock_in(): void
             api_fail('Enter how many to stock in for this SKU.', 422);
         }
         try {
-            $stocked = sku_barcode_dept_stock_in(ims_pdo(), (int) $user['id'], $productKey, $qty);
+            $stocked = sku_barcode_dept_stock_in($pdo, (int) $user['id'], $productKey, $qty);
             $payload = array_merge($stocked, [
                 'lookup_kind' => 'sku',
                 'code' => (string) $sku['code'],
@@ -341,7 +372,7 @@ function api_dept_pouch_scan_stock_in(): void
         }
     }
     $result = dept_pouch_scan_stock_in(
-        ims_pdo(),
+        $pdo,
         (int) $user['id'],
         $productKey,
         $code

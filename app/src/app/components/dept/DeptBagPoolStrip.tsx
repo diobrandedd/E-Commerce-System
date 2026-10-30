@@ -35,6 +35,8 @@ export function DeptBagPoolStrip({
       : Math.max(0, Math.min(100, (remaining / capacity) * 100));
   const unitsLeft =
     pool.grams_per_pouch > 0 ? Math.floor(Math.max(0, remaining) / pool.grams_per_pouch) : 0;
+  const unitsStocked =
+    pool.grams_per_pouch > 0 ? Math.floor(Math.max(0, capacity) / pool.grams_per_pouch) : 0;
   const teaBags = pool.tea_bags_per_pouch;
   const gramsTea = pool.grams_per_tea_bag;
   const showTeaBreakdown =
@@ -121,14 +123,23 @@ export function DeptBagPoolStrip({
             />
           ) : null}
         </div>
-        <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-[11px] text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <span>
-            {capacity > 0
-              ? `${Math.round(fillPct)}% of ${formatGrams(capacity)} g stocked`
-              : stockInHint}
+            {capacity > 0 ? (
+              <>
+                {Math.round(fillPct)}% of {formatGrams(capacity)} g stocked
+                {unitsStocked > 0 ? (
+                  <span className="ml-1 text-sm font-semibold tabular-nums text-[#8a6506]">
+                    · ~{unitsStocked.toLocaleString()} {unitsStocked === 1 ? unitLabel : unitLabelPlural}
+                  </span>
+                ) : null}
+              </>
+            ) : (
+              stockInHint
+            )}
           </span>
           {!overdrawn && unitsLeft > 0 ? (
-            <span>
+            <span className="inline-flex items-center rounded-md bg-[#C8900A]/15 px-2 py-0.5 text-sm font-semibold tabular-nums text-[#8a6506]">
               ~{unitsLeft.toLocaleString()} {unitsLeft === 1 ? unitLabel : unitLabelPlural} left
             </span>
           ) : null}

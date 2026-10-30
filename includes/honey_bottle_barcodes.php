@@ -1420,16 +1420,17 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
 
     foreach ($deptSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $productKey = (string) $row['product_key'];
-        $productLabel = dept_pouch_product_label($productKey);
-        $unitNoun = dept_pouch_unit_singular($productKey);
-        $isSku = $row['sku_id'] !== null && (int) $row['sku_id'] > 0 && ($row['unit_id'] === null || (int) $row['unit_id'] < 1);
+        $isFreebie = (string) ($row['item_pool'] ?? '') === 'freebie';
+        $productLabel = $isFreebie ? dept_raw_freebie_label($productKey) : dept_pouch_product_label($productKey);
+        $unitNoun = $isFreebie ? 'sample' : dept_pouch_unit_singular($productKey);
+        $isSku = $isFreebie || ($row['sku_id'] !== null && (int) $row['sku_id'] > 0 && ($row['unit_id'] === null || (int) $row['unit_id'] < 1));
         $qty = max(1, (int) ($row['qty'] ?? 1));
         $batchNo = $row['batch_no'] !== null ? (string) $row['batch_no'] : '';
         $code = $isSku ? (string) ($row['sku_code'] ?? '') : (string) ($row['unique_code'] ?? '');
         $items[] = [
             'id' => (int) $row['id'],
             'kind' => 'dept',
-            'lookup_kind' => $isSku ? 'sku' : 'unique_dept',
+            'lookup_kind' => $isFreebie ? 'freebie' : ($isSku ? 'sku' : 'unique_dept'),
             'product_key' => $productKey,
             'product_label' => $productLabel,
             'code' => $code,
@@ -1441,10 +1442,10 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
             'pool' => $row['item_pool'] !== null ? (string) $row['item_pool'] : null,
             'scanned_at' => (string) $row['scanned_at'],
         ];
-        $key = 'dept|' . $productKey;
+        $key = ($isFreebie ? 'freebie|' : 'dept|') . $productKey;
         if (!isset($grouped[$key])) {
             $grouped[$key] = [
-                'kind' => 'dept',
+                'kind' => $isFreebie ? 'freebie' : 'dept',
                 'product_key' => $productKey,
                 'product_label' => $productLabel,
                 'variant' => $productLabel,
@@ -1454,10 +1455,10 @@ function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
             ];
         }
         $grouped[$key]['qty'] += $qty;
-        $bKey = 'dept|' . $batchNo . '|' . $productKey;
+        $bKey = ($isFreebie ? 'freebie|' : 'dept|') . $batchNo . '|' . $productKey;
         if (!isset($byBatch[$bKey])) {
             $byBatch[$bKey] = [
-                'kind' => 'dept',
+                'kind' => $isFreebie ? 'freebie' : 'dept',
                 'product_key' => $productKey,
                 'product_label' => $productLabel,
                 'batch_no' => $batchNo !== '' ? $batchNo : null,
@@ -1683,7 +1684,7 @@ function honey_bottle_pack_session_today_stats(PDO $pdo, int $userId): array
                 ELSE 0
             END), 0) AS rts_sellable,
             COALESCE(SUM(CASE
-                WHEN COALESCE(NULLIF(i.pool, ""), "finished") = "rts_sellable" THEN 0
+                WHEN COALESCE(NULLIF(i.pool, ""), "finished") IN ("rts_sellable", "freebie") THEN 0
                 ELSE COALESCE(i.qty, 1)
             END), 0) AS packaging
          FROM honey_bottle_pack_session_dept_items i
@@ -1722,6 +1723,12 @@ function honey_bottle_pack_session_scan(
     }
 
     require_once __DIR__ . '/sku_barcodes.php';
+    require_once __DIR__ . '/dept_raw_freebies.php';
+    $freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);
+    if ($freebie !== null) {
+        return honey_bottle_pack_session_scan_freebie($pdo, $sessionId, $freebie, $qty ?? 1);
+    }
+
     $sku = sku_barcode_fetch_by_code($pdo, $code);
     if ($sku !== null) {
         return honey_bottle_pack_session_scan_sku(
@@ -1740,6 +1747,67 @@ function honey_bottle_pack_session_scan(
     }
 
     return honey_bottle_pack_session_scan_dept($pdo, $sessionId, $code);
+}
+
+/**
+ * Freebie give-out line. Pool is always freebie; stock is checked on confirm.
+ *
+ * @param array{product_key: string, code: string} $freebie
+ * @return array{result: string, session: array<string, mixed>, lookup?: array<string, mixed>|null}
+ */
+function honey_bottle_pack_session_scan_freebie(PDO $pdo, int $sessionId, array $freebie, int $qty): array
+{
+    if ($qty < 1 || $qty > 5000) {
+        throw new RuntimeException('Enter how many freebies to pack.');
+    }
+    $productKey = $freebie['product_key'];
+    $code = $freebie['code'];
+    $existing = $pdo->prepare(
+        'SELECT id, qty FROM honey_bottle_pack_session_dept_items
+         WHERE session_id = ? AND product_key = ? AND pool = "freebie" AND sku_id IS NULL AND unit_id IS NULL LIMIT 1'
+    );
+    $existing->execute([$sessionId, $productKey]);
+    $ex = $existing->fetch(PDO::FETCH_ASSOC);
+    $totalQty = $ex !== false ? (int) $ex['qty'] + $qty : $qty;
+    if ($totalQty > 5000) {
+        throw new RuntimeException('Session quantity for this freebie cannot exceed 5000.');
+    }
+    // Lock the balance row first: an unlocked read inside this transaction would see
+    // the snapshot from before the stock-in that just credited it.
+    $pdo->prepare('SELECT on_hand FROM dept_raw_freebie_balances WHERE product_key = ? FOR UPDATE')->execute([$productKey]);
+    $onHand = dept_raw_freebie_on_hand($pdo, $productKey);
+    if ($totalQty > $onHand) {
+        throw new RuntimeException(
+            'Not enough ' . dept_raw_freebie_label($productKey) . ' on hand (' . $onHand
+            . ' available, session would need ' . $totalQty . ').'
+        );
+    }
+    if ($ex !== false) {
+        $pdo->prepare(
+            'UPDATE honey_bottle_pack_session_dept_items SET qty = ?, sku_code = ? WHERE id = ?'
+        )->execute([$totalQty, $code, (int) $ex['id']]);
+    } else {
+        $pdo->prepare(
+            'INSERT INTO honey_bottle_pack_session_dept_items
+                (session_id, product_key, barcode_id, unit_id, sku_id, sku_code, qty, pool)
+             VALUES (?, ?, NULL, NULL, NULL, ?, ?, "freebie")'
+        )->execute([$sessionId, $productKey, $code, $qty]);
+    }
+
+    return [
+        'result' => 'ok',
+        'session' => honey_bottle_pack_session_get($pdo, $sessionId),
+        'lookup' => [
+            'lookup_kind' => 'freebie',
+            'kind' => 'freebie',
+            'product_key' => $productKey,
+            'product_label' => dept_raw_freebie_label($productKey),
+            'code' => $code,
+            'qty' => $totalQty,
+            'added_qty' => $qty,
+            'pool' => 'freebie',
+        ],
+    ];
 }
 
 /**
@@ -2143,9 +2211,21 @@ function honey_bottle_pack_session_confirm(PDO $pdo, int $userId, int $sessionId
             ]);
         }
 
+        require_once __DIR__ . '/dept_raw_freebies.php';
         $deptUniqueItems = [];
         $deptSkuItems = [];
         foreach ($deptItems as $item) {
+            if ((string) ($item['item_pool'] ?? '') === 'freebie') {
+                $qty = max(1, (int) ($item['qty'] ?? 1));
+                dept_raw_record_freebie_give_out(
+                    $pdo,
+                    $userId,
+                    (string) $item['product_key'],
+                    $qty,
+                    'Pack session #' . $sessionId
+                );
+                continue;
+            }
             $skuId = isset($item['sku_id']) ? (int) $item['sku_id'] : 0;
             $unitId = isset($item['unit_id']) ? (int) $item['unit_id'] : 0;
             if ($skuId > 0 && $unitId < 1) {
@@ -2266,7 +2346,7 @@ function honey_bottle_pack_session_set_item_qty(
     $kind = $kind === 'dept' ? 'dept' : 'honey';
     if ($kind === 'dept') {
         $st = $pdo->prepare(
-            'SELECT id, sku_id, unit_id FROM honey_bottle_pack_session_dept_items
+            'SELECT id, sku_id, unit_id, pool FROM honey_bottle_pack_session_dept_items
              WHERE id = ? AND session_id = ? LIMIT 1'
         );
         $st->execute([$itemId, $sessionId]);
@@ -2274,9 +2354,10 @@ function honey_bottle_pack_session_set_item_qty(
         if ($row === false) {
             throw new RuntimeException('That line is not in this session.');
         }
+        $isFreebie = (string) ($row['pool'] ?? '') === 'freebie';
         $isSku = $row['sku_id'] !== null && (int) $row['sku_id'] > 0
             && ($row['unit_id'] === null || (int) $row['unit_id'] < 1);
-        if (!$isSku) {
+        if (!$isSku && !$isFreebie) {
             throw new RuntimeException('Only SKU (non-unique) lines can change quantity. Remove unique stickers one by one.');
         }
         $pdo->prepare(

@@ -475,6 +475,54 @@ function inventory_check_scan(
     [$docBatch, $docDate] = inventory_check_optional_doc_fields($batchNo, $bottlingDate);
 
     require_once __DIR__ . '/sku_barcodes.php';
+    require_once __DIR__ . '/dept_raw_freebies.php';
+    $freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);
+    if ($freebie !== null) {
+        $productKey = $freebie['product_key'];
+        $qty = $countedQty !== null ? $countedQty : 0;
+        if ($qty < 1 || $qty > 100000) {
+            throw new RuntimeException('Enter how many freebie samples you counted.');
+        }
+        $freebieCode = 'FREEBIE:' . $productKey;
+        $label = inventory_check_freebie_product_label($productKey);
+        $dup = $pdo->prepare(
+            'SELECT id, counted_qty FROM inventory_check_scans WHERE event_id = ? AND code = ? LIMIT 1'
+        );
+        $dup->execute([$eventId, $freebieCode]);
+        $dupRow = $dup->fetch(PDO::FETCH_ASSOC);
+        if ($dupRow !== false) {
+            $totalQty = (int) $dupRow['counted_qty'] + $qty;
+            if ($totalQty > 100000) {
+                throw new RuntimeException('Counted quantity for this freebie cannot exceed 100000.');
+            }
+            $pdo->prepare(
+                'UPDATE inventory_check_scans
+                 SET counted_qty = ?, scanned_by = ?, scanned_at = NOW(), flag = "ok"
+                 WHERE id = ?'
+            )->execute([$totalQty, $userId, (int) $dupRow['id']]);
+            $scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);
+
+            return [
+                'result' => 'ok',
+                'scan' => $scan,
+                'message' => 'Added ' . $qty . ' ' . $label . ' (total ' . $totalQty . ').',
+            ];
+        }
+        $pdo->prepare(
+            'INSERT INTO inventory_check_scans
+                (event_id, kind, product_key, barcode_id, sku_id, unit_id, code, packaging_row_id,
+                 supplier_code, batch_no, bottling_date, variant, size, flag, counted_qty, scanned_by)
+             VALUES (?, "freebie", ?, NULL, NULL, NULL, ?, NULL, NULL, NULL, NULL, ?, "sample", "ok", ?, ?)'
+        )->execute([$eventId, $productKey, $freebieCode, $label, $qty, $userId]);
+        $scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());
+
+        return [
+            'result' => 'ok',
+            'scan' => $scan,
+            'message' => 'Counted ' . $qty . ' ' . $label . '.',
+        ];
+    }
+
     $sku = sku_barcode_fetch_by_code($pdo, $code);
     if ($sku !== null) {
         $qty = $countedQty !== null ? $countedQty : 0;

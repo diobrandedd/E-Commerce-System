@@ -1,7 +1,7 @@
 ---
 title: inventory_check
 source: includes/inventory_check.php
-generated: 2026-10-29T10:07:06+01:00
+generated: 2026-10-30T04:55:55+01:00
 type: module
 function_count: 42
 ---
@@ -23,6 +23,7 @@ function_count: 42
 - `includes/dept_raw_freebies.php`
 - `includes/inventory_edit_log.php`
 - `includes/sku_barcodes.php`
+- `includes/dept_raw_freebies.php`
 - `includes/honey_inventory.php`
 - `includes/inventory_check_apply.php`
 
@@ -40,7 +41,7 @@ function_count: 42
 - `api/v1/inventory_check.php`:91 — `$viewAll = inventory_check_can_view_all($user);`
 - `api/v1/inventory_check.php`:160 — `$onlyMine = inventory_check_can_view_all($user) ? null : (int) $user['id'];`
 - `includes/inventory_check.php`:127 — `return inventory_check_can_view_all($user) || inventory_check_can_manage($user);`
-- `includes/inventory_check.php`:1507 — `if (inventory_check_can_view_all($user) || inventory_check_can_manage($user)) {`
+- `includes/inventory_check.php`:1555 — `if (inventory_check_can_view_all($user) || inventory_check_can_manage($user)) {`
 - `includes/inventory_check_apply.php`:393 — `if (!inventory_check_can_view_all($user)) {`
 
 ## inventory_check_can_manage {#inventory_check_can_manage}
@@ -52,7 +53,7 @@ function_count: 42
 - `api/v1/inventory_check.php`:251 — `inventory_check_can_manage($user),`
 - `api/v1/inventory_check.php`:286 — `inventory_check_can_manage($user)`
 - `includes/inventory_check.php`:127 — `return inventory_check_can_view_all($user) || inventory_check_can_manage($user);`
-- `includes/inventory_check.php`:1507 — `if (inventory_check_can_view_all($user) || inventory_check_can_manage($user)) {`
+- `includes/inventory_check.php`:1555 — `if (inventory_check_can_view_all($user) || inventory_check_can_manage($user)) {`
 
 ## inventory_check_serialize_event {#inventory_check_serialize_event}
 
@@ -84,9 +85,9 @@ function_count: 42
 - `includes/inventory_check.php`:136 — `$event = inventory_check_event_get($pdo, $eventId);`
 - `includes/inventory_check.php`:161 — `return inventory_check_event_get($pdo, (int) $pdo->lastInsertId());`
 - `includes/inventory_check.php`:180 — `return inventory_check_event_get($pdo, $eventId);`
-- `includes/inventory_check.php`:724 — `$event = inventory_check_event_get($pdo, $ids[0]);`
-- `includes/inventory_check.php`:907 — `$event = inventory_check_event_get($pdo, $eventId);`
-- `includes/inventory_check.php`:1344 — `'event' => $event ?? inventory_check_event_get($pdo, $eventId),`
+- `includes/inventory_check.php`:772 — `$event = inventory_check_event_get($pdo, $ids[0]);`
+- `includes/inventory_check.php`:955 — `$event = inventory_check_event_get($pdo, $eventId);`
+- `includes/inventory_check.php`:1392 — `'event' => $event ?? inventory_check_event_get($pdo, $eventId),`
 - `includes/inventory_check_apply.php`:23 — `$event = inventory_check_event_get($pdo, $primaryId);`
 - `includes/inventory_check_apply.php`:419 — `$event = inventory_check_event_get($pdo, $eventIds[0]);`
 
@@ -150,7 +151,7 @@ function_count: 42
 - `api/v1/inventory_check.php`:162 — `[$from, $to] = inventory_check_history_date_span(`
 - `api/v1/inventory_check.php`:500 — `[$from, $to] = inventory_check_history_date_span(`
 - `includes/inventory_check.php`:255 — `[$fromDate, $toDate] = inventory_check_history_date_span($fromDate, $toDate);`
-- `includes/inventory_check.php`:1541 — `[$fromDate, $toDate] = inventory_check_history_date_span($fromDate, $toDate);`
+- `includes/inventory_check.php`:1589 — `[$fromDate, $toDate] = inventory_check_history_date_span($fromDate, $toDate);`
 
 ## inventory_check_event_list {#inventory_check_event_list}
 
@@ -162,35 +163,36 @@ function_count: 42
 
 ## inventory_check_freebie_product_label {#inventory_check_freebie_product_label}
 
-**Callers (4):**
+**Callers (5):**
 
 - `includes/inventory_check.php`:316 — `return inventory_check_freebie_product_label($productKey);`
 - `includes/inventory_check.php`:412 — `$label = inventory_check_freebie_product_label($productKey);`
-- `includes/inventory_check.php`:1117 — `$scopeLabels[] = inventory_check_freebie_product_label($productKey);`
-- `includes/inventory_check.php`:1174 — `$label = inventory_check_freebie_product_label((string) $productKey);`
+- `includes/inventory_check.php`:487 — `$label = inventory_check_freebie_product_label($productKey);`
+- `includes/inventory_check.php`:1165 — `$scopeLabels[] = inventory_check_freebie_product_label($productKey);`
+- `includes/inventory_check.php`:1222 — `$label = inventory_check_freebie_product_label((string) $productKey);`
 
 ## inventory_check_scan_product_label {#inventory_check_scan_product_label}
 
 **Callers (4):**
 
 - `includes/inventory_check.php`:332 — `'product_label' => inventory_check_scan_product_label($kind, $productKey),`
-- `includes/inventory_check.php`:940 — `$productLabel = inventory_check_scan_product_label($kind, $productKey);`
-- `includes/inventory_check.php`:1315 — `'product_label' => inventory_check_scan_product_label($kind, (string) $row['product_key']),`
-- `includes/inventory_check.php`:1392 — `$productLabel = inventory_check_scan_product_label($kind, $productKey);`
+- `includes/inventory_check.php`:988 — `$productLabel = inventory_check_scan_product_label($kind, $productKey);`
+- `includes/inventory_check.php`:1363 — `'product_label' => inventory_check_scan_product_label($kind, (string) $row['product_key']),`
+- `includes/inventory_check.php`:1440 — `$productLabel = inventory_check_scan_product_label($kind, $productKey);`
 
 ## inventory_check_serialize_scan {#inventory_check_serialize_scan}
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:574 — `'scan' => inventory_check_serialize_scan($dupRow),`
-- `includes/inventory_check.php`:873 — `return inventory_check_serialize_scan($row);`
+- `includes/inventory_check.php`:622 — `'scan' => inventory_check_serialize_scan($dupRow),`
+- `includes/inventory_check.php`:921 — `return inventory_check_serialize_scan($row);`
 
 ## inventory_check_optional_doc_fields {#inventory_check_optional_doc_fields}
 
 **Callers (2):**
 
 - `includes/inventory_check.php`:475 — `[$docBatch, $docDate] = inventory_check_optional_doc_fields($batchNo, $bottlingDate);`
-- `includes/inventory_check.php`:697 — `[$newBatch, $newDate] = inventory_check_optional_doc_fields($batchNo, $bottlingDate);`
+- `includes/inventory_check.php`:745 — `[$newBatch, $newDate] = inventory_check_optional_doc_fields($batchNo, $bottlingDate);`
 
 ## inventory_check_add_freebie {#inventory_check_add_freebie}
 
@@ -237,33 +239,35 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/inventory_check.php`:579 — `$honey = inventory_check_resolve_honey($pdo, $code);`
+- `includes/inventory_check.php`:627 — `$honey = inventory_check_resolve_honey($pdo, $code);`
 
 ## inventory_check_resolve_dept {#inventory_check_resolve_dept}
 
 **Callers (1):**
 
-- `includes/inventory_check.php`:580 — `$resolved = $honey ?? inventory_check_resolve_dept($pdo, $code);`
+- `includes/inventory_check.php`:628 — `$resolved = $honey ?? inventory_check_resolve_dept($pdo, $code);`
 
 ## inventory_check_flag {#inventory_check_flag}
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:807 — `'flag' => inventory_check_flag((string) $row['barcode_status'], $unitStatus),`
-- `includes/inventory_check.php`:844 — `'flag' => inventory_check_flag((string) $row['barcode_status'], $row['unit_status'] !== null ? (string) $row['unit_status'] : ''),`
+- `includes/inventory_check.php`:855 — `'flag' => inventory_check_flag((string) $row['barcode_status'], $unitStatus),`
+- `includes/inventory_check.php`:892 — `'flag' => inventory_check_flag((string) $row['barcode_status'], $row['unit_status'] !== null ? (string) $row['unit_status'] : ''),`
 
 ## inventory_check_scan_get {#inventory_check_scan_get}
 
 **Tables:** `inventory_check_scans`, `users`
 
-**Callers (6):**
+**Callers (8):**
 
 - `includes/inventory_check.php`:427 — `$scan = inventory_check_scan_get($pdo, $existingId);`
 - `includes/inventory_check.php`:442 — `$scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());`
-- `includes/inventory_check.php`:531 — `$scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);`
-- `includes/inventory_check.php`:559 — `$scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());`
-- `includes/inventory_check.php`:620 — `$scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());`
-- `includes/inventory_check.php`:706 — `return inventory_check_scan_get($pdo, $scanId);`
+- `includes/inventory_check.php`:503 — `$scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);`
+- `includes/inventory_check.php`:517 — `$scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());`
+- `includes/inventory_check.php`:579 — `$scan = inventory_check_scan_get($pdo, (int) $dupRow['id']);`
+- `includes/inventory_check.php`:607 — `$scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());`
+- `includes/inventory_check.php`:668 — `$scan = inventory_check_scan_get($pdo, (int) $pdo->lastInsertId());`
+- `includes/inventory_check.php`:754 — `return inventory_check_scan_get($pdo, $scanId);`
 
 ## inventory_check_scan_remove {#inventory_check_scan_remove}
 
@@ -306,7 +310,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:725 — `$built = inventory_check_compare_build($pdo, $ids);`
+- `includes/inventory_check.php`:773 — `$built = inventory_check_compare_build($pdo, $ids);`
 - `includes/inventory_check_apply.php`:24 — `$lines = inventory_check_compare_build($pdo, $eventIds);`
 
 ## inventory_check_compare_honey_lines {#inventory_check_compare_honey_lines}
@@ -315,13 +319,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/inventory_check.php`:1134 — `inventory_check_compare_honey_lines($pdo, $honeyCounted, $honeyMeta, $honeyBatches)`
+- `includes/inventory_check.php`:1182 — `inventory_check_compare_honey_lines($pdo, $honeyCounted, $honeyMeta, $honeyBatches)`
 
 ## inventory_check_dept_system_qty {#inventory_check_dept_system_qty}
 
 **Callers (1):**
 
-- `includes/inventory_check.php`:1139 — `$systemQty = inventory_check_dept_system_qty($pdo, (string) $productKey);`
+- `includes/inventory_check.php`:1187 — `$systemQty = inventory_check_dept_system_qty($pdo, (string) $productKey);`
 
 ## inventory_check_compare_get {#inventory_check_compare_get}
 
@@ -339,8 +343,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:763 — `'batches' => inventory_check_batch_docs_build($pdo, $ids),`
-- `includes/inventory_check.php`:1343 — `'batches' => inventory_check_batch_docs_build($pdo, $docIds),`
+- `includes/inventory_check.php`:811 — `'batches' => inventory_check_batch_docs_build($pdo, $ids),`
+- `includes/inventory_check.php`:1391 — `'batches' => inventory_check_batch_docs_build($pdo, $docIds),`
 
 ## inventory_check_compare_list {#inventory_check_compare_list}
 
@@ -354,8 +358,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (3):**
 
-- `includes/inventory_check.php`:1510 — `$ids = inventory_check_parse_merged_event_ids(`
-- `includes/inventory_check.php`:1578 — `$sessionIds = inventory_check_parse_merged_event_ids(`
+- `includes/inventory_check.php`:1558 — `$ids = inventory_check_parse_merged_event_ids(`
+- `includes/inventory_check.php`:1626 — `$sessionIds = inventory_check_parse_merged_event_ids(`
 - `includes/inventory_check_apply.php`:452 — `$eventIds = inventory_check_parse_merged_event_ids($mergedCsv, $eventId);`
 
 ## inventory_check_event_summaries_by_ids {#inventory_check_event_summaries_by_ids}
@@ -364,7 +368,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/inventory_check.php`:1582 — `$sessions = inventory_check_event_summaries_by_ids($pdo, $sessionIds);`
+- `includes/inventory_check.php`:1630 — `$sessions = inventory_check_event_summaries_by_ids($pdo, $sessionIds);`
 
 ## inventory_check_user_can_access_compare_run {#inventory_check_user_can_access_compare_run}
 

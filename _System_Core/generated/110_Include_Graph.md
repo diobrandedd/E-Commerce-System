@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-10-29T10:06:29+01:00
+generated: 2026-10-30T04:55:17+01:00
 type: memory-bank
-edge_count: 477
+edge_count: 487
 ---
 
 
@@ -136,6 +136,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/auth.php` | `includes/db.php` |
 | `includes/auth_check.php` | `includes/db.php` |
 | `includes/barcode_verify.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/barcode_verify.php` | `includes/dept_raw_freebies.php` |
 | `includes/barcode_verify.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/barcode_verify.php` | `includes/sku_barcodes.php` |
 | `includes/bulk_honey_orders.php` | `includes/honey_inventory.php` |
@@ -210,6 +211,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/dept_raw_freebies.php` | `includes/app_settings.php` |
 | `includes/dept_raw_freebies.php` | `includes/dept_inventory.php` |
 | `includes/dept_raw_freebies.php` | `includes/dept_products.php` |
+| `includes/dept_raw_freebies.php` | `includes/sku_barcodes.php` |
+| `includes/dept_raw_freebies.php` | `includes/sku_barcodes.php` |
+| `includes/dept_raw_freebies.php` | `includes/sku_barcodes.php` |
 | `includes/finished_leak_damage.php` | `includes/dept_inventory.php` |
 | `includes/finished_leak_damage.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/finished_leak_damage.php` | `includes/honey_bottle_barcodes.php` |
@@ -227,6 +231,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/historical_orders_import.php` | `includes/waybill_stamper.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/dept_inventory.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/honey_bottle_barcodes.php` | `includes/dept_raw_freebies.php` |
+| `includes/honey_bottle_barcodes.php` | `includes/dept_raw_freebies.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/honey_inventory.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/honey_inventory.php` |
 | `includes/honey_bottle_barcodes.php` | `includes/rts_inventory_sync.php` |
@@ -283,6 +289,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/inventory_check.php` | `includes/dept_inventory.php` |
 | `includes/inventory_check.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/inventory_check.php` | `includes/dept_raw_freebies.php` |
+| `includes/inventory_check.php` | `includes/dept_raw_freebies.php` |
 | `includes/inventory_check.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/inventory_check.php` | `includes/honey_inventory.php` |
 | `includes/inventory_check.php` | `includes/honey_inventory.php` |
@@ -322,6 +329,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/order_remarks.php` | `includes/waybill_stamper.php` |
 | `includes/pack_cancel_restock.php` | `includes/dept_inventory.php` |
 | `includes/pack_cancel_restock.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/pack_cancel_restock.php` | `includes/dept_raw_freebies.php` |
 | `includes/pack_cancel_restock.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/pack_cancel_restock.php` | `includes/honey_pos.php` |
 | `includes/pack_cancel_restock.php` | `includes/rts_inventory_sync.php` |
@@ -433,6 +441,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/sku_barcodes.php` | `includes/dept_pouch_barcodes.php` |
 | `includes/sku_barcodes.php` | `includes/dept_products.php` |
 | `includes/sku_barcodes.php` | `includes/dept_pt_settings.php` |
+| `includes/sku_barcodes.php` | `includes/dept_raw_freebies.php` |
+| `includes/sku_barcodes.php` | `includes/dept_raw_freebies.php` |
 | `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/sku_barcodes.php` | `includes/honey_bottle_barcodes.php` |

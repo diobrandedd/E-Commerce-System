@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-10-29T10:06:30+01:00
+generated: 2026-10-30T04:55:18+01:00
 type: memory-bank
-table_count: 103
+table_count: 104
 ---
 
 
@@ -824,6 +824,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `includes/barcode_verify.php` | [[modules/barcode_verify#barcode_verify_lookup_honey]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_barcode_save_bulk]] |
 | `includes/finished_leak_damage.php` | [[modules/finished_leak_damage#finished_leak_damage_scan_honey]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_request_list]] |
@@ -1003,6 +1004,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_get]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_list]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_today_stats]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_scan_freebie]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_scan_sku]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_scan_dept]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
@@ -1146,6 +1148,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_scan_report]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_scan_report_by_scanner]] |
 | `includes/dept_pouch_barcodes.php` | [[modules/dept_pouch_barcodes#dept_pouch_request_scan_log]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_barcode_save_bulk]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_report]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_log]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
@@ -1494,6 +1497,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_on_hand]] |
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_create]] |
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_give_out]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_scan_freebie]] |
 | `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_apply_freebie_qty]] |
 
 ## `dept_raw_freebie_log`
@@ -1513,4 +1517,12 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_category_id_or_null]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_attach_supply_category]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_list]] |
+
+## `dept_raw_freebie_barcodes`
+
+| File | Function |
+|------|----------|
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_barcode_fetch_by_code]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_barcode_list]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_barcode_save_bulk]] |
 

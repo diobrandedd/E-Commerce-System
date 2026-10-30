@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-10-29T10:06:44+01:00
+generated: 2026-10-30T04:55:33+01:00
 type: module
 function_count: 23
 ---
@@ -133,7 +133,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 ## dept_product_by_key {#dept_product_by_key}
 
-**Callers (36):**
+**Callers (38):**
 
 - `api/v1/honey.php`:1034 — `$def = dept_product_by_key($productKey);`
 - `includes/dept_inventory.php`:12 — `$def = dept_product_by_key($productKey);`
@@ -160,7 +160,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_production.php`:1073 — `$def = dept_product_by_key('honey_comb');`
 - `includes/dept_products.php`:98 — `$def = dept_product_by_key($key);`
 - `includes/dept_products.php`:223 — `return dept_product_by_key($key) !== null;`
-- _… and 11 more (run impact.php for full list)_
+- _… and 13 more (run impact.php for full list)_
 
 ## dept_product_key_valid {#dept_product_key_valid}
 

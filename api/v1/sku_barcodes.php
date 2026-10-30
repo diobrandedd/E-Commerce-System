@@ -11,6 +11,9 @@ require_once dirname(__DIR__, 2) . '/includes/sku_barcodes.php';
  *   GET  ?action=list
  *   GET  ?action=lookup&code=
  *   GET  ?action=print_sheet&sku_id=&qty=
+ *   GET  ?action=freebie_list
+ *   GET  ?action=freebie_print_sheet&product_key=
+ *   POST ?action=freebie_save_bulk -> { items: [{ product_key, code }] }
  *   POST ?action=save           -> { kind, variant?, size?, product_key?, code }
  *   POST ?action=save_bulk      -> { items: [{ kind, variant?, size?, product_key?, code, selling_price? }] }
  *   POST ?action=stock_in       -> { code|sku_id, qty, packaging_row_id?, pool? }
@@ -23,6 +26,9 @@ api_dispatch([
     'save' => 'api_sku_barcodes_save',
     'save_bulk' => 'api_sku_barcodes_save_bulk',
     'print_sheet' => 'api_sku_barcodes_print_sheet',
+    'freebie_list' => 'api_sku_barcodes_freebie_list',
+    'freebie_save_bulk' => 'api_sku_barcodes_freebie_save_bulk',
+    'freebie_print_sheet' => 'api_sku_barcodes_freebie_print_sheet',
     'print_record' => 'api_sku_barcodes_print_record',
     'stock_in' => 'api_sku_barcodes_stock_in',
 ]);
@@ -128,6 +134,52 @@ function api_sku_barcodes_print_sheet(): void
             $qty = (int) ($_GET['qty'] ?? 0);
             $html = sku_barcode_label_sheet_html($pdo, $skuId, $qty);
         }
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+    header('Content-Type: text/html; charset=utf-8');
+    echo $html;
+    exit;
+}
+
+function api_sku_barcodes_freebie_list(): void
+{
+    api_method_allowed(['GET']);
+    api_require_ims_user();
+    require_once dirname(__DIR__, 2) . '/includes/dept_raw_freebies.php';
+    api_ok(['rows' => dept_raw_freebie_barcode_list(ims_pdo())]);
+}
+
+function api_sku_barcodes_freebie_save_bulk(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_require_permission('settings.manage');
+    $user = ims_current_user();
+    if ($user === null) {
+        api_fail('Unauthorized', 401);
+    }
+    $rawItems = $input['items'] ?? null;
+    if (!is_array($rawItems)) {
+        api_fail('items array required.', 422);
+    }
+    require_once dirname(__DIR__, 2) . '/includes/dept_raw_freebies.php';
+    try {
+        $rows = dept_raw_freebie_barcode_save_bulk(ims_pdo(), (int) $user['id'], $rawItems);
+        api_ok(['rows' => $rows]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+}
+
+function api_sku_barcodes_freebie_print_sheet(): void
+{
+    api_method_allowed(['GET']);
+    api_require_permission('settings.manage');
+    require_once dirname(__DIR__, 2) . '/includes/dept_raw_freebies.php';
+    try {
+        $html = dept_raw_freebie_print_sheet_html(ims_pdo(), (string) ($_GET['product_key'] ?? ''));
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
     }

@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-10-29T10:07:00+01:00
+generated: 2026-10-30T04:55:49+01:00
 type: module
 function_count: 16
 ---
@@ -171,8 +171,8 @@ function_count: 16
 **Callers (5):**
 
 - `includes/honey_pos.php`:959 — `pos_sale_reverse_one_unit($pdo, $saleId, 'honey', [`
-- `includes/pack_cancel_restock.php`:547 — `pos_sale_reverse_one_unit($pdo, $saleId, 'honey', [`
-- `includes/pack_cancel_restock.php`:598 — `pos_sale_reverse_one_unit($pdo, $saleId, 'dept', [`
+- `includes/pack_cancel_restock.php`:552 — `pos_sale_reverse_one_unit($pdo, $saleId, 'honey', [`
+- `includes/pack_cancel_restock.php`:603 — `pos_sale_reverse_one_unit($pdo, $saleId, 'dept', [`
 - `includes/pos_refund.php`:112 — `pos_sale_reverse_one_unit($pdo, $saleId, 'honey', [`
 - `includes/pos_refund.php`:172 — `pos_sale_reverse_one_unit($pdo, $saleId, 'dept', [`
 
@@ -182,7 +182,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/pack_cancel_restock.php`:523 — `$saleId = pos_sale_id_for_honey_unit(`
+- `includes/pack_cancel_restock.php`:528 — `$saleId = pos_sale_id_for_honey_unit(`
 
 ## pos_sale_heal_returned_units {#pos_sale_heal_returned_units}
 

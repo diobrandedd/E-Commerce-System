@@ -13,6 +13,11 @@ require_once __DIR__ . '/dept_products.php';
 require_once __DIR__ . '/dept_inventory.php';
 
 const DEPT_RAW_FREEBIE_PRODUCT_KEYS = ['pt', 'brc', 'jar_cacao'];
+const DEPT_RAW_FREEBIE_DEFAULT_CODES = [
+    'pt' => 'FRB-PT',
+    'brc' => 'FRB-BRC',
+    'jar_cacao' => 'FRB-CACAO',
+];
 const DEPT_RAW_FREEBIE_GRAMS_DEFAULT = 5.0;
 const DEPT_RAW_FREEBIE_GRAMS_MIN = 0.1;
 const DEPT_RAW_FREEBIE_GRAMS_MAX = 500.0;
@@ -25,6 +30,177 @@ function dept_raw_freebie_setting_key(string $productKey): string
 function dept_raw_freebie_product_allowed(string $productKey): bool
 {
     return in_array($productKey, DEPT_RAW_FREEBIE_PRODUCT_KEYS, true);
+}
+
+function dept_raw_freebie_label(string $productKey): string
+{
+    $def = dept_product_by_key($productKey);
+
+    return (string) ($def['label'] ?? $productKey) . ' freebie';
+}
+
+/**
+ * Permanent freebie barcode for one product, or null when none is saved.
+ *
+ * @return array{product_key: string, code: string}|null
+ */
+function dept_raw_freebie_barcode_fetch_by_code(PDO $pdo, string $rawCode): ?array
+{
+    require_once __DIR__ . '/sku_barcodes.php';
+    $code = sku_barcode_normalize_code($rawCode);
+    if ($code === '') {
+        return null;
+    }
+    $st = $pdo->prepare(
+        'SELECT product_key, code FROM dept_raw_freebie_barcodes WHERE LOWER(code) = LOWER(?) LIMIT 1'
+    );
+    $st->execute([$code]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false || !dept_raw_freebie_product_allowed((string) $row['product_key'])) {
+        return null;
+    }
+
+    return [
+        'product_key' => (string) $row['product_key'],
+        'code' => (string) $row['code'],
+    ];
+}
+
+/**
+ * The three freebie barcode rows with live grams. Unsaved rows show the default code.
+ *
+ * @return list<array{product_key: string, label: string, code: string, grams: float, saved: bool}>
+ */
+function dept_raw_freebie_barcode_list(PDO $pdo): array
+{
+    $saved = [];
+    foreach ($pdo->query('SELECT product_key, code FROM dept_raw_freebie_barcodes')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $saved[(string) $row['product_key']] = (string) $row['code'];
+    }
+    $out = [];
+    foreach (DEPT_RAW_FREEBIE_PRODUCT_KEYS as $productKey) {
+        $out[] = [
+            'product_key' => $productKey,
+            'label' => dept_raw_freebie_label($productKey),
+            'code' => $saved[$productKey] ?? DEPT_RAW_FREEBIE_DEFAULT_CODES[$productKey],
+            'grams' => dept_raw_freebie_grams($pdo, $productKey),
+            'saved' => isset($saved[$productKey]),
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * Replace the three freebie codes in one transaction. Codes must be unique across
+ * freebie codes, product SKU codes, and unique bottle/pouch stickers.
+ *
+ * @param list<array{product_key?: string, code?: string}> $items
+ * @return list<array{product_key: string, label: string, code: string, grams: float, saved: bool}>
+ */
+function dept_raw_freebie_barcode_save_bulk(PDO $pdo, int $userId, array $items): array
+{
+    require_once __DIR__ . '/sku_barcodes.php';
+    $byKey = [];
+    foreach ($items as $item) {
+        $productKey = strtolower(trim((string) ($item['product_key'] ?? '')));
+        if (!dept_raw_freebie_product_allowed($productKey)) {
+            throw new RuntimeException('Freebie barcodes are only for Paragis, Black Rice, and Jar Cacao.');
+        }
+        $byKey[$productKey] = sku_barcode_assert_code((string) ($item['code'] ?? ''));
+    }
+    foreach (DEPT_RAW_FREEBIE_PRODUCT_KEYS as $productKey) {
+        if (!isset($byKey[$productKey])) {
+            throw new RuntimeException('Save all three freebie barcodes together.');
+        }
+    }
+    $seen = [];
+    foreach ($byKey as $code) {
+        $lc = strtolower($code);
+        if (isset($seen[$lc])) {
+            throw new RuntimeException('Code "' . $code . '" is used more than once. Each freebie needs a unique code.');
+        }
+        $seen[$lc] = true;
+    }
+
+    $owns = !$pdo->inTransaction();
+    if ($owns) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $skuHit = $pdo->prepare('SELECT 1 FROM product_sku_barcodes WHERE LOWER(code) = LOWER(?) LIMIT 1');
+        $honeyHit = $pdo->prepare('SELECT 1 FROM honey_bottle_barcodes WHERE code = ? LIMIT 1');
+        $deptHit = $pdo->prepare('SELECT 1 FROM dept_pouch_barcodes WHERE code = ? LIMIT 1');
+        foreach ($byKey as $code) {
+            $skuHit->execute([$code]);
+            if ($skuHit->fetchColumn()) {
+                throw new RuntimeException('Code "' . $code . '" is already a product SKU barcode. Pick another.');
+            }
+            $honeyHit->execute([$code]);
+            if ($honeyHit->fetchColumn()) {
+                throw new RuntimeException('Code "' . $code . '" matches an existing unique bottle sticker. Pick another.');
+            }
+            $deptHit->execute([$code]);
+            if ($deptHit->fetchColumn()) {
+                throw new RuntimeException('Code "' . $code . '" matches an existing unique pouch/jar sticker. Pick another.');
+            }
+        }
+        $up = $pdo->prepare(
+            'INSERT INTO dept_raw_freebie_barcodes (product_key, code, updated_by)
+             VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE code = VALUES(code), updated_by = VALUES(updated_by)'
+        );
+        foreach ($byKey as $productKey => $code) {
+            $up->execute([$productKey, $code, $userId]);
+        }
+        if ($owns) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($owns && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+
+    return dept_raw_freebie_barcode_list($pdo);
+}
+
+/**
+ * One full sticker sheet of a single freebie barcode (8×20), so the page is not left blank.
+ * Label text shows the grams configured at print time.
+ */
+function dept_raw_freebie_print_sheet_html(PDO $pdo, string $productKey): string
+{
+    $productKey = strtolower(trim($productKey));
+    if (!dept_raw_freebie_product_allowed($productKey)) {
+        throw new RuntimeException('Freebie barcodes are only for Paragis, Black Rice, and Jar Cacao.');
+    }
+    require_once __DIR__ . '/sku_barcodes.php';
+    $row = null;
+    foreach (dept_raw_freebie_barcode_list($pdo) as $candidate) {
+        if ($candidate['product_key'] === $productKey) {
+            $row = $candidate;
+            break;
+        }
+    }
+    if ($row === null || trim((string) $row['code']) === '') {
+        throw new RuntimeException('Save a barcode for this freebie before printing.');
+    }
+    $grams = rtrim(rtrim(number_format((float) $row['grams'], 2, '.', ''), '0'), '.');
+    $productName = (string) (dept_product_by_key($productKey)['label'] ?? $productKey);
+    $cell = sku_barcode_label_cell_html((string) $row['code'], [
+        'kind' => 'freebie',
+        'label' => $productName,
+        'detail' => 'freebie · ' . $grams . ' g',
+    ]);
+    $perSheet = SKU_LABEL_SHEET_COLS * SKU_LABEL_SHEET_ROWS;
+    $stream = [];
+    for ($i = 0; $i < $perSheet; $i++) {
+        $stream[] = ['slots' => 1, 'html' => $cell];
+    }
+
+    return sku_barcode_render_packed_label_sheet($stream, (string) $row['label'], $perSheet);
 }
 
 function dept_raw_freebie_grams(PDO $pdo, string $productKey): float

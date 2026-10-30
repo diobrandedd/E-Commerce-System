@@ -147,6 +147,9 @@ export const deptPouchBarcodesApi = {
       request?: DeptPouchRequest;
       lookup_kind?: string;
       qty?: number;
+      qty_samples?: number;
+      grams_total?: number;
+      freebie_on_hand?: number;
       label?: string;
       bag_pool?: {
         bags_deducted: number;

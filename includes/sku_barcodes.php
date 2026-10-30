@@ -558,6 +558,10 @@ function sku_barcode_save(
         if ($deptHit->fetchColumn()) {
             throw new RuntimeException('Code "' . $code . '" matches an existing unique pouch/jar sticker. Pick another.');
         }
+        require_once __DIR__ . '/dept_raw_freebies.php';
+        if (dept_raw_freebie_barcode_fetch_by_code($pdo, $code) !== null) {
+            throw new RuntimeException('Code "' . $code . '" is already a freebie barcode. Pick another.');
+        }
 
         if ($existing !== null) {
             $pdo->prepare(
@@ -737,6 +741,23 @@ function sku_barcode_lookup(PDO $pdo, string $rawCode): array
         }
     } catch (Throwable) {
         // fall through
+    }
+
+    require_once __DIR__ . '/dept_raw_freebies.php';
+    $freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);
+    if ($freebie !== null) {
+        $productKey = $freebie['product_key'];
+
+        return [
+            'lookup_kind' => 'freebie',
+            'requires_qty' => true,
+            'kind' => 'freebie',
+            'product_key' => $productKey,
+            'label' => dept_raw_freebie_label($productKey),
+            'code' => $freebie['code'],
+            'grams' => dept_raw_freebie_grams($pdo, $productKey),
+            'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),
+        ];
     }
 
     throw new RuntimeException('Unknown barcode.');
@@ -1441,6 +1462,9 @@ function sku_barcode_product_info_text(?array $product): string
     if ($kind === 'dept') {
         return dept_pouch_product_label((string) ($product['product_key'] ?? ''));
     }
+    if ($kind === 'freebie') {
+        return trim((string) ($product['label'] ?? ''));
+    }
 
     return '';
 }
@@ -1470,13 +1494,22 @@ function sku_barcode_label_cell_html(string $code, ?array $product = null): stri
     }
 
     $topText = sku_barcode_product_info_text($product);
-    if ($topText === '') {
+    $detail = trim((string) ($product['detail'] ?? ''));
+    if ($topText === '' && $detail === '') {
         return $plain;
     }
     $safeTop = htmlspecialchars($topText, ENT_QUOTES, 'UTF-8');
+    $safeDetail = htmlspecialchars($detail, ENT_QUOTES, 'UTF-8');
+    $isFreebie = (string) ($product['kind'] ?? '') === 'freebie' && $safeDetail !== '';
+    $info = $isFreebie
+        ? '<div class="product-info" title="' . $safeTop . ' ' . $safeDetail . '">'
+            . '<span class="freebie-name">' . $safeTop . '</span>'
+            . '<span class="freebie-grams">' . $safeDetail . '</span>'
+            . '</div>'
+        : '<div class="product-info" title="' . $safeTop . '">' . $safeTop . '</div>';
 
-    return '<div class="label label-product">'
-        . '<div class="product-info" title="' . $safeTop . '">' . $safeTop . '</div>'
+    return '<div class="label label-product' . ($isFreebie ? ' label-freebie' : '') . '">'
+        . $info
         . '<div class="bc" title="' . $safe . '">' . $svg . '</div>'
         . '<div class="human-code" title="' . $safe . '">' . $safe . '</div>'
         . '</div>';
@@ -1702,6 +1735,27 @@ function sku_barcode_render_packed_label_sheet(array $stream, string $title, int
           overflow: hidden;
           text-overflow: ellipsis;
         }
+        .label-freebie .product-info {
+          min-height: 4.6mm;
+          max-height: 5.2mm;
+          white-space: normal;
+          text-overflow: clip;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 0.2mm;
+          line-height: 1.05;
+        }
+        .label-freebie .freebie-name,
+        .label-freebie .freebie-grams {
+          display: block;
+          width: 100%;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: clip;
+        }
+        .label-freebie .bc,
+        .label-freebie .bc svg { max-height: 6.4mm; }
         .bc { line-height: 0; width: 100%; max-height: 11mm; overflow: hidden; }
         .label-plain .bc,
         .label-product .bc {

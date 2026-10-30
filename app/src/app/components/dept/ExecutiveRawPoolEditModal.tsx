@@ -20,11 +20,13 @@ function formatGrams(n: number): string {
 
 export function ExecutiveRawPoolEditModal({ productKey, title, pool, onClose, onSaved }: Props) {
   const fieldId = useId();
+  const passwordId = useId();
   const [grams, setGrams] = useState(() => {
     const g = Number(pool.grams_remaining);
     if (!Number.isFinite(g) || g < 0) return "0";
     return String(Math.round(g * 10) / 10);
   });
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -46,10 +48,16 @@ export function ExecutiveRawPoolEditModal({ productKey, title, pool, onClose, on
       setBusy(false);
       return;
     }
+    if (password.trim() === "") {
+      setErr("Administrator password is required.");
+      setBusy(false);
+      return;
+    }
     try {
       await deptRawExecutiveSetGrams({
         product_key: productKey,
         grams: value,
+        admin_password: password.trim(),
         note: "Executive pool correction",
       });
       onSaved();
@@ -65,7 +73,7 @@ export function ExecutiveRawPoolEditModal({ productKey, title, pool, onClose, on
       <AppModalHeader
         title={`Edit leaf pool — ${title}`}
         titleId="exec-raw-pool-edit-title"
-        subtitle="Sets the remaining leaf pool in grams. Stored as kg (grams ÷ Settings g/kg). Does not change finished pouches/jars."
+        subtitle="Sets the remaining leaf pool in grams. Needs the administrator password from Settings. Does not change finished pouches or jars."
         onClose={onClose}
       />
       <AppModalBody className="space-y-3 text-sm">
@@ -96,6 +104,19 @@ export function ExecutiveRawPoolEditModal({ productKey, title, pool, onClose, on
             autoFocus
           />
           {kgHint ? <p className="mt-1 text-[11px] text-muted-foreground font-mono">{kgHint}</p> : null}
+        </div>
+        <div>
+          <label htmlFor={passwordId} className="text-xs text-muted-foreground block mb-1">
+            Administrator password
+          </label>
+          <input
+            id={passwordId}
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="w-full border rounded-lg px-3 py-2"
+          />
         </div>
       </AppModalBody>
       <AppModalFooter>

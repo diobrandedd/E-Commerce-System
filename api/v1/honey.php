@@ -1659,13 +1659,18 @@ function api_honey_dept_raw_set_bags(): void
     api_ok($result);
 }
 
-/** Day-to-day executive correction of PT/BRC/Jar Cacao leaf pool (grams). No admin password. */
+/** Executive correction of PT/BRC/Jar Cacao leaf pool (grams). Executive role and administrator password. */
 function api_honey_dept_raw_executive_set(): void
 {
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
     $user = api_require_permission('honey.executive_edit');
+    if (!ims_is_executive((string) ($user['role'] ?? ''))) {
+        api_fail('Only an executive can edit the leaf pool.', 403);
+    }
+    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    api_require_admin_override_password($input);
     $productKey = trim((string) ($input['product_key'] ?? ''));
     $pdo = ims_pdo();
     $pdo->beginTransaction();

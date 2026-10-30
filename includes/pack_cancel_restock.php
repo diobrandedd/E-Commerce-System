@@ -251,6 +251,11 @@ function pack_cancel_restock_scan(
         throw new RuntimeException('This restock session is already closed.');
     }
 
+    require_once __DIR__ . '/dept_raw_freebies.php';
+    if (dept_raw_freebie_barcode_fetch_by_code($pdo, $code) !== null) {
+        throw new RuntimeException('Freebies are not restocked here.');
+    }
+
     $sku = sku_barcode_fetch_by_code($pdo, $code);
     if ($sku !== null) {
         $lookup = sku_barcode_serialize($sku);

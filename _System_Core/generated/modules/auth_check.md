@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-10-29T10:06:32+01:00
+generated: 2026-10-30T04:55:21+01:00
 type: module
 function_count: 14
 ---
@@ -50,7 +50,7 @@ function_count: 14
 
 ## ims_current_user {#ims_current_user}
 
-**Callers (49):**
+**Callers (50):**
 
 - `api/v1/_bootstrap.php`:145 — `$u = ims_current_user();`
 - `api/v1/auth.php`:75 — `$user = ims_current_user();`
@@ -71,13 +71,13 @@ function_count: 14
 - `api/v1/parcels.php`:10 — `$user = ims_current_user();`
 - `api/v1/pdf_to_excel.php`:29 — `$user = ims_current_user();`
 - `api/v1/pos.php`:54 — `$user = ims_current_user();`
-- `api/v1/sku_barcodes.php`:34 — `$user = ims_current_user();`
-- `api/v1/sku_barcodes.php`:60 — `$user = ims_current_user();`
-- `api/v1/sku_barcodes.php`:86 — `$user = ims_current_user();`
+- `api/v1/sku_barcodes.php`:40 — `$user = ims_current_user();`
+- `api/v1/sku_barcodes.php`:66 — `$user = ims_current_user();`
+- `api/v1/sku_barcodes.php`:92 — `$user = ims_current_user();`
+- `api/v1/sku_barcodes.php`:159 — `$user = ims_current_user();`
 - `api/v1/waybill.php`:36 — `$user = ims_current_user();`
 - `auth/login.php`:12 — `$existing = ims_current_user();`
-- `auth/login.php`:34 — `$u = ims_current_user();`
-- _… and 24 more (run impact.php for full list)_
+- _… and 25 more (run impact.php for full list)_
 
 ## ims_pos_authenticated {#ims_pos_authenticated}
 
@@ -156,8 +156,9 @@ function_count: 14
 
 ## ims_is_executive {#ims_is_executive}
 
-**Callers (13):**
+**Callers (14):**
 
+- `api/v1/honey.php`:1669 — `if (!ims_is_executive((string) ($user['role'] ?? ''))) {`
 - `dept/products.php`:15 — `$canManageProducts = ims_is_executive($role) || ims_is_prod_manager($role) || ims_is_tl($role);`
 - `dept/products.php`:16 — `$canAddStocks = ims_is_executive($role);`
 - `dept/products.php`:18 — `$showPricing = ims_is_executive($role);`

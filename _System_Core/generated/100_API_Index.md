@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-29T10:06:29+01:00
+generated: 2026-10-30T04:55:17+01:00
 type: memory-bank
 ---
 
@@ -215,7 +215,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `batch_list` | `api_dept_pouch_batch_list()` | `dept_pouch_batch_list()`, `ims_pdo()` |
 | `mark_printed` | `api_dept_pouch_mark_printed()` | `dept_pouch_mark_printed()`, `ims_pdo()` |
 | `print_sheet` | `api_dept_pouch_print_sheet()` | `dept_pouch_label_sheet_html()`, `ims_pdo()` |
-| `scan_stock_in` | `api_dept_pouch_scan_stock_in()` | `sku_barcode_fetch_by_code()`, `ims_pdo()`, `sku_barcode_dept_stock_in()`, `dept_pouch_request_get()`, `dept_pouch_scan_stock_in()` |
+| `scan_stock_in` | `api_dept_pouch_scan_stock_in()` | `ims_pdo()`, `dept_raw_freebie_barcode_fetch_by_code()`, `dept_raw_freebie_label()`, `dept_raw_record_freebie_create()`, `sku_barcode_fetch_by_code()`, `sku_barcode_dept_stock_in()`, `dept_pouch_request_get()`, `dept_pouch_scan_stock_in()` |
 | `scan_report` | `api_dept_pouch_scan_report()` | `dept_pouch_scan_report()`, `ims_pdo()` |
 | `request_scan_log` | `api_dept_pouch_request_scan_log()` | `dept_pouch_request_scan_log()`, `ims_pdo()` |
 | `pos_lookup` | `api_dept_pouch_pos_lookup()` | `dept_pouch_pos_lookup()`, `ims_pdo()` |
@@ -346,7 +346,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `seed_production_row` | `api_honey_seed_production_row()` | `ims_pdo()`, `honey_executive_seed_production_row()` |
 | `seed_packaging_row` | `api_honey_seed_packaging_row()` | `ims_pdo()`, `honey_executive_seed_packaging_row()` |
 | `dept_raw_set_bags` | `api_honey_dept_raw_set_bags()` | `ims_pdo()`, `dept_raw_set_bags_on_hand()` |
-| `dept_raw_executive_set` | `api_honey_dept_raw_executive_set()` | `ims_pdo()`, `dept_raw_set_grams_on_hand()`, `dept_raw_set_bags_on_hand()` |
+| `dept_raw_executive_set` | `api_honey_dept_raw_executive_set()` | `ims_is_executive()`, `ims_pdo()`, `dept_raw_set_grams_on_hand()`, `dept_raw_set_bags_on_hand()` |
 
 ### `inventory_check.php`
 
@@ -700,6 +700,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `save` | `api_sku_barcodes_save()` | `ims_current_user()`, `sku_barcode_save()`, `ims_pdo()` |
 | `save_bulk` | `api_sku_barcodes_save_bulk()` | `ims_current_user()`, `sku_barcode_save_bulk()`, `ims_pdo()` |
 | `print_sheet` | `api_sku_barcodes_print_sheet()` | `ims_pdo()`, `sku_barcode_combined_label_sheet_html()`, `sku_barcode_label_sheet_html()` |
+| `freebie_list` | `api_sku_barcodes_freebie_list()` | `dept_raw_freebie_barcode_list()`, `ims_pdo()` |
+| `freebie_save_bulk` | `api_sku_barcodes_freebie_save_bulk()` | `ims_current_user()`, `dept_raw_freebie_barcode_save_bulk()`, `ims_pdo()` |
+| `freebie_print_sheet` | `api_sku_barcodes_freebie_print_sheet()` | `dept_raw_freebie_print_sheet_html()`, `ims_pdo()` |
 | `print_record` | `api_sku_barcodes_print_record()` | `ims_user_can()`, `sku_barcode_record_print()`, `ims_pdo()` |
 | `stock_in` | `api_sku_barcodes_stock_in()` | `ims_pdo()`, `sku_barcode_fetch_by_id()`, `sku_barcode_fetch_by_code()`, `ims_user_can()`, `sku_barcode_rts_stock_in()`, `sku_barcode_honey_stock_in()`, `sku_barcode_dept_stock_in()`, `sku_barcode_serialize()` |
 

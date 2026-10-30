@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-10-29T10:04:36+01:00
+generated: 2026-10-30T04:53:20+01:00
 type: memory-bank
 ---
 
@@ -41,13 +41,13 @@ type: memory-bank
 | [[modules/dept_production]] | 29 |
 | [[modules/dept_products]] | 23 |
 | [[modules/dept_pt_settings]] | 9 |
-| [[modules/dept_raw_freebies]] | 9 |
+| [[modules/dept_raw_freebies]] | 14 |
 | [[modules/finished_leak_damage]] | 11 |
 | [[modules/forwarding]] | 15 |
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 33 |
 | [[modules/historical_orders_import]] | 25 |
-| [[modules/honey_bottle_barcodes]] | 64 |
+| [[modules/honey_bottle_barcodes]] | 65 |
 | [[modules/honey_inventory]] | 76 |
 | [[modules/honey_parcel_inventory]] | 4 |
 | [[modules/honey_parcel_item_parser]] | 17 |

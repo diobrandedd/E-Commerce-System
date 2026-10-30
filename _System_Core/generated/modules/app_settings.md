@@ -1,7 +1,7 @@
 ---
 title: app_settings
 source: includes/app_settings.php
-generated: 2026-10-29T10:06:30+01:00
+generated: 2026-10-30T04:55:19+01:00
 type: module
 function_count: 3
 ---
@@ -40,7 +40,7 @@ function_count: 3
 - `includes/dept_pt_settings.php`:56 — `$raw = app_setting_get($pdo, PT_GRAMS_PER_TEA_BAG_SETTING_KEY, null);`
 - `includes/dept_pt_settings.php`:73 — `$raw = app_setting_get($pdo, PT_TEA_BAGS_PER_POUCH_SETTING_KEY, null);`
 - `includes/dept_pt_settings.php`:98 — `$raw = app_setting_get($pdo, PT_FREEBIE_GRAMS_SETTING_KEY, null);`
-- `includes/dept_raw_freebies.php`:35 — `$raw = app_setting_get($pdo, dept_raw_freebie_setting_key($productKey), null);`
+- `includes/dept_raw_freebies.php`:211 — `$raw = app_setting_get($pdo, dept_raw_freebie_setting_key($productKey), null);`
 - `includes/honey_volume.php`:67 — `$raw = app_setting_get($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, null);`
 - `includes/pyxacct_ap_sync.php`:23 — `$raw = app_setting_get($rtsPdo, 'pyxacct_honey_ap_sync_enabled', '1');`
 - `includes/pyxacct_ap_sync.php`:37 — `return rtrim(trim((string) app_setting_get($rtsPdo, 'pyxacct_api_base_url', '')), '/');`
@@ -66,7 +66,7 @@ function_count: 3
 - `includes/dept_pt_settings.php`:183 — `app_setting_set($pdo, PT_TEA_BAGS_PER_POUCH_SETTING_KEY, (string) $teaBagsPerPouch, $userId);`
 - `includes/dept_pt_settings.php`:184 — `app_setting_set($pdo, PT_BAG_POOL_DEDUCT_SETTING_KEY, $bagPoolDeduct ? '1' : '0', $userId);`
 - `includes/dept_pt_settings.php`:185 — `app_setting_set($pdo, PT_FREEBIE_GRAMS_SETTING_KEY, (string) $freebie, $userId);`
-- `includes/dept_raw_freebies.php`:57 — `app_setting_set($pdo, dept_raw_freebie_setting_key($productKey), (string) $grams, $userId);`
+- `includes/dept_raw_freebies.php`:233 — `app_setting_set($pdo, dept_raw_freebie_setting_key($productKey), (string) $grams, $userId);`
 - `includes/honey_volume.php`:48 — `app_setting_set($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, '0', $userId);`
 - `includes/honey_volume.php`:91 — `app_setting_set($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, $stored, $userId);`
 - `includes/pyxacct_ap_sync.php`:30 — `app_setting_set($rtsPdo, 'pyxacct_honey_ap_sync_enabled', $enabled ? '1' : '0', $userId);`

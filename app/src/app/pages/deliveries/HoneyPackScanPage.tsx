@@ -81,6 +81,9 @@ function packItemLabel(item: {
   variant: string;
   size_label: string;
 }) {
+  if (item.kind === "freebie") {
+    return item.product_label || item.variant;
+  }
   if (item.kind === "dept") {
     return item.product_label || item.variant;
   }
@@ -88,6 +91,9 @@ function packItemLabel(item: {
 }
 
 function packGroupKey(g: Pick<HoneyPackSessionGroup, "kind" | "product_key" | "variant" | "size">): string {
+  if (g.kind === "freebie") {
+    return `freebie|${g.product_key ?? g.variant}`;
+  }
   if (g.kind === "dept") {
     return `dept|${g.product_key ?? g.variant}`;
   }
@@ -95,6 +101,9 @@ function packGroupKey(g: Pick<HoneyPackSessionGroup, "kind" | "product_key" | "v
 }
 
 function packItemGroupKey(item: HoneyPackSessionItem): string {
+  if (item.lookup_kind === "freebie") {
+    return `freebie|${item.product_key ?? item.variant}`;
+  }
   if (item.kind === "dept") {
     return `dept|${item.product_key ?? item.variant}`;
   }
@@ -195,7 +204,7 @@ function PackScanLivePanel() {
   const [editQty, setEditQty] = useState("1");
   const [skuQty, setSkuQty] = useState("1");
   const [skuPool, setSkuPool] = useState<"packaging" | "rts_sellable" | "finished">("packaging");
-  const [lastSku, setLastSku] = useState<{ code: string; kind: "honey" | "dept"; label: string } | null>(null);
+  const [lastSku, setLastSku] = useState<{ code: string; kind: "honey" | "dept" | "freebie"; label: string } | null>(null);
   const [todayPacked, setTodayPacked] = useState<number | null>(null);
   const cameraTitleId = useId();
   const editQtyTitleId = useId();
@@ -233,9 +242,11 @@ function PackScanLivePanel() {
       setFlash("ok");
       const lookup = res.lookup;
       const label =
-        lookup?.kind === "dept"
-          ? lookup.product_label || lookup.variant || "Dept item"
-          : `${lookup?.variant ?? ""} ${lookup?.size_label ?? ""}`.trim() || "Honey";
+        lookup?.kind === "freebie"
+          ? lookup.product_label || "Freebie"
+          : lookup?.kind === "dept"
+            ? lookup.product_label || lookup.variant || "Dept item"
+            : `${lookup?.variant ?? ""} ${lookup?.size_label ?? ""}`.trim() || "Honey";
       const added =
         lookup && typeof (lookup as { added_qty?: number }).added_qty === "number"
           ? (lookup as { added_qty: number }).added_qty
@@ -248,8 +259,8 @@ function PackScanLivePanel() {
             ? ` ×${total}`
             : "";
       setMsg(`${label}${qtyNote}`);
-      if (lookup?.lookup_kind === "sku" && lookup.code) {
-        const kind = lookup.kind === "dept" ? "dept" : "honey";
+      if ((lookup?.lookup_kind === "sku" || lookup?.lookup_kind === "freebie") && lookup.code) {
+        const kind = lookup.kind === "freebie" ? "freebie" : lookup.kind === "dept" ? "dept" : "honey";
         setLastSku({ code: String(lookup.code), kind, label });
         if (kind === "dept" && skuPool === "packaging") {
           setSkuPool("finished");
@@ -323,6 +334,9 @@ function PackScanLivePanel() {
     try {
       const looked = await skuBarcodesApi.lookup(value);
       const lookup = looked.lookup;
+      if (lookup.lookup_kind === "freebie") {
+        return await packSkuDelta(value, 1);
+      }
       if (lookup.lookup_kind === "sku" || lookup.requires_qty) {
         const kind = lookup.kind === "dept" ? "dept" : "honey";
         let pool: "packaging" | "rts_sellable" | "finished" = skuPool;
@@ -414,7 +428,7 @@ function PackScanLivePanel() {
   };
 
   const startEditQty = (item: HoneyPackSessionItem) => {
-    if (item.lookup_kind !== "sku") return;
+    if (item.lookup_kind !== "sku" && item.lookup_kind !== "freebie") return;
     setEditItem(item);
     setEditQty(String(item.qty ?? 1));
     setError(null);
@@ -491,6 +505,11 @@ function PackScanLivePanel() {
           {lastSku ? `: ${lastSku.label}` : ""}).
         </p>
         <div className="flex flex-wrap gap-2 items-end">
+          {lastSku?.kind === "freebie" ? (
+            <p className="text-xs text-muted-foreground min-w-[7rem] flex-1 self-center">
+              Freebie — taken from the freebie pool, no stock pool to pick.
+            </p>
+          ) : (
           <label className="text-xs text-muted-foreground block min-w-[7rem] flex-1">
             Stock pool
             <select
@@ -514,6 +533,7 @@ function PackScanLivePanel() {
               )}
             </select>
           </label>
+          )}
           <label className="text-xs text-muted-foreground block w-24">
             Quantity
             <input
@@ -588,7 +608,7 @@ function PackScanLivePanel() {
                     <span className="text-lg font-bold leading-tight tabular-nums">×{g.qty}</span>
                   </span>
                 </button>
-                {barcodes.length === 1 && barcodes[0]?.lookup_kind === "sku" ? (
+                {barcodes.length === 1 && (barcodes[0]?.lookup_kind === "sku" || barcodes[0]?.lookup_kind === "freebie") ? (
                   <Button
                     type="button"
                     size="sm"
@@ -608,7 +628,7 @@ function PackScanLivePanel() {
                     barcodes.map(it => {
                       const rowKey = `${it.kind ?? "honey"}-${it.id}`;
                       const removing = removingId === rowKey;
-                      const isSku = it.lookup_kind === "sku";
+                      const isSku = it.lookup_kind === "sku" || it.lookup_kind === "freebie";
                       return (
                         <div key={rowKey} className="flex items-center gap-2 py-1">
                           <div className="min-w-0 flex-1">
@@ -617,7 +637,9 @@ function PackScanLivePanel() {
                               <p className="text-[10px] text-muted-foreground font-mono">{it.batch_no}</p>
                             ) : null}
                             {isSku ? (
-                              <p className="text-[10px] text-muted-foreground">SKU · ×{it.qty ?? 1}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {it.lookup_kind === "freebie" ? "Freebie" : "SKU"} · ×{it.qty ?? 1}
+                              </p>
                             ) : (
                               <p className="text-[10px] text-muted-foreground">Unique sticker</p>
                             )}
@@ -716,17 +738,34 @@ function PackScanLivePanel() {
       <AppModal open={confirmOpen} onClose={() => setConfirmOpen(false)}>
         <AppModalHeader title="Confirm pack deduction" onClose={() => setConfirmOpen(false)} />
         <AppModalBody className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            These leave finished stock now (honey packaging and/or dept finished qty).
-          </p>
-          {(session?.grouped ?? []).map(g => (
-            <p
-              key={`${g.kind ?? "honey"}-${g.product_key ?? g.variant}-${g.size}`}
-              className="text-sm font-medium capitalize"
-            >
-              {g.qty} × {packItemLabel(g)}
-            </p>
-          ))}
+          {(session?.grouped ?? []).some(g => g.kind !== "freebie") ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                These leave finished stock now (honey packaging and/or dept finished qty).
+              </p>
+              {(session?.grouped ?? []).filter(g => g.kind !== "freebie").map(g => (
+                <p
+                  key={`${g.kind ?? "honey"}-${g.product_key ?? g.variant}-${g.size}`}
+                  className="text-sm font-medium capitalize"
+                >
+                  {g.qty} × {packItemLabel(g)}
+                </p>
+              ))}
+            </>
+          ) : null}
+          {(session?.grouped ?? []).some(g => g.kind === "freebie") ? (
+            <>
+              <p className="text-sm text-muted-foreground">Freebies given out (from the freebie pool).</p>
+              {(session?.grouped ?? []).filter(g => g.kind === "freebie").map(g => (
+                <p
+                  key={`freebie-${g.product_key ?? g.variant}`}
+                  className="text-sm font-medium"
+                >
+                  {g.qty} × {packItemLabel(g)}
+                </p>
+              ))}
+            </>
+          ) : null}
         </AppModalBody>
         <AppModalFooter>
           <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>Keep scanning</Button>

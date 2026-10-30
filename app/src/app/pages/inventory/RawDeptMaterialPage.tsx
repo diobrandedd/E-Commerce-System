@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
-import { BookOpen, AlertTriangle, Gift, History, Loader2, Minus, MoreHorizontal, Plus, Package, Printer, ScanLine, Tag } from "lucide-react";
+import { BookOpen, AlertTriangle, History, Loader2, Minus, MoreHorizontal, Plus, Package, Printer, ScanLine, Tag } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { ApiError } from "@/app/lib/api";
-import { canMutateDeptRawProduction, canDeptPouchBarcodeOps, canExecutiveDirectEdit } from "@/app/lib/honeyPermissions";
+import { canMutateDeptRawProduction, canDeptPouchBarcodeOps } from "@/app/lib/honeyPermissions";
 import { ExecutiveRawPoolEditModal } from "@/app/components/dept/ExecutiveRawPoolEditModal";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
 import {
@@ -22,7 +22,6 @@ import {
   deptPtMakeTeaBags,
   deptPtUseRawBags,
   type DeptProductionEntry,
-  deptRawFreebieCreate,
   deptRawFreebieHistory,
   deptRawStockIn,
   deptRawStockOut,
@@ -108,7 +107,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
   const { user } = useAuth();
   const canMutate = canMutateDeptRawProduction(user, route.productKey);
   const canPouchBarcodes = canDeptPouchBarcodeOps(user, route.productKey);
-  const canExecEdit = canExecutiveDirectEdit(user);
+  const canEditLeafPool = user?.role === "executive";
   const productKey = route.productKey;
   const isParagis = productKey === "pt";
   const isBrc = productKey === "brc";
@@ -284,7 +283,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Freebies</p>
                 <p className="text-2xl font-semibold mt-1">{(data.freebie_on_hand ?? 0).toLocaleString()}</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
-                  sample pouches · {(data.freebie_grams ?? 0).toLocaleString()} g each
+                  sample pouches · {(data.freebie_grams ?? 0).toLocaleString()} g each · tap for history
                 </p>
               </button>
             ) : null}
@@ -305,7 +304,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 deductEnabled={data.bag_pool_deduct_enabled !== false}
                 poolUnitLabel={bagPoolWorkflow ? "kg" : "bag"}
               />
-              {canExecEdit && bagPoolWorkflow ? (
+              {canEditLeafPool && bagPoolWorkflow ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     type="button"
@@ -341,7 +340,6 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
                 onGeneratePrint={() => setPouchModal("admin")}
                 pendingPouchLabels={pendingPouchLabels}
                 onBagWaste={() => setShowWarehouseWaste(true)}
-                onFreebies={() => setShowFreebies(true)}
             />
           )}
 
@@ -508,10 +506,7 @@ export function RawDeptMaterialPage({ route }: RawDeptMaterialPageProps) {
           productKey={productKey as "pt" | "brc" | "jar_cacao"}
           freebieGrams={data.freebie_grams ?? 0}
           freebieOnHand={data.freebie_on_hand ?? 0}
-          gramsPerBag={data.bag_pool?.grams_per_bag ?? 1000}
-          canMutate={canMutate}
           onClose={() => setShowFreebies(false)}
-          onDone={() => { void refresh(); }}
         />
       )}
       {showUseRawBags && data && (
@@ -615,7 +610,6 @@ function RawDeptInlineActions({
   onGeneratePrint,
   pendingPouchLabels,
   onBagWaste,
-  onFreebies,
 }: {
   bagPoolWorkflow: boolean;
   finishedProductPath: string;
@@ -632,7 +626,6 @@ function RawDeptInlineActions({
   onGeneratePrint: () => void;
   pendingPouchLabels: number;
   onBagWaste: () => void;
-  onFreebies: () => void;
 }) {
   const canBags = bagsOnHand > 0;
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
@@ -756,15 +749,6 @@ function RawDeptInlineActions({
             <Minus size={16} /> {bagPoolWorkflow ? "Leaf waste (kg)" : "Bag waste"}
           </AppPressable>
         )}
-        {bagPoolWorkflow ? (
-          <AppPressable
-            variant="outline"
-            onClick={onFreebies}
-            className="w-full inline-flex items-center justify-start gap-2 py-3 text-sm font-semibold border-[#C8900A] text-[#8a6506]"
-          >
-            <Gift size={16} /> + Freebies
-          </AppPressable>
-        ) : null}
         <Link
           to={finishedProductPath}
           className="w-full inline-flex items-center justify-start gap-2 py-3 px-3 text-sm font-semibold rounded-xl border border-border hover:bg-secondary"
@@ -829,15 +813,6 @@ function RawDeptInlineActions({
               className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
             >
               <Minus size={16} /> {bagPoolWorkflow ? "Leaf waste (kg)" : "Bag waste"}
-            </AppPressable>
-          ) : null}
-          {bagPoolWorkflow ? (
-            <AppPressable
-              variant="outline"
-              onClick={() => runMobileAction(onFreebies)}
-              className="min-h-11 w-full inline-flex items-center justify-start gap-2 text-sm font-semibold"
-            >
-              <Gift size={16} /> + Freebies
             </AppPressable>
           ) : null}
           <Link
@@ -1239,34 +1214,19 @@ function DeptRawFreebiesModal({
   productKey,
   freebieGrams,
   freebieOnHand,
-  gramsPerBag,
-  canMutate,
   onClose,
-  onDone,
 }: {
   productKey: "pt" | "brc" | "jar_cacao";
   freebieGrams: number;
   freebieOnHand: number;
-  gramsPerBag: number;
-  canMutate: boolean;
   onClose: () => void;
-  onDone: () => void;
 }) {
-  const [tab, setTab] = useState<"create" | "history">(canMutate ? "create" : "history");
-  const [qty, setQty] = useState("1");
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [onHand, setOnHand] = useState(freebieOnHand);
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<DeptRawFreebieLogRow[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [histLoading, setHistLoading] = useState(false);
-  const inputCls = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background";
-
-  const qtyNum = Math.max(0, Math.floor(Number(qty) || 0));
-  const gramsTotal = Math.round(qtyNum * freebieGrams * 10000) / 10000;
-  const bagsEst = gramsPerBag > 0 ? Math.round((gramsTotal / gramsPerBag) * 1e6) / 1e6 : 0;
 
   const loadHistory = useCallback(async () => {
     setHistLoading(true);
@@ -1284,105 +1244,28 @@ function DeptRawFreebiesModal({
   }, [page, productKey]);
 
   useEffect(() => {
-    if (tab === "history") void loadHistory();
-  }, [tab, loadHistory]);
+    void loadHistory();
+  }, [loadHistory]);
 
   useEffect(() => {
     setOnHand(freebieOnHand);
   }, [freebieOnHand]);
 
-  const submitCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (freebieGrams <= 0) {
-      setError("Set freebie grams in Settings before creating freebies.");
-      return;
-    }
-    if (qtyNum < 1) {
-      setError("Enter a whole number of samples ≥ 1.");
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const res = await deptRawFreebieCreate({
-        product_key: productKey,
-        qty: qtyNum,
-      });
-      setOnHand(res.freebie_on_hand);
-      setSuccess(`Created ${qtyNum} freebie sample${qtyNum === 1 ? "" : "s"} (${gramsTotal} g · ${bagsEst} kg leaf).`);
-      setQty("1");
-      onDone();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not create freebies.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const tabBtn = (id: "create" | "history", label: string) => (
-    <button
-      type="button"
-      key={id}
-      onClick={() => {
-        setTab(id);
-        setError(null);
-        setSuccess(null);
-      }}
-      className={`min-h-10 flex-1 rounded-lg px-3 text-sm font-semibold transition-colors ${
-        tab === id ? "bg-[#C8900A] text-white" : "border border-border hover:bg-secondary/50"
-      }`}
-    >
-      {label}
-    </button>
-  );
-
   return (
     <AppModal open onClose={onClose} panelClassName="max-w-lg w-full" labelledBy="raw-freebies-title">
       <AppModalHeader
-        title="Freebies"
+        title="Freebie history"
         titleId="raw-freebies-title"
         subtitle={`${onHand.toLocaleString()} on hand · ${freebieGrams} g per sample`}
         onClose={onClose}
       />
       <AppModalBody className="space-y-4">
-        <div className="flex gap-2">
-          {canMutate ? tabBtn("create", "Create") : null}
-          {tabBtn("history", "History")}
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Stock in freebies by scanning the freebie barcode in Scan to inventory.
+        </p>
         {error ? <AppErrorBanner message={error} /> : null}
-        {success ? <AppSuccessNotice message={success} /> : null}
 
-        {tab === "create" && canMutate ? (
-          <form onSubmit={submitCreate} className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Deducts leaf from the raw pool and adds samples to the Freebies pool. Correct counts via Inventory Check.
-            </p>
-            <div>
-              <label htmlFor="freebie-create-qty" className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
-                Samples
-              </label>
-              <input
-                id="freebie-create-qty"
-                type="number"
-                min={1}
-                step={1}
-                value={qty}
-                onChange={e => setQty(e.target.value)}
-                required
-                className={inputCls}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {freebieGrams} g each · {gramsTotal} g total · ~{bagsEst} kg leaf
-            </p>
-            <Button type="submit" disabled={saving || freebieGrams <= 0} className="w-full bg-[#C8900A] hover:bg-[#b07f09] text-white">
-              {saving ? "Saving…" : "Create freebies"}
-            </Button>
-          </form>
-        ) : null}
-
-        {tab === "history" ? (
+        {(
           <div className="space-y-3">
             {histLoading ? (
               <div className="flex justify-center py-6 text-muted-foreground">
@@ -1438,7 +1321,7 @@ function DeptRawFreebiesModal({
               </div>
             ) : null}
           </div>
-        ) : null}
+        )}
       </AppModalBody>
     </AppModal>
   );

@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | — |
+| **Active Spec** | [[specs/2026-10-30_freebie-barcodes]] |
 | **Active Plan** | — |
-| **Status** | `shipped` - Inventory check freebies |
+| **Status** | `shipped` - Freebie barcodes (run phase 96 on prod) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

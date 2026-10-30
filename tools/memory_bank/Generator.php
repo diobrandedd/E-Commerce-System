@@ -307,7 +307,9 @@ final class MemoryBankGenerator
         $modulesDir = mb_modules_dir();
         if (is_dir($modulesDir)) {
             foreach (glob($modulesDir . '/*.md') ?: [] as $old) {
-                unlink($old);
+                if (is_file($old)) {
+                    unlink($old);
+                }
             }
         }
 

@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-30 — Leaf pool edit is executive plus administrator password
+**Change:** Edit pool on Paragis, Black Rice, and Jar Cacao is hidden unless the account role is executive, and the save requires the Settings administrator password. → [[problems/records/2026-10-30_leaf-pool-executive-password]]
+
+### 2026-10-30 — Freebie barcodes
+**Change:** Paragis, Black Rice, and Jar Cacao freebies each have one barcode. Scan it on the raw page to stock in (leaf down by settings grams), scan it in Pack scan to give out, and print a full sheet of one freebie from Settings. The + Freebies button is removed. → [[problems/records/2026-10-30_freebie-barcodes]]
+
 ### 2026-10-29 — Print selected supply barcodes
 **Change:** Supplies rows can be ticked across category and search filters; Print selected sends only those ids. Generate all still prints the full sheet. → [[problems/records/2026-10-29_supplies-print-selected-barcodes]]
 

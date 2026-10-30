@@ -16,10 +16,20 @@ export interface SkuBarcodeRow {
   updated_by_name: string | null;
 }
 
+export interface FreebieBarcodeRow {
+  product_key: string;
+  label: string;
+  code: string;
+  grams: number;
+  saved: boolean;
+}
+
 export interface SkuLookup {
-  lookup_kind: "sku" | "unique_honey" | "unique_dept";
+  lookup_kind: "sku" | "unique_honey" | "unique_dept" | "freebie";
   requires_qty?: boolean;
-  kind: "honey" | "dept";
+  kind: "honey" | "dept" | "freebie";
+  grams?: number;
+  freebie_on_hand?: number;
   id?: number;
   label?: string;
   code: string;
@@ -40,6 +50,10 @@ export interface SkuLookup {
 
 export function skuPrintSheetUrl(skuId: number, qty: number): string {
   return `/rts/api/v1/${ENDPOINT}?action=print_sheet&sku_id=${skuId}&qty=${qty}`;
+}
+
+export function freebiePrintSheetUrl(productKey: string): string {
+  return `/rts/api/v1/${ENDPOINT}?action=freebie_print_sheet&product_key=${encodeURIComponent(productKey)}`;
 }
 
 export function skuPrintSheetCombinedUrl(
@@ -76,6 +90,9 @@ export const skuBarcodesApi = {
     rts_label_job_id?: number;
   }) =>
     apiPost<{ print_job_id: number; print_url: string }>(ENDPOINT, "print_record", body),
+  freebieList: () => apiGet<{ rows: FreebieBarcodeRow[] }>(ENDPOINT, "freebie_list"),
+  freebieSaveBulk: (items: { product_key: string; code: string }[]) =>
+    apiPost<{ rows: FreebieBarcodeRow[] }>(ENDPOINT, "freebie_save_bulk", { items }),
   stockIn: (body: {
     code?: string;
     sku_id?: number;

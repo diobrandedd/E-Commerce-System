@@ -258,10 +258,11 @@ export function deptWipWaste(payload: { qty: number; reason?: string }) {
   return apiPost("honey.php", "dept_wip_waste", payload);
 }
 
-/** Executive correction of PT/BRC/Jar Cacao leaf pool (grams → kg). Requires honey.executive_edit. */
+/** Executive correction of PT/BRC/Jar Cacao leaf pool (grams → kg). Executive role plus administrator password. */
 export function deptRawExecutiveSetGrams(payload: {
   product_key: "pt" | "brc" | "jar_cacao";
   grams: number;
+  admin_password: string;
   note?: string;
 }) {
   return apiPost<{

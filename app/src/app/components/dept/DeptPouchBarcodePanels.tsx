@@ -537,7 +537,7 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
   const [poolWarn, setPoolWarn] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [pending, setPending] = useState<{ code: string; label: string; kind: "sku" | "unique" } | null>(null);
+  const [pending, setPending] = useState<{ code: string; label: string; kind: "sku" | "unique" | "freebie" } | null>(null);
   const [qty, setQty] = useState("1");
   const [saving, setSaving] = useState(false);
   const cameraTitleId = useId();
@@ -547,7 +547,7 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
 
   useEffect(() => {
     if (!pending) return;
-    if (pending.kind !== "sku") return;
+    if (pending.kind === "unique") return;
     const t = window.setTimeout(() => {
       qtyInputRef.current?.focus();
       qtyInputRef.current?.select();
@@ -567,6 +567,15 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
       playScanBeep("ok");
       setFlash("ok");
       clearPending();
+      if (res.lookup_kind === "freebie") {
+        const grams = res.grams_total != null ? ` (−${res.grams_total} g leaf)` : "";
+        const left = res.freebie_on_hand != null ? ` · ${res.freebie_on_hand} on hand` : "";
+        setPoolWarn(null);
+        setMsg(`Stocked ${res.qty_samples ?? stockQty ?? ""} freebies${grams}${left}`);
+        window.setTimeout(() => setFlash(null), 700);
+        triggerLiveRefresh();
+        return { kind: "success", message: `Stocked ${res.qty_samples ?? ""} freebies` };
+      }
       const qtyBit = res.qty ? ` ×${res.qty}` : "";
       const poolLeft =
         res.bag_pool != null
@@ -612,7 +621,7 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
     const n = Number(qty);
     if (!Number.isFinite(n) || n < 1) {
       setFlash("err");
-      setMsg(`Enter how many ${unit.plural} to stock in.`);
+      setMsg(pending.kind === "freebie" ? "Enter how many samples to stock in." : `Enter how many ${unit.plural} to stock in.`);
       window.setTimeout(() => setFlash(null), 700);
       qtyInputRef.current?.focus();
       return { kind: "error", message: "Enter quantity." };
@@ -633,6 +642,29 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
     }
     try {
       const { lookup } = await skuBarcodesApi.lookup(value);
+      if (lookup.lookup_kind === "freebie") {
+        if (lookup.product_key && lookup.product_key !== productKey) {
+          playScanBeep("bad");
+          setFlash("err");
+          setMsg(`This freebie barcode belongs to ${lookup.label ?? lookup.product_key}.`);
+          window.setTimeout(() => setFlash(null), 900);
+          refocus();
+          return { kind: "error", message: "Wrong product freebie." };
+        }
+        playScanBeep("ok");
+        setFlash("ok");
+        setPoolWarn(null);
+        setMsg(null);
+        setQty("1");
+        setPending({
+          code: value,
+          label: `${lookup.label ?? "Freebie"} — enter how many samples`,
+          kind: "freebie",
+        });
+        setCameraOpen(false);
+        window.setTimeout(() => setFlash(null), 700);
+        return { kind: "success", message: "Enter how many samples, then Stock in." };
+      }
       if (lookup.lookup_kind === "sku" && lookup.kind === "dept") {
         if (lookup.product_key && lookup.product_key !== productKey) {
           playScanBeep("bad");
@@ -752,7 +784,11 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  {pending.kind === "sku" ? "Scanned SKU" : `Scanned ${unit.singular}`}
+                  {pending.kind === "freebie"
+                    ? "Scanned freebie"
+                    : pending.kind === "sku"
+                      ? "Scanned SKU"
+                      : `Scanned ${unit.singular}`}
                 </p>
                 <p className="text-sm font-semibold text-foreground truncate">{pending.label}</p>
                 <p className="text-xs font-mono text-muted-foreground truncate">{pending.code}</p>
@@ -771,7 +807,7 @@ export function DeptPouchScanInPanel({ productKey, productLabel }: DeptPouchPane
                 <span className="sr-only">Clear scan</span>
               </AppPressable>
             </div>
-            {pending.kind === "sku" ? (
+            {pending.kind !== "unique" ? (
               <div className="flex flex-wrap items-end gap-2">
                 <div className="w-28">
                   <label

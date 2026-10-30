@@ -1,7 +1,7 @@
 ---
 title: inventory_check_apply
 source: includes/inventory_check_apply.php
-generated: 2026-10-29T10:07:08+01:00
+generated: 2026-10-30T04:55:57+01:00
 type: module
 function_count: 10
 ---
@@ -23,7 +23,7 @@ function_count: 10
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:1049 — `return inventory_check_compare_run_for_events($pdo, [$eventId], $userId);`
+- `includes/inventory_check.php`:1097 — `return inventory_check_compare_run_for_events($pdo, [$eventId], $userId);`
 - `includes/inventory_check_apply.php`:404 — `$compare = inventory_check_compare_run_for_events($pdo, $eventIds, $userId);`
 
 ## inventory_check_audited_unique_codes {#inventory_check_audited_unique_codes}
@@ -93,6 +93,6 @@ function_count: 10
 
 **Callers (2):**
 
-- `includes/inventory_check.php`:1341 — `'run' => inventory_check_serialize_compare_run($run),`
-- `includes/inventory_check.php`:1577 — `$run = inventory_check_serialize_compare_run($row);`
+- `includes/inventory_check.php`:1389 — `'run' => inventory_check_serialize_compare_run($run),`
+- `includes/inventory_check.php`:1625 — `$run = inventory_check_serialize_compare_run($row);`
 

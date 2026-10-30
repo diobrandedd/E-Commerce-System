@@ -1,7 +1,7 @@
 ---
 title: dept_pt_settings
 source: includes/dept_pt_settings.php
-generated: 2026-10-29T10:06:45+01:00
+generated: 2026-10-30T04:55:35+01:00
 type: module
 function_count: 9
 ---
@@ -31,7 +31,7 @@ function_count: 9
 - `includes/dept_pouch_barcodes.php`:592 — `if (dept_pt_setting_bag_pool_deduct_enabled($pdo)) {`
 - `includes/dept_pt_settings.php`:147 — `'bag_pool_deduct' => dept_pt_setting_bag_pool_deduct_enabled($pdo),`
 - `includes/dept_pt_settings.php`:191 — `'bag_pool_deduct' => dept_pt_setting_bag_pool_deduct_enabled($pdo),`
-- `includes/sku_barcodes.php`:1071 — `if (dept_pt_setting_bag_pool_deduct_enabled($pdo)) {`
+- `includes/sku_barcodes.php`:1092 — `if (dept_pt_setting_bag_pool_deduct_enabled($pdo)) {`
 
 ## dept_pt_setting_grams_per_tea_bag {#dept_pt_setting_grams_per_tea_bag}
 
@@ -56,7 +56,7 @@ function_count: 9
 - `includes/dept_pouch_barcodes.php`:604 — `'grams_deducted' => dept_pt_setting_grams_per_pouch($pdo),`
 - `includes/dept_pt_settings.php`:113 — `$g = dept_pt_setting_grams_per_pouch($pdo);`
 - `includes/dept_pt_settings.php`:190 — `'grams_per_pouch' => dept_pt_setting_grams_per_pouch($pdo),`
-- `includes/sku_barcodes.php`:1077 — `'grams_deducted' => round(dept_pt_setting_grams_per_pouch($pdo) * $qty, 2),`
+- `includes/sku_barcodes.php`:1098 — `'grams_deducted' => round(dept_pt_setting_grams_per_pouch($pdo) * $qty, 2),`
 
 ## dept_pt_setting_freebie_grams {#dept_pt_setting_freebie_grams}
 
@@ -71,7 +71,7 @@ function_count: 9
 **Callers (2):**
 
 - `includes/dept_pouch_barcodes.php`:593 — `$bagsPerPouch = dept_pt_setting_bags_per_pouch($pdo);`
-- `includes/sku_barcodes.php`:1072 — `$bags = dept_pt_setting_bags_per_pouch($pdo) * $qty;`
+- `includes/sku_barcodes.php`:1093 — `$bags = dept_pt_setting_bags_per_pouch($pdo) * $qty;`
 
 ## dept_pt_bom_snapshot {#dept_pt_bom_snapshot}
 

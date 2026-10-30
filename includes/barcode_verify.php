@@ -19,6 +19,32 @@ function barcode_verify_lookup(PDO $pdo, string $rawCode): array
     }
 
     require_once __DIR__ . '/sku_barcodes.php';
+    require_once __DIR__ . '/dept_raw_freebies.php';
+    $freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);
+    if ($freebie !== null) {
+        $productKey = $freebie['product_key'];
+        $grams = rtrim(rtrim(number_format(dept_raw_freebie_grams($pdo, $productKey), 2, '.', ''), '0'), '.');
+        $onHand = dept_raw_freebie_on_hand($pdo, $productKey);
+
+        return [
+            'found' => true,
+            'kind' => 'freebie',
+            'lookup_kind' => 'freebie',
+            'code' => $freebie['code'],
+            'status' => 'freebie',
+            'product_label' => dept_raw_freebie_label($productKey) . ' · ' . $grams . ' g · ' . $onHand . ' on hand',
+            'supplier_code' => null,
+            'batch_no' => null,
+            'batch_date' => null,
+            'scanned_at' => null,
+            'scanned_by_name' => null,
+            'unit_status' => null,
+            'requires_qty' => false,
+            'honey' => null,
+            'dept' => null,
+        ];
+    }
+
     $sku = sku_barcode_fetch_by_code($pdo, $code);
     if ($sku !== null) {
         $ser = sku_barcode_serialize($sku);

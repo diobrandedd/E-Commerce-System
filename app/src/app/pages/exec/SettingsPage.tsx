@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, ShoppingCart, Tag, Droplets, Leaf, Shield, Smartphone } from "lucide-react";
+import { Gift, Loader2, Printer, ShoppingCart, Tag, Droplets, Leaf, Shield, Smartphone } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import { Switch } from "@/app/components/ui/switch";
@@ -8,7 +8,12 @@ import {
   AppSuccessNotice,
 } from "@/app/components/layout/appFeedbackMotion";
 import { apiGet, apiPost, ApiError } from "@/app/lib/api";
-import { skuBarcodesApi, type SkuBarcodeRow } from "@/app/lib/skuBarcodes";
+import {
+  freebiePrintSheetUrl,
+  skuBarcodesApi,
+  type FreebieBarcodeRow,
+  type SkuBarcodeRow,
+} from "@/app/lib/skuBarcodes";
 import { DEFAULT_ML_PER_US_GALLON } from "@/app/lib/honey";
 
 interface PosPinRow {
@@ -78,6 +83,13 @@ export function SettingsPage() {
   const [skuSaving, setSkuSaving] = useState(false);
   const [skuOk, setSkuOk] = useState<string | null>(null);
   const [skuErr, setSkuErr] = useState<string | null>(null);
+
+  const [freebieRows, setFreebieRows] = useState<FreebieBarcodeRow[]>([]);
+  const [freebieCodes, setFreebieCodes] = useState<Record<string, string>>({});
+  const [freebieLoading, setFreebieLoading] = useState(true);
+  const [freebieSaving, setFreebieSaving] = useState(false);
+  const [freebieOk, setFreebieOk] = useState<string | null>(null);
+  const [freebieErr, setFreebieErr] = useState<string | null>(null);
 
   const [mlPerGallon, setMlPerGallon] = useState(String(DEFAULT_ML_PER_US_GALLON));
   const [mlDefault, setMlDefault] = useState(DEFAULT_ML_PER_US_GALLON);
@@ -202,6 +214,23 @@ export function SettingsPage() {
       setSkuErr(e instanceof ApiError ? e.message : "Could not load barcode settings.");
     } finally {
       setSkuLoading(false);
+    }
+  }, []);
+
+  const loadFreebieRows = useCallback(async () => {
+    setFreebieLoading(true);
+    try {
+      const data = await skuBarcodesApi.freebieList();
+      setFreebieRows(data.rows);
+      const codes: Record<string, string> = {};
+      data.rows.forEach(r => {
+        codes[r.product_key] = r.code ?? "";
+      });
+      setFreebieCodes(codes);
+    } catch (e) {
+      setFreebieErr(e instanceof ApiError ? e.message : "Could not load freebie barcodes.");
+    } finally {
+      setFreebieLoading(false);
     }
   }, []);
 
@@ -348,6 +377,7 @@ export function SettingsPage() {
     void loadPins();
     void loadMobileStaff();
     void loadSkuRows();
+    void loadFreebieRows();
     void loadHoneyVolume();
     void loadPyxacctSync();
     void loadPtBom();
@@ -358,6 +388,7 @@ export function SettingsPage() {
     loadPins,
     loadMobileStaff,
     loadSkuRows,
+    loadFreebieRows,
     loadHoneyVolume,
     loadPyxacctSync,
     loadPtBom,
@@ -659,6 +690,40 @@ export function SettingsPage() {
     } finally {
       setSkuSaving(false);
     }
+  };
+
+  const freebieDirty = freebieRows.some(
+    row => (freebieCodes[row.product_key] ?? "").trim() !== (row.code ?? "").trim(),
+  );
+
+  const saveAllFreebies = async () => {
+    setFreebieSaving(true);
+    setFreebieOk(null);
+    setFreebieErr(null);
+    try {
+      const res = await skuBarcodesApi.freebieSaveBulk(
+        freebieRows.map(row => ({
+          product_key: row.product_key,
+          code: (freebieCodes[row.product_key] ?? "").trim(),
+        })),
+      );
+      setFreebieRows(res.rows);
+      const codes: Record<string, string> = {};
+      res.rows.forEach(r => {
+        codes[r.product_key] = r.code ?? "";
+      });
+      setFreebieCodes(codes);
+      setFreebieOk("Saved freebie barcodes.");
+    } catch (e) {
+      setFreebieErr(e instanceof ApiError ? e.message : "Could not save freebie barcodes.");
+    } finally {
+      setFreebieSaving(false);
+    }
+  };
+
+  const printFreebieSheet = (productKey: string) => {
+    setFreebieErr(null);
+    window.open(freebiePrintSheetUrl(productKey), "_blank", "noopener");
   };
 
   const skuDirty = skuRows.some(row => {
@@ -1421,6 +1486,112 @@ export function SettingsPage() {
                 </div>
               )}
             </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <Gift size={18} className="text-[#C8900A] shrink-0" />
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-foreground">Freebie barcodes</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  One barcode per freebie. Print fills a whole sheet with that barcode. Grams come from the freebie sample setting above.
+                </p>
+              </div>
+            </div>
+            {!freebieLoading && freebieRows.length > 0 && (
+              <Button
+                type="button"
+                disabled={freebieSaving || !freebieDirty}
+                onClick={() => void saveAllFreebies()}
+                className="shrink-0 bg-[#C8900A] hover:bg-[#b07f09] text-white"
+              >
+                {freebieSaving ? <Loader2 className="animate-spin" size={14} /> : "Save"}
+              </Button>
+            )}
+          </div>
+          {freebieOk && (
+            <div className="px-6 pt-4">
+              <AppSuccessNotice message={freebieOk} />
+            </div>
+          )}
+          {freebieErr && (
+            <div className="px-6 pt-4">
+              <AppErrorBanner message={freebieErr} />
+            </div>
+          )}
+          {freebieLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-secondary/40 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    <tr>
+                      <th className="text-left px-4 py-2.5 font-semibold">Freebie</th>
+                      <th className="text-left px-4 py-2.5 font-semibold">Grams (from BOM)</th>
+                      <th className="text-left px-4 py-2.5 font-semibold">Code</th>
+                      <th className="text-right px-4 py-2.5 font-semibold">Print</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {freebieRows.map(row => {
+                      const dirty = (freebieCodes[row.product_key] ?? "").trim() !== (row.code ?? "").trim();
+                      return (
+                        <tr key={row.product_key} className={dirty ? "bg-[#C8900A]/5" : undefined}>
+                          <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{row.label}</td>
+                          <td className="px-4 py-3 text-muted-foreground tabular-nums">{row.grams} g</td>
+                          <td className="px-4 py-3">
+                            <input
+                              value={freebieCodes[row.product_key] ?? ""}
+                              onChange={e =>
+                                setFreebieCodes(prev => ({ ...prev, [row.product_key]: e.target.value }))
+                              }
+                              className="w-full min-w-[7rem] rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-[#C8900A]"
+                              maxLength={32}
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={dirty || !(freebieCodes[row.product_key] ?? "").trim()}
+                              title={dirty ? "Save the code first" : "Print a full sheet of this barcode"}
+                              onClick={() => printFreebieSheet(row.product_key)}
+                            >
+                              <Printer size={14} /> Full sheet
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {freebieRows.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                          No freebie barcodes yet. Run the freebie barcodes migration.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {freebieRows.length > 0 && (
+                <div className="px-6 py-4 border-t border-border flex justify-end">
+                  <Button
+                    type="button"
+                    disabled={freebieSaving || !freebieDirty}
+                    onClick={() => void saveAllFreebies()}
+                    className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+                  >
+                    {freebieSaving ? <Loader2 className="animate-spin" size={14} /> : "Save"}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
 

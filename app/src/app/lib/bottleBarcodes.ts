@@ -96,7 +96,7 @@ export interface HoneyPackSessionItem {
 }
 
 export interface HoneyPackSessionGroup {
-  kind?: "honey" | "dept";
+  kind?: "honey" | "dept" | "freebie";
   product_key?: string;
   product_label?: string;
   variant: string;
@@ -314,11 +314,12 @@ export const bottleBarcodesApi = {
       result: string;
       session: HoneyPackSession;
       lookup: (HoneyBottleLookup & {
-        kind?: "honey" | "dept";
+        kind?: "honey" | "dept" | "freebie";
         product_key?: string;
         product_label?: string;
         lookup_kind?: string;
         qty?: number;
+        added_qty?: number;
         pool?: string;
       }) | null;
     }>("bottle_barcodes.php", "pack_scan", {
