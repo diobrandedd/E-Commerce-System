@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-10-30T04:53:20+01:00
+generated: 2026-10-30T07:49:41+01:00
 type: memory-bank
 ---
 
@@ -77,6 +77,7 @@ type: memory-bank
 | [[modules/pos_thermal_print]] | 4 |
 | [[modules/pos_unified]] | 9 |
 | [[modules/pyxacct_ap_sync]] | 9 |
+| [[modules/pyxacct_supply_sync]] | 3 |
 | [[modules/pyxacct_walkin_sync]] | 7 |
 | [[modules/qr_decode]] | 13 |
 | [[modules/rts_attachments]] | 6 |

@@ -83,16 +83,18 @@ function pyxacct_api_settings_save(
     return pyxacct_api_settings_public($rtsPdo);
 }
 
-/** @return array{enabled:bool,api_base_url:string,token_set:bool,walkin_enabled:bool,description:string} */
+/** @return array{enabled:bool,api_base_url:string,token_set:bool,walkin_enabled:bool,supply_enabled:bool,description:string} */
 function pyxacct_api_settings_public(PDO $rtsPdo): array
 {
     require_once __DIR__ . '/pyxacct_walkin_sync.php';
+    require_once __DIR__ . '/pyxacct_supply_sync.php';
 
     return [
         'enabled' => pyxacct_honey_ap_sync_enabled_on_tracker($rtsPdo),
         'api_base_url' => pyxacct_api_base_url_get($rtsPdo),
         'token_set' => pyxacct_api_token_get($rtsPdo) !== '',
         'walkin_enabled' => pyxacct_walkin_sync_enabled($rtsPdo),
+        'supply_enabled' => pyxacct_supply_sync_enabled($rtsPdo),
         'description' => 'When on, priced honey warehouse stock-ins POST to PyxAcct accounts payable.',
     ];
 }

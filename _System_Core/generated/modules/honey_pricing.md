@@ -1,7 +1,7 @@
 ---
 title: honey_pricing
 source: includes/honey_pricing.php
-generated: 2026-10-30T04:55:50+01:00
+generated: 2026-10-30T07:50:19+01:00
 type: module
 function_count: 19
 ---

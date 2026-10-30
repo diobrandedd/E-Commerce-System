@@ -26,6 +26,7 @@ require_once __DIR__ . '/../../includes/pos_mobile_staff.php';
  *   GET  ?action=pyxacct_sync_get
  *   POST ?action=pyxacct_sync_save -> { enabled, api_base_url, api_token? }
  *   POST ?action=pyxacct_sync_test
+ *   POST ?action=pyxacct_supply_save -> { enabled }
  */
 
 api_dispatch([
@@ -51,6 +52,7 @@ api_dispatch([
     'pyxacct_sync_test' => 'api_settings_pyxacct_sync_test',
     'pyxacct_walkin_save' => 'api_settings_pyxacct_walkin_save',
     'pyxacct_walkin_backfill' => 'api_settings_pyxacct_walkin_backfill',
+    'pyxacct_supply_save' => 'api_settings_pyxacct_supply_save',
 ]);
 
 function api_settings_require_executive(): void
@@ -496,6 +498,23 @@ function api_settings_pyxacct_walkin_save(): void
     $user = api_require_ims_user();
     $enabled = api_settings_bool($input['enabled'] ?? false, false);
     pyxacct_walkin_sync_enabled_save(
+        ims_pdo(),
+        $enabled,
+        (int) ($user['id'] ?? 0) ?: null
+    );
+    api_ok(array_merge(pyxacct_api_settings_public(ims_pdo()), ['saved' => true]));
+}
+
+function api_settings_pyxacct_supply_save(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/pyxacct_supply_sync.php';
+    $user = api_require_ims_user();
+    $enabled = api_settings_bool($input['enabled'] ?? false, false);
+    pyxacct_supply_sync_enabled_save(
         ims_pdo(),
         $enabled,
         (int) ($user['id'] ?? 0) ?: null

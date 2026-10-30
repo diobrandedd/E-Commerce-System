@@ -109,6 +109,8 @@ export function SettingsPage() {
   const [pyxacctSyncErr, setPyxacctSyncErr] = useState<string | null>(null);
   const [walkinSyncEnabled, setWalkinSyncEnabled] = useState(false);
   const [walkinSyncSaving, setWalkinSyncSaving] = useState(false);
+  const [supplySyncEnabled, setSupplySyncEnabled] = useState(false);
+  const [supplySyncSaving, setSupplySyncSaving] = useState(false);
   const [walkinBackfilling, setWalkinBackfilling] = useState(false);
 
   const [ptGramsTea, setPtGramsTea] = useState("2");
@@ -360,11 +362,13 @@ export function SettingsPage() {
         api_base_url?: string;
         token_set?: boolean;
         walkin_enabled?: boolean;
+        supply_enabled?: boolean;
       }>("settings.php", "pyxacct_sync_get");
       setPyxacctSyncEnabled(!!data.enabled);
       setPyxacctApiBaseUrl(data.api_base_url ?? "");
       setPyxacctTokenSet(!!data.token_set);
       setWalkinSyncEnabled(!!data.walkin_enabled);
+      setSupplySyncEnabled(!!data.supply_enabled);
       setPyxacctApiToken("");
     } catch (e) {
       setPyxacctSyncErr(e instanceof ApiError ? e.message : "Could not load PyxAcct sync setting.");
@@ -487,6 +491,28 @@ export function SettingsPage() {
       await loadPyxacctSync();
     } finally {
       setWalkinSyncSaving(false);
+    }
+  };
+
+  const saveSupplySync = async (enabled: boolean) => {
+    setSupplySyncSaving(true);
+    setPyxacctSyncOk(null);
+    setPyxacctSyncErr(null);
+    try {
+      const res = await apiPost<{ supply_enabled?: boolean }>("settings.php", "pyxacct_supply_save", {
+        enabled,
+      });
+      setSupplySyncEnabled(!!res.supply_enabled);
+      setPyxacctSyncOk(
+        res.supply_enabled
+          ? "Supply sync is ON. New priced supply stock-ins will post as expenses."
+          : "Supply sync is OFF. Supply stock-ins will not post.",
+      );
+    } catch (e) {
+      setPyxacctSyncErr(e instanceof ApiError ? e.message : "Could not save supply sync.");
+      await loadPyxacctSync();
+    } finally {
+      setSupplySyncSaving(false);
     }
   };
 
@@ -908,9 +934,9 @@ export function SettingsPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground">PyxAcct integration</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Honey stock-ins and walk-in receipts use this URL and token. Walk-in sync stays off until you
-                turn it on here, so another RTS database does not post into these books. PyxAcct must also
-                accept the sync in its Settings.
+                Honey stock-ins, walk-in receipts, and supply stock-ins use this URL and token. Walk-in and
+                supply sync stay off until you turn them on here, so another RTS database does not post into
+                these books. PyxAcct must also accept each sync in its Settings.
               </p>
             </div>
           </div>
@@ -1019,6 +1045,27 @@ export function SettingsPage() {
               >
                 {walkinBackfilling ? <Loader2 className="animate-spin" size={14} /> : "Sync existing walk-in"}
               </Button>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Sync supply stock-ins → expense</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {supplySyncEnabled ? "Currently ON" : "Currently OFF"}. Priced supply lots post as Packaging ·
+                    Supplies, with the item name as the description. Monthly inventory counts and past lots are not
+                    posted.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {supplySyncSaving ? <Loader2 className="animate-spin text-muted-foreground" size={16} /> : null}
+                  <Switch
+                    checked={supplySyncEnabled}
+                    disabled={supplySyncSaving || pyxacctSyncSaving}
+                    onCheckedChange={checked => {
+                      setSupplySyncEnabled(checked);
+                      void saveSupplySync(checked);
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>

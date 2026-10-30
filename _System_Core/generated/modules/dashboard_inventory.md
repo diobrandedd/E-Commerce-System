@@ -1,7 +1,7 @@
 ---
 title: dashboard_inventory
 source: includes/dashboard_inventory.php
-generated: 2026-10-30T04:55:25+01:00
+generated: 2026-10-30T07:49:48+01:00
 type: module
 function_count: 6
 ---

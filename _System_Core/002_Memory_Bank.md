@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-10-30 — Supply stock-ins post to PyxAcct as expenses
+**Change:** Priced, non-monthly supply stock-ins POST `ingest_supply` to cloud PyxAcct (Packaging → Supplies, item name as description) when the new **Sync supply stock-ins → expense** switch is on. Default off. → [[problems/records/2026-10-30_pyxacct-supply-stock-in-expense]]
+
 ### 2026-10-30 — Leaf pool edit is executive plus administrator password
 **Change:** Edit pool on Paragis, Black Rice, and Jar Cacao is hidden unless the account role is executive, and the save requires the Settings administrator password. → [[problems/records/2026-10-30_leaf-pool-executive-password]]
 

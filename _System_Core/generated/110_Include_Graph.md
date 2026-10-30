@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-10-30T04:55:17+01:00
+generated: 2026-10-30T07:49:41+01:00
 type: memory-bank
-edge_count: 487
+edge_count: 489
 ---
 
 
@@ -374,7 +374,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_unified.php` | `includes/sku_barcodes.php` |
 | `includes/pyxacct_ap_sync.php` | `includes/app_settings.php` |
 | `includes/pyxacct_ap_sync.php` | `includes/db.php` |
+| `includes/pyxacct_ap_sync.php` | `includes/pyxacct_supply_sync.php` |
 | `includes/pyxacct_ap_sync.php` | `includes/pyxacct_walkin_sync.php` |
+| `includes/pyxacct_supply_sync.php` | `includes/pyxacct_walkin_sync.php` |
 | `includes/pyxacct_walkin_sync.php` | `includes/pyxacct_ap_sync.php` |
 | `includes/pyxacct_walkin_sync.php` | `includes/rts_schema.php` |
 | `includes/rts_attachments.php` | `includes/rts_storage.php` |

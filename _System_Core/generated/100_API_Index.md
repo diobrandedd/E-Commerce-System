@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-10-30T04:55:17+01:00
+generated: 2026-10-30T07:49:39+01:00
 type: memory-bank
 ---
 
@@ -399,7 +399,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `raw_snapshot` | `api_materials_raw_snapshot()` | `material_raw_snapshot()`, `ims_pdo()` |
 | `raw_detail` | `api_materials_raw_detail()` | `material_inventory_raw_stock_by_slug()`, `ims_pdo()` |
 | `departments` | `api_materials_departments()` | `ims_pdo()` |
-| `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_role_can_stock_in_packaging()`, `material_packaging_stock_in_lot()`, `material_supply_stock_in_lot()` |
+| `stock_in_lot` | `api_materials_stock_in_lot()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_role_can_stock_in_packaging()`, `material_packaging_stock_in_lot()`, `material_supply_stock_in_lot()`, `pyxacct_sync_supply_lot()` |
 | `packaging_detail` | `api_materials_packaging_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_inventory_has_barcode_column()`, `material_packaging_ensure_barcode()`, `material_packaging_last_lot_qty()`, `material_inventory_enrich_packaging_row()`, `ims_user_can()`, `material_packaging_recent_entries()`, … |
 | `supply_detail` | `api_materials_supply_detail()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `ims_user_can()`, `material_supply_recent_entries()`, `material_supply_detail_permissions()` |
 | `set_on_hand` | `api_materials_set_on_hand()` | `ims_pdo()`, `material_inventory_fetch_stock()`, `material_packaging_set_on_hand()`, `material_supply_set_on_hand()` |
@@ -686,6 +686,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `pyxacct_sync_test` | `api_settings_pyxacct_sync_test()` | `pyxacct_test_connection()`, `ims_pdo()` |
 | `pyxacct_walkin_save` | `api_settings_pyxacct_walkin_save()` | `pyxacct_walkin_sync_enabled_save()`, `ims_pdo()`, `pyxacct_api_settings_public()` |
 | `pyxacct_walkin_backfill` | `api_settings_pyxacct_walkin_backfill()` | `pyxacct_sync_existing_walkin()`, `ims_pdo()` |
+| `pyxacct_supply_save` | `api_settings_pyxacct_supply_save()` | `pyxacct_supply_sync_enabled_save()`, `ims_pdo()`, `pyxacct_api_settings_public()` |
 
 ### `sku_barcodes.php`
 
