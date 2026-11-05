@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 /**
- * Push priced supply stock-in lots into PyxAcct as Packaging / Supplies expenses.
+ * Push priced Supplies-page stock-in lots (packaging and supply items) into PyxAcct as Packaging / Supplies expenses.
  * Uses the same API base URL and token as honey AP sync.
  * Supply posting has its own kill switch and defaults off.
  *
- * Monthly inventory recounts, zero-priced lots, packaging lots, and count corrections are not posted.
+ * Monthly inventory recounts, zero-priced lots, and count corrections are not posted.
  * Failures are logged and do not undo the stock-in.
  */
 

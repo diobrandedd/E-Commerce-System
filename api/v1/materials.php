@@ -841,7 +841,7 @@ function api_materials_stock_in_lot(): void
         }
         api_fail($e->getMessage(), 400);
     }
-    if ($category === 'supply' && !$monthly && (float) $totalRaw > 0) {
+    if (!$monthly && (float) $totalRaw > 0) {
         require_once dirname(__DIR__, 2) . '/includes/pyxacct_supply_sync.php';
         pyxacct_sync_supply_lot($pdo, [
             'entry_id' => (int) ($result['entry_id'] ?? 0),

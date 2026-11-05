@@ -1,7 +1,7 @@
 ---
 title: dept_products
 source: includes/dept_products.php
-generated: 2026-10-30T07:49:59+01:00
+generated: 2026-11-05T06:50:52+01:00
 type: module
 function_count: 23
 ---

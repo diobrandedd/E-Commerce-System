@@ -22,7 +22,8 @@ Only honey stock-ins (accounts payable) and walk-in receipts (revenue) were push
 
 - After a supply lot stock-in commits, `api_materials_stock_in_lot` calls `pyxacct_sync_supply_lot()`. That function POSTs `ingest_supply` to the PyxAcct cloud app with `source_key` `rts:supply_lot:{entry_id}`, the item name, and the lot total.
 - PyxAcct files it as an expense under Packaging → Supplies, with the item name as the description.
-- Posted only when the item is a supply, the lot total is above 0, and it is not a monthly inventory stock-in. Packaging lots and on-hand corrections are not posted. Nothing is backfilled.
+- Posted for any lot stock-in (packaging or supply category) when the lot total is above 0 and it is not a monthly inventory stock-in. On-hand corrections are not posted. Nothing is backfilled.
+- The first version posted only `category = 'supply'`, but almost every Supplies-page item is `packaging` (57 of 58), so a priced cushion-piece lot was silently skipped. The category filter was removed.
 - A new Tracker switch **Sync supply stock-ins → expense** (`pyxacct_supply_sync_enabled`, default off) sits on the PyxAcct integration card. PyxAcct has its own **Accept Tracker supply stock-ins** switch.
 - Uses the same base URL and token as honey sync. A failed POST is logged and does not undo the stock-in.
 

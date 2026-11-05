@@ -1,7 +1,7 @@
 ---
 title: honey_parcel_item_parser
 source: includes/honey_parcel_item_parser.php
-generated: 2026-10-30T07:50:17+01:00
+generated: 2026-11-05T06:51:07+01:00
 type: module
 function_count: 17
 ---

@@ -203,13 +203,6 @@ export const inventoryCheckApi = {
       ...(opts?.bottling_date != null ? { bottling_date: opts.bottling_date } : {}),
     }),
 
-  scanFreebie: (eventId: number, productKey: "pt" | "brc" | "jar_cacao", qty: number) =>
-    apiPost<InventoryCheckScanResult>(ENDPOINT, "scan_freebie", {
-      event_id: eventId,
-      product_key: productKey,
-      qty,
-    }),
-
   scanUpdate: (
     eventId: number,
     scanId: number,
