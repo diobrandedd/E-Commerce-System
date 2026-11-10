@@ -74,7 +74,7 @@ function api_suppliers_get_by_code(): void
 function api_suppliers_create(): void
 {
     api_method_allowed(['POST']);
-    $user = api_require_permission('suppliers.manage');
+    $user = api_require_permission('suppliers.manage', 'suppliers.create');
     api_require_csrf($_POST);
     $file = $_FILES['valid_id'] ?? $_FILES['valid_id_photo'] ?? null;
     if (!is_array($file)) {

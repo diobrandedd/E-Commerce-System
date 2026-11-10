@@ -46,6 +46,10 @@ export function SuppliersGuideModal({
             Register suppliers and set prices that flow into costing and raw inventory. Production staff pick suppliers
             from this list when stocking in — they cannot create new suppliers here.
           </p>
+          <p>
+            <strong className="text-foreground">Create suppliers</strong> can add new suppliers only; edits and
+            deactivation need <strong className="text-foreground">Manage suppliers</strong>.
+          </p>
         </GuideSection>
         <GuideSection title="Your workflow">
           <ol className="list-decimal pl-4 space-y-1.5">

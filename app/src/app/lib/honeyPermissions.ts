@@ -88,6 +88,10 @@ export function canManageSuppliers(user: AuthUser | null | undefined): boolean {
   return hasPermission(perms(user), user?.role, "suppliers.manage");
 }
 
+export function canCreateSuppliers(user: AuthUser | null | undefined): boolean {
+  return canManageSuppliers(user) || hasPermission(perms(user), user?.role, "suppliers.create");
+}
+
 /** Supplier Master inline purchase prices (honey + dept bags). */
 export function canEditSupplierPurchasePrices(user: AuthUser | null | undefined): boolean {
   return canManageSuppliers(user) || canExecutiveDirectEdit(user);

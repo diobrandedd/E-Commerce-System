@@ -22,7 +22,11 @@ import {
 import { ApiError } from "@/app/lib/api";
 import { cn } from "@/app/components/ui/utils";
 import { useAuth } from "@/app/context/AuthContext";
-import { canEditSupplierPurchasePrices, canManageSuppliers } from "@/app/lib/honeyPermissions";
+import {
+  canCreateSuppliers,
+  canEditSupplierPurchasePrices,
+  canManageSuppliers,
+} from "@/app/lib/honeyPermissions";
 
 type SupplierSortKey = "name" | "category" | "contact" | "payment" | "address" | "status";
 type SortDir = "asc" | "desc";
@@ -56,6 +60,7 @@ function supplierSortValue(s: Supplier, key: SupplierSortKey): string {
 export function SuppliersPage() {
   const { user } = useAuth();
   const canManage = canManageSuppliers(user);
+  const canCreate = canCreateSuppliers(user);
   const canEditPrices = canEditSupplierPurchasePrices(user);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -173,7 +178,7 @@ export function SuppliersPage() {
                 className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-border bg-background outline-none focus:border-[#C8900A] transition-colors"
               />
             </div>
-            {canManage && (
+            {canCreate && (
               <button
                 type="button"
                 onClick={() => setModal("add")}

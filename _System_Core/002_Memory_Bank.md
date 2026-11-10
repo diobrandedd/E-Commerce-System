@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-11-10 — Supplier Master create-only permission
+**Change:** New `suppliers.create` grant lets users add suppliers without edit, deactivate, or purchase-price rights. Manage suppliers still covers full write. → [[problems/records/2026-11-10_supplier-create-only-permission]]
+
 ### 2026-11-05 — Check inventory freebie barcode scan
 **Change:** Freebie barcodes (FRB-PT / FRB-BRC / FRB-CACAO) use the same scan → quantity → confirm path as SKUs in Check inventory. Manual Freebie tab removed. → [[problems/records/2026-11-05_inventory-check-freebie-scan]]
 
