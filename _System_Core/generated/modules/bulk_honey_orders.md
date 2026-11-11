@@ -1,7 +1,7 @@
 ---
 title: bulk_honey_orders
 source: includes/bulk_honey_orders.php
-generated: 2026-11-10T03:36:26+01:00
+generated: 2026-11-11T09:55:58+01:00
 type: module
 function_count: 21
 ---
@@ -17,6 +17,7 @@ function_count: 21
 
 - `includes/honey_inventory.php`
 - `includes/honey_pricing.php`
+- `includes/system_activity_log.php`
 
 ## bulk_honey_orders_assert_executive {#bulk_honey_orders_assert_executive}
 
@@ -155,8 +156,8 @@ function_count: 21
 
 - `api/v1/bulk_orders.php`:55 — `api_ok(bulk_honey_order_get(ims_pdo(), $id));`
 - `includes/bulk_honey_orders.php`:478 — `return bulk_honey_order_get($pdo, $orderId);`
-- `includes/bulk_honey_orders.php`:545 — `return bulk_honey_order_get($pdo, $orderId);`
-- `includes/bulk_honey_orders.php`:582 — `return bulk_honey_order_get($pdo, $orderId);`
+- `includes/bulk_honey_orders.php`:565 — `return bulk_honey_order_get($pdo, $orderId);`
+- `includes/bulk_honey_orders.php`:602 — `return bulk_honey_order_get($pdo, $orderId);`
 
 ## bulk_honey_orders_list {#bulk_honey_orders_list}
 
@@ -170,8 +171,8 @@ function_count: 21
 
 **Callers (2):**
 
-- `includes/bulk_honey_orders.php`:642 — `'order' => bulk_honey_format_order($order),`
-- `includes/bulk_honey_orders.php`:664 — `static fn (array $row) => bulk_honey_format_order($row),`
+- `includes/bulk_honey_orders.php`:662 — `'order' => bulk_honey_format_order($order),`
+- `includes/bulk_honey_orders.php`:684 — `static fn (array $row) => bulk_honey_format_order($row),`
 
 ## bulk_honey_format_line {#bulk_honey_format_line}
 

@@ -1,7 +1,7 @@
 ---
 title: honey_inventory
 source: includes/honey_inventory.php
-generated: 2026-11-10T03:36:48+01:00
+generated: 2026-11-11T09:56:23+01:00
 type: module
 function_count: 76
 ---
@@ -484,7 +484,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/bulk_honey_orders.php`:567 — `honey_warehouse_bulk_restore($pdo, (int) $a['warehouse_row_id'], (float) $a['qty_gallons']);`
+- `includes/bulk_honey_orders.php`:587 — `honey_warehouse_bulk_restore($pdo, (int) $a['warehouse_row_id'], (float) $a['qty_gallons']);`
 
 ## honey_production_stock_out {#honey_production_stock_out}
 

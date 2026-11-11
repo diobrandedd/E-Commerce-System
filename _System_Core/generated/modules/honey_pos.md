@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-11-10T03:36:53+01:00
+generated: 2026-11-11T09:56:28+01:00
 type: module
 function_count: 16
 ---
@@ -136,8 +136,8 @@ function_count: 16
 - `includes/pos_sales_helpers.php`:40 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'seller_name')) {`
 - `includes/pos_sales_helpers.php`:53 — `if (honey_pos_column_exists($pdo, 'pos_sales', 'sold_by_user_id')) {`
 - `includes/pos_unified.php`:439 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
-- `includes/pos_unified.php`:566 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
-- `includes/pos_unified.php`:603 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
+- `includes/pos_unified.php`:586 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
+- `includes/pos_unified.php`:623 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
 
 ## honey_pos_checkout {#honey_pos_checkout}
 

@@ -1,4 +1,4 @@
-# Pyx Tracker — unified verify for agent loop and local dev.
+# Pyx Tracker - unified verify for agent loop and local dev.
 # Usage:
 #   powershell -File tools/verify.ps1
 #   powershell -File tools/verify.ps1 -WithApi
@@ -72,6 +72,29 @@ function Test-SpaBuildOk([string]$BuildText, [int]$ExitCode, [string]$DistRoot) 
     return ($js.Count -gt 0)
 }
 
+# Windows: Apache/httpd or interrupted vite can lock dist\.htaccess (EBUSY on publicDir copy).
+function Clear-SpaDistCopyTargets([string]$DistRoot) {
+    if (-not (Test-Path $DistRoot)) { return }
+    $targets = @(
+        (Join-Path $DistRoot '.htaccess'),
+        (Join-Path $DistRoot 'index.html')
+    )
+    foreach ($t in $targets) {
+        if (-not (Test-Path -LiteralPath $t)) { continue }
+        try {
+            Remove-Item -LiteralPath $t -Force -ErrorAction Stop
+        } catch {
+            $aside = "$t.__verify_unlock_$PID"
+            try {
+                Move-Item -LiteralPath $t -Destination $aside -Force -ErrorAction Stop
+                Write-Host ('Note: moved locked {0} aside for vite copy.' -f (Split-Path -Path $t -Leaf))
+            } catch {
+                Write-Host ('Note: could not clear locked {0} - {1}' -f $t, $_.Exception.Message)
+            }
+        }
+    }
+}
+
 function Get-ChangedPaths {
     Push-Location $RepoRoot
     try {
@@ -125,7 +148,7 @@ Write-Host '=== Pyx Tracker verify ==='
 if ($changed.Count -gt 0) {
     Write-Host "Changed files: $($changed.Count) (scoped stages)"
 } else {
-    Write-Host 'No git diff — running full verify'
+    Write-Host 'No git diff - running full verify'
     $touchApp = $true
     $touchPhp = $true
     $touchPackaging = $true
@@ -197,7 +220,15 @@ if ($touchApp -or $All) {
         Push-Location (Join-Path $RepoRoot 'app')
         try {
             $distRoot = Join-Path $RepoRoot 'app\dist'
+            Clear-SpaDistCopyTargets $distRoot
             $result = Invoke-VerifyCommand { npm run build }
+            # One retry when Windows holds dist\.htaccess (EBUSY copyfile during prepareOutDir).
+            if ($result.Text -match 'EBUSY: resource busy or locked' -and $result.Text -match '\\.htaccess') {
+                Write-Host 'Note: SPA build hit EBUSY on dist\.htaccess; clearing and retrying once.'
+                Clear-SpaDistCopyTargets $distRoot
+                Start-Sleep -Milliseconds 750
+                $result = Invoke-VerifyCommand { npm run build }
+            }
             if ($result.Text) { Write-Host $result.Text }
             if (Test-SpaBuildOk $result.Text $result.ExitCode $distRoot) {
                 if ($result.ExitCode -ne 0) {
@@ -218,10 +249,13 @@ if ($touchPhp -or $All) {
     Test-Stage 'Memory bank' {
         Push-Location $RepoRoot
         try {
-            $out = & $Php tools/memory_bank/generate_all.php 2>&1
-            Write-Host ($out -join "`n")
-            if ($LASTEXITCODE -ne 0) {
-                Write-Fail 'Memory bank generate' "exit $LASTEXITCODE"
+            # Continue EAP capture: PHP warnings on stderr must not become PS terminating errors.
+            $result = Invoke-VerifyCommand { & $Php tools/memory_bank/generate_all.php }
+            if ($result.Text) { Write-Host $result.Text }
+            if ($result.ExitCode -ne 0) {
+                Write-Fail 'Memory bank generate' "exit $($result.ExitCode)"
+            } elseif ($result.Text -match '(?m)^PHP (Warning|Error|Fatal error):') {
+                Write-Fail 'Memory bank generate' 'PHP warning/error in output'
             } else {
                 Write-Pass 'Memory bank generate'
             }

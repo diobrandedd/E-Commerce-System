@@ -58,6 +58,7 @@ export type PermissionKey =
   | "inventory.raw.view"
   | "inventory.requests.approve"
   | "inventory.requests.view"
+  | "logs.view"
   | "packaging.adjust"
   | "packaging.catalog"
   | "packaging.deduct"
@@ -152,6 +153,7 @@ export const PERMISSION_KEYS: readonly PermissionKey[] = [
   "inventory.raw.view",
   "inventory.requests.approve",
   "inventory.requests.view",
+  "logs.view",
   "packaging.adjust",
   "packaging.catalog",
   "packaging.deduct",

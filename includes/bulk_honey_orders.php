@@ -542,6 +542,26 @@ function bulk_honey_order_confirm(PDO $pdo, int $userId, int $orderId): array
         throw $e;
     }
 
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'sales',
+        'bulk_order_confirm',
+        sprintf(
+            'Confirmed bulk honey order %s',
+            (string) ($order['order_no'] ?? ('#' . $orderId))
+        ),
+        [
+            'entity_type' => 'bulk_honey_order',
+            'entity_id' => $orderId,
+            'actor_user_id' => $userId,
+            'meta' => [
+                'customer_name' => $order['customer_name'] ?? null,
+                'total_gallons' => $order['total_gallons'] ?? null,
+            ],
+        ]
+    );
+
     return bulk_honey_order_get($pdo, $orderId);
 }
 

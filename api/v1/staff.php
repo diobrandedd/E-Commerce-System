@@ -138,7 +138,7 @@ function api_staff_create(): void
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
-    api_require_permission('staff.manage');
+    $actor = api_require_permission('staff.manage');
 
     $pdo = ims_pdo();
     $roleIdByName = [];
@@ -169,7 +169,22 @@ function api_staff_create(): void
         $data['is_active'],
     ]);
 
-    api_ok(['id' => (int) $pdo->lastInsertId(), 'message' => 'User created with no permissions. Open Permissions to grant access.']);
+    $newUserId = (int) $pdo->lastInsertId();
+    require_once dirname(__DIR__, 2) . '/includes/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'staff_settings',
+        'user_create',
+        sprintf('Created user %s (%s)', $data['username'], $data['role']),
+        [
+            'entity_type' => 'user',
+            'entity_id' => $newUserId,
+            'actor_user_id' => (int) ($actor['id'] ?? 0),
+            'meta' => ['role' => $data['role'], 'name' => $data['name']],
+        ]
+    );
+
+    api_ok(['id' => $newUserId, 'message' => 'User created with no permissions. Open Permissions to grant access.']);
 }
 
 function api_staff_update(): void

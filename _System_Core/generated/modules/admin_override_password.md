@@ -1,7 +1,7 @@
 ---
 title: admin_override_password
 source: includes/admin_override_password.php
-generated: 2026-11-10T03:36:22+01:00
+generated: 2026-11-11T09:55:55+01:00
 type: module
 function_count: 4
 ---
@@ -16,6 +16,7 @@ function_count: 4
 ## Includes
 
 - `includes/app_settings.php`
+- `includes/system_activity_log.php`
 
 ## admin_override_password_configured {#admin_override_password_configured}
 
@@ -23,14 +24,14 @@ function_count: 4
 
 - `api/v1/settings.php`:409 — `'configured' => admin_override_password_configured(ims_pdo()),`
 - `includes/admin_override_password.php`:40 — `if (admin_override_password_configured($pdo)) {`
-- `includes/admin_override_password.php`:61 — `if (!admin_override_password_configured($pdo)) {`
+- `includes/admin_override_password.php`:74 — `if (!admin_override_password_configured($pdo)) {`
 
 ## admin_override_password_verify {#admin_override_password_verify}
 
 **Callers (2):**
 
 - `includes/admin_override_password.php`:41 — `if ($currentPlain === null || $currentPlain === '' || !admin_override_password_verify($pdo, $currentPlain)) {`
-- `includes/admin_override_password.php`:71 — `if (!admin_override_password_verify($pdo, $plain)) {`
+- `includes/admin_override_password.php`:84 — `if (!admin_override_password_verify($pdo, $plain)) {`
 
 ## admin_override_password_set {#admin_override_password_set}
 

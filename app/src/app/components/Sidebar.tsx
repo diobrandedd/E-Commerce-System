@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   LayoutDashboard, Package, Users, BarChart2, Settings, LogOut,
-  Truck, DollarSign, RotateCcw, ClipboardList, Factory,
+  Truck, DollarSign, RotateCcw, ClipboardList, Factory, ScrollText,
   FileEdit, X, PlusCircle, ShoppingCart, ShoppingBag, UserCog, Tag, ScanLine,
 } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
@@ -267,6 +267,7 @@ function getNavItems(role: Role, _dept: string, pendingCorrections: number, labe
     productSetupNav,
     { kind: "separator" },
     { icon: BarChart2, label: "Reports", to: "/reports" },
+    { icon: ScrollText, label: "Logs", to: "/logs" },
     requestsNav(pendingCorrections),
     arNav,
     { icon: Users, label: "Staff Management", to: "/staff" },

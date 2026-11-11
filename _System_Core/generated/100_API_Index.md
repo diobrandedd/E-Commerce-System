@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-11-10T03:36:22+01:00
+generated: 2026-11-11T09:55:54+01:00
 type: memory-bank
 ---
 
@@ -137,7 +137,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `stocks_list` | `api_costing_stocks_list()` | `ims_pdo()`, `material_inventory_has_columns()`, `material_inventory_eligible_for_product_formula_row()`, `supplier_display_name()` |
 | `products_list` | `api_costing_products_list()` | `ims_pdo()`, `parcel_pack_tables_ready()`, `parcel_pack_reference_addon_for_product()` |
 | `product_view` | `api_costing_product_view()` | `ims_pdo()` |
-| `stock_update_price` | `api_costing_stock_update_price()` | `ims_pdo()` |
+| `stock_update_price` | `api_costing_stock_update_price()` | `ims_pdo()`, `system_activity_log_write()` |
 | `formula_add` | `api_costing_formula_add()` | — |
 | `formula_update` | `api_costing_formula_update()` | — |
 | `formula_delete` | `api_costing_formula_delete()` | — |
@@ -716,7 +716,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
 | `list` | `api_staff_list()` | `ims_pdo()` |
-| `create` | `api_staff_create()` | `ims_pdo()` |
+| `create` | `api_staff_create()` | `ims_pdo()`, `system_activity_log_write()` |
 | `update` | `api_staff_update()` | `ims_pdo()` |
 | `reset_password` | `api_staff_reset_password()` | `ims_pdo()` |
 | `permission_catalog` | `api_staff_permission_catalog()` | `ims_permission_catalog_grouped()` |
@@ -751,6 +751,16 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `update` | `api_suppliers_update()` | `supplier_update()`, `ims_pdo()` |
 | `activate` | `api_suppliers_activate()` | `supplier_set_active()`, `ims_pdo()` |
 | `deactivate` | `api_suppliers_deactivate()` | `supplier_set_active()`, `ims_pdo()` |
+
+### `system_logs.php`
+
+- **Path:** `api/v1/system_logs.php`
+- **URL:** `/rts/api/v1/system_logs.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `list` | `api_system_logs_list()` | `system_activity_log_list()`, `ims_pdo()` |
 
 ### `waybill.php`
 

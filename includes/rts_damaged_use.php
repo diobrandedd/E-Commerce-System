@@ -365,6 +365,24 @@ function rts_damaged_use_apply(PDO $pdo, int $userId, int $rowId, string $outcom
         throw $e;
     }
 
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'rts',
+        'damaged_use',
+        sprintf('Damaged use · row #%d · %s', $rowId, $outcome),
+        [
+            'entity_type' => 'rts_inventory_row',
+            'entity_id' => $rowId,
+            'actor_user_id' => $userId,
+            'meta' => [
+                'outcome' => $outcome,
+                'volume_gallons' => $volumeGallons,
+                'bottles_resealed' => $bottlesResealed,
+            ],
+        ]
+    );
+
     return [
         'outcome' => $outcome,
         'volume_gallons' => $volumeGallons,

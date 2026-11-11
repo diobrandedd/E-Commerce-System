@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-11-10T03:36:33+01:00
+generated: 2026-11-11T09:56:06+01:00
 type: module
 function_count: 37
 ---
@@ -335,7 +335,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_pos.php`:266 — `dept_pouch_pos_consume($pdo, $unitIds, $saleId);`
 - `includes/dept_pos.php`:419 — `dept_pouch_pos_consume($pdo, $unitIds, $saleId);`
 - `includes/pos_unified.php`:475 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
-- `includes/pos_unified.php`:640 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
+- `includes/pos_unified.php`:660 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
 
 ## dept_pouch_rts_receive {#dept_pouch_rts_receive}
 

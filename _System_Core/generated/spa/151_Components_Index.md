@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-11-10T03:35:46+01:00
+generated: 2026-11-11T09:38:31+01:00
 type: spa
 ---
 
@@ -85,6 +85,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/pages/exec/SettingsPage.tsx`
 - `app/src/app/pages/exec/StaffManagementPage.tsx`
 - `app/src/app/pages/exec/SuppliersPage.tsx`
+- `app/src/app/pages/exec/SystemLogsPage.tsx`
 - `app/src/app/pages/fulfillment/CourierSoaReconcilePage.tsx`
 - `app/src/app/pages/fulfillment/HistoricalOrdersImportPage.tsx`
 - `app/src/app/pages/fulfillment/OnlineParcelsPage.tsx`

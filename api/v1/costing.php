@@ -254,6 +254,23 @@ function api_costing_stock_update_price(): void
         api_fail($e->getMessage(), 400);
     }
 
+    if ($newPrice !== $oldPrice) {
+        require_once dirname(__DIR__, 2) . '/includes/system_activity_log.php';
+        system_activity_log_write(
+            $pdo,
+            'product_setup',
+            'costing_price_update',
+            sprintf('Costing stock #%d price updated (%s)', $stockId, $stockName),
+            [
+                'entity_type' => 'stock',
+                'entity_id' => $stockId,
+                'actor_user_id' => (int) $user['id'],
+                'old_value' => (string) $oldPrice,
+                'new_value' => (string) $newPrice,
+            ]
+        );
+    }
+
     api_ok(['updated' => true, 'stock_id' => $stockId]);
 }
 

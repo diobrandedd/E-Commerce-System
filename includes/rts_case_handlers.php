@@ -542,6 +542,22 @@ function rts_case_handler_create(PDO $pdo, array $data): array
         throw new RtsCaseException('Database error while saving.', 'save_failed', 500);
     }
 
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'rts',
+        'case_create',
+        'Created RTS case #' . $caseId . ' · ' . $tracking,
+        [
+            'entity_type' => 'rts_case',
+            'entity_id' => $caseId,
+            'meta' => [
+                'disposition' => $fields['case_disposition'] ?? null,
+                'tracking' => $tracking,
+            ],
+        ]
+    );
+
     return ['case_id' => $caseId];
 }
 

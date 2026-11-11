@@ -1103,6 +1103,20 @@ function online_parcels_ship(
     }
 
     $fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'deliveries',
+        'parcel_ship',
+        'Shipped parcel ' . $tracking,
+        [
+            'entity_type' => 'online_order_parcel',
+            'entity_id' => (int) $parcel['id'],
+            'actor_user_id' => $userId,
+            'new_value' => 'shipped',
+            'meta' => ['tracking' => $tracking, 'ship_date' => $shipDate],
+        ]
+    );
 
     return ['parcel' => $fresh ?? $parcel, 'already_shipped' => false];
 }
@@ -1221,11 +1235,30 @@ function online_parcels_cancel(
     }
 
     $fresh = online_parcels_get_by_id($pdo, (int) $parcel['id']);
+    $prev = isset($previousStatus) ? $previousStatus : (string) ($parcel['status'] ?? '');
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'deliveries',
+        'parcel_cancel',
+        'Cancelled parcel ' . $tracking . ' (was ' . $prev . ')',
+        [
+            'entity_type' => 'online_order_parcel',
+            'entity_id' => (int) $parcel['id'],
+            'actor_user_id' => $userId > 0 ? $userId : null,
+            'old_value' => $prev,
+            'new_value' => 'cancelled',
+            'meta' => [
+                'cancel_source' => $source ?? 'scanner',
+                'event_id' => $eventId ?? null,
+            ],
+        ]
+    );
 
     return [
         'parcel' => $fresh ?? $parcel,
         'already_cancelled' => false,
-        'previous_status' => isset($previousStatus) ? $previousStatus : (string) ($parcel['status'] ?? ''),
+        'previous_status' => $prev,
         'inventory_reverted' => $inventoryReverted ?? false,
         'event_id' => $eventId ?? null,
     ];

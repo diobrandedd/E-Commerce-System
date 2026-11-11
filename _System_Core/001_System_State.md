@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-10-30_freebie-barcodes]] |
+| **Active Spec** | [[specs/2026-11-11_system-activity-logs]] |
 | **Active Plan** | — |
-| **Status** | `shipped` - Freebie barcodes (run phase 96 on prod) |
+| **Status** | `shipped` - Unified system Logs page (run phase 97 on prod) |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending

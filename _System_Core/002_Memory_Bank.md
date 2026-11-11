@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-11-11 — Stronger inventory log summaries
+**Change:** System Logs inventory rows now show item names (e.g. Bubble wrap roll, Honey warehouse DS101426 · Light) and resolve supplier id changes to names; no-op same-value edits are omitted from the feed. → [[problems/records/2026-11-11_system-activity-logs]]
+
+### 2026-11-11 — Unified system Logs page
+**Change:** Sidebar **Logs** (`/logs`, `logs.view`) lists going-forward activity from product setup, RTS, deliveries, orders, POS, sales, inventory edits, and staff/settings — category filter, search, dates, pagination. Phase 97. → [[problems/records/2026-11-11_system-activity-logs]]
+
 ### 2026-11-10 — Supplier Master create-only permission
 **Change:** New `suppliers.create` grant lets users add suppliers without edit, deactivate, or purchase-price rights. Manage suppliers still covers full write. → [[problems/records/2026-11-10_supplier-create-only-permission]]
 

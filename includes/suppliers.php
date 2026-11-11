@@ -172,9 +172,24 @@ function supplier_create(PDO $pdo, int $userId, array $fields, array $file): arr
     );
     $st->execute([$first, $last, $contact, $payAcct, $payNum, $address, $idFile, $category, $userId]);
 
-    $row = supplier_fetch($pdo, (int) $pdo->lastInsertId());
+    $newId = (int) $pdo->lastInsertId();
+    $row = supplier_fetch($pdo, $newId);
+    $serialized = supplier_serialize($row, true);
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'product_setup',
+        'supplier_create',
+        'Created supplier ' . (string) ($serialized['display_name'] ?? ($first . ' ' . $last)),
+        [
+            'entity_type' => 'supplier',
+            'entity_id' => $newId,
+            'actor_user_id' => $userId,
+            'meta' => ['category' => $category],
+        ]
+    );
 
-    return supplier_serialize($row, true);
+    return $serialized;
 }
 
 function supplier_update(PDO $pdo, int $id, array $fields, ?array $file): array
@@ -206,7 +221,21 @@ function supplier_update(PDO $pdo, int $id, array $fields, ?array $file): array
          payment_account_number = ?, address = ?, valid_id_filename = ?, category = ? WHERE id = ?'
     )->execute([$first, $last, $contact, $payAcct, $payNum, $address, $idFile, $category, $id]);
 
-    return supplier_serialize(supplier_fetch($pdo, $id), true);
+    $serialized = supplier_serialize(supplier_fetch($pdo, $id), true);
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'product_setup',
+        'supplier_update',
+        'Updated supplier ' . (string) ($serialized['display_name'] ?? ('#' . $id)),
+        [
+            'entity_type' => 'supplier',
+            'entity_id' => $id,
+            'meta' => ['category' => $category],
+        ]
+    );
+
+    return $serialized;
 }
 
 function supplier_set_active(PDO $pdo, int $id, bool $active): array
@@ -217,7 +246,22 @@ function supplier_set_active(PDO $pdo, int $id, bool $active): array
         throw new RuntimeException('Supplier not found.');
     }
 
-    return supplier_serialize($row, true);
+    $serialized = supplier_serialize($row, true);
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'product_setup',
+        $active ? 'supplier_activate' : 'supplier_deactivate',
+        ($active ? 'Activated' : 'Deactivated') . ' supplier ' . (string) ($serialized['display_name'] ?? ('#' . $id)),
+        [
+            'entity_type' => 'supplier',
+            'entity_id' => $id,
+            'old_value' => $active ? 'inactive' : 'active',
+            'new_value' => $active ? 'active' : 'inactive',
+        ]
+    );
+
+    return $serialized;
 }
 
 /** @return array<string, mixed> */

@@ -1300,6 +1300,27 @@ function online_orders_batch_finalize(PDO $pdo, int $userId, int $batchId): arra
         throw new RuntimeException('Batch missing after finalize.');
     }
 
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'order_management',
+        'batch_finalize',
+        sprintf(
+            'Finalized online-orders batch #%d (%d parcels promoted)',
+            $batchId,
+            (int) ($promote['promoted'] ?? 0)
+        ),
+        [
+            'entity_type' => 'csr_online_batch',
+            'entity_id' => $batchId,
+            'actor_user_id' => $userId,
+            'meta' => [
+                'parcels_promoted' => $promote['promoted'] ?? 0,
+                'parcels_skipped' => $promote['skipped'] ?? 0,
+            ],
+        ]
+    );
+
     return [
         'batch' => $batch,
         'download_token' => $token,

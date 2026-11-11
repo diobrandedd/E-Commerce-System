@@ -281,6 +281,21 @@ function pos_sale_full_refund(PDO $pdo, int $saleId, string $reason = ''): array
     require_once __DIR__ . '/pyxacct_walkin_sync.php';
     pyxacct_void_walkin_sale($pdo, $saleId);
 
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'pos',
+        'refund',
+        sprintf('Refunded POS sale %s (%d units restocked)', (string) $sale['receipt_no'], $restocked),
+        [
+            'entity_type' => 'pos_sale',
+            'entity_id' => $saleId,
+            'old_value' => (string) ($sale['total_amount'] ?? ''),
+            'new_value' => '0',
+            'meta' => ['reason' => $reason, 'restocked_units' => $restocked],
+        ]
+    );
+
     return [
         'sale_id' => $saleId,
         'receipt_no' => (string) $sale['receipt_no'],

@@ -47,6 +47,19 @@ function admin_override_password_set(PDO $pdo, string $newPlain, ?string $curren
         throw new RuntimeException('Could not store administrator password.');
     }
     app_setting_set($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, $hash, $userId);
+
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'staff_settings',
+        'admin_password_set',
+        'Administrator override password updated',
+        [
+            'entity_type' => 'app_setting',
+            'entity_id' => ADMIN_OVERRIDE_PASSWORD_SETTING_KEY,
+            'actor_user_id' => $userId,
+        ]
+    );
 }
 
 /**

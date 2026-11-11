@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-11-10T03:34:30+01:00
+generated: 2026-11-11T09:37:10+01:00
 type: memory-bank
 ---
 
@@ -59,7 +59,7 @@ type: memory-bank
 | [[modules/ims_exec_sidebar]] | 1 |
 | [[modules/inventory_check]] | 42 |
 | [[modules/inventory_check_apply]] | 10 |
-| [[modules/inventory_edit_log]] | 4 |
+| [[modules/inventory_edit_log]] | 6 |
 | [[modules/labels]] | 3 |
 | [[modules/material_inventory]] | 86 |
 | [[modules/online_order_parcels]] | 29 |
@@ -97,5 +97,6 @@ type: memory-bank
 | [[modules/sku_barcodes]] | 40 |
 | [[modules/sp_sort_service]] | 26 |
 | [[modules/suppliers]] | 12 |
+| [[modules/system_activity_log]] | 2 |
 | [[modules/tracking_search]] | 4 |
 | [[modules/waybill_stamper]] | 19 |

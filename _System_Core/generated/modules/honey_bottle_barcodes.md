@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-11-10T03:36:45+01:00
+generated: 2026-11-11T09:56:18+01:00
 type: module
 function_count: 65
 ---
@@ -529,7 +529,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/honey_pos.php`:416 — `honey_bottle_pos_consume($pdo, $unitIds, $saleId, 1);`
 - `includes/honey_pos.php`:652 — `honey_bottle_pos_consume($pdo, $unitIds, $saleId, 1);`
 - `includes/pos_unified.php`:459 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
-- `includes/pos_unified.php`:624 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
+- `includes/pos_unified.php`:644 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
 
 ## honey_bottle_opened_return_scan {#honey_bottle_opened_return_scan}
 

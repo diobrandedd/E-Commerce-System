@@ -1,7 +1,7 @@
 ---
 title: dashboard_stock_ins
 source: includes/dashboard_stock_ins.php
-generated: 2026-11-10T03:36:29+01:00
+generated: 2026-11-11T09:56:01+01:00
 type: module
 function_count: 10
 ---

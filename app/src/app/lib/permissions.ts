@@ -38,6 +38,7 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionKey | PermissionKey[]> 
   "/inventory/cacao-brc": ["dept.brc.view", "dept.cacao.view"],
   "/staff": "staff.manage",
   "/reports": "reports.view",
+  "/logs": "logs.view",
   "/sales": "sales.view",
   "/sales/bulk-orders": "sales.bulk_orders",
   "/pos": "pos.sell",

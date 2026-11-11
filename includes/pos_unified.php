@@ -528,6 +528,26 @@ function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buye
         throw $e;
     }
 
+    require_once __DIR__ . '/system_activity_log.php';
+    $actorUserId = isset($actor['user_id']) ? (int) $actor['user_id'] : null;
+    system_activity_log_write(
+        $pdo,
+        'pos',
+        'checkout',
+        sprintf('POS sale %s · ₱%s · %s', $receiptNo, number_format($total, 2), $buyerName),
+        [
+            'entity_type' => 'pos_sale',
+            'entity_id' => $saleId,
+            'actor_user_id' => $actorUserId,
+            'new_value' => (string) $total,
+            'meta' => [
+                'discount_percent' => $discountPercent,
+                'seller_name' => $sellerName,
+                'item_count' => count($cleanLines),
+            ],
+        ]
+    );
+
     return [
         'sale_id' => $saleId,
         'receipt_no' => $receiptNo,

@@ -32,6 +32,7 @@ import { StaffManagementPage } from "./pages/exec/StaffManagementPage";
 import { CostingPage } from "./pages/exec/CostingPage";
 import { ARCreditsPage } from "./pages/exec/ARCreditsPage";
 import { ReportsPage } from "./pages/exec/ReportsPage";
+import { SystemLogsPage } from "./pages/exec/SystemLogsPage";
 import { SuppliersPage } from "./pages/exec/SuppliersPage";
 import { SettingsPage } from "./pages/exec/SettingsPage";
 import { MonthlyInventoryPage } from "./pages/exec/MonthlyInventoryPage";
@@ -150,6 +151,7 @@ export const router = createBrowserRouter(
 
         { path: "staff", element: permGuard(StaffManagementPage, "staff.manage") },
         { path: "reports", element: permGuard(ReportsPage, "reports.view") },
+        { path: "logs", element: permGuard(SystemLogsPage, "logs.view") },
         { path: "sales", element: permGuard(SalesPage, "sales.view") },
         { path: "sales/bulk-orders", element: permGuard(BulkHoneyOrdersPage, "sales.bulk_orders") },
         { path: "suppliers", element: permGuard(SuppliersPage, "suppliers.view") },

@@ -122,6 +122,7 @@ function ims_permission_catalog(): array
         'ar.mark_paid' => ['label' => 'Mark AR paid/unpaid', 'group' => 'Sales & AR', 'description' => 'Mark AR credits as paid or unpaid.'],
 
         'reports.view' => ['label' => 'View reports', 'group' => 'Executive', 'description' => 'Access executive reports.'],
+        'logs.view' => ['label' => 'View system logs', 'group' => 'Executive', 'description' => 'Open the Logs page: categorized activity across product setup, RTS, deliveries, POS, sales, and more.'],
         'costing.view' => ['label' => 'View product costing', 'group' => 'Executive', 'description' => 'View product costing and formulas.'],
         'costing.manage' => ['label' => 'Manage product costing', 'group' => 'Executive', 'description' => 'Edit costing formulas and products.'],
         'suppliers.view' => ['label' => 'View suppliers', 'group' => 'Executive', 'description' => 'View supplier master list.'],
@@ -482,6 +483,20 @@ function ims_user_permissions_set(int $userId, array $keys, ?int $grantedBy = nu
     }
 
     ims_user_permissions_clear_cache($userId);
+
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        ims_pdo(),
+        'staff_settings',
+        'permissions_set',
+        sprintf('Updated permissions for user #%d (%d keys)', $userId, count($validKeys)),
+        [
+            'entity_type' => 'user',
+            'entity_id' => $userId,
+            'actor_user_id' => $grantedBy,
+            'meta' => ['permission_count' => count($validKeys)],
+        ]
+    );
 }
 
 function ims_user_permission_count(int $userId): int

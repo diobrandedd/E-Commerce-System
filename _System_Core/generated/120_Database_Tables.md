@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-11-10T03:36:22+01:00
+generated: 2026-11-11T09:55:55+01:00
 type: memory-bank
-table_count: 104
+table_count: 105
 ---
 
 
@@ -278,6 +278,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_fetch_dept]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_list_settings]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_print_job_list]] |
+| `includes/system_activity_log.php` | [[modules/system_activity_log#system_activity_log_list]] |
 
 ## `pos_pins`
 
@@ -329,6 +330,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#fulfillment_packing_issues_list]] |
 | `includes/fulfillment_packing.php` | [[modules/fulfillment_packing#material_packaging_record_invoice_price]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_upsert_supplier_costing_stocks]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_resolve_display]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_supply_category_assign_many]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_ensure_barcode]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_inventory_fetch_stock]] |
@@ -1196,6 +1198,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_warehouse_barcodes.php` | [[modules/honey_warehouse_barcodes#honey_warehouse_barcode_request_create]] |
 | `includes/honey_warehouse_barcodes.php` | [[modules/honey_warehouse_barcodes#honey_warehouse_barcode_lookup]] |
 | `includes/honey_warehouse_barcodes.php` | [[modules/honey_warehouse_barcodes#honey_warehouse_barcode_stock_out]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_resolve_display]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_raw_snapshot]] |
 | `includes/pyxacct_ap_sync.php` | [[modules/pyxacct_ap_sync#pyxacct_sync_honey_warehouse_payable]] |
 | `includes/suppliers.php` | [[modules/suppliers#supplier_fetch_by_honey_code]] |
@@ -1229,6 +1232,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_options]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_seed_production_row]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_resolve_display]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
 
 ## `honey_packaging_rows`
@@ -1279,6 +1283,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_compare_honey_lines]] |
 | `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_void_missing_uniques]] |
 | `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_apply_honey_qty]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_resolve_display]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_system_packaging_row]] |
 | `includes/pos_refund.php` | [[modules/pos_refund#pos_refund_credit_honey_packaging]] |
@@ -1339,6 +1344,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
 | `includes/honey_parcel_inventory.php` | [[modules/honey_parcel_inventory#honey_parcel_revert_deduct]] |
 | `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_apply_dept_qty]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_resolve_display]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
 | `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_dept_stock_in]] |
@@ -1421,6 +1427,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | File | Function |
 |------|----------|
 | `api/v1/rts.php` | [[modules/rts#api_rts_inventory_list]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_resolve_display]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_events_list]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_inventory_credit_sellable_repack]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_apply]] |
@@ -1475,6 +1482,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_pricing.php` | [[modules/dept_pricing#dept_pricing_list_supplier_prices]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_sync_all_variant_stocks]] |
 | `includes/honey_pricing.php` | [[modules/honey_pricing#honey_pricing_list_supplier_prices]] |
+| `includes/inventory_edit_log.php` | [[modules/inventory_edit_log#inventory_edit_log_supplier_label]] |
 | `includes/suppliers.php` | [[modules/suppliers#supplier_fetch]] |
 | `includes/suppliers.php` | [[modules/suppliers#supplier_fetch_by_honey_code]] |
 | `includes/suppliers.php` | [[modules/suppliers#supplier_list]] |
@@ -1525,4 +1533,11 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_barcode_fetch_by_code]] |
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_barcode_list]] |
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_barcode_save_bulk]] |
+
+## `system_activity_log`
+
+| File | Function |
+|------|----------|
+| `includes/system_activity_log.php` | [[modules/system_activity_log#system_activity_log_write]] |
+| `includes/system_activity_log.php` | [[modules/system_activity_log#system_activity_log_list]] |
 
