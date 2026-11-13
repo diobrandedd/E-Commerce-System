@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-11-13 — Supplies assign stock-out scanners
+**Change:** Executives can Assign/Remove stock-out staff on the Supplies page (grants/revokes `packaging.deduct` only). Staff Permissions stays in sync. → [[problems/records/2026-11-13_supplies-stock-out-assign]]
+
 ### 2026-11-13 — Check Inventory supplies
 **Change:** Scan PKG packaging barcodes in Check Inventory (`kind=supply`), show Supplies badges, compare vs `stocks.on_hand`, executive finalize/merge applies via `material_packaging_set_on_hand` (source `inventory_check_apply`). Check-only lookup — shared SKU lookup unchanged. Phase 98. → [[problems/records/2026-11-13_inventory-check-supplies]]
 

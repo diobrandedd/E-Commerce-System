@@ -1,6 +1,6 @@
 ---
 title: Database Tables
-generated: 2026-11-13T03:42:56+01:00
+generated: 2026-11-13T04:02:26+01:00
 type: memory-bank
 table_count: 105
 ---
@@ -138,6 +138,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/ar_credits.php` | [[modules/ar_credits#ar_staff_picker_list]] |
 | `includes/auth_check.php` | [[modules/auth_check#ims_login_user]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_access_roster]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_candidates]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_require_staff_user]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_authenticate]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_verify_executive]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
@@ -259,6 +261,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_adjustment_unread_list]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_access_roster]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_candidates]] |
+| `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_require_staff_user]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel_log_list]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_list]] |
@@ -1064,6 +1068,8 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/permissions.php` | [[modules/permissions#ims_user_permissions]] |
 | `includes/permissions.php` | [[modules/permissions#ims_user_permissions_set]] |
+| `includes/permissions.php` | [[modules/permissions#ims_user_permission_grant]] |
+| `includes/permissions.php` | [[modules/permissions#ims_user_permission_revoke]] |
 
 ## `rts_barcode_label_jobs`
 

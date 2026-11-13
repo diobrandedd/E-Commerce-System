@@ -16,6 +16,7 @@ import {
   ListChecks,
   Tags,
   Users,
+  X,
 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { PageLayout } from "@/app/components/PageLayout";
@@ -30,20 +31,26 @@ import { runPackagingInventoryTour } from "@/app/components/tour/guides/packagin
 import { startPageTourAfterModalClose } from "@/app/components/tour/runPageTour";
 import { PackagingMaterialDetailModal } from "@/app/components/inventory/PackagingMaterialDetailModal";
 import {
+  AppErrorBanner,
   AppPressable,
   AppSectionEnter,
+  AppSuccessNotice,
   appHeaderActionClass,
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
 import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
+import { ApiError } from "@/app/lib/api";
 import {
+  assignPackagingDeduct,
   fetchPackagingAccessRoster,
   fetchPackagingDamageTotals,
+  fetchPackagingDeductCandidates,
   listMaterials,
   listSupplyCategories,
   packagingPrintSheetUrl,
+  unassignPackagingDeduct,
   type MaterialStockRow,
   type PackagingAccessPerson,
   type SupplyCategory,
@@ -387,7 +394,34 @@ export function PackagingMaterialsPage() {
   const [damageCustomTo, setDamageCustomTo] = useState(() => ymdLocal(new Date()));
   const [damageTotals, setDamageTotals] = useState<Record<number, number>>({});
   const [rosterExpanded, setRosterExpanded] = useState(false);
+  const [deductCandidates, setDeductCandidates] = useState<PackagingAccessPerson[]>([]);
+  const [deductAssignId, setDeductAssignId] = useState("");
+  const [deductBusy, setDeductBusy] = useState(false);
+  const [deductOk, setDeductOk] = useState<string | null>(null);
+  const [deductError, setDeductError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
+
+  const applyRosterPayload = useCallback(
+    (access: { stock_out: PackagingAccessPerson[]; stock_in_note: string } | null) => {
+      if (!access) return;
+      setRoster(access.stock_out);
+      setStockInNote(access.stock_in_note);
+    },
+    [],
+  );
+
+  const refreshDeductCandidates = useCallback(async () => {
+    if (!isExec) {
+      setDeductCandidates([]);
+      return;
+    }
+    try {
+      const res = await fetchPackagingDeductCandidates();
+      setDeductCandidates(res.candidates);
+    } catch {
+      setDeductCandidates([]);
+    }
+  }, [isExec]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -434,19 +468,54 @@ export function PackagingMaterialsPage() {
       ]);
       setItems(data.items);
       setSupplyCategories(categories.categories);
-      if (access) {
-        setRoster(access.stock_out);
-        setStockInNote(access.stock_in_note);
+      applyRosterPayload(access);
+      if (isExec) {
+        await refreshDeductCandidates();
       }
       await refreshDamageTotals();
     } finally {
       setLoading(false);
     }
-  }, [scanOnly, canView, refreshDamageTotals]);
+  }, [scanOnly, canView, isExec, refreshDamageTotals, applyRosterPayload, refreshDeductCandidates]);
 
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => { void refreshDamageTotals(); }, [refreshDamageTotals]);
   useLiveRefresh(refresh);
+
+  const assignDeductStaff = async () => {
+    const userId = Number(deductAssignId);
+    if (!userId) return;
+    setDeductBusy(true);
+    setDeductError(null);
+    setDeductOk(null);
+    try {
+      const res = await assignPackagingDeduct(userId);
+      applyRosterPayload(res.roster);
+      setDeductAssignId("");
+      setDeductOk(`Assigned ${res.user.name} to scan stock out.`);
+      await refreshDeductCandidates();
+    } catch (e) {
+      setDeductError(e instanceof ApiError ? e.message : "Could not assign staff.");
+    } finally {
+      setDeductBusy(false);
+    }
+  };
+
+  const unassignDeductStaff = async (person: PackagingAccessPerson) => {
+    setDeductBusy(true);
+    setDeductError(null);
+    setDeductOk(null);
+    try {
+      const res = await unassignPackagingDeduct(person.id);
+      applyRosterPayload(res.roster);
+      setDeductOk(`Removed ${person.name} from stock-out scanners.`);
+      await refreshDeductCandidates();
+    } catch (e) {
+      setDeductError(e instanceof ApiError ? e.message : "Could not remove staff.");
+    } finally {
+      setDeductBusy(false);
+    }
+  };
 
   const stats = useMemo(() => {
     const inStock = items.filter(i => Number(i.on_hand) > 0).length;
@@ -681,17 +750,64 @@ export function PackagingMaterialsPage() {
             <div
               id="packaging-roster-body"
               className={cn(
-                "px-3.5 pb-3 sm:px-4 sm:pb-3.5 space-y-2",
+                "px-3.5 pb-3 sm:px-4 sm:pb-3.5 space-y-3",
                 !rosterExpanded && "hidden sm:block",
               )}
             >
               <p className="text-xs text-muted-foreground leading-relaxed sm:hidden pl-[2.625rem]">
                 {stockInNote}
               </p>
+              {deductOk ? (
+                <div className="pl-[2.625rem]">
+                  <AppSuccessNotice message={deductOk} />
+                </div>
+              ) : null}
+              {deductError ? (
+                <div className="pl-[2.625rem]">
+                  <AppErrorBanner message={deductError} />
+                </div>
+              ) : null}
+              {isExec ? (
+                <div className="flex flex-wrap items-end gap-2 pl-[2.625rem]">
+                  <div className="min-w-[12rem] flex-1">
+                    <label
+                      className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1 block"
+                      htmlFor="packaging-deduct-assign"
+                    >
+                      Assign staff
+                    </label>
+                    <select
+                      id="packaging-deduct-assign"
+                      value={deductAssignId}
+                      onChange={e => setDeductAssignId(e.target.value)}
+                      disabled={deductBusy}
+                      className="w-full min-h-10 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    >
+                      <option value="">Select staff…</option>
+                      {deductCandidates.map(u => (
+                        <option key={u.id} value={u.id}>
+                          {u.name}
+                          {u.employee_id ? ` · ${u.employee_id}` : ""} · {u.role.replace(/_/g, " ")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="min-h-10"
+                    disabled={deductBusy || !deductAssignId}
+                    onClick={() => void assignDeductStaff()}
+                  >
+                    {deductBusy ? <Loader2 className="animate-spin size-3.5" /> : "Assign"}
+                  </Button>
+                </div>
+              ) : null}
               {roster.length === 0 ? (
                 <p className="text-xs text-muted-foreground pl-[2.625rem] leading-relaxed">
-                  In Staff Management, enable{" "}
-                  <strong className="text-foreground font-medium">Stock out packaging (scan)</strong>.
+                  {isExec
+                    ? "Nobody assigned yet. Pick a staff member above so they can open Supplies and scan stock out."
+                    : "Nobody assigned yet."}
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-1.5 pl-[2.625rem]">
@@ -702,6 +818,17 @@ export function PackagingMaterialsPage() {
                     >
                       <span className="font-medium">{p.name}</span>
                       <span className="text-muted-foreground">· {p.role.replace(/_/g, " ")}</span>
+                      {isExec ? (
+                        <button
+                          type="button"
+                          className="ml-0.5 inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                          disabled={deductBusy}
+                          aria-label={`Remove ${p.name}`}
+                          onClick={() => void unassignDeductStaff(p)}
+                        >
+                          <X size={12} aria-hidden />
+                        </button>
+                      ) : null}
                     </span>
                   ))}
                 </div>

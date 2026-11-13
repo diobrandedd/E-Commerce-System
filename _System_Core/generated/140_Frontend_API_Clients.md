@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-11-13T03:21:32+01:00
+generated: 2026-11-13T04:01:44+01:00
 type: memory-bank
 ---
 

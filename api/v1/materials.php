@@ -36,6 +36,9 @@ api_dispatch([
     'packaging_print_sheet' => 'api_materials_packaging_print_sheet',
     'packaging_lookup_barcode' => 'api_materials_packaging_lookup_barcode',
     'packaging_access_roster' => 'api_materials_packaging_access_roster',
+    'packaging_deduct_candidates' => 'api_materials_packaging_deduct_candidates',
+    'packaging_deduct_assign' => 'api_materials_packaging_deduct_assign',
+    'packaging_deduct_unassign' => 'api_materials_packaging_deduct_unassign',
     'packaging_stock_out_history' => 'api_materials_packaging_stock_out_history',
     'supply_categories_list' => 'api_materials_supply_categories_list',
     'supply_category_create' => 'api_materials_supply_category_create',
@@ -956,6 +959,59 @@ function api_materials_packaging_access_roster(): void
         api_fail('Forbidden.', 403);
     }
     api_ok(material_packaging_access_roster(ims_pdo()));
+}
+
+function api_materials_require_packaging_catalog(): array
+{
+    $user = api_require_ims_user();
+    if (!ims_user_can($user, 'packaging.catalog')) {
+        api_fail('Forbidden.', 403);
+    }
+
+    return $user;
+}
+
+function api_materials_packaging_deduct_candidates(): void
+{
+    api_method_allowed(['GET']);
+    api_materials_require_packaging_catalog();
+    api_ok(['candidates' => material_packaging_deduct_candidates(ims_pdo())]);
+}
+
+function api_materials_packaging_deduct_assign(): void
+{
+    api_method_allowed(['POST']);
+    $actor = api_materials_require_packaging_catalog();
+    $in = api_input();
+    api_require_csrf($in);
+    try {
+        $res = material_packaging_deduct_assign(
+            ims_pdo(),
+            (int) ($in['user_id'] ?? 0),
+            (int) $actor['id']
+        );
+        api_ok($res);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_materials_packaging_deduct_unassign(): void
+{
+    api_method_allowed(['POST']);
+    $actor = api_materials_require_packaging_catalog();
+    $in = api_input();
+    api_require_csrf($in);
+    try {
+        $res = material_packaging_deduct_unassign(
+            ims_pdo(),
+            (int) ($in['user_id'] ?? 0),
+            (int) $actor['id']
+        );
+        api_ok($res);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
 }
 
 function api_materials_packaging_stock_out_history(): void

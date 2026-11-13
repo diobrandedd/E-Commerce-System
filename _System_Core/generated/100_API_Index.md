@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-11-13T03:42:56+01:00
+generated: 2026-11-13T04:02:26+01:00
 type: memory-bank
 ---
 
@@ -411,6 +411,9 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `packaging_print_sheet` | `api_materials_packaging_print_sheet()` | `ims_user_can()`, `material_inventory_role_can_issue_packing()`, `material_packaging_print_sheet_html()`, `ims_pdo()` |
 | `packaging_lookup_barcode` | `api_materials_packaging_lookup_barcode()` | `ims_user_can()`, `material_inventory_role_can_deduct_packaging()`, `material_packaging_lookup_by_barcode()`, `ims_pdo()`, `material_inventory_role_can_stock_in_packaging()` |
 | `packaging_access_roster` | `api_materials_packaging_access_roster()` | `ims_user_can()`, `material_packaging_access_roster()`, `ims_pdo()` |
+| `packaging_deduct_candidates` | `api_materials_packaging_deduct_candidates()` | `material_packaging_deduct_candidates()`, `ims_pdo()` |
+| `packaging_deduct_assign` | `api_materials_packaging_deduct_assign()` | `material_packaging_deduct_assign()`, `ims_pdo()` |
+| `packaging_deduct_unassign` | `api_materials_packaging_deduct_unassign()` | `material_packaging_deduct_unassign()`, `ims_pdo()` |
 | `packaging_stock_out_history` | `api_materials_packaging_stock_out_history()` | `ims_user_can()`, `material_packaging_stock_out_history()`, `ims_pdo()` |
 | `supply_categories_list` | `api_materials_supply_categories_list()` | `material_supply_categories_list()`, `ims_pdo()` |
 | `supply_category_create` | `api_materials_supply_category_create()` | `material_supply_category_create()`, `ims_pdo()` |

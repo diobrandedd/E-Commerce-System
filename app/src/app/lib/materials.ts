@@ -281,6 +281,24 @@ export function fetchPackagingAccessRoster() {
   }>("materials.php", "packaging_access_roster");
 }
 
+export function fetchPackagingDeductCandidates() {
+  return apiGet<{ candidates: PackagingAccessPerson[] }>("materials.php", "packaging_deduct_candidates");
+}
+
+export function assignPackagingDeduct(userId: number) {
+  return apiPost<{
+    user: { id: number; name: string; role: string };
+    roster: { stock_out: PackagingAccessPerson[]; stock_in_note: string };
+  }>("materials.php", "packaging_deduct_assign", { user_id: userId });
+}
+
+export function unassignPackagingDeduct(userId: number) {
+  return apiPost<{
+    user: { id: number; name: string; role: string };
+    roster: { stock_out: PackagingAccessPerson[]; stock_in_note: string };
+  }>("materials.php", "packaging_deduct_unassign", { user_id: userId });
+}
+
 export interface PackagingStockOutHistoryRow {
   id: number;
   stock_id: number;

@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-11-13T03:42:56+01:00
+generated: 2026-11-13T04:02:26+01:00
 type: memory-bank
-edge_count: 510
+edge_count: 517
 ---
 
 
@@ -311,6 +311,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/labels.php` | `includes/rts_products.php` |
 | `includes/material_inventory.php` | `includes/auth_check.php` |
 | `includes/material_inventory.php` | `includes/auth_check.php` |
+| `includes/material_inventory.php` | `includes/auth_check.php` |
+| `includes/material_inventory.php` | `includes/auth_check.php` |
 | `includes/material_inventory.php` | `includes/catalog_bootstrap.php` |
 | `includes/material_inventory.php` | `includes/dept_products.php` |
 | `includes/material_inventory.php` | `includes/fulfillment_packing.php` |
@@ -318,6 +320,9 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/material_inventory.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/material_inventory.php` | `includes/inventory_edit_log.php` |
 | `includes/material_inventory.php` | `includes/inventory_edit_log.php` |
+| `includes/material_inventory.php` | `includes/permissions.php` |
+| `includes/material_inventory.php` | `includes/permissions.php` |
+| `includes/material_inventory.php` | `includes/permissions.php` |
 | `includes/material_inventory.php` | `includes/permissions.php` |
 | `includes/material_inventory.php` | `includes/sku_barcodes.php` |
 | `includes/online_order_parcels.php` | `includes/honey_parcel_inventory.php` |
@@ -357,6 +362,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pdf_to_excel.php` | `includes/waybill_stamper.php` |
 | `includes/permissions.php` | `includes/auth_check.php` |
 | `includes/permissions.php` | `includes/db.php` |
+| `includes/permissions.php` | `includes/system_activity_log.php` |
+| `includes/permissions.php` | `includes/system_activity_log.php` |
 | `includes/permissions.php` | `includes/system_activity_log.php` |
 | `includes/pos_discount_requests.php` | `includes/dept_pos.php` |
 | `includes/pos_discount_requests.php` | `includes/honey_pos.php` |

@@ -499,6 +499,80 @@ function ims_user_permission_count(int $userId): int
     return count(ims_user_permissions($userId));
 }
 
+/**
+ * Grant a single catalog permission without replacing other grants.
+ */
+function ims_user_permission_grant(int $userId, string $key, ?int $grantedBy = null): void
+{
+    $key = trim($key);
+    $catalog = ims_permission_catalog();
+    if ($key === '' || !isset($catalog[$key])) {
+        throw new RuntimeException('Unknown permission key.');
+    }
+    if ($userId < 1) {
+        throw new RuntimeException('Invalid user.');
+    }
+
+    $pdo = ims_pdo();
+    $pdo->prepare(
+        'INSERT INTO user_permissions (user_id, permission_key, granted_by)
+         VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE granted_by = VALUES(granted_by), granted_at = CURRENT_TIMESTAMP'
+    )->execute([$userId, $key, $grantedBy]);
+
+    ims_user_permissions_clear_cache($userId);
+
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'staff_settings',
+        'permission_grant',
+        sprintf('Granted %s to user #%d', $key, $userId),
+        [
+            'entity_type' => 'user',
+            'entity_id' => $userId,
+            'actor_user_id' => $grantedBy,
+            'meta' => ['permission_key' => $key],
+        ]
+    );
+}
+
+/**
+ * Revoke a single catalog permission without touching other grants.
+ */
+function ims_user_permission_revoke(int $userId, string $key, ?int $actorId = null): void
+{
+    $key = trim($key);
+    $catalog = ims_permission_catalog();
+    if ($key === '' || !isset($catalog[$key])) {
+        throw new RuntimeException('Unknown permission key.');
+    }
+    if ($userId < 1) {
+        throw new RuntimeException('Invalid user.');
+    }
+
+    $pdo = ims_pdo();
+    $pdo->prepare(
+        'DELETE FROM user_permissions WHERE user_id = ? AND permission_key = ?'
+    )->execute([$userId, $key]);
+
+    ims_user_permissions_clear_cache($userId);
+
+    require_once __DIR__ . '/system_activity_log.php';
+    system_activity_log_write(
+        $pdo,
+        'staff_settings',
+        'permission_revoke',
+        sprintf('Revoked %s from user #%d', $key, $userId),
+        [
+            'entity_type' => 'user',
+            'entity_id' => $userId,
+            'actor_user_id' => $actorId,
+            'meta' => ['permission_key' => $key],
+        ]
+    );
+}
+
 /** Resolve department key for a user row. */
 function ims_user_dept_key(array $user): ?string
 {

@@ -2669,6 +2669,124 @@ function material_packaging_access_roster(PDO $pdo): array
 
     return [
         'stock_out' => $stockOut,
-        'stock_in_note' => 'Only executives can stock in packaging lots. Assign Stock out packaging (scan) to staff below.',
+        'stock_in_note' => 'Only executives can stock in packaging lots. Assign stock-out scanners on this page.',
+    ];
+}
+
+/**
+ * Active non-executive staff who do not yet have packaging.deduct.
+ *
+ * @return list<array{id:int,name:string,role:string,employee_id:string}>
+ */
+function material_packaging_deduct_candidates(PDO $pdo): array
+{
+    require_once __DIR__ . '/auth_check.php';
+    require_once __DIR__ . '/permissions.php';
+
+    $st = $pdo->query(
+        "SELECT u.id, u.name, u.employee_id, r.name AS role_name
+         FROM users u
+         INNER JOIN roles r ON r.id = u.role_id
+         WHERE u.is_active = 1
+         ORDER BY u.name ASC"
+    );
+    $out = [];
+    foreach ($st ? $st->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
+        $role = (string) $row['role_name'];
+        if (ims_is_executive($role)) {
+            continue;
+        }
+        $userId = (int) $row['id'];
+        $user = [
+            'id' => $userId,
+            'role' => $role,
+            'dept_id' => null,
+        ];
+        if (material_inventory_role_can_deduct_packaging($user)) {
+            continue;
+        }
+        $out[] = [
+            'id' => $userId,
+            'name' => (string) $row['name'],
+            'role' => $role,
+            'employee_id' => trim((string) ($row['employee_id'] ?? '')),
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * @return array{id:int,name:string,role:string,is_active:int}
+ */
+function material_packaging_deduct_require_staff_user(PDO $pdo, int $userId): array
+{
+    require_once __DIR__ . '/auth_check.php';
+    if ($userId < 1) {
+        throw new RuntimeException('Pick a staff member.');
+    }
+    $st = $pdo->prepare(
+        'SELECT u.id, u.name, u.is_active, r.name AS role_name
+         FROM users u
+         INNER JOIN roles r ON r.id = u.role_id
+         WHERE u.id = ?
+         LIMIT 1'
+    );
+    $st->execute([$userId]);
+    $row = $st->fetch(PDO::FETCH_ASSOC);
+    if ($row === false) {
+        throw new RuntimeException('Staff member not found.');
+    }
+    if (!(int) ($row['is_active'] ?? 0)) {
+        throw new RuntimeException('That staff member is inactive.');
+    }
+    $role = (string) $row['role_name'];
+    if (ims_is_executive($role)) {
+        throw new RuntimeException('Executives already have stock-out access — no need to assign.');
+    }
+
+    return [
+        'id' => (int) $row['id'],
+        'name' => (string) $row['name'],
+        'role' => $role,
+        'is_active' => (int) $row['is_active'],
+    ];
+}
+
+/**
+ * @return array{user: array{id:int,name:string,role:string}, roster: array<string, mixed>}
+ */
+function material_packaging_deduct_assign(PDO $pdo, int $targetUserId, int $actorUserId): array
+{
+    require_once __DIR__ . '/permissions.php';
+    $target = material_packaging_deduct_require_staff_user($pdo, $targetUserId);
+    ims_user_permission_grant($targetUserId, 'packaging.deduct', $actorUserId);
+
+    return [
+        'user' => [
+            'id' => $target['id'],
+            'name' => $target['name'],
+            'role' => $target['role'],
+        ],
+        'roster' => material_packaging_access_roster($pdo),
+    ];
+}
+
+/**
+ * @return array{user: array{id:int,name:string,role:string}, roster: array<string, mixed>}
+ */
+function material_packaging_deduct_unassign(PDO $pdo, int $targetUserId, int $actorUserId): array
+{
+    require_once __DIR__ . '/permissions.php';
+    $target = material_packaging_deduct_require_staff_user($pdo, $targetUserId);
+    ims_user_permission_revoke($targetUserId, 'packaging.deduct', $actorUserId);
+
+    return [
+        'user' => [
+            'id' => $target['id'],
+            'name' => $target['name'],
+            'role' => $target['role'],
+        ],
+        'roster' => material_packaging_access_roster($pdo),
     ];
 }
