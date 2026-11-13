@@ -11,7 +11,6 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionKey | PermissionKey[]> 
   "/edit-requests": "inventory.edit_requests.submit",
   "/inventory/check": "inventory.check.scan",
   "/inventory/requests": "inventory.requests.view",
-  "/inventory/monthly-count": "inventory.monthly_count",
   "/inventory/raw-materials": [
     "inventory.raw.view",
     "honey.view",

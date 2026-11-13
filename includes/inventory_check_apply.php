@@ -119,12 +119,15 @@ function inventory_check_audited_unique_codes(PDO $pdo, array $eventIds): array
                 continue;
             }
             $key = 'honey|' . $variant . '|' . $size;
-        } else {
+        } elseif ($kind === 'dept') {
             $pk = trim((string) $row['product_key']);
             if ($pk === '') {
                 continue;
             }
             $key = 'dept|' . $pk;
+        } else {
+            // freebie / supply — not unique stickers
+            continue;
         }
         $map[$key][$code] = true;
     }
@@ -336,8 +339,54 @@ function inventory_check_apply_qty_to_audited(PDO $pdo, int $userId, array $line
                 continue;
             }
             inventory_check_apply_freebie_qty($pdo, $userId, $pk, $target);
+            continue;
+        }
+        if ($kind === 'supply') {
+            $pk = (string) ($line['product_key'] ?? '');
+            if ($pk === '') {
+                continue;
+            }
+            $label = (string) ($line['product_label'] ?? $line['variant'] ?? ('Supply #' . $pk));
+            inventory_check_apply_supply_qty($pdo, $userId, (int) $pk, $target, $label);
         }
     }
+}
+
+function inventory_check_apply_supply_qty(
+    PDO $pdo,
+    int $userId,
+    int $stockId,
+    int $target,
+    string $label = ''
+): void {
+    if ($target < 0) {
+        throw new RuntimeException('Audited supply quantity cannot be negative.');
+    }
+    if ($stockId < 1) {
+        throw new RuntimeException('Invalid supply stock id.');
+    }
+    require_once __DIR__ . '/material_inventory.php';
+    $row = material_inventory_fetch_stock($pdo, $stockId, true);
+    if ($row === null || (string) ($row['category'] ?? '') !== 'packaging') {
+        $name = $label !== '' ? $label : ('#' . $stockId);
+        throw new RuntimeException(
+            'Supply ' . $name . ' was removed from the catalog — remove the line or recreate the item.'
+        );
+    }
+    if (!(int) ($row['is_active'] ?? 1)) {
+        $name = $label !== '' ? $label : trim((string) ($row['name'] ?? ('#' . $stockId)));
+        throw new RuntimeException(
+            'Supply ' . $name . ' is inactive — remove the line or reactivate it before applying.'
+        );
+    }
+    material_packaging_set_on_hand(
+        $pdo,
+        $stockId,
+        (float) $target,
+        $userId,
+        'inventory_check_apply',
+        'inventory_check_apply'
+    );
 }
 
 /**

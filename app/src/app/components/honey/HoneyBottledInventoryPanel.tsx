@@ -114,7 +114,7 @@ export function HoneyBottledInventoryPanel({
           {canExecEdit ? (
             <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">
               Edit adjusts Light / Amber / Dark pool counts — the same finished stock Pack and POS use. A reason
-              is required and kept in Edit Logs.
+              is required and kept in Logs.
             </p>
           ) : null}
         </div>

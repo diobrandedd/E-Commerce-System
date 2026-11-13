@@ -1283,7 +1283,8 @@ function material_packaging_set_on_hand(
     int $stockId,
     float $onHand,
     int $userId,
-    ?string $note = null
+    ?string $note = null,
+    ?string $source = null
 ): array {
     if ($onHand < 0) {
         throw new RuntimeException('On-hand quantity cannot be negative.');
@@ -1302,6 +1303,7 @@ function material_packaging_set_on_hand(
     $oldOnHand = round((float) ($row['on_hand'] ?? 0), 2);
     $newOnHand = round($onHand, 2);
     $entryId = null;
+    $logSource = $source !== null && trim($source) !== '' ? trim($source) : 'set_on_hand';
 
     if ($newOnHand !== $oldOnHand) {
         $delta = round($newOnHand - $oldOnHand, 2);
@@ -1329,7 +1331,7 @@ function material_packaging_set_on_hand(
             'on_hand',
             (string) $oldOnHand,
             (string) $newOnHand,
-            'set_on_hand'
+            $logSource
         );
     }
 

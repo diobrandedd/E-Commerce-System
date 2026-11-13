@@ -4,6 +4,12 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-11-13 — Check Inventory supplies
+**Change:** Scan PKG packaging barcodes in Check Inventory (`kind=supply`), show Supplies badges, compare vs `stocks.on_hand`, executive finalize/merge applies via `material_packaging_set_on_hand` (source `inventory_check_apply`). Check-only lookup — shared SKU lookup unchanged. Phase 98. → [[problems/records/2026-11-13_inventory-check-supplies]]
+
+### 2026-11-13 — Removed Monthly inventory
+**Change:** Deleted Monthly inventory page, `inventory.monthly_count`, and monthly-only seed/set-bags APIs. Old `/inventory/monthly-count` redirects to Logs. Admin password kept for Check inventory confirm and leaf-pool edits. → [[problems/records/2026-11-13_remove-monthly-inventory]]
+
 ### 2026-11-11 — Stronger inventory log summaries
 **Change:** System Logs inventory rows now show item names (e.g. Bubble wrap roll, Honey warehouse DS101426 · Light) and resolve supplier id changes to names; no-op same-value edits are omitted from the feed. → [[problems/records/2026-11-11_system-activity-logs]]
 

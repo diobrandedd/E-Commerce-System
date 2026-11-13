@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { InventoryCheckBatchDocs } from "@/app/components/inventory/InventoryCheckBatchDocs";
+import { InventoryCheckKindBadge } from "@/app/components/inventory/InventoryCheckKindBadge";
 import { InventoryCheckScanLogModal } from "@/app/components/inventory/InventoryCheckScanLogModal";
 import { Button } from "@/app/components/ui/button";
 import {
@@ -205,7 +206,7 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
-                          <th className="px-3 py-2">Product</th>
+                          <th className="px-3 py-2">Item</th>
                           <th className="px-3 py-2">Batch</th>
                           <th className="px-3 py-2">Size</th>
                           <th className="px-3 py-2 text-right">Qty</th>
@@ -220,8 +221,13 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                             className={appHoverRow}
                           >
                             <td className="px-3 py-2">
-                              {row.product_label}
-                              {row.variant ? ` · ${row.variant}` : ""}
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <InventoryCheckKindBadge kind={row.kind} typeLabel={row.type_label} />
+                                <span>
+                                  {row.product_label}
+                                  {row.kind !== "supply" && row.variant ? ` · ${row.variant}` : ""}
+                                </span>
+                              </div>
                             </td>
                             <td className="px-3 py-2">{row.batch_no ?? "—"}</td>
                             <td className="px-3 py-2">{row.size_label ?? "—"}</td>
@@ -328,8 +334,8 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
-                            <th className="px-3 py-2">Product</th>
-                            <th className="px-3 py-2">Size</th>
+                            <th className="px-3 py-2">Item</th>
+                            <th className="px-3 py-2">Size / unit</th>
                             <th className="px-3 py-2 text-right">Audited</th>
                             <th className="px-3 py-2 text-right">System</th>
                             <th className="px-3 py-2 text-right">Variance</th>
@@ -339,8 +345,13 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                           {compare.lines.map(line => (
                             <tr key={line.id} className={appHoverRow}>
                               <td className="px-3 py-2">
-                                {line.product_label}
-                                {line.variant ? ` · ${line.variant}` : ""}
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <InventoryCheckKindBadge kind={line.kind} typeLabel={line.type_label} />
+                                  <span>
+                                    {line.product_label}
+                                    {line.kind !== "supply" && line.variant ? ` · ${line.variant}` : ""}
+                                  </span>
+                                </div>
                               </td>
                               <td className="px-3 py-2">{line.size_label ?? "—"}</td>
                               <td className="px-3 py-2 text-right tabular-nums">{line.counted_qty}</td>
@@ -378,16 +389,19 @@ export function InventoryCheckHistoryDetailModal({ event, onClose }: InventoryCh
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="font-mono text-sm font-semibold tracking-wide">{scan.code}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {scan.product_label}
-                                {scan.size_label ? ` · ${scan.size_label}` : ""}
-                                {scan.batch_no ? ` · ${scan.batch_no}` : ""}
-                                {scan.bottling_date ? ` · bottled ${scan.bottling_date}` : ""}
-                                {scan.counted_qty != null && scan.counted_qty !== 1
-                                  ? ` · ×${scan.counted_qty}`
-                                  : ""}
-                                {scan.flag !== "ok" ? ` · ${scan.flag.replace(/_/g, " ")}` : ""}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                <InventoryCheckKindBadge kind={scan.kind} typeLabel={scan.type_label} />
+                                <p className="text-xs text-muted-foreground">
+                                  {scan.product_label}
+                                  {scan.size_label ? ` · ${scan.size_label}` : ""}
+                                  {scan.batch_no ? ` · ${scan.batch_no}` : ""}
+                                  {scan.bottling_date ? ` · bottled ${scan.bottling_date}` : ""}
+                                  {scan.counted_qty != null && scan.counted_qty !== 1
+                                    ? ` · ×${scan.counted_qty}`
+                                    : ""}
+                                  {scan.flag !== "ok" ? ` · ${scan.flag.replace(/_/g, " ")}` : ""}
+                                </p>
+                              </div>
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-sm font-medium">{scan.scanned_by_name || "—"}</p>

@@ -7,6 +7,7 @@ import { InventoryCheckBatchDocs } from "@/app/components/inventory/InventoryChe
 import { InventoryCheckAppliedRunDetailModal } from "@/app/components/inventory/InventoryCheckAppliedRunDetailModal";
 import { InventoryCheckHistoryDetailModal } from "@/app/components/inventory/InventoryCheckHistoryDetailModal";
 import { AdminOverridePasswordModal } from "@/app/components/inventory/AdminOverridePasswordModal";
+import { InventoryCheckKindBadge } from "@/app/components/inventory/InventoryCheckKindBadge";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
 import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScannerModal";
@@ -19,13 +20,13 @@ import {
 import { ApiError } from "@/app/lib/api";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
-import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
 import {
   inventoryCheckApi,
   type InventoryCheckAppliedRun,
   type InventoryCheckCompareResult,
   type InventoryCheckContext,
   type InventoryCheckEvent,
+  type InventoryCheckKind,
   type InventoryCheckScan,
   type InventoryCheckSummary,
 } from "@/app/lib/inventoryCheck";
@@ -149,8 +150,16 @@ export function InventoryCheckPage() {
   const [scanFlash, setScanFlash] = useState<"ok" | "err" | "dup" | null>(null);
   const [scanFlashMsg, setScanFlashMsg] = useState<string | null>(null);
   const [scanPopup, setScanPopup] = useState<string | null>(null);
-  const [pending, setPending] = useState<{ code: string; label: string } | null>(null);
+  const [pending, setPending] = useState<{
+    code: string;
+    label: string;
+    kind: InventoryCheckKind | "sku";
+    typeLabel: string;
+    unit?: string;
+    onHand?: number;
+  } | null>(null);
   const [pendingQty, setPendingQty] = useState("1");
+  const [lineKindFilter, setLineKindFilter] = useState<"all" | "products" | "freebie" | "supply">("all");
   const [docBusy, setDocBusy] = useState(false);
   const qtyInputRef = useRef<HTMLInputElement>(null);
   const lastItemRef = useRef(lastItem);
@@ -186,6 +195,12 @@ export function InventoryCheckPage() {
   const sessionOpen = event !== null && event.status === "open";
   const isSessionOwner = event !== null && event.opened_by === userId;
   const canControlSession = sessionOpen && (isSessionOwner || canManage);
+  const filteredLines = lines.filter(r => {
+    if (lineKindFilter === "all") return true;
+    if (lineKindFilter === "supply") return r.kind === "supply";
+    if (lineKindFilter === "freebie") return r.kind === "freebie";
+    return r.kind === "honey" || r.kind === "dept";
+  });
 
   const flash = (kind: "ok" | "err" | "dup", message: string, opts?: { popup?: boolean }) => {
     setScanFlash(kind);
@@ -464,14 +479,14 @@ export function InventoryCheckPage() {
     }
   };
 
-  /** Unique stickers auto-commit; SKU barcodes pause for quantity. */
+  /** Unique stickers auto-commit; SKU / freebie / supply pause for quantity. */
   const onAddScan = async (raw?: string): Promise<ScannerDecodeFeedback | void> => {
     const value = (raw ?? code).trim();
     if (!value || !event) return;
     setCode("");
 
     if (pending) {
-      return { kind: "error", message: "Enter quantity for the current product first." };
+      return { kind: "error", message: "Enter quantity for the current item first." };
     }
 
     const now = Date.now();
@@ -480,24 +495,44 @@ export function InventoryCheckPage() {
     }
 
     try {
-      const looked = await skuBarcodesApi.lookup(value);
+      const looked = await inventoryCheckApi.lookup(value);
       const lookup = looked.lookup;
 
-      if (lookup.lookup_kind === "sku" || lookup.lookup_kind === "freebie") {
-        const label =
-          lookup.lookup_kind === "freebie"
-            ? `${lookup.label ?? value} · freebie`
-            : (lookup.label ?? lookup.product_label ?? value);
-        setPending({ code: value, label });
+      if (
+        lookup.lookup_kind === "sku" ||
+        lookup.lookup_kind === "freebie" ||
+        lookup.lookup_kind === "supply"
+      ) {
+        const isSupply = lookup.lookup_kind === "supply";
+        const isFreebie = lookup.lookup_kind === "freebie";
+        const label = lookup.label ?? lookup.product_label ?? value;
+        const typeLabel = isSupply
+          ? "Supplies"
+          : isFreebie
+            ? "Freebie"
+            : (lookup.type_label ?? "Product");
+        const kind: InventoryCheckKind | "sku" = isSupply
+          ? "supply"
+          : isFreebie
+            ? "freebie"
+            : "sku";
+        setPending({
+          code: value,
+          label,
+          kind,
+          typeLabel,
+          unit: lookup.unit,
+          onHand: typeof lookup.on_hand === "number" ? lookup.on_hand : undefined,
+        });
         setPendingQty("1");
         setCameraOpen(false);
         playScanBeep("ok");
-        flash("ok", `${label} — enter quantity`, { popup: false });
+        flash("ok", `${label} · ${typeLabel} — enter quantity`, { popup: false });
         window.setTimeout(() => {
           qtyInputRef.current?.focus();
           qtyInputRef.current?.select();
         }, 40);
-        return { kind: "success", message: `${label} · enter qty` };
+        return { kind: "success", message: `${label} · ${typeLabel} · enter qty` };
       }
 
       if (lookup.lookup_kind === "unique_honey" || lookup.lookup_kind === "unique_dept") {
@@ -1132,8 +1167,8 @@ export function InventoryCheckPage() {
             {sessionOpen && (
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">
-                  Scan a product barcode, then enter how many you counted. Unique stickers count as 1
-                  automatically.
+                  Scan a product, freebie, or supply barcode, then enter how many you counted. Unique
+                  stickers count as 1 automatically.
                 </p>
                 <Button
                   type="button"
@@ -1152,13 +1187,35 @@ export function InventoryCheckPage() {
             )}
 
             {lines.length === 0 && sessionOpen ? (
-              <p className="text-sm text-muted-foreground">No products added yet.</p>
+              <p className="text-sm text-muted-foreground">No items added yet.</p>
             ) : lines.length > 0 ? (
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      ["all", "All"],
+                      ["products", "Products"],
+                      ["freebie", "Freebies"],
+                      ["supply", "Supplies"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <Button
+                      key={key}
+                      type="button"
+                      size="sm"
+                      variant={lineKindFilter === key ? "default" : "outline"}
+                      className="min-h-9"
+                      onClick={() => setLineKindFilter(key)}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
               <div className="overflow-x-auto rounded-xl border border-border">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
-                      <th className="px-3 py-2">Product</th>
+                      <th className="px-3 py-2">Item</th>
                       <th className="px-3 py-2">Code</th>
                       <th className="px-3 py-2 text-right">Qty</th>
                       <th className="px-3 py-2">By</th>
@@ -1166,15 +1223,20 @@ export function InventoryCheckPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {lines.map(r => {
+                    {filteredLines.map(r => {
                       const canEditRow = sessionOpen && (canManage || r.scanned_by === userId);
                       const editing = editId === r.id;
                       return (
                         <tr key={r.id} className={appHoverRow}>
                           <td className="px-3 py-2">
-                            {r.product_label}
-                            {r.size_label ? ` · ${r.size_label}` : ""}
-                            {r.variant ? ` · ${r.variant}` : ""}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <InventoryCheckKindBadge kind={r.kind} typeLabel={r.type_label} />
+                              <span>
+                                {r.product_label}
+                                {r.size_label ? ` · ${r.size_label}` : ""}
+                                {r.kind !== "supply" && r.variant ? ` · ${r.variant}` : ""}
+                              </span>
+                            </div>
                             {r.flag !== "ok" ? (
                               <span className="ml-1 text-xs text-destructive">{r.flag.replace(/_/g, " ")}</span>
                             ) : null}
@@ -1235,6 +1297,10 @@ export function InventoryCheckPage() {
                   </tbody>
                 </table>
               </div>
+              {filteredLines.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No lines in this filter.</p>
+              ) : null}
+              </div>
             ) : null}
 
             {summary && summary.rows.length > 0 && (
@@ -1251,8 +1317,8 @@ export function InventoryCheckPage() {
         <AppModalHeader title="Add to list" onClose={closeAddModal} />
         <AppModalBody className="space-y-4 relative">
           <p className="text-xs text-muted-foreground">
-            Scan a product or freebie barcode. For SKU and freebie stickers, enter how many you counted;
-            unique unit stickers count as 1 right away.
+            Scan a product, freebie, or supply barcode. For SKU, freebie, and supply stickers, enter how
+            many you counted; unique unit stickers count as 1 right away.
           </p>
 
           <AnimatePresence>
@@ -1278,9 +1344,24 @@ export function InventoryCheckPage() {
               data-testid="inventory-check-pending-qty-panel"
             >
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">Just scanned</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Just scanned</p>
+                  <InventoryCheckKindBadge
+                    kind={pending.kind === "sku" ? "dept" : pending.kind}
+                    typeLabel={pending.typeLabel}
+                  />
+                </div>
                 <p className="text-sm font-semibold mt-0.5">{pending.label}</p>
                 <p className="font-mono text-xs text-muted-foreground">{pending.code}</p>
+                {pending.kind === "supply" ? (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {pending.unit ? `Unit: ${pending.unit}` : null}
+                    {pending.unit && pending.onHand != null ? " · " : null}
+                    {pending.onHand != null
+                      ? `System: ${formatQty(pending.onHand)}${pending.unit ? ` ${pending.unit}` : ""}`
+                      : null}
+                  </p>
+                ) : null}
               </div>
               <div className="w-28">
                 <label className="text-xs text-muted-foreground" htmlFor="inv-check-pending-qty">
@@ -1412,7 +1493,7 @@ export function InventoryCheckPage() {
           title="Scan barcode"
           continuous
           sameCodeCooldownMs={SCAN_COOLDOWN_MS}
-          scanPrompt="Point at a barcode. For SKU and freebie codes you’ll enter quantity next."
+          scanPrompt="Point at a barcode. For SKU, freebie, and supply codes you’ll enter quantity next."
           onClose={closeCamera}
           onDecoded={decoded => onAddScan(decoded)}
         />
@@ -1437,8 +1518,8 @@ export function InventoryCheckPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
-                      <th className="px-3 py-2">Product</th>
-                      <th className="px-3 py-2">Size</th>
+                      <th className="px-3 py-2">Item</th>
+                      <th className="px-3 py-2">Size / unit</th>
                       <th className="px-3 py-2 text-right">Audited</th>
                       <th className="px-3 py-2 text-right">System</th>
                       <th className="px-3 py-2 text-right">Variance</th>
@@ -1448,8 +1529,13 @@ export function InventoryCheckPage() {
                     {compare.lines.map(l => (
                       <tr key={l.id} className={appHoverRow}>
                         <td className="px-3 py-2">
-                          {l.product_label}
-                          {l.variant ? ` · ${l.variant}` : ""}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <InventoryCheckKindBadge kind={l.kind} typeLabel={l.type_label} />
+                            <span>
+                              {l.product_label}
+                              {l.kind !== "supply" && l.variant ? ` · ${l.variant}` : ""}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-3 py-2">{l.size_label ?? "—"}</td>
                         <td className="px-3 py-2 text-right">{l.counted_qty}</td>

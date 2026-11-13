@@ -1,13 +1,11 @@
 ---
-date: 2026-09-12
+date: 2026-11-13
 type: cause
 status: documented
 area: inventory
-tags: [cause, monthly-inventory, security]
+tags: [cause]
 ---
 
-# Cause: Monthly inventory overrides absolute stock
+# Cause: Dedicated monthly absolute-count page
 
-Monthly inventory is an executive physical-count tool that **sets** on-hand / lot quantities to counted values (not stage moves). That path must stay gated by `inventory.monthly_count` **and** a shared administrator override password so a logged-in executive session alone cannot silently rewrite stock.
-
-Hiding the module (redirect to Check inventory) removed the only intentional absolute-override UI without replacing the password gate.
+Monthly inventory was a separate SPA + permission (`inventory.monthly_count`) that set exact on-hand across many domains after the administrator password. Once Check inventory sync and Products executive Edit covered corrections, the page remained a convenient override surface with little unique value (Edit Logs moved to System Logs).

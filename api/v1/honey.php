@@ -75,9 +75,6 @@ api_dispatch([
     'warehouse_set_unit_cost' => 'api_honey_warehouse_set_unit_cost',
     'pricing_sync_stocks' => 'api_honey_pricing_sync_stocks',
     'edit_log_list' => 'api_honey_edit_log_list',
-    'seed_production_row' => 'api_honey_seed_production_row',
-    'seed_packaging_row' => 'api_honey_seed_packaging_row',
-    'dept_raw_set_bags' => 'api_honey_dept_raw_set_bags',
     'dept_raw_executive_set' => 'api_honey_dept_raw_executive_set',
 ]);
 
@@ -282,11 +279,6 @@ function api_honey_warehouse_stock_in(): void
     $input = api_input();
     api_require_csrf($input);
     $user = api_honey_require_honey_ops();
-    $monthly = !empty($input['monthly_inventory']) || strtolower(trim((string) ($input['log_source'] ?? ''))) === 'monthly_inventory';
-    if ($monthly) {
-        require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
-        api_require_admin_override_password($input);
-    }
     $variants = is_array($input['variants'] ?? null) ? $input['variants'] : [];
     try {
         $result = honey_warehouse_stock_in(
@@ -887,12 +879,6 @@ function api_honey_executive_edit(): void
     api_require_csrf($input);
     $user = api_require_permission('honey.executive_edit');
     $fields = is_array($input['fields'] ?? null) ? $input['fields'] : $input;
-    $logSource = strtolower(trim((string) ($fields['log_source'] ?? $input['log_source'] ?? '')));
-    $monthly = !empty($input['monthly_inventory']) || $logSource === 'monthly_inventory';
-    if ($monthly) {
-        require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
-        api_require_admin_override_password($input);
-    }
     $pdo = ims_pdo();
     $pdo->beginTransaction();
     try {
@@ -1570,92 +1556,6 @@ function api_honey_edit_log_list(): void
         $dateTo !== '' ? $dateTo : null,
         $q !== '' ? $q : null
     );
-    api_ok($result);
-}
-
-function api_honey_seed_production_row(): void
-{
-    api_method_allowed(['POST']);
-    $input = api_input();
-    api_require_csrf($input);
-    $user = api_require_permission('honey.executive_edit');
-    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
-    api_require_admin_override_password($input);
-    $pdo = ims_pdo();
-    $pdo->beginTransaction();
-    try {
-        $row = honey_executive_seed_production_row(
-            $pdo,
-            (int) $user['id'],
-            (int) ($input['warehouse_row_id'] ?? 0),
-            (float) ($input['qty'] ?? 0),
-            isset($input['variant']) ? (string) $input['variant'] : null
-        );
-        $pdo->commit();
-    } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        api_fail($e->getMessage(), 400);
-    }
-    api_ok(['row' => $row]);
-}
-
-function api_honey_seed_packaging_row(): void
-{
-    api_method_allowed(['POST']);
-    $input = api_input();
-    api_require_csrf($input);
-    $user = api_require_permission('honey.executive_edit');
-    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
-    api_require_admin_override_password($input);
-    $pdo = ims_pdo();
-    $pdo->beginTransaction();
-    try {
-        $row = honey_executive_seed_packaging_row(
-            $pdo,
-            (int) $user['id'],
-            (int) ($input['production_row_id'] ?? 0),
-            (string) ($input['bottling_date'] ?? date('Y-m-d')),
-            is_array($input['size_qtys'] ?? null) ? $input['size_qtys'] : []
-        );
-        $pdo->commit();
-    } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        api_fail($e->getMessage(), 400);
-    }
-    api_ok(['row' => $row]);
-}
-
-function api_honey_dept_raw_set_bags(): void
-{
-    api_method_allowed(['POST']);
-    $input = api_input();
-    api_require_csrf($input);
-    $user = api_require_permission('honey.executive_edit');
-    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
-    api_require_admin_override_password($input);
-    $productKey = trim((string) ($input['product_key'] ?? ''));
-    $pdo = ims_pdo();
-    $pdo->beginTransaction();
-    try {
-        $result = dept_raw_set_bags_on_hand(
-            $pdo,
-            (int) $user['id'],
-            $productKey,
-            (float) ($input['bags'] ?? -1),
-            isset($input['note']) ? (string) $input['note'] : null,
-            'monthly_inventory'
-        );
-        $pdo->commit();
-    } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        api_fail($e->getMessage(), 400);
-    }
     api_ok($result);
 }
 

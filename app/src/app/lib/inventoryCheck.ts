@@ -17,13 +17,37 @@ export interface InventoryCheckEvent {
   compare_run_count: number;
 }
 
-export type InventoryCheckKind = "honey" | "dept" | "freebie";
+export type InventoryCheckKind = "honey" | "dept" | "freebie" | "supply";
+
+export type InventoryCheckLookupKind =
+  | "sku"
+  | "freebie"
+  | "unique_honey"
+  | "unique_dept"
+  | "supply";
+
+export interface InventoryCheckLookup {
+  lookup_kind: InventoryCheckLookupKind;
+  requires_qty?: boolean;
+  kind?: InventoryCheckKind | string;
+  code?: string;
+  label?: string;
+  product_label?: string;
+  type_label?: string;
+  unit?: string;
+  on_hand?: number;
+  stock_id?: number;
+  product_key?: string;
+  size_label?: string;
+  variant?: string;
+}
 
 export interface InventoryCheckScan {
   id: number;
   kind: InventoryCheckKind;
   product_key: string;
   product_label: string;
+  type_label?: string;
   code: string;
   packaging_row_id: number | null;
   supplier_code: string | null;
@@ -44,6 +68,7 @@ export interface InventoryCheckSummaryRow {
   kind: InventoryCheckKind;
   product_key: string;
   product_label: string;
+  type_label?: string;
   packaging_row_id: number | null;
   supplier_code: string | null;
   batch_no: string | null;
@@ -80,6 +105,7 @@ export interface InventoryCheckVarianceLine {
   kind: InventoryCheckKind;
   product_key: string;
   product_label: string;
+  type_label?: string;
   packaging_row_id: number | null;
   supplier_code: string | null;
   batch_no: string | null;
@@ -168,6 +194,9 @@ export interface InventoryCheckScanLogFilters {
 
 export const inventoryCheckApi = {
   context: () => apiGet<InventoryCheckContext>(ENDPOINT, "context"),
+
+  lookup: (code: string) =>
+    apiGet<{ lookup: InventoryCheckLookup }>(ENDPOINT, "lookup", { code }),
 
   openEvent: (note?: string) =>
     apiPost<{ event: InventoryCheckEvent }>(ENDPOINT, "event_open", note ? { note } : {}),

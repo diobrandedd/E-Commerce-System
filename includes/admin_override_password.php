@@ -63,7 +63,7 @@ function admin_override_password_set(PDO $pdo, string $newPlain, ?string $curren
 }
 
 /**
- * Require admin_password from an API input array (monthly inventory / stock overrides).
+ * Require admin_password from an API input array (Check inventory confirm / leaf-pool edits).
  * Call only from api/v1 handlers (api_fail must exist).
  *
  * @param array<string, mixed> $input
@@ -73,7 +73,7 @@ function api_require_admin_override_password(array $input): void
     $pdo = ims_pdo();
     if (!admin_override_password_configured($pdo)) {
         api_fail(
-            'Administrator password is not set. An executive must set it under System Settings before overriding stock.',
+            'Administrator password is not set. An executive must set it under System Settings before confirming inventory sync or editing the leaf pool.',
             403
         );
     }

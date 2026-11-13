@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-11-11T09:55:54+01:00
+generated: 2026-11-13T03:42:56+01:00
 type: memory-bank
 ---
 
@@ -343,9 +343,6 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `warehouse_set_unit_cost` | `api_honey_warehouse_set_unit_cost()` | `honey_pricing_set_warehouse_row_cost()`, `ims_pdo()`, `honey_pricing_pending_count()` |
 | `pricing_sync_stocks` | `api_honey_pricing_sync_stocks()` | `honey_pricing_sync_all_variant_stocks()`, `ims_pdo()` |
 | `edit_log_list` | `api_honey_edit_log_list()` | `inventory_edit_log_list()`, `ims_pdo()` |
-| `seed_production_row` | `api_honey_seed_production_row()` | `ims_pdo()`, `honey_executive_seed_production_row()` |
-| `seed_packaging_row` | `api_honey_seed_packaging_row()` | `ims_pdo()`, `honey_executive_seed_packaging_row()` |
-| `dept_raw_set_bags` | `api_honey_dept_raw_set_bags()` | `ims_pdo()`, `dept_raw_set_bags_on_hand()` |
 | `dept_raw_executive_set` | `api_honey_dept_raw_executive_set()` | `ims_is_executive()`, `ims_pdo()`, `dept_raw_set_grams_on_hand()`, `dept_raw_set_bags_on_hand()` |
 
 ### `inventory_check.php`
@@ -361,6 +358,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `event_close` | `api_inventory_check_event_close()` | `inventory_check_event_close()`, `ims_pdo()` |
 | `event_cancel` | `api_inventory_check_event_cancel()` | `inventory_check_event_cancel()`, `ims_pdo()` |
 | `event_list` | `api_inventory_check_event_list()` | `inventory_check_can_view_all()`, `inventory_check_history_date_span()`, `inventory_check_event_list()`, `ims_pdo()` |
+| `lookup` | `api_inventory_check_lookup()` | `inventory_check_lookup()`, `ims_pdo()` |
 | `scan` | `api_inventory_check_scan()` | `ims_pdo()`, `inventory_check_scan()`, `inventory_check_summary()` |
 | `scan_freebie` | `api_inventory_check_scan_freebie()` | `ims_pdo()`, `inventory_check_add_freebie()`, `inventory_check_summary()` |
 | `scan_update` | `api_inventory_check_scan_update()` | `ims_pdo()`, `inventory_check_scan_update()`, `inventory_check_can_manage()`, `inventory_check_summary()` |

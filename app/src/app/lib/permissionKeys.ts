@@ -52,7 +52,6 @@ export type PermissionKey =
   | "inventory.entries.view"
   | "inventory.leak_damage.record"
   | "inventory.leak_damage.view"
-  | "inventory.monthly_count"
   | "inventory.products.view"
   | "inventory.raw.mutate"
   | "inventory.raw.view"
@@ -147,7 +146,6 @@ export const PERMISSION_KEYS: readonly PermissionKey[] = [
   "inventory.entries.view",
   "inventory.leak_damage.record",
   "inventory.leak_damage.view",
-  "inventory.monthly_count",
   "inventory.products.view",
   "inventory.raw.mutate",
   "inventory.raw.view",

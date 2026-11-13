@@ -7,7 +7,7 @@ declare(strict_types=1);
  * Uses the same API base URL and token as honey AP sync.
  * Supply posting has its own kill switch and defaults off.
  *
- * Monthly inventory recounts, zero-priced lots, and count corrections are not posted.
+ * Zero-priced lots and count corrections are not posted.
  * Failures are logged and do not undo the stock-in.
  */
 

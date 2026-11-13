@@ -102,6 +102,7 @@ function inventory_edit_log_resolve_display(
         'executive_edit' => 'executive edit',
         'monthly_inventory' => 'monthly inventory',
         'count_correction' => 'count correction',
+        'inventory_check_apply' => 'inventory check apply',
         '' => 'edit',
         default => $sourceKey,
     };

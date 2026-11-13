@@ -66,6 +66,7 @@ api_dispatch([
     'event_close' => 'api_inventory_check_event_close',
     'event_cancel' => 'api_inventory_check_event_cancel',
     'event_list' => 'api_inventory_check_event_list',
+    'lookup' => 'api_inventory_check_lookup',
     'scan' => 'api_inventory_check_scan',
     'scan_freebie' => 'api_inventory_check_scan_freebie',
     'scan_update' => 'api_inventory_check_scan_update',
@@ -174,6 +175,20 @@ function api_inventory_check_event_list(): void
         $from,
         $to
     ));
+}
+
+function api_inventory_check_lookup(): void
+{
+    api_method_allowed(['GET', 'POST']);
+    api_inventory_check_require_scan();
+    $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    $in = $method === 'GET' ? $_GET : api_input();
+    $code = (string) ($in['code'] ?? ($_GET['code'] ?? ''));
+    try {
+        api_ok(['lookup' => inventory_check_lookup(ims_pdo(), $code)]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
 }
 
 function api_inventory_check_scan(): void

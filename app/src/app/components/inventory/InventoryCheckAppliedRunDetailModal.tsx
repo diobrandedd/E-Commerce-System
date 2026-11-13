@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
 import { InventoryCheckBatchDocs } from "@/app/components/inventory/InventoryCheckBatchDocs";
+import { InventoryCheckKindBadge } from "@/app/components/inventory/InventoryCheckKindBadge";
 import { Button } from "@/app/components/ui/button";
 import {
   AppErrorBanner,
@@ -119,8 +120,8 @@ export function InventoryCheckAppliedRunDetailModal({
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-secondary/30 text-left text-xs uppercase text-muted-foreground">
-                      <th className="px-3 py-2">Product</th>
-                      <th className="px-3 py-2">Size</th>
+                      <th className="px-3 py-2">Item</th>
+                      <th className="px-3 py-2">Size / unit</th>
                       <th className="px-3 py-2 text-right">Audited</th>
                       <th className="px-3 py-2 text-right">System</th>
                       <th className="px-3 py-2 text-right">Variance</th>
@@ -130,8 +131,13 @@ export function InventoryCheckAppliedRunDetailModal({
                     {compare.lines.map(line => (
                       <tr key={line.id} className={appHoverRow}>
                         <td className="px-3 py-2">
-                          {line.product_label}
-                          {line.variant ? ` · ${line.variant}` : ""}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <InventoryCheckKindBadge kind={line.kind} typeLabel={line.type_label} />
+                            <span>
+                              {line.product_label}
+                              {line.kind !== "supply" && line.variant ? ` · ${line.variant}` : ""}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-3 py-2">{line.size_label ?? "—"}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{line.counted_qty}</td>

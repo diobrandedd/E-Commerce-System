@@ -355,7 +355,7 @@ export function ExecutiveRowEditModal(props: Props) {
                   required
                 />
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Saved to Edit Logs for reporting. Does not rewrite stock-in scan history.
+                  Saved to Logs for reporting. Does not rewrite stock-in scan history.
                 </p>
               </div>
             </>

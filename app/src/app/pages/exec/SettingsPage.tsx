@@ -424,7 +424,7 @@ export function SettingsPage() {
       setAdminPwOk(
         adminPwConfigured
           ? "Administrator password updated."
-          : "Administrator password set. Monthly inventory will require it for stock overrides."
+          : "Administrator password set. Check inventory confirm and leaf-pool edits will require it."
       );
     } catch (e) {
       setAdminPwErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not save.");
@@ -1050,7 +1050,7 @@ export function SettingsPage() {
                   <p className="text-sm font-medium text-foreground">Sync supply stock-ins → expense</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {supplySyncEnabled ? "Currently ON" : "Currently OFF"}. Priced supply lots post as Packaging ·
-                    Supplies, with the item name as the description. Monthly inventory counts and past lots are not
+                    Supplies, with the item name as the description. On-hand corrections and past lots are not
                     posted.
                   </p>
                 </div>
@@ -1648,7 +1648,7 @@ export function SettingsPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground">Administrator password</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Required on Monthly inventory when overriding absolute stock levels. Separate from login
+                Required for Check inventory confirm and executive leaf-pool edits. Separate from login
                 passwords — executives set and change it here.
               </p>
             </div>

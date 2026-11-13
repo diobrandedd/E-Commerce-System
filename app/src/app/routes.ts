@@ -35,7 +35,6 @@ import { ReportsPage } from "./pages/exec/ReportsPage";
 import { SystemLogsPage } from "./pages/exec/SystemLogsPage";
 import { SuppliersPage } from "./pages/exec/SuppliersPage";
 import { SettingsPage } from "./pages/exec/SettingsPage";
-import { MonthlyInventoryPage } from "./pages/exec/MonthlyInventoryPage";
 import { POSUnifiedPage } from "./pages/pos/POSUnifiedPage";
 import { POSLayout } from "./components/pos/POSLayout";
 import { SalesPage } from "./pages/exec/SalesPage";
@@ -114,7 +113,7 @@ export const router = createBrowserRouter(
         { path: "beginning-inventory", element: guarded(InventoryPage) },
         { path: "edit-requests", element: guarded(EditRequestsPage) },
         { path: "inventory/requests", element: permGuard(InventoryRequestsPage, "inventory.requests.view") },
-        { path: "inventory/monthly-count", element: permGuard(MonthlyInventoryPage, "inventory.monthly_count") },
+        { path: "inventory/monthly-count", element: createElement(Navigate, { to: "/logs", replace: true }) },
         { path: "inventory/raw-materials", element: invViewGuard(RawMaterialsHubPage) },
         { path: "inventory/raw-materials/honey", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },
         { path: "inventory/raw-materials/honey/warehouse", element: invViewGuard(HoneyWarehousePage) },

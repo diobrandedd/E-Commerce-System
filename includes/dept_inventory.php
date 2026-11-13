@@ -858,7 +858,7 @@ function dept_raw_set_bags_on_hand(
         throw new RuntimeException('No leaf stock for this product. Stock-in at least once first, or set supplier prices.');
     }
     $stockId = (int) $stock['id'];
-    $defaultNote = $logSource === 'executive_edit' ? 'Executive pool correction' : 'Monthly inventory count';
+    $defaultNote = $logSource === 'executive_edit' ? 'Executive pool correction' : 'Pool correction';
     $auditNote = $note !== null && trim($note) !== '' ? trim($note) : $defaultNote;
     $ins = $pdo->prepare(
         'INSERT INTO stock_entries (stock_id, dept_id, qty, batching_date, supplier_batch_no, entered_by)

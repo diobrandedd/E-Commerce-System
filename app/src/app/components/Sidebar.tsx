@@ -140,17 +140,12 @@ function getNavItems(role: Role, _dept: string, pendingCorrections: number, labe
     { label: "Check inventory", to: "/inventory/check" },
   ];
 
-  const inventoryChildrenExec: NavChild[] = [
-    ...inventoryChildren,
-    { label: "Monthly inventory", to: "/inventory/monthly-count" },
-  ];
-
   const inventoryNavExec: NavItem = {
     icon: Package,
     label: "Inventory",
     to: "/inventory/raw-materials",
     badge: labelBadge,
-    children: inventoryChildrenExec,
+    children: inventoryChildren,
   };
 
   const honeyLabelsNav: NavItem = {

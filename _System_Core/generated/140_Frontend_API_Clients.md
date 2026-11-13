@@ -1,6 +1,6 @@
 ---
 title: Frontend API Clients
-generated: 2026-11-11T09:38:31+01:00
+generated: 2026-11-13T03:21:32+01:00
 type: memory-bank
 ---
 
@@ -35,7 +35,6 @@ Backend index: [[100_API_Index]]
 | `app/src/app/components/notifications/CorrectionNotificationsContext.tsx` | `honey.php` |
 | `app/src/app/lib/deptRawInventory.ts` | `honey.php` |
 | `app/src/app/pages/InventoryRequestsPage.tsx` | `honey.php` |
-| `app/src/app/pages/exec/MonthlyInventoryPage.tsx` | `honey.php` |
 | `app/src/app/pages/honey/HoneyProductionPage.tsx` | `honey.php` |
 | `app/src/app/pages/honey/HoneyWarehousePage.tsx` | `honey.php` |
 | `app/src/app/lib/materials.ts` | `materials.php` |
@@ -43,7 +42,6 @@ Backend index: [[100_API_Index]]
 | `app/src/app/lib/parcelsApi.ts` | `parcels.php` |
 | `app/src/app/pages/InventoryRequestsPage.tsx` | `pos_discounts.php` |
 | `app/src/app/pages/RTSPage.tsx` | `rts.php` |
-| `app/src/app/pages/exec/MonthlyInventoryPage.tsx` | `rts.php` |
 | `app/src/app/pages/rts/RTSDamagedInventoryPage.tsx` | `rts.php` |
 | `app/src/app/lib/rtsApi.ts` | `rts_cases.php` |
 | `app/src/app/pages/RTSPage.tsx` | `rts_sync.php` |
