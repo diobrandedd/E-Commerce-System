@@ -1,7 +1,7 @@
 ---
 title: inventory_check_apply
 source: includes/inventory_check_apply.php
-generated: 2026-11-17T06:08:04+01:00
+generated: 2026-11-17T06:10:39+01:00
 type: module
 function_count: 11
 ---
