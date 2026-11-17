@@ -35,6 +35,7 @@ api_dispatch([
     'dept_checkout' => 'api_pos_dept_checkout',
     'dept_ar_checkout' => 'api_pos_dept_ar_checkout',
     'unified_lookup' => 'api_pos_unified_lookup',
+    'unified_freebie_options' => 'api_pos_unified_freebie_options',
     'unified_checkout' => 'api_pos_unified_checkout',
     'unified_ar_checkout' => 'api_pos_unified_ar_checkout',
     'staff_picker' => 'api_pos_staff_picker',
@@ -427,6 +428,17 @@ function api_pos_unified_lookup(): void
     $code = trim((string) ($_GET['code'] ?? ''));
     try {
         api_ok(['barcode' => pos_unified_lookup(ims_pdo(), $code)]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_pos_unified_freebie_options(): void
+{
+    api_method_allowed(['GET']);
+    api_pos_require_session();
+    try {
+        api_ok(['options' => pos_unified_freebie_options(ims_pdo())]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

@@ -395,6 +395,56 @@ function dept_raw_record_freebie_give_out(
 }
 
 /**
+ * Credit freebie on-hand after a POS void/refund (no leaf-bag deduct).
+ * Logged as action `create` with grams/bags NULL so history shows the restock reason.
+ *
+ * @return array{product_key: string, action: string, qty_samples: int, freebie_on_hand: int, log_id: int}
+ */
+function dept_raw_record_freebie_restock(
+    PDO $pdo,
+    int $userId,
+    string $productKey,
+    int $qtySamples,
+    string $reason
+): array {
+    if (!dept_raw_freebie_product_allowed($productKey)) {
+        throw new RuntimeException('Freebies are only for Paragis, Black Rice, and Jar Cacao.');
+    }
+    if ($qtySamples < 1) {
+        throw new RuntimeException('Sample quantity must be a whole number ≥ 1.');
+    }
+    $reason = trim($reason);
+    if ($reason === '') {
+        throw new RuntimeException('Reason is required.');
+    }
+
+    dept_raw_freebie_ensure_balance_row($pdo, $productKey);
+    $pdo->prepare(
+        'UPDATE dept_raw_freebie_balances SET on_hand = on_hand + ? WHERE product_key = ?'
+    )->execute([$qtySamples, $productKey]);
+
+    $ins = $pdo->prepare(
+        'INSERT INTO dept_raw_freebie_log
+         (product_key, action, qty_samples, grams_per_sample, grams_total, bags_deducted, reason, reported_by)
+         VALUES (?, \'create\', ?, NULL, NULL, NULL, ?, ?)'
+    );
+    $ins->execute([
+        $productKey,
+        $qtySamples,
+        substr($reason, 0, 255),
+        $userId > 0 ? $userId : 1,
+    ]);
+
+    return [
+        'product_key' => $productKey,
+        'action' => 'create',
+        'qty_samples' => $qtySamples,
+        'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),
+        'log_id' => (int) $pdo->lastInsertId(),
+    ];
+}
+
+/**
  * @return array{
  *   rows: list<array<string, mixed>>,
  *   total: int,

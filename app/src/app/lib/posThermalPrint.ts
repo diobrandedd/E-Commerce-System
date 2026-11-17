@@ -12,7 +12,15 @@ const COLS = 28; // keep prices left of the physical cut edge (~.00 was clipping
 
 export type PosThermalReceipt = Pick<
   HoneyCheckoutResult,
-  "receipt_no" | "total" | "buyer_name" | "seller_name" | "items" | "subtotal" | "discount_percent" | "discount_amount"
+  | "receipt_no"
+  | "total"
+  | "buyer_name"
+  | "seller_name"
+  | "items"
+  | "subtotal"
+  | "discount_percent"
+  | "discount_amount"
+  | "freebies"
 >;
 
 function escapeHtml(value: string): string {
@@ -66,6 +74,17 @@ function buildReceiptHtml(receipt: PosThermalReceipt, logoSrc: string, printedAt
     } else {
       lines.push(label.slice(0, COLS));
       lines.push(padRow(label.slice(COLS, COLS * 2) || "", price));
+    }
+  }
+
+  for (const fb of receipt.freebies ?? []) {
+    const label = `${fb.label} x${fb.qty}`;
+    const maxLeft = COLS - 10;
+    if (label.length <= maxLeft) {
+      lines.push(padRow(label, "FREE"));
+    } else {
+      lines.push(label.slice(0, COLS));
+      lines.push(padRow(label.slice(COLS, COLS * 2) || "", "FREE"));
     }
   }
 

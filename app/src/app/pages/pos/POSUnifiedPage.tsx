@@ -1,7 +1,10 @@
 import { useId, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { AnimatePresence } from "motion/react";
-import { AlertCircle, Camera, Loader2, Trash2 } from "lucide-react";
+import { AlertCircle, Camera, Gift, Loader2, Trash2 } from "lucide-react";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
+import { AppErrorBanner, AppPressable } from "@/app/components/layout/appFeedbackMotion";
+import { Button } from "@/app/components/ui/button";
 import { POSHeader } from "@/app/components/pos/POSHeader";
 import { POSGuideModal } from "@/app/components/pos/POSGuideModal";
 import { POSReceiptView } from "@/app/components/pos/POSReceiptView";
@@ -29,6 +32,7 @@ import {
   posUnifiedApi,
   unifiedCartPayload,
   type UnifiedCartLine,
+  type UnifiedFreebieOption,
   type UnifiedLookupKind,
   type UnifiedPosLookup,
 } from "@/app/lib/posUnified";
@@ -36,8 +40,13 @@ import { useScanWedgeField } from "@/app/lib/scanWedgeField";
 
 function lookupKindOf(b: UnifiedPosLookup): UnifiedLookupKind {
   if (b.lookup_kind) return b.lookup_kind;
+  if (b.kind === "freebie") return "freebie";
   if (b.requires_qty || (b.sku_id != null && b.sku_id > 0)) return "sku";
   return b.kind === "honey" ? "unique_honey" : "unique_dept";
+}
+
+function isFreebieLine(l: UnifiedCartLine): boolean {
+  return l.kind === "freebie" || l.lookup_kind === "freebie";
 }
 
 export function POSUnifiedPage() {
@@ -60,18 +69,33 @@ export function POSUnifiedPage() {
   const [feedback, setFeedback] = useState<"success" | "error" | null>(null);
   const [cartPulse, setCartPulse] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [freebieModalOpen, setFreebieModalOpen] = useState(false);
+  const [freebieOptions, setFreebieOptions] = useState<UnifiedFreebieOption[]>([]);
+  const [freebieLoading, setFreebieLoading] = useState(false);
+  const [freebieProductKey, setFreebieProductKey] = useState("pt");
+  const [freebieQty, setFreebieQty] = useState("1");
+  const [freebieModalError, setFreebieModalError] = useState<string | null>(null);
   const { inputRef: scanRef, refocus, inputProps } = useScanWedgeField(cameraOpen);
 
-  const pricedCart = useMemo(() => cart.every(l => l.list_unit_price > 0), [cart]);
-  const subtotal = cart.reduce((s, l) => s + l.list_unit_price * l.qty, 0);
+  const paidCart = useMemo(() => cart.filter(l => !isFreebieLine(l)), [cart]);
+  const pricedCart = useMemo(
+    () => paidCart.length > 0 && paidCart.every(l => l.list_unit_price > 0),
+    [paidCart],
+  );
+  const subtotal = paidCart.reduce((s, l) => s + l.list_unit_price * l.qty, 0);
   const itemCount = cart.reduce((s, l) => s + l.qty, 0);
+  const freebieOnly = cart.length > 0 && paidCart.length === 0;
 
   const removeLine = (key: string) => setCart(prev => prev.filter(l => l.key !== key));
 
   const setLinePrice = (key: string, raw: string) => {
     const n = parseFloat(raw);
     setCart(prev =>
-      prev.map(l => (l.key === key ? { ...l, list_unit_price: Number.isFinite(n) && n >= 0 ? n : 0 } : l)),
+      prev.map(l =>
+        l.key === key && !isFreebieLine(l)
+          ? { ...l, list_unit_price: Number.isFinite(n) && n >= 0 ? n : 0 }
+          : l,
+      ),
     );
   };
 
@@ -79,15 +103,99 @@ export function POSUnifiedPage() {
     const n = parseInt(raw, 10);
     setCart(prev =>
       prev.map(l =>
-        l.key === key && l.lookup_kind === "sku"
+        l.key === key && (l.lookup_kind === "sku" || isFreebieLine(l))
           ? { ...l, qty: Number.isFinite(n) && n >= 1 ? n : 1 }
           : l,
       ),
     );
   };
 
+  const addFreebieToCart = (productKey: string, label: string, code: string, qty: number) => {
+    const key = `freebie|${productKey}`;
+    setCart(prev => {
+      const existing = prev.find(l => l.key === key);
+      if (existing) {
+        return prev.map(l => (l.key === key ? { ...l, qty: l.qty + qty, code: code || l.code } : l));
+      }
+      return [
+        ...prev,
+        {
+          key,
+          kind: "freebie",
+          lookup_kind: "freebie",
+          label,
+          code,
+          batch_no: "",
+          product_id: 0,
+          product_key: productKey,
+          unit_id: null,
+          list_unit_price: 0,
+          qty,
+          pool: "freebie",
+        },
+      ];
+    });
+    setCartPulse(true);
+    setTimeout(() => setCartPulse(false), 500);
+  };
+
+  const openFreebieModal = async () => {
+    setFreebieModalOpen(true);
+    setFreebieModalError(null);
+    setFreebieQty("1");
+    setFreebieLoading(true);
+    try {
+      const res = await posUnifiedApi.freebieOptions();
+      setFreebieOptions(res.options);
+      if (res.options.length > 0) {
+        setFreebieProductKey(res.options[0].product_key);
+      }
+    } catch (e) {
+      setFreebieModalError(e instanceof ApiError ? e.message : "Could not load freebies.");
+    } finally {
+      setFreebieLoading(false);
+    }
+  };
+
+  const confirmAddFreebie = () => {
+    const opt = freebieOptions.find(o => o.product_key === freebieProductKey);
+    if (!opt) {
+      setFreebieModalError("Pick a freebie product.");
+      return;
+    }
+    const qty = parseInt(freebieQty, 10);
+    if (!Number.isFinite(qty) || qty < 1) {
+      setFreebieModalError("Enter a quantity of at least 1.");
+      return;
+    }
+    if (qty > opt.on_hand) {
+      setFreebieModalError(`Only ${opt.on_hand} ${opt.label} on hand.`);
+      return;
+    }
+    addFreebieToCart(opt.product_key, opt.label, opt.code, qty);
+    playScanBeep("ok");
+    setFeedback("success");
+    setFreebieModalOpen(false);
+    refocus();
+  };
+
   const addFromLookup = (b: UnifiedPosLookup): ScannerDecodeFeedback => {
     const lk = lookupKindOf(b);
+    if (lk === "freebie") {
+      const productKey = b.product_key ?? "";
+      if (!productKey) {
+        const reason = "Unknown freebie.";
+        playScanBeep("bad");
+        setError(reason);
+        setFeedback("error");
+        return { kind: "error", message: reason };
+      }
+      addFreebieToCart(productKey, b.label, b.code, 1);
+      playScanBeep("ok");
+      setFeedback("success");
+      refocus();
+      return { kind: "success", message: `Added: ${b.label}` };
+    }
     if (lk !== "sku" && b.unit_id != null && cart.some(l => l.unit_id === b.unit_id)) {
       const reason = "That sticker is already in the cart.";
       playScanBeep("dup");
@@ -184,7 +292,7 @@ export function POSUnifiedPage() {
   };
 
   const checkout = async (discountPercent = 0) => {
-    if (cart.length === 0 || !pricedCart) return;
+    if (cart.length === 0 || !pricedCart || freebieOnly) return;
     if (!checkoutIdentityReady(buyerName, sellerName)) {
       setError("Customer name and seller are required.");
       return;
@@ -232,9 +340,9 @@ export function POSUnifiedPage() {
     () =>
       cart.map(l => ({
         key: l.key,
-        label: `${l.label} · ${l.code}`,
+        label: isFreebieLine(l) ? l.label : `${l.label} · ${l.code}`,
         qty: l.qty,
-        unitPrice: l.list_unit_price,
+        unitPrice: isFreebieLine(l) ? 0 : l.list_unit_price,
         kind: l.kind,
         productId: l.product_id,
         variant: l.variant,
@@ -242,10 +350,15 @@ export function POSUnifiedPage() {
         productKey: l.product_key,
         lookupKind: l.lookup_kind,
         skuId: l.sku_id ?? undefined,
+        code: l.code || undefined,
         bottleUnitIds:
-          l.lookup_kind !== "sku" && l.kind === "honey" && l.unit_id != null ? [l.unit_id] : undefined,
+          !isFreebieLine(l) && l.lookup_kind !== "sku" && l.kind === "honey" && l.unit_id != null
+            ? [l.unit_id]
+            : undefined,
         pouchUnitIds:
-          l.lookup_kind !== "sku" && l.kind === "dept" && l.unit_id != null ? [l.unit_id] : undefined,
+          !isFreebieLine(l) && l.lookup_kind !== "sku" && l.kind === "dept" && l.unit_id != null
+            ? [l.unit_id]
+            : undefined,
       })),
     [cart],
   );
@@ -267,12 +380,12 @@ export function POSUnifiedPage() {
       <POSHeader title="Pyx POS" subtitle="Scan stickers — any product" onExit={handleExit} onGuide={() => setGuideOpen(true)} />
 
       <div className="px-4 pt-2">
-        <div className="w-full max-w-xl mx-auto flex gap-2">
+        <div className="w-full max-w-xl mx-auto flex flex-wrap gap-2">
           <input
             ref={scanRef}
             {...inputProps}
-            className="flex-1 border rounded-lg px-3 py-2 text-sm font-mono"
-            placeholder="Scan product barcode (honey or dept)"
+            className="flex-1 min-w-[10rem] border rounded-lg px-3 py-2 text-sm font-mono"
+            placeholder="Scan product or freebie barcode"
             value={scanCode}
             onChange={e => setScanCode(e.target.value)}
             onKeyDown={e => {
@@ -290,6 +403,13 @@ export function POSUnifiedPage() {
           >
             <Camera size={16} /> Camera
           </ActionFeedbackButton>
+          <AppPressable
+            type="button"
+            onClick={() => void openFreebieModal()}
+            className="shrink-0 px-3 py-2 text-sm flex items-center gap-1.5 rounded-lg border border-border bg-card font-medium"
+          >
+            <Gift size={16} /> Add freebie
+          </AppPressable>
         </div>
       </div>
 
@@ -310,7 +430,9 @@ export function POSUnifiedPage() {
         <div className="max-w-lg mx-auto">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2 text-center">Cart</p>
           {cart.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center">Scan stickers — enter price per line before checkout</p>
+            <p className="text-xs text-muted-foreground text-center">
+              Scan stickers or add a freebie — enter price on paid lines before checkout
+            </p>
           ) : (
             <div className="space-y-2 max-h-48 overflow-y-auto">
               <AnimatePresence initial={false}>
@@ -318,10 +440,17 @@ export function POSUnifiedPage() {
                   <CartLineMotion key={line.key}>
                     <div className="flex items-center gap-2 text-xs bg-secondary/40 rounded-lg px-2 py-2">
                       <div className="flex-1 min-w-0 text-left">
-                        <p className="font-medium truncate">{line.label}</p>
-                        <p className="font-mono text-muted-foreground">{line.code}</p>
+                        <p className="font-medium truncate flex items-center gap-1.5">
+                          {line.label}
+                          {isFreebieLine(line) ? (
+                            <span className="inline-flex rounded-full bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.5 font-semibold">
+                              Freebie
+                            </span>
+                          ) : null}
+                        </p>
+                        <p className="font-mono text-muted-foreground">{line.code || "—"}</p>
                       </div>
-                      {line.lookup_kind === "sku" ? (
+                      {line.lookup_kind === "sku" || isFreebieLine(line) ? (
                         <input
                           type="number"
                           min={1}
@@ -333,15 +462,19 @@ export function POSUnifiedPage() {
                       ) : (
                         <span className="w-8 text-center text-muted-foreground">×1</span>
                       )}
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        className="w-20 border rounded px-2 py-1 text-right"
-                        value={line.list_unit_price || ""}
-                        placeholder="Price"
-                        onChange={e => setLinePrice(line.key, e.target.value)}
-                      />
+                      {isFreebieLine(line) ? (
+                        <span className="w-20 text-right font-semibold text-emerald-700">Free</span>
+                      ) : (
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          className="w-20 border rounded px-2 py-1 text-right"
+                          value={line.list_unit_price || ""}
+                          placeholder="Price"
+                          onChange={e => setLinePrice(line.key, e.target.value)}
+                        />
+                      )}
                       <button
                         type="button"
                         onClick={() => removeLine(line.key)}
@@ -377,15 +510,18 @@ export function POSUnifiedPage() {
         <div className="max-w-sm mx-auto">
           <button
             type="button"
-            disabled={cart.length === 0 || !pricedCart}
+            disabled={cart.length === 0 || !pricedCart || freebieOnly}
             onClick={() => setShowCheckout(true)}
             className="w-full py-3.5 rounded-xl text-sm font-bold text-white disabled:opacity-40 transition-transform active:scale-[0.98]"
             style={{ background: "#C8900A" }}
           >
             Checkout{itemCount > 0 ? ` (${itemCount} item${itemCount === 1 ? "" : "s"})` : ""}
           </button>
-          {cart.length > 0 && !pricedCart && (
-            <p className="text-[10px] text-center text-muted-foreground mt-2">Enter a price for every scanned item</p>
+          {freebieOnly && (
+            <p className="text-[10px] text-center text-muted-foreground mt-2">Add at least one paid item with freebies</p>
+          )}
+          {cart.length > 0 && !freebieOnly && !pricedCart && (
+            <p className="text-[10px] text-center text-muted-foreground mt-2">Enter a price for every paid item</p>
           )}
         </div>
       </div>
@@ -441,6 +577,53 @@ export function POSUnifiedPage() {
           onDecoded={addScanned}
         />
       ) : null}
+
+      <AppModal open={freebieModalOpen} onClose={() => setFreebieModalOpen(false)} panelClassName="max-w-sm">
+        <AppModalHeader title="Add freebie" onClose={() => setFreebieModalOpen(false)} />
+        <AppModalBody className="space-y-3">
+          <AppErrorBanner message={freebieModalError} />
+          {freebieLoading ? (
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 size={14} className="animate-spin" /> Loading…
+            </p>
+          ) : (
+            <>
+              <label className="block text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                Product
+                <select
+                  value={freebieProductKey}
+                  onChange={e => setFreebieProductKey(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                >
+                  {freebieOptions.map(o => (
+                    <option key={o.product_key} value={o.product_key}>
+                      {o.label} · {o.on_hand} on hand
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                Quantity
+                <input
+                  type="number"
+                  min={1}
+                  value={freebieQty}
+                  onChange={e => setFreebieQty(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                />
+              </label>
+            </>
+          )}
+        </AppModalBody>
+        <AppModalFooter>
+          <Button type="button" variant="outline" onClick={() => setFreebieModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button type="button" disabled={freebieLoading || freebieOptions.length === 0} onClick={confirmAddFreebie}>
+            Add to cart
+          </Button>
+        </AppModalFooter>
+      </AppModal>
 
       <POSGuideModal
         open={guideOpen}

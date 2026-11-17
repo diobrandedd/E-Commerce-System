@@ -1,8 +1,8 @@
 ---
 title: Include Graph
-generated: 2026-11-13T04:02:26+01:00
+generated: 2026-11-17T06:02:20+01:00
 type: memory-bank
-edge_count: 517
+edge_count: 521
 ---
 
 
@@ -283,6 +283,8 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/honey_pricing.php` | `includes/pyxacct_ap_sync.php` |
 | `includes/honey_sales_report.php` | `includes/dashboard_inventory.php` |
 | `includes/honey_sales_report.php` | `includes/dept_products.php` |
+| `includes/honey_sales_report.php` | `includes/dept_raw_freebies.php` |
+| `includes/honey_sales_report.php` | `includes/dept_raw_freebies.php` |
 | `includes/honey_sales_report.php` | `includes/honey_pos.php` |
 | `includes/honey_sales_report.php` | `includes/rts_schema.php` |
 | `includes/honey_volume.php` | `includes/app_settings.php` |
@@ -376,6 +378,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_refund.php` | `includes/ar_credits.php` |
 | `includes/pos_refund.php` | `includes/dept_inventory.php` |
 | `includes/pos_refund.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/pos_refund.php` | `includes/dept_raw_freebies.php` |
 | `includes/pos_refund.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/pos_refund.php` | `includes/honey_pos.php` |
 | `includes/pos_refund.php` | `includes/pyxacct_walkin_sync.php` |
@@ -385,6 +388,7 @@ These reverse-layer includes can boot JSON headers/sessions unexpectedly. See [[
 | `includes/pos_sales_helpers.php` | `includes/honey_pos.php` |
 | `includes/pos_unified.php` | `includes/dept_pos.php` |
 | `includes/pos_unified.php` | `includes/dept_pouch_barcodes.php` |
+| `includes/pos_unified.php` | `includes/dept_raw_freebies.php` |
 | `includes/pos_unified.php` | `includes/honey_bottle_barcodes.php` |
 | `includes/pos_unified.php` | `includes/honey_pos.php` |
 | `includes/pos_unified.php` | `includes/pos_sales_helpers.php` |

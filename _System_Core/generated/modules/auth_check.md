@@ -1,7 +1,7 @@
 ---
 title: auth_check
 source: includes/auth_check.php
-generated: 2026-11-13T04:02:29+01:00
+generated: 2026-11-17T06:02:23+01:00
 type: module
 function_count: 14
 ---
@@ -70,7 +70,7 @@ function_count: 14
 - `api/v1/order_remarks.php`:30 — `$user = ims_current_user();`
 - `api/v1/parcels.php`:10 — `$user = ims_current_user();`
 - `api/v1/pdf_to_excel.php`:29 — `$user = ims_current_user();`
-- `api/v1/pos.php`:54 — `$user = ims_current_user();`
+- `api/v1/pos.php`:55 — `$user = ims_current_user();`
 - `api/v1/sku_barcodes.php`:40 — `$user = ims_current_user();`
 - `api/v1/sku_barcodes.php`:66 — `$user = ims_current_user();`
 - `api/v1/sku_barcodes.php`:92 — `$user = ims_current_user();`
@@ -85,11 +85,11 @@ function_count: 14
 
 - `api/v1/ar.php`:52 — `if (ims_pos_authenticated()) {`
 - `api/v1/auth.php`:56 — `if (ims_pos_authenticated()) {`
-- `api/v1/pos.php`:51 — `if (ims_pos_authenticated()) {`
+- `api/v1/pos.php`:52 — `if (ims_pos_authenticated()) {`
 - `auth/login.php`:8 — `if (ims_pos_authenticated()) {`
 - `dept/products.php`:17 — `$canDeductStock = !ims_pos_authenticated();`
 - `includes/auth_check.php`:164 — `if (!ims_pos_authenticated()) {`
-- `includes/pos_unified.php`:18 — `if (ims_pos_authenticated()) {`
+- `includes/pos_unified.php`:35 — `if (ims_pos_authenticated()) {`
 - `index.php`:8 — `if (ims_pos_authenticated()) {`
 - `login.php`:9 — `if (ims_pos_authenticated()) {`
 

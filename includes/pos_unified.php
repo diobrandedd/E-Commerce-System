@@ -7,6 +7,23 @@ require_once __DIR__ . '/dept_pouch_barcodes.php';
 require_once __DIR__ . '/honey_pos.php';
 require_once __DIR__ . '/dept_pos.php';
 require_once __DIR__ . '/pos_sales_helpers.php';
+require_once __DIR__ . '/dept_raw_freebies.php';
+
+/**
+ * Freebie ledger requires a users.id FK. PIN terminals have no IMS user —
+ * fall back to the lowest active user so give-out / restock can still audit.
+ */
+function pos_unified_reporter_user_id(PDO $pdo, array $actor): int
+{
+    $uid = isset($actor['user_id']) ? (int) $actor['user_id'] : 0;
+    if ($uid > 0) {
+        return $uid;
+    }
+    $st = $pdo->query('SELECT id FROM users WHERE is_active = 1 ORDER BY id ASC LIMIT 1');
+    $id = $st !== false ? (int) $st->fetchColumn() : 0;
+
+    return $id > 0 ? $id : 1;
+}
 
 /**
  * Current POS cashier: PIN terminal or IMS user with pos.sell.
@@ -155,6 +172,31 @@ function pos_unified_lookup(PDO $pdo, string $code): array
         ];
     }
 
+    $freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);
+    if ($freebie !== null) {
+        $productKey = (string) $freebie['product_key'];
+
+        return [
+            'kind' => 'freebie',
+            'lookup_kind' => 'freebie',
+            'requires_qty' => true,
+            'label' => dept_raw_freebie_label($productKey),
+            'product_id' => 0,
+            'product_name' => dept_raw_freebie_label($productKey),
+            'variant' => null,
+            'size' => null,
+            'size_label' => null,
+            'product_key' => $productKey,
+            'unit_id' => null,
+            'sku_id' => null,
+            'code' => (string) $freebie['code'],
+            'batch_no' => null,
+            'suggested_price' => 0.0,
+            'on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),
+            'pool' => 'freebie',
+        ];
+    }
+
     try {
         $honey = honey_bottle_pos_lookup($pdo, $code);
         $variant = (string) $honey['variant'];
@@ -212,6 +254,125 @@ function pos_unified_lookup(PDO $pdo, string $code): array
         'suggested_price' => $prod['suggested_price'],
         'pool' => (string) ($dept['unit_pool'] ?? 'finished'),
     ];
+}
+
+/**
+ * Picker options for Add freebie (Paragis / Black Rice / Jar Cacao).
+ *
+ * @return list<array{product_key: string, label: string, code: string, on_hand: int}>
+ */
+function pos_unified_freebie_options(PDO $pdo): array
+{
+    $codes = [];
+    foreach (dept_raw_freebie_barcode_list($pdo) as $row) {
+        $codes[(string) $row['product_key']] = (string) $row['code'];
+    }
+    $out = [];
+    foreach (DEPT_RAW_FREEBIE_PRODUCT_KEYS as $productKey) {
+        $out[] = [
+            'product_key' => $productKey,
+            'label' => dept_raw_freebie_label($productKey),
+            'code' => $codes[$productKey] ?? (DEPT_RAW_FREEBIE_DEFAULT_CODES[$productKey] ?? ''),
+            'on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),
+        ];
+    }
+
+    return $out;
+}
+
+/**
+ * Split freebie cart lines from paid honey/dept lines.
+ *
+ * @param list<array<string,mixed>> $items
+ * @return array{paid: list<array<string,mixed>>, freebies: list<array{product_key: string, qty: int, code: ?string, label: string}>}
+ */
+function pos_unified_split_freebie_items(array $items): array
+{
+    $paid = [];
+    $merged = [];
+    foreach ($items as $entry) {
+        $kind = strtolower(trim((string) ($entry['kind'] ?? '')));
+        if ($kind !== 'freebie') {
+            $paid[] = $entry;
+            continue;
+        }
+        $productKey = strtolower(trim((string) ($entry['product_key'] ?? '')));
+        if (!dept_raw_freebie_product_allowed($productKey)) {
+            throw new RuntimeException('Freebies are only for Paragis, Black Rice, and Jar Cacao.');
+        }
+        $qty = (int) ($entry['qty'] ?? 0);
+        if ($qty < 1 || $qty > 5000) {
+            throw new RuntimeException('Freebie quantity must be between 1 and 5000.');
+        }
+        $code = isset($entry['code']) ? trim((string) $entry['code']) : '';
+        if (!isset($merged[$productKey])) {
+            $merged[$productKey] = [
+                'product_key' => $productKey,
+                'qty' => 0,
+                'code' => $code !== '' ? $code : null,
+                'label' => dept_raw_freebie_label($productKey),
+            ];
+        }
+        $merged[$productKey]['qty'] += $qty;
+        if ($merged[$productKey]['qty'] > 5000) {
+            throw new RuntimeException('Freebie quantity must be between 1 and 5000.');
+        }
+        if ($code !== '' && ($merged[$productKey]['code'] === null || $merged[$productKey]['code'] === '')) {
+            $merged[$productKey]['code'] = $code;
+        }
+    }
+
+    return [
+        'paid' => $paid,
+        'freebies' => array_values($merged),
+    ];
+}
+
+/**
+ * Deduct freebie pool and insert pos_receipt_freebies rows for a sale.
+ *
+ * @param list<array{product_key: string, qty: int, code: ?string, label: string}> $freebies
+ * @return list<array{product_key: string, label: string, qty: int, code: ?string}>
+ */
+function pos_unified_record_freebies(
+    PDO $pdo,
+    int $userId,
+    int $saleId,
+    string $receiptNo,
+    array $freebies
+): array {
+    if ($freebies === []) {
+        return [];
+    }
+    $reason = 'POS sale ' . $receiptNo;
+    $recorded = [];
+    $ins = $pdo->prepare(
+        'INSERT INTO pos_receipt_freebies (sale_id, product_key, qty, code, freebie_log_id)
+         VALUES (?, ?, ?, ?, ?)'
+    );
+    foreach ($freebies as $fb) {
+        $productKey = (string) $fb['product_key'];
+        $qty = (int) $fb['qty'];
+        $result = dept_raw_record_freebie_give_out($pdo, $userId, $productKey, $qty, $reason);
+        $code = isset($fb['code']) && $fb['code'] !== null && trim((string) $fb['code']) !== ''
+            ? substr(trim((string) $fb['code']), 0, 64)
+            : null;
+        $ins->execute([
+            $saleId,
+            $productKey,
+            $qty,
+            $code,
+            (int) $result['log_id'],
+        ]);
+        $recorded[] = [
+            'product_key' => $productKey,
+            'label' => (string) ($fb['label'] ?? dept_raw_freebie_label($productKey)),
+            'qty' => $qty,
+            'code' => $code,
+        ];
+    }
+
+    return $recorded;
 }
 
 /**
@@ -408,7 +569,12 @@ function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buye
     $discountFactor = $discountPercent > 0 ? (1 - ($discountPercent / 100)) : 1.0;
     $discountRequestId = isset($opts['discount_request_id']) ? (int) $opts['discount_request_id'] : null;
 
-    $cleanLines = pos_unified_build_cart_lines($pdo, $items, $discountFactor);
+    $split = pos_unified_split_freebie_items($items);
+    if ($split['paid'] === []) {
+        throw new RuntimeException('Add at least one paid item.');
+    }
+    $cleanLines = pos_unified_build_cart_lines($pdo, $split['paid'], $discountFactor);
+    $freebieLines = $split['freebies'];
     $subtotal = round(array_sum(array_column($cleanLines, 'line_subtotal')), 2);
     $total = round(array_sum(array_column($cleanLines, 'line_total')), 2);
     $discountAmount = round($subtotal - $total, 2);
@@ -510,6 +676,14 @@ function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buye
             }
         }
 
+        $recordedFreebies = pos_unified_record_freebies(
+            $pdo,
+            pos_unified_reporter_user_id($pdo, $actor),
+            $saleId,
+            $receiptNo,
+            $freebieLines
+        );
+
         if ($discountRequestId !== null && $discountRequestId > 0) {
             $pdo->prepare(
                 'UPDATE pos_discount_requests
@@ -544,6 +718,7 @@ function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buye
                 'discount_percent' => $discountPercent,
                 'seller_name' => $sellerName,
                 'item_count' => count($cleanLines),
+                'freebie_count' => count($recordedFreebies),
             ],
         ]
     );
@@ -570,6 +745,7 @@ function pos_unified_checkout(PDO $pdo, array $actor, array $items, string $buye
             'kind' => $l['kind'],
             'product_key' => $l['product_key'] ?? null,
         ], $cleanLines),
+        'freebies' => $recordedFreebies,
     ];
 }
 
@@ -596,7 +772,12 @@ function pos_unified_ar_checkout(PDO $pdo, array $actor, array $items, array $de
     }
     $debtorMobile = trim((string) ($debtor['debtor_mobile'] ?? ''));
 
-    $cleanLines = pos_unified_build_cart_lines($pdo, $items, 1.0);
+    $split = pos_unified_split_freebie_items($items);
+    if ($split['paid'] === []) {
+        throw new RuntimeException('Add at least one paid item.');
+    }
+    $cleanLines = pos_unified_build_cart_lines($pdo, $split['paid'], 1.0);
+    $freebieLines = $split['freebies'];
     $total = round(array_sum(array_column($cleanLines, 'line_total')), 2);
 
     $owns = !$pdo->inTransaction();
@@ -697,6 +878,14 @@ function pos_unified_ar_checkout(PDO $pdo, array $actor, array $items, array $de
             ];
         }
 
+        $recordedFreebies = pos_unified_record_freebies(
+            $pdo,
+            pos_unified_reporter_user_id($pdo, $actor),
+            $saleId,
+            $receiptNo,
+            $freebieLines
+        );
+
         $creditIds = ar_credits_record_lines($pdo, [
             'debtor_user_id' => $debtorUserId,
             'debtor_name' => $debtorName,
@@ -723,6 +912,7 @@ function pos_unified_ar_checkout(PDO $pdo, array $actor, array $items, array $de
         'debtor_name' => $debtorName,
         'debtor_mobile' => $debtorMobile !== '' ? $debtorMobile : null,
         'ar_credit_ids' => $creditIds,
+        'freebies' => $recordedFreebies,
     ];
 }
 
@@ -735,8 +925,12 @@ function pos_unified_discount_quote(PDO $pdo, array $items, int $discountPercent
     if (!in_array($discountPercent, [10, 20], true)) {
         throw new RuntimeException('Discount must be 10% or 20%.');
     }
+    $split = pos_unified_split_freebie_items($items);
+    if ($split['paid'] === []) {
+        throw new RuntimeException('Add at least one paid item.');
+    }
     $discountFactor = 1 - ($discountPercent / 100);
-    $clean = pos_unified_build_cart_lines($pdo, $items, $discountFactor);
+    $clean = pos_unified_build_cart_lines($pdo, $split['paid'], $discountFactor);
     $subtotal = round(array_sum(array_column($clean, 'line_subtotal')), 2);
     $total = round(array_sum(array_column($clean, 'line_total')), 2);
 

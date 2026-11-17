@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-11-13T04:02:26+01:00
+generated: 2026-11-17T06:02:20+01:00
 type: memory-bank
 ---
 
@@ -532,6 +532,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `dept_checkout` | `api_pos_dept_checkout()` | `dept_pos_checkout()`, `ims_pdo()` |
 | `dept_ar_checkout` | `api_pos_dept_ar_checkout()` | `dept_pos_ar_checkout()`, `ims_pdo()` |
 | `unified_lookup` | `api_pos_unified_lookup()` | `pos_unified_lookup()`, `ims_pdo()` |
+| `unified_freebie_options` | `api_pos_unified_freebie_options()` | `pos_unified_freebie_options()`, `ims_pdo()` |
 | `unified_checkout` | `api_pos_unified_checkout()` | `pos_unified_checkout()`, `ims_pdo()`, `pos_session_actor()` |
 | `unified_ar_checkout` | `api_pos_unified_ar_checkout()` | `pos_unified_ar_checkout()`, `ims_pdo()`, `pos_session_actor()` |
 | `staff_picker` | `api_pos_staff_picker()` | `ar_staff_picker_list()`, `ims_pdo()` |

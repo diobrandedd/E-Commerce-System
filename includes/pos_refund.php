@@ -238,6 +238,34 @@ function pos_sale_full_refund(PDO $pdo, int $saleId, string $reason = ''): array
             // products.dept_product_key may be missing on older DBs — unique units already handled.
         }
 
+        // Restock freebies given on this sale (pos_receipt_freebies → freebie pool).
+        try {
+            require_once __DIR__ . '/dept_raw_freebies.php';
+            $fbSt = $pdo->prepare(
+                'SELECT product_key, qty FROM pos_receipt_freebies WHERE sale_id = ? FOR UPDATE'
+            );
+            $fbSt->execute([$saleId]);
+            $receiptNo = (string) ($sale['receipt_no'] ?? ('#' . $saleId));
+            foreach ($fbSt->fetchAll(PDO::FETCH_ASSOC) as $fb) {
+                $productKey = (string) $fb['product_key'];
+                $qty = (int) $fb['qty'];
+                if ($qty < 1 || !dept_raw_freebie_product_allowed($productKey)) {
+                    continue;
+                }
+                dept_raw_record_freebie_restock(
+                    $pdo,
+                    1,
+                    $productKey,
+                    $qty,
+                    'POS void ' . $receiptNo
+                );
+                $restocked += $qty;
+            }
+            $pdo->prepare('DELETE FROM pos_receipt_freebies WHERE sale_id = ?')->execute([$saleId]);
+        } catch (Throwable) {
+            // Table missing on older DBs — paid-line restock still proceeds.
+        }
+
         // Clear receipt lines and zero the sale.
         $pdo->prepare('DELETE FROM pos_receipt_items WHERE sale_id = ?')->execute([$saleId]);
         if (honey_pos_column_exists($pdo, 'pos_sales', 'subtotal_amount')) {

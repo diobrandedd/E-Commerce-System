@@ -11,13 +11,14 @@ export interface POSARLineItem {
   label: string;
   qty: number;
   unitPrice: number;
-  kind?: "honey" | "dept";
+  kind?: "honey" | "dept" | "freebie";
   productId?: number;
   variant?: string;
   size?: string;
   productKey?: string;
-  lookupKind?: "sku" | "unique_honey" | "unique_dept";
+  lookupKind?: "sku" | "unique_honey" | "unique_dept" | "freebie";
   skuId?: number;
+  code?: string;
   bottleUnitIds?: number[];
   pouchUnitIds?: number[];
 }
@@ -46,7 +47,10 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const total = useMemo(() => lines.reduce((s, l) => s + l.unitPrice * l.qty, 0), [lines]);
+  const total = useMemo(
+    () => lines.reduce((s, l) => (l.kind === "freebie" || l.lookupKind === "freebie" ? s : s + l.unitPrice * l.qty), 0),
+    [lines],
+  );
   const todayLabel = useMemo(
     () =>
       new Date().toLocaleDateString("en-PH", {
@@ -98,6 +102,14 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
       const items =
         mode === "unified"
           ? lines.map(l => {
+              if (l.kind === "freebie" || l.lookupKind === "freebie") {
+                return {
+                  kind: "freebie",
+                  product_key: l.productKey,
+                  qty: l.qty,
+                  ...(l.code ? { code: l.code } : {}),
+                };
+              }
               const lookupKind =
                 l.lookupKind ??
                 (l.skuId
@@ -246,15 +258,25 @@ export function POSARCheckoutPanel({ mode, lines, onCancel, onSuccess }: POSARCh
       </div>
 
       <div className="space-y-2 text-sm mb-4 max-h-40 overflow-y-auto">
-        {lines.map(line => (
-          <div key={line.key} className="flex justify-between gap-2">
-            <span>
-              {mode === "honey" && line.variant ? `${variantLabel(line.variant)} · ` : ""}
-              {line.label} ×{line.qty}
-            </span>
-            <span className="font-semibold">{peso(line.unitPrice * line.qty)}</span>
-          </div>
-        ))}
+        {lines.map(line => {
+          const isFreebie = line.kind === "freebie" || line.lookupKind === "freebie";
+          return (
+            <div key={line.key} className="flex justify-between gap-2">
+              <span>
+                {mode === "honey" && line.variant ? `${variantLabel(line.variant)} · ` : ""}
+                {line.label} ×{line.qty}
+                {isFreebie ? (
+                  <span className="ml-1.5 inline-flex rounded-full bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.5 font-semibold">
+                    Freebie
+                  </span>
+                ) : null}
+              </span>
+              <span className={`font-semibold ${isFreebie ? "text-emerald-700" : ""}`}>
+                {isFreebie ? "FREE" : peso(line.unitPrice * line.qty)}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex justify-between font-bold text-base border-t pt-3 mb-4">
