@@ -1321,6 +1321,10 @@ function honey_bottle_pack_session_start(PDO $pdo, int $userId): array
  */
 function honey_bottle_pack_session_get(PDO $pdo, int $sessionId): array
 {
+    // Freebie pack lines call dept_raw_freebie_label(); load helpers even when
+    // this get() runs from pack_start / history (scan path already required it).
+    require_once __DIR__ . '/dept_raw_freebies.php';
+
     $st = $pdo->prepare(
         'SELECT s.*,
                 u_start.name AS started_by_name,

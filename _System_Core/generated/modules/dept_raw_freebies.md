@@ -1,7 +1,7 @@
 ---
 title: dept_raw_freebies
 source: includes/dept_raw_freebies.php
-generated: 2026-11-17T06:48:31+01:00
+generated: 2026-11-17T09:05:45+01:00
 type: module
 function_count: 15
 ---
@@ -54,15 +54,16 @@ function_count: 15
 
 ## dept_raw_freebie_label {#dept_raw_freebie_label}
 
-**Callers (15):**
+**Callers (16):**
 
 - `api/v1/dept_pouch_barcodes.php`:323 — `api_fail('This freebie barcode belongs to ' . dept_raw_freebie_label($freebie['product_key']) . '.', 422);`
 - `api/v1/dept_pouch_barcodes.php`:340 — `'label' => dept_raw_freebie_label($productKey),`
 - `includes/barcode_verify.php`:35 — `'product_label' => dept_raw_freebie_label($productKey) . ' · ' . $grams . ' g · ' . $onHand . ' on hand',`
 - `includes/dept_raw_freebies.php`:84 — `'label' => dept_raw_freebie_label($productKey),`
-- `includes/honey_bottle_barcodes.php`:1424 — `$productLabel = $isFreebie ? dept_raw_freebie_label($productKey) : dept_pouch_product_label($productKey);`
-- `includes/honey_bottle_barcodes.php`:1781 — `'Not enough ' . dept_raw_freebie_label($productKey) . ' on hand (' . $onHand`
-- `includes/honey_bottle_barcodes.php`:1804 — `'product_label' => dept_raw_freebie_label($productKey),`
+- `includes/honey_bottle_barcodes.php`:1324 — `// Freebie pack lines call dept_raw_freebie_label(); load helpers even when`
+- `includes/honey_bottle_barcodes.php`:1428 — `$productLabel = $isFreebie ? dept_raw_freebie_label($productKey) : dept_pouch_product_label($productKey);`
+- `includes/honey_bottle_barcodes.php`:1785 — `'Not enough ' . dept_raw_freebie_label($productKey) . ' on hand (' . $onHand`
+- `includes/honey_bottle_barcodes.php`:1808 — `'product_label' => dept_raw_freebie_label($productKey),`
 - `includes/honey_sales_report.php`:289 — `'label' => dept_raw_freebie_label($productKey),`
 - `includes/honey_sales_report.php`:369 — `'label' => dept_raw_freebie_label($productKey),`
 - `includes/pos_unified.php`:183 — `'label' => dept_raw_freebie_label($productKey),`
@@ -80,7 +81,7 @@ function_count: 15
 
 - `api/v1/dept_pouch_barcodes.php`:320 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/barcode_verify.php`:23 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
-- `includes/honey_bottle_barcodes.php`:1727 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
+- `includes/honey_bottle_barcodes.php`:1731 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/inventory_check.php`:554 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/pack_cancel_restock.php`:255 — `if (dept_raw_freebie_barcode_fetch_by_code($pdo, $code) !== null) {`
 - `includes/pos_unified.php`:175 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
@@ -155,7 +156,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_raw_freebies.php`:392 — `'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
 - `includes/dept_raw_freebies.php`:442 — `'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
 - `includes/dept_raw_freebies.php`:507 — `'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
-- `includes/honey_bottle_barcodes.php`:1778 — `$onHand = dept_raw_freebie_on_hand($pdo, $productKey);`
+- `includes/honey_bottle_barcodes.php`:1782 — `$onHand = dept_raw_freebie_on_hand($pdo, $productKey);`
 - `includes/inventory_check.php`:1376 — `$systemQty = (float) dept_raw_freebie_on_hand($pdo, (string) $productKey);`
 - `includes/inventory_check_apply.php`:292 — `$old = dept_raw_freebie_on_hand($pdo, $productKey);`
 - `includes/pos_unified.php`:195 — `'on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
@@ -178,7 +179,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (3):**
 
 - `api/v1/honey.php`:1124 — `$result = dept_raw_record_freebie_give_out($pdo, (int) $user['id'], $productKey, $qty, $reason);`
-- `includes/honey_bottle_barcodes.php`:2220 — `dept_raw_record_freebie_give_out(`
+- `includes/honey_bottle_barcodes.php`:2224 — `dept_raw_record_freebie_give_out(`
 - `includes/pos_unified.php`:356 — `$result = dept_raw_record_freebie_give_out($pdo, $userId, $productKey, $qty, $reason);`
 
 ## dept_raw_record_freebie_restock {#dept_raw_record_freebie_restock}

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-11-17T06:46:07+01:00
+generated: 2026-11-17T09:03:43+01:00
 type: memory-bank
 ---
 

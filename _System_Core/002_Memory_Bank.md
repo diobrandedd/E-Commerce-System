@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-11-17 — Pack scan Server error on freebie draft sessions
+**Change:** `honey_bottle_pack_session_get` now requires `dept_raw_freebies.php` so reopening a draft/history session that contains freebie lines no longer fatals as generic "Server error."
+
 ### 2026-11-17 — Packaging stock-in is permission-only
 **Change:** `packaging.stock_in` no longer requires executive role; Supplies route accepts stock_in so assignees can open items and use Stock in lot. → [[problems/records/2026-11-17_packaging-stock-in-permission]]
 
