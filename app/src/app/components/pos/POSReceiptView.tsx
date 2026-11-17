@@ -105,6 +105,23 @@ export function POSReceiptView({
                 </span>
               </motion.div>
             ))}
+            {(receipt.freebies ?? []).map((fb, idx) => (
+              <motion.div
+                key={`fb-${idx}`}
+                className="flex justify-between text-xs gap-2"
+                initial={reduce ? false : { opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + (receipt.items.length + idx) * 0.06 }}
+              >
+                <span className="text-foreground">
+                  {fb.label} ×{fb.qty}
+                  <span className="ml-1.5 inline-flex rounded-full bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.5 font-semibold">
+                    Freebie
+                  </span>
+                </span>
+                <span className="font-semibold text-emerald-700">FREE</span>
+              </motion.div>
+            ))}
           </div>
         </div>
         {receipt.discount_percent != null && receipt.discount_percent > 0 && (

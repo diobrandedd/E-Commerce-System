@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-11-13T04:00:19+01:00
+generated: 2026-11-17T06:07:24+01:00
 type: memory-bank
 ---
 
@@ -41,7 +41,7 @@ type: memory-bank
 | [[modules/dept_production]] | 29 |
 | [[modules/dept_products]] | 23 |
 | [[modules/dept_pt_settings]] | 9 |
-| [[modules/dept_raw_freebies]] | 14 |
+| [[modules/dept_raw_freebies]] | 15 |
 | [[modules/finished_leak_damage]] | 11 |
 | [[modules/forwarding]] | 15 |
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
@@ -53,7 +53,7 @@ type: memory-bank
 | [[modules/honey_parcel_item_parser]] | 17 |
 | [[modules/honey_pos]] | 16 |
 | [[modules/honey_pricing]] | 19 |
-| [[modules/honey_sales_report]] | 43 |
+| [[modules/honey_sales_report]] | 45 |
 | [[modules/honey_volume]] | 13 |
 | [[modules/honey_warehouse_barcodes]] | 12 |
 | [[modules/ims_exec_sidebar]] | 1 |
@@ -75,7 +75,7 @@ type: memory-bank
 | [[modules/pos_refund]] | 2 |
 | [[modules/pos_sales_helpers]] | 3 |
 | [[modules/pos_thermal_print]] | 4 |
-| [[modules/pos_unified]] | 9 |
+| [[modules/pos_unified]] | 13 |
 | [[modules/pyxacct_ap_sync]] | 9 |
 | [[modules/pyxacct_supply_sync]] | 3 |
 | [[modules/pyxacct_walkin_sync]] | 7 |

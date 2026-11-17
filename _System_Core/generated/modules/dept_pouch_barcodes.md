@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-11-13T08:20:52+01:00
+generated: 2026-11-17T06:07:35+01:00
 type: module
 function_count: 37
 ---
@@ -326,7 +326,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/dept_pouch_barcodes.php`:429 — `api_ok(['barcode' => dept_pouch_pos_lookup(ims_pdo(), $code)]);`
-- `includes/pos_unified.php`:192 — `$dept = dept_pouch_pos_lookup($pdo, $code);`
+- `includes/pos_unified.php`:234 — `$dept = dept_pouch_pos_lookup($pdo, $code);`
 
 ## dept_pouch_pos_consume {#dept_pouch_pos_consume}
 
@@ -334,8 +334,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/dept_pos.php`:266 — `dept_pouch_pos_consume($pdo, $unitIds, $saleId);`
 - `includes/dept_pos.php`:419 — `dept_pouch_pos_consume($pdo, $unitIds, $saleId);`
-- `includes/pos_unified.php`:475 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
-- `includes/pos_unified.php`:660 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
+- `includes/pos_unified.php`:641 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
+- `includes/pos_unified.php`:841 — `dept_pouch_pos_consume($pdo, $line['pouch_unit_ids'], $saleId);`
 
 ## dept_pouch_rts_receive {#dept_pouch_rts_receive}
 

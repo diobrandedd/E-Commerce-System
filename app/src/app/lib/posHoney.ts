@@ -30,6 +30,13 @@ export interface HoneyCartLine {
   bottleUnitIds?: number[];
 }
 
+export interface HoneyCheckoutFreebie {
+  product_key: string;
+  label: string;
+  qty: number;
+  code?: string | null;
+}
+
 export interface HoneyCheckoutResult {
   sale_id: number;
   receipt_no: string;
@@ -50,6 +57,7 @@ export interface HoneyCheckoutResult {
     variant?: string;
     size?: string;
   }[];
+  freebies?: HoneyCheckoutFreebie[];
 }
 
 export interface HoneyDiscountRequestResult {

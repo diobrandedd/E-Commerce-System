@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-11-13T08:21:02+01:00
+generated: 2026-11-17T06:07:47+01:00
 type: module
 function_count: 65
 ---
@@ -518,7 +518,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 **Callers (2):**
 
 - `api/v1/bottle_barcodes.php`:656 — `api_ok(['barcode' => honey_bottle_pos_lookup(ims_pdo(), $code)]);`
-- `includes/pos_unified.php`:159 — `$honey = honey_bottle_pos_lookup($pdo, $code);`
+- `includes/pos_unified.php`:201 — `$honey = honey_bottle_pos_lookup($pdo, $code);`
 
 ## honey_bottle_pos_consume {#honey_bottle_pos_consume}
 
@@ -528,8 +528,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/honey_pos.php`:416 — `honey_bottle_pos_consume($pdo, $unitIds, $saleId, 1);`
 - `includes/honey_pos.php`:652 — `honey_bottle_pos_consume($pdo, $unitIds, $saleId, 1);`
-- `includes/pos_unified.php`:459 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
-- `includes/pos_unified.php`:644 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
+- `includes/pos_unified.php`:625 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
+- `includes/pos_unified.php`:825 — `honey_bottle_pos_consume($pdo, $line['bottle_unit_ids'], $saleId, 0);`
 
 ## honey_bottle_opened_return_scan {#honey_bottle_opened_return_scan}
 

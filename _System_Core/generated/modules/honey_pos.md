@@ -1,7 +1,7 @@
 ---
 title: honey_pos
 source: includes/honey_pos.php
-generated: 2026-11-13T08:21:10+01:00
+generated: 2026-11-17T06:07:56+01:00
 type: module
 function_count: 16
 ---
@@ -43,7 +43,7 @@ function_count: 16
 
 - `includes/honey_pos.php`:83 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
 - `includes/honey_pricing.php`:141 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
-- `includes/pos_unified.php`:39 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
+- `includes/pos_unified.php`:56 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
 - `includes/sku_barcodes.php`:292 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
 - `includes/sku_barcodes.php`:333 — `$deptId = honey_pos_resolve_honey_dept_id($pdo);`
 
@@ -70,7 +70,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `api/v1/pos.php`:108 — `api_ok(honey_pos_honey_catalog(ims_pdo()));`
+- `api/v1/pos.php`:109 — `api_ok(honey_pos_honey_catalog(ims_pdo()));`
 
 ## honey_pos_available_qty {#honey_pos_available_qty}
 
@@ -109,7 +109,7 @@ function_count: 16
 
 - `includes/honey_pos.php`:330 — `$unitIds = honey_pos_line_unit_ids($entry);`
 - `includes/honey_pos.php`:570 — `$unitIds = honey_pos_line_unit_ids($entry);`
-- `includes/pos_unified.php`:245 — `$unitIds = honey_pos_line_unit_ids($entry);`
+- `includes/pos_unified.php`:406 — `$unitIds = honey_pos_line_unit_ids($entry);`
 
 ## honey_pos_column_exists {#honey_pos_column_exists}
 
@@ -127,17 +127,17 @@ function_count: 16
 - `includes/honey_pos.php`:808 — `$hasVariant = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
 - `includes/honey_pos.php`:809 — `$hasList = honey_pos_column_exists($pdo, 'pos_receipt_items', 'list_unit_price');`
 - `includes/honey_pos.php`:938 — `$hasVariant = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
-- `includes/honey_sales_report.php`:604 — `$hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');`
-- `includes/honey_sales_report.php`:619 — `$hasRefunded = honey_pos_column_exists($pdo, 'pos_sales', 'refunded_at');`
+- `includes/honey_sales_report.php`:730 — `$hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');`
+- `includes/honey_sales_report.php`:745 — `$hasRefunded = honey_pos_column_exists($pdo, 'pos_sales', 'refunded_at');`
 - `includes/pos_discount_requests.php`:340 — `$hasSellerName = honey_pos_column_exists($pdo, 'pos_sales', 'seller_name');`
 - `includes/pos_refund.php`:180 — `if (honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant')`
 - `includes/pos_refund.php`:181 — `&& honey_pos_column_exists($pdo, 'pos_receipt_items', 'size')) {`
-- `includes/pos_refund.php`:243 — `if (honey_pos_column_exists($pdo, 'pos_sales', 'subtotal_amount')) {`
+- `includes/pos_refund.php`:271 — `if (honey_pos_column_exists($pdo, 'pos_sales', 'subtotal_amount')) {`
 - `includes/pos_sales_helpers.php`:40 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'seller_name')) {`
 - `includes/pos_sales_helpers.php`:53 — `if (honey_pos_column_exists($pdo, 'pos_sales', 'sold_by_user_id')) {`
-- `includes/pos_unified.php`:439 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
-- `includes/pos_unified.php`:586 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
-- `includes/pos_unified.php`:623 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
+- `includes/pos_unified.php`:605 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
+- `includes/pos_unified.php`:762 — `if (!honey_pos_column_exists($pdo, 'pos_sales', 'is_ar')) {`
+- `includes/pos_unified.php`:804 — `$hasVariantCol = honey_pos_column_exists($pdo, 'pos_receipt_items', 'variant');`
 
 ## honey_pos_checkout {#honey_pos_checkout}
 
@@ -145,7 +145,7 @@ function_count: 16
 
 **Callers (2):**
 
-- `api/v1/pos.php`:278 — `$result = honey_pos_checkout(ims_pdo(), $pinId, $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
+- `api/v1/pos.php`:279 — `$result = honey_pos_checkout(ims_pdo(), $pinId, $items, $identity['buyer_name'], $identity['buyer_credentials'], [`
 - `includes/pos_discount_requests.php`:258 — `$result = honey_pos_checkout(`
 
 ## honey_pos_ar_checkout {#honey_pos_ar_checkout}
@@ -154,7 +154,7 @@ function_count: 16
 
 **Callers (1):**
 
-- `api/v1/pos.php`:322 — `$result = honey_pos_ar_checkout(ims_pdo(), $pinId, $items, [`
+- `api/v1/pos.php`:323 — `$result = honey_pos_ar_checkout(ims_pdo(), $pinId, $items, [`
 
 ## pos_sale_recalc_totals {#pos_sale_recalc_totals}
 
@@ -190,5 +190,5 @@ function_count: 16
 
 **Callers (1):**
 
-- `includes/honey_sales_report.php`:654 — `pos_sale_heal_returned_units($pdo, $saleId);`
+- `includes/honey_sales_report.php`:780 — `pos_sale_heal_returned_units($pdo, $saleId);`
 

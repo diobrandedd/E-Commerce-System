@@ -1,9 +1,9 @@
 ---
 title: dept_raw_freebies
 source: includes/dept_raw_freebies.php
-generated: 2026-11-13T08:20:57+01:00
+generated: 2026-11-17T06:07:41+01:00
 type: module
-function_count: 14
+function_count: 15
 ---
 
 
@@ -31,7 +31,7 @@ function_count: 14
 
 ## dept_raw_freebie_product_allowed {#dept_raw_freebie_product_allowed}
 
-**Callers (15):**
+**Callers (18):**
 
 - `api/v1/honey.php`:1090 — `if (!dept_raw_freebie_product_allowed($productKey)) {`
 - `api/v1/honey.php`:1116 — `if (!dept_raw_freebie_product_allowed($productKey)) {`
@@ -46,12 +46,15 @@ function_count: 14
 - `includes/dept_raw_freebies.php`:281 — `if (!dept_raw_freebie_product_allowed($productKey)) {`
 - `includes/dept_raw_freebies.php`:352 — `if (!dept_raw_freebie_product_allowed($productKey)) {`
 - `includes/dept_raw_freebies.php`:410 — `if (!dept_raw_freebie_product_allowed($productKey)) {`
+- `includes/dept_raw_freebies.php`:460 — `if (!dept_raw_freebie_product_allowed($productKey)) {`
 - `includes/inventory_check.php`:479 — `if (!dept_raw_freebie_product_allowed($productKey)) {`
 - `includes/inventory_check_apply.php`:287 — `if (!dept_raw_freebie_product_allowed($productKey)) {`
+- `includes/pos_refund.php`:252 — `if ($qty < 1 || !dept_raw_freebie_product_allowed($productKey)) {`
+- `includes/pos_unified.php`:300 — `if (!dept_raw_freebie_product_allowed($productKey)) {`
 
 ## dept_raw_freebie_label {#dept_raw_freebie_label}
 
-**Callers (8):**
+**Callers (15):**
 
 - `api/v1/dept_pouch_barcodes.php`:323 — `api_fail('This freebie barcode belongs to ' . dept_raw_freebie_label($freebie['product_key']) . '.', 422);`
 - `api/v1/dept_pouch_barcodes.php`:340 — `'label' => dept_raw_freebie_label($productKey),`
@@ -60,19 +63,27 @@ function_count: 14
 - `includes/honey_bottle_barcodes.php`:1424 — `$productLabel = $isFreebie ? dept_raw_freebie_label($productKey) : dept_pouch_product_label($productKey);`
 - `includes/honey_bottle_barcodes.php`:1781 — `'Not enough ' . dept_raw_freebie_label($productKey) . ' on hand (' . $onHand`
 - `includes/honey_bottle_barcodes.php`:1804 — `'product_label' => dept_raw_freebie_label($productKey),`
+- `includes/honey_sales_report.php`:289 — `'label' => dept_raw_freebie_label($productKey),`
+- `includes/honey_sales_report.php`:369 — `'label' => dept_raw_freebie_label($productKey),`
+- `includes/pos_unified.php`:183 — `'label' => dept_raw_freebie_label($productKey),`
+- `includes/pos_unified.php`:185 — `'product_name' => dept_raw_freebie_label($productKey),`
+- `includes/pos_unified.php`:274 — `'label' => dept_raw_freebie_label($productKey),`
+- `includes/pos_unified.php`:313 — `'label' => dept_raw_freebie_label($productKey),`
+- `includes/pos_unified.php`:369 — `'label' => (string) ($fb['label'] ?? dept_raw_freebie_label($productKey)),`
 - `includes/sku_barcodes.php`:756 — `'label' => dept_raw_freebie_label($productKey),`
 
 ## dept_raw_freebie_barcode_fetch_by_code {#dept_raw_freebie_barcode_fetch_by_code}
 
 **Tables:** `dept_raw_freebie_barcodes`
 
-**Callers (7):**
+**Callers (8):**
 
 - `api/v1/dept_pouch_barcodes.php`:320 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/barcode_verify.php`:23 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/honey_bottle_barcodes.php`:1727 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/inventory_check.php`:554 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/pack_cancel_restock.php`:255 — `if (dept_raw_freebie_barcode_fetch_by_code($pdo, $code) !== null) {`
+- `includes/pos_unified.php`:175 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/sku_barcodes.php`:562 — `if (dept_raw_freebie_barcode_fetch_by_code($pdo, $code) !== null) {`
 - `includes/sku_barcodes.php`:747 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 
@@ -80,11 +91,12 @@ function_count: 14
 
 **Tables:** `dept_raw_freebie_barcodes`
 
-**Callers (3):**
+**Callers (4):**
 
 - `api/v1/sku_barcodes.php`:150 — `api_ok(['rows' => dept_raw_freebie_barcode_list(ims_pdo())]);`
 - `includes/dept_raw_freebies.php`:166 — `return dept_raw_freebie_barcode_list($pdo);`
 - `includes/dept_raw_freebies.php`:181 — `foreach (dept_raw_freebie_barcode_list($pdo) as $candidate) {`
+- `includes/pos_unified.php`:267 — `foreach (dept_raw_freebie_barcode_list($pdo) as $row) {`
 
 ## dept_raw_freebie_barcode_save_bulk {#dept_raw_freebie_barcode_save_bulk}
 
@@ -108,7 +120,7 @@ function_count: 14
 - `includes/dept_raw_freebies.php`:86 — `'grams' => dept_raw_freebie_grams($pdo, $productKey),`
 - `includes/dept_raw_freebies.php`:235 — `return dept_raw_freebie_grams($pdo, $productKey);`
 - `includes/dept_raw_freebies.php`:288 — `$gramsEach = dept_raw_freebie_grams($pdo, $productKey);`
-- `includes/dept_raw_freebies.php`:458 — `'freebie_grams' => dept_raw_freebie_grams($pdo, $productKey),`
+- `includes/dept_raw_freebies.php`:508 — `'freebie_grams' => dept_raw_freebie_grams($pdo, $productKey),`
 - `includes/sku_barcodes.php`:758 — `'grams' => dept_raw_freebie_grams($pdo, $productKey),`
 
 ## dept_raw_freebie_grams_save {#dept_raw_freebie_grams_save}
@@ -121,18 +133,19 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `dept_raw_freebie_balances`
 
-**Callers (4):**
+**Callers (5):**
 
 - `includes/dept_raw_freebies.php`:253 — `dept_raw_freebie_ensure_balance_row($pdo, $productKey);`
 - `includes/dept_raw_freebies.php`:302 — `dept_raw_freebie_ensure_balance_row($pdo, $productKey);`
 - `includes/dept_raw_freebies.php`:363 — `dept_raw_freebie_ensure_balance_row($pdo, $productKey);`
+- `includes/dept_raw_freebies.php`:421 — `dept_raw_freebie_ensure_balance_row($pdo, $productKey);`
 - `includes/inventory_check_apply.php`:291 — `dept_raw_freebie_ensure_balance_row($pdo, $productKey);`
 
 ## dept_raw_freebie_on_hand {#dept_raw_freebie_on_hand}
 
 **Tables:** `dept_raw_freebie_balances`
 
-**Callers (11):**
+**Callers (14):**
 
 - `includes/barcode_verify.php`:27 — `$onHand = dept_raw_freebie_on_hand($pdo, $productKey);`
 - `includes/dept_production.php`:990 — `$snap['freebie_on_hand'] = dept_raw_freebie_on_hand($pdo, $productKey);`
@@ -140,10 +153,13 @@ _No direct callers detected (may be entry point or dynamic call)._
 - `includes/dept_production.php`:1012 — `$snap['freebie_on_hand'] = dept_raw_freebie_on_hand($pdo, $productKey);`
 - `includes/dept_raw_freebies.php`:330 — `'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
 - `includes/dept_raw_freebies.php`:392 — `'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
-- `includes/dept_raw_freebies.php`:457 — `'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
+- `includes/dept_raw_freebies.php`:442 — `'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
+- `includes/dept_raw_freebies.php`:507 — `'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
 - `includes/honey_bottle_barcodes.php`:1778 — `$onHand = dept_raw_freebie_on_hand($pdo, $productKey);`
 - `includes/inventory_check.php`:1376 — `$systemQty = (float) dept_raw_freebie_on_hand($pdo, (string) $productKey);`
 - `includes/inventory_check_apply.php`:292 — `$old = dept_raw_freebie_on_hand($pdo, $productKey);`
+- `includes/pos_unified.php`:195 — `'on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
+- `includes/pos_unified.php`:276 — `'on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
 - `includes/sku_barcodes.php`:759 — `'freebie_on_hand' => dept_raw_freebie_on_hand($pdo, $productKey),`
 
 ## dept_raw_record_freebie_create {#dept_raw_record_freebie_create}
@@ -159,10 +175,19 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `dept_raw_freebie_balances`, `dept_raw_freebie_log`
 
-**Callers (2):**
+**Callers (3):**
 
 - `api/v1/honey.php`:1124 — `$result = dept_raw_record_freebie_give_out($pdo, (int) $user['id'], $productKey, $qty, $reason);`
 - `includes/honey_bottle_barcodes.php`:2220 — `dept_raw_record_freebie_give_out(`
+- `includes/pos_unified.php`:356 — `$result = dept_raw_record_freebie_give_out($pdo, $userId, $productKey, $qty, $reason);`
+
+## dept_raw_record_freebie_restock {#dept_raw_record_freebie_restock}
+
+**Tables:** `dept_raw_freebie_log`, `dept_raw_freebie_balances`
+
+**Callers (1):**
+
+- `includes/pos_refund.php`:255 — `dept_raw_record_freebie_restock(`
 
 ## dept_raw_freebie_history {#dept_raw_freebie_history}
 

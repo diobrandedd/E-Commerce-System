@@ -255,6 +255,132 @@ function honey_sales_checkout_where_clause(?array $range, ?string $receiptSearch
  * @param array<string, mixed>|null $range
  * @return array{products: list<array<string, mixed>>, walk_in: float, shipped: float, total: float}
  */
+/**
+ * Batch-load freebie lines for walk-in checkouts.
+ *
+ * @param list<int> $saleIds
+ * @return array<int, list<array{product_key: string, label: string, qty: int, code: ?string}>>
+ */
+function honey_sales_load_checkout_freebies(PDO $pdo, array $saleIds): array
+{
+    $saleIds = array_values(array_filter(array_map('intval', $saleIds), static fn ($id) => $id > 0));
+    $out = [];
+    foreach ($saleIds as $id) {
+        $out[$id] = [];
+    }
+    if ($saleIds === []) {
+        return $out;
+    }
+    try {
+        require_once __DIR__ . '/dept_raw_freebies.php';
+        $placeholders = implode(',', array_fill(0, count($saleIds), '?'));
+        $st = $pdo->prepare(
+            "SELECT sale_id, product_key, qty, code
+             FROM pos_receipt_freebies
+             WHERE sale_id IN ({$placeholders})
+             ORDER BY id ASC"
+        );
+        $st->execute($saleIds);
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $sid = (int) $row['sale_id'];
+            $productKey = (string) $row['product_key'];
+            $out[$sid][] = [
+                'product_key' => $productKey,
+                'label' => dept_raw_freebie_label($productKey),
+                'qty' => (int) $row['qty'],
+                'code' => $row['code'] !== null && (string) $row['code'] !== '' ? (string) $row['code'] : null,
+            ];
+        }
+    } catch (Throwable) {
+        // Table missing before phase 99.
+    }
+
+    return $out;
+}
+
+/**
+ * Freebies given: walk-in (POS receipt freebies) + shipped (confirmed pack session freebie lines).
+ *
+ * @return array{
+ *   products: list<array{key: string, label: string, walk_in: float, shipped: float, total: float}>,
+ *   walk_in: float,
+ *   shipped: float,
+ *   total: float
+ * }
+ */
+function honey_sales_freebie_breakdown(PDO $pdo, ?array $range, string $channel = 'all'): array
+{
+    require_once __DIR__ . '/dept_raw_freebies.php';
+    $counts = [];
+
+    try {
+        $walkWhere = ' WHERE 1=1';
+        $walkParams = [];
+        if ($range !== null) {
+            $walkWhere .= ' AND ps.sale_date >= ? AND ps.sale_date <= ?';
+            $walkParams = [$range['from'] . ' 00:00:00', $range['to'] . ' 23:59:59'];
+        }
+        $walkSql = "SELECT prf.product_key, COALESCE(SUM(prf.qty), 0) AS qty
+                    FROM pos_receipt_freebies prf
+                    INNER JOIN pos_sales ps ON ps.id = prf.sale_id{$walkWhere}
+                    GROUP BY prf.product_key";
+        $walkSt = $pdo->prepare($walkSql);
+        $walkSt->execute($walkParams);
+        foreach ($walkSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $counts[(string) $row['product_key']]['walk_in'] = (float) $row['qty'];
+        }
+    } catch (Throwable) {
+        // pos_receipt_freebies missing.
+    }
+
+    try {
+        $shipWhere = ' WHERE s.status = "confirmed"
+                         AND s.confirmed_at IS NOT NULL
+                         AND di.pool = "freebie"';
+        $shipParams = [];
+        if ($range !== null) {
+            $shipWhere .= ' AND s.confirmed_at >= ? AND s.confirmed_at <= ?';
+            $shipParams = [$range['from'] . ' 00:00:00', $range['to'] . ' 23:59:59'];
+        }
+        $shipSql = "SELECT di.product_key, COALESCE(SUM(di.qty), 0) AS qty
+                    FROM honey_bottle_pack_session_dept_items di
+                    INNER JOIN honey_bottle_pack_sessions s ON s.id = di.session_id
+                    {$shipWhere}
+                    GROUP BY di.product_key";
+        $shipSt = $pdo->prepare($shipSql);
+        $shipSt->execute($shipParams);
+        foreach ($shipSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $counts[(string) $row['product_key']]['shipped'] = (float) $row['qty'];
+        }
+    } catch (Throwable) {
+        // Pack session tables missing.
+    }
+
+    $products = [];
+    $walkInTotal = 0.0;
+    $shippedTotal = 0.0;
+    foreach (DEPT_RAW_FREEBIE_PRODUCT_KEYS as $productKey) {
+        $walkIn = $channel === 'online' ? 0.0 : (float) ($counts[$productKey]['walk_in'] ?? 0);
+        $shipped = $channel === 'walk_in' ? 0.0 : (float) ($counts[$productKey]['shipped'] ?? 0);
+        $walkInTotal += $walkIn;
+        $shippedTotal += $shipped;
+        $products[] = [
+            'key' => $productKey,
+            'label' => dept_raw_freebie_label($productKey),
+            'walk_in' => $walkIn,
+            'shipped' => $shipped,
+            'total' => $walkIn + $shipped,
+        ];
+    }
+
+    return [
+        'products' => $products,
+        'walk_in' => $walkInTotal,
+        'shipped' => $shippedTotal,
+        'total' => $walkInTotal + $shippedTotal,
+    ];
+}
+
 function honey_sales_dept_breakdown(PDO $pdo, ?array $range, string $channel = 'all'): array
 {
     $counts = [];
@@ -720,10 +846,17 @@ function honey_sales_fetch_checkouts(
         }
     }
 
+    $freebiesBySale = honey_sales_load_checkout_freebies($pdo, $saleIds);
+
     $rows = [];
     foreach ($sales as $s) {
         $saleId = (int) $s['sale_id'];
         $items = $itemsBySale[$saleId] ?? [];
+        $freebies = $freebiesBySale[$saleId] ?? [];
+        $freebieQty = 0;
+        foreach ($freebies as $fb) {
+            $freebieQty += (int) ($fb['qty'] ?? 0);
+        }
         $rows[] = [
             'sale_id' => $saleId,
             'receipt_no' => (string) $s['receipt_no'],
@@ -741,6 +874,8 @@ function honey_sales_fetch_checkouts(
             'refund_reason' => isset($s['refund_reason']) && $s['refund_reason'] !== null ? (string) $s['refund_reason'] : null,
             'item_count' => count($items),
             'items' => $items,
+            'freebies' => $freebies,
+            'freebie_qty' => $freebieQty,
             'returned_units' => $returnedBySale[$saleId] ?? [],
         ];
     }
@@ -930,6 +1065,7 @@ function honey_sales_sold_snapshot(
 
     $dept = honey_sales_dept_breakdown($pdo, $range, $channel);
     $deptShare = $channel === 'all' ? $dept : honey_sales_dept_breakdown($pdo, $range, 'all');
+    $freebies = honey_sales_freebie_breakdown($pdo, $range, $channel);
 
     // Channel share = packaging honey + counted RTS scans + dept (always both channels for the %).
     $walkInQty = $packWalkIn + $rtsWalkIn + (float) $deptShare['walk_in'];
@@ -958,6 +1094,7 @@ function honey_sales_sold_snapshot(
             'total' => $honeyTotal,
         ],
         'dept' => $dept,
+        'freebies' => $freebies,
         'rts' => [
             'walk_in' => $rtsWalkIn,
             'shipped' => $rtsShipped,
@@ -2304,16 +2441,16 @@ function honey_sales_export_write_walk_in_detail(
     $sheet->setCellValue('A' . $detailStart, 'Detail · ' . $partLabel);
     $sheet->getStyle('A' . $detailStart)->getFont()->setBold(true)->setSize(12);
 
-    $headers = ['When sold', 'Receipt', 'Sold by', 'Sold to', 'Items', 'Qty', 'Type', 'RTS resellable'];
+    $headers = ['When sold', 'Receipt', 'Sold by', 'Sold to', 'Items', 'Qty', 'Freebies', 'Type', 'RTS resellable'];
     if ($canViewAmounts) {
         $headers[] = 'Total';
     }
     $headerRow = $detailStart + 2;
-    $cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
+    $cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
     foreach ($headers as $i => $h) {
         $sheet->setCellValue($cols[$i] . $headerRow, $h);
     }
-    $lastCol = $canViewAmounts ? 'I' : 'H';
+    $lastCol = $canViewAmounts ? 'J' : 'I';
     $sheet->getStyle('A' . $headerRow . ':' . $lastCol . $headerRow)->getFont()->setBold(true);
 
     if ($rows === []) {
@@ -2326,16 +2463,27 @@ function honey_sales_export_write_walk_in_detail(
                 ? 'AR'
                 : (!empty($row['discount_percent']) ? ((int) $row['discount_percent'] . '% off') : 'Regular');
             $items = is_array($row['items'] ?? null) ? $row['items'] : [];
+            $freebies = is_array($row['freebies'] ?? null) ? $row['freebies'] : [];
+            $freebieLabel = '';
+            if ($freebies !== []) {
+                $parts = [];
+                foreach ($freebies as $fb) {
+                    $parts[] = ((string) ($fb['label'] ?? $fb['product_key'] ?? 'Freebie'))
+                        . ' × ' . (int) ($fb['qty'] ?? 0);
+                }
+                $freebieLabel = implode('; ', $parts);
+            }
             $sheet->setCellValue('A' . $r, (string) ($row['sold_at'] ?? ''));
             $sheet->setCellValue('B' . $r, (string) ($row['receipt_no'] ?? ''));
             $sheet->setCellValue('C' . $r, (string) ($row['sold_by_name'] ?? 'POS'));
             $sheet->setCellValue('D' . $r, (string) ($row['buyer_name'] ?? 'Walk-in'));
             $sheet->setCellValue('E' . $r, honey_sales_export_checkout_item_labels($items));
             $sheet->setCellValue('F' . $r, honey_sales_export_checkout_item_qtys($items));
-            $sheet->setCellValue('G' . $r, $type);
-            $sheet->setCellValue('H' . $r, !empty($rtsFlags[$saleId]) ? 'Yes' : 'No');
+            $sheet->setCellValue('G' . $r, $freebieLabel);
+            $sheet->setCellValue('H' . $r, $type);
+            $sheet->setCellValue('I' . $r, !empty($rtsFlags[$saleId]) ? 'Yes' : 'No');
             if ($canViewAmounts) {
-                $sheet->setCellValue('I' . $r, (float) ($row['total_amount'] ?? 0));
+                $sheet->setCellValue('J' . $r, (float) ($row['total_amount'] ?? 0));
             }
             $r++;
         }

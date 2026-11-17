@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-11-17 — POS freebies + Sales Freebies given
+**Change:** Scan FRB or Add freebie on unified POS (always ₱0); deduct freebie pool on checkout/AR; store in `pos_receipt_freebies`. Recent walk-in sales + Excel show freebie lines. Sales **Freebies given** card (period + walk-in/shipped). Phase 99. → [[problems/records/2026-11-17_pos-freebies]]
+
 ### 2026-11-13 — Supplies assign stock-out scanners
 **Change:** Executives can Assign/Remove stock-out staff on the Supplies page (grants/revokes `packaging.deduct` only). Staff Permissions stays in sync. → [[problems/records/2026-11-13_supplies-stock-out-assign]]
 

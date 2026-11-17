@@ -1,8 +1,8 @@
 import { apiGet, apiPost } from "@/app/lib/api";
 import type { HoneyCheckoutResult } from "@/app/lib/posHoney";
 
-export type UnifiedPosKind = "honey" | "dept";
-export type UnifiedLookupKind = "sku" | "unique_honey" | "unique_dept";
+export type UnifiedPosKind = "honey" | "dept" | "freebie";
+export type UnifiedLookupKind = "sku" | "unique_honey" | "unique_dept" | "freebie";
 
 export interface UnifiedPosLookup {
   kind: UnifiedPosKind;
@@ -20,6 +20,7 @@ export interface UnifiedPosLookup {
   code: string;
   batch_no: string | null;
   suggested_price: number | null;
+  on_hand?: number;
   pool?: string;
 }
 
@@ -41,9 +42,19 @@ export interface UnifiedCartLine {
   pool?: string;
 }
 
+export interface UnifiedFreebieOption {
+  product_key: string;
+  label: string;
+  code: string;
+  on_hand: number;
+}
+
 export const posUnifiedApi = {
   lookup: (code: string) =>
     apiGet<{ barcode: UnifiedPosLookup }>("pos.php", "unified_lookup", { code }),
+
+  freebieOptions: () =>
+    apiGet<{ options: UnifiedFreebieOption[] }>("pos.php", "unified_freebie_options"),
 
   checkout: (payload: {
     items: Array<Record<string, unknown>>;
@@ -57,6 +68,14 @@ export const posUnifiedApi = {
 
 export function unifiedCartPayload(lines: UnifiedCartLine[]) {
   return lines.map(l => {
+    if (l.kind === "freebie" || l.lookup_kind === "freebie") {
+      return {
+        kind: "freebie",
+        product_key: l.product_key,
+        qty: l.qty,
+        ...(l.code ? { code: l.code } : {}),
+      };
+    }
     const base = {
       kind: l.kind,
       product_id: l.product_id,

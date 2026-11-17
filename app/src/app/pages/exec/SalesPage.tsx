@@ -34,6 +34,13 @@ interface CheckoutItem {
   barcodes?: CheckoutBarcode[];
 }
 
+interface CheckoutFreebie {
+  product_key: string;
+  label: string;
+  qty: number;
+  code?: string | null;
+}
+
 interface CheckoutRow {
   sale_id: number;
   receipt_no: string;
@@ -48,6 +55,8 @@ interface CheckoutRow {
   is_ar?: boolean;
   item_count: number;
   items: CheckoutItem[];
+  freebies?: CheckoutFreebie[];
+  freebie_qty?: number;
   returned_units?: { code: string; kind?: string; match_key?: string }[];
 }
 
@@ -75,6 +84,12 @@ interface SalesSnapshot {
   honey?: { label: string; unit: string; walk_in: number; shipped: number; total: number };
   dept?: {
     products: DeptProductUnits[];
+    walk_in: number;
+    shipped: number;
+    total: number;
+  };
+  freebies?: {
+    products: { key: string; label: string; walk_in: number; shipped: number; total: number }[];
     walk_in: number;
     shipped: number;
     total: number;
@@ -133,9 +148,14 @@ function itemLabel(item: CheckoutItem): string {
   return item.label ?? item.name ?? "Item";
 }
 
-function itemNames(items: CheckoutItem[]): string {
-  if (items.length === 0) return "—";
-  return items.map(itemLabel).join("; ");
+function itemNames(items: CheckoutItem[], freebies?: CheckoutFreebie[]): string {
+  const paid = items.length === 0 ? [] : items.map(itemLabel);
+  const fbQty = (freebies ?? []).reduce((s, f) => s + f.qty, 0);
+  if (fbQty > 0) {
+    paid.push(`+ ${fmtQty(fbQty)} freebie${fbQty === 1 ? "" : "s"}`);
+  }
+  if (paid.length === 0) return "—";
+  return paid.join("; ");
 }
 
 function itemQtys(items: CheckoutItem[]): string {
@@ -163,6 +183,12 @@ function checkoutToThermalReceipt(row: CheckoutRow): PosThermalReceipt {
       unit_price: it.unit_price ?? 0,
       line_subtotal: it.line_subtotal,
       line_total: it.line_total ?? 0,
+    })),
+    freebies: (row.freebies ?? []).map(fb => ({
+      product_key: fb.product_key,
+      label: fb.label,
+      qty: fb.qty,
+      code: fb.code,
     })),
   };
 }
@@ -501,6 +527,37 @@ export function SalesPage() {
           </AppSectionEnter>
         )}
 
+        {data?.freebies && (
+          <AppSectionEnter>
+            <h2 className="text-sm font-semibold mb-1">Freebies given</h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              Walk-in from POS receipts · Shipped from confirmed pack sessions. Follows period and channel filters.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {data.freebies.products.map(p => (
+                <div
+                  key={p.key}
+                  className={`rounded-xl border border-border bg-card p-4 ${appHoverRow}`}
+                >
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground truncate">{p.label}</p>
+                  <p className="text-xl font-bold mt-1">
+                    {loading ? "…" : fmtQty(p.total)}{" "}
+                    <span className="text-sm font-medium text-muted-foreground">samples</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Walk-in {fmtQty(p.walk_in)} · Shipped {fmtQty(p.shipped)}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Total freebies given: {loading ? "…" : fmtQty(data.freebies.total)}
+              {" · "}
+              Walk-in {fmtQty(data.freebies.walk_in)} · Shipped {fmtQty(data.freebies.shipped)}
+            </p>
+          </AppSectionEnter>
+        )}
+
         {channel !== "online" && (
         <div className={`grid grid-cols-1 gap-3 ${canViewAmounts ? "md:grid-cols-4" : "md:grid-cols-2"}`}>
           <div className="rounded-xl border border-border bg-card p-4">
@@ -688,7 +745,7 @@ export function SalesPage() {
                             <td className="px-3 py-2.5">{row.sold_by_name || "POS"}</td>
                             <td className="px-3 py-2.5">{row.buyer_name || "Walk-in"}</td>
                             <td className="px-3 py-2.5 text-muted-foreground max-w-[14rem]">
-                              {itemNames(row.items)}
+                              {itemNames(row.items, row.freebies)}
                             </td>
                             <td className="px-3 py-2.5 tabular-nums text-muted-foreground whitespace-nowrap">
                               {itemQtys(row.items)}
@@ -788,6 +845,23 @@ export function SalesPage() {
                                             peso(item.line_total ?? 0)
                                           )}
                                         </span>
+                                      ) : null}
+                                    </li>
+                                  ))}
+                                  {(row.freebies ?? []).map((fb, idx) => (
+                                    <li
+                                      key={`fb-${idx}`}
+                                      className="flex justify-between gap-3 text-sm py-1.5 px-3 rounded-lg bg-card border border-emerald-200/80"
+                                    >
+                                      <span className="min-w-0">
+                                        <span className="font-medium">{fb.label}</span>
+                                        <span className="ml-1.5 inline-flex rounded-full bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.5 font-semibold">
+                                          Freebie
+                                        </span>
+                                        <span className="text-muted-foreground"> × {fmtQty(fb.qty)}</span>
+                                      </span>
+                                      {canViewAmounts ? (
+                                        <span className="font-semibold whitespace-nowrap self-start text-emerald-700">FREE</span>
                                       ) : null}
                                     </li>
                                   ))}

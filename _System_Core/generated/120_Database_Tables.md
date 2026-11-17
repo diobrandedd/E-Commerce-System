@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-11-13T08:20:40+01:00
+generated: 2026-11-17T06:07:24+01:00
 type: memory-bank
-table_count: 105
+table_count: 106
 ---
 
 
@@ -272,6 +272,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_list]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_assign]] |
+| `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_reporter_user_id]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_get]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_events_list]] |
@@ -902,6 +903,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_today_stats]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_discard]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_freebie_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_shipped_export]] |
 
@@ -962,6 +964,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_pos.php` | [[modules/honey_pos#honey_pos_ar_checkout]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_recalc_totals]] |
 | `includes/honey_pos.php` | [[modules/honey_pos#pos_sale_reverse_one_unit]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_freebie_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_checkouts]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_sold_snapshot]] |
@@ -1016,6 +1019,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_remove_item]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_set_item_qty]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_freebie_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_shipped_export]] |
 
@@ -1509,6 +1513,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_on_hand]] |
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_create]] |
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_give_out]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_restock]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_scan_freebie]] |
 | `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_apply_freebie_qty]] |
 
@@ -1518,6 +1523,7 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_create]] |
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_give_out]] |
+| `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_record_freebie_restock]] |
 | `includes/dept_raw_freebies.php` | [[modules/dept_raw_freebies#dept_raw_freebie_history]] |
 
 ## `packaging_supply_categories`
@@ -1544,4 +1550,13 @@ _No references detected in includes/api (may be legacy pages only)._
 |------|----------|
 | `includes/system_activity_log.php` | [[modules/system_activity_log#system_activity_log_write]] |
 | `includes/system_activity_log.php` | [[modules/system_activity_log#system_activity_log_list]] |
+
+## `pos_receipt_freebies`
+
+| File | Function |
+|------|----------|
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_load_checkout_freebies]] |
+| `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_freebie_breakdown]] |
+| `includes/pos_refund.php` | [[modules/pos_refund#pos_sale_full_refund]] |
+| `includes/pos_unified.php` | [[modules/pos_unified#pos_unified_record_freebies]] |
 

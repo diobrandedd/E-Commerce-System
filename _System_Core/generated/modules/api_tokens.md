@@ -1,7 +1,7 @@
 ---
 title: api_tokens
 source: includes/api_tokens.php
-generated: 2026-11-13T08:20:42+01:00
+generated: 2026-11-17T06:07:25+01:00
 type: module
 function_count: 8
 ---
@@ -80,7 +80,7 @@ function_count: 8
 
 **Callers (3):**
 
-- `api/v1/pos.php`:545 — `pos_sales_ensure_refund_columns(ims_pdo());`
-- `api/v1/pos.php`:579 — `pos_sales_ensure_refund_columns(ims_pdo());`
+- `api/v1/pos.php`:557 — `pos_sales_ensure_refund_columns(ims_pdo());`
+- `api/v1/pos.php`:591 — `pos_sales_ensure_refund_columns(ims_pdo());`
 - `includes/pos_refund.php`:60 — `pos_sales_ensure_refund_columns($pdo);`
 
