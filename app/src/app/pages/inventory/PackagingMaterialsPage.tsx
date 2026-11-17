@@ -365,14 +365,17 @@ export function PackagingMaterialsPage() {
   const isExec = can("packaging.catalog");
   const isHr = can("packaging.request") && !can("packaging.catalog");
   const isPm = can("packaging.deduct") && !can("packaging.catalog");
-  const canView = can("packaging.view");
+  const canStockIn = can("packaging.stock_in");
+  const canView = can("packaging.view") || canStockIn;
   const canDeduct = can("packaging.deduct");
-  // Assigned stock-out staff (including production managers) scan only.
-  // Executives keep the catalog, history, and report-damage actions.
-  const scanOnly = canDeduct && !isExec;
+  // Assigned stock-out staff (including production managers) scan only —
+  // unless they also have stock-in / catalog (need the item list + detail modal).
+  const scanOnly = canDeduct && !isExec && !canStockIn;
   const [items, setItems] = useState<MaterialStockRow[]>([]);
   const [roster, setRoster] = useState<PackagingAccessPerson[]>([]);
-  const [stockInNote, setStockInNote] = useState("Only executives can stock in packaging lots.");
+  const [stockInNote, setStockInNote] = useState(
+    "Stock-in uses the Stock in packaging permission. Assign stock-out scanners on this page.",
+  );
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
@@ -1261,6 +1264,7 @@ export function PackagingMaterialsPage() {
         <PackagingMaterialDetailModal
           stock={detailRow}
           isExec={isExec}
+          canStockIn={canStockIn}
           isHr={isHr}
           isPm={isPm}
           onClose={() => setDetailRow(null)}

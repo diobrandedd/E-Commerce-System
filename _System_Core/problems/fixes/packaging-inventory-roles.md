@@ -12,7 +12,8 @@ tags: [pattern, packaging, inventory, roles, hr, prod_manager, executive, barcod
 | **HR** | No Supplies page | — | — |
 | **Assigned** (`packaging.deduct`, not executive) | **Scan stock out** + **Report damage** (no catalog) | **Issue** materials, view counters | Re-waybill + ship (Deliveries) |
 | **csr_tl** | No access | No access | **View only** (Online Parcels `on_hold`) |
-| **Executive** | Stock-in lot, catalog, set on-hand, pool yield, print barcodes, deduct | All | All |
+| **Stock-in assignee** (`packaging.stock_in`) | **Stock in lot** (any role; permission-only) | — | — |
+| **Executive** | Catalog, set on-hand, pool yield, print barcodes, deduct (+ stock-in if granted) | All | All |
 
 **Ship deduct:** fulfillment packaging consumes **staging** (`fulfillment_packing_balances.consumed_qty`), not warehouse `on_hand`. PM must **issue** to packing before ship.
 
@@ -24,7 +25,7 @@ tags: [pattern, packaging, inventory, roles, hr, prod_manager, executive, barcod
 
 | Action | Role | Helper |
 |--------|------|--------|
-| `stock_in_lot` (packaging) | Executive only | `material_inventory_role_can_stock_in_packaging()` |
+| `stock_in_lot` (packaging) | `packaging.stock_in` (any role) | `material_inventory_role_can_stock_in_packaging()` |
 | `packaging_deduct` / scan | `packaging.deduct` | `material_packaging_deduct_for_use` |
 | `packaging_report_damage` | `packaging.deduct` | `material_packaging_report_damage` |
 | `packaging_damage_totals` | view | `material_packaging_damage_totals` |

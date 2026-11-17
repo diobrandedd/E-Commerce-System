@@ -57,7 +57,7 @@ function ExecutiveGuide() {
   return (
     <ol className="list-decimal pl-4 space-y-1.5">
       <li>
-        <strong className="text-foreground">Stock in lot</strong> — only executives record purchase lots (total invoice + qty).
+        <strong className="text-foreground">Stock in lot</strong> — anyone with <strong className="text-foreground">Stock in packaging</strong> records purchase lots (total invoice + qty).
       </li>
       <li>
         <strong className="text-foreground">Scan stock out</strong> — scan a packaging barcode, confirm, enter qty + reason. This is the warehouse norm (no auto-deduct on produce).
@@ -85,7 +85,7 @@ function HrGuide() {
   return (
     <ol className="list-decimal pl-4 space-y-1.5">
       <li>
-        <strong className="text-foreground">View only / requests</strong> — packaging stock-in is executive-only. Ask an executive to record purchase lots.
+        <strong className="text-foreground">View only / requests</strong> — without Stock in packaging, ask someone who has that permission to record purchase lots.
       </li>
       <li>
         <strong className="text-foreground">You do not deduct</strong> — production staff with deduct permission scan stock out. Flag low level % to executive.

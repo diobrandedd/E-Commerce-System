@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-11-17 — Packaging stock-in is permission-only
+**Change:** `packaging.stock_in` no longer requires executive role; Supplies route accepts stock_in so assignees can open items and use Stock in lot. → [[problems/records/2026-11-17_packaging-stock-in-permission]]
+
 ### 2026-11-17 — POS freebies + Sales Freebies given
 **Change:** Scan FRB or Add freebie on unified POS (always ₱0); deduct freebie pool on checkout/AR; store in `pos_receipt_freebies`. Recent walk-in sales + Excel show freebie lines. Sales **Freebies given** card (period + walk-in/shipped). Phase 99. → [[problems/records/2026-11-17_pos-freebies]]
 

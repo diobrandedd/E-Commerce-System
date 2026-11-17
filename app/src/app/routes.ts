@@ -125,7 +125,7 @@ export const router = createBrowserRouter(
         { path: "inventory/raw-materials/cacao", element: permGuard(RawMaterialDetailPage, "dept.cacao.view") },
         { path: "inventory/raw-materials/honey-comb", element: permGuard(RawMaterialDetailPage, "dept.comb.view") },
         { path: "inventory/raw-materials/:slug", element: invViewGuard(RawMaterialDetailPage) },
-        { path: "inventory/supplies", element: permGuard(PackagingMaterialsPage, ["packaging.catalog", "packaging.deduct"]) },
+        { path: "inventory/supplies", element: permGuard(PackagingMaterialsPage, ["packaging.catalog", "packaging.deduct", "packaging.stock_in"]) },
         {
           path: "inventory/packaging-materials",
           element: createElement(Navigate, { to: "/inventory/supplies", replace: true }),

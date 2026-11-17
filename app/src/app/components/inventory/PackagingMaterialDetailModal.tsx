@@ -47,6 +47,8 @@ function entryMatchesTab(entry: PackagingStockEntry, tab: ActivityTab): boolean 
 interface PackagingMaterialDetailModalProps {
   stock: MaterialStockRow;
   isExec: boolean;
+  /** Explicit packaging.stock_in grant (may be true without catalog / exec role). */
+  canStockIn?: boolean;
   isHr: boolean;
   isPm: boolean;
   onClose: () => void;
@@ -82,8 +84,9 @@ const defaultPermissions = (
   isExec: boolean,
   isHr: boolean,
   isPm: boolean,
+  canStockIn: boolean,
 ): PackagingDetailPermissions => ({
-  can_stock_in: isExec || isPm || isHr,
+  can_stock_in: canStockIn || isExec || isPm || isHr,
   can_edit_price: isExec || isHr,
   can_deduct: isExec || isPm,
   can_set_on_hand: isExec,
@@ -96,6 +99,7 @@ const defaultPermissions = (
 export function PackagingMaterialDetailModal({
   stock,
   isExec,
+  canStockIn = false,
   isHr,
   isPm,
   onClose,
@@ -104,7 +108,7 @@ export function PackagingMaterialDetailModal({
   const [detail, setDetail] = useState<MaterialStockRow | null>(stock);
   const [entries, setEntries] = useState<PackagingStockEntry[]>([]);
   const [permissions, setPermissions] = useState<PackagingDetailPermissions>(
-    () => defaultPermissions(isExec, isHr, isPm),
+    () => defaultPermissions(isExec, isHr, isPm, canStockIn),
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

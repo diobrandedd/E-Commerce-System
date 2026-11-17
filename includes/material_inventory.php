@@ -11,7 +11,10 @@ const MATERIAL_CATEGORIES = ['raw_material', 'packaging', 'supply', 'costing_onl
 /** @param array{id:int,role:string,dept_id:?int} $user */
 function material_inventory_role_can_view(array $user): bool
 {
-    return ims_user_can($user, 'packaging.view') || ims_user_can($user, 'supplies.view');
+    // packaging.stock_in alone is enough to open Supplies / detail for lot receive.
+    return ims_user_can($user, 'packaging.view')
+        || ims_user_can($user, 'supplies.view')
+        || ims_user_can($user, 'packaging.stock_in');
 }
 
 /** @param array{id:int,role:string,dept_id:?int} $user */
@@ -41,10 +44,8 @@ function material_inventory_role_can_request_packaging(array $user): bool
 /** @param array{id:int,role:string,dept_id:?int} $user */
 function material_inventory_role_can_stock_in_packaging(array $user): bool
 {
-    require_once __DIR__ . '/auth_check.php';
-
-    return ims_user_can($user, 'packaging.stock_in')
-        && ims_is_executive((string) ($user['role'] ?? ''));
+    // Permission-only: staff can be granted packaging.stock_in without executive role.
+    return ims_user_can($user, 'packaging.stock_in');
 }
 
 /** @param array{id:int,role:string,dept_id:?int} $user */
@@ -2669,7 +2670,7 @@ function material_packaging_access_roster(PDO $pdo): array
 
     return [
         'stock_out' => $stockOut,
-        'stock_in_note' => 'Only executives can stock in packaging lots. Assign stock-out scanners on this page.',
+        'stock_in_note' => 'Stock-in uses the Stock in packaging permission. Assign stock-out scanners on this page.',
     ];
 }
 

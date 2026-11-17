@@ -1,7 +1,7 @@
 ---
 title: honey_bottle_barcodes
 source: includes/honey_bottle_barcodes.php
-generated: 2026-11-17T06:10:21+01:00
+generated: 2026-11-17T06:48:37+01:00
 type: module
 function_count: 65
 ---
@@ -593,7 +593,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `includes/dept_pouch_barcodes.php`:1087 — `$svg = honey_bottle_code128_svg($code);`
 - `includes/honey_bottle_barcodes.php`:3014 — `$svg = honey_bottle_code128_svg($code);`
-- `includes/material_inventory.php`:2566 — `$svg = honey_bottle_code128_svg($code);`
+- `includes/material_inventory.php`:2567 — `$svg = honey_bottle_code128_svg($code);`
 - `includes/sku_barcodes.php`:1482 — `$svg = honey_bottle_code128_svg($code);`
 
 ## honey_bottle_batch_codes {#honey_bottle_batch_codes}
