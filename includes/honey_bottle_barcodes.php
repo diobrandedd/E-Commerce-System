@@ -43,6 +43,13 @@ function honey_bottle_can_view_packaging_report(array $user): bool
         || honey_bottle_can_scan($user);
 }
 
+/** Undo a Packaging report stock-in line (executive + admin password at API). */
+function honey_bottle_can_undo_packaging_scan_line(array $user): bool
+{
+    return ims_user_can($user, 'honey.executive_edit')
+        || ims_is_executive((string) ($user['role'] ?? ''));
+}
+
 function honey_bottle_can_pack_scan(array $user): bool
 {
     return ims_user_can($user, 'deliveries.pack_scan');
@@ -984,6 +991,262 @@ function honey_bottle_packaging_scan_report(
         ],
         'by_scanner' => $byScanner,
     ];
+}
+
+/**
+ * Undo one Packaging report line: (scan_date, scanned_by, variant, size).
+ * Reverses sticker + SKU honey stock-in events, drops finished POOL on-hand,
+ * and restores production gallons. Bottling packaging materials are not restored.
+ *
+ * @return array{
+ *   scan_date: string,
+ *   scanned_by: ?int,
+ *   variant: string,
+ *   size: string,
+ *   qty: int,
+ *   sticker_count: int,
+ *   sku_event_count: int,
+ *   used_gallons: float,
+ *   remaining_production_gallons: float,
+ *   production_row_id: int
+ * }
+ */
+function honey_bottle_packaging_scan_line_undo(
+    PDO $pdo,
+    int $actorUserId,
+    string $scanDate,
+    ?int $scannedBy,
+    string $variant,
+    string $size
+): array {
+    require_once __DIR__ . '/honey_volume.php';
+    require_once __DIR__ . '/sku_barcodes.php';
+    require_once __DIR__ . '/system_activity_log.php';
+
+    $scanDateNorm = honey_bottle_scan_report_date($scanDate);
+    if ($scanDateNorm === null) {
+        throw new RuntimeException('Pick a specific scan date before undoing a line.');
+    }
+    $variant = honey_normalize_variant($variant);
+    $size = honey_normalize_bottle_size($size);
+    if (!in_array($size, HONEY_SIZES, true)) {
+        throw new RuntimeException('Invalid size.');
+    }
+    if ($scannedBy !== null && $scannedBy < 1) {
+        $scannedBy = null;
+    }
+
+    $from = $scanDateNorm . ' 00:00:00';
+    $to = (new DateTimeImmutable($scanDateNorm))->modify('+1 day')->format('Y-m-d') . ' 00:00:00';
+
+    $owns = !$pdo->inTransaction();
+    if ($owns) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $bySql = $scannedBy === null ? 'c.scanned_by IS NULL' : 'c.scanned_by = ?';
+        $stickerParams = [$from, $to, $variant, $size];
+        if ($scannedBy !== null) {
+            $stickerParams[] = $scannedBy;
+        }
+        $stickerSt = $pdo->prepare(
+            "SELECT c.id AS barcode_id, c.code, c.status AS barcode_status, b.request_id,
+                    u.id AS unit_id, u.status AS unit_status, u.pool AS unit_pool,
+                    u.packaging_row_id AS unit_packaging_row_id
+             FROM honey_bottle_barcodes c
+             INNER JOIN honey_barcode_batches b ON b.id = c.batch_id
+             LEFT JOIN honey_bottle_units u ON u.barcode_id = c.id
+             WHERE c.scanned_at IS NOT NULL
+               AND c.scanned_at >= ? AND c.scanned_at < ?
+               AND LOWER(b.variant) = ?
+               AND LOWER(c.size) = ?
+               AND {$bySql}
+             ORDER BY c.id ASC
+             FOR UPDATE"
+        );
+        $stickerSt->execute($stickerParams);
+        $stickers = $stickerSt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $skuBySql = $scannedBy === null ? 'e.scanned_by IS NULL' : 'e.scanned_by = ?';
+        $skuParams = [$from, $to, $variant, $size];
+        if ($scannedBy !== null) {
+            $skuParams[] = $scannedBy;
+        }
+        $skuSt = $pdo->prepare(
+            "SELECT e.id, e.qty, e.packaging_row_id, e.honey_request_id, e.sku_id
+             FROM sku_barcode_stock_events e
+             INNER JOIN product_sku_barcodes s ON s.id = e.sku_id
+             WHERE e.kind = 'honey'
+               AND e.packaging_row_id IS NOT NULL
+               AND e.scanned_at >= ? AND e.scanned_at < ?
+               AND LOWER(s.variant) = ?
+               AND LOWER(s.size) = ?
+               AND {$skuBySql}
+             ORDER BY e.id ASC
+             FOR UPDATE"
+        );
+        $skuSt->execute($skuParams);
+        $skuEvents = $skuSt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $stickerCount = count($stickers);
+        $skuQty = 0;
+        foreach ($skuEvents as $ev) {
+            $skuQty += (int) $ev['qty'];
+        }
+        $totalQty = $stickerCount + $skuQty;
+        if ($totalQty < 1) {
+            throw new RuntimeException('No stock-in events found for that person, size, and date.');
+        }
+
+        foreach ($stickers as $row) {
+            $code = (string) ($row['code'] ?? '');
+            if ((string) ($row['barcode_status'] ?? '') === 'void') {
+                throw new RuntimeException(
+                    'Cannot undo: barcode ' . $code . ' is void. Fix that bottle first.'
+                );
+            }
+            $unitId = isset($row['unit_id']) ? (int) $row['unit_id'] : 0;
+            if ($unitId < 1) {
+                throw new RuntimeException(
+                    'Cannot undo: barcode ' . $code . ' has no packaging unit row.'
+                );
+            }
+            $unitStatus = (string) ($row['unit_status'] ?? '');
+            $unitPool = (string) ($row['unit_pool'] ?? '');
+            if ($unitPool !== 'packaging' || $unitStatus !== 'in_stock') {
+                throw new RuntimeException(
+                    'Cannot undo: barcode ' . $code . ' is no longer in packaging stock'
+                    . ($unitStatus !== '' ? " (status: {$unitStatus})" : '')
+                    . '. Sold, packed, or moved bottles must stay.'
+                );
+            }
+        }
+
+        $pool = honey_packaging_ensure_variant_pool($pdo, $actorUserId, $variant);
+        $poolId = (int) $pool['id'];
+        honey_bottle_adjust_aggregate($pdo, $poolId, $size, -(float) $totalQty);
+
+        $requestIds = [];
+        foreach ($stickers as $row) {
+            $barcodeId = (int) $row['barcode_id'];
+            $unitId = (int) $row['unit_id'];
+            try {
+                $pdo->prepare('DELETE FROM honey_bottle_units WHERE id = ?')->execute([$unitId]);
+            } catch (Throwable $e) {
+                throw new RuntimeException(
+                    'Cannot undo barcode ' . (string) $row['code']
+                    . ': it is linked to another record (pack, leak, or RTS).',
+                    0,
+                    $e
+                );
+            }
+            $pdo->prepare(
+                'UPDATE honey_bottle_barcodes
+                 SET status = "printed", scanned_at = NULL, scanned_by = NULL
+                 WHERE id = ?'
+            )->execute([$barcodeId]);
+            if (!empty($row['request_id'])) {
+                $requestIds[(int) $row['request_id']] = true;
+            }
+        }
+
+        foreach ($skuEvents as $ev) {
+            $qty = (int) $ev['qty'];
+            $reqId = isset($ev['honey_request_id']) && $ev['honey_request_id'] !== null
+                ? (int) $ev['honey_request_id']
+                : 0;
+            if ($reqId > 0 && $qty > 0) {
+                $pdo->prepare(
+                    'UPDATE honey_bottle_requests
+                     SET sku_scanned_qty = GREATEST(0, CAST(COALESCE(sku_scanned_qty, 0) AS SIGNED) - ?)
+                     WHERE id = ?'
+                )->execute([$qty, $reqId]);
+                $requestIds[$reqId] = true;
+            }
+            $pdo->prepare('DELETE FROM sku_barcode_stock_events WHERE id = ?')->execute([(int) $ev['id']]);
+        }
+
+        foreach (array_keys($requestIds) as $reqId) {
+            sku_barcode_refresh_honey_request_status($pdo, (int) $reqId);
+            // Sticker-only requests: recompute status from barcode scans.
+            $counts = $pdo->prepare(
+                'SELECT
+                    SUM(c.status = "scanned") AS scanned,
+                    COUNT(*) AS total
+                 FROM honey_barcode_batches b
+                 INNER JOIN honey_bottle_barcodes c ON c.batch_id = b.id
+                 WHERE b.request_id = ?'
+            );
+            $counts->execute([(int) $reqId]);
+            $c = $counts->fetch(PDO::FETCH_ASSOC) ?: [];
+            $scanned = (int) ($c['scanned'] ?? 0);
+            $total = (int) ($c['total'] ?? 0);
+            if ($total > 0) {
+                $status = $scanned >= $total ? 'completed' : 'in_progress';
+                $pdo->prepare(
+                    'UPDATE honey_bottle_requests SET status = ? WHERE id = ? AND status <> "cancelled"'
+                )->execute([$status, (int) $reqId]);
+            }
+        }
+
+        $mlPerGallon = honey_ml_per_gallon($pdo);
+        $usedGallons = honey_lines_to_gallons([['size' => $size, 'qty' => $totalQty]], $mlPerGallon);
+        $credit = honey_production_credit_gallons_for_variant($pdo, $variant, $usedGallons);
+
+        system_activity_log_write(
+            $pdo,
+            'inventory',
+            'packaging_scan_line_undo',
+            sprintf(
+                'Undid packaging stock-in: %s · %s · %d bottle%s on %s',
+                ucfirst($variant),
+                honey_bottle_size_label($size),
+                $totalQty,
+                $totalQty === 1 ? '' : 's',
+                $scanDateNorm
+            ),
+            [
+                'entity_type' => 'honey_packaging_scan_line',
+                'entity_id' => $scanDateNorm . ':' . ($scannedBy ?? 'null') . ':' . $variant . ':' . $size,
+                'actor_user_id' => $actorUserId,
+                'meta' => [
+                    'scan_date' => $scanDateNorm,
+                    'scanned_by' => $scannedBy,
+                    'variant' => $variant,
+                    'size' => $size,
+                    'qty' => $totalQty,
+                    'sticker_count' => $stickerCount,
+                    'sku_event_count' => count($skuEvents),
+                    'used_gallons' => $credit['credited_gallons'],
+                    'production_row_id' => $credit['production_row_id'],
+                    'packaging_materials_restored' => false,
+                    'admin_password_verified' => true,
+                ],
+            ]
+        );
+
+        if ($owns) {
+            $pdo->commit();
+        }
+
+        return [
+            'scan_date' => $scanDateNorm,
+            'scanned_by' => $scannedBy,
+            'variant' => $variant,
+            'size' => $size,
+            'qty' => $totalQty,
+            'sticker_count' => $stickerCount,
+            'sku_event_count' => count($skuEvents),
+            'used_gallons' => $credit['credited_gallons'],
+            'remaining_production_gallons' => $credit['remaining_production_gallons'],
+            'production_row_id' => $credit['production_row_id'],
+        ];
+    } catch (Throwable $e) {
+        if ($owns && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 }
 
 /**

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-11-17T09:05:28+01:00
+generated: 2026-11-24T04:58:46+01:00
 type: memory-bank
 ---
 
@@ -104,6 +104,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `packaging_options` | `api_bottle_packaging_options()` | `honey_bottle_packaging_options()`, `ims_pdo()` |
 | `packaging_scan_report` | `api_bottle_packaging_scan_report()` | `honey_bottle_packaging_scan_report()`, `ims_pdo()` |
 | `packaging_scan_log` | `api_bottle_packaging_scan_log()` | `honey_bottle_packaging_scan_log()`, `ims_pdo()` |
+| `packaging_scan_line_undo` | `api_bottle_packaging_scan_line_undo()` | `honey_bottle_can_undo_packaging_scan_line()`, `honey_bottle_packaging_scan_line_undo()`, `ims_pdo()` |
 | `ensure_packaging_shell` | `api_bottle_ensure_packaging_shell()` | `honey_fetch_packaging_by_production()`, `ims_pdo()`, `honey_bottle_ensure_packaging_shell()`, `honey_bottle_serialize_packaging_option()` |
 | `create_custom_packaging` | `api_bottle_create_custom_packaging()` | `honey_bottle_can_request()`, `honey_bottle_user_can_generate()`, `honey_bottle_create_custom_packaging()`, `ims_pdo()`, `honey_bottle_serialize_packaging_option()` |
 

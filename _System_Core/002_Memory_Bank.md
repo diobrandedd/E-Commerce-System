@@ -4,6 +4,9 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-11-24 — Packaging stock-in line undo
+**Change:** Executive Undo on Packaging report person/size lines (specific scan date) with administrator password — reverses sticker + SKU events, POOL on-hand, and production gallons. → [[problems/records/2026-11-24_packaging-stock-in-line-undo]] · [[specs/2026-11-24_packaging-stock-in-line-undo]]
+
 ### 2026-11-17 — Pack scan Server error on freebie draft sessions
 **Change:** `honey_bottle_pack_session_get` now requires `dept_raw_freebies.php` so reopening a draft/history session that contains freebie lines no longer fatals as generic "Server error."
 

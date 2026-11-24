@@ -95,6 +95,23 @@ function Clear-SpaDistCopyTargets([string]$DistRoot) {
     }
 }
 
+# Deep-link hard refresh needs dist\.htaccess (SPA rewrite). Vite copy can miss it after EBUSY unlock.
+function Ensure-SpaDistHtaccess([string]$DistRoot, [string]$RepoRoot) {
+    $dest = Join-Path $DistRoot '.htaccess'
+    if (Test-Path -LiteralPath $dest) { return }
+    $src = Join-Path $RepoRoot 'app\public\.htaccess'
+    if (-not (Test-Path -LiteralPath $src)) {
+        Write-Host 'Note: app/public/.htaccess missing; cannot restore SPA rewrite file.'
+        return
+    }
+    try {
+        Copy-Item -LiteralPath $src -Destination $dest -Force -ErrorAction Stop
+        Write-Host 'Note: restored dist\.htaccess from app/public (needed for hard-refresh deep links).'
+    } catch {
+        Write-Host ('Note: could not restore dist\.htaccess - {0}' -f $_.Exception.Message)
+    }
+}
+
 function Get-ChangedPaths {
     Push-Location $RepoRoot
     try {
@@ -229,6 +246,7 @@ if ($touchApp -or $All) {
                 Start-Sleep -Milliseconds 750
                 $result = Invoke-VerifyCommand { npm run build }
             }
+            Ensure-SpaDistHtaccess $distRoot $RepoRoot
             if ($result.Text) { Write-Host $result.Text }
             if (Test-SpaBuildOk $result.Text $result.ExitCode $distRoot) {
                 if ($result.ExitCode -ne 0) {

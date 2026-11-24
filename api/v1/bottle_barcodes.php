@@ -105,6 +105,7 @@ api_dispatch([
     'packaging_options' => 'api_bottle_packaging_options',
     'packaging_scan_report' => 'api_bottle_packaging_scan_report',
     'packaging_scan_log' => 'api_bottle_packaging_scan_log',
+    'packaging_scan_line_undo' => 'api_bottle_packaging_scan_line_undo',
     'ensure_packaging_shell' => 'api_bottle_ensure_packaging_shell',
     'create_custom_packaging' => 'api_bottle_create_custom_packaging',
 ]);
@@ -156,6 +157,48 @@ function api_bottle_packaging_scan_report(): void
         $scanDate !== '' ? $scanDate : null,
         $bottlingDate !== '' ? $bottlingDate : null
     ));
+}
+
+function api_bottle_packaging_scan_line_undo(): void
+{
+    api_method_allowed(['POST']);
+    api_bottle_require_csrf();
+    $user = api_bottle_require_user();
+    if (!honey_bottle_can_undo_packaging_scan_line($user)) {
+        api_fail('Forbidden. Only an executive can undo packaging stock-in lines.', 403);
+    }
+    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    $in = api_input();
+    api_require_admin_override_password($in);
+
+    $scanDate = trim((string) ($in['scan_date'] ?? ''));
+    $variant = trim((string) ($in['variant'] ?? ''));
+    $size = trim((string) ($in['size'] ?? ''));
+    $scannedByRaw = $in['scanned_by'] ?? null;
+    $scannedBy = null;
+    if ($scannedByRaw !== null && $scannedByRaw !== '' && strtolower((string) $scannedByRaw) !== 'null') {
+        $scannedBy = (int) $scannedByRaw;
+        if ($scannedBy < 1) {
+            api_fail('Invalid scanned_by.', 422);
+        }
+    }
+    if ($scanDate === '' || $variant === '' || $size === '') {
+        api_fail('scan_date, variant, and size are required.', 422);
+    }
+
+    try {
+        $result = honey_bottle_packaging_scan_line_undo(
+            ims_pdo(),
+            (int) $user['id'],
+            $scanDate,
+            $scannedBy,
+            $variant,
+            $size
+        );
+        api_ok(['undo' => $result]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
 }
 
 function api_bottle_ensure_packaging_shell(): void

@@ -568,6 +568,73 @@ function honey_production_fifo_deduct_gallons(PDO $pdo, string $variant, float $
 }
 
 /**
+ * Restore production gallons after undoing packaging stock-in (approx reverse of FIFO deduct).
+ * Credits the newest non-voided lot for the variant (prefer overdrawn, then active).
+ *
+ * @return array{credited_gallons: float, production_row_id: int, supplier_code: string, remaining_production_gallons: float}
+ */
+function honey_production_credit_gallons_for_variant(PDO $pdo, string $variant, float $gallons): array
+{
+    $variant = honey_normalize_variant($variant);
+    $gallons = round($gallons, 4);
+    if ($gallons <= 1e-9) {
+        throw new RuntimeException('Gallon credit must be greater than zero.');
+    }
+
+    honey_production_sync_active_flags($pdo);
+
+    $voidFilter = honey_production_has_voided_at($pdo) ? ' AND voided_at IS NULL' : '';
+    $st = $pdo->prepare(
+        'SELECT id, supplier_code, current_qty, initial_qty,
+                COALESCE(is_active, 1) AS is_active
+         FROM honey_production_rows
+         WHERE variant = ?'
+         . $voidFilter . '
+         ORDER BY
+           CASE WHEN current_qty < -1e-9 THEN 0 ELSE 1 END ASC,
+           CASE WHEN COALESCE(is_active, 1) = 1 THEN 0 ELSE 1 END ASC,
+           COALESCE(stock_out_date, DATE(transferred_at)) DESC,
+           id DESC
+         LIMIT 1
+         FOR UPDATE'
+    );
+    $st->execute([$variant]);
+    $lot = $st->fetch(PDO::FETCH_ASSOC);
+    if ($lot === false) {
+        throw new RuntimeException(
+            'No production lot for ' . ucfirst($variant) . ' to restore gallons to.'
+        );
+    }
+
+    $lotId = (int) $lot['id'];
+    $priorCurrent = (float) $lot['current_qty'];
+    $priorInitial = (float) $lot['initial_qty'];
+    $newInitial = honey_production_refill_initial_qty($priorCurrent, $priorInitial, $gallons);
+    $pdo->prepare(
+        'UPDATE honey_production_rows
+         SET current_qty = current_qty + ?,
+             initial_qty = ?,
+             is_active = 1
+         WHERE id = ?'
+    )->execute([$gallons, $newInitial, $lotId]);
+    honey_production_clear_depleted_and_activate($pdo, $lotId);
+
+    $sumSt = $pdo->prepare(
+        'SELECT COALESCE(SUM(current_qty), 0) FROM honey_production_rows WHERE variant = ?'
+        . $voidFilter
+    );
+    $sumSt->execute([$variant]);
+    $remaining = (float) $sumSt->fetchColumn();
+
+    return [
+        'credited_gallons' => $gallons,
+        'production_row_id' => $lotId,
+        'supplier_code' => (string) $lot['supplier_code'],
+        'remaining_production_gallons' => round($remaining, 4),
+    ];
+}
+
+/**
  * SKU stock-in to variant POOL + FIFO production gallon deduct.
  *
  * @return array<string, mixed>

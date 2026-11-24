@@ -428,4 +428,25 @@ export const bottleBarcodesApi = {
       page,
       scan_date: scanDate,
     }),
+  packagingScanLineUndo: (body: {
+    scan_date: string;
+    scanned_by: number | null;
+    variant: string;
+    size: string;
+    admin_password: string;
+  }) =>
+    apiPost<{
+      undo: {
+        scan_date: string;
+        scanned_by: number | null;
+        variant: string;
+        size: string;
+        qty: number;
+        sticker_count: number;
+        sku_event_count: number;
+        used_gallons: number;
+        remaining_production_gallons: number;
+        production_row_id: number;
+      };
+    }>("bottle_barcodes.php", "packaging_scan_line_undo", body),
 };

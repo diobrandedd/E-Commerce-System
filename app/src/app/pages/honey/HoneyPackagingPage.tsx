@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { AlertTriangle, ChevronDown, Loader2, Printer, ScanLine, Tag } from "lucide-react";
+import { AlertTriangle, ChevronDown, Loader2, Printer, ScanLine, Tag, Undo2 } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
-import { AppModal, AppModalBody, AppModalHeader } from "@/app/components/AppModal";
+import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { HoneyStageContent, HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
 import { BatchTraceabilityDrawer } from "@/app/components/honey/BatchTraceabilityDrawer";
 import {
@@ -15,18 +15,28 @@ import {
   AppErrorBanner,
   AppPressable,
   AppSectionEnter,
+  AppSuccessNotice,
   appHeaderActionClass,
   appHoverCard,
 } from "@/app/components/layout/appFeedbackMotion";
 import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { useLiveRefresh } from "@/app/hooks/useLiveRefresh";
+import { ApiError } from "@/app/lib/api";
 import { HONEY_SIZES } from "@/app/lib/honey";
-import { canDeptPouchBarcodeOps } from "@/app/lib/honeyPermissions";
+import { canDeptPouchBarcodeOps, canExecutiveDirectEdit } from "@/app/lib/honeyPermissions";
 import { deptPouchBarcodesApi } from "@/app/lib/deptPouchBarcodes";
 import { bottleBarcodesApi } from "@/app/lib/bottleBarcodes";
 import { variantLabel } from "@/app/lib/posHoney";
 import { cn } from "@/app/components/ui/utils";
+
+type UndoLineTarget = {
+  user_id: number | null;
+  name: string;
+  variant: string;
+  size: string;
+  qty: number;
+};
 
 const HONEY_COMB_KEY = "honey_comb";
 const HONEY_COMB_LABEL = "Honey Comb";
@@ -97,6 +107,7 @@ export function HoneyPackagingPage() {
   const reduceMotion = useReducedMotion();
   const canLeakDamage = can("inventory.leak_damage.view");
   const canCombBarcodes = canDeptPouchBarcodeOps(user, "honey_comb");
+  const canUndoLine = canExecutiveDirectEdit(user);
   const [scanDate, setScanDate] = useState(localToday);
   const [scanDates, setScanDates] = useState<string[]>([]);
   const [byVariant, setByVariant] = useState<VariantScanned[]>([]);
@@ -109,8 +120,17 @@ export function HoneyPackagingPage() {
   const [traceBatch, setTraceBatch] = useState<string | null>(null);
   const [combModal, setCombModal] = useState<"scan" | "admin" | null>(null);
   const [pendingCombLabels, setPendingCombLabels] = useState(0);
+  const [undoTarget, setUndoTarget] = useState<UndoLineTarget | null>(null);
+  const [undoStep, setUndoStep] = useState<"password" | "sure" | null>(null);
+  const [undoPassword, setUndoPassword] = useState("");
+  const [undoBusy, setUndoBusy] = useState(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
+  const [undoSuccess, setUndoSuccess] = useState<string | null>(null);
   const combScanTitleId = useId();
   const combAdminTitleId = useId();
+  const undoTitleId = useId();
+  const undoSureTitleId = useId();
+  const undoPasswordId = useId();
 
   const refreshPendingComb = useCallback(async () => {
     if (!canCombBarcodes) {
@@ -141,6 +161,58 @@ export function HoneyPackagingPage() {
       setLoading(false);
     }
   }, [refreshPendingComb, scanDate]);
+
+  const closeUndoModal = () => {
+    if (undoBusy) return;
+    setUndoTarget(null);
+    setUndoStep(null);
+    setUndoPassword("");
+    setUndoError(null);
+  };
+
+  const advanceUndoToSure = () => {
+    if (!undoTarget || scanDate === "all") return;
+    if (undoPassword.trim() === "") {
+      setUndoError("Administrator password is required.");
+      return;
+    }
+    setUndoError(null);
+    setUndoStep("sure");
+  };
+
+  const submitUndoLine = async () => {
+    if (!undoTarget || scanDate === "all" || undoStep !== "sure") return;
+    if (undoPassword.trim() === "") {
+      setUndoStep("password");
+      setUndoError("Administrator password is required.");
+      return;
+    }
+    setUndoBusy(true);
+    setUndoError(null);
+    try {
+      const res = await bottleBarcodesApi.packagingScanLineUndo({
+        scan_date: scanDate,
+        scanned_by: undoTarget.user_id,
+        variant: undoTarget.variant,
+        size: undoTarget.size,
+        admin_password: undoPassword.trim(),
+      });
+      const qty = res.undo.qty;
+      setUndoSuccess(
+        `Undid ${qty.toLocaleString()} × ${variantLabel(undoTarget.variant)} · ${sizeDisplay(undoTarget.size)} for ${undoTarget.name}.`,
+      );
+      setUndoTarget(null);
+      setUndoStep(null);
+      setUndoPassword("");
+      await refresh();
+      window.setTimeout(() => setUndoSuccess(null), 5000);
+    } catch (e) {
+      setUndoStep("password");
+      setUndoError(e instanceof ApiError ? e.message : "Could not undo that stock-in line.");
+    } finally {
+      setUndoBusy(false);
+    }
+  };
 
   useEffect(() => {
     void refresh();
@@ -328,11 +400,18 @@ export function HoneyPackagingPage() {
             </div>
           )}
 
+          <AppSuccessNotice message={undoSuccess} className="mt-4" />
+
           {!loading && byScanner.length > 0 && (
             <div className="mt-4 rounded-xl border border-border bg-secondary/20 px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
                 Scanned by person · {filterScanLabel(scanDate)}
               </p>
+              {canUndoLine && scanDate === "all" ? (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Pick a specific scan date to undo a person/size line.
+                </p>
+              ) : null}
               <ul className="mt-2 space-y-3">
                 {byScanner.map(row => (
                   <li key={`${row.user_id ?? "unk"}-${row.name}`} className="text-sm">
@@ -347,13 +426,35 @@ export function HoneyPackagingPage() {
                         {row.lines!.map(line => (
                           <li
                             key={`${line.variant}-${line.size}`}
-                            className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground"
+                            className="flex items-center justify-between gap-3 text-xs text-muted-foreground"
                           >
                             <span className="truncate">
                               {variantLabel(line.variant)} · {sizeDisplay(line.size)}
                             </span>
-                            <span className="tabular-nums shrink-0">
-                              {line.qty.toLocaleString()}
+                            <span className="flex items-center gap-2 shrink-0">
+                              <span className="tabular-nums">{line.qty.toLocaleString()}</span>
+                              {canUndoLine && scanDate !== "all" && line.qty > 0 ? (
+                                <AppPressable
+                                  type="button"
+                                  className="inline-flex min-h-8 items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-medium text-foreground"
+                                  onClick={() => {
+                                    setUndoError(null);
+                                    setUndoPassword("");
+                                    setUndoStep("password");
+                                    setUndoTarget({
+                                      user_id: row.user_id,
+                                      name: row.name,
+                                      variant: line.variant,
+                                      size: line.size,
+                                      qty: line.qty,
+                                    });
+                                  }}
+                                  data-testid={`packaging-undo-${row.user_id ?? "unk"}-${line.variant}-${line.size}`}
+                                >
+                                  <Undo2 size={12} />
+                                  Undo
+                                </AppPressable>
+                              ) : null}
                             </span>
                           </li>
                         ))}
@@ -424,6 +525,134 @@ export function HoneyPackagingPage() {
           ) : null}
         </div>
       </HoneyStageContent>
+
+      {undoTarget && undoStep === "password" && (
+        <AppModal
+          open
+          onClose={closeUndoModal}
+          panelClassName="max-w-md w-full"
+          labelledBy={undoTitleId}
+        >
+          <AppModalHeader
+            title="Undo packaging stock-in"
+            titleId={undoTitleId}
+            subtitle="Reverses this report line and finished on-hand. Enter the administrator password from Settings."
+            onClose={closeUndoModal}
+          />
+          <AppModalBody className="space-y-3 text-sm">
+            {undoError ? <AppErrorBanner message={undoError} /> : null}
+            <dl className="rounded-lg border border-border bg-secondary/30 px-3 py-2 space-y-1.5 text-xs">
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Person</dt>
+                <dd className="font-medium text-foreground text-right">{undoTarget.name}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Date</dt>
+                <dd className="font-medium text-foreground text-right">{scanDateLabel(scanDate)}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Line</dt>
+                <dd className="font-medium text-foreground text-right">
+                  {variantLabel(undoTarget.variant)} · {sizeDisplay(undoTarget.size)}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Qty</dt>
+                <dd className="font-semibold tabular-nums text-foreground text-right">
+                  {undoTarget.qty.toLocaleString()} bottles
+                </dd>
+              </div>
+            </dl>
+            <p className="text-[11px] text-muted-foreground">
+              Bottles already sold or packed cannot be undone. Bottling packaging materials from the
+              original stock-in are not put back.
+            </p>
+            <div>
+              <label htmlFor={undoPasswordId} className="text-xs text-muted-foreground block mb-1">
+                Administrator password
+              </label>
+              <input
+                id={undoPasswordId}
+                type="password"
+                autoComplete="current-password"
+                value={undoPassword}
+                onChange={e => setUndoPassword(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    advanceUndoToSure();
+                  }
+                }}
+                className="w-full border rounded-lg px-3 py-2"
+                autoFocus
+              />
+            </div>
+          </AppModalBody>
+          <AppModalFooter>
+            <Button type="button" variant="outline" onClick={closeUndoModal} disabled={undoBusy} className="min-h-11 flex-1">
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={undoBusy}
+              onClick={advanceUndoToSure}
+              className="min-h-11 flex-1"
+              data-testid="packaging-undo-continue"
+            >
+              Continue
+            </Button>
+          </AppModalFooter>
+        </AppModal>
+      )}
+
+      {undoTarget && undoStep === "sure" && (
+        <AppModal
+          open
+          onClose={closeUndoModal}
+          panelClassName="max-w-md w-full"
+          labelledBy={undoSureTitleId}
+        >
+          <AppModalHeader
+            title="Are you sure?"
+            titleId={undoSureTitleId}
+            subtitle="This cannot be undone from here. Stock-in history and finished on-hand will change now."
+            onClose={closeUndoModal}
+          />
+          <AppModalBody className="space-y-3 text-sm">
+            {undoError ? <AppErrorBanner message={undoError} /> : null}
+            <p className="text-sm text-foreground">
+              Undo{" "}
+              <span className="font-semibold tabular-nums">{undoTarget.qty.toLocaleString()}</span>{" "}
+              × {variantLabel(undoTarget.variant)} · {sizeDisplay(undoTarget.size)} for{" "}
+              <span className="font-semibold">{undoTarget.name}</span> on {scanDateLabel(scanDate)}?
+            </p>
+          </AppModalBody>
+          <AppModalFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={undoBusy}
+              onClick={() => {
+                if (undoBusy) return;
+                setUndoError(null);
+                setUndoStep("password");
+              }}
+              className="min-h-11 flex-1"
+            >
+              Back
+            </Button>
+            <Button
+              type="button"
+              disabled={undoBusy}
+              onClick={() => void submitUndoLine()}
+              className="min-h-11 flex-1"
+              data-testid="packaging-undo-confirm"
+            >
+              {undoBusy ? <Loader2 className="inline animate-spin" size={14} /> : "Yes, undo"}
+            </Button>
+          </AppModalFooter>
+        </AppModal>
+      )}
 
       {combModal === "scan" && (
         <AppModal

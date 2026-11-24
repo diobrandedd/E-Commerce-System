@@ -6,9 +6,9 @@
 
 | Field | Link |
 |-------|------|
-| **Active Spec** | [[specs/2026-11-17_pos-freebies]] |
-| **Active Plan** | [[plans/archive/2026-11-17_pos-freebies_plan]] |
-| **Status** | `shipped` - POS freebies + Sales Freebies given |
+| **Active Spec** | [[specs/2026-11-24_packaging-stock-in-line-undo]] |
+| **Active Plan** | [[plans/archive/2026-11-24_packaging-stock-in-line-undo_plan]] |
+| **Status** | `shipped` — Packaging report per-line undo + admin-password modal |
 
 ## ðŸš€ Active Feature / Sprint
 - **Current Focus:** Manual E2E on dept raw production (Use raw bags â†’ Pouch); run phase 22â€“28 migrations on prod if pending
@@ -46,6 +46,6 @@
 - [x] CSR variant resolution UX â€” confirm, show completed, edit (2026-06-04)
 
 ## âš ï¸ Known Blockers / Open Bugs
-- **Ops:** Hard-refresh Apache `app/dist/` after SPA deploy.
+- **Ops:** Hard-refresh Apache `app/dist/` after SPA deploy. Deep SPA URLs need `app/dist/.htaccess` (rewrite to `index.html`); verify/build now restores it if Windows EBUSY drops the Vite public copy.
 - **v2:** Courier-cancel parcel â†’ restock inventory (spec out of scope).
 

@@ -1,7 +1,7 @@
 ---
 title: admin_override_password
 source: includes/admin_override_password.php
-generated: 2026-11-17T09:05:29+01:00
+generated: 2026-11-24T04:58:46+01:00
 type: module
 function_count: 4
 ---
@@ -41,8 +41,9 @@ function_count: 4
 
 ## api_require_admin_override_password {#api_require_admin_override_password}
 
-**Callers (3):**
+**Callers (4):**
 
+- `api/v1/bottle_barcodes.php`:172 — `api_require_admin_override_password($in);`
 - `api/v1/honey.php`:1573 — `api_require_admin_override_password($input);`
 - `api/v1/inventory_check.php`:419 — `api_require_admin_override_password($in);`
 - `api/v1/inventory_check.php`:445 — `api_require_admin_override_password($in);`
