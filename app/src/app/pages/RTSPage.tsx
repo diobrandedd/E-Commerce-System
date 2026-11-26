@@ -27,6 +27,8 @@ import {
   rtsStockInSessionScan,
   rtsStockInSessionStart,
   rtsStockInSessionUpdate,
+  rtsStockInFreebieHistory,
+  type RtsFreebieReturnRow,
   type RtsStockInSession,
   type RtsStockInSessionItem,
 } from "@/app/lib/rtsApi";
@@ -75,6 +77,21 @@ function whereLabel(w: string): string {
   return w;
 }
 
+function sessionItemSubtitle(item: RtsStockInSessionItem): string {
+  if (item.lookup_kind === "freebie") return "Freebie · back to freebie stock (not RTS)";
+  const detail = item.size_label ?? item.size ?? (item.lookup_kind === "sku" ? "SKU" : "Unique sticker");
+  return item.variant ? `${variantLabel(item.variant)} · ${detail}` : detail;
+}
+
+function confirmedSummary(session: RtsStockInSession): string {
+  const freebies = session.freebie_qty ?? 0;
+  const units = session.total_qty - freebies;
+  const parts: string[] = [];
+  if (units > 0) parts.push(`${units} unit(s) into RTS inventory`);
+  if (freebies > 0) parts.push(`${freebies} freebie(s) back to freebie stock`);
+  return `Confirmed ${parts.join(" and ") || "0 unit(s)"}.`;
+}
+
 function stockInRequestKey(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -95,6 +112,7 @@ export function RTSPage() {
   const [honey, setHoney] = useState<RtsInvRow[]>([]);
   const [other, setOther] = useState<RtsInvRow[]>([]);
   const [useLog, setUseLog] = useState<UseLogRow[]>([]);
+  const [freebieReturns, setFreebieReturns] = useState<RtsFreebieReturnRow[]>([]);
   const [sync, setSync] = useState<{ last_synced_at: string | null; last_error: string | null } | null>(null);
   const [diagnostic, setDiagnostic] = useState<{
     case_count: number;
@@ -132,6 +150,12 @@ export function RTSPage() {
       setUseLog(res.rows ?? []);
     } catch {
       setUseLog([]);
+    }
+    try {
+      const res = await rtsStockInFreebieHistory(100);
+      setFreebieReturns(res.rows ?? []);
+    } catch {
+      setFreebieReturns([]);
     }
   }, []);
 
@@ -287,7 +311,7 @@ export function RTSPage() {
       setConfirmSessionOpen(false);
       setCameraOpen(false);
       setStockSession(null);
-      setToast(`Confirmed ${res.session.total_qty} unit(s) into RTS inventory.`);
+      setToast(confirmedSummary(res.session));
       window.setTimeout(() => setToast(null), 4000);
       await loadInventory(false);
     } catch (e) {
@@ -379,7 +403,8 @@ export function RTSPage() {
               </div>
               <p className="text-xs text-muted-foreground">
                 Scans stay in a draft until you review and confirm. SKU scans add +1 each time; unique stickers can
-                appear once. Inventory does not change if you cancel.
+                appear once. Freebie barcodes go back to freebie stock, not RTS. Inventory does not change if you
+                cancel.
               </p>
               {!stockSession ? (
                 <Button
@@ -440,16 +465,13 @@ export function RTSPage() {
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="text-sm font-semibold">{item.product_label}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {item.variant ? `${variantLabel(item.variant)} · ` : ""}
-                                  {item.size_label ?? item.size ?? (item.lookup_kind === "sku" ? "SKU" : "Unique sticker")}
-                                </p>
+                                <p className="text-xs text-muted-foreground">{sessionItemSubtitle(item)}</p>
                                 <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{item.code}</p>
                               </div>
                               <span className="text-lg font-bold tabular-nums">×{item.qty}</span>
                             </div>
                             <div className="mt-3 flex justify-end gap-2">
-                              {item.lookup_kind === "sku" ? (
+                              {item.lookup_kind === "sku" || item.lookup_kind === "freebie" ? (
                                 <Button type="button" size="sm" variant="outline" onClick={() => startSessionEdit(item)}>
                                   <Pencil size={14} className="mr-1" /> Edit qty
                                 </Button>
@@ -483,16 +505,13 @@ export function RTSPage() {
                               <tr key={item.id} className={cn("border-b last:border-b-0", appHoverRow)}>
                                 <td className="px-3 py-2">
                                   <span className="font-medium">{item.product_label}</span>
-                                  <span className="block text-xs text-muted-foreground">
-                                    {item.variant ? `${variantLabel(item.variant)} · ` : ""}
-                                    {item.size_label ?? item.size ?? (item.lookup_kind === "sku" ? "SKU" : "Unique sticker")}
-                                  </span>
+                                  <span className="block text-xs text-muted-foreground">{sessionItemSubtitle(item)}</span>
                                 </td>
                                 <td className="px-3 py-2 font-mono text-xs">{item.code}</td>
                                 <td className="px-3 py-2 text-right text-base font-bold tabular-nums">{item.qty}</td>
                                 <td className="px-3 py-2">
                                   <div className="flex justify-end gap-1">
-                                    {item.lookup_kind === "sku" ? (
+                                    {item.lookup_kind === "sku" || item.lookup_kind === "freebie" ? (
                                       <Button type="button" size="sm" variant="outline" onClick={() => startSessionEdit(item)}>
                                         Edit
                                       </Button>
@@ -629,6 +648,15 @@ export function RTSPage() {
                 <UsedRtsTable rows={useLog} />
               </section>
             </AppSectionEnter>
+            <AppSectionEnter index={4}>
+              <section>
+                <h3 className="text-sm font-semibold mb-1">Freebie RTS returns</h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Freebies scanned in RTS stock-in sessions and credited back to freebie stock.
+                </p>
+                <FreebieReturnsTable rows={freebieReturns} />
+              </section>
+            </AppSectionEnter>
           </>
         )}
         {canViewOps && (
@@ -742,9 +770,15 @@ export function RTSPage() {
         />
         <AppModalBody className="space-y-2 text-sm">
           <p>
-            Add <strong>{stockSession?.total_qty ?? 0} unit(s)</strong> across{" "}
+            Add <strong>{(stockSession?.total_qty ?? 0) - (stockSession?.freebie_qty ?? 0)} unit(s)</strong> across{" "}
             <strong>{stockSession?.line_count ?? 0} reviewed line(s)</strong> to sellable RTS inventory.
           </p>
+          {(stockSession?.freebie_qty ?? 0) > 0 ? (
+            <p>
+              <strong>{stockSession?.freebie_qty} freebie(s)</strong> go back to freebie stock. They are not
+              marked as RTS.
+            </p>
+          ) : null}
           <p className="text-xs text-muted-foreground">
             All lines are rechecked and applied together. If one line is invalid, nothing is stocked in.
           </p>
@@ -821,6 +855,42 @@ function UsedRtsTable({ rows }: { rows: UseLogRow[] }) {
               <td className="px-3 py-2">{r.size ?? "—"}</td>
               <td className="px-3 py-2">{r.qty}</td>
               <td className="px-3 py-2 font-medium">{whereLabel(r.used_where)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function FreebieReturnsTable({ rows }: { rows: RtsFreebieReturnRow[] }) {
+  if (!rows.length) {
+    return <p className="text-sm text-muted-foreground">No freebie returns yet.</p>;
+  }
+  return (
+    <div className="bg-card rounded-xl border overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-secondary/40 text-xs uppercase text-muted-foreground">
+            <th className="px-3 py-2 text-left">Date</th>
+            <th className="px-3 py-2 text-left">Freebie</th>
+            <th className="px-3 py-2 text-left">Code</th>
+            <th className="px-3 py-2 text-left">Qty</th>
+            <th className="px-3 py-2 text-left">Session</th>
+            <th className="px-3 py-2 text-left">Confirmed by</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.id} className={cn("border-b", appHoverRow)}>
+              <td className="px-3 py-2 whitespace-nowrap text-xs">
+                {r.confirmed_at ? new Date(r.confirmed_at.replace(" ", "T")).toLocaleString() : "—"}
+              </td>
+              <td className="px-3 py-2">{r.product_label}</td>
+              <td className="px-3 py-2 font-mono text-xs">{r.code}</td>
+              <td className="px-3 py-2 tabular-nums">{r.qty}</td>
+              <td className="px-3 py-2">#{r.session_id}</td>
+              <td className="px-3 py-2">{r.confirmed_by_name || "—"}</td>
             </tr>
           ))}
         </tbody>

@@ -40,6 +40,7 @@ api_dispatch([
     'stock_in_session_remove' => 'api_rts_stock_in_session_remove',
     'stock_in_session_cancel' => 'api_rts_stock_in_session_cancel',
     'stock_in_session_confirm' => 'api_rts_stock_in_session_confirm',
+    'stock_in_freebie_history' => 'api_rts_stock_in_freebie_history',
     'use_damaged' => 'api_rts_use_damaged',
     'damaged_use_log' => 'api_rts_damaged_use_log',
     'sync_status' => 'api_rts_sync_status_action',
@@ -319,6 +320,20 @@ function api_rts_stock_in_session_confirm(): void
             (int) ($input['session_id'] ?? 0),
             (int) $user['id']
         )]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 400);
+    }
+}
+
+function api_rts_stock_in_freebie_history(): void
+{
+    api_method_allowed(['GET']);
+    $user = api_require_ims_user();
+    if (!api_rts_role_allowed($user)) {
+        api_fail('Forbidden.', 403);
+    }
+    try {
+        api_ok(['rows' => rts_stock_in_freebie_history(ims_pdo(), (int) ($_GET['limit'] ?? 100))]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 400);
     }

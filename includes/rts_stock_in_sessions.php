@@ -6,6 +6,7 @@ require_once __DIR__ . '/honey_bottle_barcodes.php';
 require_once __DIR__ . '/dept_pouch_barcodes.php';
 require_once __DIR__ . '/sku_barcodes.php';
 require_once __DIR__ . '/rts_inventory_sync.php';
+require_once __DIR__ . '/dept_raw_freebies.php';
 
 function rts_stock_in_request_key(string $value): string
 {
@@ -52,9 +53,13 @@ function rts_stock_in_session_get(PDO $pdo, int $sessionId, int $userId): array
     $itemsSt->execute([$sessionId]);
     $items = [];
     $totalQty = 0;
+    $freebieQty = 0;
     foreach ($itemsSt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         $qty = max(1, (int) $row['qty']);
         $totalQty += $qty;
+        if ((string) $row['kind'] === 'freebie') {
+            $freebieQty += $qty;
+        }
         $items[] = [
             'id' => (int) $row['id'],
             'kind' => (string) $row['kind'],
@@ -87,6 +92,7 @@ function rts_stock_in_session_get(PDO $pdo, int $sessionId, int $userId): array
         'items' => $items,
         'line_count' => count($items),
         'total_qty' => $totalQty,
+        'freebie_qty' => $freebieQty,
     ];
 }
 
@@ -253,8 +259,34 @@ function rts_stock_in_session_scan(
         }
 
         $lookup = null;
-        $sku = sku_barcode_fetch_by_code($pdo, $code);
-        if ($sku !== null) {
+        $freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);
+        $sku = $freebie === null ? sku_barcode_fetch_by_code($pdo, $code) : null;
+        if ($freebie !== null) {
+            $productKey = $freebie['product_key'];
+            $code = strtoupper($freebie['code']);
+            $label = dept_raw_freebie_label($productKey);
+            $pdo->prepare(
+                'INSERT INTO rts_stock_in_session_items
+                    (session_id, kind, lookup_kind, code, product_key, product_label, qty)
+                 VALUES (?, "freebie", "freebie", ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE qty = qty + VALUES(qty), updated_at = NOW()'
+            )->execute([$sessionId, $code, $productKey, $label, $qty]);
+            $itemSt = $pdo->prepare('SELECT id, qty FROM rts_stock_in_session_items WHERE session_id = ? AND code = ?');
+            $itemSt->execute([$sessionId, $code]);
+            $item = $itemSt->fetch(PDO::FETCH_ASSOC);
+            $pdo->prepare(
+                'UPDATE rts_stock_in_session_events SET item_id = ?, qty_delta = ? WHERE request_key = ?'
+            )->execute([(int) ($item['id'] ?? 0), $qty, $requestKey]);
+            $lookup = [
+                'kind' => 'freebie',
+                'lookup_kind' => 'freebie',
+                'code' => $code,
+                'product_label' => $label,
+                'product_key' => $productKey,
+                'qty' => (int) ($item['qty'] ?? $qty),
+                'added_qty' => $qty,
+            ];
+        } elseif ($sku !== null) {
             $kind = (string) $sku['kind'];
             $variant = $kind === 'honey' ? honey_normalize_variant((string) $sku['variant']) : null;
             $size = $kind === 'honey' ? (string) $sku['size'] : null;
@@ -380,7 +412,7 @@ function rts_stock_in_session_update_qty(PDO $pdo, int $sessionId, int $itemId, 
         if ($item === false) {
             throw new RuntimeException('Session item not found.');
         }
-        if ((string) $item['lookup_kind'] !== 'sku') {
+        if (!in_array((string) $item['lookup_kind'], ['sku', 'freebie'], true)) {
             throw new RuntimeException('Unique stickers always have quantity 1.');
         }
         $oldQty = (int) $item['qty'];
@@ -496,7 +528,16 @@ function rts_stock_in_session_confirm(PDO $pdo, int $sessionId, int $userId): ar
         }
         foreach ($items as $item) {
             $lookupKind = (string) $item['lookup_kind'];
-            if ($lookupKind === 'sku') {
+            if ($lookupKind === 'freebie') {
+                // Freebies go back to their own freebie on-hand only: no RTS pool row, no unit status change.
+                dept_raw_record_freebie_restock(
+                    $pdo,
+                    $userId,
+                    (string) $item['product_key'],
+                    (int) $item['qty'],
+                    'RTS return · stock-in session #' . $sessionId
+                );
+            } elseif ($lookupKind === 'sku') {
                 $sku = sku_barcode_fetch_by_code($pdo, (string) $item['code']);
                 if ($sku === null || (int) $sku['id'] !== (int) $item['sku_id']) {
                     throw new RuntimeException('A SKU barcode changed after it was scanned. Cancel and rescan.');
@@ -535,4 +576,39 @@ function rts_stock_in_session_confirm(PDO $pdo, int $sessionId, int $userId): ar
         }
         throw $e;
     }
+}
+
+/**
+ * Confirmed freebie lines from RTS stock-in sessions, newest first.
+ *
+ * @return list<array<string,mixed>>
+ */
+function rts_stock_in_freebie_history(PDO $pdo, int $limit = 100): array
+{
+    $limit = max(1, min(500, $limit));
+    $st = $pdo->query(
+        "SELECT i.id, i.session_id, i.product_key, i.product_label, i.code, i.qty,
+                s.confirmed_at, COALESCE(u.name, u.username, '') AS confirmed_by_name
+         FROM rts_stock_in_session_items i
+         INNER JOIN rts_stock_in_sessions s ON s.id = i.session_id
+         LEFT JOIN users u ON u.id = s.confirmed_by
+         WHERE i.kind = 'freebie' AND s.status = 'confirmed'
+         ORDER BY s.confirmed_at DESC, i.id DESC
+         LIMIT {$limit}"
+    );
+    $rows = [];
+    foreach ($st ? $st->fetchAll(PDO::FETCH_ASSOC) : [] as $row) {
+        $rows[] = [
+            'id' => (int) $row['id'],
+            'session_id' => (int) $row['session_id'],
+            'product_key' => (string) $row['product_key'],
+            'product_label' => (string) $row['product_label'],
+            'code' => (string) $row['code'],
+            'qty' => (int) $row['qty'],
+            'confirmed_at' => (string) $row['confirmed_at'],
+            'confirmed_by_name' => (string) $row['confirmed_by_name'],
+        ];
+    }
+
+    return $rows;
 }

@@ -261,8 +261,8 @@ export function rtsStockInScan(code: string, qty?: number) {
 
 export interface RtsStockInSessionItem {
   id: number;
-  kind: "honey" | "dept";
-  lookup_kind: "sku" | "unique_honey" | "unique_dept";
+  kind: "honey" | "dept" | "freebie";
+  lookup_kind: "sku" | "unique_honey" | "unique_dept" | "freebie";
   code: string;
   sku_id: number | null;
   variant: string | null;
@@ -288,14 +288,15 @@ export interface RtsStockInSession {
   items: RtsStockInSessionItem[];
   line_count: number;
   total_qty: number;
+  freebie_qty: number;
 }
 
 export interface RtsStockInSessionScanResult {
   result: "ok" | "duplicate_session" | "replayed";
   session: RtsStockInSession;
   lookup: {
-    kind: "honey" | "dept";
-    lookup_kind: "sku" | "unique_honey" | "unique_dept";
+    kind: "honey" | "dept" | "freebie";
+    lookup_kind: "sku" | "unique_honey" | "unique_dept" | "freebie";
     code: string;
     product_label: string;
     variant?: string | null;
@@ -351,6 +352,21 @@ export function rtsStockInSessionConfirm(sessionId: number) {
   return apiPost<{ session: RtsStockInSession }>("rts.php", "stock_in_session_confirm", {
     session_id: sessionId,
   });
+}
+
+export interface RtsFreebieReturnRow {
+  id: number;
+  session_id: number;
+  product_key: string;
+  product_label: string;
+  code: string;
+  qty: number;
+  confirmed_at: string;
+  confirmed_by_name: string;
+}
+
+export function rtsStockInFreebieHistory(limit = 100) {
+  return apiGet<{ rows: RtsFreebieReturnRow[] }>("rts.php", "stock_in_freebie_history", { limit });
 }
 
 export interface RtsDamagedUseLogRow {
