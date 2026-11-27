@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { AlertTriangle, ChevronDown, Loader2, Printer, ScanLine, Tag, Undo2 } from "lucide-react";
+import { OverrideConfirmModal } from "@/app/components/approvals/OverrideConfirmModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { HoneyStageContent, HoneyStageTabs } from "@/app/components/honey/HoneyStageTabs";
@@ -121,16 +122,11 @@ export function HoneyPackagingPage() {
   const [combModal, setCombModal] = useState<"scan" | "admin" | null>(null);
   const [pendingCombLabels, setPendingCombLabels] = useState(0);
   const [undoTarget, setUndoTarget] = useState<UndoLineTarget | null>(null);
-  const [undoStep, setUndoStep] = useState<"password" | "sure" | null>(null);
-  const [undoPassword, setUndoPassword] = useState("");
   const [undoBusy, setUndoBusy] = useState(false);
   const [undoError, setUndoError] = useState<string | null>(null);
   const [undoSuccess, setUndoSuccess] = useState<string | null>(null);
   const combScanTitleId = useId();
   const combAdminTitleId = useId();
-  const undoTitleId = useId();
-  const undoSureTitleId = useId();
-  const undoPasswordId = useId();
 
   const refreshPendingComb = useCallback(async () => {
     if (!canCombBarcodes) {
@@ -165,28 +161,11 @@ export function HoneyPackagingPage() {
   const closeUndoModal = () => {
     if (undoBusy) return;
     setUndoTarget(null);
-    setUndoStep(null);
-    setUndoPassword("");
     setUndoError(null);
-  };
-
-  const advanceUndoToSure = () => {
-    if (!undoTarget || scanDate === "all") return;
-    if (undoPassword.trim() === "") {
-      setUndoError("Administrator password is required.");
-      return;
-    }
-    setUndoError(null);
-    setUndoStep("sure");
   };
 
   const submitUndoLine = async () => {
-    if (!undoTarget || scanDate === "all" || undoStep !== "sure") return;
-    if (undoPassword.trim() === "") {
-      setUndoStep("password");
-      setUndoError("Administrator password is required.");
-      return;
-    }
+    if (!undoTarget || scanDate === "all") return;
     setUndoBusy(true);
     setUndoError(null);
     try {
@@ -195,19 +174,26 @@ export function HoneyPackagingPage() {
         scanned_by: undoTarget.user_id,
         variant: undoTarget.variant,
         size: undoTarget.size,
-        admin_password: undoPassword.trim(),
+        expected_qty: undoTarget.qty,
       });
-      const qty = res.undo.qty;
+      if (res.pending) {
+        setUndoSuccess(
+          res.email_sent === false
+            ? `Sent for HR approval (#${res.request_id}). Email could not be sent${res.email_error ? `: ${res.email_error}` : "."}`
+            : `Sent to HR manager for approval (#${res.request_id}).`,
+        );
+        setUndoTarget(null);
+        window.setTimeout(() => setUndoSuccess(null), 6000);
+        return;
+      }
+      const qty = res.undo?.qty ?? undoTarget.qty;
       setUndoSuccess(
         `Undid ${qty.toLocaleString()} × ${variantLabel(undoTarget.variant)} · ${sizeDisplay(undoTarget.size)} for ${undoTarget.name}.`,
       );
       setUndoTarget(null);
-      setUndoStep(null);
-      setUndoPassword("");
       await refresh();
       window.setTimeout(() => setUndoSuccess(null), 5000);
     } catch (e) {
-      setUndoStep("password");
       setUndoError(e instanceof ApiError ? e.message : "Could not undo that stock-in line.");
     } finally {
       setUndoBusy(false);
@@ -439,8 +425,6 @@ export function HoneyPackagingPage() {
                                   className="inline-flex min-h-8 items-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-medium text-foreground"
                                   onClick={() => {
                                     setUndoError(null);
-                                    setUndoPassword("");
-                                    setUndoStep("password");
                                     setUndoTarget({
                                       user_id: row.user_id,
                                       name: row.name,
@@ -526,133 +510,30 @@ export function HoneyPackagingPage() {
         </div>
       </HoneyStageContent>
 
-      {undoTarget && undoStep === "password" && (
-        <AppModal
-          open
-          onClose={closeUndoModal}
-          panelClassName="max-w-md w-full"
-          labelledBy={undoTitleId}
-        >
-          <AppModalHeader
-            title="Undo packaging stock-in"
-            titleId={undoTitleId}
-            subtitle="Reverses this report line and finished on-hand. Enter the administrator password from Settings."
-            onClose={closeUndoModal}
-          />
-          <AppModalBody className="space-y-3 text-sm">
-            {undoError ? <AppErrorBanner message={undoError} /> : null}
-            <dl className="rounded-lg border border-border bg-secondary/30 px-3 py-2 space-y-1.5 text-xs">
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Person</dt>
-                <dd className="font-medium text-foreground text-right">{undoTarget.name}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Date</dt>
-                <dd className="font-medium text-foreground text-right">{scanDateLabel(scanDate)}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Line</dt>
-                <dd className="font-medium text-foreground text-right">
-                  {variantLabel(undoTarget.variant)} · {sizeDisplay(undoTarget.size)}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Qty</dt>
-                <dd className="font-semibold tabular-nums text-foreground text-right">
-                  {undoTarget.qty.toLocaleString()} bottles
-                </dd>
-              </div>
-            </dl>
-            <p className="text-[11px] text-muted-foreground">
-              Bottles already sold or packed cannot be undone. Bottling packaging materials from the
-              original stock-in are not put back.
-            </p>
-            <div>
-              <label htmlFor={undoPasswordId} className="text-xs text-muted-foreground block mb-1">
-                Administrator password
-              </label>
-              <input
-                id={undoPasswordId}
-                type="password"
-                autoComplete="current-password"
-                value={undoPassword}
-                onChange={e => setUndoPassword(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    advanceUndoToSure();
-                  }
-                }}
-                className="w-full border rounded-lg px-3 py-2"
-                autoFocus
-              />
+      <OverrideConfirmModal
+        open={!!undoTarget}
+        busy={undoBusy}
+        error={undoError}
+        title="Send packaging undo for approval?"
+        summary={
+          undoTarget ? (
+            <div className="space-y-2">
+              <p>
+                Undo{" "}
+                <span className="font-semibold tabular-nums">{undoTarget.qty.toLocaleString()}</span> ×{" "}
+                {variantLabel(undoTarget.variant)} · {sizeDisplay(undoTarget.size)} for{" "}
+                <span className="font-semibold">{undoTarget.name}</span> on {scanDateLabel(scanDate)}.
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Bottles already sold or packed cannot be undone. Bottling packaging materials from the
+                original stock-in are not put back.
+              </p>
             </div>
-          </AppModalBody>
-          <AppModalFooter>
-            <Button type="button" variant="outline" onClick={closeUndoModal} disabled={undoBusy} className="min-h-11 flex-1">
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={undoBusy}
-              onClick={advanceUndoToSure}
-              className="min-h-11 flex-1"
-              data-testid="packaging-undo-continue"
-            >
-              Continue
-            </Button>
-          </AppModalFooter>
-        </AppModal>
-      )}
-
-      {undoTarget && undoStep === "sure" && (
-        <AppModal
-          open
-          onClose={closeUndoModal}
-          panelClassName="max-w-md w-full"
-          labelledBy={undoSureTitleId}
-        >
-          <AppModalHeader
-            title="Are you sure?"
-            titleId={undoSureTitleId}
-            subtitle="This cannot be undone from here. Stock-in history and finished on-hand will change now."
-            onClose={closeUndoModal}
-          />
-          <AppModalBody className="space-y-3 text-sm">
-            {undoError ? <AppErrorBanner message={undoError} /> : null}
-            <p className="text-sm text-foreground">
-              Undo{" "}
-              <span className="font-semibold tabular-nums">{undoTarget.qty.toLocaleString()}</span>{" "}
-              × {variantLabel(undoTarget.variant)} · {sizeDisplay(undoTarget.size)} for{" "}
-              <span className="font-semibold">{undoTarget.name}</span> on {scanDateLabel(scanDate)}?
-            </p>
-          </AppModalBody>
-          <AppModalFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={undoBusy}
-              onClick={() => {
-                if (undoBusy) return;
-                setUndoError(null);
-                setUndoStep("password");
-              }}
-              className="min-h-11 flex-1"
-            >
-              Back
-            </Button>
-            <Button
-              type="button"
-              disabled={undoBusy}
-              onClick={() => void submitUndoLine()}
-              className="min-h-11 flex-1"
-              data-testid="packaging-undo-confirm"
-            >
-              {undoBusy ? <Loader2 className="inline animate-spin" size={14} /> : "Yes, undo"}
-            </Button>
-          </AppModalFooter>
-        </AppModal>
-      )}
+          ) : null
+        }
+        onClose={closeUndoModal}
+        onConfirm={submitUndoLine}
+      />
 
       {combModal === "scan" && (
         <AppModal

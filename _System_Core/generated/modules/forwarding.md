@@ -1,7 +1,7 @@
 ---
 title: forwarding
 source: includes/forwarding.php
-generated: 2026-11-24T09:12:39+01:00
+generated: 2026-11-27T06:28:58+01:00
 type: module
 function_count: 15
 ---
@@ -123,8 +123,8 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/auth.php`:61 — `'forwarding' => rts_forwarding_api_payload(),`
 - `api/v1/auth.php`:81 — `'forwarding' => rts_forwarding_api_payload(),`
-- `api/v1/auth.php`:101 — `'forwarding' => rts_forwarding_api_payload(),`
-- `api/v1/auth.php`:139 — `'forwarding' => rts_forwarding_api_payload(),`
-- `api/v1/auth.php`:161 — `'forwarding' => rts_forwarding_api_payload(),`
-- `api/v1/auth.php`:249 — `'forwarding' => rts_forwarding_api_payload(),`
+- `api/v1/auth.php`:103 — `'forwarding' => rts_forwarding_api_payload(),`
+- `api/v1/auth.php`:143 — `'forwarding' => rts_forwarding_api_payload(),`
+- `api/v1/auth.php`:165 — `'forwarding' => rts_forwarding_api_payload(),`
+- `api/v1/auth.php`:253 — `'forwarding' => rts_forwarding_api_payload(),`
 

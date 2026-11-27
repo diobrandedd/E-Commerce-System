@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-11-24T09:12:30+01:00
+generated: 2026-11-27T06:28:48+01:00
 type: module
 function_count: 21
 ---
@@ -48,7 +48,7 @@ function_count: 21
 
 **Tables:** `dept_inventory_rows`
 
-**Callers (13):**
+**Callers (14):**
 
 - `includes/dept_inventory.php`:578 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/dept_inventory.php`:621 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
@@ -57,6 +57,7 @@ function_count: 21
 - `includes/dept_production.php`:951 — `$row = dept_inventory_ensure_row($pdo, $userId, 'brc');`
 - `includes/dept_production.php`:1041 — `$row = dept_inventory_ensure_row($pdo, $userId, 'jar_cacao');`
 - `includes/dept_production.php`:1071 — `$row = dept_inventory_ensure_row($pdo, $userId, 'honey_comb');`
+- `includes/honey_bottle_barcodes.php`:2860 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/inventory_check_apply.php`:252 — `$row = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/pack_cancel_restock.php`:597 — `$fin = dept_inventory_ensure_row($pdo, $userId, $productKey);`
 - `includes/pos_refund.php`:167 — `$fin = dept_inventory_ensure_row($pdo, 0, $productKey);`
@@ -234,14 +235,16 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `stock_entries`, `stocks`
 
-**Callers (2):**
+**Callers (3):**
 
-- `api/v1/honey.php`:1588 — `$result = dept_raw_set_bags_on_hand(`
+- `api/v1/honey.php`:1603 — `$result = dept_raw_set_bags_on_hand(`
 - `includes/dept_inventory.php`:923 — `return dept_raw_set_bags_on_hand($pdo, $userId, $productKey, $newKg, $note, $logSource);`
+- `includes/override_approvals.php`:402 — `return dept_raw_set_bags_on_hand(`
 
 ## dept_raw_set_grams_on_hand {#dept_raw_set_grams_on_hand}
 
-**Callers (1):**
+**Callers (2):**
 
-- `api/v1/honey.php`:1579 — `$result = dept_raw_set_grams_on_hand(`
+- `api/v1/honey.php`:1594 — `$result = dept_raw_set_grams_on_hand(`
+- `includes/override_approvals.php`:392 — `return dept_raw_set_grams_on_hand(`
 

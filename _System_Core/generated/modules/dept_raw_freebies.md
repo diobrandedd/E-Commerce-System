@@ -1,7 +1,7 @@
 ---
 title: dept_raw_freebies
 source: includes/dept_raw_freebies.php
-generated: 2026-11-24T09:12:38+01:00
+generated: 2026-11-27T06:28:56+01:00
 type: module
 function_count: 15
 ---
@@ -54,7 +54,7 @@ function_count: 15
 
 ## dept_raw_freebie_label {#dept_raw_freebie_label}
 
-**Callers (16):**
+**Callers (17):**
 
 - `api/v1/dept_pouch_barcodes.php`:323 — `api_fail('This freebie barcode belongs to ' . dept_raw_freebie_label($freebie['product_key']) . '.', 422);`
 - `api/v1/dept_pouch_barcodes.php`:340 — `'label' => dept_raw_freebie_label($productKey),`
@@ -71,13 +71,14 @@ function_count: 15
 - `includes/pos_unified.php`:274 — `'label' => dept_raw_freebie_label($productKey),`
 - `includes/pos_unified.php`:313 — `'label' => dept_raw_freebie_label($productKey),`
 - `includes/pos_unified.php`:369 — `'label' => (string) ($fb['label'] ?? dept_raw_freebie_label($productKey)),`
+- `includes/rts_stock_in_sessions.php`:267 — `$label = dept_raw_freebie_label($productKey);`
 - `includes/sku_barcodes.php`:756 — `'label' => dept_raw_freebie_label($productKey),`
 
 ## dept_raw_freebie_barcode_fetch_by_code {#dept_raw_freebie_barcode_fetch_by_code}
 
 **Tables:** `dept_raw_freebie_barcodes`
 
-**Callers (8):**
+**Callers (9):**
 
 - `api/v1/dept_pouch_barcodes.php`:320 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/barcode_verify.php`:23 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
@@ -85,6 +86,7 @@ function_count: 15
 - `includes/inventory_check.php`:554 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/pack_cancel_restock.php`:255 — `if (dept_raw_freebie_barcode_fetch_by_code($pdo, $code) !== null) {`
 - `includes/pos_unified.php`:175 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
+- `includes/rts_stock_in_sessions.php`:262 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 - `includes/sku_barcodes.php`:562 — `if (dept_raw_freebie_barcode_fetch_by_code($pdo, $code) !== null) {`
 - `includes/sku_barcodes.php`:747 — `$freebie = dept_raw_freebie_barcode_fetch_by_code($pdo, $code);`
 
@@ -186,9 +188,11 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Tables:** `dept_raw_freebie_log`, `dept_raw_freebie_balances`
 
-**Callers (1):**
+**Callers (3):**
 
+- `includes/honey_bottle_barcodes.php`:2808 — `dept_raw_record_freebie_restock(`
 - `includes/pos_refund.php`:255 — `dept_raw_record_freebie_restock(`
+- `includes/rts_stock_in_sessions.php`:533 — `dept_raw_record_freebie_restock(`
 
 ## dept_raw_freebie_history {#dept_raw_freebie_history}
 

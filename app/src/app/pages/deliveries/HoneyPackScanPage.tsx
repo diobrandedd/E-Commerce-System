@@ -1,5 +1,17 @@
 import { useCallback, useEffect, useId, useState } from "react";
-import { BookOpen, Camera, CheckCircle2, ChevronDown, ChevronRight, Loader2, Pencil, Trash2, XCircle } from "lucide-react";
+import {
+  BookOpen,
+  Camera,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Pencil,
+  Trash2,
+  Undo2,
+  XCircle,
+} from "lucide-react";
+import { OverrideConfirmModal } from "@/app/components/approvals/OverrideConfirmModal";
 import { PageLayout } from "@/app/components/PageLayout";
 import { AppModal, AppModalBody, AppModalFooter, AppModalHeader } from "@/app/components/AppModal";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -7,12 +19,14 @@ import type { ScannerDecodeFeedback } from "@/app/components/scan/TrackingQrScan
 import { Button } from "@/app/components/ui/button";
 import {
   AppErrorBanner,
+  AppPressable,
   AppSectionEnter,
   AppSuccessNotice,
   AppStepSwitch,
   appHeaderActionClass,
   appHoverRow,
 } from "@/app/components/layout/appFeedbackMotion";
+import { useAuth } from "@/app/context/AuthContext";
 import { ApiError } from "@/app/lib/api";
 import {
   bottleBarcodesApi,
@@ -21,6 +35,7 @@ import {
   type HoneyPackSessionItem,
   type HoneyPackSessionListRow,
 } from "@/app/lib/bottleBarcodes";
+import { canExecutiveDirectEdit } from "@/app/lib/honeyPermissions";
 import { skuBarcodesApi } from "@/app/lib/skuBarcodes";
 import { playScanBeep } from "@/app/lib/scanBeep";
 import { useScanWedgeField } from "@/app/lib/scanWedgeField";
@@ -791,6 +806,8 @@ function PackScanLivePanel() {
 
 
 function PackScanHistoryPanel() {
+  const { user } = useAuth();
+  const canUndo = canExecutiveDirectEdit(user);
   const [from, setFrom] = useState(() => daysAgoIso(13));
   const [to, setTo] = useState(() => todayIso());
   const [batchNo, setBatchNo] = useState("");
@@ -807,7 +824,11 @@ function PackScanHistoryPanel() {
   const [perPage, setPerPage] = useState(30);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [undoTarget, setUndoTarget] = useState<HoneyPackSessionListRow | null>(null);
+  const [undoBusy, setUndoBusy] = useState(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -848,10 +869,41 @@ function PackScanHistoryPanel() {
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
+  const submitUndoSession = async () => {
+    if (!undoTarget) return;
+    setUndoBusy(true);
+    setUndoError(null);
+    try {
+      const res = await bottleBarcodesApi.packSessionUndo({
+        session_id: undoTarget.id,
+        expected_item_count: undoTarget.item_count,
+      });
+      if (res.pending) {
+        setOk(
+          res.email_sent === false
+            ? `Sent for HR approval (#${res.request_id}). Email could not be sent${res.email_error ? `: ${res.email_error}` : "."}`
+            : `Sent to HR manager for approval (#${res.request_id}).`,
+        );
+        setUndoTarget(null);
+        window.setTimeout(() => setOk(null), 6000);
+        return;
+      }
+      setOk(`Undid pack session #${undoTarget.id}. Items returned to inventory / RTS / freebies.`);
+      setUndoTarget(null);
+      setExpanded(null);
+      await refresh();
+      window.setTimeout(() => setOk(null), 5000);
+    } catch (e) {
+      setUndoError(e instanceof ApiError ? e.message : "Could not undo that pack session.");
+    } finally {
+      setUndoBusy(false);
+    }
+  };
+
   return (
     <AppSectionEnter className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Confirmed pack sessions only. Read-only — does not change stock or past scans.
+        Confirmed pack sessions only. Executives can undo a whole session (HR approval).
       </p>
       <div className="flex flex-wrap gap-2 items-end bg-card border rounded-xl p-3">
         <label className="text-xs text-muted-foreground">
@@ -907,6 +959,7 @@ function PackScanHistoryPanel() {
       </div>
 
       {error && <AppErrorBanner message={error} />}
+      <AppSuccessNotice message={ok} />
       {loading ? (
         <p className="text-sm text-muted-foreground py-8 text-center">
           <Loader2 className="inline animate-spin" size={16} /> Loading…
@@ -938,6 +991,22 @@ function PackScanHistoryPanel() {
                 </button>
                 {open ? (
                   <div className="border-t px-3 py-3 space-y-3 bg-secondary/20">
+                    {canUndo ? (
+                      <div className="flex justify-end">
+                        <AppPressable
+                          type="button"
+                          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium text-foreground"
+                          onClick={() => {
+                            setUndoError(null);
+                            setUndoTarget(r);
+                          }}
+                          data-testid={`pack-session-undo-${r.id}`}
+                        >
+                          <Undo2 size={13} />
+                          Undo session
+                        </AppPressable>
+                      </div>
+                    ) : null}
                     <div>
                       <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">By batch</p>
                       <div className="overflow-x-auto rounded-lg border bg-card">
@@ -1018,6 +1087,41 @@ function PackScanHistoryPanel() {
           </div>
         </div>
       )}
+
+      <OverrideConfirmModal
+        open={!!undoTarget}
+        busy={undoBusy}
+        error={undoError}
+        title="Send pack session undo for approval?"
+        summary={
+          undoTarget ? (
+            <div className="space-y-2">
+              <p>
+                Undo pack session <span className="font-semibold">#{undoTarget.id}</span> by{" "}
+                <span className="font-semibold">{undoTarget.confirmed_by_name || "—"}</span> on{" "}
+                {formatWhen(undoTarget.confirmed_at)} (
+                <span className="tabular-nums">{undoTarget.item_count}</span> line
+                {undoTarget.item_count === 1 ? "" : "s"}).
+              </p>
+              {(undoTarget.grouped ?? []).length > 0 ? (
+                <p className="text-xs text-muted-foreground capitalize">
+                  {(undoTarget.grouped ?? []).map(g => `${g.qty}× ${packItemLabel(g)}`).join(" · ")}
+                </p>
+              ) : null}
+              <p className="text-[11px] text-muted-foreground">
+                Items return to inventory, RTS sellable, or freebies. Fails if any unique barcode has
+                already been shipped, sold, or restocked.
+              </p>
+            </div>
+          ) : null
+        }
+        onClose={() => {
+          if (undoBusy) return;
+          setUndoTarget(null);
+          setUndoError(null);
+        }}
+        onConfirm={submitUndoSession}
+      />
     </AppSectionEnter>
   );
 }

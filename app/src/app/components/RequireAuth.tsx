@@ -34,7 +34,13 @@ export function RequireAuth({ children, roles, permission, allowPOS = false, red
   }
 
   if (!user) {
-    return <Navigate to={redirectTo} state={{ from: location.pathname }} replace />;
+    const from = `${location.pathname}${location.search}`;
+    try {
+      if (from && from !== "/") sessionStorage.setItem("pyx_post_login", from);
+    } catch {
+      /* private mode / blocked storage */
+    }
+    return <Navigate to={redirectTo} state={{ from }} replace />;
   }
 
   if (permission && !hasPermission(permissions, user.role, permission)) {

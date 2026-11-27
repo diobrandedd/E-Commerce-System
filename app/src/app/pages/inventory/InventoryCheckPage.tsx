@@ -6,7 +6,7 @@ import { PageLayout } from "@/app/components/PageLayout";
 import { InventoryCheckBatchDocs } from "@/app/components/inventory/InventoryCheckBatchDocs";
 import { InventoryCheckAppliedRunDetailModal } from "@/app/components/inventory/InventoryCheckAppliedRunDetailModal";
 import { InventoryCheckHistoryDetailModal } from "@/app/components/inventory/InventoryCheckHistoryDetailModal";
-import { AdminOverridePasswordModal } from "@/app/components/inventory/AdminOverridePasswordModal";
+import { OverrideConfirmModal } from "@/app/components/approvals/OverrideConfirmModal";
 import { InventoryCheckKindBadge } from "@/app/components/inventory/InventoryCheckKindBadge";
 import { Button } from "@/app/components/ui/button";
 import { BarcodeCameraScannerModal } from "@/app/components/scan/BarcodeCameraScannerModal";
@@ -678,7 +678,7 @@ export function InventoryCheckPage() {
     setPwOpen(true);
   };
 
-  const finalizeWithPassword = async (adminPassword: string) => {
+  const finalizeWithConfirm = async () => {
     if (!canViewAll) {
       setPwError("Only full-report accounts can update inventory from audits.");
       return;
@@ -690,14 +690,28 @@ export function InventoryCheckPage() {
     try {
       const closedIds = [...selectedHistoryIds];
       if (closedIds.length < 1) throw new Error("Select at least one closed audit.");
-      const res = await inventoryCheckApi.finalizeMerged(closedIds, adminPassword);
-      setCompare(res.compare);
-      const voided = res.compare.run.barcodes_voided_count ?? 0;
-      setOk(
-        voided > 0
-          ? `Inventory updated to audited counts. ${voided} unique barcode(s) voided. Variance saved to history.`
-          : "Inventory updated to audited counts. Variance saved to history.",
-      );
+      const res = await inventoryCheckApi.finalizeMerged(closedIds);
+      if (res.pending) {
+        setOk(
+          res.email_sent === false
+            ? `Sent for HR approval (#${res.request_id}). Email could not be sent${res.email_error ? `: ${res.email_error}` : "."}`
+            : `Sent to HR manager for approval (#${res.request_id}).`,
+        );
+        setPwOpen(false);
+        setCompareOpen(false);
+        return;
+      }
+      if (res.compare) {
+        setCompare(res.compare);
+        const voided = res.compare.run.barcodes_voided_count ?? 0;
+        setOk(
+          voided > 0
+            ? `Inventory updated to audited counts. ${voided} unique barcode(s) voided. Variance saved to history.`
+            : "Inventory updated to audited counts. Variance saved to history.",
+        );
+      } else {
+        setOk("Inventory updated to audited counts.");
+      }
       setSelectedHistoryIds([]);
       setPwOpen(false);
       setCompareOpen(false);
@@ -1581,17 +1595,25 @@ export function InventoryCheckPage() {
         </AppModalBody>
       </AppModal>
 
-      <AdminOverridePasswordModal
+      <OverrideConfirmModal
         open={pwOpen}
         busy={pwBusy}
         error={pwError}
-        description="Updating inventory from this audit needs the administrator password from System Settings."
+        title="Send Check Inventory confirm for approval?"
+        summary={
+          <p>
+            Update finished stock from{" "}
+            <span className="font-semibold tabular-nums">{selectedHistoryIds.length}</span> closed audit
+            {selectedHistoryIds.length === 1 ? "" : "s"}
+            {selectedHistoryIds.length > 0 ? ` (#${selectedHistoryIds.join(", #")})` : ""}.
+          </p>
+        }
         onClose={() => {
           if (pwBusy) return;
           setPwOpen(false);
           setPwError(null);
         }}
-        onConfirm={finalizeWithPassword}
+        onConfirm={finalizeWithConfirm}
       />
 
       {historyDetail ? (

@@ -1,6 +1,6 @@
 ---
 title: API Index
-generated: 2026-11-24T09:12:17+01:00
+generated: 2026-11-27T06:28:39+01:00
 type: memory-bank
 ---
 
@@ -19,6 +19,22 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 - **URL:** `/rts/api/v1/_costing_helpers.php?action=...`
 - **Includes:** `api/v1/_bootstrap.php`
 - **Note:** No `api_dispatch` map (inline handlers or helper file).
+
+### `approvals.php`
+
+- **Path:** `api/v1/approvals.php`
+- **URL:** `/rts/api/v1/approvals.php?action=...`
+- **Includes:** `api/v1/_bootstrap.php`
+
+| Action | Handler | Domain calls |
+|--------|---------|--------------|
+| `list` | `api_approvals_list()` | `override_approval_list()`, `ims_pdo()`, `override_approval_hr_manager_public()`, `override_approval_is_hr_manager()` |
+| `get` | `api_approvals_get()` | `override_approval_get()`, `ims_pdo()`, `override_approval_is_hr_manager()` |
+| `approve` | `api_approvals_approve()` | `override_approval_approve()`, `ims_pdo()`, `override_approval_get()` |
+| `reject` | `api_approvals_reject()` | `override_approval_reject()`, `ims_pdo()` |
+| `pending_count` | `api_approvals_pending_count()` | `override_approval_pending_count()`, `ims_pdo()` |
+| `unread_list` | `api_approvals_unread_list()` | `override_approval_unread_list()`, `ims_pdo()` |
+| `mark_viewed` | `api_approvals_mark_viewed()` | `override_approval_mark_viewed()`, `ims_pdo()` |
 
 ### `ar.php`
 
@@ -43,8 +59,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 
 | Action | Handler | Domain calls |
 |--------|---------|--------------|
-| `me` | `api_auth_me()` | `ims_pos_authenticated()`, `rts_forwarding_api_payload()`, `ims_current_user()`, `ims_user_permissions()` |
-| `login` | `api_auth_login()` | `ims_login_user()`, `ims_current_user()`, `ims_user_permissions()`, `rts_forwarding_api_payload()` |
+| `me` | `api_auth_me()` | `ims_pos_authenticated()`, `rts_forwarding_api_payload()`, `ims_current_user()`, `ims_user_permissions()`, `override_approval_is_hr_manager()` |
+| `login` | `api_auth_login()` | `ims_login_user()`, `ims_current_user()`, `ims_user_permissions()`, `override_approval_is_hr_manager()`, `rts_forwarding_api_payload()` |
 | `pos_login` | `api_auth_pos_login()` | `ims_login_pos()`, `rts_forwarding_api_payload()`, `pos_api_token_issue()`, `ims_pdo()` |
 | `pos_staff_login` | `api_auth_pos_staff_login()` | `pos_mobile_authenticate()`, `ims_pdo()`, `pos_mobile_user_can_login()`, `ims_user_permissions()`, `rts_forwarding_api_payload()`, `pos_api_token_issue()` |
 | `verify_executive` | `api_auth_verify_executive()` | `pos_mobile_verify_executive()`, `ims_pdo()` |
@@ -104,7 +120,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `packaging_options` | `api_bottle_packaging_options()` | `honey_bottle_packaging_options()`, `ims_pdo()` |
 | `packaging_scan_report` | `api_bottle_packaging_scan_report()` | `honey_bottle_packaging_scan_report()`, `ims_pdo()` |
 | `packaging_scan_log` | `api_bottle_packaging_scan_log()` | `honey_bottle_packaging_scan_log()`, `ims_pdo()` |
-| `packaging_scan_line_undo` | `api_bottle_packaging_scan_line_undo()` | `honey_bottle_can_undo_packaging_scan_line()`, `honey_bottle_packaging_scan_line_undo()`, `ims_pdo()` |
+| `packaging_scan_line_undo` | `api_bottle_packaging_scan_line_undo()` | `honey_bottle_can_undo_packaging_scan_line()`, `ims_pdo()`, `override_approval_packaging_line_qty()`, `override_approval_is_hr_manager()`, `honey_bottle_packaging_scan_line_undo()`, `override_approval_create()` |
+| `pack_session_undo` | `api_bottle_pack_session_undo()` | `honey_bottle_can_undo_packaging_scan_line()`, `ims_pdo()`, `honey_bottle_pack_session_get()`, `honey_bottle_pack_session_item_count()`, `override_approval_is_hr_manager()`, `honey_bottle_pack_session_undo()`, `override_approval_create()` |
 | `ensure_packaging_shell` | `api_bottle_ensure_packaging_shell()` | `honey_fetch_packaging_by_production()`, `ims_pdo()`, `honey_bottle_ensure_packaging_shell()`, `honey_bottle_serialize_packaging_option()` |
 | `create_custom_packaging` | `api_bottle_create_custom_packaging()` | `honey_bottle_can_request()`, `honey_bottle_user_can_generate()`, `honey_bottle_create_custom_packaging()`, `ims_pdo()`, `honey_bottle_serialize_packaging_option()` |
 
@@ -344,7 +361,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `warehouse_set_unit_cost` | `api_honey_warehouse_set_unit_cost()` | `honey_pricing_set_warehouse_row_cost()`, `ims_pdo()`, `honey_pricing_pending_count()` |
 | `pricing_sync_stocks` | `api_honey_pricing_sync_stocks()` | `honey_pricing_sync_all_variant_stocks()`, `ims_pdo()` |
 | `edit_log_list` | `api_honey_edit_log_list()` | `inventory_edit_log_list()`, `ims_pdo()` |
-| `dept_raw_executive_set` | `api_honey_dept_raw_executive_set()` | `ims_is_executive()`, `ims_pdo()`, `dept_raw_set_grams_on_hand()`, `dept_raw_set_bags_on_hand()` |
+| `dept_raw_executive_set` | `api_honey_dept_raw_executive_set()` | `ims_is_executive()`, `ims_pdo()`, `override_approval_is_hr_manager()`, `dept_raw_set_grams_on_hand()`, `dept_raw_set_bags_on_hand()`, `override_approval_create()` |
 
 ### `inventory_check.php`
 
@@ -372,8 +389,8 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `compare_get` | `api_inventory_check_compare_get()` | `ims_pdo()`, `inventory_check_user_can_access_compare_run()`, `inventory_check_compare_get()` |
 | `compare_list` | `api_inventory_check_compare_list()` | `inventory_check_compare_list()`, `ims_pdo()` |
 | `applied_runs_list` | `api_inventory_check_applied_runs_list()` | `inventory_check_history_date_span()`, `inventory_check_applied_runs_list()`, `ims_pdo()` |
-| `finalize` | `api_inventory_check_finalize()` | `ims_pdo()`, `inventory_check_event_get()`, `inventory_check_finalize_with_sync()` |
-| `finalize_merged` | `api_inventory_check_finalize_merged()` | `ims_pdo()`, `inventory_check_event_get()`, `inventory_check_finalize_with_sync()` |
+| `finalize` | `api_inventory_check_finalize()` | `ims_pdo()`, `inventory_check_event_get()`, `override_approval_is_hr_manager()`, `inventory_check_finalize_with_sync()`, `override_approval_create()` |
+| `finalize_merged` | `api_inventory_check_finalize_merged()` | `ims_pdo()`, `inventory_check_event_get()`, `override_approval_is_hr_manager()`, `inventory_check_finalize_with_sync()`, `override_approval_create()` |
 
 ### `materials.php`
 
@@ -594,6 +611,7 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `stock_in_session_remove` | `api_rts_stock_in_session_remove()` | `rts_stock_in_session_remove()`, `ims_pdo()` |
 | `stock_in_session_cancel` | `api_rts_stock_in_session_cancel()` | `rts_stock_in_session_discard()`, `ims_pdo()` |
 | `stock_in_session_confirm` | `api_rts_stock_in_session_confirm()` | `rts_stock_in_session_confirm()`, `ims_pdo()` |
+| `stock_in_freebie_history` | `api_rts_stock_in_freebie_history()` | `rts_stock_in_freebie_history()`, `ims_pdo()` |
 | `use_damaged` | `api_rts_use_damaged()` | `rts_damaged_use_apply()`, `ims_pdo()` |
 | `damaged_use_log` | `api_rts_damaged_use_log()` | `rts_damaged_use_events_list()`, `ims_pdo()` |
 | `sync_status` | `api_rts_sync_status_action()` | `rts_inventory_sync_status()`, `ims_pdo()` |
@@ -682,8 +700,12 @@ See also: [[110_Include_Graph]] · [[130_Module_Index]] · [[140_Frontend_API_Cl
 | `brc_bom_save` | `api_settings_brc_bom_save()` | `dept_brc_bom_save()`, `ims_pdo()`, `dept_brc_bom_snapshot()` |
 | `jar_cacao_bom_get` | `api_settings_jar_cacao_bom_get()` | `dept_jar_cacao_bom_snapshot()`, `ims_pdo()` |
 | `jar_cacao_bom_save` | `api_settings_jar_cacao_bom_save()` | `dept_jar_cacao_bom_save()`, `ims_pdo()`, `dept_jar_cacao_bom_snapshot()` |
-| `admin_password_get` | `api_settings_admin_password_get()` | `admin_override_password_configured()`, `ims_pdo()` |
-| `admin_password_save` | `api_settings_admin_password_save()` | `admin_override_password_set()`, `ims_pdo()` |
+| `hr_manager_get` | `api_settings_hr_manager_get()` | `override_approval_hr_manager_public()`, `ims_pdo()` |
+| `hr_manager_candidates` | `api_settings_hr_manager_candidates()` | `override_approval_hr_candidates()`, `ims_pdo()` |
+| `hr_manager_save` | `api_settings_hr_manager_save()` | `override_approval_hr_manager_save()`, `ims_pdo()` |
+| `mail_settings_get` | `api_settings_mail_settings_get()` | `app_mail_settings_public()`, `ims_pdo()` |
+| `mail_settings_save` | `api_settings_mail_settings_save()` | `app_mail_settings_save()`, `ims_pdo()` |
+| `mail_test` | `api_settings_mail_test()` | `ims_pdo()`, `app_setting_get()`, `app_mail_send()` |
 | `pyxacct_sync_get` | `api_settings_pyxacct_sync_get()` | `pyxacct_api_settings_public()`, `ims_pdo()` |
 | `pyxacct_sync_save` | `api_settings_pyxacct_sync_save()` | `pyxacct_api_settings_save()`, `ims_pdo()` |
 | `pyxacct_sync_test` | `api_settings_pyxacct_sync_test()` | `pyxacct_test_connection()`, `ims_pdo()` |

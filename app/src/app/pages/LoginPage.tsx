@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
 import pyxLogo from "@/imports/pyxfoodpr.png";
 import { AppErrorBanner } from "@/app/components/layout/appFeedbackMotion";
@@ -17,14 +17,41 @@ const DEFAULT_ROUTE_BY_ROLE: Record<Role, string> = {
   pos: "/pos",
 };
 
+/** Internal SPA path only (keeps email deep links like /approvals?id=12). */
+function safeReturnPath(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const path = raw.trim();
+  if (!path.startsWith("/") || path.startsWith("//") || path === "/") return null;
+  if (path.includes("://")) return null;
+  return path;
+}
+
+function consumePostLoginPath(role: Role, stateFrom: unknown): string {
+  let stored: string | null = null;
+  try {
+    stored = sessionStorage.getItem("pyx_post_login");
+    sessionStorage.removeItem("pyx_post_login");
+  } catch {
+    /* ignore */
+  }
+  return (
+    safeReturnPath(stateFrom) ??
+    safeReturnPath(stored) ??
+    DEFAULT_ROUTE_BY_ROLE[role] ??
+    "/dashboard"
+  );
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, user, mode, loading } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const stateFrom = (location.state as { from?: string } | null)?.from;
 
   useEffect(() => {
     if (loading) return;
@@ -33,10 +60,9 @@ export function LoginPage() {
       return;
     }
     if (user) {
-      const next = DEFAULT_ROUTE_BY_ROLE[user.role] ?? "/dashboard";
-      navigate(next, { replace: true });
+      navigate(consumePostLoginPath(user.role, stateFrom), { replace: true });
     }
-  }, [user, mode, loading, navigate]);
+  }, [user, mode, loading, navigate, stateFrom]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +74,7 @@ export function LoginPage() {
     setIsLoading(true);
     try {
       const u = await login(username.trim(), password);
-      const next = DEFAULT_ROUTE_BY_ROLE[u.role] ?? "/dashboard";
-      navigate(next, { replace: true });
+      navigate(consumePostLoginPath(u.role, stateFrom), { replace: true });
     } catch (e) {
       setFormError(e instanceof ApiError ? e.message : "Login failed.");
     } finally {

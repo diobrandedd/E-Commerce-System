@@ -270,24 +270,34 @@ export const inventoryCheckApi = {
   compareRun: (eventId: number) =>
     apiPost<InventoryCheckCompareResult>(ENDPOINT, "compare_run", { event_id: eventId }),
 
-  finalize: (eventId: number, adminPassword: string) =>
+  finalize: (eventId: number) =>
     apiPost<{
-      event: InventoryCheckEvent;
-      compare: InventoryCheckCompareResult;
+      applied?: boolean;
+      pending?: boolean;
+      request_id?: number;
+      summary?: string;
+      email_sent?: boolean;
+      email_error?: string | null;
+      event?: InventoryCheckEvent;
+      compare?: InventoryCheckCompareResult;
       closed?: boolean;
     }>(ENDPOINT, "finalize", {
       event_id: eventId,
-      admin_password: adminPassword,
     }),
 
-  finalizeMerged: (eventIds: number[], adminPassword: string) =>
+  finalizeMerged: (eventIds: number[]) =>
     apiPost<{
-      event: InventoryCheckEvent;
-      compare: InventoryCheckCompareResult;
+      applied?: boolean;
+      pending?: boolean;
+      request_id?: number;
+      summary?: string;
+      email_sent?: boolean;
+      email_error?: string | null;
+      event?: InventoryCheckEvent;
+      compare?: InventoryCheckCompareResult;
       closed?: boolean;
     }>(ENDPOINT, "finalize_merged", {
       event_ids: eventIds,
-      admin_password: adminPassword,
     }),
 
   compareGet: (runId: number) =>

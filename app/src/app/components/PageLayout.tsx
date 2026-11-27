@@ -44,12 +44,14 @@ function AppShellFrame() {
   const location = useLocation();
   const navigate = useNavigate();
   const { chrome } = usePageChrome();
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const isExec = can("inventory.requests.approve") || can("honey.executive_edit");
+  const isHr = !!user?.is_hr_manager;
+  const watchBell = isExec || isHr;
   const { unreadCount, unreadList, refresh: refreshNotifications } = useCorrectionNotifications();
 
   const { title, subtitle, actions, contentWidth = "default", notificationCount = 0 } = chrome;
-  const badgeCount = isExec ? unreadCount : notificationCount;
+  const badgeCount = watchBell ? unreadCount : notificationCount;
   const contentChromeClass = cn(
     "w-full mx-auto px-4 sm:px-6",
     CONTENT_WIDTH_CLASS[contentWidth],
@@ -86,6 +88,11 @@ function AppShellFrame() {
   const openSupplyRequest = (id: number) => {
     setBellOpen(false);
     navigate(`/inventory/requests?supply_request=${id}#supply-requests-section`);
+  };
+
+  const openOverrideApproval = (id: number) => {
+    setBellOpen(false);
+    navigate(`/approvals?id=${id}`);
   };
 
   return (
@@ -127,7 +134,7 @@ function AppShellFrame() {
                   onClick={() => {
                     setBellOpen(v => {
                       const next = !v;
-                      if (next && isExec) void refreshNotifications();
+                      if (next && watchBell) void refreshNotifications();
                       return next;
                     });
                   }}
@@ -141,7 +148,7 @@ function AppShellFrame() {
                     </span>
                   )}
                 </button>
-                {bellOpen && isExec && (
+                {bellOpen && watchBell && (
                   <div
                     className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-card border border-border rounded-xl shadow-lg z-50"
                     style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
@@ -152,7 +159,7 @@ function AppShellFrame() {
                         type="button"
                         onClick={() => {
                           setBellOpen(false);
-                          navigate("/inventory/requests");
+                          navigate(isHr ? "/approvals" : "/inventory/requests");
                         }}
                         className="text-xs text-[#C8900A] font-semibold hover:underline"
                       >
@@ -168,6 +175,10 @@ function AppShellFrame() {
                             <button
                               type="button"
                               onClick={() => {
+                                if (r.kind === "override_approval") {
+                                  openOverrideApproval(r.id);
+                                  return;
+                                }
                                 if (r.kind === "correction") {
                                   void openCorrectionRequest(r.id);
                                   return;
@@ -185,7 +196,15 @@ function AppShellFrame() {
                               }}
                               className="w-full text-left px-4 py-3 hover:bg-secondary/50 transition-colors"
                             >
-                              {r.kind === "correction" ? (
+                              {r.kind === "override_approval" ? (
+                                <>
+                                  <p className="text-xs font-semibold text-foreground">Override approval</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.summary}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-1">
+                                    {r.requested_by_name} · {r.created_at}
+                                  </p>
+                                </>
+                              ) : r.kind === "correction" ? (
                                 <>
                                   <p className="text-xs font-semibold text-foreground capitalize">{r.stage}</p>
                                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Gift, Loader2, Printer, ShoppingCart, Tag, Droplets, Leaf, Shield, Smartphone } from "lucide-react";
+import { Gift, Loader2, Mail, Printer, ShoppingCart, Tag, Droplets, Leaf, Shield, Smartphone, UserRound } from "lucide-react";
 import { PageLayout } from "@/app/components/PageLayout";
 import { Button } from "@/app/components/ui/button";
 import { Switch } from "@/app/components/ui/switch";
@@ -152,14 +152,25 @@ export function SettingsPage() {
   const [cacaoOk, setCacaoOk] = useState<string | null>(null);
   const [cacaoErr, setCacaoErr] = useState<string | null>(null);
 
-  const [adminPwConfigured, setAdminPwConfigured] = useState(false);
-  const [adminPwLoading, setAdminPwLoading] = useState(true);
-  const [adminPwSaving, setAdminPwSaving] = useState(false);
-  const [adminPwCurrent, setAdminPwCurrent] = useState("");
-  const [adminPwNew, setAdminPwNew] = useState("");
-  const [adminPwConfirm, setAdminPwConfirm] = useState("");
-  const [adminPwOk, setAdminPwOk] = useState<string | null>(null);
-  const [adminPwErr, setAdminPwErr] = useState<string | null>(null);
+  type HrCandidate = { id: number; username: string; name: string; email: string; role: string };
+  const [hrLoading, setHrLoading] = useState(true);
+  const [hrSaving, setHrSaving] = useState(false);
+  const [hrCandidates, setHrCandidates] = useState<HrCandidate[]>([]);
+  const [hrUserId, setHrUserId] = useState("");
+  const [hrEmail, setHrEmail] = useState("");
+  const [hrOk, setHrOk] = useState<string | null>(null);
+  const [hrErr, setHrErr] = useState<string | null>(null);
+
+  const [mailLoading, setMailLoading] = useState(true);
+  const [mailSaving, setMailSaving] = useState(false);
+  const [mailTesting, setMailTesting] = useState(false);
+  const [mailSmtpUser, setMailSmtpUser] = useState("");
+  const [mailFromName, setMailFromName] = useState("Pyx Tracker");
+  const [mailPass, setMailPass] = useState("");
+  const [mailPassSet, setMailPassSet] = useState(false);
+  const [mailAppBase, setMailAppBase] = useState("");
+  const [mailOk, setMailOk] = useState<string | null>(null);
+  const [mailErr, setMailErr] = useState<string | null>(null);
 
   const loadPins = useCallback(async () => {
     setPinsLoading(true);
@@ -340,16 +351,46 @@ export function SettingsPage() {
     }
   }, []);
 
-  const loadAdminPassword = useCallback(async () => {
-    setAdminPwLoading(true);
-    setAdminPwErr(null);
+  const loadHrManager = useCallback(async () => {
+    setHrLoading(true);
+    setHrErr(null);
     try {
-      const data = await apiGet<{ configured: boolean }>("settings.php", "admin_password_get");
-      setAdminPwConfigured(!!data.configured);
+      const [cfg, cands] = await Promise.all([
+        apiGet<{ user_id: number | null; email: string; name: string; configured: boolean }>(
+          "settings.php",
+          "hr_manager_get",
+        ),
+        apiGet<{ users: HrCandidate[] }>("settings.php", "hr_manager_candidates"),
+      ]);
+      setHrCandidates(cands.users ?? []);
+      setHrUserId(cfg.user_id ? String(cfg.user_id) : "");
+      setHrEmail(cfg.email ?? "");
     } catch (e) {
-      setAdminPwErr(e instanceof ApiError ? e.message : "Could not load administrator password status.");
+      setHrErr(e instanceof ApiError ? e.message : "Could not load HR manager settings.");
     } finally {
-      setAdminPwLoading(false);
+      setHrLoading(false);
+    }
+  }, []);
+
+  const loadMailSettings = useCallback(async () => {
+    setMailLoading(true);
+    setMailErr(null);
+    try {
+      const data = await apiGet<{
+        smtp_user: string;
+        from_name: string;
+        password_set: boolean;
+        app_public_base: string;
+      }>("settings.php", "mail_settings_get");
+      setMailSmtpUser(data.smtp_user ?? "");
+      setMailFromName(data.from_name || "Pyx Tracker");
+      setMailPassSet(!!data.password_set);
+      setMailAppBase(data.app_public_base ?? "");
+      setMailPass("");
+    } catch (e) {
+      setMailErr(e instanceof ApiError ? e.message : "Could not load mail settings.");
+    } finally {
+      setMailLoading(false);
     }
   }, []);
 
@@ -387,7 +428,8 @@ export function SettingsPage() {
     void loadPtBom();
     void loadBrcBom();
     void loadCacaoBom();
-    void loadAdminPassword();
+    void loadHrManager();
+    void loadMailSettings();
   }, [
     loadPins,
     loadMobileStaff,
@@ -398,38 +440,75 @@ export function SettingsPage() {
     loadPtBom,
     loadBrcBom,
     loadCacaoBom,
-    loadAdminPassword,
+    loadHrManager,
+    loadMailSettings,
   ]);
 
-  const saveAdminPassword = async () => {
-    setAdminPwSaving(true);
-    setAdminPwOk(null);
-    setAdminPwErr(null);
+  const saveHrManager = async () => {
+    setHrSaving(true);
+    setHrOk(null);
+    setHrErr(null);
     try {
-      if (adminPwNew.trim().length < 6) {
-        throw new Error("New password must be at least 6 characters.");
+      const uid = Number(hrUserId);
+      if (!Number.isFinite(uid) || uid < 1) {
+        throw new Error("Select an HR manager user.");
       }
-      if (adminPwNew !== adminPwConfirm) {
-        throw new Error("New password and confirmation do not match.");
-      }
-      await apiPost("settings.php", "admin_password_save", {
-        current_password: adminPwConfigured ? adminPwCurrent : undefined,
-        new_password: adminPwNew,
-        new_password_confirm: adminPwConfirm,
+      await apiPost("settings.php", "hr_manager_save", {
+        user_id: uid,
+        email: hrEmail.trim(),
       });
-      setAdminPwConfigured(true);
-      setAdminPwCurrent("");
-      setAdminPwNew("");
-      setAdminPwConfirm("");
-      setAdminPwOk(
-        adminPwConfigured
-          ? "Administrator password updated."
-          : "Administrator password set. Check inventory confirm and leaf-pool edits will require it."
-      );
+      setHrOk("HR manager saved. Override edits will be emailed here for approval.");
+      await loadHrManager();
     } catch (e) {
-      setAdminPwErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not save.");
+      setHrErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not save.");
     } finally {
-      setAdminPwSaving(false);
+      setHrSaving(false);
+    }
+  };
+
+  const saveMailSettings = async () => {
+    setMailSaving(true);
+    setMailOk(null);
+    setMailErr(null);
+    try {
+      const payload: {
+        smtp_user: string;
+        from_name: string;
+        app_public_base: string;
+        smtp_pass?: string;
+      } = {
+        smtp_user: mailSmtpUser.trim(),
+        from_name: mailFromName.trim() || "Pyx Tracker",
+        app_public_base: mailAppBase.trim(),
+      };
+      if (mailPass.trim() !== "") {
+        payload.smtp_pass = mailPass.trim();
+      }
+      const data = await apiPost<{ password_set: boolean }>("settings.php", "mail_settings_save", payload);
+      setMailPassSet(!!data.password_set);
+      setMailPass("");
+      setMailOk("Gmail SMTP settings saved.");
+      await loadMailSettings();
+    } catch (e) {
+      setMailErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Could not save.");
+    } finally {
+      setMailSaving(false);
+    }
+  };
+
+  const sendMailTest = async () => {
+    setMailTesting(true);
+    setMailOk(null);
+    setMailErr(null);
+    try {
+      const data = await apiPost<{ to: string }>("settings.php", "mail_test", {
+        to: mailSmtpUser.trim() || undefined,
+      });
+      setMailOk(`Test email sent to ${data.to}.`);
+    } catch (e) {
+      setMailErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : "Test email failed.");
+    } finally {
+      setMailTesting(false);
     }
   };
 
@@ -1644,81 +1723,171 @@ export function SettingsPage() {
 
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
           <div className="px-6 py-4 border-b border-border flex items-center gap-2">
-            <Shield size={18} className="text-[#C8900A]" />
+            <UserRound size={18} className="text-[#C8900A]" />
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Administrator password</h3>
+              <h3 className="text-sm font-semibold text-foreground">HR manager</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Required for Check inventory confirm and executive leaf-pool edits. Separate from login
-                passwords — executives set and change it here.
+                Approves Check Inventory confirm, leaf-pool edits, and Packaging undo. Other staff send a
+                request; the HR manager gets an email and Approves in the app after login.
               </p>
             </div>
           </div>
-          {adminPwLoading ? (
+          {hrLoading ? (
             <div className="px-6 py-8 flex justify-center text-muted-foreground">
               <Loader2 className="animate-spin" size={20} />
             </div>
           ) : (
             <div className="px-6 py-5 space-y-4">
-              <AppSuccessNotice message={adminPwOk} />
-              <AppErrorBanner message={adminPwErr} />
-              <p className="text-xs text-muted-foreground">
-                Status:{" "}
-                <span className="font-medium text-foreground">
-                  {adminPwConfigured ? "Configured" : "Not set yet"}
-                </span>
-              </p>
-              {adminPwConfigured ? (
-                <div>
-                  <label htmlFor="admin-pw-current" className="text-xs text-muted-foreground">
-                    Current password
-                  </label>
-                  <input
-                    id="admin-pw-current"
-                    type="password"
-                    autoComplete="current-password"
-                    className="mt-1 w-full max-w-md rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
-                    value={adminPwCurrent}
-                    onChange={e => setAdminPwCurrent(e.target.value)}
-                  />
-                </div>
-              ) : null}
+              <AppSuccessNotice message={hrOk} />
+              <AppErrorBanner message={hrErr} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
                 <div>
-                  <label htmlFor="admin-pw-new" className="text-xs text-muted-foreground">
-                    New password
+                  <label htmlFor="hr-manager-user" className="text-xs text-muted-foreground">
+                    Select user
                   </label>
-                  <input
-                    id="admin-pw-new"
-                    type="password"
-                    autoComplete="new-password"
+                  <select
+                    id="hr-manager-user"
                     className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
-                    value={adminPwNew}
-                    onChange={e => setAdminPwNew(e.target.value)}
-                    placeholder="At least 6 characters"
-                  />
+                    value={hrUserId}
+                    onChange={e => {
+                      const id = e.target.value;
+                      setHrUserId(id);
+                      const cand = hrCandidates.find(u => String(u.id) === id);
+                      if (cand?.email && !hrEmail.trim()) {
+                        setHrEmail(cand.email);
+                      }
+                    }}
+                  >
+                    <option value="">— Choose —</option>
+                    {hrCandidates.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ({u.username}) · {u.role}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label htmlFor="admin-pw-confirm" className="text-xs text-muted-foreground">
-                    Confirm new password
+                  <label htmlFor="hr-manager-email" className="text-xs text-muted-foreground">
+                    Approval email
                   </label>
                   <input
-                    id="admin-pw-confirm"
-                    type="password"
-                    autoComplete="new-password"
+                    id="hr-manager-email"
+                    type="email"
+                    autoComplete="email"
                     className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
-                    value={adminPwConfirm}
-                    onChange={e => setAdminPwConfirm(e.target.value)}
+                    value={hrEmail}
+                    onChange={e => setHrEmail(e.target.value)}
+                    placeholder="hr@example.com"
                   />
                 </div>
               </div>
               <Button
                 type="button"
-                disabled={adminPwSaving || !adminPwNew.trim()}
-                onClick={() => void saveAdminPassword()}
+                disabled={hrSaving || !hrUserId || !hrEmail.trim()}
+                onClick={() => void saveHrManager()}
                 className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
               >
-                {adminPwSaving ? <Loader2 className="animate-spin" size={14} /> : adminPwConfigured ? "Update password" : "Set password"}
+                {hrSaving ? <Loader2 className="animate-spin" size={14} /> : "Save HR manager"}
               </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <div className="px-6 py-4 border-b border-border flex items-center gap-2">
+            <Mail size={18} className="text-[#C8900A]" />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Email (Gmail SMTP)</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Sends approval request emails. Use a Gmail address and an{" "}
+                <span className="font-medium text-foreground">app password</span> (not the normal Gmail
+                login). Host is fixed to smtp.gmail.com:587.
+              </p>
+            </div>
+          </div>
+          {mailLoading ? (
+            <div className="px-6 py-8 flex justify-center text-muted-foreground">
+              <Loader2 className="animate-spin" size={20} />
+            </div>
+          ) : (
+            <div className="px-6 py-5 space-y-4">
+              <AppSuccessNotice message={mailOk} />
+              <AppErrorBanner message={mailErr} />
+              <p className="text-xs text-muted-foreground">
+                App password:{" "}
+                <span className="font-medium text-foreground">{mailPassSet ? "Set" : "Not set yet"}</span>
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
+                <div>
+                  <label htmlFor="mail-smtp-user" className="text-xs text-muted-foreground">
+                    Gmail address
+                  </label>
+                  <input
+                    id="mail-smtp-user"
+                    type="email"
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={mailSmtpUser}
+                    onChange={e => setMailSmtpUser(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="mail-from-name" className="text-xs text-muted-foreground">
+                    From name
+                  </label>
+                  <input
+                    id="mail-from-name"
+                    type="text"
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={mailFromName}
+                    onChange={e => setMailFromName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="mail-app-pass" className="text-xs text-muted-foreground">
+                    App password {mailPassSet ? "(leave blank to keep)" : ""}
+                  </label>
+                  <input
+                    id="mail-app-pass"
+                    type="password"
+                    autoComplete="new-password"
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={mailPass}
+                    onChange={e => setMailPass(e.target.value)}
+                    placeholder={mailPassSet ? "••••••••" : "16-character app password"}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="mail-app-base" className="text-xs text-muted-foreground">
+                    App public URL (for email links)
+                  </label>
+                  <input
+                    id="mail-app-base"
+                    type="url"
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-[#C8900A]"
+                    value={mailAppBase}
+                    onChange={e => setMailAppBase(e.target.value)}
+                    placeholder="https://your-host/rts/app/dist"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  disabled={mailSaving || !mailSmtpUser.trim()}
+                  onClick={() => void saveMailSettings()}
+                  className="bg-[#C8900A] hover:bg-[#b07f09] text-white"
+                >
+                  {mailSaving ? <Loader2 className="animate-spin" size={14} /> : "Save mail settings"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={mailTesting || !mailPassSet}
+                  onClick={() => void sendMailTest()}
+                >
+                  {mailTesting ? <Loader2 className="animate-spin" size={14} /> : "Send test email"}
+                </Button>
+              </div>
             </div>
           )}
         </div>

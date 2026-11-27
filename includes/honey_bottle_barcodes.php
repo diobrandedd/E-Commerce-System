@@ -2660,6 +2660,274 @@ function honey_bottle_pack_session_discard(PDO $pdo, int $sessionId): void
     )->execute([$sessionId]);
 }
 
+/** Line-row count (honey + dept), same definition as pack history item_count. */
+function honey_bottle_pack_session_item_count(PDO $pdo, int $sessionId): int
+{
+    $st = $pdo->prepare(
+        'SELECT
+           (SELECT COUNT(*) FROM honey_bottle_pack_session_items WHERE session_id = ?)
+         + (SELECT COUNT(*) FROM honey_bottle_pack_session_dept_items WHERE session_id = ?)'
+    );
+    $st->execute([$sessionId, $sessionId]);
+
+    return (int) $st->fetchColumn();
+}
+
+/**
+ * Reverse a confirmed pack session: restore units/pools/freebies, drop sales-log rows,
+ * mark session undone (hidden from History). Fail closed if any unique unit is not still packed.
+ *
+ * @return array{session_id: int, item_count: int, units_restored: int, sku_lines: int, freebie_samples: int}
+ */
+function honey_bottle_pack_session_undo(PDO $pdo, int $userId, int $sessionId): array
+{
+    if ($sessionId < 1) {
+        throw new RuntimeException('Invalid pack session.');
+    }
+    if ($userId < 1) {
+        throw new RuntimeException('Actor required.');
+    }
+
+    require_once __DIR__ . '/rts_inventory_sync.php';
+    require_once __DIR__ . '/sku_barcodes.php';
+    require_once __DIR__ . '/dept_inventory.php';
+    require_once __DIR__ . '/dept_pouch_barcodes.php';
+    require_once __DIR__ . '/dept_raw_freebies.php';
+    require_once __DIR__ . '/system_activity_log.php';
+
+    $owns = !$pdo->inTransaction();
+    if ($owns) {
+        $pdo->beginTransaction();
+    }
+    try {
+        $lock = $pdo->prepare('SELECT * FROM honey_bottle_pack_sessions WHERE id = ? FOR UPDATE');
+        $lock->execute([$sessionId]);
+        $sess = $lock->fetch(PDO::FETCH_ASSOC);
+        if ($sess === false) {
+            throw new RuntimeException('Pack session not found.');
+        }
+        if ((string) ($sess['status'] ?? '') !== 'confirmed') {
+            throw new RuntimeException('Only confirmed pack sessions can be undone.');
+        }
+
+        $honeySt = $pdo->prepare(
+            'SELECT i.id AS item_id, i.unit_id, i.sku_id, i.qty, i.pool AS item_pool,
+                    i.packaging_row_id AS item_packaging_row_id, i.variant AS item_variant, i.size AS item_size,
+                    u.packaging_row_id, u.variant, u.size, u.status, u.pool, u.consumed_ref_type, u.consumed_ref_id
+             FROM honey_bottle_pack_session_items i
+             LEFT JOIN honey_bottle_units u ON u.id = i.unit_id
+             WHERE i.session_id = ?
+             FOR UPDATE'
+        );
+        $honeySt->execute([$sessionId]);
+        $honeyItems = $honeySt->fetchAll(PDO::FETCH_ASSOC);
+
+        $deptPoolSelect = rts_db_has_column($pdo, 'dept_pouch_units', 'pool')
+            ? ', un.pool'
+            : ', "finished" AS pool';
+        $deptSt = $pdo->prepare(
+            'SELECT i.id AS item_id, i.unit_id, i.product_key, i.sku_id, i.qty, i.pool AS item_pool,
+                    un.status, un.consumed_ref_type, un.consumed_ref_id' . $deptPoolSelect . '
+             FROM honey_bottle_pack_session_dept_items i
+             LEFT JOIN dept_pouch_units un ON un.id = i.unit_id
+             WHERE i.session_id = ?
+             FOR UPDATE'
+        );
+        $deptSt->execute([$sessionId]);
+        $deptItems = $deptSt->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($honeyItems === [] && $deptItems === []) {
+            throw new RuntimeException('This pack session has no items to undo.');
+        }
+
+        $unitsRestored = 0;
+        $skuLines = 0;
+        $freebieSamples = 0;
+
+        foreach ($honeyItems as $item) {
+            $skuId = isset($item['sku_id']) ? (int) $item['sku_id'] : 0;
+            $unitId = isset($item['unit_id']) ? (int) $item['unit_id'] : 0;
+            if ($skuId > 0 && $unitId < 1) {
+                $qty = max(1, (int) ($item['qty'] ?? 1));
+                $variant = honey_normalize_variant((string) ($item['item_variant'] ?? ''));
+                $size = (string) ($item['item_size'] ?? '');
+                $pool = (string) ($item['item_pool'] ?? 'packaging');
+                $packId = isset($item['item_packaging_row_id']) ? (int) $item['item_packaging_row_id'] : null;
+                sku_barcode_honey_credit(
+                    $pdo,
+                    $variant,
+                    $size,
+                    $qty,
+                    $pool,
+                    $packId !== null && $packId > 0 ? $packId : null
+                );
+                $skuLines++;
+                continue;
+            }
+
+            if ($unitId < 1) {
+                throw new RuntimeException('A honey line in this session is missing its unit.');
+            }
+            if ((string) ($item['status'] ?? '') !== 'packed') {
+                throw new RuntimeException(
+                    'Cannot undo: a bottle left this pack (status '
+                    . (string) ($item['status'] ?? 'unknown') . '). Restock or ship first, then submit again.'
+                );
+            }
+            if ((string) ($item['consumed_ref_type'] ?? '') !== 'pack_session'
+                || (int) ($item['consumed_ref_id'] ?? 0) !== $sessionId) {
+                throw new RuntimeException('Cannot undo: a bottle is no longer linked to this pack session.');
+            }
+
+            $upd = $pdo->prepare(
+                'UPDATE honey_bottle_units
+                 SET status = "in_stock", consumed_at = NULL, consumed_ref_type = NULL, consumed_ref_id = NULL
+                 WHERE id = ? AND status = "packed"
+                   AND consumed_ref_type = "pack_session" AND consumed_ref_id = ?'
+            );
+            $upd->execute([$unitId, $sessionId]);
+            if ($upd->rowCount() < 1) {
+                throw new RuntimeException('Could not restore a honey bottle to stock.');
+            }
+
+            $variant = honey_normalize_variant((string) ($item['variant'] ?? ''));
+            $size = (string) ($item['size'] ?? '');
+            $pool = (string) ($item['pool'] ?? 'packaging');
+            if ($pool === 'rts_sellable') {
+                rts_inventory_credit_sellable_honey($pdo, $variant, $size, 1.0);
+            } else {
+                honey_bottle_adjust_variant_pool($pdo, $userId, $variant, $size, 1.0);
+            }
+            $unitsRestored++;
+        }
+
+        foreach ($deptItems as $item) {
+            $poolItem = (string) ($item['item_pool'] ?? '');
+            if ($poolItem === 'freebie') {
+                $qty = max(1, (int) ($item['qty'] ?? 1));
+                dept_raw_record_freebie_restock(
+                    $pdo,
+                    $userId,
+                    (string) $item['product_key'],
+                    $qty,
+                    'Undo pack session #' . $sessionId
+                );
+                $freebieSamples += $qty;
+                continue;
+            }
+
+            $skuId = isset($item['sku_id']) ? (int) $item['sku_id'] : 0;
+            $unitId = isset($item['unit_id']) ? (int) $item['unit_id'] : 0;
+            if ($skuId > 0 && $unitId < 1) {
+                $qty = max(1, (int) ($item['qty'] ?? 1));
+                $productKey = (string) $item['product_key'];
+                $pool = (string) ($item['item_pool'] ?? 'finished');
+                sku_barcode_dept_credit($pdo, $userId, $productKey, $qty, $pool);
+                $skuLines++;
+                continue;
+            }
+
+            if ($unitId < 1) {
+                throw new RuntimeException('A pouch/jar line in this session is missing its unit.');
+            }
+            if ((string) ($item['status'] ?? '') !== 'packed') {
+                throw new RuntimeException(
+                    'Cannot undo: a pouch/jar left this pack (status '
+                    . (string) ($item['status'] ?? 'unknown') . ').'
+                );
+            }
+            if ((string) ($item['consumed_ref_type'] ?? '') !== 'pack_session'
+                || (int) ($item['consumed_ref_id'] ?? 0) !== $sessionId) {
+                throw new RuntimeException('Cannot undo: a pouch/jar is no longer linked to this pack session.');
+            }
+
+            $upd = $pdo->prepare(
+                'UPDATE dept_pouch_units
+                 SET status = "in_stock", consumed_at = NULL, consumed_ref_type = NULL, consumed_ref_id = NULL
+                 WHERE id = ? AND status = "packed"
+                   AND consumed_ref_type = "pack_session" AND consumed_ref_id = ?'
+            );
+            $upd->execute([$unitId, $sessionId]);
+            if ($upd->rowCount() < 1) {
+                throw new RuntimeException('Could not restore a pouch/jar to stock.');
+            }
+
+            $productKey = (string) $item['product_key'];
+            $pool = (string) ($item['pool'] ?? 'finished');
+            if ($pool === 'rts_sellable') {
+                rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), 1.0);
+            } else {
+                $fin = dept_inventory_ensure_row($pdo, $userId, $productKey);
+                $pdo->prepare(
+                    'UPDATE dept_inventory_rows SET current_qty = current_qty + 1 WHERE id = ?'
+                )->execute([(int) $fin['id']]);
+            }
+            $unitsRestored++;
+        }
+
+        if (rts_db_has_column($pdo, 'honey_sales_log', 'pack_session_id')) {
+            $pdo->prepare('DELETE FROM honey_sales_log WHERE pack_session_id = ?')->execute([$sessionId]);
+        }
+
+        $mark = $pdo->prepare(
+            'UPDATE honey_bottle_pack_sessions
+             SET status = "undone", undone_at = NOW(), undone_by = ?
+             WHERE id = ? AND status = "confirmed"'
+        );
+        $mark->execute([$userId, $sessionId]);
+        if ($mark->rowCount() < 1) {
+            throw new RuntimeException('Could not mark pack session as undone.');
+        }
+
+        $itemCount = count($honeyItems) + count($deptItems);
+        $confirmedBy = $sess['confirmed_by'] !== null ? (int) $sess['confirmed_by'] : null;
+        $confirmedAt = (string) ($sess['confirmed_at'] ?? '');
+
+        system_activity_log_write(
+            $pdo,
+            'inventory',
+            'pack_session_undo',
+            sprintf(
+                'Undid pack session #%d (%d line%s)',
+                $sessionId,
+                $itemCount,
+                $itemCount === 1 ? '' : 's'
+            ),
+            [
+                'entity_type' => 'honey_bottle_pack_session',
+                'entity_id' => (string) $sessionId,
+                'actor_user_id' => $userId,
+                'meta' => [
+                    'session_id' => $sessionId,
+                    'item_count' => $itemCount,
+                    'units_restored' => $unitsRestored,
+                    'sku_lines' => $skuLines,
+                    'freebie_samples' => $freebieSamples,
+                    'confirmed_by' => $confirmedBy,
+                    'confirmed_at' => $confirmedAt,
+                ],
+            ]
+        );
+
+        if ($owns) {
+            $pdo->commit();
+        }
+
+        return [
+            'session_id' => $sessionId,
+            'item_count' => $itemCount,
+            'units_restored' => $unitsRestored,
+            'sku_lines' => $skuLines,
+            'freebie_samples' => $freebieSamples,
+        ];
+    } catch (Throwable $e) {
+        if ($owns && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+}
+
 /**
  * @param array{
  *   source: string,

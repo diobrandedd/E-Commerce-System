@@ -1,6 +1,6 @@
 ---
 title: SPA Components Index
-generated: 2026-11-24T04:36:13+01:00
+generated: 2026-11-27T06:14:30+01:00
 type: spa
 ---
 
@@ -62,6 +62,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/dashboard/DashboardExecView.tsx`
 - `app/src/app/components/layout/appFeedbackMotion.tsx`
 - `app/src/app/pages/AccountSettingsPage.tsx`
+- `app/src/app/pages/ApprovalsPage.tsx`
 - `app/src/app/pages/BarcodeVerifyPage.tsx`
 - `app/src/app/pages/DashboardPage.tsx`
 - `app/src/app/pages/EditRequestsPage.tsx`
@@ -145,6 +146,7 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 ## Dedicated modal/drawer components
 
 - `app/src/app/components/AppModal.tsx`
+- `app/src/app/components/approvals/OverrideConfirmModal.tsx`
 - `app/src/app/components/costing/CostingGuideModal.tsx`
 - `app/src/app/components/costing/CostingParcelRecipeDetailModal.tsx`
 - `app/src/app/components/costing/CostingProductDetailModal.tsx`
@@ -170,7 +172,6 @@ Design system: [[../../004_SPA_Design_System]] · UX patterns: [[../../005_SPA_U
 - `app/src/app/components/honey/ExecutiveRowEditModal.tsx`
 - `app/src/app/components/honey/HoneyFinishedEditLogsModal.tsx`
 - `app/src/app/components/honey/PackagingScanLogModal.tsx`
-- `app/src/app/components/inventory/AdminOverridePasswordModal.tsx`
 - `app/src/app/components/inventory/DeptRawProduceGuideModal.tsx`
 - `app/src/app/components/inventory/InventoryCheckAppliedRunDetailModal.tsx`
 - `app/src/app/components/inventory/InventoryCheckHistoryDetailModal.tsx`

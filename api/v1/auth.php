@@ -93,6 +93,8 @@ function api_auth_me(): void
         'role' => $user['role'],
     ], $dept);
     $payload['permissions'] = ims_user_permissions((int) $user['id']);
+    require_once dirname(__DIR__, 2) . '/includes/override_approvals.php';
+    $payload['is_hr_manager'] = override_approval_is_hr_manager($payload);
 
     api_ok([
         'authenticated' => true,
@@ -131,6 +133,8 @@ function api_auth_login(): void
         'role' => $user['role'],
     ], $dept);
     $serialized['permissions'] = ims_user_permissions((int) $user['id']);
+    require_once dirname(__DIR__, 2) . '/includes/override_approvals.php';
+    $serialized['is_hr_manager'] = override_approval_is_hr_manager($serialized);
 
     api_ok([
         'authenticated' => true,

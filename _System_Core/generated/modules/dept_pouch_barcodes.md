@@ -1,7 +1,7 @@
 ---
 title: dept_pouch_barcodes
 source: includes/dept_pouch_barcodes.php
-generated: 2026-11-24T09:12:31+01:00
+generated: 2026-11-27T06:28:50+01:00
 type: module
 function_count: 37
 ---
@@ -69,11 +69,11 @@ function_count: 37
 - `includes/dept_pouch_barcodes.php`:910 — `$productKey = dept_pouch_normalize_product_key($productKey);`
 - `includes/dept_pouch_barcodes.php`:1388 — `$productKey = dept_pouch_normalize_product_key((string) $row['product_key']);`
 - `includes/dept_pouch_barcodes.php`:1469 — `$productKey = dept_pouch_normalize_product_key($productKey);`
-- `includes/rts_stock_in_sessions.php`:312 — `$productKey = dept_pouch_normalize_product_key((string) $dept['product_key']);`
+- `includes/rts_stock_in_sessions.php`:344 — `$productKey = dept_pouch_normalize_product_key((string) $dept['product_key']);`
 
 ## dept_pouch_product_label {#dept_pouch_product_label}
 
-**Callers (41):**
+**Callers (42):**
 
 - `api/v1/rts_barcode_labels.php`:49 — `'label' => dept_pouch_product_label($key),`
 - `includes/barcode_verify.php`:158 — `$productLabel = dept_pouch_product_label($productKey);`
@@ -91,6 +91,7 @@ function_count: 37
 - `includes/honey_bottle_barcodes.php`:2197 — `'product_label' => dept_pouch_product_label($productKey),`
 - `includes/honey_bottle_barcodes.php`:2283 — `$productLabel = dept_pouch_product_label($productKey);`
 - `includes/honey_bottle_barcodes.php`:2534 — `dept_pouch_product_label($productKey),`
+- `includes/honey_bottle_barcodes.php`:2858 — `rts_inventory_credit_sellable_other($pdo, dept_pouch_product_label($productKey), 1.0);`
 - `includes/inventory_check.php`:307 — `return 'Freebie · ' . dept_pouch_product_label($productKey);`
 - `includes/inventory_check.php`:337 — `return dept_pouch_product_label($productKey);`
 - `includes/inventory_check.php`:1026 — `'variant' => dept_pouch_product_label($productKey),`
@@ -99,8 +100,7 @@ function_count: 37
 - `includes/inventory_check.php`:1358 — `'variant' => dept_pouch_product_label((string) $productKey),`
 - `includes/pack_cancel_restock.php`:143 — `: dept_pouch_product_label($productKey);`
 - `includes/pack_cancel_restock.php`:184 — `$productLabel = dept_pouch_product_label($productKey);`
-- `includes/pack_cancel_restock.php`:412 — `'product_label' => dept_pouch_product_label($productKey),`
-- _… and 16 more (run impact.php for full list)_
+- _… and 17 more (run impact.php for full list)_
 
 ## dept_pouch_unit_singular {#dept_pouch_unit_singular}
 
@@ -133,7 +133,7 @@ function_count: 37
 - `includes/finished_leak_damage.php`:81 — `$deptCode = dept_pouch_normalize_code($code);`
 - `includes/honey_bottle_barcodes.php`:2261 — `$code = dept_pouch_normalize_code($code);`
 - `includes/pack_cancel_restock.php`:388 — `$code = dept_pouch_normalize_code($code);`
-- `includes/rts_stock_in_sessions.php`:193 — `$st->execute([dept_pouch_normalize_code($code)]);`
+- `includes/rts_stock_in_sessions.php`:199 — `$st->execute([dept_pouch_normalize_code($code)]);`
 
 ## dept_pouch_normalize_batch_no {#dept_pouch_normalize_batch_no}
 
@@ -347,7 +347,7 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 **Callers (1):**
 
-- `includes/rts_stock_in_sessions.php`:516 — `dept_pouch_rts_stock_in_scan($pdo, $userId, (string) $item['code']);`
+- `includes/rts_stock_in_sessions.php`:557 — `dept_pouch_rts_stock_in_scan($pdo, $userId, (string) $item['code']);`
 
 ## dept_pouch_defect_scan {#dept_pouch_defect_scan}
 

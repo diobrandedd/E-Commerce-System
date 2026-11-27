@@ -346,6 +346,22 @@ export const bottleBarcodesApi = {
     apiPost<{ session: HoneyPackSession }>("bottle_barcodes.php", "pack_confirm", { session_id: sessionId }),
   packDiscard: (sessionId: number) =>
     apiPost<{ ok: boolean }>("bottle_barcodes.php", "pack_discard", { session_id: sessionId }),
+  packSessionUndo: (body: { session_id: number; expected_item_count?: number }) =>
+    apiPost<{
+      applied?: boolean;
+      pending?: boolean;
+      request_id?: number;
+      summary?: string;
+      email_sent?: boolean;
+      email_error?: string | null;
+      undo?: {
+        session_id: number;
+        item_count: number;
+        units_restored: number;
+        sku_lines: number;
+        freebie_samples: number;
+      };
+    }>("bottle_barcodes.php", "pack_session_undo", body),
   posLookup: (code: string) =>
     apiGet<{ barcode: HoneyBottleLookup }>("bottle_barcodes.php", "pos_lookup", { code }),
   openedReturnScan: (code: string) =>
@@ -433,10 +449,16 @@ export const bottleBarcodesApi = {
     scanned_by: number | null;
     variant: string;
     size: string;
-    admin_password: string;
+    expected_qty?: number;
   }) =>
     apiPost<{
-      undo: {
+      applied?: boolean;
+      pending?: boolean;
+      request_id?: number;
+      summary?: string;
+      email_sent?: boolean;
+      email_error?: string | null;
+      undo?: {
         scan_date: string;
         scanned_by: number | null;
         variant: string;

@@ -28,6 +28,7 @@ import { PackagingMaterialsPage } from "./pages/inventory/PackagingMaterialsPage
 import { CacaoBrcHubPage } from "./pages/inventory/CacaoBrcHubPage";
 import { FinishedLeakDamagePage } from "./pages/inventory/FinishedLeakDamagePage";
 import { InventoryCheckPage } from "./pages/inventory/InventoryCheckPage";
+import { ApprovalsPage } from "./pages/ApprovalsPage";
 import { StaffManagementPage } from "./pages/exec/StaffManagementPage";
 import { CostingPage } from "./pages/exec/CostingPage";
 import { ARCreditsPage } from "./pages/exec/ARCreditsPage";
@@ -113,6 +114,7 @@ export const router = createBrowserRouter(
         { path: "beginning-inventory", element: guarded(InventoryPage) },
         { path: "edit-requests", element: guarded(EditRequestsPage) },
         { path: "inventory/requests", element: permGuard(InventoryRequestsPage, "inventory.requests.view") },
+        { path: "approvals", element: guarded(ApprovalsPage) },
         { path: "inventory/monthly-count", element: createElement(Navigate, { to: "/logs", replace: true }) },
         { path: "inventory/raw-materials", element: invViewGuard(RawMaterialsHubPage) },
         { path: "inventory/raw-materials/honey", element: createElement(Navigate, { to: "/inventory/raw-materials/honey/warehouse", replace: true }) },

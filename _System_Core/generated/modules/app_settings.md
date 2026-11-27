@@ -1,7 +1,7 @@
 ---
 title: app_settings
 source: includes/app_settings.php
-generated: 2026-11-24T09:12:21+01:00
+generated: 2026-11-27T06:28:40+01:00
 type: module
 function_count: 3
 ---
@@ -24,10 +24,9 @@ function_count: 3
 
 **Tables:** `app_settings`
 
-**Callers (21):**
+**Callers (31):**
 
-- `includes/admin_override_password.php`:12 — `$hash = app_setting_get($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, null);`
-- `includes/admin_override_password.php`:22 — `$hash = app_setting_get($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, null);`
+- `api/v1/settings.php`:496 — `$to = (string) app_setting_get($pdo, MAIL_SMTP_USER_KEY, '');`
 - `includes/dept_brc_settings.php`:48 — `return dept_brc_setting_parse_bool(app_setting_get($pdo, BRC_BAG_POOL_DEDUCT_SETTING_KEY, null), true);`
 - `includes/dept_brc_settings.php`:56 — `$raw = app_setting_get($pdo, BRC_GRAMS_PER_POUCH_SETTING_KEY, null);`
 - `includes/dept_brc_settings.php`:73 — `$raw = app_setting_get($pdo, BRC_GRAMS_PER_BAG_SETTING_KEY, null);`
@@ -42,19 +41,24 @@ function_count: 3
 - `includes/dept_pt_settings.php`:98 — `$raw = app_setting_get($pdo, PT_FREEBIE_GRAMS_SETTING_KEY, null);`
 - `includes/dept_raw_freebies.php`:211 — `$raw = app_setting_get($pdo, dept_raw_freebie_setting_key($productKey), null);`
 - `includes/honey_volume.php`:67 — `$raw = app_setting_get($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, null);`
-- `includes/pyxacct_ap_sync.php`:23 — `$raw = app_setting_get($rtsPdo, 'pyxacct_honey_ap_sync_enabled', '1');`
-- `includes/pyxacct_ap_sync.php`:37 — `return rtrim(trim((string) app_setting_get($rtsPdo, 'pyxacct_api_base_url', '')), '/');`
-- `includes/pyxacct_ap_sync.php`:59 — `return pyxacct_api_token_normalize((string) app_setting_get($rtsPdo, 'pyxacct_api_token', ''));`
-- `includes/pyxacct_supply_sync.php`:18 — `$raw = app_setting_get($rtsPdo, 'pyxacct_supply_sync_enabled', '0');`
-- `includes/pyxacct_walkin_sync.php`:19 — `$raw = app_setting_get($rtsPdo, 'pyxacct_walkin_sync_enabled', '0');`
+- `includes/mailer.php`:18 — `'smtp_user' => (string) app_setting_get($pdo, MAIL_SMTP_USER_KEY, ''),`
+- `includes/mailer.php`:19 — `'from_name' => (string) app_setting_get($pdo, MAIL_FROM_NAME_KEY, 'Pyx Tracker'),`
+- `includes/mailer.php`:20 — `'password_set' => ((string) app_setting_get($pdo, MAIL_SMTP_PASS_KEY, '')) !== '',`
+- `includes/mailer.php`:21 — `'app_public_base' => (string) app_setting_get($pdo, MAIL_APP_PUBLIC_BASE_KEY, ''),`
+- `includes/mailer.php`:70 — `$configured = rtrim(trim((string) app_setting_get($pdo, MAIL_APP_PUBLIC_BASE_KEY, '')), '/');`
+- `includes/mailer.php`:106 — `$user = (string) app_setting_get($pdo, MAIL_SMTP_USER_KEY, '');`
+- `includes/mailer.php`:107 — `$pass = (string) app_setting_get($pdo, MAIL_SMTP_PASS_KEY, '');`
+- `includes/mailer.php`:108 — `$fromName = (string) app_setting_get($pdo, MAIL_FROM_NAME_KEY, 'Pyx Tracker');`
+- `includes/override_approvals.php`:27 — `$uid = (int) (app_setting_get($pdo, OVERRIDE_APPROVAL_HR_USER_KEY, '0') ?? '0');`
+- `includes/override_approvals.php`:31 — `$email = trim((string) app_setting_get($pdo, OVERRIDE_APPROVAL_HR_EMAIL_KEY, ''));`
+- _… and 6 more (run impact.php for full list)_
 
 ## app_setting_set {#app_setting_set}
 
 **Tables:** `app_settings`
 
-**Callers (21):**
+**Callers (26):**
 
-- `includes/admin_override_password.php`:49 — `app_setting_set($pdo, ADMIN_OVERRIDE_PASSWORD_SETTING_KEY, $hash, $userId);`
 - `includes/dept_brc_settings.php`:175 — `app_setting_set($pdo, BRC_GRAMS_PER_POUCH_SETTING_KEY, (string) $gramsPerPouch, $userId);`
 - `includes/dept_brc_settings.php`:176 — `app_setting_set($pdo, BRC_GRAMS_PER_BAG_SETTING_KEY, (string) $gramsPerBag, $userId);`
 - `includes/dept_brc_settings.php`:177 — `app_setting_set($pdo, BRC_BAG_POOL_DEDUCT_SETTING_KEY, $bagPoolDeduct ? '1' : '0', $userId);`
@@ -70,9 +74,15 @@ function_count: 3
 - `includes/dept_raw_freebies.php`:233 — `app_setting_set($pdo, dept_raw_freebie_setting_key($productKey), (string) $grams, $userId);`
 - `includes/honey_volume.php`:48 — `app_setting_set($pdo, HONEY_PACKAGING_DEDUCT_SETTING_KEY, '0', $userId);`
 - `includes/honey_volume.php`:91 — `app_setting_set($pdo, HONEY_ML_PER_GALLON_SETTING_KEY, $stored, $userId);`
+- `includes/mailer.php`:48 — `app_setting_set($pdo, MAIL_SMTP_USER_KEY, $smtpUser, $userId);`
+- `includes/mailer.php`:49 — `app_setting_set($pdo, MAIL_FROM_NAME_KEY, $fromName, $userId);`
+- `includes/mailer.php`:50 — `app_setting_set($pdo, MAIL_APP_PUBLIC_BASE_KEY, $appPublicBase, $userId);`
+- `includes/mailer.php`:52 — `app_setting_set($pdo, MAIL_SMTP_PASS_KEY, trim($smtpPass), $userId);`
+- `includes/override_approvals.php`:129 — `app_setting_set($pdo, OVERRIDE_APPROVAL_HR_USER_KEY, (string) $userId, $actorId);`
+- `includes/override_approvals.php`:130 — `app_setting_set($pdo, OVERRIDE_APPROVAL_HR_EMAIL_KEY, $email, $actorId);`
 - `includes/pyxacct_ap_sync.php`:30 — `app_setting_set($rtsPdo, 'pyxacct_honey_ap_sync_enabled', $enabled ? '1' : '0', $userId);`
 - `includes/pyxacct_ap_sync.php`:75 — `app_setting_set($rtsPdo, 'pyxacct_api_base_url', $baseUrl, $userId);`
 - `includes/pyxacct_ap_sync.php`:80 — `app_setting_set($rtsPdo, 'pyxacct_api_token', $token, $userId);`
 - `includes/pyxacct_supply_sync.php`:25 — `app_setting_set($rtsPdo, 'pyxacct_supply_sync_enabled', $enabled ? '1' : '0', $userId);`
-- `includes/pyxacct_walkin_sync.php`:26 — `app_setting_set($rtsPdo, 'pyxacct_walkin_sync_enabled', $enabled ? '1' : '0', $userId);`
+- _… and 1 more (run impact.php for full list)_
 

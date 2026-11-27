@@ -106,6 +106,7 @@ api_dispatch([
     'packaging_scan_report' => 'api_bottle_packaging_scan_report',
     'packaging_scan_log' => 'api_bottle_packaging_scan_log',
     'packaging_scan_line_undo' => 'api_bottle_packaging_scan_line_undo',
+    'pack_session_undo' => 'api_bottle_pack_session_undo',
     'ensure_packaging_shell' => 'api_bottle_ensure_packaging_shell',
     'create_custom_packaging' => 'api_bottle_create_custom_packaging',
 ]);
@@ -167,9 +168,8 @@ function api_bottle_packaging_scan_line_undo(): void
     if (!honey_bottle_can_undo_packaging_scan_line($user)) {
         api_fail('Forbidden. Only an executive can undo packaging stock-in lines.', 403);
     }
-    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    require_once dirname(__DIR__, 2) . '/includes/override_approvals.php';
     $in = api_input();
-    api_require_admin_override_password($in);
 
     $scanDate = trim((string) ($in['scan_date'] ?? ''));
     $variant = trim((string) ($in['variant'] ?? ''));
@@ -186,16 +186,134 @@ function api_bottle_packaging_scan_line_undo(): void
         api_fail('scan_date, variant, and size are required.', 422);
     }
 
+    $pdo = ims_pdo();
+    $expectedQty = isset($in['expected_qty'])
+        ? (int) $in['expected_qty']
+        : override_approval_packaging_line_qty($pdo, $scanDate, $scannedBy, $variant, $size);
+    $payload = [
+        'scan_date' => $scanDate,
+        'variant' => $variant,
+        'size' => $size,
+        'scanned_by' => $scannedBy,
+        'expected_qty' => $expectedQty,
+    ];
+    $summary = sprintf(
+        'Packaging undo · %s · %s · %d bottle%s on %s',
+        ucfirst($variant),
+        $size,
+        $expectedQty,
+        $expectedQty === 1 ? '' : 's',
+        $scanDate
+    );
+
     try {
-        $result = honey_bottle_packaging_scan_line_undo(
-            ims_pdo(),
-            (int) $user['id'],
-            $scanDate,
-            $scannedBy,
-            $variant,
-            $size
-        );
-        api_ok(['undo' => $result]);
+        if (override_approval_is_hr_manager($user, $pdo)) {
+            $result = honey_bottle_packaging_scan_line_undo(
+                $pdo,
+                (int) $user['id'],
+                $scanDate,
+                $scannedBy,
+                $variant,
+                $size
+            );
+            api_ok(['applied' => true, 'undo' => $result]);
+        }
+        $created = override_approval_create($pdo, $user, 'packaging_scan_undo', $payload, $summary);
+        api_ok([
+            'pending' => true,
+            'request_id' => (int) ($created['request']['id'] ?? 0),
+            'request' => $created['request'],
+            'email_sent' => $created['email_sent'],
+            'email_error' => $created['email_error'],
+            'summary' => $summary,
+        ]);
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+}
+
+function api_bottle_pack_session_undo(): void
+{
+    api_method_allowed(['POST']);
+    api_bottle_require_csrf();
+    $user = api_bottle_require_user();
+    if (!honey_bottle_can_undo_packaging_scan_line($user)) {
+        api_fail('Forbidden. Only an executive can undo pack sessions.', 403);
+    }
+    require_once dirname(__DIR__, 2) . '/includes/override_approvals.php';
+    $in = api_input();
+    $sessionId = (int) ($in['session_id'] ?? 0);
+    if ($sessionId < 1) {
+        api_fail('session_id is required.', 422);
+    }
+
+    $pdo = ims_pdo();
+    $sess = honey_bottle_pack_session_get($pdo, $sessionId);
+    if ((string) ($sess['status'] ?? '') !== 'confirmed') {
+        api_fail('Only confirmed pack sessions can be undone.', 422);
+    }
+    $expectedCount = isset($in['expected_item_count'])
+        ? (int) $in['expected_item_count']
+        : honey_bottle_pack_session_item_count($pdo, $sessionId);
+    $confirmedByName = '';
+    $confirmedBy = isset($sess['confirmed_by']) ? (int) $sess['confirmed_by'] : 0;
+    if ($confirmedBy > 0) {
+        $n = $pdo->prepare('SELECT name FROM users WHERE id = ? LIMIT 1');
+        $n->execute([$confirmedBy]);
+        $confirmedByName = trim((string) ($n->fetchColumn() ?: ''));
+    }
+    if ($confirmedByName === '' && isset($sess['confirmed_by_name'])) {
+        $confirmedByName = trim((string) $sess['confirmed_by_name']);
+    }
+    $when = (string) ($sess['confirmed_at'] ?? '');
+    $groupBits = [];
+    foreach (($sess['grouped'] ?? []) as $g) {
+        if (!is_array($g)) {
+            continue;
+        }
+        $qty = (int) ($g['qty'] ?? 0);
+        if ($qty < 1) {
+            continue;
+        }
+        $kind = (string) ($g['kind'] ?? 'honey');
+        if ($kind === 'dept' || $kind === 'freebie') {
+            $label = (string) ($g['product_label'] ?? $g['product_key'] ?? 'item');
+        } else {
+            $label = trim(
+                ucfirst((string) ($g['variant'] ?? '')) . ' ' . (string) ($g['size'] ?? '')
+            );
+        }
+        $groupBits[] = $qty . '× ' . $label;
+    }
+    $summary = sprintf(
+        'Undo pack session #%d · %s · %s%s',
+        $sessionId,
+        $confirmedByName !== '' ? $confirmedByName : 'packer',
+        $when !== '' ? $when : 'unknown time',
+        $groupBits !== [] ? ' · ' . implode(', ', array_slice($groupBits, 0, 6)) : ''
+    );
+    if (strlen($summary) > 500) {
+        $summary = substr($summary, 0, 497) . '...';
+    }
+    $payload = [
+        'session_id' => $sessionId,
+        'expected_item_count' => $expectedCount,
+    ];
+
+    try {
+        if (override_approval_is_hr_manager($user, $pdo)) {
+            $result = honey_bottle_pack_session_undo($pdo, (int) $user['id'], $sessionId);
+            api_ok(['applied' => true, 'undo' => $result]);
+        }
+        $created = override_approval_create($pdo, $user, 'pack_session_undo', $payload, $summary);
+        api_ok([
+            'pending' => true,
+            'request_id' => (int) ($created['request']['id'] ?? 0),
+            'request' => $created['request'],
+            'email_sent' => $created['email_sent'],
+            'email_error' => $created['email_error'],
+            'summary' => $summary,
+        ]);
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
     }

@@ -1,6 +1,6 @@
 ---
 title: SPA Routes
-generated: 2026-11-24T04:36:13+01:00
+generated: 2026-11-27T06:14:30+01:00
 type: spa
 ---
 
@@ -20,6 +20,7 @@ Basename: `/rts/app/dist` (prod) · dev at `localhost:5173`
 | `/daily-count` | `InventoryPage` | any authenticated |
 | `/beginning-inventory` | `InventoryPage` | any authenticated |
 | `/edit-requests` | `EditRequestsPage` | any authenticated |
+| `/approvals` | `ApprovalsPage` | any authenticated |
 | `/inventory/:dept` | `InventoryPage` | any authenticated |
 | `/account` | `AccountSettingsPage` | any authenticated |
 | `//` | `Root` | public or POS nested |

@@ -1,8 +1,8 @@
 ---
 title: Database Tables
-generated: 2026-11-24T09:12:18+01:00
+generated: 2026-11-27T06:28:39+01:00
 type: memory-bank
-table_count: 106
+table_count: 107
 ---
 
 
@@ -140,6 +140,8 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_access_roster]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_candidates]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_require_staff_user]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_hr_candidates]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_approve]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_authenticate]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_verify_executive]] |
 | `includes/pos_mobile_staff.php` | [[modules/pos_mobile_staff#pos_mobile_staff_candidates]] |
@@ -193,6 +195,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 |------|----------|
 | `api/v1/auth.php` | [[modules/auth#api_auth_pos_staff_login]] |
 | `api/v1/auth.php` | [[modules/auth#api_auth_verify_executive]] |
+| `api/v1/bottle_barcodes.php` | [[modules/bottle_barcodes#api_bottle_pack_session_undo]] |
 | `api/v1/costing.php` | [[modules/costing#api_costing_products_list]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_index]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_edit_requests]] |
@@ -264,6 +267,13 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_candidates]] |
 | `includes/material_inventory.php` | [[modules/material_inventory#material_packaging_deduct_require_staff_user]] |
 | `includes/online_order_parcels.php` | [[modules/online_order_parcels#online_parcels_cancel_log_list]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_hr_manager]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_hr_candidates]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_hr_manager_save]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_get]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_list]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_unread_list]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_approve]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_list]] |
 | `includes/pos_discount_requests.php` | [[modules/pos_discount_requests#pos_discount_request_list]] |
@@ -277,6 +287,7 @@ Schema sources: `sql/full_schema.sql` and migration files
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
 | `includes/rts_damaged_use.php` | [[modules/rts_damaged_use#rts_damaged_use_events_list]] |
 | `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_row]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_freebie_history]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_fetch_by_id]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_fetch_by_code]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_fetch_honey]] |
@@ -499,6 +510,19 @@ _No references detected in includes/api (may be legacy pages only)._
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_apply_price_change]] |
 | `api/v1/_costing_helpers.php` | [[modules/_costing_helpers#api_costing_build_product_detail]] |
 | `api/v1/dashboard.php` | [[modules/dashboard#api_dashboard_populate_financials]] |
+
+## `override_approval_requests`
+
+| File | Function |
+|------|----------|
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_create]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_get]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_list]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_pending_count]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_unread_list]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_mark_viewed]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_approve]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_reject]] |
 
 ## `inventory_edit_log`
 
@@ -825,6 +849,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_batch_codes]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 | `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_void_missing_uniques]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_packaging_line_qty]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_credit_honey_requests]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_refresh_honey_request_status]] |
 
@@ -855,6 +880,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_shipped_export]] |
 | `includes/inventory_check.php` | [[modules/inventory_check#inventory_check_resolve_honey]] |
 | `includes/inventory_check_apply.php` | [[modules/inventory_check_apply#inventory_check_void_missing_uniques]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_packaging_line_qty]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_scan_stats]] |
 | `includes/rts_barcode_labels.php` | [[modules/rts_barcode_labels#rts_barcode_label_job_list]] |
@@ -880,6 +906,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_list]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_today_stats]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_undo]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pos_consume]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_opened_return_scan]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_rts_receive]] |
@@ -907,9 +934,11 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_today_stats]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_discard]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_undo]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_freebie_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_shipped_export]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_execute]] |
 
 ## `honey_bottle_pack_session_items`
 
@@ -923,6 +952,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_remove_item]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_set_item_qty]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_item_count]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_undo]] |
 
 ## `honey_bottle_codes_issued`
 
@@ -1023,6 +1054,8 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_confirm]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_remove_item]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_set_item_qty]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_item_count]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_undo]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_freebie_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_dept_breakdown]] |
 | `includes/honey_sales_report.php` | [[modules/honey_sales_report#honey_sales_fetch_shipped_export]] |
@@ -1168,6 +1201,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_report]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_line_undo]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_log]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_packaging_line_qty]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_get]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_confirm]] |
 | `includes/pack_cancel_restock.php` | [[modules/pack_cancel_restock#pack_cancel_restock_list]] |
@@ -1307,6 +1341,7 @@ _No references detected in includes/api (may be legacy pages only)._
 
 | File | Function |
 |------|----------|
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_undo]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_write_sale_log]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_packaging_stock_out_sold]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_build_trace_chain]] |
@@ -1353,6 +1388,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/dept_production.php` | [[modules/dept_production#dept_brc_produce_pouches]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_jar_produce]] |
 | `includes/dept_production.php` | [[modules/dept_production#dept_honey_comb_produce]] |
+| `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_pack_session_undo]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_apply_correction_request]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_executive_edit_row]] |
 | `includes/honey_inventory.php` | [[modules/honey_inventory#honey_correction_row_context]] |
@@ -1375,6 +1411,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_report]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_line_undo]] |
 | `includes/honey_bottle_barcodes.php` | [[modules/honey_bottle_barcodes#honey_bottle_packaging_scan_log]] |
+| `includes/override_approvals.php` | [[modules/override_approvals#override_approval_packaging_line_qty]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_credit_honey_requests]] |
 | `includes/sku_barcodes.php` | [[modules/sku_barcodes#sku_barcode_credit_dept_requests]] |
 
@@ -1419,6 +1456,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_start]] |
 | `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_discard]] |
 | `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_confirm]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_freebie_history]] |
 
 ## `rts_stock_in_session_items`
 
@@ -1429,6 +1467,7 @@ _No references detected in includes/api (may be legacy pages only)._
 | `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_update_qty]] |
 | `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_remove]] |
 | `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_session_confirm]] |
+| `includes/rts_stock_in_sessions.php` | [[modules/rts_stock_in_sessions#rts_stock_in_freebie_history]] |
 
 ## `rts_stock_in_session_events`
 

@@ -1559,7 +1559,7 @@ function api_honey_edit_log_list(): void
     api_ok($result);
 }
 
-/** Executive correction of PT/BRC/Jar Cacao leaf pool (grams). Executive role and administrator password. */
+/** Executive correction of PT/BRC/Jar Cacao leaf pool (grams). HR manager applies now; others request approval. */
 function api_honey_dept_raw_executive_set(): void
 {
     api_method_allowed(['POST']);
@@ -1569,38 +1569,66 @@ function api_honey_dept_raw_executive_set(): void
     if (!ims_is_executive((string) ($user['role'] ?? ''))) {
         api_fail('Only an executive can edit the leaf pool.', 403);
     }
-    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
-    api_require_admin_override_password($input);
+    require_once dirname(__DIR__, 2) . '/includes/override_approvals.php';
     $productKey = trim((string) ($input['product_key'] ?? ''));
     $pdo = ims_pdo();
-    $pdo->beginTransaction();
+    $payload = ['product_key' => $productKey];
+    if (array_key_exists('grams', $input)) {
+        $payload['grams'] = (float) $input['grams'];
+    } else {
+        $payload['bags'] = (float) ($input['bags'] ?? -1);
+    }
+    if (isset($input['note'])) {
+        $payload['note'] = (string) $input['note'];
+    }
+    $label = strtoupper($productKey);
+    $summary = array_key_exists('grams', $payload)
+        ? "Leaf pool edit · {$label} → " . $payload['grams'] . ' g'
+        : "Leaf pool edit · {$label} → " . $payload['bags'] . ' kg';
+
     try {
-        if (array_key_exists('grams', $input)) {
-            $result = dept_raw_set_grams_on_hand(
-                $pdo,
-                (int) $user['id'],
-                $productKey,
-                (float) $input['grams'],
-                isset($input['note']) ? (string) $input['note'] : null,
-                'executive_edit'
-            );
-        } else {
-            $result = dept_raw_set_bags_on_hand(
-                $pdo,
-                (int) $user['id'],
-                $productKey,
-                (float) ($input['bags'] ?? -1),
-                isset($input['note']) ? (string) $input['note'] : null,
-                'executive_edit'
-            );
+        if (override_approval_is_hr_manager($user, $pdo)) {
+            $pdo->beginTransaction();
+            try {
+                if (array_key_exists('grams', $payload)) {
+                    $result = dept_raw_set_grams_on_hand(
+                        $pdo,
+                        (int) $user['id'],
+                        $productKey,
+                        (float) $payload['grams'],
+                        isset($payload['note']) ? (string) $payload['note'] : null,
+                        'executive_edit'
+                    );
+                } else {
+                    $result = dept_raw_set_bags_on_hand(
+                        $pdo,
+                        (int) $user['id'],
+                        $productKey,
+                        (float) $payload['bags'],
+                        isset($payload['note']) ? (string) $payload['note'] : null,
+                        'executive_edit'
+                    );
+                }
+                $pdo->commit();
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                throw $e;
+            }
+            api_ok(array_merge(is_array($result) ? $result : [], ['applied' => true]));
         }
-        $pdo->commit();
+        $created = override_approval_create($pdo, $user, 'dept_raw_pool_set', $payload, $summary);
+        api_ok([
+            'pending' => true,
+            'request_id' => (int) ($created['request']['id'] ?? 0),
+            'request' => $created['request'],
+            'email_sent' => $created['email_sent'],
+            'email_error' => $created['email_error'],
+            'summary' => $summary,
+        ]);
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
         api_fail($e->getMessage(), 400);
     }
-    api_ok($result);
 }
 

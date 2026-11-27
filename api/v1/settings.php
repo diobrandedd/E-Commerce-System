@@ -23,6 +23,12 @@ require_once __DIR__ . '/../../includes/pos_mobile_staff.php';
  *   POST ?action=brc_bom_save -> { grams_per_pouch, grams_per_bag, bag_pool_deduct? }
  *   GET  ?action=jar_cacao_bom_get
  *   POST ?action=jar_cacao_bom_save -> { grams_per_jar, grams_per_bag, bag_pool_deduct? }
+ *   GET  ?action=hr_manager_get
+ *   GET  ?action=hr_manager_candidates
+ *   POST ?action=hr_manager_save -> { user_id, email }
+ *   GET  ?action=mail_settings_get
+ *   POST ?action=mail_settings_save -> { smtp_user, from_name, smtp_pass?, app_public_base? }
+ *   POST ?action=mail_test -> { to? }
  *   GET  ?action=pyxacct_sync_get
  *   POST ?action=pyxacct_sync_save -> { enabled, api_base_url, api_token? }
  *   POST ?action=pyxacct_sync_test
@@ -45,8 +51,12 @@ api_dispatch([
     'brc_bom_save' => 'api_settings_brc_bom_save',
     'jar_cacao_bom_get' => 'api_settings_jar_cacao_bom_get',
     'jar_cacao_bom_save' => 'api_settings_jar_cacao_bom_save',
-    'admin_password_get' => 'api_settings_admin_password_get',
-    'admin_password_save' => 'api_settings_admin_password_save',
+    'hr_manager_get' => 'api_settings_hr_manager_get',
+    'hr_manager_candidates' => 'api_settings_hr_manager_candidates',
+    'hr_manager_save' => 'api_settings_hr_manager_save',
+    'mail_settings_get' => 'api_settings_mail_settings_get',
+    'mail_settings_save' => 'api_settings_mail_settings_save',
+    'mail_test' => 'api_settings_mail_test',
     'pyxacct_sync_get' => 'api_settings_pyxacct_sync_get',
     'pyxacct_sync_save' => 'api_settings_pyxacct_sync_save',
     'pyxacct_sync_test' => 'api_settings_pyxacct_sync_test',
@@ -400,41 +410,101 @@ function api_settings_jar_cacao_bom_save(): void
     api_ok(array_merge($saved, dept_jar_cacao_bom_snapshot(ims_pdo())));
 }
 
-function api_settings_admin_password_get(): void
+function api_settings_hr_manager_get(): void
 {
     api_method_allowed(['GET']);
     api_settings_require_executive();
-    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
-    api_ok([
-        'configured' => admin_override_password_configured(ims_pdo()),
-    ]);
+    require_once dirname(__DIR__, 2) . '/includes/override_approvals.php';
+    api_ok(override_approval_hr_manager_public(ims_pdo()));
 }
 
-function api_settings_admin_password_save(): void
+function api_settings_hr_manager_candidates(): void
+{
+    api_method_allowed(['GET']);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/override_approvals.php';
+    api_ok(['users' => override_approval_hr_candidates(ims_pdo())]);
+}
+
+function api_settings_hr_manager_save(): void
 {
     api_method_allowed(['POST']);
     $input = api_input();
     api_require_csrf($input);
     api_settings_require_executive();
-    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
+    require_once dirname(__DIR__, 2) . '/includes/override_approvals.php';
     $user = api_require_ims_user();
-    $newPassword = (string) ($input['new_password'] ?? '');
-    $confirm = (string) ($input['new_password_confirm'] ?? $input['confirm_password'] ?? '');
-    if ($newPassword !== $confirm) {
-        api_fail('New password and confirmation do not match.', 422);
-    }
-    $current = isset($input['current_password']) ? (string) $input['current_password'] : null;
     try {
-        admin_override_password_set(
+        $public = override_approval_hr_manager_save(
             ims_pdo(),
-            $newPassword,
-            $current,
+            (int) ($input['user_id'] ?? 0),
+            (string) ($input['email'] ?? ''),
             (int) ($user['id'] ?? 0) ?: null
         );
     } catch (Throwable $e) {
         api_fail($e->getMessage(), 422);
     }
-    api_ok(['configured' => true, 'saved' => true]);
+    api_ok(array_merge($public, ['saved' => true]));
+}
+
+function api_settings_mail_settings_get(): void
+{
+    api_method_allowed(['GET']);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/mailer.php';
+    api_ok(app_mail_settings_public(ims_pdo()));
+}
+
+function api_settings_mail_settings_save(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/mailer.php';
+    $user = api_require_ims_user();
+    $pass = null;
+    if (array_key_exists('smtp_pass', $input) || array_key_exists('app_password', $input)) {
+        $raw = $input['smtp_pass'] ?? $input['app_password'];
+        $pass = is_string($raw) ? $raw : (string) $raw;
+    }
+    try {
+        $public = app_mail_settings_save(
+            ims_pdo(),
+            (string) ($input['smtp_user'] ?? ''),
+            (string) ($input['from_name'] ?? 'Pyx Tracker'),
+            $pass,
+            (string) ($input['app_public_base'] ?? ''),
+            (int) ($user['id'] ?? 0) ?: null
+        );
+    } catch (Throwable $e) {
+        api_fail($e->getMessage(), 422);
+    }
+    api_ok(array_merge($public, ['saved' => true]));
+}
+
+function api_settings_mail_test(): void
+{
+    api_method_allowed(['POST']);
+    $input = api_input();
+    api_require_csrf($input);
+    api_settings_require_executive();
+    require_once dirname(__DIR__, 2) . '/includes/mailer.php';
+    $pdo = ims_pdo();
+    $to = trim((string) ($input['to'] ?? ''));
+    if ($to === '') {
+        $to = (string) app_setting_get($pdo, MAIL_SMTP_USER_KEY, '');
+    }
+    $result = app_mail_send(
+        $pdo,
+        $to,
+        'Pyx Tracker test email',
+        '<p>This is a test email from Pyx Tracker System Settings.</p><p>Gmail SMTP is working.</p>'
+    );
+    if (empty($result['ok'])) {
+        api_fail((string) ($result['error'] ?? 'Test email failed.'), 422, $result);
+    }
+    api_ok(['ok' => true, 'to' => $to]);
 }
 
 function api_settings_pyxacct_sync_get(): void

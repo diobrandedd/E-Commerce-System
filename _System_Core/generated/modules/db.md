@@ -1,7 +1,7 @@
 ---
 title: db
 source: includes/db.php
-generated: 2026-11-24T09:12:28+01:00
+generated: 2026-11-27T06:28:46+01:00
 type: module
 function_count: 4
 ---
@@ -62,32 +62,32 @@ function_count: 4
 
 ## ims_pdo {#ims_pdo}
 
-**Callers (426):**
+**Callers (441):**
 
 - `api/v1/_bootstrap.php`:204 — `$pdo = ims_pdo();`
+- `api/v1/approvals.php`:38 — `$rows = override_approval_list(ims_pdo(), $user, $status !== '' ? $status : 'all');`
+- `api/v1/approvals.php`:39 — `$hr = override_approval_hr_manager_public(ims_pdo());`
+- `api/v1/approvals.php`:52 — `$row = override_approval_get(ims_pdo(), $id);`
+- `api/v1/approvals.php`:71 — `$request = override_approval_approve(ims_pdo(), $id, $user);`
+- `api/v1/approvals.php`:74 — `$req = override_approval_get(ims_pdo(), $id);`
+- `api/v1/approvals.php`:91 — `$request = override_approval_reject(ims_pdo(), $id, $user, $note);`
+- `api/v1/approvals.php`:102 — `api_ok(['count' => override_approval_pending_count(ims_pdo())]);`
+- `api/v1/approvals.php`:109 — `api_ok(['rows' => override_approval_unread_list(ims_pdo())]);`
+- `api/v1/approvals.php`:119 — `override_approval_mark_viewed(ims_pdo(), $id && $id > 0 ? $id : null);`
 - `api/v1/ar.php`:33 — `api_ok(['products' => ar_credits_sellable_products(ims_pdo())]);`
 - `api/v1/ar.php`:44 — `api_ok(['staff' => ar_staff_picker_list(ims_pdo())]);`
 - `api/v1/ar.php`:63 — `api_ok(['credits' => ar_credits_list(ims_pdo(), $user)]);`
 - `api/v1/ar.php`:87 — `$result = ar_credits_take_for_user(ims_pdo(), (int) $user['id'], $productId, $qty);`
 - `api/v1/ar.php`:107 — `ar_credits_mark_paid(ims_pdo(), $id, (int) $user['id']);`
 - `api/v1/ar.php`:127 — `ar_credits_mark_unpaid(ims_pdo(), $id);`
-- `api/v1/auth.php`:176 — `$issued = pos_api_token_issue(ims_pdo(), [`
-- `api/v1/auth.php`:208 — `$pdo = ims_pdo();`
-- `api/v1/auth.php`:254 — `$issued = pos_api_token_issue(ims_pdo(), [`
-- `api/v1/auth.php`:288 — `$pdo = ims_pdo();`
-- `api/v1/auth.php`:319 — `pos_api_token_revoke_plain(ims_pdo(), $plain);`
+- `api/v1/auth.php`:180 — `$issued = pos_api_token_issue(ims_pdo(), [`
+- `api/v1/auth.php`:212 — `$pdo = ims_pdo();`
+- `api/v1/auth.php`:258 — `$issued = pos_api_token_issue(ims_pdo(), [`
+- `api/v1/auth.php`:292 — `$pdo = ims_pdo();`
+- `api/v1/auth.php`:323 — `pos_api_token_revoke_plain(ims_pdo(), $plain);`
 - `api/v1/barcode_verify.php`:25 — `api_ok(['result' => barcode_verify_lookup(ims_pdo(), $code)]);`
-- `api/v1/bottle_barcodes.php`:130 — `api_ok(['rows' => honey_bottle_packaging_options(ims_pdo())]);`
-- `api/v1/bottle_barcodes.php`:141 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:156 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:191 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:211 — `$before = honey_fetch_packaging_by_production(ims_pdo(), $productionRowId, date('Y-m-d'));`
-- `api/v1/bottle_barcodes.php`:212 — `$pk = honey_bottle_ensure_packaging_shell(ims_pdo(), (int) $user['id'], $productionRowId);`
-- `api/v1/bottle_barcodes.php`:231 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:253 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:272 — `api_ok(honey_bottle_request_list(ims_pdo(), $status, $filterUser, $page, 25));`
-- `api/v1/bottle_barcodes.php`:280 — `api_ok(['request' => honey_bottle_request_get(ims_pdo(), $id)]);`
-- `api/v1/bottle_barcodes.php`:290 — `ims_pdo(),`
-- `api/v1/bottle_barcodes.php`:306 — `api_ok(['count' => honey_bottle_pending_request_count(ims_pdo())]);`
-- _… and 401 more (run impact.php for full list)_
+- `api/v1/bottle_barcodes.php`:131 — `api_ok(['rows' => honey_bottle_packaging_options(ims_pdo())]);`
+- `api/v1/bottle_barcodes.php`:142 — `ims_pdo(),`
+- `api/v1/bottle_barcodes.php`:157 — `ims_pdo(),`
+- _… and 416 more (run impact.php for full list)_
 

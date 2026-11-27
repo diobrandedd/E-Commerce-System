@@ -258,19 +258,24 @@ export function deptWipWaste(payload: { qty: number; reason?: string }) {
   return apiPost("honey.php", "dept_wip_waste", payload);
 }
 
-/** Executive correction of PT/BRC/Jar Cacao leaf pool (grams → kg). Executive role plus administrator password. */
+/** Executive correction of PT/BRC/Jar Cacao leaf pool (grams → kg). HR manager applies; others request approval. */
 export function deptRawExecutiveSetGrams(payload: {
   product_key: "pt" | "brc" | "jar_cacao";
   grams: number;
-  admin_password: string;
   note?: string;
 }) {
   return apiPost<{
-    product_key: string;
-    bags_on_hand: number;
-    previous: number;
-    entry_id: number | null;
-    grams_remaining: number;
-    grams_per_bag: number;
+    applied?: boolean;
+    pending?: boolean;
+    request_id?: number;
+    summary?: string;
+    email_sent?: boolean;
+    email_error?: string | null;
+    product_key?: string;
+    bags_on_hand?: number;
+    previous?: number;
+    entry_id?: number | null;
+    grams_remaining?: number;
+    grams_per_bag?: number;
   }>("honey.php", "dept_raw_executive_set", payload);
 }

@@ -415,8 +415,7 @@ function api_inventory_check_finalize(): void
     // Stock updates only after a closed audit is selected from history (same gate as merge).
     $user = api_inventory_check_require_view_all();
     $in = api_input();
-    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
-    api_require_admin_override_password($in);
+    require_once dirname(__DIR__, 2) . '/includes/override_approvals.php';
     $pdo = ims_pdo();
     $eventId = (int) ($in['event_id'] ?? 0);
     api_inventory_check_require_event_access($user, $eventId);
@@ -424,9 +423,22 @@ function api_inventory_check_finalize(): void
     if ((string) ($ev['status'] ?? '') !== 'closed') {
         api_fail('Complete the audit first so it is in history, then confirm from Compare selected.', 422);
     }
+    $payload = ['event_ids' => [$eventId]];
+    $summary = 'Check Inventory confirm · audit #' . $eventId;
     try {
-        $result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], false);
-        api_ok($result);
+        if (override_approval_is_hr_manager($user, $pdo)) {
+            $result = inventory_check_finalize_with_sync($pdo, $user, [$eventId], false);
+            api_ok(array_merge(is_array($result) ? $result : [], ['applied' => true]));
+        }
+        $created = override_approval_create($pdo, $user, 'inventory_check_finalize', $payload, $summary);
+        api_ok([
+            'pending' => true,
+            'request_id' => (int) ($created['request']['id'] ?? 0),
+            'request' => $created['request'],
+            'email_sent' => $created['email_sent'],
+            'email_error' => $created['email_error'],
+            'summary' => $summary,
+        ]);
     } catch (Throwable $e) {
         if ($e->getMessage() === 'Forbidden.') {
             api_fail('Forbidden.', 403);
@@ -441,8 +453,7 @@ function api_inventory_check_finalize_merged(): void
     api_inventory_check_require_csrf();
     $user = api_inventory_check_require_view_all();
     $in = api_input();
-    require_once dirname(__DIR__, 2) . '/includes/admin_override_password.php';
-    api_require_admin_override_password($in);
+    require_once dirname(__DIR__, 2) . '/includes/override_approvals.php';
     $rawIds = is_array($in['event_ids'] ?? null) ? $in['event_ids'] : [];
     $eventIds = array_values(array_unique(array_filter(array_map('intval', $rawIds))));
     if (count($eventIds) < 1) {
@@ -456,9 +467,23 @@ function api_inventory_check_finalize_merged(): void
             api_fail('Merged update only works on closed audits.', 422);
         }
     }
+    $payload = ['event_ids' => $eventIds];
+    $summary = 'Check Inventory confirm · ' . count($eventIds) . ' audit'
+        . (count($eventIds) === 1 ? '' : 's') . ' (#' . implode(', #', $eventIds) . ')';
     try {
-        $result = inventory_check_finalize_with_sync($pdo, $user, $eventIds, false);
-        api_ok($result);
+        if (override_approval_is_hr_manager($user, $pdo)) {
+            $result = inventory_check_finalize_with_sync($pdo, $user, $eventIds, false);
+            api_ok(array_merge(is_array($result) ? $result : [], ['applied' => true]));
+        }
+        $created = override_approval_create($pdo, $user, 'inventory_check_finalize', $payload, $summary);
+        api_ok([
+            'pending' => true,
+            'request_id' => (int) ($created['request']['id'] ?? 0),
+            'request' => $created['request'],
+            'email_sent' => $created['email_sent'],
+            'email_error' => $created['email_error'],
+            'summary' => $summary,
+        ]);
     } catch (Throwable $e) {
         if ($e->getMessage() === 'Forbidden.') {
             api_fail('Forbidden.', 403);

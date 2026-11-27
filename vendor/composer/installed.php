@@ -3,7 +3,7 @@
         'name' => 'pyxfood/rts-system',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '3342c3b53780b7e0296bc5800a1f36aa1dda306e',
+        'reference' => '6718921bcbc4646c9516f981276ca48a69e3ba0b',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -64,6 +64,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'phpmailer/phpmailer' => array(
+            'pretty_version' => 'v6.12.0',
+            'version' => '6.12.0.0',
+            'reference' => 'd1ac35d784bf9f5e61b424901d5a014967f15b12',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../phpmailer/phpmailer',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'phpoffice/phpspreadsheet' => array(
             'pretty_version' => '2.4.5',
             'version' => '2.4.5.0',
@@ -94,7 +103,7 @@
         'pyxfood/rts-system' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '3342c3b53780b7e0296bc5800a1f36aa1dda306e',
+            'reference' => '6718921bcbc4646c9516f981276ca48a69e3ba0b',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

@@ -1,6 +1,6 @@
 ---
 title: Module Index
-generated: 2026-11-24T04:34:44+01:00
+generated: 2026-11-27T06:13:07+01:00
 type: memory-bank
 ---
 
@@ -12,7 +12,6 @@ type: memory-bank
 | Module | Functions |
 |--------|-----------|
 | [[modules/admin_nav]] | 1 |
-| [[modules/admin_override_password]] | 4 |
 | [[modules/admin_sidebar]] | 3 |
 | [[modules/admin_sidebar_styles]] | 0 |
 | [[modules/api_tokens]] | 8 |
@@ -47,7 +46,7 @@ type: memory-bank
 | [[modules/fulfillment_pack_tier_seed]] | 3 |
 | [[modules/fulfillment_packing]] | 33 |
 | [[modules/historical_orders_import]] | 25 |
-| [[modules/honey_bottle_barcodes]] | 67 |
+| [[modules/honey_bottle_barcodes]] | 69 |
 | [[modules/honey_inventory]] | 75 |
 | [[modules/honey_parcel_inventory]] | 4 |
 | [[modules/honey_parcel_item_parser]] | 17 |
@@ -61,10 +60,12 @@ type: memory-bank
 | [[modules/inventory_check_apply]] | 11 |
 | [[modules/inventory_edit_log]] | 6 |
 | [[modules/labels]] | 3 |
+| [[modules/mailer]] | 5 |
 | [[modules/material_inventory]] | 90 |
 | [[modules/online_order_parcels]] | 29 |
 | [[modules/online_orders_generator]] | 44 |
 | [[modules/order_remarks]] | 19 |
+| [[modules/override_approvals]] | 16 |
 | [[modules/pack_cancel_restock]] | 11 |
 | [[modules/parcel_pack_costing]] | 37 |
 | [[modules/partner_sold_reconcile]] | 25 |
@@ -90,7 +91,7 @@ type: memory-bank
 | [[modules/rts_products]] | 14 |
 | [[modules/rts_schema]] | 13 |
 | [[modules/rts_shop_couriers]] | 2 |
-| [[modules/rts_stock_in_sessions]] | 13 |
+| [[modules/rts_stock_in_sessions]] | 14 |
 | [[modules/rts_storage]] | 16 |
 | [[modules/shopee_spx_packing_list]] | 4 |
 | [[modules/shopee_spx_product_info]] | 12 |

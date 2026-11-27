@@ -4,6 +4,15 @@
 
 ## 📅 Recent Log Entries
 
+### 2026-11-27 — Pack session undo (HR approval)
+**Change:** Executive Undo on Pack scan History reverses a whole confirmed session (units → packaging/RTS/freebies, delete sales-log rows, status=undone). Phase 101 + `pack_session_undo` approval type. → [[problems/records/2026-11-27_pack-session-undo]] · [[specs/2026-11-27_pack-session-undo]]
+
+### 2026-11-26 — Login keeps approval deep link
+**Change:** After login, return to the intended SPA path (e.g. `/approvals?id=N` from the HR email). `RequireAuth` stores path+query; `LoginPage` no longer always sends users to the dashboard.
+
+### 2026-11-26 — HR manager approvals
+**Change:** Replaced administrator override password with HR manager email + Approvals page for Check Inventory confirm, leaf-pool edit, and Packaging undo. Phase 100 `override_approval_requests`, PHPMailer Gmail SMTP, `is_hr_manager` on auth. → [[problems/records/2026-11-26_hr-manager-approvals]] · [[specs/2026-11-26_hr-manager-approvals]] · [[plans/archive/2026-11-26_hr-manager-approvals_plan]]
+
 ### 2026-11-24 — Packaging stock-in line undo
 **Change:** Executive Undo on Packaging report person/size lines (specific scan date) with administrator password — reverses sticker + SKU events, POOL on-hand, and production gallons. → [[problems/records/2026-11-24_packaging-stock-in-line-undo]] · [[specs/2026-11-24_packaging-stock-in-line-undo]]
 

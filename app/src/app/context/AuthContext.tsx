@@ -51,6 +51,8 @@ export interface AuthUser {
   dept_id: number | null;
   dept_name: string;
   permissions?: string[];
+  /** Configured System Settings HR manager (approves override requests). */
+  is_hr_manager?: boolean;
 }
 
 export interface MePayload {

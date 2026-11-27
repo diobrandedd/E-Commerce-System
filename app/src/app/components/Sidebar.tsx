@@ -162,6 +162,12 @@ function getNavItems(role: Role, _dept: string, pendingCorrections: number, labe
     badge: badge && badge > 0 ? badge : undefined,
   });
 
+  const approvalsNav: NavItem = {
+    icon: ClipboardList,
+    label: "Approvals",
+    to: "/approvals",
+  };
+
   const orderManagementNav: NavItem = {
     icon: ClipboardList,
     label: "Order management",
@@ -264,6 +270,7 @@ function getNavItems(role: Role, _dept: string, pendingCorrections: number, labe
     { icon: BarChart2, label: "Reports", to: "/reports" },
     { icon: ScrollText, label: "Logs", to: "/logs" },
     requestsNav(pendingCorrections),
+    approvalsNav,
     arNav,
     { icon: Users, label: "Staff Management", to: "/staff" },
     { icon: Settings, label: "System Settings", to: "/settings" },
