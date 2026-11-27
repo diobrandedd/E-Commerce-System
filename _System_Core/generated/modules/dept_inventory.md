@@ -1,7 +1,7 @@
 ---
 title: dept_inventory
 source: includes/dept_inventory.php
-generated: 2026-11-27T06:28:48+01:00
+generated: 2026-11-27T06:40:28+01:00
 type: module
 function_count: 21
 ---
@@ -239,12 +239,12 @@ _No direct callers detected (may be entry point or dynamic call)._
 
 - `api/v1/honey.php`:1603 — `$result = dept_raw_set_bags_on_hand(`
 - `includes/dept_inventory.php`:923 — `return dept_raw_set_bags_on_hand($pdo, $userId, $productKey, $newKg, $note, $logSource);`
-- `includes/override_approvals.php`:402 — `return dept_raw_set_bags_on_hand(`
+- `includes/override_approvals.php`:420 — `return dept_raw_set_bags_on_hand(`
 
 ## dept_raw_set_grams_on_hand {#dept_raw_set_grams_on_hand}
 
 **Callers (2):**
 
 - `api/v1/honey.php`:1594 — `$result = dept_raw_set_grams_on_hand(`
-- `includes/override_approvals.php`:392 — `return dept_raw_set_grams_on_hand(`
+- `includes/override_approvals.php`:410 — `return dept_raw_set_grams_on_hand(`
 

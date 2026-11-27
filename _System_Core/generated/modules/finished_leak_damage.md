@@ -1,7 +1,7 @@
 ---
 title: finished_leak_damage
 source: includes/finished_leak_damage.php
-generated: 2026-11-27T06:28:57+01:00
+generated: 2026-11-27T06:40:37+01:00
 type: module
 function_count: 11
 ---

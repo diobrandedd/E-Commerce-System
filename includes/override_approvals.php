@@ -213,16 +213,34 @@ function override_approval_create(
     $id = (int) $pdo->lastInsertId();
 
     $link = app_mail_spa_base_url($pdo) . '/approvals?id=' . $id;
+    $safeLink = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
+    $hrNamePlain = $hr['name'] !== '' ? $hr['name'] : 'HR manager';
     $requesterName = trim((string) ($user['name'] ?? '')) !== ''
         ? (string) $user['name']
         : ('User #' . $requesterId);
+    $safeHr = htmlspecialchars($hrNamePlain, ENT_QUOTES, 'UTF-8');
+    $safeRequester = htmlspecialchars($requesterName, ENT_QUOTES, 'UTF-8');
+    $safeSummary = htmlspecialchars($summary, ENT_QUOTES, 'UTF-8');
     $subject = 'Pyx Tracker approval needed: ' . $summary;
-    $html = '<p>Hello ' . htmlspecialchars($hr['name'] !== '' ? $hr['name'] : 'HR manager', ENT_QUOTES, 'UTF-8') . ',</p>'
-        . '<p><strong>' . htmlspecialchars($requesterName, ENT_QUOTES, 'UTF-8') . '</strong> requested:</p>'
-        . '<p>' . htmlspecialchars($summary, ENT_QUOTES, 'UTF-8') . '</p>'
-        . '<p><a href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">Open in Pyx Tracker to Approve or Reject</a></p>'
-        . '<p>You must log in. The link alone does not apply the change.</p>';
-    $mail = app_mail_send($pdo, $hr['email'], $subject, $html);
+    // Table-based button for Gmail/Outlook; gold matches SPA primary.
+    $html = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#1f2937;">'
+        . '<p style="margin:0 0 16px;">Hello ' . $safeHr . ',</p>'
+        . '<p style="margin:0 0 8px;"><strong>' . $safeRequester . '</strong> requested an approval:</p>'
+        . '<div style="margin:0 0 20px;padding:14px 16px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">'
+        . '<p style="margin:0;font-size:14px;color:#111827;">' . $safeSummary . '</p>'
+        . '</div>'
+        . '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 16px;">'
+        . '<tr><td align="center" bgcolor="#C8900A" style="border-radius:8px;">'
+        . '<a href="' . $safeLink . '" target="_blank"'
+        . ' style="display:inline-block;padding:12px 22px;font-family:Arial,Helvetica,sans-serif;'
+        . 'font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">'
+        . 'Review request</a>'
+        . '</td></tr></table>'
+        . '<p style="margin:0;font-size:12px;color:#6b7280;">You must log in. This button opens the Approvals page — it does not apply the change by itself.</p>'
+        . '</div>';
+    $text = "Hello {$hrNamePlain},\n\n{$requesterName} requested an approval:\n{$summary}\n\n"
+        . "Review: {$link}\n\nYou must log in. The link alone does not apply the change.\n";
+    $mail = app_mail_send($pdo, $hr['email'], $subject, $html, $text);
 
     $req = override_approval_get($pdo, $id);
     if ($req === null) {
